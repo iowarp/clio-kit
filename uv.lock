@@ -25,7 +25,7 @@ wheels = [
 
 [[package]]
 name = "iowarp-mcps"
-version = "0.3.1"
+version = "0.3.7"
 source = { editable = "." }
 dependencies = [
     { name = "click" },

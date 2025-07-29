@@ -86,6 +86,50 @@ uvx iowarp-mcps slurm
 
 <img src="https://www.nsf.gov/themes/custom/nsf_theme/components/molecules/logo/logo-desktop.png" alt="NSF Logo" width="24" height="24"> **[NSF (National Science Foundation)](https://www.nsf.gov/)** - Supporting scientific computing research and AI integration initiatives
 
+## Development & Publishing
+
+### Testing Development Versions
+
+Development versions are automatically published to TestPyPI on every commit to main. To test the latest development version:
+
+```bash
+# Install dev version from TestPyPI
+uvx --index-url https://test.pypi.org/simple/ iowarp-mcps
+
+# Or install specific dev version
+pip install --index-url https://test.pypi.org/simple/ iowarp-mcps==1.2.3.dev20241201123456+abc1234
+```
+
+Development versions use the format: `{base_version}.dev{timestamp}+{commit_sha}`
+
+### Creating Releases
+
+To create a stable release on PyPI:
+
+1. **Create and push a version tag:**
+   ```bash
+   git tag v1.2.3
+   git push origin v1.2.3
+   ```
+
+2. **GitHub Actions will automatically:**
+   - Build the package with the tagged version
+   - Publish to PyPI
+   - Create a GitHub release with artifacts
+
+3. **Users can then install the stable version:**
+   ```bash
+   uvx iowarp-mcps  # Latest stable version
+   uvx iowarp-mcps@1.2.3  # Specific version
+   ```
+
+### Version Management
+
+- **Base version** is maintained in `pyproject.toml`
+- **Dev versions** are auto-generated from commits to main
+- **Release versions** come from git tags (without the 'v' prefix)
+- All versions follow [semantic versioning](https://semver.org/)
+
 ## Contributing
 
 We welcome contributions in any form!
