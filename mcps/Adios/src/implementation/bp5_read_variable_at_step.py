@@ -1,8 +1,9 @@
 import numpy as np
 import adios2
 
-
-def read_variable_at_step(filename: str, variable_name: str, target_step: int):
+def read_variable_at_step(
+    filename: str, variable_name: str, target_step: int
+):
     """
     Read a single variable from a specific step in a BP5 file.
 
@@ -12,7 +13,7 @@ def read_variable_at_step(filename: str, variable_name: str, target_step: int):
       target_step: The integer step index to fetch
 
     Returns:
-      A Python scalar or list (flattened array) of that variable’s value
+      A Python scalar or list (flattened array) of that variable's value
       at the specified step.
 
     Raises:
@@ -25,14 +26,10 @@ def read_variable_at_step(filename: str, variable_name: str, target_step: int):
                 # make sure the variable exists
                 avail = s.available_variables()
                 if variable_name not in avail:
-                    raise ValueError(
-                        f"Variable '{variable_name}' not in step {current}"
-                    )
+                    raise ValueError(f"Variable '{variable_name}' not in step {current}")
                 arr = s.read(variable_name)
                 # convert NumPy types → native Python
-                if isinstance(arr, np.generic) or (
-                    hasattr(arr, "shape") and arr.shape == ()
-                ):
+                if isinstance(arr, np.generic) or (hasattr(arr, "shape") and arr.shape == ()):
                     return np.array(arr).item()
                 else:
                     return np.array(arr).flatten().tolist()
