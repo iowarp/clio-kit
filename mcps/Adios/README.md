@@ -122,50 +122,61 @@ uv --directory=$env:CLONE_DIR\iowarp-mcps\mcps\Adios run adios-mcp --help
 ## Capabilities
 
 ### `list_bp5`
-**Description**: List all BP5 files in a specified directory with comprehensive file information including metadata and structure details.
+**Description**: List all bp5 files in the specified directory.
 
 **Parameters**:
-- `directory` (str): Absolute path to directory containing BP5 files
+- `directory` (str, optional): Parameter for directory (default: data/)
 
-**Returns**: List of BP5 files with metadata, size information, and basic structure details.
+**Returns**: Returns dict
 
 ### `inspect_variables`
-**Description**: Inspect all variables in a BP5 file including type information, shape dimensions, and available time steps for comprehensive data structure analysis. If variable_name is provided, returns data for that specific variable.
+**Description**: Inspects variables in a BP5 file. If variable_name is provided, returns data for that specific variable. Otherwise, shows type, shape, and steps for all variables. The 'filename' parameter must be an absolute path to the BP5 file.
 
 **Parameters**:
-- `filename` (str): Absolute path to BP5 file
-- `variable_name` (str, optional): Specific variable name for targeted inspection
+- `filename` (str): Parameter for filename
+- `variable_name` (str, optional): Parameter for variable_name
 
-**Returns**: Complete variable inventory with types, shapes, step counts, and data structure information for all variables or specific variable.
+**Returns**: Returns dict
 
 ### `inspect_variables_at_step`
-**Description**: Inspect a specific variable at a given step in a BP5 file. Shows variable type, shape, and metadata at the specified time step.
+**Description**: Inspects a specific variable at a given step in a BP5 file. Shows variable type, shape, min, max. All parameters are required. The 'filename' must be an absolute path.
 
 **Parameters**:
-- `filename` (str): Absolute path to BP5 file
-- `variable_name` (str): Name of the variable to inspect
-- `step` (int): Step number to inspect
+- `filename` (str): Parameter for filename
+- `variable_name` (str): Parameter for variable_name
+- `step` (int): Parameter for step
 
-**Returns**: Variable information at the specified step including type, shape, and available metadata.
+**Returns**: Returns dict
 
 ### `inspect_attributes`
-**Description**: Read global or variable-specific attributes from a BP5 file with detailed metadata extraction and attribute value analysis.
+**Description**: Reads global or variable-specific attributes from a BP5 file. The 'filename' parameter must be an absolute path. The 'variable_name' is optional.
 
 **Parameters**:
-- `filename` (str): Absolute path to BP5 file
-- `variable_name` (str, optional): Specific variable name for targeted attribute inspection
+- `filename` (str): Parameter for filename
+- `variable_name` (str, optional): Parameter for variable_name
 
-**Returns**: Comprehensive attribute dictionary with metadata, variable-specific attributes, and global file attributes.
+**Returns**: Returns dict
 
 ### `read_variable_at_step`
-**Description**: Read a named variable at a specific time step from a BP5 file with full data extraction and conversion to Python native types.
+**Description**: Reads a named variable at a specific step from a BP5 file. WARNING: This tool reads the entire variable into memory. For large variables (>1000 elements), first use 'inspect_variables' to check the size, then use 'read_variable_chunk' instead to avoid memory/token issues. The 'filename' must be an absolute path.
 
 **Parameters**:
-- `filename` (str): Absolute path to BP5 file
-- `variable_name` (str): Name of variable to read
-- `target_step` (int): Time step number to read from
+- `filename` (str): Parameter for filename
+- `variable_name` (str): Parameter for variable_name
+- `target_step` (int): Parameter for target_step
 
-**Returns**: Variable data as Python scalar or list (flattened array) at the specified step.
+**Returns**: Returns dict
+
+### `read_variable_chunk`
+**Description**: Reads a chunk of a large variable at a specific step from a BP5 file. This tool is designed for large variables (>1000 elements) to avoid memory/token issues. First use 'inspect_variables' to check if a variable is large enough to need chunking. The chunk size is automatically calculated as roughly 1/5 of the total data. Returns data chunk plus chunk_info with 'next_start_index' for subsequent calls. Continue calling with next_start_index until 'is_complete' is True. The 'filename' must be an absolute path.
+
+**Parameters**:
+- `filename` (str): Parameter for filename
+- `variable_name` (str): Parameter for variable_name
+- `target_step` (int): Parameter for target_step
+- `start_index` (int, optional): Parameter for start_index (default: 0)
+
+**Returns**: Returns dict
 ## Examples
 
 ### 1. Scientific Data Structure Analysis
