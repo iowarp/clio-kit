@@ -66,7 +66,7 @@ class TestServer:
             assert hasattr(server, tool_name), f"Missing tool function: {tool_name}"
             tool = getattr(server, tool_name)
             assert tool is not None
-            assert hasattr(tool, "name")
+            assert hasattr(tool, "__name__")  # Functions have __name__ not name
 
     def test_main_function_exists(self):
         """Test that main function exists and is callable"""
@@ -225,7 +225,7 @@ class TestServer:
     @pytest.mark.asyncio
     async def test_data_info_tool_execution(self, sample_csv_file):
         """Test data_info_tool execution"""
-        result = await server.data_info_tool.fn(file_path=sample_csv_file)
+        result = await server.data_info_tool(file_path=sample_csv_file)
         assert isinstance(result, dict)
         assert "status" in result
 
@@ -233,7 +233,7 @@ class TestServer:
     async def test_line_plot_tool_execution(self, sample_csv_file):
         """Test line_plot_tool execution"""
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-            result = await server.line_plot_tool.fn(
+            result = await server.line_plot_tool(
                 file_path=sample_csv_file,
                 x_column="x",
                 y_column="y",
@@ -248,7 +248,7 @@ class TestServer:
     async def test_bar_plot_tool_execution(self, sample_csv_file):
         """Test bar_plot_tool execution"""
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-            result = await server.bar_plot_tool.fn(
+            result = await server.bar_plot_tool(
                 file_path=sample_csv_file,
                 x_column="category",
                 y_column="value",
@@ -263,7 +263,7 @@ class TestServer:
     async def test_scatter_plot_tool_execution(self, sample_csv_file):
         """Test scatter_plot_tool execution"""
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-            result = await server.scatter_plot_tool.fn(
+            result = await server.scatter_plot_tool(
                 file_path=sample_csv_file,
                 x_column="x",
                 y_column="y",
@@ -278,7 +278,7 @@ class TestServer:
     async def test_histogram_plot_tool_execution(self, sample_csv_file):
         """Test histogram_plot_tool execution"""
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-            result = await server.histogram_plot_tool.fn(
+            result = await server.histogram_plot_tool(
                 file_path=sample_csv_file,
                 column="value",
                 bins=10,
@@ -293,7 +293,7 @@ class TestServer:
     async def test_heatmap_plot_tool_execution(self, sample_csv_file):
         """Test heatmap_plot_tool execution"""
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-            result = await server.heatmap_plot_tool.fn(
+            result = await server.heatmap_plot_tool(
                 file_path=sample_csv_file, title="Test Heatmap", output_path=f.name
             )
             assert isinstance(result, dict)
@@ -388,14 +388,14 @@ class TestServer:
 
         # Test with invalid file path
         async def test_invalid_file():
-            result = await server.data_info_tool.fn(file_path="/nonexistent/file.csv")
+            result = await server.data_info_tool(file_path="/nonexistent/file.csv")
             assert result["status"] == "error"
 
         asyncio.run(test_invalid_file())
 
         # Test with invalid column
         async def test_invalid_column():
-            result = await server.line_plot_tool.fn(
+            result = await server.line_plot_tool(
                 file_path=sample_csv_file,
                 x_column="invalid_column",
                 y_column="y",
@@ -433,7 +433,7 @@ class TestServer:
             assert hasattr(server, tool_name)
             tool = getattr(server, tool_name)
             assert tool is not None
-            assert hasattr(tool, "name")
+            assert hasattr(tool, "__name__")  # Functions have __name__ not name
             assert hasattr(tool, "fn")
 
     def test_logger_configuration(self):
