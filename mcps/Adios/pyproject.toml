@@ -3,7 +3,7 @@ name = "adios-mcp"
 version = "1.0.0"
 description = "Fetch and analyze BP5 data files using ADIOS2. Access scientific data, metadata, and attributes for research and analysis purposes."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = "==3.12"
 license = "MIT"
 authors = [
   { name = "IOWarp Team", email = "team@iowarp.com" }
