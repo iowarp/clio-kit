@@ -17,7 +17,11 @@ dependencies = [
   "uvicorn[standard]>=0.20",
   "pandas>=1.0",
   "pyarrow>=19.0.1",
-  "fastmcp"
+  "fastmcp",
+  "h11>=0.16.0",
+  "requests>=2.32.4",
+  "starlette>=0.47.2",
+  "urllib3>=2.5.0"
 ]
 
 [project.scripts]

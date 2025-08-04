@@ -15,6 +15,7 @@ keywords = ["compression", "gzip", "storage", "archival", "backup", "analytics",
 dependencies = [
     "fastmcp>=0.1.0",
     "python-dotenv>=1.0.0",
+    "starlette>=0.47.2",
 ]
 
 [dependency-groups]
