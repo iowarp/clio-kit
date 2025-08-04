@@ -18,12 +18,14 @@ dependencies = [
     "matplotlib>=3.6.0",
     "seaborn>=0.12.0",
     "numpy<2.0.0",
-    "openpyxl>=3.0.0"
+    "openpyxl>=3.0.0",
+    "starlette>=0.47.2"
 ]
 
 [dependency-groups]
 dev = [
     "mypy>=1.17.0",
+    "pip-audit>=2.9.0",
     "pytest>=8.4.0",
     "pytest-asyncio>=1.1.0",
     "pytest-cov>=6.2.1",
