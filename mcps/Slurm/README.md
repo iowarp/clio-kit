@@ -207,6 +207,8 @@ uv --directory=$env:CLONE_DIR\iowarp-mcps\mcps\Slurm run slurm-mcp --help
 - `partition` (Any, optional): Parameter for partition
 - `job_name` (Any, optional): Parameter for job_name
 - `immediate` (bool, optional): Parameter for immediate (default: False)
+- `exclusive` (bool, optional): Parameter for exclusive (default: False)
+- `nodelist` (Any, optional): Parameter for nodelist
 
 **Returns**: Dictionary with allocation information
 
