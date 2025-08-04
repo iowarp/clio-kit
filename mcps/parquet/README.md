@@ -152,6 +152,9 @@ uv --directory=$env:CLONE_DIR\iowarp-mcps\mcps\parquet run parquet-mcp --help
 
 **Returns**: Dictionary with preview data, schema information, and file statistics.
 
+
+
+
 ## Examples
 
 ### 1. Data Discovery and Schema Analysis
