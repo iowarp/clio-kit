@@ -698,6 +698,12 @@ This powerful tool provides complete node allocation capabilities using salloc f
 reservation with intelligent resource optimization, performance analysis, and comprehensive allocation management for
 efficient cluster utilization and interactive workload optimization.
 
+**Key Allocation Options**:
+- **Exclusive Allocation**: Use `exclusive=True` to allocate nodes exclusively, preventing other jobs from sharing the same nodes
+- **Node Selection**: Use `nodelist` to specify particular nodes (e.g., "node01,node02" or "gpu[001-004]") for targeted allocation
+- **Resource Control**: Full control over CPU cores, memory, and time limits with intelligent optimization
+- **Partition Management**: Smart partition selection based on workload requirements and availability
+
 **Intelligent Node Allocation Strategy**:
 1. **Resource Optimization**: Intelligent resource allocation with efficiency analysis and cost optimization
 2. **Availability Analysis**: Real-time node availability assessment with optimal allocation recommendations
@@ -733,7 +739,9 @@ Use this tool when:
 - Creating interactive computing sessions with optimized resource allocation ("Allocate nodes for interactive analysis with performance optimization")
 - Reserving cluster resources for interactive workloads with intelligent resource management and cost optimization
 - Setting up development environments with optimal resource allocation and efficiency monitoring
-- Managing interactive sessions with comprehensive performance analysis and optimization recommendations""",
+- Managing interactive sessions with comprehensive performance analysis and optimization recommendations
+- Requesting exclusive access to specific nodes for sensitive or high-performance workloads
+- Targeting specific hardware configurations by selecting particular nodes from the cluster""",
 )
 async def allocate_slurm_nodes_tool(
     nodes: int = 1,
@@ -743,6 +751,8 @@ async def allocate_slurm_nodes_tool(
     partition: Optional[str] = None,
     job_name: Optional[str] = None,
     immediate: bool = False,
+    exclusive: bool = False,
+    nodelist: Optional[str] = None,
 ) -> dict:
     """
     Allocate Slurm nodes using salloc command.
@@ -755,13 +765,23 @@ async def allocate_slurm_nodes_tool(
         partition: Slurm partition to use
         job_name: Name for the allocation
         immediate: Whether to return immediately without waiting for allocation
+        exclusive: Whether to allocate nodes exclusively (default: False)
+        nodelist: Comma-separated list of specific nodes to request (e.g., "node01,node02")
 
     Returns:
         Dictionary with allocation information
     """
     logger.info(f"Allocating {nodes} nodes with {cores} cores each")
     return allocate_nodes(
-        nodes, cores, memory, time_limit, partition, job_name, immediate
+        nodes,
+        cores,
+        memory,
+        time_limit,
+        partition,
+        job_name,
+        immediate,
+        exclusive,
+        nodelist,
     )
 
 

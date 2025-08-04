@@ -19,6 +19,8 @@ def allocate_nodes(
     partition: Optional[str] = None,
     job_name: Optional[str] = None,
     immediate: bool = False,
+    exclusive: bool = False,
+    nodelist: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Allocate nodes using salloc for interactive sessions.
@@ -31,6 +33,8 @@ def allocate_nodes(
         partition: Slurm partition to use
         job_name: Name for the allocation
         immediate: Whether to return immediately without waiting for allocation
+        exclusive: Whether to allocate nodes exclusively (default: False)
+        nodelist: Comma-separated list of specific nodes to request (e.g., "node01,node02")
 
     Returns:
         Dictionary containing allocation information
@@ -44,7 +48,15 @@ def allocate_nodes(
 
     # Only use real Slurm allocation - no mock mode
     return _allocate_real_slurm_nodes(
-        nodes, cores, memory, time_limit, partition, job_name, immediate
+        nodes,
+        cores,
+        memory,
+        time_limit,
+        partition,
+        job_name,
+        immediate,
+        exclusive,
+        nodelist,
     )
 
 
@@ -56,6 +68,8 @@ def _allocate_real_slurm_nodes(
     partition: Optional[str] = None,
     job_name: Optional[str] = None,
     immediate: bool = False,
+    exclusive: bool = False,
+    nodelist: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Allocate real Slurm nodes using salloc."""
 
@@ -76,6 +90,14 @@ def _allocate_real_slurm_nodes(
         cmd.extend([f"--job-name={job_name}"])
     else:
         cmd.extend(["--job-name=mcp_allocation"])
+
+    # Add exclusive allocation if requested
+    if exclusive:
+        cmd.extend(["--exclusive"])
+
+    # Add specific nodelist if provided
+    if nodelist:
+        cmd.extend([f"--nodelist={nodelist}"])
 
     # For immediate allocations, try a different approach
     if immediate:
@@ -158,6 +180,8 @@ def _allocate_real_slurm_nodes(
                 "time_limit": time_limit or "01:00:00",
                 "partition": partition,
                 "job_name": job_name or "mcp_allocation",
+                "exclusive": exclusive,
+                "nodelist": nodelist,
                 "real_slurm": True,
             }
 
@@ -200,6 +224,8 @@ def _allocate_real_slurm_nodes(
                     "time_limit": time_limit or "01:00:00",
                     "partition": partition,
                     "job_name": job_name or "mcp_allocation",
+                    "exclusive": exclusive,
+                    "nodelist": nodelist,
                     "real_slurm": True,
                 }
             )

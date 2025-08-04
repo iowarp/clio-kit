@@ -314,3 +314,80 @@ class TestNodeAllocationCoverage:
                     # Check the salloc command for default job name
                     salloc_call = mock_run.call_args_list[0][0][0]
                     assert "--job-name=mcp_allocation" in salloc_call
+
+    def test_allocate_nodes_with_exclusive(self):
+        """Test allocate_nodes with exclusive allocation."""
+        with patch(
+            "src.implementation.node_allocation.check_slurm_available",
+            return_value=True,
+        ):
+            with patch("src.implementation.node_allocation.subprocess.run") as mock_run:
+                mock_run.return_value = Mock(
+                    returncode=0, stdout="Granted job allocation 12345\n", stderr=""
+                )
+                with patch(
+                    "src.implementation.node_allocation._get_recent_allocation_id",
+                    return_value="12345",
+                ):
+                    result = allocate_nodes(nodes=1, cores=4, exclusive=True)
+
+                    # Check that the salloc command includes --exclusive
+                    salloc_call = mock_run.call_args_list[0][0][0]
+                    assert "--exclusive" in salloc_call
+                    assert result.get("exclusive") is True
+
+    def test_allocate_nodes_with_nodelist(self):
+        """Test allocate_nodes with specific node list."""
+        with patch(
+            "src.implementation.node_allocation.check_slurm_available",
+            return_value=True,
+        ):
+            with patch("src.implementation.node_allocation.subprocess.run") as mock_run:
+                mock_run.return_value = Mock(
+                    returncode=0, stdout="Granted job allocation 12345\n", stderr=""
+                )
+                with patch(
+                    "src.implementation.node_allocation._get_recent_allocation_id",
+                    return_value="12345",
+                ):
+                    with patch(
+                        "src.implementation.node_allocation._get_allocation_nodes",
+                        return_value=None,  # Don't interfere with our nodelist parameter
+                    ):
+                        result = allocate_nodes(
+                            nodes=2, cores=4, nodelist="node01,node02"
+                        )
+
+                        # Check that the salloc command includes --nodelist
+                        salloc_call = mock_run.call_args_list[0][0][0]
+                        assert "--nodelist=node01,node02" in salloc_call
+                        assert result.get("nodelist") == "node01,node02"
+
+    def test_allocate_nodes_with_exclusive_and_nodelist(self):
+        """Test allocate_nodes with both exclusive and nodelist options."""
+        with patch(
+            "src.implementation.node_allocation.check_slurm_available",
+            return_value=True,
+        ):
+            with patch("src.implementation.node_allocation.subprocess.run") as mock_run:
+                mock_run.return_value = Mock(
+                    returncode=0, stdout="Granted job allocation 12345\n", stderr=""
+                )
+                with patch(
+                    "src.implementation.node_allocation._get_recent_allocation_id",
+                    return_value="12345",
+                ):
+                    with patch(
+                        "src.implementation.node_allocation._get_allocation_nodes",
+                        return_value=None,  # Don't interfere with our parameters
+                    ):
+                        result = allocate_nodes(
+                            nodes=2, cores=8, exclusive=True, nodelist="gpu[001-002]"
+                        )
+
+                        # Check that the salloc command includes both options
+                        salloc_call = mock_run.call_args_list[0][0][0]
+                        assert "--exclusive" in salloc_call
+                        assert "--nodelist=gpu[001-002]" in salloc_call
+                        assert result.get("exclusive") is True
+                        assert result.get("nodelist") == "gpu[001-002]"
