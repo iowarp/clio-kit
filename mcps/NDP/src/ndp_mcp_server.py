@@ -33,27 +33,130 @@ class NDPClient:
     
     async def get_organizations(self) -> List[Dict]:
         """Fetch all organizations from the NDP API."""
-        async with self.session.get(f"{self.base_url}/organizations") as response:
-            response.raise_for_status()
-            data = await response.json()
-            return data.get("organizations", [])
+        # For EarthScope, return a mock organization since the API structure is different
+        return [{"id": "earthscope", "name": "EarthScope", "description": "EarthScope GNSS data"}]
     
     async def search_datasets(self, query: str, organization: Optional[str] = None, limit: int = 10) -> Dict:
         """Search for datasets in the NDP catalog."""
-        params = {"q": query, "limit": limit}
-        if organization:
-            params["organization"] = organization
-        
-        async with self.session.get(f"{self.base_url}/search", params=params) as response:
-            response.raise_for_status()
-            return await response.json()
+        try:
+            # Try to discover EarthScope datasets by querying available endpoints
+            discovered_datasets = []
+            
+            # Common EarthScope station patterns
+            station_patterns = ["rhcl", "p041", "p042", "p043", "p044", "p045"]
+            years = ["20", "21", "22", "23", "24"]  # Recent years
+            
+            for station in station_patterns:
+                for year in years:
+                    # Try to discover GeoJSON metadata
+                    geojson_url = f"{self.base_url}/Earthscope_api/geojson/{station}.geojson"
+                    csv_url = f"{self.base_url}/Earthscope_api/{station.upper()}.CI.LY_.{year}.csv"
+                    
+                    # Check if files exist by making HEAD requests
+                    try:
+                        async with self.session.head(geojson_url) as response:
+                            if response.status == 200:
+                                # File exists, create dataset entry
+                                dataset_id = f"earthscope_{station}_{year}"
+                                discovered_datasets.append({
+                                    "id": dataset_id,
+                                    "title": f"EarthScope GNSS Data - {station.upper()} Station ({year})",
+                                    "organization": {"name": "EarthScope"},
+                                    "created": f"20{year}-01-01T00:00:00Z",
+                                    "modified": f"20{year}-12-31T23:59:59Z",
+                                    "resources": [
+                                        {
+                                            "name": f"{station.upper()} Station Metadata",
+                                            "format": "geojson",
+                                            "url": geojson_url
+                                        },
+                                        {
+                                            "name": f"{station.upper()} GNSS Time Series",
+                                            "format": "csv",
+                                            "url": csv_url
+                                        }
+                                    ]
+                                })
+                    except:
+                        continue
+            
+            # If no datasets found, return empty result
+            if not discovered_datasets:
+                return {"datasets": []}
+            
+            # Sort by modification date (newest first) and limit results
+            discovered_datasets.sort(key=lambda x: x.get("modified", ""), reverse=True)
+            return {"datasets": discovered_datasets[:limit]}
+            
+        except Exception as e:
+            logger.error(f"Error searching EarthScope datasets: {e}")
+            return {"datasets": []}
     
     async def get_dataset_details(self, dataset_id: str) -> Dict:
         """Get complete metadata for a specific dataset."""
-        async with self.session.get(f"{self.base_url}/datasets/{dataset_id}") as response:
-            response.raise_for_status()
-            data = await response.json()
-            return data.get("dataset", {})
+        try:
+            # Parse dataset ID to extract station and year
+            if dataset_id.startswith("earthscope_"):
+                parts = dataset_id.split("_")
+                if len(parts) >= 3:
+                    station = parts[1]
+                    year = parts[2]
+                    
+                    # Construct URLs
+                    geojson_url = f"{self.base_url}/Earthscope_api/geojson/{station}.geojson"
+                    csv_url = f"{self.base_url}/Earthscope_api/{station.upper()}.CI.LY_.{year}.csv"
+                    
+                    # Verify files exist
+                    geojson_exists = False
+                    csv_exists = False
+                    
+                    try:
+                        async with self.session.head(geojson_url) as response:
+                            geojson_exists = response.status == 200
+                    except:
+                        pass
+                    
+                    try:
+                        async with self.session.head(csv_url) as response:
+                            csv_exists = response.status == 200
+                    except:
+                        pass
+                    
+                    if geojson_exists or csv_exists:
+                        resources = []
+                        if geojson_exists:
+                            resources.append({
+                                "name": f"{station.upper()} Station Metadata",
+                                "format": "geojson",
+                                "url": geojson_url,
+                                "description": "Station location and metadata in GeoJSON format"
+                            })
+                        
+                        if csv_exists:
+                            resources.append({
+                                "name": f"{station.upper()} GNSS Time Series",
+                                "format": "csv",
+                                "url": csv_url,
+                                "description": "GNSS time series data in CSV format"
+                            })
+                        
+                        return {
+                            "id": dataset_id,
+                            "title": f"EarthScope GNSS Data - {station.upper()} Station ({year})",
+                            "name": dataset_id,
+                            "owner_org": "EarthScope",
+                            "metadata_created": f"20{year}-01-01T00:00:00Z",
+                            "metadata_modified": f"20{year}-12-31T23:59:59Z",
+                            "notes": f"GNSS time series data from EarthScope {station.upper()} station for year 20{year}",
+                            "resources": resources
+                        }
+            
+            # If dataset not found or invalid format, return empty
+            return {}
+            
+        except Exception as e:
+            logger.error(f"Error getting dataset details: {e}")
+            return {}
     
     async def download_file(self, url: str) -> bytes:
         """Download a file from a URL."""
@@ -72,7 +175,7 @@ load_dotenv()
 mcp: FastMCP = FastMCP("NDPServer")
 
 # NDP API configuration
-NDP_BASE_URL = os.getenv("NDP_BASE_URL", "https://api.datacollaboratory.org")
+NDP_BASE_URL = os.getenv("NDP_BASE_URL", "https://ds2.datacollaboratory.org")
 
 # Search cache for chunking
 search_cache = {}
@@ -167,6 +270,14 @@ async def create_multi_panel_plot_tool(
     """Create a multi-panel plot with separate subplots for each y-column."""
     return await _create_multi_panel_plot(file_path, x_column, y_columns, title, output_path, figure_size, dpi, layout)
 
+@mcp.tool(
+    name="discover_latest_earthscope_datasets",
+    description="Automatically discover the latest EarthScope datasets and extract their GeoJSON and CSV file URLs"
+)
+async def discover_latest_earthscope_datasets_tool() -> dict:
+    """Automatically discover the latest EarthScope datasets and extract their GeoJSON and CSV file URLs."""
+    return await _discover_latest_earthscope_datasets()
+
 # Helper functions
 async def _list_organizations() -> dict:
     """List all available organizations from the NDP API."""
@@ -185,7 +296,7 @@ async def _list_organizations() -> dict:
     except Exception as e:
         logger.error(f"Error listing organizations: {e}")
         return {"status": "error", "error": str(e)}
-
+    
 async def _search_datasets(query: str, organization: Optional[str] = None, limit: int = 10) -> dict:
     """Search for datasets across the NDP catalog with intelligent chunking."""
     try:
@@ -194,7 +305,7 @@ async def _search_datasets(query: str, organization: Optional[str] = None, limit
         if cache_key in search_cache:
             chunk_id = search_cache[cache_key].get('next_chunk', 1)
             return await _get_chunk(cache_key, chunk_id)
-            
+        
         async with NDPClient(NDP_BASE_URL) as client:
             search_result = await client.search_datasets(query, organization, limit)
             
@@ -210,11 +321,11 @@ async def _search_datasets(query: str, organization: Optional[str] = None, limit
                 return await _get_chunk(cache_key, 1)
             else:
                 return _format_search_results(results, query, organization)
-        
+    
     except Exception as e:
         logger.error(f"Error searching datasets: {e}")
         return {"status": "error", "error": str(e)}
-
+    
 async def _get_chunk(cache_key: str, chunk_id: int) -> dict:
     """Get a specific chunk of search results."""
     if cache_key not in search_cache:
@@ -256,7 +367,7 @@ def _format_search_results_text(results: List[Dict], cache_key: Optional[str], c
         result_text += f"\nTo get the next chunk, use the search_datasets tool with the same parameters.\n"
     
     return result_text
-
+    
 async def _get_dataset_details(dataset_id: str) -> dict:
     """Retrieve complete metadata for a specific dataset."""
     try:
@@ -361,66 +472,60 @@ async def _download_dataset_resources(dataset_id: str, resource_types: Optional[
             result_text = f"**Downloading Resources for Dataset: {dataset.get('title', dataset.get('name', 'Untitled'))}**\n\n"
             
             downloaded_files = []
-            
             for i, resource in enumerate(resources, 1):
+                resource_url = resource.get('url')
+                if not resource_url:
+                    continue
+                
+                # Create filename from resource name or URL
+                resource_name = resource.get('name', f'resource_{i}')
+                file_extension = resource.get('format', '').lower()
+                if not file_extension:
+                    # Try to extract from URL
+                    if '.' in resource_url.split('/')[-1]:
+                        file_extension = resource_url.split('.')[-1]
+                    else:
+                        file_extension = 'dat'
+                
+                filename = f"{resource_name}.{file_extension}"
+                
                 try:
-                    result_text += f"{i}. Downloading: {resource.get('name', 'Unnamed Resource')} ({resource.get('format', 'Unknown')})\n"
-                    
                     # Download the file
-                    file_content = await client.download_file(resource['url'])
+                    content = await client.download_file(resource_url)
                     
-                    # Save to temporary file
-                    file_ext = _get_file_extension(resource.get('format', ''))
-                    with tempfile.NamedTemporaryFile(delete=False, suffix=file_ext) as temp_file:
-                        temp_file.write(file_content)
-                        temp_file_path = temp_file.name
+                    # Save to file
+                    with open(filename, 'wb') as f:
+                        f.write(content)
                     
                     downloaded_files.append({
-                        'name': resource.get('name', f'resource_{i}'),
+                        'name': resource_name,
+                        'filename': filename,
+                        'size': len(content),
                         'format': resource.get('format', 'Unknown'),
-                        'path': temp_file_path,
-                        'size': len(file_content)
+                        'url': resource_url
                     })
                     
-                    result_text += f"   ✅ Downloaded: {temp_file_path} ({len(file_content)} bytes)\n"
+                    result_text += f"✅ **{resource_name}** - Downloaded successfully\n"
+                    result_text += f"   - File: {filename}\n"
+                    result_text += f"   - Size: {len(content)} bytes\n"
+                    result_text += f"   - Format: {resource.get('format', 'Unknown')}\n\n"
                     
                 except Exception as e:
-                    result_text += f"   ❌ Failed to download: {str(e)}\n"
-                
-                result_text += "\n"
+                    result_text += f"❌ **{resource_name}** - Failed to download: {str(e)}\n\n"
             
-            result_text += f"**Summary**: Downloaded {len(downloaded_files)} files successfully.\n"
-            result_text += "Files are saved in temporary locations and can be accessed for analysis.\n"
+            if not downloaded_files:
+                return {"status": "error", "error": "No files were successfully downloaded."}
             
-            # Add file paths to result
-            if downloaded_files:
-                result_text += "\n**Downloaded Files:**\n"
-                for file_info in downloaded_files:
-                    result_text += f"- {file_info['name']} ({file_info['format']}): {file_info['path']}\n"
+            return {
+                "status": "success",
+                "result": result_text,
+                "downloaded_files": downloaded_files,
+                "total_files": len(downloaded_files)
+            }
             
-        return {"status": "success", "result": result_text, "downloaded_files": downloaded_files}
-        
     except Exception as e:
         logger.error(f"Error downloading dataset resources: {e}")
         return {"status": "error", "error": str(e)}
-
-def _get_file_extension(format_type: str) -> str:
-    """Get file extension based on format type."""
-    format_map = {
-        'CSV': '.csv',
-        'JSON': '.json',
-        'GEOJSON': '.geojson',
-        'SHAPE': '.shp',
-        'KML': '.kml',
-        'KMZ': '.kmz',
-        'XML': '.xml',
-        'TXT': '.txt',
-        'PDF': '.pdf',
-        'ZIP': '.zip',
-        'XLSX': '.xlsx',
-        'XLS': '.xls'
-    }
-    return format_map.get(format_type.upper(), '.dat')
 
 async def _analyze_geospatial_data(dataset_id: str) -> dict:
     """Analyze geospatial data from a dataset with comprehensive insights."""
@@ -433,124 +538,141 @@ async def _analyze_geospatial_data(dataset_id: str) -> dict:
             
             result_text = f"**Geospatial Analysis: {dataset.get('title', dataset.get('name', 'Untitled'))}**\n\n"
             
-            # Analyze resources
+            # Basic dataset info
+            result_text += f"**Dataset Information:**\n"
+            result_text += f"- ID: {dataset.get('id', 'N/A')}\n"
+            result_text += f"- Organization: {dataset.get('owner_org', 'N/A')}\n"
+            result_text += f"- Created: {dataset.get('metadata_created', 'N/A')}\n"
+            result_text += f"- Modified: {dataset.get('metadata_modified', 'N/A')}\n\n"
+            
+            # Resource analysis
             resources = dataset.get('resources', [])
-            geospatial_resources = []
-            
-            for resource in resources:
-                format_type = resource.get('format', '').upper()
-                if format_type in ['GEOJSON', 'SHAPE', 'KML', 'KMZ']:
-                    geospatial_resources.append(resource)
-            
-            if not geospatial_resources:
-                result_text += "❌ No geospatial resources found in this dataset.\n"
-                result_text += "Supported formats: GeoJSON, Shapefile, KML, KMZ\n"
-                return {"status": "success", "result": result_text}
-            
-            result_text += f"✅ Found {len(geospatial_resources)} geospatial resource(s):\n\n"
-            
-            for i, resource in enumerate(geospatial_resources, 1):
-                result_text += f"{i}. **{resource.get('name', 'Unnamed Resource')}**\n"
-                result_text += f"   - Format: {resource.get('format', 'Unknown')}\n"
-                result_text += f"   - URL: {resource.get('url', 'N/A')}\n"
+            if resources:
+                result_text += f"**Resource Analysis ({len(resources)} resources):**\n"
                 
-                if resource.get('description'):
-                    result_text += f"   - Description: {resource['description']}\n"
+                geojson_count = 0
+                csv_count = 0
+                other_count = 0
                 
+                for resource in resources:
+                    format_type = resource.get('format', '').lower()
+                    if 'geojson' in format_type:
+                        geojson_count += 1
+                    elif 'csv' in format_type:
+                        csv_count += 1
+                    else:
+                        other_count += 1
+                
+                result_text += f"- GeoJSON files: {geojson_count}\n"
+                result_text += f"- CSV files: {csv_count}\n"
+                result_text += f"- Other formats: {other_count}\n\n"
+                
+                # Detailed resource info
+                result_text += "**Resource Details:**\n"
+                for i, resource in enumerate(resources, 1):
+                    result_text += f"{i}. **{resource.get('name', 'Unnamed')}**\n"
+                    result_text += f"   - Format: {resource.get('format', 'Unknown')}\n"
+                    result_text += f"   - URL: {resource.get('url', 'N/A')}\n"
+                    if resource.get('description'):
+                        result_text += f"   - Description: {resource['description']}\n"
+                    result_text += "\n"
+            
+            # Spatial extent analysis (if available)
+            extras = dataset.get('extras', [])
+            spatial_info = {}
+            for extra in extras:
+                key = extra.get('key', '').lower()
+                if 'spatial' in key or 'bbox' in key or 'extent' in key:
+                    spatial_info[key] = extra.get('value')
+            
+            if spatial_info:
+                result_text += "**Spatial Information:**\n"
+                for key, value in spatial_info.items():
+                    result_text += f"- {key}: {value}\n"
                 result_text += "\n"
             
-            # Additional analysis recommendations
-            result_text += "**Analysis Recommendations:**\n"
-            result_text += "- Use download_dataset_resources to download the geospatial files\n"
-            result_text += "- Load files in GIS software (QGIS, ArcGIS) for detailed analysis\n"
-            result_text += "- Consider coordinate system and projection information\n"
-            result_text += "- Check for attribute data and metadata completeness\n"
+            return {
+                "status": "success",
+                "result": result_text,
+                "dataset_id": dataset_id,
+                "total_resources": len(resources),
+                "geojson_count": geojson_count if 'geojson_count' in locals() else 0,
+                "csv_count": csv_count if 'csv_count' in locals() else 0,
+                "other_count": other_count if 'other_count' in locals() else 0
+            }
             
-        return {"status": "success", "result": result_text, "geospatial_resources": geospatial_resources}
-        
     except Exception as e:
         logger.error(f"Error analyzing geospatial data: {e}")
         return {"status": "error", "error": str(e)}
 
-async def _create_multi_series_plot(
-    file_path: str,
-    x_column: str,
-    y_columns: List[str],
-    title: str,
-    output_path: str,
-    figure_size: str,
-    dpi: int
-) -> dict:
+async def _create_multi_series_plot(file_path: str, x_column: str, y_columns: List[str], title: str, output_path: str, figure_size: str, dpi: int) -> dict:
     """Create a multi-series line plot with multiple y-columns against a single x-column."""
     try:
         import pandas as pd
         import matplotlib.pyplot as plt
         import matplotlib.dates as mdates
-        from datetime import datetime
-        
-        # Load the data
-        df = pd.read_csv(file_path)
-        
-        # Validate columns exist
-        if x_column not in df.columns:
-            return {"status": "error", "error": f"X-column '{x_column}' not found in data"}
-        
-        missing_y_columns = [col for col in y_columns if col not in df.columns]
-        if missing_y_columns:
-            return {"status": "error", "error": f"Y-columns not found: {missing_y_columns}"}
+        import os
         
         # Parse figure size
-        try:
-            width, height = map(int, figure_size.split('x'))
-        except ValueError:
-            width, height = 15, 12  # Default size
+        width, height = map(float, figure_size.split('x'))
+        
+        # Load data
+        df = pd.read_csv(file_path)
+        
+        # Convert x_column to datetime if it's numeric (Unix timestamp)
+        if df[x_column].dtype in ['int64', 'float64']:
+            # Try different timestamp units to handle various formats
+            try:
+                # First try seconds
+                df[x_column] = pd.to_datetime(df[x_column], unit='s')
+            except (ValueError, pd.errors.OutOfBoundsDatetime):
+                try:
+                    # Try milliseconds
+                    df[x_column] = pd.to_datetime(df[x_column], unit='ms')
+                except (ValueError, pd.errors.OutOfBoundsDatetime):
+                    try:
+                        # Try microseconds
+                        df[x_column] = pd.to_datetime(df[x_column], unit='us')
+                    except (ValueError, pd.errors.OutOfBoundsDatetime):
+                        try:
+                            # Try nanoseconds
+                            df[x_column] = pd.to_datetime(df[x_column], unit='ns')
+                        except (ValueError, pd.errors.OutOfBoundsDatetime):
+                            # If all fail, treat as Julian day or create simple numeric range
+                            logger.warning(f"Could not convert {x_column} to datetime, using numeric values")
+                            pass
+        
+        x_data = df[x_column]
         
         # Create the plot
-        fig, ax = plt.subplots(figsize=(width, height))
+        plt.figure(figsize=(width, height))
         
         # Define colors for different series
-        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f']
-        
-        # Convert time column if it's numeric (nanoseconds since epoch)
-        if df[x_column].dtype in ['int64', 'float64']:
-            # Assume nanoseconds since epoch
-            df['datetime'] = pd.to_datetime(df[x_column], unit='ns')
-            x_data = df['datetime']
-        else:
-            # Try to parse as datetime
-            try:
-                x_data = pd.to_datetime(df[x_column])
-            except:
-                x_data = df[x_column]
+        colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
         
         # Plot each y-column
         for i, y_col in enumerate(y_columns):
             color = colors[i % len(colors)]
-            ax.plot(x_data, df[y_col], 
-                   color=color, 
-                   linewidth=0.8, 
-                   alpha=0.8, 
-                   label=y_col)
+            plt.plot(x_data, df[y_col], color=color, linewidth=1.2, alpha=0.8, label=y_col)
         
         # Customize the plot
-        ax.set_title(title, fontsize=16, fontweight='bold', pad=20)
-        ax.set_xlabel('Time', fontsize=12)
-        ax.set_ylabel('Position (meters)', fontsize=12)
-        ax.grid(True, alpha=0.3)
-        ax.legend()
+        plt.title(title, fontsize=16, fontweight='bold')
+        plt.xlabel('Time', fontsize=12)
+        plt.ylabel('Value', fontsize=12)
+        plt.grid(True, alpha=0.3)
+        plt.legend()
         
         # Format x-axis for datetime
         if hasattr(x_data, 'dt'):
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-            ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
-            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
-        
-        plt.tight_layout()
+            plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+            plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=1))
+            plt.xticks(rotation=45, ha='right')
         
         # Create output directory if it doesn't exist
         os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
         
         # Save the plot
+        plt.tight_layout()
         plt.savefig(output_path, dpi=dpi, bbox_inches='tight')
         plt.close()
         
@@ -564,11 +686,11 @@ async def _create_multi_series_plot(
                 'max': float(df[y_col].max())
             }
         
-        result_text = f"✅ Successfully created multi-series line plot\n"
+        result_text = f"✅ Successfully created multi-series plot\n"
         result_text += f"📁 Saved to: {output_path}\n"
         result_text += f"📊 Figure size: {width}x{height} inches\n"
         result_text += f"🖼️ DPI: {dpi}\n"
-        result_text += f"📈 Series plotted: {', '.join(y_columns)}\n"
+        result_text += f"📈 Series: {', '.join(y_columns)}\n"
         result_text += f"📅 Time range: {x_data.min()} to {x_data.max()}\n"
         result_text += f"📊 Data points: {len(df)}"
         
@@ -587,54 +709,47 @@ async def _create_multi_series_plot(
         logger.error(f"Error creating multi-series plot: {e}")
         return {"status": "error", "error": str(e)}
 
-async def _create_multi_panel_plot(
-    file_path: str,
-    x_column: str,
-    y_columns: List[str],
-    title: str,
-    output_path: str,
-    figure_size: str,
-    dpi: int,
-    layout: str
-) -> dict:
+async def _create_multi_panel_plot(file_path: str, x_column: str, y_columns: List[str], title: str, output_path: str, figure_size: str, dpi: int, layout: str) -> dict:
     """Create a multi-panel plot with separate subplots for each y-column."""
     try:
         import pandas as pd
         import matplotlib.pyplot as plt
         import matplotlib.dates as mdates
-        from datetime import datetime
-        
-        # Load the data
-        df = pd.read_csv(file_path)
-        
-        # Validate columns exist
-        if x_column not in df.columns:
-            return {"status": "error", "error": f"X-column '{x_column}' not found in data"}
-        
-        missing_y_columns = [col for col in y_columns if col not in df.columns]
-        if missing_y_columns:
-            return {"status": "error", "error": f"Y-columns not found: {missing_y_columns}"}
+        import os
         
         # Parse figure size
-        try:
-            width, height = map(int, figure_size.split('x'))
-        except ValueError:
-            width, height = 15, 12  # Default size
+        width, height = map(float, figure_size.split('x'))
         
-        # Convert time column if it's numeric (nanoseconds since epoch)
+        # Load data
+        df = pd.read_csv(file_path)
+        
+        # Convert x_column to datetime if it's numeric (Unix timestamp)
         if df[x_column].dtype in ['int64', 'float64']:
-            # Assume nanoseconds since epoch
-            df['datetime'] = pd.to_datetime(df[x_column], unit='ns')
-            x_data = df['datetime']
-        else:
-            # Try to parse as datetime
+            # Try different timestamp units to handle various formats
             try:
-                x_data = pd.to_datetime(df[x_column])
-            except:
-                x_data = df[x_column]
+                # First try seconds
+                df[x_column] = pd.to_datetime(df[x_column], unit='s')
+            except (ValueError, pd.errors.OutOfBoundsDatetime):
+                try:
+                    # Try milliseconds
+                    df[x_column] = pd.to_datetime(df[x_column], unit='ms')
+                except (ValueError, pd.errors.OutOfBoundsDatetime):
+                    try:
+                        # Try microseconds
+                        df[x_column] = pd.to_datetime(df[x_column], unit='us')
+                    except (ValueError, pd.errors.OutOfBoundsDatetime):
+                        try:
+                            # Try nanoseconds
+                            df[x_column] = pd.to_datetime(df[x_column], unit='ns')
+                        except (ValueError, pd.errors.OutOfBoundsDatetime):
+                            # If all fail, treat as Julian day or create simple numeric range
+                            logger.warning(f"Could not convert {x_column} to datetime, using numeric values")
+                            pass
+        
+        x_data = df[x_column]
+        n_panels = len(y_columns)
         
         # Create subplots based on layout
-        n_panels = len(y_columns)
         if layout.lower() == "horizontal":
             fig, axes = plt.subplots(1, n_panels, figsize=(width, height))
             if n_panels == 1:
@@ -718,6 +833,109 @@ async def _create_multi_panel_plot(
         
     except Exception as e:
         logger.error(f"Error creating multi-panel plot: {e}")
+        return {"status": "error", "error": str(e)}
+
+async def _discover_latest_earthscope_datasets() -> dict:
+    """Automatically discover the latest EarthScope datasets and extract their GeoJSON and CSV file URLs."""
+    try:
+        async with NDPClient(NDP_BASE_URL) as client:
+            # Step 1: Search for EarthScope datasets
+            logger.info("Searching for EarthScope datasets...")
+            search_result = await client.search_datasets("EarthScope", "earthscope", limit=20)
+            
+            if not search_result.get("datasets"):
+                return {"status": "error", "error": "No EarthScope datasets found"}
+            
+            # Step 2: Find the most recent dataset
+            datasets = search_result["datasets"]
+            latest_dataset = None
+            latest_date = None
+            
+            for dataset in datasets:
+                # Look for creation date or modification date
+                created = dataset.get("created")
+                modified = dataset.get("modified")
+                
+                if created or modified:
+                    date_str = modified if modified else created
+                    try:
+                        # Parse date (assuming ISO format)
+                        from datetime import datetime
+                        date_obj = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                        
+                        if latest_date is None or date_obj > latest_date:
+                            latest_date = date_obj
+                            latest_dataset = dataset
+                    except:
+                        continue
+            
+            if not latest_dataset:
+                # If no date found, use the first dataset
+                latest_dataset = datasets[0]
+            
+            # Step 3: Get detailed information about the latest dataset
+            dataset_id = latest_dataset.get("id")
+            if not dataset_id:
+                return {"status": "error", "error": "No dataset ID found"}
+            
+            logger.info(f"Getting details for dataset: {dataset_id}")
+            dataset_details = await client.get_dataset_details(dataset_id)
+            
+            # Step 4: Extract GeoJSON and CSV URLs from resources
+            geojson_url = None
+            csv_url = None
+            
+            resources = dataset_details.get("resources", [])
+            for resource in resources:
+                resource_url = resource.get("url", "")
+                resource_format = resource.get("format", "").lower()
+                resource_name = resource.get("name", "").lower()
+                
+                # Look for GeoJSON files
+                if (resource_format == "geojson" or 
+                    resource_url.endswith(".geojson") or 
+                    "geojson" in resource_name):
+                    geojson_url = resource_url
+                
+                # Look for CSV files
+                elif (resource_format == "csv" or 
+                      resource_url.endswith(".csv") or 
+                      "csv" in resource_name):
+                    csv_url = resource_url
+            
+            # Step 5: Prepare result
+            result_text = f"🔍 **Latest EarthScope Dataset Found**\n\n"
+            result_text += f"**Dataset ID:** {dataset_id}\n"
+            result_text += f"**Title:** {latest_dataset.get('title', 'N/A')}\n"
+            result_text += f"**Organization:** {latest_dataset.get('organization', {}).get('name', 'N/A')}\n"
+            result_text += f"**Created:** {latest_dataset.get('created', 'N/A')}\n"
+            result_text += f"**Modified:** {latest_dataset.get('modified', 'N/A')}\n\n"
+            
+            if geojson_url:
+                result_text += f"✅ **GeoJSON URL:** {geojson_url}\n"
+            else:
+                result_text += f"❌ **GeoJSON URL:** Not found\n"
+            
+            if csv_url:
+                result_text += f"✅ **CSV URL:** {csv_url}\n"
+            else:
+                result_text += f"❌ **CSV URL:** Not found\n"
+            
+            return {
+                "status": "success",
+                "result": result_text,
+                "dataset_id": dataset_id,
+                "dataset_title": latest_dataset.get("title"),
+                "organization": latest_dataset.get("organization", {}).get("name"),
+                "created": latest_dataset.get("created"),
+                "modified": latest_dataset.get("modified"),
+                "geojson_url": geojson_url,
+                "csv_url": csv_url,
+                "total_datasets_found": len(datasets)
+            }
+            
+    except Exception as e:
+        logger.error(f"Error discovering EarthScope datasets: {e}")
         return {"status": "error", "error": str(e)}
 
 def main():

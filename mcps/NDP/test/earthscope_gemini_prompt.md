@@ -92,7 +92,8 @@ This workflow will perform the following steps:
 ### Step 4: Generate PNG Visualization Using NDP MCP
 ```
 1. Use NDP MCP `create_multi_panel_plot` tool to create the 3-panel time series plot:
-   - File: earthscope_output/RHCL.CI.LY_.20.csv
+   - File: earthscope_output/RHCL.CI.LY
+   _.20.csv
    - X-column: 'time' (will be automatically converted from nanoseconds to datetime)
    - Y-columns: ['east', 'north', 'up']
    - Title: "RHCL.CI.LY_.20 - GNSS Time Series (1Hz, 816,588 points, ~94.5% complete)"
