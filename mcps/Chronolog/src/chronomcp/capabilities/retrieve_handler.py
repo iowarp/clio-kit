@@ -1,8 +1,8 @@
 # capabilities/retrieve_interaction.py
-import utils.config as config
-import utils.helpers as helpers
+
 import re
 from datetime import datetime
+from chronomcp.utils import config, helpers
 
 
 async def retrieve_interaction(

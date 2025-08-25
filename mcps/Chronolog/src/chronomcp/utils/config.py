@@ -36,6 +36,6 @@ client = py_chronolog_client.Client(client_conf)
 mcp: FastMCP = FastMCP("chronologMCP")
 
 # session state
-_active_chronicle = None
-_active_story = None
+_active_chronicle = ""
+_active_story = ""
 _story_handle = None

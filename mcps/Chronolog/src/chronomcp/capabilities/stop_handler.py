@@ -1,5 +1,6 @@
 # capabilities/stop_chronolog.py
-import utils.config as config
+
+from chronomcp.utils import config
 
 
 async def stop_chronolog() -> str:

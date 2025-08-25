@@ -30,6 +30,8 @@ dependencies = [
     "python-dotenv",
     "google-genai",
     "h5py",
+    "pytest",
+    "pytest-asyncio",
     "h11>=0.16.0",
     "requests>=2.32.4",
     "starlette>=0.47.2",

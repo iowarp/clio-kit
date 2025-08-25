@@ -17,8 +17,6 @@ jobs:
             path: "mcps/Adios"
           - name: "Arxiv" 
             path: "mcps/Arxiv"
-          - name: "Chronolog"
-            path: "mcps/Chronolog"
           - name: "Compression"
             path: "mcps/Compression"
           - name: "Darshan"

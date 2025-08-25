@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main, dev, integration-cleanup, update-workflow-with-correct-code-security ]
 
+# Chronolog MCP tests are handled in dedicated workflow
+env:
+  NO_TEST_MCPS: '["Chronolog"]'
+
 jobs:
   discover-mcps:
     name: Discover MCP Directories
@@ -116,6 +120,7 @@ jobs:
     name: Test - ${{ matrix.mcp }}
     runs-on: ubuntu-latest
     needs: discover-mcps
+    if: ${{ !contains(fromJson(env.NO_TEST_MCPS), matrix.mcp) }}
     strategy:
       fail-fast: false
       matrix:
@@ -211,6 +216,7 @@ jobs:
     name: Python 3.10 - ${{ matrix.mcp }}
     runs-on: ubuntu-latest
     needs: discover-mcps
+    if: ${{ !contains(fromJson(env.NO_TEST_MCPS), matrix.mcp) }}
     strategy:
       fail-fast: false
       matrix:
@@ -250,6 +256,7 @@ jobs:
     name: Python 3.11 - ${{ matrix.mcp }}
     runs-on: ubuntu-latest
     needs: discover-mcps
+    if: ${{ !contains(fromJson(env.NO_TEST_MCPS), matrix.mcp) }}
     strategy:
       fail-fast: false
       matrix:
@@ -289,6 +296,7 @@ jobs:
     name: Python 3.12 - ${{ matrix.mcp }}
     runs-on: ubuntu-latest
     needs: discover-mcps
+    if: ${{ !contains(fromJson(env.NO_TEST_MCPS), matrix.mcp) }}
     strategy:
       fail-fast: false
       matrix:

@@ -11,7 +11,7 @@ sys.path.insert(0, sys.path[0] + '/..')
 
 from wrp_client.config import load_config
 from wrp_client.providers.factory import get_llm_adapter
-from wrp_client.mcp_manager import MCPManager, find_server_py
+from wrp_client.mcp_manager import WarpMCPManager, EmptyMCPManager, find_server_py
 
 
 async def async_main():
@@ -53,7 +53,7 @@ async def async_main():
     if not server_names:
         print("No MCP servers specified in the configuration file.", file=sys.stderr)
         sys.exit(1)
-        
+
     for server_name in server_names:
         # The manager can handle complex server configs if needed in the future
         if isinstance(server_name, dict):
@@ -63,9 +63,16 @@ async def async_main():
 
         print(f"\n=== Connecting to {name} ===")
         try:
-            server_py = find_server_py(name)
-            manager = MCPManager(llm_adapter, verbose=verbose)
-            await manager.connect(server_py)
+            # Choose manager based on LLM's externally_managed_mcps flag
+            if getattr(llm_adapter, 'externally_managed_mcps', False):
+                manager = EmptyMCPManager(llm_adapter, verbose=verbose)
+                # For externally managed MCPs, we don't need a server script
+                await manager.connect("")
+            else:
+                server_py = find_server_py(name)
+                manager = WarpMCPManager(llm_adapter, verbose=verbose)
+                await manager.connect(server_py)
+            
             await manager.chat_loop()
         except FileNotFoundError as e:
             print(f"Error: {e}", file=sys.stderr)

@@ -1,0 +1,119 @@
+
+name: Test ChronoLog MCP
+
+on:
+  push:
+    branches: [ main, dev ]
+
+  pull_request:
+    branches: [ main, dev ]
+
+  workflow_dispatch:
+
+jobs:
+  test-chronomcp:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+        
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      
+    - name: Install gcc13 at runner level
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-13 g++-13 gfortran-13
+        
+    - name: Get spack
+      run: |
+        git clone --branch v0.21.2 https://github.com/spack/spack.git
+        source spack/share/spack/setup-env.sh
+        echo "SPACK_ROOT=$PWD/spack" >> $GITHUB_ENV
+        echo "$PWD/spack/bin" >> $GITHUB_PATH
+        # Prevent spack from auto-detecting system compilers (including gcc14)
+        spack compiler remove --all || true
+        
+    - name: Clone ChronoLog repository
+      run: |
+        git clone https://github.com/grc-iit/ChronoLog.git
+        cd ChronoLog
+        git switch develop
+        
+    - name: Cache Spack Dependencies
+      uses: actions/cache@v4
+      id: spack-cache
+      with:
+        path: |
+          ${{ env.SPACK_ROOT }}/opt
+          ${{ env.SPACK_ROOT }}/var/spack/cache
+          ~/.spack
+          ${{ github.workspace }}/ChronoLog/.spack-env
+        key: chronolog-spack-${{ runner.os }}-${{ hashFiles('ChronoLog/spack.yaml') }}
+        restore-keys: |
+          chronolog-spack-${{ runner.os }}-
+
+    - name: Install ChronoLog dependencies
+      if: steps.spack-cache.outputs.cache-hit != 'true'
+      working-directory: ${{ github.workspace }}/ChronoLog
+      run: |
+        source $SPACK_ROOT/share/spack/setup-env.sh
+        spack env activate -p .
+        # Register gcc-13 with Spack and remove any gcc-14 to avoid libffi incompatibility
+        spack compiler find /usr/bin
+        spack compiler remove gcc@14 --all || true
+        spack concretize --force
+        spack install -j4 -v
+        
+    - name: Setup Spack Environment (Cache Hit)
+      if: steps.spack-cache.outputs.cache-hit == 'true'
+      working-directory: ${{ github.workspace }}/ChronoLog
+      run: |
+        source $SPACK_ROOT/share/spack/setup-env.sh
+        spack env activate -p .
+        
+    - name: Build ChronoLog
+      working-directory: ${{ github.workspace }}/ChronoLog
+      run: |
+        source $SPACK_ROOT/share/spack/setup-env.sh
+        spack env activate -p .
+        ./deploy/local_single_user_deploy.sh --build --build-type Debug --install-dir $GITHUB_WORKSPACE/ChronoLog/install
+        
+    - name: Install ChronoLog
+      working-directory: ${{ github.workspace }}/ChronoLog
+      run: |
+        source $SPACK_ROOT/share/spack/setup-env.sh
+        spack env activate -p .
+        ./deploy/local_single_user_deploy.sh --install --work-dir $GITHUB_WORKSPACE/ChronoLog/install/Debug
+        echo "PYTHONPATH=$PYTHONPATH:$GITHUB_WORKSPACE/ChronoLog/install/Debug/lib" >> $GITHUB_ENV
+        echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GITHUB_WORKSPACE/ChronoLog/install/Debug/lib" >> $GITHUB_ENV
+
+    - name: Create Python client symlink
+      working-directory: ${{ github.workspace }}/ChronoLog/install/Debug/lib
+      run: |
+        rm -f py_chronolog_client.so
+        ln -s py_chronolog_client.cpython-312-x86_64-linux-gnu.so py_chronolog_client.so
+
+    - name: Start ChronoLog service
+      working-directory: ${{ github.workspace }}/ChronoLog
+      run: |
+        source $SPACK_ROOT/share/spack/setup-env.sh
+        spack env activate -p .
+        ./deploy/local_single_user_deploy.sh -d -k 5 -r 2 --work-dir $GITHUB_WORKSPACE/ChronoLog/install/Debug
+        
+    - name: Install ChronoLog MCP dependencies
+      working-directory: ${{ github.workspace }}/mcps/Chronolog
+      run: |
+        uv venv
+        uv sync --python 3.11
+        uv pip install -e .
+        
+    - name: Run ChronoLog MCP tests
+      working-directory: ${{ github.workspace }}/mcps/Chronolog
+      run: uv run pytest -v

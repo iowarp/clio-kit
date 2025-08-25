@@ -1,5 +1,6 @@
 # capabilities/record_interaction.py
-import utils.config as config
+
+from chronomcp.utils import config
 
 
 async def record_interaction(user_message: str, assistant_message: str) -> str:

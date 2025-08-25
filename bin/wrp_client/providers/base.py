@@ -22,6 +22,7 @@ class BaseLLM(ABC):
     must implement. This allows the main application logic to interact with any
     LLM provider in a consistent, predictable way.
     """
+    externally_managed_mcps = False
     @abstractmethod
     async def chat(
         self, messages: List[Dict[str, str]], tools: List[ToolDef]
