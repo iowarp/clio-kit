@@ -1,16 +1,12 @@
 """Validation tests for HDF5 MCP v2.0."""
 import pytest
 import ast
-import sys
 from pathlib import Path
-
-# Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 
 def test_all_files_syntax_valid():
     """Test all Python files have valid syntax."""
-    src_dir = Path(__file__).parent.parent / 'src'
+    src_dir = Path(__file__).parent.parent / 'src' / 'hdf5_mcp'
     python_files = list(src_dir.rglob('*.py'))
 
     assert len(python_files) > 15, f"Expected 15+ Python files, found {len(python_files)}"
@@ -25,7 +21,7 @@ def test_all_files_syntax_valid():
 
 def test_sse_protocol_versions():
     """Test SSE transport supports MCP protocol versions."""
-    from transports.sse_transport import SUPPORTED_VERSIONS
+    from hdf5_mcp.transports.sse_transport import SUPPORTED_VERSIONS
 
     assert '2025-06-18' in SUPPORTED_VERSIONS
     assert '2025-03-26' in SUPPORTED_VERSIONS
@@ -33,8 +29,8 @@ def test_sse_protocol_versions():
 
 def test_sse_localhost_binding():
     """Test SSE enforces localhost-only binding for security."""
-    from transports.sse_transport import SSETransport
-    from transports.base import TransportConfig, TransportType
+    from hdf5_mcp.transports.sse_transport import SSETransport
+    from hdf5_mcp.transports.base import TransportConfig, TransportType
 
     # Test default is localhost
     transport = SSETransport()
