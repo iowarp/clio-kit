@@ -19,6 +19,7 @@ import logging
 import json
 import functools
 import inspect
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union, Tuple, Callable, TypeVar, Set, Type, get_type_hints
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -220,21 +221,34 @@ def log_operation(func: Callable) -> Callable:
     return wrapper
 
 def measure_performance(func: Callable) -> Callable:
-    """Decorator for performance measurement of operations."""
+    """Decorator for performance measurement with adaptive units and optional display."""
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
-        start_time = time.time()
+        # Use perf_counter for nanosecond precision
+        start_time = time.perf_counter()
         result = await func(*args, **kwargs)
-        execution_time = (time.time() - start_time) * 1000  # Convert to milliseconds
+        elapsed_ns = (time.perf_counter() - start_time) * 1_000_000_000  # nanoseconds
 
-        # Record the performance metric
-        logger.debug(f"Performance: {func.__name__} took {execution_time:.2f}ms")
+        # Convert to appropriate unit for display
+        if elapsed_ns < 1_000:  # < 1 microsecond
+            time_str = f"{elapsed_ns:.0f}ns"
+        elif elapsed_ns < 1_000_000:  # < 1 millisecond
+            time_str = f"{elapsed_ns / 1_000:.1f}μs"
+        elif elapsed_ns < 1_000_000_000:  # < 1 second
+            time_str = f"{elapsed_ns / 1_000_000:.1f}ms"
+        else:
+            time_str = f"{elapsed_ns / 1_000_000_000:.2f}s"
 
-        # Only show performance if meaningful (> 1ms)
-        if execution_time > 1.0 and isinstance(result, list) and result and isinstance(result[0], TextContent):
-            performance_note = f"\n\n⏱️ {execution_time:.1f}ms"
+        # Always log for debugging
+        logger.debug(f"Performance: {func.__name__} took {time_str}")
+
+        # Check if we should display performance in results
+        show_performance = os.getenv('HDF5_SHOW_PERFORMANCE', 'false').lower() == 'true'
+
+        # Only append to result if enabled AND result is TextContent
+        if show_performance and isinstance(result, list) and result and isinstance(result[0], TextContent):
             orig = result[0]
-            result[0] = TextContent(type=orig.type, text=orig.text + performance_note)
+            result[0] = TextContent(type=orig.type, text=orig.text + f"\n\n⏱ {time_str}")
 
         return result
     return wrapper
