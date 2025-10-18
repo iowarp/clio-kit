@@ -86,10 +86,17 @@ Large Files:         Unlimited (streaming)
 
 Environment variables:
 ```bash
-HDF5_DATA_DIR=/path/to/data      # Default data directory
-HDF5_CACHE_SIZE=1000             # LRU cache capacity
-HDF5_NUM_WORKERS=4               # Parallel worker count
+HDF5_DATA_DIR=/path/to/data          # Default data directory
+HDF5_CACHE_SIZE=1000                 # LRU cache capacity
+HDF5_NUM_WORKERS=4                   # Parallel worker count
+HDF5_SHOW_PERFORMANCE=false          # Show timing in results (true for dev/debug)
 ```
+
+**Performance Measurement**:
+- Always captured with nanosecond precision
+- Adaptive units (ns, μs, ms, s)
+- Hidden by default (production)
+- Enable with `HDF5_SHOW_PERFORMANCE=true` for debugging
 
 ## Transport Support
 
