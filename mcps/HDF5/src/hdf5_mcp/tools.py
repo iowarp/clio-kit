@@ -125,33 +125,50 @@ class ToolRegistry:
     def get_tools(cls) -> List[Tool]:
         """Get all registered tools in MCP Tool format."""
         mcp_tools = []
-        
+
         for name, tool_info in cls._tools.items():
-            # Convert internal parameter format to MCP format
-            mcp_params = {}
+            # Convert internal parameter format to JSON Schema 2020-12 compliant format
+            properties = {}
+            required = []
+
             for param_name, param_info in tool_info["parameters"].items():
                 param_type = param_info.get("type", "any")
+
+                # Map Python types to JSON Schema types
                 if param_type == "int":
-                    param_type = "integer"
+                    json_type = "integer"
                 elif param_type == "bool":
-                    param_type = "boolean"
+                    json_type = "boolean"
                 elif param_type == "float":
-                    param_type = "number"
-                elif param_type in ["list", "dict", "tuple"]:
-                    param_type = "object"
+                    json_type = "number"
+                elif param_type == "list":
+                    json_type = "array"
+                elif param_type == "dict":
+                    json_type = "object"
                 else:
-                    param_type = "string"
-                    
-                mcp_params[param_name] = param_type
-                
+                    json_type = "string"
+
+                # Build property schema
+                properties[param_name] = {"type": json_type}
+
+                # Track required parameters
+                if param_info.get("required", False):
+                    required.append(param_name)
+
+            # Build JSON Schema compliant inputSchema
+            input_schema = {
+                "type": "object",
+                "properties": properties
+            }
+            if required:
+                input_schema["required"] = required
+
             mcp_tools.append(Tool(
                 name=name,
                 description=tool_info["description"],
-                parameters=mcp_params,
-                returns="Result of the tool execution",
-                inputSchema={"type": "object", "properties": mcp_params}
+                inputSchema=input_schema
             ))
-            
+
         return mcp_tools
     
     @classmethod
