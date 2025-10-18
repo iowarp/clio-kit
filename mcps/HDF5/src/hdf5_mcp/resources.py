@@ -99,7 +99,14 @@ class LazyHDF5Proxy:
     def filename(self) -> str:
         """Get the filename of the HDF5 file."""
         return str(self._file_path)
-    
+
+    @property
+    def mode(self) -> str:
+        """Get the file access mode."""
+        if self.file is not None:
+            return self.file.mode
+        return 'r'
+
     @property
     def attrs(self):
         """Get the attributes of the HDF5 file."""
