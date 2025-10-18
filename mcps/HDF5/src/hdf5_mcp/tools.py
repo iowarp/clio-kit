@@ -225,17 +225,17 @@ def measure_performance(func: Callable) -> Callable:
     async def wrapper(*args, **kwargs):
         start_time = time.time()
         result = await func(*args, **kwargs)
-        execution_time = time.time() - start_time
-        
+        execution_time = (time.time() - start_time) * 1000  # Convert to milliseconds
+
         # Record the performance metric
-        logger.debug(f"Performance: {func.__name__} took {execution_time:.4f} seconds")
-        
-        # Add performance info to the result if it's a list of TextContent
-        if isinstance(result, list) and result and isinstance(result[0], TextContent):
-            performance_note = f"\n\nOperation took {execution_time:.2f}ms."
+        logger.debug(f"Performance: {func.__name__} took {execution_time:.2f}ms")
+
+        # Only show performance if meaningful (> 1ms)
+        if execution_time > 1.0 and isinstance(result, list) and result and isinstance(result[0], TextContent):
+            performance_note = f"\n\n⏱️ {execution_time:.1f}ms"
             orig = result[0]
             result[0] = TextContent(type=orig.type, text=orig.text + performance_note)
-            
+
         return result
     return wrapper
 
