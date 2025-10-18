@@ -335,13 +335,20 @@ class HDF5Tools:
     
     @ToolRegistry.register(category="navigation")
     @handle_hdf5_errors
-    async def list_keys(self) -> ToolResult:
-        """List keys in the current group."""
-        if not self.file or not isinstance(self.file, h5py.Group):
-            return [TextContent(text="Current object is not a group", type="text")]
-        
-        keys = list(self.file.keys())
-        return [TextContent(text=json.dumps(keys, indent=2), type="text")]
+    async def list_keys(self, path: str = "/") -> ToolResult:
+        """List keys in a group."""
+        if not self.file:
+            return [TextContent(text="No file currently open", type="text")]
+
+        try:
+            obj = self.file[path] if path != "/" else self.file.file
+            if not isinstance(obj, h5py.Group):
+                return [TextContent(text=f"{path} is not a group", type="text")]
+
+            keys = list(obj.keys())
+            return [TextContent(text=json.dumps(keys, indent=2), type="text")]
+        except KeyError:
+            return [TextContent(text=f"Path not found: {path}", type="text")]
     
     # Helper method to handle visit callbacks
     def _make_visit_function(self, callback_text: str) -> Callable:
@@ -466,31 +473,49 @@ class HDF5Tools:
     @handle_hdf5_errors
     @measure_performance
     async def get_shape(self, path: str) -> ToolResult:
-        """Get the shape of the current dataset."""
-        if not self.file or not isinstance(self.file, h5py.Dataset):
-            return [TextContent(text="Current object is not a dataset", type="text")]
-        
-        return [TextContent(text=str(self.file.shape), type="text")]
+        """Get the shape of a dataset."""
+        if not self.file:
+            return [TextContent(text="No file currently open", type="text")]
+
+        try:
+            dataset = self.file[path]
+            if not isinstance(dataset, h5py.Dataset):
+                return [TextContent(text=f"{path} is not a dataset", type="text")]
+            return [TextContent(text=str(dataset.shape), type="text")]
+        except KeyError:
+            return [TextContent(text=f"Dataset not found: {path}", type="text")]
     
     @ToolRegistry.register(category="dataset")
     @handle_hdf5_errors
     @measure_performance
     async def get_dtype(self, path: str) -> ToolResult:
-        """Get the data type of the current dataset."""
-        if not self.file or not isinstance(self.file, h5py.Dataset):
-            return [TextContent(text="Current object is not a dataset", type="text")]
-        
-        return [TextContent(text=str(self.file.dtype), type="text")]
+        """Get the data type of a dataset."""
+        if not self.file:
+            return [TextContent(text="No file currently open", type="text")]
+
+        try:
+            dataset = self.file[path]
+            if not isinstance(dataset, h5py.Dataset):
+                return [TextContent(text=f"{path} is not a dataset", type="text")]
+            return [TextContent(text=str(dataset.dtype), type="text")]
+        except KeyError:
+            return [TextContent(text=f"Dataset not found: {path}", type="text")]
     
     @ToolRegistry.register(category="dataset")
     @handle_hdf5_errors
     @measure_performance
     async def get_size(self, path: str) -> ToolResult:
-        """Get the size of the current dataset."""
-        if not self.file or not isinstance(self.file, h5py.Dataset):
-            return [TextContent(text="Current object is not a dataset", type="text")]
-        
-        return [TextContent(text=str(self.file.size), type="text")]
+        """Get the size of a dataset."""
+        if not self.file:
+            return [TextContent(text="No file currently open", type="text")]
+
+        try:
+            dataset = self.file[path]
+            if not isinstance(dataset, h5py.Dataset):
+                return [TextContent(text=f"{path} is not a dataset", type="text")]
+            return [TextContent(text=str(dataset.size), type="text")]
+        except KeyError:
+            return [TextContent(text=f"Dataset not found: {path}", type="text")]
     
     @ToolRegistry.register(category="dataset")
     @handle_hdf5_errors
@@ -988,10 +1013,14 @@ class HDF5Tools:
         """Analyze and understand file organization and data patterns."""
         if not self.file:
             return [TextContent(text="Error: No file currently open", type="text")]
-        
+
         try:
-            obj = self.file[path] if path != "/" else self.file
-            
+            # Unwrap LazyHDF5Proxy if path is root
+            if path == "/":
+                obj = self.file.file  # Get actual h5py.File
+            else:
+                obj = self.file[path]
+
             # Basic structure analysis
             if isinstance(obj, h5py.Group):
                 items = list(obj.keys())
@@ -1105,11 +1134,15 @@ class HDF5Tools:
         """Suggest interesting data to explore next based on current location."""
         if not self.file:
             return [TextContent(text="Error: No file currently open", type="text")]
-        
+
         try:
-            obj = self.file[current_path] if current_path != "/" else self.file
+            # Unwrap LazyHDF5Proxy if path is root
+            if current_path == "/":
+                obj = self.file.file
+            else:
+                obj = self.file[current_path]
             suggestions = []
-            
+
             if isinstance(obj, h5py.Group):
                 items = list(obj.keys())
                 
