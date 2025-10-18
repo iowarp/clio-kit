@@ -425,47 +425,53 @@ class HDF5Tools:
     @ToolRegistry.register(category="dataset")
     @handle_hdf5_errors
     @measure_performance
-    async def read_partial_dataset(self, path: str, 
-                                 start: Optional[List[int]] = None,
-                                 count: Optional[List[int]] = None) -> ToolResult:
+    async def read_partial_dataset(self, path: str,
+                                 start: Optional[str] = None,
+                                 count: Optional[str] = None) -> ToolResult:
         """
-        Read a portion of a dataset with chunked access and parallel processing.
-        
+        Read a portion of a dataset with slicing.
+
         Args:
             path: Path to dataset within file
-            start: Starting indices for each dimension
-            count: Number of elements to read in each dimension
+            start: Starting indices as comma-separated string (e.g., "0,0,0")
+            count: Number of elements as comma-separated string (e.g., "10,10,10")
         """
         if not self.file:
             return [TextContent(text="Error: No file currently open", type="text")]
-            
+
         try:
-            # Get dataset with chunked access support
-            data = self.resource_manager.get_dataset(
-                self.file.filename,
-                path,
-                tuple(start) if start else None,
-                tuple(count) if count else None
-            )
-            
-            if data is None:
-                return [TextContent(text=f"Error reading dataset {path}", type="text")]
-                
-            # For large datasets, use Dask for parallel processing
-            if data.nbytes > 1e8:  # 100MB threshold
-                dask_array = da.from_array(data, chunks='auto')
-                result = dask_array.compute()
+            dataset = self.file[path]
+            if not isinstance(dataset, h5py.Dataset):
+                return [TextContent(text=f"{path} is not a dataset", type="text")]
+
+            # Parse start and count strings to tuples
+            if start:
+                start_tuple = tuple(int(x.strip()) for x in start.split(','))
             else:
-                result = data
-                
+                start_tuple = tuple(0 for _ in dataset.shape)
+
+            if count:
+                count_tuple = tuple(int(x.strip()) for x in count.split(','))
+            else:
+                count_tuple = dataset.shape
+
+            # Build slice
+            slices = tuple(slice(s, s + c) for s, c in zip(start_tuple, count_tuple))
+            data = dataset[slices]
+
             return [TextContent(
-                text=f"Successfully read dataset {path}\n"
-                f"Shape: {result.shape}\n"
-                f"Dtype: {result.dtype}\n"
-                f"First few values: {result.flat[:5]}",
+                text=f"Successfully read partial dataset {path}\n"
+                f"Slice: start={start_tuple}, count={count_tuple}\n"
+                f"Result shape: {data.shape}\n"
+                f"Dtype: {data.dtype}\n"
+                f"First few values: {data.flat[:5].tolist()}",
                 type="text"
             )]
-            
+
+        except ValueError as e:
+            return [TextContent(text=f"Invalid start/count format: {str(e)}", type="text")]
+        except KeyError:
+            return [TextContent(text=f"Dataset not found: {path}", type="text")]
         except Exception as e:
             return [TextContent(text=f"Error reading dataset: {str(e)}", type="text")]
     
@@ -521,22 +527,29 @@ class HDF5Tools:
     @handle_hdf5_errors
     @measure_performance
     async def get_chunks(self, path: str) -> ToolResult:
-        """Get chunk information for the current dataset."""
+        """Get chunk information for a dataset."""
         if not self.file:
             return [TextContent(text="Error: No file currently open", type="text")]
-            
+
         try:
-            chunks = self.file.chunks
+            dataset = self.file[path]
+            if not isinstance(dataset, h5py.Dataset):
+                return [TextContent(text=f"{path} is not a dataset", type="text")]
+
+            chunks = dataset.chunks
             if chunks is None:
-                return [TextContent(text="Dataset is not chunked", type="text")]
-                
+                return [TextContent(text="Dataset is not chunked (contiguous storage)", type="text")]
+
+            chunk_size_kb = np.prod(chunks) * dataset.dtype.itemsize / 1024
             return [TextContent(
                 text=f"Chunk configuration:\n"
                 f"Chunk shape: {chunks}\n"
-                f"Chunk size: {np.prod(chunks) * self.file.dtype.itemsize / 1024:.2f} KB",
+                f"Chunk size: {chunk_size_kb:.2f} KB",
                 type="text"
             )]
-            
+
+        except KeyError:
+            return [TextContent(text=f"Dataset not found: {path}", type="text")]
         except Exception as e:
             return [TextContent(text=f"Error getting chunk info: {str(e)}", type="text")]
     
@@ -703,12 +716,26 @@ class HDF5Tools:
     @ToolRegistry.register(category="performance")
     @handle_hdf5_errors
     @measure_performance
-    async def hdf5_batch_read(self, paths: List[str], slice_spec: Optional[str] = None) -> ToolResult:
-        """Read multiple datasets in one call with parallel processing."""
+    async def hdf5_batch_read(self, paths: str, slice_spec: Optional[str] = None) -> ToolResult:
+        """Read multiple datasets in one call with parallel processing.
+
+        Args:
+            paths: Comma-separated dataset paths (e.g., "/data1,/data2,/data3")
+            slice_spec: Optional slice specification
+        """
         if not self.file:
             return [TextContent(text="Error: No file currently open", type="text")]
-        
+
         try:
+            # Parse paths string to list
+            import json
+            try:
+                # Try JSON array format first
+                path_list = json.loads(paths)
+            except:
+                # Fall back to comma-separated
+                path_list = [p.strip() for p in paths.split(',') if p.strip()]
+
             # Parse slice specification if provided
             slice_obj = None
             if slice_spec:
@@ -722,8 +749,8 @@ class HDF5Tools:
             results = {}
             with ThreadPoolExecutor(max_workers=NUM_WORKERS) as executor:
                 future_to_path = {
-                    executor.submit(self._read_single_dataset, path, slice_obj): path 
-                    for path in paths
+                    executor.submit(self._read_single_dataset, path, slice_obj): path
+                    for path in path_list
                 }
                 
                 for future in as_completed(future_to_path):
@@ -735,7 +762,7 @@ class HDF5Tools:
                         results[path] = {"error": str(e)}
             
             # Format results
-            summary = f"Batch read complete for {len(paths)} datasets:\n\n"
+            summary = f"Batch read complete for {len(path_list)} datasets:\n\n"
             
             for path, result in results.items():
                 if "error" in result:
@@ -874,23 +901,38 @@ class HDF5Tools:
     @ToolRegistry.register(category="performance")
     @handle_hdf5_errors
     @measure_performance
-    async def hdf5_aggregate_stats(self, paths: List[str], stats: List[str] = None) -> ToolResult:
-        """Parallel statistics computation across multiple datasets."""
+    async def hdf5_aggregate_stats(self, paths: str, stats: Optional[str] = None) -> ToolResult:
+        """Parallel statistics computation across multiple datasets.
+
+        Args:
+            paths: Comma-separated dataset paths
+            stats: Comma-separated stats to compute (default: "mean,std,min,max")
+        """
         if not self.file:
             return [TextContent(text="Error: No file currently open", type="text")]
-        
-        if stats is None:
-            stats = ["mean", "std", "min", "max", "sum", "count"]
-        
+
         try:
+            # Parse paths
+            import json
+            try:
+                path_list = json.loads(paths)
+            except:
+                path_list = [p.strip() for p in paths.split(',') if p.strip()]
+
+            # Parse stats
+            if stats:
+                stats_list = [s.strip() for s in stats.split(',') if s.strip()]
+            else:
+                stats_list = ["mean", "std", "min", "max", "sum", "count"]
+
             # Parallel statistics computation
             results = {}
             with ThreadPoolExecutor(max_workers=NUM_WORKERS) as executor:
                 future_to_path = {
-                    executor.submit(self._compute_dataset_stats, path, stats): path 
-                    for path in paths
+                    executor.submit(self._compute_dataset_stats, path, stats_list): path
+                    for path in path_list
                 }
-                
+
                 for future in as_completed(future_to_path):
                     path = future_to_path[future]
                     try:
