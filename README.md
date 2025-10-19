@@ -6,7 +6,7 @@
 [![CI](https://github.com/iowarp/iowarp-mcps/actions/workflows/quality_control.yml/badge.svg)](https://github.com/iowarp/iowarp-mcps/actions/workflows/quality_control.yml)
 [![Coverage](https://codecov.io/gh/iowarp/iowarp-mcps/branch/main/graph/badge.svg)](https://codecov.io/gh/iowarp/iowarp-mcps)
 
-[![Tests](https://img.shields.io/badge/Tests-14%20MCP%20Packages-blue)](https://github.com/iowarp/iowarp-mcps/actions/workflows/test-mcps.yml)
+[![Tests](https://img.shields.io/badge/Tests-15%20MCP%20Packages-blue)](https://github.com/iowarp/iowarp-mcps/actions/workflows/test-mcps.yml)
 [![WRP Framework](https://img.shields.io/badge/WRP-AI%20Testing%20Framework-blue)](https://github.com/iowarp/iowarp-mcps/actions/workflows/wrp-tests.yml)
 
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
@@ -53,22 +53,23 @@ uvx iowarp-mcps slurm
 
 <div align="center">
 
-| 📦 **Package** | 🔧 **System** | 📋 **Description** | ⚡ **Install Command** |
-|:---|:---:|:---|:---|
-| **`adios`** | Data I/O | Read data using ADIOS2 engine | `uvx iowarp-mcps adios` |
-| **`arxiv`** | Research | Fetch research papers from ArXiv | `uvx iowarp-mcps arxiv` |
-| **`chronolog`** | Logging | Log and retrieve data from ChronoLog | `uvx iowarp-mcps chronolog` |
-| **`compression`** | Utilities | File compression with gzip | `uvx iowarp-mcps compression` |
-| **`darshan`** | Performance | I/O performance trace analysis | `uvx iowarp-mcps darshan` |
-| **`hdf5`** | Data I/O | List HDF5 files from directories | `uvx iowarp-mcps hdf5` |
-| **`jarvis`** | Workflow | Data pipeline lifecycle management | `uvx iowarp-mcps jarvis` |
-| **`lmod`** | Environment | Environment module management | `uvx iowarp-mcps lmod` |
-| **`node-hardware`** | System | System hardware information | `uvx iowarp-mcps node-hardware` |
-| **`pandas`** | Data Analysis | CSV data loading and filtering | `uvx iowarp-mcps pandas` |
-| **`parallel-sort`** | Computing | Large file sorting simulation | `uvx iowarp-mcps parallel-sort` |
-| **`parquet`** | Data I/O | Read Parquet file columns | `uvx iowarp-mcps parquet` |
-| **`plot`** | Visualization | Generate plots from CSV data | `uvx iowarp-mcps plot` |
-| **`slurm`** | HPC | Job submission simulation | `uvx iowarp-mcps slurm` |
+| 📦 **Package** | 📌 **Ver** | 🔧 **System** | 📋 **Description** | ⚡ **Install Command** |
+|:---|:---:|:---:|:---|:---|
+| **`adios`** | 1.0 | Data I/O | Read data using ADIOS2 engine | `uvx iowarp-mcps adios` |
+| **`arxiv`** | 1.0 | Research | Fetch research papers from ArXiv | `uvx iowarp-mcps arxiv` |
+| **`chronolog`** | 1.0 | Logging | Log and retrieve data from ChronoLog | `uvx iowarp-mcps chronolog` |
+| **`compression`** | 1.0 | Utilities | File compression with gzip | `uvx iowarp-mcps compression` |
+| **`darshan`** | 1.0 | Performance | I/O performance trace analysis | `uvx iowarp-mcps darshan` |
+| **`hdf5`** ⭐ | 2.0 | Data I/O | HPC-optimized scientific data with 25+ tools, caching, streaming | `uvx iowarp-mcps hdf5` |
+| **`jarvis`** | 1.0 | Workflow | Data pipeline lifecycle management | `uvx iowarp-mcps jarvis` |
+| **`lmod`** | 1.0 | Environment | Environment module management | `uvx iowarp-mcps lmod` |
+| **`ndp`** | 1.0 | Data Protocol | Search and discover datasets across CKAN instances | `uvx iowarp-mcps ndp` |
+| **`node-hardware`** | 1.0 | System | System hardware information | `uvx iowarp-mcps node-hardware` |
+| **`pandas`** | 1.0 | Data Analysis | CSV data loading and filtering | `uvx iowarp-mcps pandas` |
+| **`parallel-sort`** | 1.0 | Computing | Large file sorting simulation | `uvx iowarp-mcps parallel-sort` |
+| **`parquet`** | 1.0 | Data I/O | Read Parquet file columns | `uvx iowarp-mcps parquet` |
+| **`plot`** | 1.0 | Visualization | Generate plots from CSV data | `uvx iowarp-mcps plot` |
+| **`slurm`** | 1.0 | HPC | Job submission simulation | `uvx iowarp-mcps slurm` |
 
 </div>
 
