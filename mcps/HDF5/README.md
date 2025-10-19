@@ -1,6 +1,6 @@
 # HDF5 MCP - Advanced Scientific Data Access
 
-Enterprise-grade HDF5 file operations for AI agents with caching, parallel processing, and intelligent data discovery.
+HDF5 file operations for AI agents with caching, parallel processing, and intelligent data discovery.
 
 ## Installation
 
