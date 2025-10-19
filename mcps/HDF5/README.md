@@ -167,4 +167,4 @@ MIT
 
 **Part of [IoWarp MCPs](https://github.com/iowarp/iowarp-mcps)** - Scientific computing tools for AI agents
 
-**Status**: v2.0.0 - Enterprise-grade multi-transport HDF5 MCP
+**Status**: v2.0.2 - Enterprise-grade multi-transport HDF5 MCP
