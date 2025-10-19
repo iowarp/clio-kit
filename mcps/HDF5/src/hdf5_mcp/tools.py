@@ -957,9 +957,9 @@ class HDF5Tools:
             
             # Aggregate results
             successful_stats = {k: v for k, v in results.items() if "error" not in v}
-            
-            summary = f"Aggregate statistics for {len(paths)} datasets:\n\n"
-            
+
+            summary = f"Aggregate statistics for {len(path_list)} datasets:\n\n"
+
             # Individual dataset statistics
             for path, stat_result in results.items():
                 if "error" in stat_result:
@@ -967,7 +967,7 @@ class HDF5Tools:
                 else:
                     summary += f"✓ {path}:\n"
                     summary += f"  Shape: {stat_result['shape']}, Size: {stat_result['size_mb']:.2f} MB\n"
-                    for stat_name in stats:
+                    for stat_name in stats_list:
                         if stat_name in stat_result:
                             summary += f"  {stat_name}: {stat_result[stat_name]:.6f}\n"
                     summary += "\n"
@@ -978,7 +978,7 @@ class HDF5Tools:
                 
                 # Aggregate numeric statistics
                 for stat_name in ["mean", "sum", "count"]:
-                    if all(stat_name in stats and stat_name in result for result in successful_stats.values()):
+                    if all(stat_name in stats_list and stat_name in result for result in successful_stats.values()):
                         values = [result[stat_name] for result in successful_stats.values()]
                         if stat_name == "mean":
                             # Weighted mean by count
