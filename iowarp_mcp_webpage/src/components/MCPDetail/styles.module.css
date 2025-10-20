@@ -1,0 +1,462 @@
+/**
+ * ============================================================================
+ * MCP Detail Page - Neobrutalism Style
+ * ============================================================================
+ * Thick borders. Hard shadows. Blocky layout. Bold typography.
+ */
+
+/* ============================================================================
+ * CONTAINER
+ * ============================================================================ */
+.mcpDetail {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-xl) var(--space-md);
+  min-height: 100vh;
+}
+
+/* ============================================================================
+ * HEADER
+ * ============================================================================ */
+.header {
+  margin-bottom: var(--space-xl);
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  margin-bottom: var(--space-lg);
+  background: var(--color-white);
+  border: var(--border-width) solid var(--color-black);
+  border-radius: var(--border-radius);
+  color: var(--color-teal);
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition);
+}
+
+.backButton:hover {
+  transform: translate(-3px, -3px) skew(-2deg);
+  box-shadow: var(--shadow-md);
+  text-decoration: none;
+  color: var(--color-orange);
+}
+
+.mcpInfo {
+  background: var(--color-white);
+  border: var(--border-width) solid var(--color-black);
+  border-radius: var(--border-radius);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-lg);
+  border-top: 6px solid var(--color-orange);
+}
+
+.mcpHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.mcpIcon {
+  font-size: 4rem;
+  line-height: 1;
+}
+
+.mcpTitleSection {
+  flex: 1;
+}
+
+.mcpTitle {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--color-teal);
+  margin: 0 0 var(--space-sm) 0;
+  line-height: 1.1;
+}
+
+.mcpMeta {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.mcpCategory,
+.mcpVersion {
+  padding: 0.5rem 1rem;
+  border: var(--border-width) solid var(--color-black);
+  border-radius: var(--border-radius);
+  font-size: 0.875rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 3px 3px 0px 0px var(--color-black);
+}
+
+.mcpCategory {
+  background: var(--color-blue);
+  color: var(--color-white);
+}
+
+.mcpVersion {
+  background: var(--color-white);
+  color: var(--color-black);
+}
+
+.mcpDescription {
+  font-size: 1.125rem;
+  line-height: 1.6;
+  color: var(--color-black);
+  font-weight: 500;
+  margin-bottom: var(--space-md);
+}
+
+.projectInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  background: var(--color-bg-light);
+  border: 2px solid var(--color-black);
+  border-radius: var(--border-radius);
+  margin-top: var(--space-md);
+}
+
+.projectInfoItem {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-black);
+}
+
+.projectInfoItem strong {
+  font-weight: 800;
+  color: var(--color-teal);
+}
+
+/* ============================================================================
+ * TAB NAVIGATION - Thick bordered tabs
+ * ============================================================================ */
+.tabNavigation {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-lg);
+  border-bottom: var(--border-width) solid var(--color-black);
+  padding-bottom: 0;
+}
+
+.mainTab {
+  padding: var(--space-sm) var(--space-lg);
+  background: transparent;
+  border: none;
+  border-bottom: 4px solid transparent;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-bottom: -3px;
+}
+
+.mainTab:hover {
+  color: var(--color-teal);
+  transform: skew(-2deg);
+}
+
+.mainTab.active {
+  color: var(--color-teal);
+  border-bottom-color: var(--color-orange);
+}
+
+/* ============================================================================
+ * TAB CONTENT
+ * ============================================================================ */
+.tabContent {
+  padding: var(--space-lg) 0;
+}
+
+/* Installation Tab */
+.installationTab {
+  max-width: 900px;
+}
+
+.installHeader {
+  margin-bottom: var(--space-lg);
+}
+
+.installHeader h2 {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--color-teal);
+  margin-bottom: var(--space-sm);
+}
+
+.installHeader p {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.installTabs {
+  display: flex;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.installTab {
+  padding: 0.625rem 1.25rem;
+  background: var(--color-white);
+  border: var(--border-width) solid var(--color-black);
+  border-radius: var(--border-radius);
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--color-black);
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition);
+}
+
+.installTab:hover {
+  transform: translate(-2px, -2px) rotate(-1deg);
+  box-shadow: var(--shadow-md);
+}
+
+.installTab.active {
+  background: var(--color-teal);
+  color: var(--color-white);
+  box-shadow: var(--shadow-md);
+}
+
+.installContent {
+  background: var(--color-white);
+  border: var(--border-width) solid var(--color-black);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+/* Actions Tab */
+.actionsTab {
+  max-width: 1000px;
+}
+
+.sectionHeader {
+  margin-bottom: var(--space-lg);
+}
+
+.sectionHeader h2 {
+  font-size: 2rem;
+  font-weight: 900;
+  color: var(--color-teal);
+  margin-bottom: var(--space-sm);
+}
+
+.sectionHeader p {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.actionsGrid {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.actionCard {
+  background: var(--color-white);
+  border: var(--border-width) solid var(--color-black);
+  border-radius: var(--border-radius);
+  padding: var(--space-md);
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: var(--shadow-sm);
+}
+
+.actionCard:hover {
+  transform: translateX(4px) skew(-1deg);
+  box-shadow: var(--shadow-md);
+}
+
+.actionCard.expanded {
+  background: var(--color-bg-light);
+  box-shadow: var(--shadow-md);
+}
+
+.actionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.actionName {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-teal);
+  font-family: var(--font-mono);
+}
+
+.actionToggle {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--color-orange);
+}
+
+.actionDescription {
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 2px solid var(--color-black);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--color-black);
+  font-weight: 500;
+}
+
+/* Examples Tab */
+.examplesTab {
+  max-width: 1000px;
+}
+
+.examplesGrid {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.exampleCard {
+  background: var(--color-white);
+  border: var(--border-width) solid var(--color-black);
+  border-radius: var(--border-radius);
+  padding: var(--space-md);
+  cursor: pointer;
+  transition: all var(--transition);
+  box-shadow: var(--shadow-sm);
+  border-left: 6px solid var(--color-orange);
+}
+
+.exampleCard:hover {
+  transform: translateX(6px) skew(-1deg);
+  box-shadow: var(--shadow-md);
+}
+
+.exampleCard.expanded {
+  background: var(--color-bg-light);
+  box-shadow: var(--shadow-md);
+}
+
+.exampleTitle {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--color-teal);
+  margin: 0;
+}
+
+.exampleExpansion {
+  margin-top: var(--space-md);
+  padding-top: var(--space-md);
+  border-top: 2px solid var(--color-black);
+}
+
+.exampleCode h5,
+.exampleDescription h5 {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: var(--color-orange);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-xs);
+}
+
+.exampleCode {
+  margin-bottom: var(--space-md);
+}
+
+.exampleDescription {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--color-black);
+  font-weight: 500;
+}
+
+.markdownContent {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--color-black);
+}
+
+/* ============================================================================
+ * FOOTER
+ * ============================================================================ */
+.footer {
+  margin-top: var(--space-3xl);
+  padding-top: var(--space-xl);
+  border-top: var(--border-width) solid var(--color-black);
+}
+
+.footerLinks {
+  display: flex;
+  gap: var(--space-md);
+  margin-bottom: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.footerLink {
+  padding: 0.75rem 1.5rem;
+  background: var(--color-white);
+  border: var(--border-width) solid var(--color-black);
+  border-radius: var(--border-radius);
+  color: var(--color-teal);
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition);
+}
+
+.footerLink:hover {
+  transform: translate(-3px, -3px) rotate(-1deg);
+  box-shadow: var(--shadow-md);
+  color: var(--color-orange);
+  text-decoration: none;
+}
+
+.footerText {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  text-align: center;
+}
+
+/* ============================================================================
+ * RESPONSIVE
+ * ============================================================================ */
+@media (max-width: 768px) {
+  .mcpDetail {
+    padding: var(--space-lg) var(--space-sm);
+  }
+
+  .mcpHeader {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .mcpIcon {
+    font-size: 3rem;
+  }
+
+  .mcpTitle {
+    font-size: 2rem;
+  }
+
+  .tabNavigation {
+    overflow-x: auto;
+  }
+
+  .footerLinks {
+    flex-direction: column;
+  }
+
+  .footerLink {
+    text-align: center;
+  }
+}

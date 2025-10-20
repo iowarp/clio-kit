@@ -1,0 +1,587 @@
+/**
+ * ============================================================================
+ * IoWarp MCPs - Cohesive Dark/Light Theme System
+ * ============================================================================
+ *
+ * DARK MODE: Super dark - dark backgrounds, dark cards, dark everything
+ *            Teal/Orange/Cream used only as accents
+ *
+ * LIGHT MODE: Creamy light - light backgrounds, light/white cards
+ *             Teal/Orange used as accents
+ *
+ * Neobrutalism = Thick borders + Hard shadows + Bold shapes
+ * NOT white boxes on dark!
+ */
+
+:root {
+  /* === LOCKED BRAND COLORS (From Logo - Never Change) === */
+  --brand-teal: #217CA3;
+  --brand-teal-light: #6BC2E4;
+  --brand-orange: #EC7C26;
+  --brand-cream: #FAF8F5;
+
+  /* === LIGHT THEME (Default) === */
+  --color-bg: #FAF8F5;              /* Warm cream background */
+  --color-surface: #FFFFFF;         /* White cards */
+  --color-surface-alt: #F5F0E8;     /* Light cream cards */
+  --color-text: #111827;            /* Black text */
+  --color-text-muted: #6B7280;      /* Gray text */
+  --color-border: #111827;          /* Black borders */
+  --color-shadow: #111827;          /* Black shadows */
+
+  /* === CONSTANTS === */
+  --border-width: 3px;
+  --border-radius: 8px;
+  --transition: 150ms ease;
+
+  --shadow-sm: 4px 4px 0px 0px var(--color-shadow);
+  --shadow-md: 6px 6px 0px 0px var(--color-shadow);
+  --shadow-lg: 8px 8px 0px 0px var(--color-shadow);
+  --shadow-xl: 10px 10px 0px 0px var(--color-shadow);
+
+  --space-xs: 0.5rem;
+  --space-sm: 1rem;
+  --space-md: 1.5rem;
+  --space-lg: 2rem;
+  --space-xl: 3rem;
+  --space-2xl: 4rem;
+  --space-3xl: 6rem;
+
+  --font-display: 'Space Grotesk', 'IBM Plex Sans', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* === DOCUSAURUS === */
+  --ifm-color-primary: var(--brand-teal);
+  --ifm-background-color: var(--color-bg);
+  --ifm-background-surface-color: var(--color-surface);
+  --ifm-font-color-base: var(--color-text);
+  --ifm-link-color: var(--brand-teal);
+  --ifm-link-hover-color: var(--brand-orange);
+  --ifm-navbar-background-color: var(--color-surface);
+  --ifm-footer-background-color: #111827;
+  --ifm-font-family-base: var(--font-body);
+  --ifm-heading-font-family: var(--font-display);
+
+  /* Backwards compatibility */
+  --color-teal: var(--brand-teal);
+  --color-orange: var(--brand-orange);
+  --color-blue: var(--brand-teal-light);
+  --color-black: var(--color-border);
+  --color-white: var(--color-surface);
+  --color-bg-light: var(--color-bg);
+}
+
+/* ============================================================================
+ * DARK THEME - Super Dark (Black bg, dark blue elements)
+ * ============================================================================ */
+[data-theme='dark'] {
+  --color-bg: #000000;              /* Pure black background */
+  --color-surface: #0F1F35;         /* Dark blue cards/elements */
+  --color-text: #E5E7EB;            /* Light gray text */
+  --color-text-muted: #9CA3AF;
+  --color-border: rgba(107, 194, 228, 0.25);
+  --color-shadow: rgba(107, 194, 228, 0.4);  /* Light teal shadows! */
+
+  /* Override shadow tokens for dark mode */
+  --shadow-sm: 4px 4px 0px 0px rgba(107, 194, 228, 0.3);
+  --shadow-md: 6px 6px 0px 0px rgba(107, 194, 228, 0.4);
+  --shadow-lg: 8px 8px 0px 0px rgba(107, 194, 228, 0.5);
+  --shadow-xl: 10px 10px 0px 0px rgba(107, 194, 228, 0.6);
+
+  --ifm-background-color: #000000;
+  --ifm-background-surface-color: #0F1F35;
+  --ifm-font-color-base: #E5E7EB;
+  --ifm-color-primary: var(--brand-teal-light);
+  --ifm-link-color: var(--brand-teal-light);
+  --ifm-link-hover-color: var(--brand-orange);
+  --ifm-navbar-background-color: #050D1A;
+  --ifm-footer-background-color: #050D1A;
+
+  --color-teal: var(--brand-teal-light);
+  --color-orange: var(--brand-orange);
+  --color-blue: var(--brand-teal-light);
+  --color-black: rgba(107, 194, 228, 0.25);
+  --color-white: #0F1F35;
+}
+
+/* ============================================================================
+ * BASE
+ * ============================================================================ */
+body {
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+/* ============================================================================
+ * HERO - With millimeter paper grid
+ * ============================================================================ */
+.hero {
+  background: var(--brand-teal);
+  background-image:
+    linear-gradient(rgba(248, 176, 119, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(248, 176, 119, 0.35) 1px, transparent 1px);
+  background-size: 20px 20px;
+  padding: 0;
+  text-align: center;
+  position: relative;
+  border-bottom: 6px solid var(--color-black);
+  min-height: 98vh;
+  display: flex;
+  flex-direction: column;
+}
+
+[data-theme='dark'] .hero {
+  background: #0A1520;
+  background-image:
+    linear-gradient(rgba(107, 194, 228, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(107, 194, 228, 0.12) 1px, transparent 1px);
+  background-size: 20px 20px;
+  border-bottom-color: rgba(107, 194, 228, 0.3);
+}
+
+.hero__content {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+  padding: 0 var(--space-md);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+}
+
+.hero__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #FFFFFF;
+  color: #0A1520;
+  padding: 0.75rem 2rem;
+  border: 4px solid #0A1520;
+  border-radius: var(--border-radius);
+  font-weight: 900;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+  box-shadow: 6px 6px 0px 0px #0A1520;
+  transform: rotate(-1.5deg);
+  align-self: center;
+}
+
+.hero__eyebrowLogo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  filter: none;
+}
+
+.hero__eyebrowLogoLarge {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  filter: none;
+}
+
+[data-theme='dark'] .hero__eyebrow {
+  background: #0F1F35;
+  color: var(--brand-teal-light);
+  border-color: var(--brand-orange);
+  box-shadow: 6px 6px 0px 0px var(--brand-orange);
+}
+
+[data-theme='dark'] .hero__eyebrowLogo,
+[data-theme='dark'] .hero__eyebrowLogoLarge {
+  filter: none;
+}
+
+.hero__branding {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+}
+
+.hero__logo {
+  width: 360px;
+  height: auto;
+}
+
+.hero__brand {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 0.85;
+  text-shadow: 3px 3px 0px rgba(0, 0, 0, 0.3);
+  font-family: var(--font-display);
+}
+
+.hero__brandLine {
+  display: block;
+}
+
+.hero__brandLine:first-child {
+  margin-bottom: 0.15rem;
+}
+
+.hero__title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: #FFFFFF;
+  line-height: 1.2;
+  margin: 0 0 var(--space-md) 0;
+  letter-spacing: -0.02em;
+}
+
+.hero__actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-md);
+}
+
+.hero__cta {
+  padding: 0.875rem 2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  border: var(--border-width) solid #111827;
+  border-radius: var(--border-radius);
+  transition: all var(--transition);
+}
+
+.button--primary.hero__cta {
+  background: var(--brand-orange);
+  color: #FFFFFF;
+  box-shadow: var(--shadow-md);
+}
+
+.button--primary.hero__cta:hover {
+  transform: translate(-4px, -4px) rotate(-1deg);
+  box-shadow: var(--shadow-xl);
+}
+
+.button--outline.hero__cta {
+  background: #FFFFFF;
+  color: var(--brand-teal);
+  box-shadow: var(--shadow-sm);
+}
+
+.button--outline.hero__cta:hover {
+  transform: translate(-3px, -3px) rotate(1deg);
+  box-shadow: var(--shadow-md);
+}
+
+.button--ghost.hero__cta {
+  background: transparent;
+  color: #FFFFFF;
+  border-color: #FFFFFF;
+}
+
+.button--ghost.hero__cta:hover {
+  transform: translate(-2px, -2px) skew(-2deg);
+  box-shadow: 4px 4px 0px 0px #FFFFFF;
+}
+
+.hero__subtitle {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #FFFFFF;
+  line-height: 1.6;
+  margin: 0 auto var(--space-lg);
+  max-width: 750px;
+}
+
+.hero__subtitle a {
+  color: #FFFFFF;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color var(--transition);
+}
+
+.hero__subtitle a:hover {
+  color: var(--brand-orange);
+}
+
+.hero__highlights {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+  margin: auto 0;
+  flex: 1;
+  align-content: center;
+}
+
+.hero__highlightCard {
+  background: #FFFFFF;
+  border: var(--border-width) solid #111827;
+  border-radius: var(--border-radius);
+  padding: var(--space-lg);
+  box-shadow: var(--shadow-md);
+  transition: all var(--transition);
+  border-top: 6px solid var(--brand-orange);
+}
+
+/* Dark mode - Hero cards dark with orange accent */
+[data-theme='dark'] .hero__highlightCard {
+  background: #0F1F35;
+  border-color: rgba(107, 194, 228, 0.25);
+  border-top: 6px solid var(--brand-orange);
+}
+
+[data-theme='dark'] .hero__highlightCard h3 {
+  color: var(--brand-teal-light);
+}
+
+[data-theme='dark'] .hero__highlightCard p {
+  color: #E5E7EB;
+}
+
+[data-theme='dark'] .hero__highlightCard p a {
+  color: var(--brand-teal-light);
+}
+
+/* Dark mode - Gnosis box dark with light shadow */
+[data-theme='dark'] .hero__eyebrow {
+  background: #0F1F35;
+  color: var(--brand-teal-light);
+  border-color: rgba(107, 194, 228, 0.4);
+  box-shadow: 5px 5px 0px 0px rgba(107, 194, 228, 0.4);
+}
+
+/* Dark mode - Outline button dark */
+[data-theme='dark'] .button--outline.hero__cta {
+  background: #0F1F35;
+  color: var(--brand-teal-light);
+  border-color: var(--brand-teal-light);
+}
+
+.hero__highlightCard:nth-child(1) {
+  transform: rotate(-0.5deg);
+}
+
+.hero__highlightCard:nth-child(2) {
+  transform: rotate(0.5deg);
+}
+
+.hero__highlightCard:nth-child(3) {
+  transform: rotate(-0.3deg);
+}
+
+.hero__highlightCard:hover {
+  transform: translateY(-12px) skew(-2deg) rotate(0deg) !important;
+  box-shadow: var(--shadow-xl);
+  border-top-width: 8px;
+}
+
+.hero__highlightCard h3 {
+  font-size: 1.125rem;
+  font-weight: 900;
+  color: var(--brand-teal);
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+}
+
+.hero__highlightCard p {
+  font-size: 0.95rem;
+  color: #111827;
+  line-height: 1.7;
+  margin: 0;
+  font-weight: 500;
+}
+
+.hero__highlightCard p a {
+  color: var(--brand-teal);
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.hero__highlightCard p a:hover {
+  color: var(--brand-orange);
+  text-decoration: underline;
+}
+
+.hero__highlightCard p a strong {
+  font-weight: 900;
+  display: inline;
+}
+
+.hero__footer {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
+  margin-top: auto;
+  padding-top: var(--space-md);
+  padding-bottom: var(--space-md);
+  border-top: 2px solid rgba(255, 255, 255, 0.25);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.hero__nsfLogo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+.hero__footerLink {
+  color: #FFFFFF;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color var(--transition);
+}
+
+.hero__footerLink:hover {
+  color: var(--brand-orange);
+}
+
+/* ============================================================================
+ * NAVBAR
+ * ============================================================================ */
+.navbar {
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: none;
+}
+
+.navbar__title {
+  font-weight: 900;
+  color: var(--brand-teal);
+}
+
+.navbar__link {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.navbar__link--active {
+  color: var(--brand-orange) !important;
+  font-weight: 700;
+}
+
+.navbar__item:hover .navbar__link {
+  color: var(--brand-teal) !important;
+}
+
+[data-theme='dark'] .navbar {
+  background: #050D1A;
+  border-bottom-color: rgba(107, 194, 228, 0.2);
+}
+
+[data-theme='dark'] .navbar__title {
+  color: var(--brand-teal-light);
+}
+
+[data-theme='dark'] .navbar__link {
+  color: #E5E7EB;
+}
+
+[data-theme='dark'] .navbar__link--active {
+  color: var(--brand-orange) !important;
+}
+
+[data-theme='dark'] .navbar__item:hover .navbar__link {
+  color: var(--brand-teal-light) !important;
+}
+
+/* ============================================================================
+ * FOOTER
+ * ============================================================================ */
+.footer {
+  background: #111827;
+  border-top: 6px solid var(--brand-orange);
+  padding: var(--space-xl) var(--space-md);
+}
+
+[data-theme='dark'] .footer {
+  background: #050D1A;
+}
+
+.footer__title {
+  font-size: 0.875rem;
+  font-weight: 900;
+  color: var(--brand-teal-light);
+}
+
+.footer__link {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  text-decoration: none;
+  transition: all var(--transition);
+}
+
+.footer__link:hover {
+  color: var(--brand-orange);
+}
+
+/* ============================================================================
+ * RESPONSIVE
+ * ============================================================================ */
+@media (max-width: 768px) {
+  .hero {
+    min-height: 100vh;
+  }
+
+  .hero__branding {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .hero__logo {
+    width: 200px;
+  }
+
+  .hero__brand {
+    font-size: 1.75rem;
+  }
+
+  .hero__title {
+    font-size: 1.75rem;
+  }
+
+  .hero__subtitle {
+    font-size: 0.9rem;
+  }
+
+  .hero__actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .hero__cta {
+    width: 100%;
+  }
+
+  .hero__highlights {
+    grid-template-columns: 1fr;
+    flex: none;
+    margin: var(--space-lg) 0;
+  }
+
+  .hero__eyebrowLogoLarge {
+    width: 48px;
+    height: 48px;
+  }
+}
