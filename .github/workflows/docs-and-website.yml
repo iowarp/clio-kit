@@ -60,21 +60,21 @@ jobs:
     # Generate and build documentation
     - name: Generate Docusaurus documentation
       run: |
-        python3 scripts/generate_docs.py iowarp_mcp_servers docs
+        python3 scripts/generate_docs.py iowarp_mcp_servers iowarp_mcp_webpage/docs
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
-        cache-dependency-path: './docs/package-lock.json'
+        cache-dependency-path: './iowarp_mcp_webpage/package-lock.json'
 
     - name: Install Node.js dependencies
-      working-directory: ./docs
+      working-directory: ./iowarp_mcp_webpage
       run: npm ci
 
     - name: Build Docusaurus website
-      working-directory: ./docs
+      working-directory: ./iowarp_mcp_webpage
       run: npm run build
 
     # Store build artifacts for deployment job
@@ -83,7 +83,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: docs-build
-        path: ./docs/build
+        path: ./iowarp_mcp_webpage/build
         retention-days: 1
 
     # Commit generated documentation (for workflow branch)
@@ -94,7 +94,7 @@ jobs:
         git config --local user.name "github-actions[bot]"
         
         if [[ -n $(git status --porcelain) ]]; then
-          git add docs/docs/mcps/ docs/src/data/mcpData.js
+          git add iowarp_mcp_webpage/docs/mcps/ iowarp_mcp_webpage/src/data/mcpData.js
           git commit -m "Auto-update MCP documentation files"
           git push
         else
