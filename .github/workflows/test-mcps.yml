@@ -1,10 +1,7 @@
 name: Run MCP tests
 
 on:
-  pull_request:
-    branches: [main, dev]
-  push:
-    branches: [main, dev]
+  workflow_dispatch:  # Manual trigger only - redundant with quality_control.yml
 
 jobs:
   test-mcps:

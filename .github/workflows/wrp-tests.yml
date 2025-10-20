@@ -9,11 +9,7 @@ name: WRP Framework Tests
 #
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
-  workflow_dispatch:  # Allow manual triggering
+  workflow_dispatch:  # Manual trigger only - requires API keys in ai-testing environment
 
 jobs:
   wrp-tests:

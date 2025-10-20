@@ -2,13 +2,7 @@
 name: Test ChronoLog MCP
 
 on:
-  push:
-    branches: [ main, dev ]
-
-  pull_request:
-    branches: [ main, dev ]
-
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger only - expensive Spack compilation (40+ min)
 
 jobs:
   test-chronomcp:
