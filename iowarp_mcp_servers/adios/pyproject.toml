@@ -21,15 +21,15 @@ keywords = [
   "grc"
 ]
 
-[project.urls]
-Homepage = "https://iowarp.github.io/iowarp-mcps/"
-Repository = "https://github.com/iowarp/iowarp-mcps"
-
 dependencies = [
     "fastmcp",
     "numpy",
     "adios2"
 ]
+
+[project.urls]
+Homepage = "https://iowarp.github.io/iowarp-mcps/"
+Repository = "https://github.com/iowarp/iowarp-mcps"
 
 [dependency-groups]
 dev = [

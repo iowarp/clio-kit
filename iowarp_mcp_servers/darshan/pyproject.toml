@@ -23,10 +23,6 @@ keywords = [
   "grc"
 ]
 
-[project.urls]
-Homepage = "https://iowarp.github.io/iowarp-mcps/"
-Repository = "https://github.com/iowarp/iowarp-mcps"
-
 dependencies = [
   "mcp[cli]>=0.1.0",
   "python-dotenv>=1.0.0",
@@ -38,6 +34,10 @@ dependencies = [
   "h5py>=3.8.0",
   "scipy>=1.10.0"
 ]
+
+[project.urls]
+Homepage = "https://iowarp.github.io/iowarp-mcps/"
+Repository = "https://github.com/iowarp/iowarp-mcps"
 
 [project.optional-dependencies]
 test = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0"]

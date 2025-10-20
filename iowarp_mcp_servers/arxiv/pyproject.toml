@@ -11,14 +11,14 @@ authors = [
 
 keywords = ["data processing", "arxiv", "publications", "scientific data", "research", "papers", "iowarp", "grc"]
 
-[project.urls]
-Homepage = "https://iowarp.github.io/iowarp-mcps/"
-Repository = "https://github.com/iowarp/iowarp-mcps"
-
 dependencies = [
     "fastmcp",
     "httpx>=0.24.0",
 ]
+
+[project.urls]
+Homepage = "https://iowarp.github.io/iowarp-mcps/"
+Repository = "https://github.com/iowarp/iowarp-mcps"
 
 [dependency-groups]
 dev = [
