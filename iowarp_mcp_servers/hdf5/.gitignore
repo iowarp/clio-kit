@@ -1,0 +1,85 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging (build artifacts - never commit)
+build/
+dist/
+*.egg-info/
+.eggs/
+*.whl
+*.tar.gz
+
+# Virtual environments (uv creates .venv/)
+.venv/
+venv/
+env/
+ENV/
+
+# PDM / Poetry caches (if used)
+.pdm.toml
+poetry.lock
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# VS Code settings
+.history/
+
+# Pytest
+.pytest_cache/
+.cache/
+
+# mypy
+.mypy_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+.nox/
+
+# Logs and debug
+*.log
+*.out
+*.err
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+
+# macOS
+*.DS_Store
+
+# Windows
+Thumbs.db
+
+# Ignore user-specific files
+.env
+
+# HDF5 MCP specific - runtime data
+data/
+test_data/
+*.h5
+*.hdf5
+*.he5
+
+# HDF5 MCP specific - cache files
+.storage_index.json
+.cache_db.json
+.history_db.json
+
+# Temporary test scripts (don't commit)
+test_*.py
+*_test.py
+*.sh

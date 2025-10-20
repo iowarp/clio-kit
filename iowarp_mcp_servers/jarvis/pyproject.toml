@@ -1,0 +1,45 @@
+[project]
+name = "jarvis-mcp"
+version = "1.0.0"
+description = "Jarvis-CD MCP - Pipeline Management for High-Performance Computing with comprehensive workflow operations"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+
+
+[project.urls]
+Homepage = "https://iowarp.github.io/iowarp-mcps/"
+Repository = "https://github.com/iowarp/iowarp-mcps"
+
+authors = [
+    { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
+]
+
+dependencies = [
+  "fastmcp",
+  "fastapi",
+  "python-dotenv>=1.0.0",
+  "jarvis-util @ git+https://github.com/grc-iit/jarvis-util.git@main#egg=jarvis-util",
+  "jarvis-cd @ git+https://github.com/grc-iit/jarvis-cd.git@main#egg=jarvis-cd"
+]
+
+keywords = ["jarvis", "pipeline-management", "high-performance-computing", "hpc", "workflow", "data-pipelines", "scientific-computing", "mcp", "package-management"]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=6.2.1",
+    "pytest-timeout>=2.4.0",
+    "ruff>=0.12.5",
+    "psutil>=6.0.0",
+    "mypy>=1.17.0",
+    "types-requests",
+]
+
+[project.scripts]
+jarvis-mcp = "server:main"
+
+[build-system]
+requires = ["setuptools>=64.0", "wheel"]
+build-backend = "setuptools.build_meta"

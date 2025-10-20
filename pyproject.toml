@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
 authors = [
-    {name = "IOWarp Team", email = "team@iowarp.com"}
+    {name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu"}
 ]
 
 # Only dependencies needed for the launcher
@@ -32,12 +32,12 @@ sources = ["src"]
 
 # Include all server directories in the wheel for uvx execution
 [tool.hatch.build.targets.wheel.shared-data]
-"mcps" = "mcps"
+"iowarp_mcp_servers" = "iowarp_mcp_servers"
 
 [tool.hatch.build.targets.sdist]
 include = [
     "src/",
-    "mcps/",
+    "iowarp_mcp_servers/",
     "README.md",
     "pyproject.toml"
 ]

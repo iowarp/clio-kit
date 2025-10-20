@@ -1,0 +1,45 @@
+[project]
+name = "plot-mcp"
+version = "1.0.0"
+description = "MCP server for advanced data visualization and plotting operations"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+
+
+[project.urls]
+Homepage = "https://iowarp.github.io/iowarp-mcps/"
+Repository = "https://github.com/iowarp/iowarp-mcps"
+
+authors = [
+    { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
+]
+
+keywords = ["MCP", "plotting", "visualization", "analytics", "matplotlib", "seaborn", "data-science"]
+
+dependencies = [
+    "fastmcp>=0.1.0",
+    "python-dotenv>=1.0.0",
+    "pandas>=1.5.0",
+    "matplotlib>=3.6.0",
+    "seaborn>=0.12.0",
+    "numpy<2.0.0",
+    "openpyxl>=3.0.0"
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.0",
+    "pytest>=8.4.0",
+    "pytest-asyncio>=1.1.0",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.5",
+]
+
+[project.scripts]
+plot-mcp = "server:main"
+
+
+[build-system]
+requires = ["setuptools>=64.0", "wheel"]
+build-backend = "setuptools.build_meta"

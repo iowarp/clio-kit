@@ -1,3 +1,0 @@
-"""
-ArXiv MCP capabilities.
-"""

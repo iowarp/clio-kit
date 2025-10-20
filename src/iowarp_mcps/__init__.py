@@ -10,51 +10,51 @@ MODULE_DIR = Path(__file__).parent
 
 def get_servers_path():
     """Get the path to servers directory (dev or installed)"""
-    # First try development path (../../mcps from module)
-    dev_path = MODULE_DIR.parent.parent / "mcps"
+    # First try development path (../../iowarp_mcp_servers from module)
+    dev_path = MODULE_DIR.parent.parent / "iowarp_mcp_servers"
     if dev_path.exists():
         return dev_path
-    
+
     # Try to find shared data in the installed package
     # When installed via wheel, shared data goes to site-packages/
-    # Look for mcps directory in various possible locations
+    # Look for iowarp_mcp_servers directory in various possible locations
     possible_paths = [
         # Standard site-packages installation
-        MODULE_DIR.parent / "mcps",  # ../mcps from module
+        MODULE_DIR.parent / "iowarp_mcp_servers",  # ../iowarp_mcp_servers from module
         # Alternative installation paths
-        MODULE_DIR / "mcps",  # ./mcps from module (if included directly)
+        MODULE_DIR / "iowarp_mcp_servers",  # ./iowarp_mcp_servers from module (if included directly)
         # System-wide data directory
-        Path(sys.prefix) / "share" / "iowarp-mcps" / "mcps",
-        # Local data directory 
-        Path.home() / ".local" / "share" / "iowarp-mcps" / "mcps",
+        Path(sys.prefix) / "share" / "iowarp-mcps" / "iowarp_mcp_servers",
+        # Local data directory
+        Path.home() / ".local" / "share" / "iowarp-mcps" / "iowarp_mcp_servers",
     ]
-    
+
     # Try each possible path
     for path in possible_paths:
         if path.exists() and path.is_dir():
             return path
-    
+
     # If none found, check if we're in an isolated environment (like uvx)
     # and try to find the data directory relative to the Python executable
     python_path = Path(sys.executable)
     isolated_paths = [
-        # uvx style isolated environment - mcps is at the root level
-        python_path.parent.parent / "mcps",
-        python_path.parent.parent / "share" / "mcps",
-        python_path.parent.parent / "purelib" / "mcps", 
-        python_path.parent.parent / "data" / "mcps",
+        # uvx style isolated environment - iowarp_mcp_servers is at the root level
+        python_path.parent.parent / "iowarp_mcp_servers",
+        python_path.parent.parent / "share" / "iowarp_mcp_servers",
+        python_path.parent.parent / "purelib" / "iowarp_mcp_servers",
+        python_path.parent.parent / "data" / "iowarp_mcp_servers",
     ]
-    
+
     for path in isolated_paths:
         if path.exists() and path.is_dir():
             return path
-    
+
     # Last resort: return the dev path even if it doesn't exist
     # so the caller can handle the missing directory appropriately
     return dev_path
 
 def auto_discover_mcps():
-    """Auto-discover MCP servers from the mcps directory"""
+    """Auto-discover MCP servers from the iowarp_mcp_servers directory"""
     servers_path = get_servers_path()
     if not servers_path.exists():
         return {}, {}
@@ -109,7 +109,7 @@ def list_available_servers():
 @click.option('-b', '--branch', help='Git branch to use (for development)')
 @click.argument('args', nargs=-1, type=click.UNPROCESSED)
 def main(server, branch, args):
-    """Launch IOWarp MCP servers with isolated dependencies using uvx"""
+    """Launch IoWarp MCP servers with isolated dependencies using uvx"""
     
     server_command_map, dir_name_map = auto_discover_mcps()
     
@@ -139,7 +139,7 @@ def main(server, branch, args):
         cmd = [
             "uvx",
             "--from",
-            f"git+https://github.com/JaimeCernuda/iowarp-mcps.git@{branch}#subdirectory=mcps/{actual_dir}",
+            f"git+https://github.com/iowarp/iowarp-mcps.git@{branch}#subdirectory=iowarp_mcp_servers/{actual_dir}",
             entry_command
         ]
     else:

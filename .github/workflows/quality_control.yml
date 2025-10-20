@@ -22,11 +22,11 @@ jobs:
     - name: Discover MCP directories
       id: discover
       run: |
-        # Find all directories in mcps/ that have a pyproject.toml file
+        # Find all directories in iowarp_mcp_servers/ that have a pyproject.toml file
         # Using blacklist approach - exclude specific problematic MCPs if needed
         blacklisted_mcps=""
-        
-        mcps_list=$(find mcps -maxdepth 1 -type d -exec test -f {}/pyproject.toml \; -print | sed 's|mcps/||' | sort)
+
+        mcps_list=$(find iowarp_mcp_servers -maxdepth 1 -type d -exec test -f {}/pyproject.toml \; -print | sed 's|iowarp_mcp_servers/||' | sort)
         
         # Filter out blacklisted MCPs if any
         if [ -n "$blacklisted_mcps" ]; then
@@ -61,20 +61,20 @@ jobs:
     
     - name: Install dependencies for ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -f pyproject.toml ]; then
-          uv sync --all-extras --dev 
+          uv sync --all-extras --dev
         fi
         uv add --dev ruff
-    
+
     - name: Run Ruff linter on ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
-        uv run ruff check --output-format=github . 
-    
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
+        uv run ruff check --output-format=github .
+
     - name: Run Ruff formatter check on ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         uv run ruff format --check . 
 
   mypy:
@@ -101,15 +101,15 @@ jobs:
     
     - name: Install dependencies for ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -f pyproject.toml ]; then
           uv sync --all-extras --dev
         fi
-        uv add --dev mypy 
-    
+        uv add --dev mypy
+
     - name: Run MyPy on ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -d src ]; then
           uv run mypy src/ --ignore-missing-imports --show-error-codes --no-error-summary 
         else
@@ -141,37 +141,37 @@ jobs:
     
     - name: Install dependencies for ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -f pyproject.toml ]; then
-          uv sync --all-extras --dev 
+          uv sync --all-extras --dev
         fi
-        uv add --dev pytest pytest-cov 
-    
+        uv add --dev pytest pytest-cov
+
     - name: Run tests with coverage for ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -d tests ]; then
-          uv run pytest tests/ -v --tb=short --cov=src --cov-report=xml --cov-report=html --cov-report=term 
+          uv run pytest tests/ -v --tb=short --cov=src --cov-report=xml --cov-report=html --cov-report=term
         else
           echo "No tests directory found for ${{ matrix.mcp }}"
         fi
-    
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v4
-      if: hashFiles('mcps/${{ matrix.mcp }}/coverage.xml') != ''
+      if: hashFiles('iowarp_mcp_servers/${{ matrix.mcp }}/coverage.xml') != ''
       with:
-        file: mcps/${{ matrix.mcp }}/coverage.xml
+        file: iowarp_mcp_servers/${{ matrix.mcp }}/coverage.xml
         flags: ${{ matrix.mcp }}
         name: codecov-${{ matrix.mcp }}
         fail_ci_if_error: false
         token: ${{ secrets.CODECOV_TOKEN }}
-    
+
     - name: Upload coverage HTML report
       uses: actions/upload-artifact@v4
-      if: hashFiles('mcps/${{ matrix.mcp }}/htmlcov/') != ''
+      if: hashFiles('iowarp_mcp_servers/${{ matrix.mcp }}/htmlcov/') != ''
       with:
         name: coverage-html-${{ matrix.mcp }}
-        path: mcps/${{ matrix.mcp }}/htmlcov/
+        path: iowarp_mcp_servers/${{ matrix.mcp }}/htmlcov/
 
   security:
     name: Security Audit - ${{ matrix.mcp }}
@@ -197,15 +197,15 @@ jobs:
     
     - name: Install dependencies for ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -f pyproject.toml ]; then
           uv sync --all-extras --dev
         fi
         uv add --dev pip-audit
-    
+
     - name: Run security audit for ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -f pyproject.toml ]; then
           uv run pip-audit
         else
@@ -237,17 +237,17 @@ jobs:
     
     - name: Install dependencies for ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -f pyproject.toml ]; then
-          uv sync --all-extras --dev 
+          uv sync --all-extras --dev
         fi
-        uv add --dev pytest 
-    
+        uv add --dev pytest
+
     - name: Run tests for ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -d tests ]; then
-          uv run pytest tests/ --tb=short -v 
+          uv run pytest tests/ --tb=short -v
         else
           echo "No tests directory for ${{ matrix.mcp }}"
         fi
@@ -277,17 +277,17 @@ jobs:
     
     - name: Install dependencies for ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -f pyproject.toml ]; then
-          uv sync --all-extras --dev 
+          uv sync --all-extras --dev
         fi
-        uv add --dev pytest 
-    
+        uv add --dev pytest
+
     - name: Run tests for ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -d tests ]; then
-          uv run pytest tests/ --tb=short -v 
+          uv run pytest tests/ --tb=short -v
         else
           echo "No tests directory for ${{ matrix.mcp }}"
         fi
@@ -317,17 +317,17 @@ jobs:
     
     - name: Install dependencies for ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -f pyproject.toml ]; then
-          uv sync --all-extras --dev 
+          uv sync --all-extras --dev
         fi
-        uv add --dev pytest 
-    
+        uv add --dev pytest
+
     - name: Run tests for ${{ matrix.mcp }}
       run: |
-        cd mcps/${{ matrix.mcp }}
+        cd iowarp_mcp_servers/${{ matrix.mcp }}
         if [ -d tests ]; then
-          uv run pytest tests/ --tb=short -v 
+          uv run pytest tests/ --tb=short -v
         else
           echo "No tests directory for ${{ matrix.mcp }}"
         fi

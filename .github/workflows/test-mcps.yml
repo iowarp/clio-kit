@@ -13,32 +13,32 @@ jobs:
       fail-fast: false
       matrix:
         mcp:
-          - name: "Adios"
-            path: "mcps/Adios"
-          - name: "Arxiv" 
-            path: "mcps/Arxiv"
-          - name: "Compression"
-            path: "mcps/Compression"
-          - name: "Darshan"
-            path: "mcps/Darshan"
-          - name: "HDF5"
-            path: "mcps/HDF5"
-          - name: "Jarvis"
-            path: "mcps/Jarvis"
+          - name: "adios"
+            path: "iowarp_mcp_servers/adios"
+          - name: "arxiv"
+            path: "iowarp_mcp_servers/arxiv"
+          - name: "compression"
+            path: "iowarp_mcp_servers/compression"
+          - name: "darshan"
+            path: "iowarp_mcp_servers/darshan"
+          - name: "hdf5"
+            path: "iowarp_mcp_servers/hdf5"
+          - name: "jarvis"
+            path: "iowarp_mcp_servers/jarvis"
           - name: "lmod"
-            path: "mcps/lmod"
-          - name: "Node_Hardware"
-            path: "mcps/Node_Hardware"
-          - name: "Pandas"
-            path: "mcps/Pandas"
-          - name: "Parallel_Sort"
-            path: "mcps/Parallel_Sort"
+            path: "iowarp_mcp_servers/lmod"
+          - name: "node-hardware"
+            path: "iowarp_mcp_servers/node-hardware"
+          - name: "pandas"
+            path: "iowarp_mcp_servers/pandas"
+          - name: "parallel-sort"
+            path: "iowarp_mcp_servers/parallel-sort"
           - name: "parquet"
-            path: "mcps/parquet"
-          - name: "Plot"
-            path: "mcps/Plot"
-          - name: "Slurm"
-            path: "mcps/Slurm"
+            path: "iowarp_mcp_servers/parquet"
+          - name: "plot"
+            path: "iowarp_mcp_servers/plot"
+          - name: "slurm"
+            path: "iowarp_mcp_servers/slurm"
 
     name: Test ${{ matrix.mcp.name }}
     
@@ -55,7 +55,7 @@ jobs:
       uses: astral-sh/setup-uv@v3
       
     - name: Install Slurm dependencies
-      if: matrix.mcp.name == 'Slurm'
+      if: matrix.mcp.name == 'slurm'
       run: |
         sudo apt-get update
         sudo apt-get install -y slurm-wlm

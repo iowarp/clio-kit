@@ -1,0 +1,67 @@
+[project]
+name = "ndp-mcp"
+version = "1.0.0"
+description = "National Data Platform (NDP) MCP server for searching and discovering datasets across multiple CKAN instances"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+
+
+[project.urls]
+Homepage = "https://iowarp.github.io/iowarp-mcps/"
+Repository = "https://github.com/iowarp/iowarp-mcps"
+
+authors = [
+    { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
+]
+
+dependencies = [
+    "fastmcp>=0.2.0",
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.0",
+    "pydantic>=2.5.0"
+]
+
+keywords = ["ndp", "dataset-search", "ckan", "mcp", "llm-integration", "scientific-data"]
+
+[project.scripts]
+ndp-mcp = "server:main"
+
+[build-system]
+requires = ["setuptools>=64.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.0",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-httpx>=0.30.0",
+    "ruff>=0.12.5",
+    "mypy>=1.7.0",
+    "pip-audit>=2.6.0"
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "S", "B", "A", "C4", "ICN", "PIE", "T20", "Q"]
+ignore = ["S101", "S603", "S607"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+strict_optional = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short -v"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]
