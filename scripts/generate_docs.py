@@ -269,13 +269,32 @@ class DocusaurusGenerator:
     
     def _generate_mcp_markdown(self, mcp_data: Dict):
         """Generate markdown file for a single MCP with 4 sections."""
+        # Try to load old description from existing file
+        output_file = self.mcps_output_dir / f"{mcp_data['slug']}.md"
+        old_jsx_description = None
+
+        if output_file.exists():
+            try:
+                with open(output_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    # Extract description from JSX prop
+                    import re
+                    match = re.search(r'description="([^"]*)"', content)
+                    if match:
+                        old_jsx_description = match.group(1)
+            except Exception as e:
+                print(f"Warning: Could not load old description for {mcp_data['slug']}: {e}")
+
+        # Use old description if available, otherwise use new one
+        base_description = old_jsx_description if old_jsx_description else mcp_data['description']
+
         # Escape YAML special characters in description
-        description = mcp_data['description'].replace('"', '\\"').replace('\n', ' ')
+        description = base_description.replace('"', '\\"').replace('\n', ' ')
         if len(description) > 300:
             description = description[:297] + "..."
-        
+
         # Escape quotes in the full description for JSX
-        jsx_description = mcp_data['description'].replace('"', '&quot;').replace('\n', ' ')
+        jsx_description = base_description.replace('"', '&quot;').replace('\n', ' ')
         
         # Format JSX props
         actions_jsx = json.dumps(mcp_data['actions'])
@@ -538,19 +557,45 @@ final_result = finalize_output(processed)
     
     def _generate_mcp_data_js(self, mcps_data: Dict):
         """Generate the mcpData.js file for the frontend."""
+        # Load existing mcpData.js to preserve descriptions
+        existing_mcps = {}
+        output_file = self.data_output_dir / "mcpData.js"
+        if output_file.exists():
+            try:
+                with open(output_file, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                    # Extract existing mcpData object (simple extraction)
+                    import re
+                    match = re.search(r'export const mcpData = ({.*?});', content, re.DOTALL)
+                    if match:
+                        import json
+                        # This is a simplified extraction - in production use proper JS parser
+                        try:
+                            json_str = match.group(1)
+                            existing_mcps = json.loads(json_str)
+                        except:
+                            pass
+            except Exception as e:
+                print(f"Warning: Could not load existing mcpData: {e}")
+
         # Count categories
         category_counts = {}
         for mcp_data in mcps_data.values():
             category = mcp_data['category']
             category_counts[category] = category_counts.get(category, 0) + 1
-        
-        # Generate JavaScript object
+
+        # Generate JavaScript object, preserving existing descriptions
         js_mcps = {}
         for slug, mcp_data in mcps_data.items():
+            # Preserve old description if it exists
+            old_description = None
+            if slug in existing_mcps and 'description' in existing_mcps[slug]:
+                old_description = existing_mcps[slug]['description']
+
             js_mcps[slug] = {
                 'name': mcp_data['name'],
                 'category': mcp_data['category'],
-                'description': mcp_data['description'],
+                'description': old_description or mcp_data['description'],  # Use old description if available
                 'icon': mcp_data['icon'],
                 'actions': mcp_data['actions'],
                 'stats': {

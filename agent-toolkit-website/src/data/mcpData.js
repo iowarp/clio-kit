@@ -2,7 +2,7 @@
 export const mcpData = {
   "chronolog": {
     "name": "Chronolog",
-    "category": "Utilities",
+    "category": "Data Processing",
     "description": "Start logging sessions. Record AI interactions. Stop and save. Retrieve historical data. 4 tools for distributed logging on HPC systems.",
     "icon": "\u23f0",
     "actions": [
@@ -13,7 +13,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -24,7 +24,7 @@ export const mcpData = {
   },
   "node_hardware": {
     "name": "Node-Hardware",
-    "category": "Performance",
+    "category": "Analysis & Visualization",
     "description": "CPU info. Memory stats. GPU details. Disk usage. Network metrics. 11 tools for hardware monitoring. Real-time system analysis.",
     "icon": "\ud83d\udcbb",
     "actions": [
@@ -42,7 +42,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -53,7 +53,7 @@ export const mcpData = {
   },
   "lmod": {
     "name": "Lmod",
-    "category": "HPC",
+    "category": "System Management",
     "description": "Load modules. Swap environments. Save collections. Spider search. 10 tools for environment module management on HPC clusters.",
     "icon": "\ud83d\udce6",
     "actions": [
@@ -70,7 +70,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -81,7 +81,7 @@ export const mcpData = {
   },
   "arxiv": {
     "name": "Arxiv",
-    "category": "Research",
+    "category": "Data Processing",
     "description": "Search papers. Download PDFs. Export BibTeX. Find by author, title, date, subject. 13 tools for academic research. ArXiv.org integration through AI.",
     "icon": "\ud83d\udcc4",
     "actions": [
@@ -101,7 +101,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -112,7 +112,7 @@ export const mcpData = {
   },
   "darshan": {
     "name": "Darshan",
-    "category": "Performance",
+    "category": "Analysis & Visualization",
     "description": "Load logs. Analyze I/O patterns. Identify bottlenecks. Performance metrics. Compare runs. 10 tools for I/O profiling. Darshan log analysis via AI.",
     "icon": "\u26a1",
     "actions": [
@@ -139,7 +139,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -150,7 +150,7 @@ export const mcpData = {
   },
   "pandas": {
     "name": "Pandas",
-    "category": "Analytics",
+    "category": "Data Processing",
     "description": "Load CSV/Excel/Parquet. Statistical analysis. Data cleaning. Correlations. Groupby operations. Time series. 15 tools for tabular data. Pandas through natural language.",
     "icon": "\ud83d\udc3c",
     "actions": [
@@ -172,7 +172,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -183,13 +183,13 @@ export const mcpData = {
   },
   "parquet": {
     "name": "Parquet",
-    "category": "Formats",
+    "category": "Data Processing",
     "description": "Read columnar data. Write Parquet files. Schema inspection. Pandas integration. Efficient for large datasets. Apache Parquet format operations.",
     "icon": "\ud83d\udccb",
     "actions": [],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -208,7 +208,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -218,8 +218,8 @@ export const mcpData = {
     "slug": "compression"
   },
   "hdf5": {
-    "name": "HDF5",
-    "category": "Formats",
+    "name": "Hdf5",
+    "category": "Data Processing",
     "description": "Read HDF5 files. Explore datasets. Extract data. AI-powered insights. Parallel batch ops (4-8x faster). LRU cache (1000x faster). 27 tools for scientific HDF5 data.",
     "icon": "\ud83d\uddc2\ufe0f",
     "actions": [
@@ -253,7 +253,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.1.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -264,7 +264,7 @@ export const mcpData = {
   },
   "adios": {
     "name": "Adios",
-    "category": "Formats",
+    "category": "Data Processing",
     "description": "Read BP5 files. Inspect variables. Check attributes. Read at timestep. 5 tools for ADIOS2 scientific data I/O.",
     "icon": "\ud83d\udcca",
     "actions": [
@@ -276,7 +276,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -287,7 +287,7 @@ export const mcpData = {
   },
   "parallel_sort": {
     "name": "Parallel-Sort",
-    "category": "Analytics",
+    "category": "Data Processing",
     "description": "Sort massive log files. Parallel processing. Pattern detection. Time-range filtering. Export JSON/CSV. 13 tools for large file operations.",
     "icon": "\ud83d\udd04",
     "actions": [
@@ -307,7 +307,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -318,7 +318,7 @@ export const mcpData = {
   },
   "slurm": {
     "name": "Slurm",
-    "category": "HPC",
+    "category": "System Management",
     "description": "Submit jobs. Check status. Allocate nodes. Read output. Full HPC cluster management through AI assistants. 13 tools for Slurm workload manager.",
     "icon": "\ud83d\udda5\ufe0f",
     "actions": [
@@ -338,7 +338,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -349,7 +349,7 @@ export const mcpData = {
   },
   "ndp": {
     "name": "Ndp",
-    "category": "Research",
+    "category": "Data Processing",
     "description": "List organizations. Search datasets. Get metadata. Discover research data through CKAN API. 3 tools for dataset discovery and exploration.",
     "icon": "\ud83d\udd27",
     "actions": [
@@ -359,7 +359,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -370,7 +370,7 @@ export const mcpData = {
   },
   "plot": {
     "name": "Plot",
-    "category": "Analytics",
+    "category": "Data Processing",
     "description": "Generate line plots. Create bar charts. Scatter visualizations. Histograms and heatmaps. 6 plotting tools for CSV data visualization through AI.",
     "icon": "\ud83d\udcc8",
     "actions": [
@@ -383,7 +383,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -394,7 +394,7 @@ export const mcpData = {
   },
   "jarvis": {
     "name": "Jarvis",
-    "category": "HPC",
+    "category": "Data Processing",
     "description": "Create pipelines. Build environments. Configure packages. Run workflows. 27 tools for data pipeline management. Jarvis-CD integration for HPC.",
     "icon": "\ud83e\udd16",
     "actions": [
@@ -430,7 +430,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.0.0",
-      "updated": "2025-10-19"
+      "updated": "2025-11-11"
     },
     "platforms": [
       "claude",
@@ -441,96 +441,74 @@ export const mcpData = {
   }
 };
 
-// Categories with counts and colors - Simple names
+// Categories with counts and colors
 export const categories = {
   "All": {
     "count": 15,
     "color": "#6b7280",
-    "icon": "🔍"
+    "icon": "\ud83d\udd0d"
   },
-  "Formats": {
-    "count": 3,
-    "color": "#217CA3",
-    "icon": "📁"
+  "Data Processing": {
+    "count": 10,
+    "color": "#3b82f6",
+    "icon": "\ud83d\udcca"
   },
-  "Analytics": {
-    "count": 3,
-    "color": "#6BC2E4",
-    "icon": "📊"
-  },
-  "HPC": {
-    "count": 3,
-    "color": "#EC7C26",
-    "icon": "⚡"
-  },
-  "Performance": {
+  "Analysis & Visualization": {
     "count": 2,
     "color": "#10b981",
-    "icon": "⚙️"
+    "icon": "\ud83d\udcc8"
   },
-  "Research": {
+  "System Management": {
     "count": 2,
-    "color": "#8B5CF6",
-    "icon": "🔬"
+    "color": "#f59e0b",
+    "icon": "\ud83d\udda5\ufe0f"
   },
   "Utilities": {
-    "count": 2,
-    "color": "#6b7280",
-    "icon": "🛠️"
+    "count": 1,
+    "color": "#ef4444",
+    "icon": "\ud83d\udd27"
   }
 };
 
-// Featured MCPs - Most used in research (3 only)
+// Popular MCPs for featured section
 export const popularMcps = [
+  "jarvis",
   "hdf5",
-  "adios",
-  "ndp"
+  "darshan",
+  "pandas",
+  "arxiv",
+  "parallel_sort"
 ];
 
-// GitHub stats for featured MCPs
-export const githubStats = {
-  "hdf5": {
-    "stars": 847,
-    "contributors": 12,
-    "lastUpdated": "Oct 15"
-  },
-  "adios": {
-    "stars": 623,
-    "contributors": 8,
-    "lastUpdated": "Oct 12"
-  },
-  "ndp": {
-    "stars": 89,
-    "contributors": 3,
-    "lastUpdated": "Oct 18"
-  }
-};
-
-// Category type mapping for tags - Short labels for cards
+// Category type mappings
 export const categoryTypes = {
-  "Formats": "FORMAT",
-  "Analytics": "ANALYTICS",
-  "HPC": "HPC",
-  "Performance": "PERF",
-  "Research": "RESEARCH",
-  "Utilities": "UTILS"
+  "Data Processing": "data",
+  "Analysis & Visualization": "analysis",
+  "System Management": "system",
+  "Utilities": "util"
 };
 
-// Endorsement mapping - IoWarp native vs Community
+// GitHub repository statistics
+export const githubStats = {
+  "stars": 0,
+  "forks": 0,
+  "watchers": 0,
+  "url": "https://github.com/iowarp/agent-toolkit"
+};
+
+// MCP endorsements and badges
 export const mcpEndorsement = {
-  "hdf5": "IOWARP",
-  "adios": "IOWARP",
-  "pandas": "IOWARP",
-  "slurm": "IOWARP",
-  "arxiv": "IOWARP",
-  "darshan": "IOWARP",
-  "lmod": "IOWARP",
-  "plot": "IOWARP",
-  "jarvis": "IOWARP",
-  "compression": "IOWARP",
-  "parquet": "IOWARP",
-  "parallel_sort": "IOWARP",
-  "chronolog": "IOWARP",
-  "node_hardware": "IOWARP",
-  "ndp": "COMMUNITY"
+  "hdf5": [
+    "flagship",
+    "v2.0"
+  ],
+  "slurm": [
+    "hpc"
+  ],
+  "arxiv": [
+    "research"
+  ],
+  "pandas": [
+    "data"
+  ]
 };

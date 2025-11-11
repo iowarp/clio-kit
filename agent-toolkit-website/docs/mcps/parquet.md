@@ -1,6 +1,6 @@
 ---
 title: Parquet MCP
-description: "Part of [Agent Toolkit](https://iowarp.github.io/agent-toolkit/) - Gnosis Research Center"
+description: "Parquet MCP v1.0.0 - Part of Agent Toolkit (IoWarp Platform). Tools for Parquet file operations: read columns, preview data, analyze schemas. Enables AI agents to work with columnar data formats efficiently."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -13,7 +13,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   version="1.0.0"
   actions={[]}
   platforms={["claude", "cursor", "vscode"]}
-  keywords={[]}
+  keywords={["Parquet", "columnar", "data", "analytics", "pandas"]}
   license="MIT"
   tools={[]}
 >

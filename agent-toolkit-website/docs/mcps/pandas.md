@@ -1,6 +1,6 @@
 ---
 title: Pandas MCP
-description: "Part of [Agent Toolkit](https://iowarp.github.io/agent-toolkit/) - Gnosis Research Center"
+description: "Pandas MCP v1.0.0 - Part of Agent Toolkit (IoWarp Platform). 15 tools for data analysis: load CSV/Excel/Parquet, statistical analysis, data cleaning, time series operations. Enables AI agents to process and analyze tabular data."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';

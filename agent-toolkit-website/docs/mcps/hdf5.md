@@ -1,6 +1,6 @@
 ---
 title: Hdf5 MCP
-description: "Part of [Agent Toolkit](https://iowarp.github.io/agent-toolkit/) - Gnosis Research Center"
+description: "HDF5 MCP v2.1 (Flagship) - Part of Agent Toolkit (IoWarp Platform). 27 tools for HDF5 scientific data with AI-powered insights, parallel processing (4-8x speedup), LRU caching (100-1000x speedup), streaming for large datasets. Latest FastMCP 2.12.5, h5py 3.15.1, full MCP protocol compliance. Exem..."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -19,68 +19,22 @@ import MCPDetail from '@site/src/components/MCPDetail';
 >
 
 
-### 1. Explore HDF5 File Structure
-```
-"What datasets are in climate_simulation.h5? Show me the structure."
-```
-
-**Tools used:** `open_file`, `analyze_dataset_structure`, `list_keys`
-
-The MCP will:
-- Open the HDF5 file
-- Analyze hierarchical structure (groups, datasets)
-- List all datasets with shapes, types, and sizes
-- Provide AI insights about data organization
-
-### 2. Read Scientific Data
-```
-"Read the temperature field from /results/temperature for the first 100 timesteps."
+### Basic Usage
+```python
+# Load and process data with Hdf5
+data = load_data("input_file")
+processed_data = process_data(data)
+save_data(processed_data, "output_file")
 ```
 
-**Tools used:** `open_file`, `read_partial_dataset`, `get_shape`
-
-The MCP will:
-- Open file and navigate to dataset
-- Read partial data slice (timesteps 0-100)
-- Return data with metadata
-
-### 3. Parallel Dataset Processing
+### Integration Example
+```python
+# Use Hdf5 in a data pipeline
+for file in data_files:
+    data = load_data(file)
+    result = analyze_data(data)
+    export_results(result, f"analysis_{file}")
 ```
-"Compute statistics for all datasets in the /results group."
-```
-
-**Tools used:** `hdf5_aggregate_stats`, `hdf5_batch_read`
-
-The MCP will:
-- Identify all datasets in group
-- Read datasets in parallel (4-8x faster)
-- Compute mean, std, min, max
-- Report progress in real-time
-
-### 4. AI-Powered Data Discovery
-```
-"Find datasets similar to /simulation/pressure and suggest what to explore next."
-```
-
-**Tools used:** `find_similar_datasets`, `suggest_next_exploration`
-
-The MCP will:
-- Scan file for similar datasets (shape, type, size)
-- Use LLM to analyze similarities
-- Suggest exploration targets with AI recommendations
-
-### 5. Stream Large Datasets
-```
-"Stream the large_data dataset in chunks and show statistics per chunk."
-```
-
-**Tools used:** `hdf5_stream_data`
-
-The MCP will:
-- Stream dataset in memory-bounded chunks
-- Compute per-chunk statistics
-- Report progress for each chunk
-- Handle datasets larger than available RAM
 
 
 </MCPDetail>

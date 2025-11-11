@@ -1,6 +1,6 @@
 ---
 title: Ndp MCP
-description: "Part of [Agent Toolkit](https://iowarp.github.io/agent-toolkit/) - Gnosis Research Center"
+description: "NDP MCP v1.0.0 - Part of Agent Toolkit (IoWarp Platform). 3 tools for dataset discovery: list organizations, search datasets, get details. Enables AI agents to discover and access datasets across CKAN instances."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -13,7 +13,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   version="1.0.0"
   actions={["list_organizations", "search_datasets", "get_dataset_details"]}
   platforms={["claude", "cursor", "vscode"]}
-  keywords={[]}
+  keywords={["ndp", "dataset-search", "ckan", "mcp", "llm-integration", "scientific-data"]}
   license="MIT"
   tools={[{"name": "list_organizations", "description": "List organizations available in the National Data Platform. This tool should always be called before searching to verify organization names are correctly formatted. Supports filtering by organization name and selecting different servers (local, global, pre_ckan).", "function_name": "list_organizations"}, {"name": "search_datasets", "description": "Search for datasets in the National Data Platform using simple or advanced search criteria. Supports both term-based searches and field-specific filtering. Use this tool to discover datasets by keywords, organization, format, or other metadata. Results are automatically limited to 20 by default to prevent context overflow - use the limit parameter to adjust this.", "function_name": "search_datasets"}, {"name": "get_dataset_details", "description": "Retrieve detailed information about a specific dataset using its ID or name. Returns comprehensive metadata including all resources, descriptions, and additional fields. Use this after finding datasets with search_datasets to get complete information.", "function_name": "get_dataset_details"}]}
 >

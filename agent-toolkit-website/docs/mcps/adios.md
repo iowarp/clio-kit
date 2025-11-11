@@ -1,6 +1,6 @@
 ---
 title: Adios MCP
-description: "Part of [Agent Toolkit](https://iowarp.github.io/agent-toolkit/) - Gnosis Research Center"
+description: "ADIOS MCP v1.0.0 - Part of Agent Toolkit (IoWarp Platform). 5 tools for ADIOS2 BP5 file access: list files, inspect variables, read data at specific steps, extract attributes. Enables AI agents to work with high-performance scientific data formats."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';

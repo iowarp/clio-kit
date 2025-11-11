@@ -1,6 +1,6 @@
 ---
 title: Slurm MCP
-description: "Part of [Agent Toolkit](https://iowarp.github.io/agent-toolkit/) - Gnosis Research Center"
+description: "Slurm MCP v1.0.0 - Part of Agent Toolkit (IoWarp Platform). 13 tools for HPC cluster job management: submit jobs, monitor status, allocate nodes, manage queues. Enables AI agents to operate Slurm clusters through natural language."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';

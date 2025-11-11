@@ -1,6 +1,6 @@
 ---
 title: Lmod MCP
-description: "Part of [Agent Toolkit](https://iowarp.github.io/agent-toolkit/) - Gnosis Research Center"
+description: "Lmod MCP v1.0.0 - Part of Agent Toolkit (IoWarp Platform). 10 tools for environment module management: load/unload modules, search available modules, save/restore configurations. Enables AI agents to manage HPC software environments."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -13,7 +13,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   version="1.0.0"
   actions={["module_list", "module_avail", "module_show", "module_load", "module_unload", "module_swap", "module_spider", "module_save", "module_restore", "module_savelist"]}
   platforms={["claude", "cursor", "vscode"]}
-  keywords={[]}
+  keywords={["lmod", "environment-modules", "module-management", "hpc", "scientific-computing", "supercomputing", "cluster-computing", "module-system"]}
   license="MIT"
   tools={[{"name": "module_list", "description": "List all currently loaded environment modules. Shows the active modules in your current shell environment.", "function_name": "module_list_tool"}, {"name": "module_avail", "description": "Search for available modules that can be loaded. Optionally filter by name pattern (e.g., 'python', 'gcc/*', '*mpi*').", "function_name": "module_avail_tool"}, {"name": "module_show", "description": "Display detailed information about a specific module including its description, dependencies, environment variables it sets, and conflicts.", "function_name": "module_show_tool"}, {"name": "module_load", "description": "Load one or more environment modules into the current session. Modules modify environment variables like PATH, LD_LIBRARY_PATH, etc.", "function_name": "module_load_tool"}, {"name": "module_unload", "description": "Unload (remove) one or more currently loaded modules from the environment. Reverses the changes made by module load.", "function_name": "module_unload_tool"}, {"name": "module_swap", "description": "Swap one module for another (unload old_module and load new_module atomically). Useful for switching between different versions.", "function_name": "module_swap_tool"}, {"name": "module_spider", "description": "Search the entire module tree for modules matching a pattern. More comprehensive than module_avail, shows all versions and variants.", "function_name": "module_spider_tool"}, {"name": "module_save", "description": "Save the current set of loaded modules as a named collection for easy restoration later.", "function_name": "module_save_tool"}, {"name": "module_restore", "description": "Restore a previously saved module collection, loading all modules that were saved in that collection.", "function_name": "module_restore_tool"}, {"name": "module_savelist", "description": "List all saved module collections available for restoration.", "function_name": "module_savelist_tool"}]}
 >

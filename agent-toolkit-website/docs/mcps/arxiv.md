@@ -1,6 +1,6 @@
 ---
 title: Arxiv MCP
-description: "Part of [Agent Toolkit](https://iowarp.github.io/agent-toolkit/) - Gnosis Research Center"
+description: "ArXiv MCP v1.0.0 - Part of Agent Toolkit (IoWarp Platform). 13 tools for research paper discovery: search by author/title/keywords, download PDFs, export BibTeX citations. Enables AI agents to search and retrieve scientific publications."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';

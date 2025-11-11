@@ -1,6 +1,6 @@
 ---
 title: Plot MCP
-description: "Part of [Agent Toolkit](https://iowarp.github.io/agent-toolkit/) - Gnosis Research Center"
+description: "Plot MCP v1.0.0 - Part of Agent Toolkit (IoWarp Platform). 6 tools for data visualization: line plots, bar charts, scatter plots, histograms, heatmaps. Enables AI agents to generate publication-quality visualizations from CSV/Excel data."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -13,7 +13,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   version="1.0.0"
   actions={["line_plot", "bar_plot", "scatter_plot", "histogram_plot", "heatmap_plot", "data_info"]}
   platforms={["claude", "cursor", "vscode"]}
-  keywords={[]}
+  keywords={["MCP", "plotting", "visualization", "analytics", "matplotlib", "seaborn", "data-science"]}
   license="MIT"
   tools={[{"name": "line_plot", "description": "Create line plots from CSV or Excel data with customizable styling and formatting. Supports multiple data series, trend analysis, and time-series visualization with advanced customization options.", "function_name": "line_plot_tool"}, {"name": "bar_plot", "description": "Create bar charts from CSV or Excel data with advanced styling and categorical data visualization. Supports grouped bars, stacked bars, and horizontal orientation with customizable colors and annotations.", "function_name": "bar_plot_tool"}, {"name": "scatter_plot", "description": "Create scatter plots from CSV or Excel data with correlation analysis and trend visualization. Supports multi-dimensional data exploration, regression lines, and statistical annotations for data relationships.", "function_name": "scatter_plot_tool"}, {"name": "histogram_plot", "description": "Create histograms from CSV or Excel data with statistical distribution analysis. Supports density plots, normal distribution overlays, and comprehensive statistical metrics for data distribution visualization.", "function_name": "histogram_plot_tool"}, {"name": "heatmap_plot", "description": "Create heatmaps from CSV or Excel data with correlation matrix analysis and color-coded data visualization. Supports hierarchical clustering, dendrograms, and advanced color mapping for multi-dimensional data exploration.", "function_name": "heatmap_plot_tool"}, {"name": "data_info", "description": "Get comprehensive data file information including detailed schema analysis, data quality assessment, and statistical profiling. Provides thorough data exploration with column types, distributions, and data health metrics.", "function_name": "data_info_tool"}]}
 >

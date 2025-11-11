@@ -1,6 +1,6 @@
 ---
 title: Compression MCP
-description: "Part of [Agent Toolkit](https://iowarp.github.io/agent-toolkit/) - Gnosis Research Center"
+description: "Compression MCP v1.0.0 - Part of Agent Toolkit (IoWarp Platform). GZIP file compression tool for storage optimization, archival, and network transfer. Enables AI agents to compress files efficiently."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -13,7 +13,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   version="1.0.0"
   actions={["compress_file"]}
   platforms={["claude", "cursor", "vscode"]}
-  keywords={[]}
+  keywords={["compression", "gzip", "storage", "archival", "backup", "analytics", "statistics"]}
   license="MIT"
   tools={[{"name": "compress_file", "description": "Compress a file using gzip compression.", "function_name": "compress_file_tool"}]}
 >

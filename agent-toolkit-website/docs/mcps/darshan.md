@@ -1,6 +1,6 @@
 ---
 title: Darshan MCP
-description: "Part of [Agent Toolkit](https://iowarp.github.io/agent-toolkit/) - Gnosis Research Center"
+description: "Darshan MCP v1.0.0 - Part of Agent Toolkit (IoWarp Platform). 10 tools for I/O performance analysis: load traces, analyze access patterns, identify bottlenecks, compare logs. Enables AI agents to analyze HPC application I/O performance."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
