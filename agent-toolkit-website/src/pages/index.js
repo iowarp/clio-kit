@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <Layout
       title={`${siteConfig.title}`}
-      description="Agent Toolkit v1.0.0 - Part of the IoWarp platform. Tools, skills, plugins, and extensions for AI agents. Launching with 15+ MCP servers for scientific computing. Connect AI to HDF5, ADIOS, Slurm, Pandas.">
+      description="Agent Toolkit v1.0.0 (Beta Public Release - November 11, 2025) - Part of the IoWarp platform. Tools, skills, plugins, and extensions for AI agents. Launching with 15+ MCP servers for scientific computing. Connect AI to HDF5, ADIOS, Slurm, Pandas.">
       <main className="landingPage">
 
         {/* Hero */}
@@ -18,7 +18,7 @@ export default function Home() {
             {/* Gnosis box at top */}
             <div className="hero__eyebrow">
               <img src="/agent-toolkit/img/logos/grc-logo.png" alt="GRC" className="hero__eyebrowLogo" />
-              Gnosis Research Center
+              <a href="https://grc.iit.edu/" target="_blank" rel="noopener noreferrer" style={{textDecoration: 'none', color: 'inherit'}}>Gnosis Research Center (GRC)</a>
               <img src="/agent-toolkit/img/logos/iit-logo.png" alt="IIT" className="hero__eyebrowLogoLarge" />
             </div>
 
@@ -57,7 +57,7 @@ export default function Home() {
             {/* Subtitle - 2 lines */}
             <p className="hero__subtitle">
               Agent Toolkit provides comprehensive science capabilities for AI agents.<br/>
-              <strong>v1.0.0</strong> launches with 150+ tools across 15+ MCP servers for scientific computing.<br/>
+              <strong>v1.0.0</strong> (Beta Public Release - November 11, 2025) launches with 150+ tools across 15+ MCP servers for scientific computing.<br/>
               Works with <a href="https://www.claude.com/product/claude-code" target="_blank" rel="noopener">Claude Code</a>,{' '}
               <a href="https://cursor.com/home" target="_blank" rel="noopener">Cursor</a>,{' '}
               <a href="https://code.visualstudio.com/" target="_blank" rel="noopener">VS Code</a>,{' '}
@@ -107,7 +107,7 @@ export default function Home() {
 
             {/* Footer - Single line */}
             <div className="hero__footer">
-              Open-Source Community Project supported in part by the{' '}
+              Part of the <a href="https://iowarp.ai" className="hero__footerLink" target="_blank" rel="noopener noreferrer"><strong>IoWarp Platform</strong></a> · Open-Source Community Project supported in part by the{' '}
               <img src="/agent-toolkit/img/logos/nsf-logo.png" alt="NSF" className="hero__nsfLogo" />
               <a href="https://new.nsf.gov/" className="hero__footerLink" target="_blank" rel="noopener noreferrer">
                 National Science Foundation (NSF)

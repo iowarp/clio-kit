@@ -11,7 +11,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Agent Toolkit - Gnosis Research Center',
-  tagline: 'Tools, skills, plugins, and extensions for AI agents. Part of the IoWarp platform. | Gnosis Research Center, Illinois Institute of Technology',
+  tagline: 'Tools, skills, plugins, and extensions for AI agents. Part of the IoWarp platform. | Developed by Gnosis Research Center (GRC) at Illinois Institute of Technology',
   favicon: 'img/iowarp_logo.png',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -66,13 +66,13 @@ const config = {
     ({
       // Enhanced metadata for social sharing
       metadata: [
-        {name: 'description', content: 'Agent Toolkit - Tools, skills, plugins, and extensions for AI agents. Part of the IoWarp platform. v1.0.0 features 15+ MCP servers for scientific computing: HDF5, Slurm, Pandas, ArXiv, and more. Built with FastMCP 2.12, 150+ tools for HPC workflows. Developed by Gnosis Research Center at Illinois Institute of Technology, supported by NSF.'},
+        {name: 'description', content: 'Agent Toolkit v1.0.0 (Beta Public Release - November 11, 2025) - Tools, skills, plugins, and extensions for AI agents. Part of the IoWarp platform. Features 15+ MCP servers for scientific computing: HDF5, Slurm, Pandas, ArXiv, and more. Built with FastMCP 2.12, 150+ tools for HPC workflows. Developed by Gnosis Research Center at Illinois Institute of Technology, supported by NSF.'},
         {name: 'keywords', content: 'Agent Toolkit, AI agents, tools, skills, plugins, extensions, MCP, Model Context Protocol, scientific computing, HPC, HDF5, Slurm, Pandas, ADIOS, Parquet, FastMCP, research computing, IoWarp platform, Gnosis Research Center, Illinois Tech, NSF'},
         {property: 'og:title', content: 'Agent Toolkit - Tools for AI Agents | IoWarp Platform | Gnosis Research Center'},
-        {property: 'og:description', content: 'Agent Toolkit v1.0.0: 15+ MCP servers for scientific computing. Part of the IoWarp platform providing tools, skills, plugins, and extensions for AI agents. HDF5, Slurm, Pandas, ArXiv. Built with FastMCP 2.12 at Illinois Institute of Technology.'},
+        {property: 'og:description', content: 'Agent Toolkit v1.0.0 (Beta Public Release - November 11, 2025): 15+ MCP servers for scientific computing. Part of the IoWarp platform providing tools, skills, plugins, and extensions for AI agents. HDF5, Slurm, Pandas, ArXiv. Built with FastMCP 2.12 at Illinois Institute of Technology.'},
         {name: 'twitter:card', content: 'summary_large_image'},
         {name: 'twitter:title', content: 'Agent Toolkit - Tools for AI Agents | IoWarp Platform'},
-        {name: 'twitter:description', content: 'Agent Toolkit v1.0.0: MCP servers for scientific computing. Part of the IoWarp platform providing comprehensive agent tooling.'},
+        {name: 'twitter:description', content: 'Agent Toolkit v1.0.0 (Beta Public Release - November 11, 2025): MCP servers for scientific computing. Part of the IoWarp platform providing comprehensive agent tooling.'},
       ],
       // Social card for link previews
       image: 'img/iowarp_logo.png',
@@ -126,8 +126,12 @@ const config = {
                 to: '/',
               },
               {
-                label: 'Canonical Site',
-                href: 'https://iowarp.github.io/agent-toolkit/',
+                label: 'Platform Website',
+                href: 'https://iowarp.ai',
+              },
+              {
+                label: 'GitHub Repository',
+                href: 'https://github.com/iowarp/agent-toolkit',
               },
             ],
           },
@@ -179,7 +183,7 @@ const config = {
             ],
           },
         ],
-        copyright: `Agent Toolkit · Gnosis Research Center, Illinois Institute of Technology. Funded in part by the National Science Foundation. © ${new Date().getFullYear()}`,
+        copyright: `Agent Toolkit · Part of the IoWarp Platform · Developed by Gnosis Research Center (GRC), Illinois Institute of Technology. Funded in part by the National Science Foundation. © ${new Date().getFullYear()}`,
       },
       prism: {
         theme: prismThemes.github,

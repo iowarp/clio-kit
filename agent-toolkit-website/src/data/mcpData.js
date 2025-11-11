@@ -252,7 +252,7 @@ export const mcpData = {
       "export_dataset"
     ],
     "stats": {
-      "version": "2.1.0",
+      "version": "1.0.0",
       "updated": "2025-11-11"
     },
     "platforms": [

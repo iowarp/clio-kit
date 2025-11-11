@@ -1,12 +1,17 @@
 # Agent Toolkit Documentation Website
 
-This directory contains the Docusaurus-based documentation website for Agent Toolkit, the tooling layer of the IoWarp platform.
+This directory contains the Docusaurus-based documentation website for Agent Toolkit, the tooling layer of the **[IoWarp Platform](https://iowarp.ai)**.
 
-**v1.0.0** focuses on MCP servers for scientific computing. Future releases will expand to include additional skills, plugins, and extensions for AI agents.
+**v1.0.0** (Beta Public Release - November 11, 2025) focuses on MCP servers for scientific computing. Future releases will expand to include additional skills, plugins, and extensions for AI agents.
+
+**Developed by:** [Gnosis Research Center (GRC)](https://grc.iit.edu/) at [Illinois Institute of Technology](https://www.iit.edu/)  
+**Contact:** [grc@illinoistech.edu](mailto:grc@illinoistech.edu)  
+**Platform:** [IoWarp.ai](https://iowarp.ai) | **GitHub:** [github.com/iowarp/agent-toolkit](https://github.com/iowarp/agent-toolkit)
 
 ## 🌐 Live Website
 
-Visit the live website at: **https://iowarp.github.io/agent-toolkit**
+Visit the live website at: **https://iowarp.github.io/agent-toolkit**  
+Full platform overview: **[IoWarp.ai](https://iowarp.ai)**
 
 ## 📁 Structure
 

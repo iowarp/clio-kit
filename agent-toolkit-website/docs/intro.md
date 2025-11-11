@@ -6,12 +6,14 @@ sidebar_position: 1
 
 **Agent Toolkit** is the tooling layer of the IoWarp platform, providing comprehensive capabilities for AI agents working in scientific computing environments.
 
-**v1.0.0 Release** launches with 15+ Model Context Protocol (MCP) servers, enabling AI coding assistants (Cursor, Claude Code, VS Code) to interact with HPC resources, scientific data formats, and research datasets through natural language.
+**v1.0.0 Release** (Beta Public Release - November 11, 2025) launches with 15+ Model Context Protocol (MCP) servers, enabling AI coding assistants (Cursor, Claude Code, VS Code) to interact with HPC resources, scientific data formats, and research datasets through natural language.
 
 **Future Roadmap**: v1.2.0 and beyond will expand beyond MCP servers to include additional skills, plugins, and extensions, making Agent Toolkit a complete ecosystem for AI agent tooling.
 
-**Built by:** Gnosis Research Center, Illinois Institute of Technology
-**Supported by:** National Science Foundation
+**Built by:** [Gnosis Research Center (GRC)](https://grc.iit.edu/) at [Illinois Institute of Technology](https://www.iit.edu/)  
+**Contact:** [grc@illinoistech.edu](mailto:grc@illinoistech.edu)  
+**Platform:** [IoWarp.ai](https://iowarp.ai)  
+**Supported by:** National Science Foundation  
 **Technology:** FastMCP 2.12, Python 3.10+, MIT licensed
 
 ---
@@ -138,7 +140,7 @@ Each MCP server is an independent Python package with its own dependencies. The 
 agent-toolkit/
 ├── src/agent_toolkit/       # Unified launcher (180 lines, Click only)
 ├── agent-toolkit-mcp-servers/     # 15 independent server packages
-│   ├── hdf5/              # v2.1 - 27 tools, FastMCP 2.12.5, h5py 3.15.1
+│   ├── hdf5/              # v1.0.0 - 27 tools, FastMCP 2.12.5, h5py 3.15.1
 │   ├── pandas/            # v1.0 - 15 tools
 │   ├── slurm/             # v1.0 - 13 tools
 │   └── ...                # 12 more servers
@@ -155,7 +157,7 @@ agent-toolkit/
 
 ## HDF5 MCP - Reference Implementation
 
-HDF5 MCP v2.1 demonstrates MCP best practices. Study this server as a template:
+HDF5 MCP v1.0.0 demonstrates MCP best practices. Study this server as a template:
 
 **Dependencies:** FastMCP 2.12.5, h5py 3.15.1, numpy 2.3.4 (latest as of Oct 2025)
 
@@ -222,21 +224,22 @@ See [CONTRIBUTING.md](https://github.com/iowarp/agent-toolkit/blob/main/CONTRIBU
 
 ## Support
 
+- **Platform Website:** [IoWarp.ai](https://iowarp.ai) - Full platform overview and resources
 - **Documentation:** [iowarp.github.io/agent-toolkit](https://iowarp.github.io/agent-toolkit/)
 - **Community Chat:** [Zulip](https://grc.zulipchat.com/#narrow/channel/518574-agent-toolkit)
 - **Issues:** [GitHub Issues](https://github.com/iowarp/agent-toolkit/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/iowarp/agent-toolkit/discussions)
 
 **Institutional Links:**
-- [Gnosis Research Center](https://grc.iit.edu/)
+- **[Gnosis Research Center (GRC)](https://grc.iit.edu/)** - Lead development institution
 - [Illinois Institute of Technology](https://www.iit.edu/)
-- [IoWarp Project](https://iowarp.ai)
+- **[IoWarp Platform](https://iowarp.ai)** - Full platform website
 
 ---
 
 ## Roadmap & Vision
 
-**v1.0.0 (Current Release)**
+**v1.0.0 (Beta Public Release - November 11, 2025)**
 - 15+ MCP servers for scientific computing
 - Unified launcher with auto-discovery
 - Comprehensive documentation and examples
@@ -258,8 +261,9 @@ If you use Agent Toolkit in your research:
 ```
 Agent Toolkit: Tools, Skills, Plugins, and Extensions for AI Agents
 Part of the IoWarp Platform
-Gnosis Research Center, Illinois Institute of Technology
-https://iowarp.github.io/agent-toolkit/
+Gnosis Research Center (GRC), Illinois Institute of Technology
+https://iowarp.ai/agent-toolkit/
+https://github.com/iowarp/agent-toolkit
 ```
 
 **Funding:** This work is supported in part by the National Science Foundation.
