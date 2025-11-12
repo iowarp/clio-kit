@@ -226,7 +226,8 @@ See [CONTRIBUTING.md](https://github.com/iowarp/agent-toolkit/blob/main/CONTRIBU
 
 - **Platform Website:** [IoWarp.ai](https://iowarp.ai) - Full platform overview and resources
 - **Documentation:** [iowarp.github.io/agent-toolkit](https://iowarp.github.io/agent-toolkit/)
-- **Community Chat:** [Zulip](https://grc.zulipchat.com/#narrow/channel/518574-agent-toolkit)
+- **Community Chat:** [Zulip](https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit)
+- **Join Community:** [Invitation Link](https://iowarp.zulipchat.com/join/e4wh24du356e4y2iw6x6jeay/)
 - **Issues:** [GitHub Issues](https://github.com/iowarp/agent-toolkit/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/iowarp/agent-toolkit/discussions)
 

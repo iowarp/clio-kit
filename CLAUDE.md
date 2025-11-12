@@ -419,7 +419,8 @@ The site includes comprehensive metadata for:
 - **FastMCP Documentation**: https://github.com/jlowin/FastMCP
 - **Project Website**: https://iowarp.github.io/agent-toolkit/
 - **Contribution Guide**: https://github.com/iowarp/agent-toolkit/wiki/Contribution
-- **Community**: Zulip chat at grc.zulipchat.com/#narrow/channel/518574-agent-toolkit
+- **Community**: Zulip chat at https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit
+- **Join Community**: Invitation link at https://iowarp.zulipchat.com/join/e4wh24du356e4y2iw6x6jeay/
 
 ## Branch Strategy
 

@@ -167,7 +167,7 @@ const config = {
               },
               {
                 label: 'Zulip Chat',
-                href: 'https://grc.zulipchat.com/#narrow/channel/518574-agent-toolkit',
+                href: 'https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit',
               },
             ],
           },

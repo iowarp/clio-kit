@@ -363,7 +363,7 @@ What actually happens
 
 ### Get Help
 
-- **Zulip Chat**: [IoWarp-mcp Community](https://grc.zulipchat.com/#narrow/channel/518574-agent-toolkit)
+- **Zulip Chat**: [Agent Toolkit Community](https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit)
 - **GitHub Discussions**: [Ask questions](https://github.com/iowarp/agent-toolkit/discussions)
 - **GitHub Issues**: [Report bugs](https://github.com/iowarp/agent-toolkit/issues)
 

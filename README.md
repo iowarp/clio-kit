@@ -14,7 +14,7 @@
 
 **Agent Toolkit** - Part of the IoWarp platform's tooling layer for AI agents. A comprehensive collection of tools, skills, plugins, and extensions. Currently featuring 15+ Model Context Protocol (MCP) servers for scientific computing, with plans to expand to additional agent capabilities. Enables AI agents to interact with HPC resources, scientific data formats, and research datasets.
 
-**Website**: [https://iowarp.github.io/agent-toolkit/](https://iowarp.github.io/agent-toolkit/) | **Chat**: [Zulip Community](https://grc.zulipchat.com/#narrow/channel/518574-agent-toolkit) | Developed by <img src="https://grc.iit.edu/img/logo.png" alt="GRC Logo" width="18" height="18"> **[Gnosis Research Center (GRC)](https://grc.iit.edu/)**
+**Website**: [https://iowarp.github.io/agent-toolkit/](https://iowarp.github.io/agent-toolkit/) | **Chat**: [Zulip Community](https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit) | Developed by <img src="https://grc.iit.edu/img/logo.png" alt="GRC Logo" width="18" height="18"> **[Gnosis Research Center (GRC)](https://grc.iit.edu/)**
 
 ---
 
@@ -299,7 +299,8 @@ pip install uv
 
 ### Community & Support
 
-- **Chat**: [Zulip Community](https://iowarp.zulipchat.com/#narrow/channel/agent-toolkit)
+- **Chat**: [Zulip Community](https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit)
+- **Join**: [Invitation Link](https://iowarp.zulipchat.com/join/e4wh24du356e4y2iw6x6jeay/)
 - **Issues**: [GitHub Issues](https://github.com/iowarp/agent-toolkit/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/iowarp/agent-toolkit/discussions)
 - **Website**: [https://iowarp.ai/agent-toolkit/](https://iowarp.ai/agent-toolkit/)

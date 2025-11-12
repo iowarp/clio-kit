@@ -280,6 +280,7 @@ MIT License - see LICENSE for details
 
 ## Support
 
-- **Zulip Chat**: https://grc.zulipchat.com/join/bepp44mnzwjnvyewhzumxhnh/
+- **Zulip Chat**: https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit
+- **Zulip Invitation**: https://iowarp.zulipchat.com/join/e4wh24du356e4y2iw6x6jeay/
 - **GitHub Issues**: https://github.com/iowarp/agent-toolkit/issues
 - **Email**: grc@illinoistech.edu
