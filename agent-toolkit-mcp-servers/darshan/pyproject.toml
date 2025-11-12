@@ -51,6 +51,7 @@ where = ["src"]
 dev-dependencies = [
     "pytest>=8.4.0",
     "pytest-asyncio>=0.21.0",
+    "pytest-cov>=7.0.0",
     "ruff>=0.12.5",
 ]
 
