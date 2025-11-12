@@ -12,7 +12,7 @@ authors = [
 keywords = ["jarvis", "pipeline-management", "high-performance-computing", "hpc", "workflow", "data-pipelines", "scientific-computing", "mcp", "package-management"]
 
 dependencies = [
-  "fastmcp",
+  "fastmcp>=2.13.0",
   "fastapi",
   "python-dotenv>=1.0.0",
   "jarvis-util @ git+https://github.com/grc-iit/jarvis-util.git@main#egg=jarvis-util",

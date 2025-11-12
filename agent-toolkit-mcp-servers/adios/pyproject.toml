@@ -22,7 +22,7 @@ keywords = [
 ]
 
 dependencies = [
-    "fastmcp",
+    "fastmcp>=2.13.0",
     "numpy",
     "adios2"
 ]

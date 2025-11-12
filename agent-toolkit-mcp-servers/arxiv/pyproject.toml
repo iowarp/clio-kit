@@ -12,7 +12,7 @@ authors = [
 keywords = ["data processing", "arxiv", "publications", "scientific data", "research", "papers", "iowarp", "grc"]
 
 dependencies = [
-    "fastmcp",
+    "fastmcp>=2.13.0",
     "httpx>=0.24.0",
 ]
 

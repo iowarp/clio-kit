@@ -12,7 +12,7 @@ authors = [
 keywords = ["MCP", "Slurm", "HPC", "job-management", "cluster-monitoring", "workload-management", "scientific-computing", "high-performance-computing"]
 
 dependencies = [
-    "fastmcp",
+    "fastmcp>=2.13.0",
     "psutil>=7.0.0",
     "python-dotenv>=1.0.0",
 ]
