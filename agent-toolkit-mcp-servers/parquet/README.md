@@ -10,28 +10,14 @@ Model Context Protocol (MCP) server for Apache Parquet files. Provides metadata 
 ## Quick Start
 
 ```bash
-<<<<<<< HEAD:agent-toolkit-mcp-servers/parquet/README.md
 uvx agent-toolkit parquet
-||||||| 0425fdf:iowarp_mcp_servers/parquet/README.md
-uvx iowarp-mcps parquet
-=======
-# From the monorepo
-cd iowarp-mcps/iowarp_mcp_servers/parquet
-uv run parquet-mcp
->>>>>>> 1099a6a50f9d621e79b31b4d1aa2b24995c7936a:iowarp_mcp_servers/parquet/README.md
 ```
 
 ## Key Features
 
-<<<<<<< HEAD:agent-toolkit-mcp-servers/parquet/README.md
 - **Full Documentation**: [Agent Toolkit Website](https://iowarp.github.io/agent-toolkit/)
 - **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
 - **Contributing**: See [Contribution Guide](https://github.com/iowarp/agent-toolkit/wiki/Contribution)
-||||||| 0425fdf:iowarp_mcp_servers/parquet/README.md
-- **Full Documentation**: [IoWarp MCPs Website](https://iowarp.github.io/iowarp-mcps/)
-- **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
-- **Contributing**: See [Contribution Guide](https://github.com/iowarp/iowarp-mcps/wiki/Contribution)
-=======
 - 16KB payload limit with error messages and suggested slice sizes
 - JSON filtering with compound/nested operations (AND/OR/NOT, comparisons, NULL checks, IN clauses)
 - Column projection and pagination
@@ -39,7 +25,6 @@ uv run parquet-mcp
 - Structured JSON error responses
 - Tested on 131M+ row datasets
 - 192 tests
->>>>>>> 1099a6a50f9d621e79b31b4d1aa2b24995c7936a:iowarp_mcp_servers/parquet/README.md
 
 ## Installation
 
@@ -51,7 +36,6 @@ uv run parquet-mcp
 
 ### Setup and Run
 
-<<<<<<< HEAD:agent-toolkit-mcp-servers/parquet/README.md
 Go to: `Settings` -> `Cursor Settings` -> `MCP` -> `Add new global MCP server`
 
 Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file is the recommended approach. You may also install in a specific project by creating `.cursor/mcp.json` in your project folder. See [Cursor MCP docs](https://docs.cursor.com/context/model-context-protocol) for more info.
@@ -121,159 +105,24 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
 <summary><b>Manual Setup</b></summary>
 
 **Linux/macOS:**
-||||||| 0425fdf:iowarp_mcp_servers/parquet/README.md
-Go to: `Settings` -> `Cursor Settings` -> `MCP` -> `Add new global MCP server`
-
-Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file is the recommended approach. You may also install in a specific project by creating `.cursor/mcp.json` in your project folder. See [Cursor MCP docs](https://docs.cursor.com/context/model-context-protocol) for more info.
-
-```json
-{
-  "mcpServers": {
-    "parquet-mcp": {
-      "command": "uvx",
-      "args": ["iowarp-mcps", "parquet"]
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><b>Install in VS Code</b></summary>
-
-Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
-
-```json
-"mcp": {
-  "servers": {
-    "parquet-mcp": {
-      "type": "stdio",
-      "command": "uvx",
-      "args": ["iowarp-mcps", "parquet"]
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><b>Install in Claude Code</b></summary>
-
-Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
-
-```sh
-claude mcp add parquet-mcp -- uvx iowarp-mcps parquet
-```
-
-</details>
-
-<details>
-<summary><b>Install in Claude Desktop</b></summary>
-
-Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude Desktop MCP docs](https://modelcontextprotocol.io/quickstart/user) for more info.
-
-```json
-{
-  "mcpServers": {
-    "parquet-mcp": {
-      "command": "uvx",
-      "args": ["iowarp-mcps", "parquet"]
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><b>Manual Setup</b></summary>
-
-**Linux/macOS:**
-=======
->>>>>>> 1099a6a50f9d621e79b31b4d1aa2b24995c7936a:iowarp_mcp_servers/parquet/README.md
 ```bash
-<<<<<<< HEAD:agent-toolkit-mcp-servers/parquet/README.md
 CLONE_DIR=$(pwd)
 git clone https://github.com/iowarp/agent-toolkit.git
 uv --directory=$CLONE_DIR/agent-toolkit/agent-toolkit-mcp-servers/parquet run parquet-mcp --help
-||||||| 0425fdf:iowarp_mcp_servers/parquet/README.md
-CLONE_DIR=$(pwd)
-git clone https://github.com/iowarp/iowarp-mcps.git
-uv --directory=$CLONE_DIR/iowarp-mcps/iowarp_mcp_servers/parquet run parquet-mcp --help
-=======
-# Clone the repository
-git clone https://github.com/iowarp/iowarp-mcps.git
-cd iowarp-mcps/iowarp_mcp_servers/parquet
-
-# Install dependencies
-uv sync
-
-# Run the server
-uv run parquet-mcp
->>>>>>> 1099a6a50f9d621e79b31b4d1aa2b24995c7936a:iowarp_mcp_servers/parquet/README.md
 ```
 
-<<<<<<< HEAD:agent-toolkit-mcp-servers/parquet/README.md
 **Windows CMD:**
 ```cmd
 set CLONE_DIR=%cd%
 git clone https://github.com/iowarp/agent-toolkit.git
 uv --directory=%CLONE_DIR%\agent-toolkit\agent-toolkit-mcp-servers\parquet run parquet-mcp --help
-||||||| 0425fdf:iowarp_mcp_servers/parquet/README.md
-**Windows CMD:**
-```cmd
-set CLONE_DIR=%cd%
-git clone https://github.com/iowarp/iowarp-mcps.git
-uv --directory=%CLONE_DIR%\iowarp-mcps\iowarp_mcp_servers\parquet run parquet-mcp --help
-=======
-### MCP Client Integration
-
-<details>
-<summary><b>Cursor</b></summary>
-
-Create `.cursor/mcp.json` in the parquet server directory:
-
-```json
-{
-  "mcpServers": {
-    "parquet-mcp": {
-      "command": "uv",
-      "args": ["run", "parquet-mcp"],
-      "disabled": false,
-      "env": {}
-    }
-  }
-}
->>>>>>> 1099a6a50f9d621e79b31b4d1aa2b24995c7936a:iowarp_mcp_servers/parquet/README.md
 ```
 
-<<<<<<< HEAD:agent-toolkit-mcp-servers/parquet/README.md
 **Windows PowerShell:**
 ```powershell
 $env:CLONE_DIR=$PWD
 git clone https://github.com/iowarp/agent-toolkit.git
 uv --directory=$env:CLONE_DIR\agent-toolkit\agent-toolkit-mcp-servers\parquet run parquet-mcp --help
-||||||| 0425fdf:iowarp_mcp_servers/parquet/README.md
-**Windows PowerShell:**
-```powershell
-$env:CLONE_DIR=$PWD
-git clone https://github.com/iowarp/iowarp-mcps.git
-uv --directory=$env:CLONE_DIR\iowarp-mcps\iowarp_mcp_servers\parquet run parquet-mcp --help
-=======
-**Note**: This runs from the current directory, so Cursor must be opened in the `parquet/` directory.
-
-</details>
-
-<details>
-<summary><b>Claude Code</b></summary>
-
-```bash
-# From the parquet directory
-cd iowarp-mcps/iowarp_mcp_servers/parquet
-claude mcp add parquet-mcp -- uv run parquet-mcp
->>>>>>> 1099a6a50f9d621e79b31b4d1aa2b24995c7936a:iowarp_mcp_servers/parquet/README.md
 ```
 
 </details>
@@ -396,7 +245,7 @@ Place these files in the `datasets/` directory to enable full evaluation testing
 ## Architecture
 
 ```
-parquet/                              # iowarp_mcp_servers/parquet/
+parquet/                              # agent-toolkit-mcp-servers/parquet/
 ├── src/parquet_mcp/
 │   ├── server.py                     # FastMCP server with @mcp.tool decorators
 │   └── capabilities/
@@ -424,7 +273,7 @@ MIT License - see LICENSE for details
 
 ## Resources
 
-- **IoWarp MCPs Website**: https://iowarp.github.io/iowarp-mcps/
+- **Agent Toolkit Website**: https://iowarp.github.io/agent-toolkit/
 - **Model Context Protocol**: https://modelcontextprotocol.io/
 - **Apache Parquet**: https://parquet.apache.org/
 - **PyArrow Documentation**: https://arrow.apache.org/docs/python/
@@ -432,5 +281,5 @@ MIT License - see LICENSE for details
 ## Support
 
 - **Zulip Chat**: https://grc.zulipchat.com/join/bepp44mnzwjnvyewhzumxhnh/
-- **GitHub Issues**: https://github.com/iowarp/iowarp-mcps/issues
+- **GitHub Issues**: https://github.com/iowarp/agent-toolkit/issues
 - **Email**: grc@illinoistech.edu
