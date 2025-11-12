@@ -187,6 +187,8 @@ class BeautifulFormatter:
         """Convert numpy types to Python native types for JSON serialization."""
         if isinstance(obj, np.ndarray):
             return obj.tolist()
+        elif isinstance(obj, pd.Series):
+            return [BeautifulFormatter._convert_numpy_types(item) for item in obj]
         elif isinstance(obj, np.integer):
             return int(obj)
         elif isinstance(obj, np.floating):
@@ -195,14 +197,14 @@ class BeautifulFormatter:
             return bool(obj)
         elif isinstance(obj, np.str_):
             return str(obj)
-        elif pd.isna(obj):
-            return None
         elif isinstance(obj, dict):
             return {
                 k: BeautifulFormatter._convert_numpy_types(v) for k, v in obj.items()
             }
         elif isinstance(obj, list):
             return [BeautifulFormatter._convert_numpy_types(item) for item in obj]
+        elif pd.isna(obj):
+            return None
         else:
             return obj
 
