@@ -4,10 +4,7 @@ Tests actual function bodies by patching handlers at the capabilities layer.
 """
 
 import pytest
-import os
-import sys
-from unittest.mock import Mock, patch, MagicMock, AsyncMock
-from fastapi import HTTPException
+from unittest.mock import Mock, patch
 
 
 class TestPipelineToolsDirect:

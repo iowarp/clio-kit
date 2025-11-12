@@ -363,6 +363,7 @@ class TestApplyFilter:
 
         # Should return original table (error handling)
         assert filtered is not None
+        assert len(filtered) == original_len
 
 
 class TestFilterIntegrationWithReadSlice:

@@ -89,7 +89,6 @@ class TestColumnPreviewEdgeCases:
     async def test_column_preview_generic_exception(self, edge_test_file):
         """Test column preview with corrupted file to trigger generic exception."""
         from parquet_mcp.capabilities.parquet_handler import get_column_preview
-        import os
 
         # Create a corrupted file
         corrupted_file = edge_test_file.replace('.parquet', '_corrupt.parquet')
@@ -148,7 +147,6 @@ class TestAggregateTypeCoercion:
     async def test_aggregate_generic_exception(self, edge_test_file):
         """Test aggregate with corrupted file to trigger generic exception."""
         from parquet_mcp.capabilities.parquet_handler import aggregate_column
-        import os
 
         # Create a corrupted file
         corrupted_file = edge_test_file.replace('.parquet', '_agg_corrupt.parquet')

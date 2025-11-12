@@ -6,7 +6,7 @@ import pytest
 import tempfile
 import os
 from implementation.export_handler import export_to_json, export_to_csv, export_to_text, export_summary_report
-from implementation.filter_handler import filter_logs, filter_by_time_range
+from implementation.filter_handler import filter_by_time_range
 from implementation.sort_handler import sort_log_by_timestamp
 from implementation.parallel_processor import parallel_sort_large_file
 from implementation.statistics_handler import analyze_log_statistics

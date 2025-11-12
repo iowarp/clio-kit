@@ -1,8 +1,6 @@
 """Tests for the FastMCP server and tool integration."""
 
 import pytest
-import json
-import os
 import pyarrow as pa
 import pyarrow.parquet as pq
 from unittest.mock import patch

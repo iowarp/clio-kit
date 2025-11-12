@@ -1,7 +1,7 @@
 """Tests for POSIX and MPI-IO operation parsing functions in Darshan parser."""
 
 import pytest
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch
 import os
 import sys
 

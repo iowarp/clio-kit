@@ -2,7 +2,6 @@
 
 import pytest
 import json
-import os
 import pyarrow as pa
 import pyarrow.parquet as pq
 
