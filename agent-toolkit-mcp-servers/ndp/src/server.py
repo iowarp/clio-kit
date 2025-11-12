@@ -286,18 +286,18 @@ async def search_datasets(
 
         # Store total count before limiting
         total_found = len(datasets)
-        
+
         # Convert limit to integer if it's a string
         if isinstance(limit, str):
             try:
                 limit = int(limit)
             except ValueError:
                 limit = None
-        
+
         # Apply limit if specified, or default limit of 20 to prevent huge responses
         effective_limit = limit if limit and limit > 0 else 20
         was_limited = len(datasets) > effective_limit
-        
+
         if len(datasets) > effective_limit:
             datasets = datasets[:effective_limit]
 
