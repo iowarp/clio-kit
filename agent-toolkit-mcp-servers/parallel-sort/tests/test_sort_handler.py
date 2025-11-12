@@ -165,3 +165,47 @@ Invalid line without timestamp
 
         finally:
             os.unlink(temp_path)
+
+    @pytest.mark.asyncio
+    async def test_sort_permission_denied(self):
+        """Test handling of permission denied errors."""
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".log") as f:
+            f.write("2024-01-01 10:00:00 INFO Test")
+            temp_path = f.name
+
+        try:
+            # Remove read permissions
+            os.chmod(temp_path, 0o000)
+
+            result = await sort_log_by_timestamp(temp_path)
+
+            # Should return error
+            assert "error" in result
+
+        finally:
+            # Restore permissions and cleanup
+            os.chmod(temp_path, 0o644)
+            os.unlink(temp_path)
+
+    @pytest.mark.asyncio
+    async def test_sort_all_invalid_lines(self):
+        """Test file with only invalid lines."""
+        test_content = """Invalid line 1
+Invalid line 2
+Invalid line 3"""
+
+        with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".log") as f:
+            f.write(test_content)
+            temp_path = f.name
+
+        try:
+            result = await sort_log_by_timestamp(temp_path)
+
+            assert result["total_lines"] == 3
+            assert result["valid_lines"] == 0
+            assert result["invalid_lines"] == 3
+            assert len(result["sorted_lines"]) == 0
+
+        finally:
+            os.unlink(temp_path)

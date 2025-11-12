@@ -130,20 +130,8 @@ def sample_datasets():
     }
 
 
-@pytest.fixture(autouse=True)
-def reset_global_state():
-    """Reset global state between tests."""
-    from hdf5_mcp import server
-
-    yield
-
-    # Cleanup after each test
-    if server.current_file is not None:
-        try:
-            server.current_file.close()
-        except Exception:
-            pass
-        server.current_file = None
+# NOTE: Removed autouse=True fixture that was causing test hangs
+# by importing server module which initializes global ThreadPoolExecutor
 
 
 @pytest.fixture
