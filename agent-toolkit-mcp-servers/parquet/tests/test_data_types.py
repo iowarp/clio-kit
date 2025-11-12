@@ -40,7 +40,11 @@ async def test_read_slice_numeric_precision(test_parquet_file):
 
     for row in data["data"]:
         for col in schema["columns"]:
-            if col["type"] in numeric_types or "int" in col["type"] or "float" in col["type"]:
+            if (
+                col["type"] in numeric_types
+                or "int" in col["type"]
+                or "float" in col["type"]
+            ):
                 value = row.get(col["name"])
                 if value is not None:
                     # Numeric values should be numbers (int or float)
@@ -130,7 +134,8 @@ async def test_column_preview_special_float_values(test_parquet_file):
     summary_result = await summarize(test_parquet_file)
     summary = json.loads(summary_result)
     available_columns = [
-        col for col in summary["schema"]["columns"]
+        col
+        for col in summary["schema"]["columns"]
         if "float" in col["type"].lower() or "double" in col["type"].lower()
     ]
 

@@ -53,7 +53,9 @@ def _apply_filter(table: pa.Table, filter_dict: Optional[Dict[str, Any]]) -> pa.
         return table
 
 
-def _build_filter_mask(table: pa.Table, filter_dict: Dict[str, Any]) -> Optional[pa.Array]:
+def _build_filter_mask(
+    table: pa.Table, filter_dict: Dict[str, Any]
+) -> Optional[pa.Array]:
     """
     Build a boolean mask from filter specification.
 
@@ -172,18 +174,21 @@ async def summarize(file_path: str) -> str:
         return json.dumps(summary, indent=2)
 
     except FileNotFoundError:
-        return json.dumps({
-            "status": "error",
-            "message": f"File not found: {file_path}"
-        })
+        return json.dumps(
+            {"status": "error", "message": f"File not found: {file_path}"}
+        )
     except Exception as e:
-        return json.dumps({
-            "status": "error",
-            "message": f"Error summarizing Parquet file: {str(e)}"
-        })
+        return json.dumps(
+            {"status": "error", "message": f"Error summarizing Parquet file: {str(e)}"}
+        )
 
 
-def _estimate_slice_size(pq_file: pq.ParquetFile, start_row: int, end_row: int, columns: Optional[List[str]] = None) -> int:
+def _estimate_slice_size(
+    pq_file: pq.ParquetFile,
+    start_row: int,
+    end_row: int,
+    columns: Optional[List[str]] = None,
+) -> int:
     """
     Estimate the JSON serialized size of a slice without reading it.
 
@@ -251,7 +256,7 @@ async def read_slice(
     start_row: int,
     end_row: int,
     columns: Optional[List[str]] = None,
-    filter_json: Optional[str] = None
+    filter_json: Optional[str] = None,
 ) -> str:
     """
     Read a horizontal slice of a Parquet file with optional column projection and filtering.
@@ -277,60 +282,71 @@ async def read_slice(
             try:
                 start_row = int(start_row)
             except ValueError:
-                return json.dumps({
-                    "status": "error",
-                    "message": f"start_row must be an integer, got: '{start_row}'"
-                })
+                return json.dumps(
+                    {
+                        "status": "error",
+                        "message": f"start_row must be an integer, got: '{start_row}'",
+                    }
+                )
         elif isinstance(start_row, float):
             # Convert float to int (common when parameters come from JSON)
             start_row = int(start_row)
         elif not isinstance(start_row, int):
-            return json.dumps({
-                "status": "error",
-                "message": f"start_row must be an integer, got type: {type(start_row).__name__}"
-            })
-        
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"start_row must be an integer, got type: {type(start_row).__name__}",
+                }
+            )
+
         if isinstance(end_row, str):
             try:
                 end_row = int(end_row)
             except ValueError:
-                return json.dumps({
-                    "status": "error",
-                    "message": f"end_row must be an integer, got: '{end_row}'"
-                })
+                return json.dumps(
+                    {
+                        "status": "error",
+                        "message": f"end_row must be an integer, got: '{end_row}'",
+                    }
+                )
         elif isinstance(end_row, float):
             # Convert float to int (common when parameters come from JSON)
             end_row = int(end_row)
         elif not isinstance(end_row, int):
-            return json.dumps({
-                "status": "error",
-                "message": f"end_row must be an integer, got type: {type(end_row).__name__}"
-            })
-        
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"end_row must be an integer, got type: {type(end_row).__name__}",
+                }
+            )
+
         pq_file = pq.ParquetFile(file_path)
         metadata = pq_file.metadata
         total_rows = metadata.num_rows
 
         # Validate input parameters
         if start_row < 0:
-            return json.dumps({
-                "status": "error",
-                "message": "start_row must be >= 0",
-                "suggestion": f"Total rows available: {total_rows}"
-            })
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": "start_row must be >= 0",
+                    "suggestion": f"Total rows available: {total_rows}",
+                }
+            )
 
         if end_row > total_rows:
-            return json.dumps({
-                "status": "error",
-                "message": f"end_row ({end_row}) exceeds total rows ({total_rows})",
-                "suggestion": f"Use end_row <= {total_rows}"
-            })
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"end_row ({end_row}) exceeds total rows ({total_rows})",
+                    "suggestion": f"Use end_row <= {total_rows}",
+                }
+            )
 
         if start_row >= end_row:
-            return json.dumps({
-                "status": "error",
-                "message": "start_row must be less than end_row"
-            })
+            return json.dumps(
+                {"status": "error", "message": "start_row must be less than end_row"}
+            )
 
         # Validate columns if specified
         schema = pq_file.schema_arrow
@@ -339,12 +355,14 @@ async def read_slice(
         if columns is not None:
             invalid_cols = [c for c in columns if c not in available_columns]
             if invalid_cols:
-                return json.dumps({
-                    "status": "error",
-                    "message": f"Invalid columns: {invalid_cols}",
-                    "available_columns": list(available_columns),
-                    "suggestion": "Check column names and try again"
-                })
+                return json.dumps(
+                    {
+                        "status": "error",
+                        "message": f"Invalid columns: {invalid_cols}",
+                        "available_columns": list(available_columns),
+                        "suggestion": "Check column names and try again",
+                    }
+                )
 
         # Parse filter if provided
         filter_dict = None
@@ -352,11 +370,13 @@ async def read_slice(
             try:
                 filter_dict = json.loads(filter_json)
             except json.JSONDecodeError:
-                return json.dumps({
-                    "status": "error",
-                    "message": "Invalid filter JSON format",
-                    "suggestion": "Provide valid JSON filter specification"
-                })
+                return json.dumps(
+                    {
+                        "status": "error",
+                        "message": "Invalid filter JSON format",
+                        "suggestion": "Provide valid JSON filter specification",
+                    }
+                )
 
         # Read the slice
         num_rows = end_row - start_row
@@ -375,34 +395,42 @@ async def read_slice(
         # Final size check (actual)
         max_size_bytes = 16384  # 16KB limit
         json_str = json.dumps(data)
-        actual_size = len(json_str.encode('utf-8'))
+        actual_size = len(json_str.encode("utf-8"))
 
         if actual_size > max_size_bytes:
             # Calculate suggested safe size based on actual payload
             rows_requested = end_row - start_row
             # Use rows_after_filter for bytes_per_row calculation since that's what's in the payload
-            bytes_per_row = actual_size / rows_after_filter if rows_after_filter > 0 else actual_size / rows_requested
-            suggested_safe_rows = int((max_size_bytes / bytes_per_row) * 0.9)  # 90% safety margin
+            bytes_per_row = (
+                actual_size / rows_after_filter
+                if rows_after_filter > 0
+                else actual_size / rows_requested
+            )
+            suggested_safe_rows = int(
+                (max_size_bytes / bytes_per_row) * 0.9
+            )  # 90% safety margin
             suggested_end_row = start_row + suggested_safe_rows
 
-            return json.dumps({
-                "status": "error",
-                "message": f"Actual payload exceeds limit: {actual_size} bytes (limit: {max_size_bytes})",
-                "suggestion": f"Try a smaller slice. Suggested: rows {start_row} to {suggested_end_row} ({suggested_safe_rows} rows)",
-                "metadata": {
-                    "actual_size_bytes": actual_size,
-                    "limit_bytes": max_size_bytes,
-                    "rows_requested": rows_requested,
-                    "rows_after_filter": rows_after_filter,
-                    "bytes_per_row": round(bytes_per_row, 2),
-                    "suggested_safe_rows": suggested_safe_rows,
-                    "suggested_slice": {
-                        "start_row": start_row,
-                        "end_row": suggested_end_row,
-                        "num_rows": suggested_safe_rows
-                    }
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Actual payload exceeds limit: {actual_size} bytes (limit: {max_size_bytes})",
+                    "suggestion": f"Try a smaller slice. Suggested: rows {start_row} to {suggested_end_row} ({suggested_safe_rows} rows)",
+                    "metadata": {
+                        "actual_size_bytes": actual_size,
+                        "limit_bytes": max_size_bytes,
+                        "rows_requested": rows_requested,
+                        "rows_after_filter": rows_after_filter,
+                        "bytes_per_row": round(bytes_per_row, 2),
+                        "suggested_safe_rows": suggested_safe_rows,
+                        "suggested_slice": {
+                            "start_row": start_row,
+                            "end_row": suggested_end_row,
+                            "num_rows": suggested_safe_rows,
+                        },
+                    },
                 }
-            })
+            )
 
         # Build response
         response = {
@@ -412,28 +440,25 @@ async def read_slice(
                 "start_row": start_row,
                 "end_row": end_row,
                 "requested_rows": num_rows,
-                "rows_after_filter": rows_after_filter
+                "rows_after_filter": rows_after_filter,
             },
             "schema": {
                 "columns": [
                     {
                         "name": field.name,
                         "type": str(field.type),
-                        "nullable": field.nullable
+                        "nullable": field.nullable,
                     }
                     for field in table.schema
                 ]
             },
             "data": data,
-            "shape": {
-                "rows": len(data),
-                "columns": len(table.column_names)
-            },
+            "shape": {"rows": len(data), "columns": len(table.column_names)},
             "metadata": {
                 "payload_size_bytes": actual_size,
                 "total_rows_in_file": total_rows,
-                "filter_applied": filter_dict is not None
-            }
+                "filter_applied": filter_dict is not None,
+            },
         }
 
         if filter_dict is not None:
@@ -442,22 +467,20 @@ async def read_slice(
         return json.dumps(response, indent=2)
 
     except FileNotFoundError:
-        return json.dumps({
-            "status": "error",
-            "message": f"File not found: {file_path}"
-        })
+        return json.dumps(
+            {"status": "error", "message": f"File not found: {file_path}"}
+        )
     except Exception as e:
-        return json.dumps({
-            "status": "error",
-            "message": f"Error reading slice from Parquet file: {str(e)}"
-        })
+        return json.dumps(
+            {
+                "status": "error",
+                "message": f"Error reading slice from Parquet file: {str(e)}",
+            }
+        )
 
 
 async def get_column_preview(
-    file_path: str,
-    column_name: str,
-    start_index: int = 0,
-    max_items: int = 100
+    file_path: str, column_name: str, start_index: int = 0, max_items: int = 100
 ) -> str:
     """
     Get a preview of values from a specific column.
@@ -483,26 +506,29 @@ async def get_column_preview(
         # Validate column exists
         available_columns = {field.name for field in schema}
         if column_name not in available_columns:
-            return json.dumps({
-                "status": "error",
-                "message": f"Column not found: {column_name}",
-                "available_columns": list(available_columns),
-                "suggestion": "Check column name and try again"
-            })
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Column not found: {column_name}",
+                    "available_columns": list(available_columns),
+                    "suggestion": "Check column name and try again",
+                }
+            )
 
         # Validate pagination parameters
         if start_index < 0:
-            return json.dumps({
-                "status": "error",
-                "message": "start_index must be >= 0"
-            })
+            return json.dumps(
+                {"status": "error", "message": "start_index must be >= 0"}
+            )
 
         if start_index >= total_rows:
-            return json.dumps({
-                "status": "error",
-                "message": f"start_index ({start_index}) exceeds total rows ({total_rows})",
-                "suggestion": f"Use start_index < {total_rows}"
-            })
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"start_index ({start_index}) exceeds total rows ({total_rows})",
+                    "suggestion": f"Use start_index < {total_rows}",
+                }
+            )
 
         # Constrain max_items to 100
         max_items = min(max_items, 100)
@@ -517,30 +543,40 @@ async def get_column_preview(
         column_data = table.column(column_name)
 
         # Slice to get the requested range
-        column_slice = column_data.slice(offset=start_index, length=end_index - start_index)
+        column_slice = column_data.slice(
+            offset=start_index, length=end_index - start_index
+        )
 
         # Convert to Python list for JSON serialization
         data = column_slice.to_pylist()
 
         # Check payload size
         json_str = json.dumps(data)
-        payload_size = len(json_str.encode('utf-8'))
+        payload_size = len(json_str.encode("utf-8"))
         max_size_bytes = 16384  # 16KB limit
 
         if payload_size > max_size_bytes:
-            return json.dumps({
-                "status": "error",
-                "message": f"Payload exceeds limit: {payload_size} bytes (limit: {max_size_bytes})",
-                "suggestion": "Try reducing max_items",
-                "metadata": {
-                    "column_name": column_name,
-                    "total_values": total_rows,
-                    "available_from_start_index": total_rows - start_index,
-                    "payload_size_bytes": payload_size,
-                    "limit_bytes": max_size_bytes,
-                    "recommended_max_items": max(1, int((max_size_bytes / payload_size) * (end_index - start_index)))
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Payload exceeds limit: {payload_size} bytes (limit: {max_size_bytes})",
+                    "suggestion": "Try reducing max_items",
+                    "metadata": {
+                        "column_name": column_name,
+                        "total_values": total_rows,
+                        "available_from_start_index": total_rows - start_index,
+                        "payload_size_bytes": payload_size,
+                        "limit_bytes": max_size_bytes,
+                        "recommended_max_items": max(
+                            1,
+                            int(
+                                (max_size_bytes / payload_size)
+                                * (end_index - start_index)
+                            ),
+                        ),
+                    },
                 }
-            })
+            )
 
         # Get column type info
         col_field = next((f for f in schema if f.name == column_name), None)
@@ -558,26 +594,24 @@ async def get_column_preview(
                 "end_index": end_index,
                 "num_items": len(data),
                 "total_values": total_rows,
-                "has_more": end_index < total_rows
+                "has_more": end_index < total_rows,
             },
             "metadata": {
                 "payload_size_bytes": payload_size,
-                "limit_bytes": max_size_bytes
-            }
+                "limit_bytes": max_size_bytes,
+            },
         }
 
         return json.dumps(response, indent=2)
 
     except FileNotFoundError:
-        return json.dumps({
-            "status": "error",
-            "message": f"File not found: {file_path}"
-        })
+        return json.dumps(
+            {"status": "error", "message": f"File not found: {file_path}"}
+        )
     except Exception as e:
-        return json.dumps({
-            "status": "error",
-            "message": f"Error getting column preview: {str(e)}"
-        })
+        return json.dumps(
+            {"status": "error", "message": f"Error getting column preview: {str(e)}"}
+        )
 
 
 async def aggregate_column(
@@ -586,7 +620,7 @@ async def aggregate_column(
     operation: str,
     filter_json: Optional[str] = None,
     start_row: Optional[int] = None,
-    end_row: Optional[int] = None
+    end_row: Optional[int] = None,
 ) -> str:
     """
     Compute aggregate statistics on a column with optional filtering and range bounds.
@@ -611,22 +645,34 @@ async def aggregate_column(
         # Validate column exists
         available_columns = {field.name for field in schema}
         if column_name not in available_columns:
-            return json.dumps({
-                "status": "error",
-                "message": f"Column not found: {column_name}",
-                "available_columns": list(available_columns),
-                "suggestion": "Check column name and try again"
-            })
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Column not found: {column_name}",
+                    "available_columns": list(available_columns),
+                    "suggestion": "Check column name and try again",
+                }
+            )
 
         # Validate operation
-        valid_operations = ["min", "max", "mean", "sum", "count", "std", "count_distinct"]
+        valid_operations = [
+            "min",
+            "max",
+            "mean",
+            "sum",
+            "count",
+            "std",
+            "count_distinct",
+        ]
         if operation not in valid_operations:
-            return json.dumps({
-                "status": "error",
-                "message": f"Invalid operation: {operation}",
-                "valid_operations": valid_operations,
-                "suggestion": "Use one of the supported aggregation operations"
-            })
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Invalid operation: {operation}",
+                    "valid_operations": valid_operations,
+                    "suggestion": "Use one of the supported aggregation operations",
+                }
+            )
 
         # Validate and coerce start_row and end_row types
         if start_row is not None:
@@ -634,36 +680,44 @@ async def aggregate_column(
                 try:
                     start_row = int(start_row)
                 except ValueError:
-                    return json.dumps({
-                        "status": "error",
-                        "message": f"start_row must be an integer, got: '{start_row}'"
-                    })
+                    return json.dumps(
+                        {
+                            "status": "error",
+                            "message": f"start_row must be an integer, got: '{start_row}'",
+                        }
+                    )
             elif isinstance(start_row, float):
                 # Convert float to int (common when parameters come from JSON)
                 start_row = int(start_row)
             elif not isinstance(start_row, int):
-                return json.dumps({
-                    "status": "error",
-                    "message": f"start_row must be an integer, got type: {type(start_row).__name__}"
-                })
-        
+                return json.dumps(
+                    {
+                        "status": "error",
+                        "message": f"start_row must be an integer, got type: {type(start_row).__name__}",
+                    }
+                )
+
         if end_row is not None:
             if isinstance(end_row, str):
                 try:
                     end_row = int(end_row)
                 except ValueError:
-                    return json.dumps({
-                        "status": "error",
-                        "message": f"end_row must be an integer, got: '{end_row}'"
-                    })
+                    return json.dumps(
+                        {
+                            "status": "error",
+                            "message": f"end_row must be an integer, got: '{end_row}'",
+                        }
+                    )
             elif isinstance(end_row, float):
                 # Convert float to int (common when parameters come from JSON)
                 end_row = int(end_row)
             elif not isinstance(end_row, int):
-                return json.dumps({
-                    "status": "error",
-                    "message": f"end_row must be an integer, got type: {type(end_row).__name__}"
-                })
+                return json.dumps(
+                    {
+                        "status": "error",
+                        "message": f"end_row must be an integer, got type: {type(end_row).__name__}",
+                    }
+                )
 
         # Parse filter if provided
         filter_dict = None
@@ -671,20 +725,24 @@ async def aggregate_column(
             try:
                 filter_dict = json.loads(filter_json)
             except json.JSONDecodeError:
-                return json.dumps({
-                    "status": "error",
-                    "message": "Invalid filter JSON format",
-                    "suggestion": "Provide valid JSON filter specification"
-                })
+                return json.dumps(
+                    {
+                        "status": "error",
+                        "message": "Invalid filter JSON format",
+                        "suggestion": "Provide valid JSON filter specification",
+                    }
+                )
 
         # Read table (full or range)
         if start_row is not None and end_row is not None:
             if start_row < 0 or end_row > total_rows or start_row >= end_row:
-                return json.dumps({
-                    "status": "error",
-                    "message": f"Invalid range: start_row={start_row}, end_row={end_row}",
-                    "suggestion": f"Use 0 <= start_row < end_row <= {total_rows}"
-                })
+                return json.dumps(
+                    {
+                        "status": "error",
+                        "message": f"Invalid range: start_row={start_row}, end_row={end_row}",
+                        "suggestion": f"Use 0 <= start_row < end_row <= {total_rows}",
+                    }
+                )
             table = pq.read_table(file_path)
             table = table.slice(offset=start_row, length=end_row - start_row)
         else:
@@ -697,15 +755,17 @@ async def aggregate_column(
         rows_after_filter = len(table)
 
         if rows_after_filter == 0:
-            return json.dumps({
-                "status": "error",
-                "message": "No rows remain after filtering",
-                "metadata": {
-                    "rows_before_filter": rows_before_filter,
-                    "rows_after_filter": 0,
-                    "filter_applied": filter_dict is not None
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": "No rows remain after filtering",
+                    "metadata": {
+                        "rows_before_filter": rows_before_filter,
+                        "rows_after_filter": 0,
+                        "filter_applied": filter_dict is not None,
+                    },
                 }
-            })
+            )
 
         # Get column data
         column = table[column_name]
@@ -730,11 +790,13 @@ async def aggregate_column(
                 result = None
 
         except Exception as e:
-            return json.dumps({
-                "status": "error",
-                "message": f"Error computing {operation}: {str(e)}",
-                "suggestion": f"Ensure column '{column_name}' has appropriate data type for {operation}"
-            })
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"Error computing {operation}: {str(e)}",
+                    "suggestion": f"Ensure column '{column_name}' has appropriate data type for {operation}",
+                }
+            )
 
         # Get column type
         col_field = next((f for f in schema if f.name == column_name), None)
@@ -751,9 +813,9 @@ async def aggregate_column(
                 "rows_processed": rows_after_filter,
                 "rows_before_filter": rows_before_filter,
                 "filter_applied": filter_dict is not None,
-                "null_count": pc.count(column, mode='only_null').as_py(),
-                "data_type": col_type
-            }
+                "null_count": pc.count(column, mode="only_null").as_py(),
+                "data_type": col_type,
+            },
         }
 
         if filter_dict is not None:
@@ -762,18 +824,16 @@ async def aggregate_column(
         if start_row is not None and end_row is not None:
             response["metadata"]["range_constraint"] = {
                 "start_row": start_row,
-                "end_row": end_row
+                "end_row": end_row,
             }
 
         return json.dumps(response, indent=2)
 
     except FileNotFoundError:
-        return json.dumps({
-            "status": "error",
-            "message": f"File not found: {file_path}"
-        })
+        return json.dumps(
+            {"status": "error", "message": f"File not found: {file_path}"}
+        )
     except Exception as e:
-        return json.dumps({
-            "status": "error",
-            "message": f"Error computing aggregation: {str(e)}"
-        })
+        return json.dumps(
+            {"status": "error", "message": f"Error computing aggregation: {str(e)}"}
+        )

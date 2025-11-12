@@ -1,6 +1,5 @@
 """Tests for MCP integration and basic functionality."""
 
-
 # Import the server module
 import os
 import sys

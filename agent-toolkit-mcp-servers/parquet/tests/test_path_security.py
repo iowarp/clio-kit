@@ -215,5 +215,8 @@ async def test_read_slice_relative_vs_absolute_paths(test_parquet_file):
     assert data_abs["status"] == "success"
 
     # Verify path is consistent
-    assert absolute_path in data_abs["file_path"] or data_abs["file_path"] in absolute_path or \
-           os.path.samefile(absolute_path, data_abs["file_path"])
+    assert (
+        absolute_path in data_abs["file_path"]
+        or data_abs["file_path"] in absolute_path
+        or os.path.samefile(absolute_path, data_abs["file_path"])
+    )

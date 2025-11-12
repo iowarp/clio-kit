@@ -38,7 +38,7 @@ class NDPClient:
         self.max_retries = 3
         self.retry_delay = 1.0
 
-    async def _make_request( # type: ignore[return]
+    async def _make_request(  # type: ignore[return]
         self,
         method: str,
         endpoint: str,
@@ -59,7 +59,7 @@ class NDPClient:
                         raise ValueError(f"Unsupported HTTP method: {method}")
 
                     response.raise_for_status()
-                    return response.json() # type: ignore[no-any-return]
+                    return response.json()  # type: ignore[no-any-return]
 
             except httpx.TimeoutException:
                 if attempt < self.max_retries - 1:
@@ -96,12 +96,12 @@ class NDPClient:
 
         # Add terms as query parameters
         for term in terms:
-            params.setdefault("terms", []).append(term) # type: ignore[attr-defined, arg-type]
+            params.setdefault("terms", []).append(term)  # type: ignore[attr-defined, arg-type]
 
         # Add keys if provided
         if keys:
             for key in keys:
-                params.setdefault("keys", []).append(key) # type: ignore[attr-defined, arg-type]
+                params.setdefault("keys", []).append(key)  # type: ignore[attr-defined, arg-type]
 
         result = await self._make_request("GET", "/search", params=params)
 
@@ -147,7 +147,7 @@ class NDPClient:
         if search_term:
             search_data["search_term"] = search_term
         if filter_list:
-            search_data["filter_list"] = filter_list # type: ignore[assignment]
+            search_data["filter_list"] = filter_list  # type: ignore[assignment]
         if timestamp:
             search_data["timestamp"] = timestamp
 
@@ -424,7 +424,7 @@ def main() -> None:
 
     if len(sys.argv) > 1 and sys.argv[1] == "--fastapi":
         # FastAPI mode for development/testing
-        mcp.run(transport="fastapi", host="localhost", port=8000) # type: ignore[arg-type]
+        mcp.run(transport="fastapi", host="localhost", port=8000)  # type: ignore[arg-type]
     else:
         # Standard stdio mode for production
         mcp.run(transport="stdio")

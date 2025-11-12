@@ -14,9 +14,7 @@ from parquet_mcp.capabilities.parquet_handler import (
 @pytest.fixture
 def non_parquet_text_file():
     """Create a temporary text file that is not Parquet."""
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".txt", delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
         f.write("This is just plain text, not a Parquet file\n")
         f.write("Line 2\nLine 3\n")
         return f.name
@@ -25,9 +23,7 @@ def non_parquet_text_file():
 @pytest.fixture
 def non_parquet_json_file():
     """Create a temporary JSON file that is not Parquet."""
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".json", delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         json.dump({"key": "value", "number": 42}, f)
         return f.name
 
@@ -35,9 +31,7 @@ def non_parquet_json_file():
 @pytest.fixture
 def corrupted_parquet_file():
     """Create a temporary corrupted Parquet file (partial/truncated)."""
-    with tempfile.NamedTemporaryFile(
-        mode="wb", suffix=".parquet", delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="wb", suffix=".parquet", delete=False) as f:
         # Write some random bytes that start like Parquet but are truncated
         f.write(b"PAR1")  # Parquet magic number
         f.write(b"garbage data that is not valid parquet")
@@ -47,9 +41,7 @@ def corrupted_parquet_file():
 @pytest.fixture
 def empty_file():
     """Create an empty file."""
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".parquet", delete=False
-    ) as f:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".parquet", delete=False) as f:
         return f.name  # Leave empty
 
 
@@ -117,7 +109,9 @@ async def test_read_slice_text_file(non_parquet_text_file):
 
     # Should return error - text file is not a valid Parquet file
     assert data["status"] == "error"
-    assert "magic bytes" in data["message"].lower() or "parquet" in data["message"].lower()
+    assert (
+        "magic bytes" in data["message"].lower() or "parquet" in data["message"].lower()
+    )
 
     # Cleanup
     os.unlink(non_parquet_text_file)

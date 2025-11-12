@@ -46,9 +46,7 @@ async def test_get_column_preview_negative_start_index(test_parquet_file):
 
     if len(available_columns) > 0:
         result = await get_column_preview(
-            test_parquet_file,
-            available_columns[0],
-            start_index=-1
+            test_parquet_file, available_columns[0], start_index=-1
         )
         data = json.loads(result)
 
@@ -66,9 +64,7 @@ async def test_get_column_preview_start_index_exceeds_total(test_parquet_file):
 
     if len(available_columns) > 0:
         result = await get_column_preview(
-            test_parquet_file,
-            available_columns[0],
-            start_index=total_rows + 100
+            test_parquet_file, available_columns[0], start_index=total_rows + 100
         )
         data = json.loads(result)
 
@@ -87,10 +83,7 @@ async def test_get_column_preview_pagination(test_parquet_file):
     if len(available_columns) > 0 and total_rows > 50:
         # Get first page
         result1 = await get_column_preview(
-            test_parquet_file,
-            available_columns[0],
-            start_index=0,
-            max_items=20
+            test_parquet_file, available_columns[0], start_index=0, max_items=20
         )
         data1 = json.loads(result1)
 
@@ -102,10 +95,7 @@ async def test_get_column_preview_pagination(test_parquet_file):
 
         # Get second page
         result2 = await get_column_preview(
-            test_parquet_file,
-            available_columns[0],
-            start_index=20,
-            max_items=20
+            test_parquet_file, available_columns[0], start_index=20, max_items=20
         )
         data2 = json.loads(result2)
 
@@ -127,9 +117,7 @@ async def test_get_column_preview_max_items_constraint(test_parquet_file):
     if len(available_columns) > 0:
         # Request more than 100 items
         result = await get_column_preview(
-            test_parquet_file,
-            available_columns[0],
-            max_items=500
+            test_parquet_file, available_columns[0], max_items=500
         )
         data = json.loads(result)
 
@@ -190,10 +178,7 @@ async def test_get_column_preview_pagination_info_complete(test_parquet_file):
 
     if len(available_columns) > 0:
         result = await get_column_preview(
-            test_parquet_file,
-            available_columns[0],
-            start_index=0,
-            max_items=50
+            test_parquet_file, available_columns[0], start_index=0, max_items=50
         )
         data = json.loads(result)
 
@@ -205,7 +190,10 @@ async def test_get_column_preview_pagination_info_complete(test_parquet_file):
         assert "total_values" in pagination
         assert "has_more" in pagination
         assert pagination["num_items"] <= 50
-        assert pagination["end_index"] - pagination["start_index"] == pagination["num_items"]
+        assert (
+            pagination["end_index"] - pagination["start_index"]
+            == pagination["num_items"]
+        )
 
 
 @pytest.mark.asyncio
@@ -218,7 +206,9 @@ async def test_get_column_preview_payload_exceeds_limit():
     large_file = "datasets/batch_large_strings.parquet"
 
     # Try to get 100 items (should fail due to size)
-    result = await get_column_preview(large_file, "large_text", start_index=0, max_items=100)
+    result = await get_column_preview(
+        large_file, "large_text", start_index=0, max_items=100
+    )
     data = json.loads(result)
 
     assert data["status"] == "error"
@@ -235,10 +225,7 @@ async def test_get_column_preview_payload_exceeds_limit():
 
     # Now try with the recommended size - should succeed
     result2 = await get_column_preview(
-        large_file,
-        "large_text",
-        start_index=0,
-        max_items=recommended
+        large_file, "large_text", start_index=0, max_items=recommended
     )
     data2 = json.loads(result2)
 

@@ -42,8 +42,8 @@ class TestNDPClientEdgeCases:
     async def test_make_request_max_retries_exceeded(self, client):
         """Test behavior when max retries is exceeded."""
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.get.side_effect = (
-                Exception("Connection failed")
+            mock_client.return_value.__aenter__.return_value.get.side_effect = Exception(
+                "Connection failed"
             )
 
             with patch("asyncio.sleep", new=AsyncMock()):

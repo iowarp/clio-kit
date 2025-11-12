@@ -190,7 +190,14 @@ async def test_read_slice_response_contains_required_fields(test_parquet_file):
     data = json.loads(result)
 
     if data["status"] == "success":
-        required_fields = ["status", "file_path", "slice_info", "schema", "data", "shape"]
+        required_fields = [
+            "status",
+            "file_path",
+            "slice_info",
+            "schema",
+            "data",
+            "shape",
+        ]
         for field in required_fields:
             assert field in data, f"Missing required field: {field}"
 
@@ -209,7 +216,13 @@ async def test_column_preview_response_contains_required_fields(test_parquet_fil
         data = json.loads(result)
 
         if data["status"] == "success":
-            required_fields = ["status", "column_name", "column_type", "data", "pagination"]
+            required_fields = [
+                "status",
+                "column_name",
+                "column_type",
+                "data",
+                "pagination",
+            ]
             for field in required_fields:
                 assert field in data, f"Missing required field: {field}"
 

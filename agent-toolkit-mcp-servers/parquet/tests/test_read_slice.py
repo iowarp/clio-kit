@@ -37,10 +37,7 @@ async def test_read_slice_with_columns(test_parquet_file):
     if len(available_columns) > 0:
         # Test with a single column
         result = await read_slice(
-            test_parquet_file,
-            start_row=0,
-            end_row=5,
-            columns=[available_columns[0]]
+            test_parquet_file, start_row=0, end_row=5, columns=[available_columns[0]]
         )
         data = json.loads(result)
 
@@ -53,10 +50,7 @@ async def test_read_slice_with_columns(test_parquet_file):
 async def test_read_slice_invalid_column(test_parquet_file):
     """Test read_slice with an invalid column name."""
     result = await read_slice(
-        test_parquet_file,
-        start_row=0,
-        end_row=10,
-        columns=["nonexistent_column"]
+        test_parquet_file, start_row=0, end_row=10, columns=["nonexistent_column"]
     )
     data = json.loads(result)
 

@@ -963,7 +963,10 @@ async def hdf5_batch_read(
 @with_error_handling
 @with_performance_tracking
 async def hdf5_stream_data(
-    path: str, chunk_size: int = 1024, max_chunks: int = 100, ctx: Optional[Context] = None
+    path: str,
+    chunk_size: int = 1024,
+    max_chunks: int = 100,
+    ctx: Optional[Context] = None,
 ) -> str:
     """Stream large datasets efficiently with memory management.
 
@@ -1189,7 +1192,9 @@ async def hdf5_aggregate_stats(
 )
 @with_error_handling
 @with_performance_tracking
-async def analyze_dataset_structure(path: str = "/", ctx: Optional[Context] = None) -> str:
+async def analyze_dataset_structure(
+    path: str = "/", ctx: Optional[Context] = None
+) -> str:
     """Analyze and understand file organization and data patterns with AI insights.
 
     Args:
@@ -1243,7 +1248,7 @@ async def analyze_dataset_structure(path: str = "/", ctx: Optional[Context] = No
                     f"Dataset info: {', '.join(dataset_info[:5])}. "
                     f"What patterns do you observe and what might this data be used for?"
                 )
-                analysis += f"\n\n🤖 AI Insights:\n{llm_response.text}\n" # type: ignore[union-attr]
+                analysis += f"\n\n🤖 AI Insights:\n{llm_response.text}\n"  # type: ignore[union-attr]
             except ValueError as e:
                 # Client doesn't support sampling
                 logger.debug(f"Sampling not supported: {e}")
@@ -1278,7 +1283,7 @@ async def analyze_dataset_structure(path: str = "/", ctx: Optional[Context] = No
                     f"Shape {obj.shape}, dtype {obj.dtype}, size {obj.nbytes / (1024 * 1024):.2f} MB. "
                     f"What might this data represent?"
                 )
-                analysis += f"\n\n🤖 AI Insights:\n{llm_response.text}\n" # type: ignore[union-attr]
+                analysis += f"\n\n🤖 AI Insights:\n{llm_response.text}\n"  # type: ignore[union-attr]
             except ValueError as e:
                 logger.debug(f"Sampling not supported: {e}")
             except Exception as e:
@@ -1306,7 +1311,9 @@ async def analyze_dataset_structure(path: str = "/", ctx: Optional[Context] = No
 @with_error_handling
 @with_performance_tracking
 async def find_similar_datasets(
-    reference_path: str, similarity_threshold: float = 0.8, ctx: Optional[Context] = None
+    reference_path: str,
+    similarity_threshold: float = 0.8,
+    ctx: Optional[Context] = None,
 ) -> str:
     """Find datasets with similar characteristics to a reference dataset with AI analysis.
 
@@ -1355,7 +1362,7 @@ async def find_similar_datasets(
                 )
 
     actual_file = current_file.file if hasattr(current_file, "file") else current_file
-    actual_file.visititems(check_dataset) # type: ignore[union-attr]
+    actual_file.visititems(check_dataset)  # type: ignore[union-attr]
 
     similar_datasets.sort(key=lambda x: x["similarity"], reverse=True)
 
@@ -1386,7 +1393,7 @@ async def find_similar_datasets(
                     f"{similar_paths}. "
                     f"What might these similar datasets represent?"
                 )
-                result += f"\n\n🤖 AI Analysis:\n{llm_response.text}\n" # type: ignore[union-attr]
+                result += f"\n\n🤖 AI Analysis:\n{llm_response.text}\n"  # type: ignore[union-attr]
             except ValueError as e:
                 logger.debug(f"Sampling not supported: {e}")
             except Exception as e:
@@ -1412,7 +1419,9 @@ async def find_similar_datasets(
 )
 @with_error_handling
 @with_performance_tracking
-async def suggest_next_exploration(current_path: str = "/", ctx: Optional[Context] = None) -> str:
+async def suggest_next_exploration(
+    current_path: str = "/", ctx: Optional[Context] = None
+) -> str:
     """Suggest interesting data to explore next based on current location with AI recommendations.
 
     Args:
@@ -1483,7 +1492,7 @@ async def suggest_next_exploration(current_path: str = "/", ctx: Optional[Contex
             except Exception:
                 continue
 
-    suggestions.sort(key=lambda x: x["score"], reverse=True) # type: ignore[arg-type, return-value]
+    suggestions.sort(key=lambda x: x["score"], reverse=True)  # type: ignore[arg-type, return-value]
 
     result = f"Exploration suggestions from '{current_path}':\n\n"
     if suggestions:
@@ -1504,7 +1513,7 @@ async def suggest_next_exploration(current_path: str = "/", ctx: Optional[Contex
                     f"{suggestion_list}, "
                     f"what would you recommend exploring first and why?"
                 )
-                result += f"\n🤖 AI Recommendations:\n{llm_response.text}\n" # type: ignore[union-attr]
+                result += f"\n🤖 AI Recommendations:\n{llm_response.text}\n"  # type: ignore[union-attr]
             except ValueError as e:
                 logger.debug(f"Sampling not supported: {e}")
             except Exception as e:
@@ -1555,7 +1564,7 @@ async def identify_io_bottlenecks(
         actual_file = (
             current_file.file if hasattr(current_file, "file") else current_file
         )
-        actual_file.visititems(collect_datasets) # type: ignore[union-attr]
+        actual_file.visititems(collect_datasets)  # type: ignore[union-attr]
         analysis_paths = analysis_paths[:10]
 
     bottlenecks = []
@@ -1607,7 +1616,7 @@ async def identify_io_bottlenecks(
                     f"What specific optimization strategies would you recommend to address these issues?"
                 )
                 result += (
-                    f"\n🤖 AI Optimization Recommendations:\n{llm_response.text}\n" # type: ignore[union-attr]
+                    f"\n🤖 AI Optimization Recommendations:\n{llm_response.text}\n"  # type: ignore[union-attr]
                 )
             except ValueError as e:
                 logger.debug(f"Sampling not supported: {e}")
@@ -1826,11 +1835,11 @@ async def export_dataset(
         try:
             format_result = await ctx.elicit(
                 "What format should I export to?",
-                response_type=["csv", "json", "numpy"], # type: ignore[arg-type]
+                response_type=["csv", "json", "numpy"],  # type: ignore[arg-type]
             )
 
             if format_result.action == "accept":
-                export_format = format_result.data # type: ignore[assignment]
+                export_format = format_result.data  # type: ignore[assignment]
             elif format_result.action == "decline":
                 return "Export declined by user"
             else:  # cancel

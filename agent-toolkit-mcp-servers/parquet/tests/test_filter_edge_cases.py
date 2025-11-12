@@ -12,6 +12,7 @@ from parquet_mcp.capabilities.parquet_handler import read_slice
 
 # SUITE 9: Edge Cases and Error Handling (13 tests)
 
+
 @pytest.mark.asyncio
 async def test_filter_null_comparison():
     """Test filter behavior with NULL values in comparisons."""
@@ -21,7 +22,7 @@ async def test_filter_null_comparison():
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -35,10 +36,7 @@ async def test_filter_null_comparison():
 async def test_filter_empty_string():
     """Test handling of empty string in filter."""
     result = await read_slice(
-        file_path="datasets/batch_1.parquet",
-        start_row=0,
-        end_row=100,
-        filter_json=""
+        file_path="datasets/batch_1.parquet", start_row=0, end_row=100, filter_json=""
     )
     data = json.loads(result)
 
@@ -54,7 +52,7 @@ async def test_filter_whitespace_only():
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json="   \t\n  "
+        filter_json="   \t\n  ",
     )
     data = json.loads(result)
 
@@ -66,20 +64,25 @@ async def test_filter_whitespace_only():
 async def test_filter_very_long_expression():
     """Test handling of very long filter expression."""
     # Build a long OR chain
-    or_conditions = [{"column": "event_id", "op": "equal", "value": i} for i in range(100)]
+    or_conditions = [
+        {"column": "event_id", "op": "equal", "value": i} for i in range(100)
+    ]
     filter_spec = json.dumps({"or": or_conditions})
 
     result = await read_slice(
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=200,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
     assert data["status"] in ["success", "error"]
     if data["status"] == "error":
-        assert "too long" in data["message"].lower() or "complex" in data["message"].lower()
+        assert (
+            "too long" in data["message"].lower()
+            or "complex" in data["message"].lower()
+        )
 
 
 @pytest.mark.asyncio
@@ -91,7 +94,7 @@ async def test_filter_unicode():
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -101,12 +104,14 @@ async def test_filter_unicode():
 @pytest.mark.asyncio
 async def test_filter_case_sensitivity():
     """Test that filter is case-sensitive for column names."""
-    filter_spec = json.dumps({"column": "ZENITH", "op": "less", "value": 1.0})  # Wrong case
+    filter_spec = json.dumps(
+        {"column": "ZENITH", "op": "less", "value": 1.0}
+    )  # Wrong case
     result = await read_slice(
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -124,7 +129,7 @@ async def test_filter_division_by_zero():
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -140,7 +145,7 @@ async def test_filter_boolean_column():
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -157,7 +162,7 @@ async def test_filter_scientific_notation():
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -169,12 +174,14 @@ async def test_filter_scientific_notation():
 @pytest.mark.asyncio
 async def test_filter_negative_numbers():
     """Test filter with negative numbers."""
-    filter_spec = json.dumps({"column": "time", "op": "greater", "value": -1})  # All should pass if time is positive
+    filter_spec = json.dumps(
+        {"column": "time", "op": "greater", "value": -1}
+    )  # All should pass if time is positive
     result = await read_slice(
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -184,12 +191,14 @@ async def test_filter_negative_numbers():
 @pytest.mark.asyncio
 async def test_filter_float_precision():
     """Test filter with high-precision float."""
-    filter_spec = json.dumps({"column": "zenith", "op": "less", "value": 0.2924767344867341})
+    filter_spec = json.dumps(
+        {"column": "zenith", "op": "less", "value": 0.2924767344867341}
+    )
     result = await read_slice(
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=200,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -206,7 +215,7 @@ async def test_filter_special_characters():
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -228,7 +237,7 @@ async def test_filter_extra_whitespace_in_json():
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -238,4 +247,3 @@ async def test_filter_extra_whitespace_in_json():
         for row in data["data"]:
             if "zenith" in row:
                 assert row["zenith"] < 1.0
-

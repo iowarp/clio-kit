@@ -276,7 +276,11 @@ async def test_column_preview_consistency_across_ranges(test_parquet_file):
         data3 = json.loads(result3)
 
         # Items 5-9 should be identical
-        if data1["status"] == "success" and data2["status"] == "success" and data3["status"] == "success":
+        if (
+            data1["status"] == "success"
+            and data2["status"] == "success"
+            and data3["status"] == "success"
+        ):
             for i in range(5):
                 assert data1["data"][5 + i] == data2["data"][i]
                 assert data1["data"][5 + i] == data3["data"][5 + i]

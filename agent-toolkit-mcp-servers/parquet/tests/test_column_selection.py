@@ -168,7 +168,9 @@ async def test_read_slice_special_characters_in_columns(test_parquet_file):
     available_columns = [col["name"] for col in summary["schema"]["columns"]]
 
     # Check if any columns have special characters
-    special_char_cols = [col for col in available_columns if not col.replace("_", "").isalnum()]
+    special_char_cols = [
+        col for col in available_columns if not col.replace("_", "").isalnum()
+    ]
 
     if len(special_char_cols) > 0:
         result = await read_slice(

@@ -6,13 +6,15 @@ from parquet_mcp.capabilities.parquet_handler import (
     summarize,
     read_slice,
     get_column_preview,
-    aggregate_column
+    aggregate_column,
 )
 
 mcp = FastMCP("parquet-mcp")
 
 
-@mcp.tool(description="Return structured JSON with Parquet schema, row count, and file size")
+@mcp.tool(
+    description="Return structured JSON with Parquet schema, row count, and file size"
+)
 async def summarize_tool(file_path: str) -> str:
     """
     Summarize a Parquet file's structure and metadata.
@@ -26,13 +28,15 @@ async def summarize_tool(file_path: str) -> str:
     return await summarize(file_path)
 
 
-@mcp.tool(description="Read a horizontal slice of a Parquet file with optional column projection and filtering")
+@mcp.tool(
+    description="Read a horizontal slice of a Parquet file with optional column projection and filtering"
+)
 async def read_slice_tool(
     file_path: str,
     start_row: int,
     end_row: int,
     columns: Optional[List[str]] = None,
-    filter_json: Optional[str] = None
+    filter_json: Optional[str] = None,
 ) -> str:
     """
     Read a specific range of rows from a Parquet file with optional column filtering and row filtering.
@@ -51,8 +55,12 @@ async def read_slice_tool(
     return await read_slice(file_path, start_row, end_row, columns, filter_json)
 
 
-@mcp.tool(description="Get a preview of values from a specific column with pagination support")
-async def get_column_preview_tool(file_path: str, column_name: str, start_index: int = 0, max_items: int = 100) -> str:
+@mcp.tool(
+    description="Get a preview of values from a specific column with pagination support"
+)
+async def get_column_preview_tool(
+    file_path: str, column_name: str, start_index: int = 0, max_items: int = 100
+) -> str:
     """
     Get a preview of values from a named column in a Parquet file.
 
@@ -68,14 +76,16 @@ async def get_column_preview_tool(file_path: str, column_name: str, start_index:
     return await get_column_preview(file_path, column_name, start_index, max_items)
 
 
-@mcp.tool(description="Compute aggregate statistics on a column with optional filtering")
+@mcp.tool(
+    description="Compute aggregate statistics on a column with optional filtering"
+)
 async def aggregate_column_tool(
     file_path: str,
     column_name: str,
     operation: str,
     filter_json: Optional[str] = None,
     start_row: Optional[Union[int, float]] = None,
-    end_row: Optional[Union[int, float]] = None
+    end_row: Optional[Union[int, float]] = None,
 ) -> str:
     """
     Compute aggregate statistics on a column with optional filtering and range bounds.
@@ -92,7 +102,9 @@ async def aggregate_column_tool(
     Returns:
         JSON string with aggregation result and metadata
     """
-    return await aggregate_column(file_path, column_name, operation, filter_json, start_row, end_row)
+    return await aggregate_column(
+        file_path, column_name, operation, filter_json, start_row, end_row
+    )
 
 
 def main():
@@ -103,7 +115,7 @@ def main():
     # Configure logging
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
     logger = logging.getLogger(__name__)
 

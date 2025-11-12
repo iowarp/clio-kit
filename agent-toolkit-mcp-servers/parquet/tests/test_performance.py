@@ -9,13 +9,11 @@ Run with: pytest -m slow
 import json
 import time
 import pytest
-from parquet_mcp.capabilities.parquet_handler import (
-    read_slice,
-    aggregate_column
-)
+from parquet_mcp.capabilities.parquet_handler import read_slice, aggregate_column
 
 
 # SUITE 10: Aggregation Performance (6 tests)
+
 
 @pytest.mark.asyncio
 @pytest.mark.slow
@@ -23,12 +21,10 @@ async def test_aggregate_min_performance():
     """Test MIN aggregation performance."""
     start = time.time()
     result = await aggregate_column(
-        file_path="datasets/train_meta.parquet",
-        column_name="zenith",
-        operation="min"
+        file_path="datasets/train_meta.parquet", column_name="zenith", operation="min"
     )
     elapsed = time.time() - start
-    
+
     data = json.loads(result)
     assert data["status"] == "success"
     assert isinstance(data["result"], float)
@@ -41,12 +37,10 @@ async def test_aggregate_max_performance():
     """Test MAX aggregation performance."""
     start = time.time()
     result = await aggregate_column(
-        file_path="datasets/train_meta.parquet",
-        column_name="azimuth",
-        operation="max"
+        file_path="datasets/train_meta.parquet", column_name="azimuth", operation="max"
     )
     elapsed = time.time() - start
-    
+
     data = json.loads(result)
     assert data["status"] == "success"
     assert isinstance(data["result"], float)
@@ -63,10 +57,10 @@ async def test_aggregate_with_filter_performance():
         file_path="datasets/train_meta.parquet",
         column_name="event_id",
         operation="count",
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     elapsed = time.time() - start
-    
+
     data = json.loads(result)
     assert data["status"] == "success"
     assert isinstance(data["result"], int)
@@ -83,7 +77,7 @@ async def test_count_distinct_performance():
         column_name="sensor_id",
         operation="count_distinct",
         start_row=0,
-        end_row=2000
+        end_row=2000,
     )
     elapsed = time.time() - start
 
@@ -102,9 +96,7 @@ async def test_sequential_aggregations_performance():
     start = time.time()
     for op in operations:
         result = await aggregate_column(
-            file_path="datasets/train_meta.parquet",
-            column_name="zenith",
-            operation=op
+            file_path="datasets/train_meta.parquet", column_name="zenith", operation=op
         )
         data = json.loads(result)
         assert data["status"] == "success"
@@ -118,22 +110,24 @@ async def test_sequential_aggregations_performance():
 @pytest.mark.slow
 async def test_aggregate_complex_filter_performance():
     """Test aggregation with complex filter performance."""
-    filter_spec = json.dumps({
-        "and": [
-            {"column": "zenith", "op": "greater", "value": 1.0},
-            {"column": "zenith", "op": "less", "value": 2.0},
-            {"column": "batch_id", "op": "in", "values": [1, 2, 3]}
-        ]
-    })
+    filter_spec = json.dumps(
+        {
+            "and": [
+                {"column": "zenith", "op": "greater", "value": 1.0},
+                {"column": "zenith", "op": "less", "value": 2.0},
+                {"column": "batch_id", "op": "in", "values": [1, 2, 3]},
+            ]
+        }
+    )
     start = time.time()
     result = await aggregate_column(
         file_path="datasets/train_meta.parquet",
         column_name="azimuth",
         operation="mean",
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     elapsed = time.time() - start
-    
+
     data = json.loads(result)
     assert data["status"] == "success"
     assert isinstance(data["result"], float)
@@ -141,6 +135,7 @@ async def test_aggregate_complex_filter_performance():
 
 
 # SUITE 11: Filtering Performance (6 tests)
+
 
 @pytest.mark.asyncio
 @pytest.mark.slow
@@ -152,7 +147,7 @@ async def test_filter_large_file_performance():
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=100000,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     elapsed = time.time() - start
 
@@ -165,24 +160,26 @@ async def test_filter_large_file_performance():
 @pytest.mark.slow
 async def test_complex_filter_performance():
     """Test complex multi-condition filter performance."""
-    filter_spec = json.dumps({
-        "and": [
-            {
-                "or": [
-                    {"column": "azimuth", "op": "greater", "value": 5.0},
-                    {"column": "azimuth", "op": "less", "value": 1.0}
-                ]
-            },
-            {"column": "zenith", "op": "less", "value": 1.5},
-            {"column": "batch_id", "op": "in", "values": [1, 2, 3]}
-        ]
-    })
+    filter_spec = json.dumps(
+        {
+            "and": [
+                {
+                    "or": [
+                        {"column": "azimuth", "op": "greater", "value": 5.0},
+                        {"column": "azimuth", "op": "less", "value": 1.0},
+                    ]
+                },
+                {"column": "zenith", "op": "less", "value": 1.5},
+                {"column": "batch_id", "op": "in", "values": [1, 2, 3]},
+            ]
+        }
+    )
     start = time.time()
     result = await read_slice(
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=50000,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     elapsed = time.time() - start
 
@@ -210,7 +207,7 @@ async def test_filter_memory_usage():
                 file_path="datasets/train_meta.parquet",
                 start_row=i * 1000,
                 end_row=(i + 1) * 1000,
-                filter_json=filter_spec
+                filter_json=filter_spec,
             )
 
         gc.collect()
@@ -227,13 +224,15 @@ async def test_filter_memory_usage():
 @pytest.mark.slow
 async def test_in_filter_performance():
     """Test IN filter performance with many values."""
-    filter_spec = json.dumps({"column": "event_id", "op": "in", "values": list(range(100))})
+    filter_spec = json.dumps(
+        {"column": "event_id", "op": "in", "values": list(range(100))}
+    )
     start = time.time()
     result = await read_slice(
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=200,  # Reduced to avoid payload size limit
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     elapsed = time.time() - start
 
@@ -246,33 +245,35 @@ async def test_in_filter_performance():
 @pytest.mark.slow
 async def test_nested_filter_performance():
     """Test deeply nested filter performance."""
-    filter_spec = json.dumps({
-        "and": [
-            {
-                "or": [
-                    {
-                        "and": [
-                            {"column": "zenith", "op": "greater", "value": 1.0},
-                            {"column": "zenith", "op": "less", "value": 2.0}
-                        ]
-                    },
-                    {
-                        "and": [
-                            {"column": "azimuth", "op": "greater", "value": 5.0},
-                            {"column": "azimuth", "op": "less", "value": 6.0}
-                        ]
-                    }
-                ]
-            },
-            {"column": "batch_id", "op": "equal", "value": 1}
-        ]
-    })
+    filter_spec = json.dumps(
+        {
+            "and": [
+                {
+                    "or": [
+                        {
+                            "and": [
+                                {"column": "zenith", "op": "greater", "value": 1.0},
+                                {"column": "zenith", "op": "less", "value": 2.0},
+                            ]
+                        },
+                        {
+                            "and": [
+                                {"column": "azimuth", "op": "greater", "value": 5.0},
+                                {"column": "azimuth", "op": "less", "value": 6.0},
+                            ]
+                        },
+                    ]
+                },
+                {"column": "batch_id", "op": "equal", "value": 1},
+            ]
+        }
+    )
     start = time.time()
     result = await read_slice(
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=10000,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     elapsed = time.time() - start
 
@@ -285,23 +286,24 @@ async def test_nested_filter_performance():
 @pytest.mark.slow
 async def test_filter_and_projection_performance():
     """Test combined filtering and column projection performance."""
-    filter_spec = json.dumps({
-        "and": [
-            {"column": "zenith", "op": "less", "value": 1.5},
-            {"column": "batch_id", "op": "equal", "value": 1}
-        ]
-    })
+    filter_spec = json.dumps(
+        {
+            "and": [
+                {"column": "zenith", "op": "less", "value": 1.5},
+                {"column": "batch_id", "op": "equal", "value": 1},
+            ]
+        }
+    )
     start = time.time()
     result = await read_slice(
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=50000,
         columns=["event_id", "zenith", "azimuth"],
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     elapsed = time.time() - start
 
     data = json.loads(result)
     assert data["status"] in ["success", "error"]
     assert elapsed < 8.0  # Should complete in < 8 seconds
-

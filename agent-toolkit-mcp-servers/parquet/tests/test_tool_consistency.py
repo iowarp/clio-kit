@@ -84,7 +84,9 @@ async def test_column_order_preserved_across_tools(test_parquet_file):
 
     # Read multiple slices and verify column order
     for start in [0, 5, 10]:
-        slice_result = await read_slice(test_parquet_file, start_row=start, end_row=start + 5)
+        slice_result = await read_slice(
+            test_parquet_file, start_row=start, end_row=start + 5
+        )
         slice_data = json.loads(slice_result)
 
         if slice_data["status"] == "success":
@@ -134,11 +136,15 @@ async def test_column_types_consistency(test_parquet_file):
 
     # Read multiple slices and verify types don't change
     for start in [0, 10, 20]:
-        slice_result = await read_slice(test_parquet_file, start_row=start, end_row=start + 5)
+        slice_result = await read_slice(
+            test_parquet_file, start_row=start, end_row=start + 5
+        )
         slice_data = json.loads(slice_result)
 
         if slice_data["status"] == "success":
-            slice_types = {col["name"]: col["type"] for col in slice_data["schema"]["columns"]}
+            slice_types = {
+                col["name"]: col["type"] for col in slice_data["schema"]["columns"]
+            }
             assert slice_types == schema_types
 
 
@@ -163,12 +169,16 @@ async def test_nullable_consistency_across_tools(test_parquet_file):
     """Test that nullable information is consistent across all tools."""
     summary_result = await summarize(test_parquet_file)
     summary = json.loads(summary_result)
-    summary_nullable = {col["name"]: col["nullable"] for col in summary["schema"]["columns"]}
+    summary_nullable = {
+        col["name"]: col["nullable"] for col in summary["schema"]["columns"]
+    }
 
     # Check in read_slice
     slice_result = await read_slice(test_parquet_file, start_row=0, end_row=5)
     slice_data = json.loads(slice_result)
-    slice_nullable = {col["name"]: col["nullable"] for col in slice_data["schema"]["columns"]}
+    slice_nullable = {
+        col["name"]: col["nullable"] for col in slice_data["schema"]["columns"]
+    }
 
     assert summary_nullable == slice_nullable
 
@@ -251,7 +261,7 @@ async def test_summarize_column_preview_read_slice_workflow(test_parquet_file):
         test_parquet_file,
         start_row=0,
         end_row=min(100, summary["num_rows"]),
-        columns=[col_name]
+        columns=[col_name],
     )
     slice_data = json.loads(slice_result)
 

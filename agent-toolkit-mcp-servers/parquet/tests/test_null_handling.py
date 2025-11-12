@@ -138,12 +138,16 @@ async def test_nullable_metadata_consistency(test_parquet_file):
     # Get schema from summarize
     summary_result = await summarize(test_parquet_file)
     summary = json.loads(summary_result)
-    summarize_schema = {col["name"]: col["nullable"] for col in summary["schema"]["columns"]}
+    summarize_schema = {
+        col["name"]: col["nullable"] for col in summary["schema"]["columns"]
+    }
 
     # Get schema from read_slice
     slice_result = await read_slice(test_parquet_file, start_row=0, end_row=5)
     slice_data = json.loads(slice_result)
-    slice_schema = {col["name"]: col["nullable"] for col in slice_data["schema"]["columns"]}
+    slice_schema = {
+        col["name"]: col["nullable"] for col in slice_data["schema"]["columns"]
+    }
 
     # Nullable metadata should match
     assert summarize_schema == slice_schema

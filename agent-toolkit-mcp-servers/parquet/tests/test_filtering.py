@@ -13,6 +13,7 @@ from parquet_mcp.capabilities.parquet_handler import read_slice
 
 # SUITE 1: Simple Comparison Operators (6 tests)
 
+
 @pytest.mark.asyncio
 async def test_filter_equals():
     """Test simple equality filter."""
@@ -21,7 +22,7 @@ async def test_filter_equals():
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -39,7 +40,7 @@ async def test_filter_not_equals():
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -56,7 +57,7 @@ async def test_filter_less_than():
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -73,7 +74,7 @@ async def test_filter_greater_than():
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -90,7 +91,7 @@ async def test_filter_less_than_equal():
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -107,7 +108,7 @@ async def test_filter_greater_than_equal():
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -118,20 +119,23 @@ async def test_filter_greater_than_equal():
 
 # SUITE 2: Logical Operators (5 tests)
 
+
 @pytest.mark.asyncio
 async def test_filter_and_operator():
     """Test AND logical operator."""
-    filter_spec = json.dumps({
-        "and": [
-            {"column": "azimuth", "op": "greater", "value": 3.0},
-            {"column": "zenith", "op": "less", "value": 2.0}
-        ]
-    })
+    filter_spec = json.dumps(
+        {
+            "and": [
+                {"column": "azimuth", "op": "greater", "value": 3.0},
+                {"column": "zenith", "op": "less", "value": 2.0},
+            ]
+        }
+    )
     result = await read_slice(
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=200,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -144,17 +148,19 @@ async def test_filter_and_operator():
 @pytest.mark.asyncio
 async def test_filter_or_operator():
     """Test OR logical operator."""
-    filter_spec = json.dumps({
-        "or": [
-            {"column": "zenith", "op": "less", "value": 0.5},
-            {"column": "zenith", "op": "greater", "value": 2.5}
-        ]
-    })
+    filter_spec = json.dumps(
+        {
+            "or": [
+                {"column": "zenith", "op": "less", "value": 0.5},
+                {"column": "zenith", "op": "greater", "value": 2.5},
+            ]
+        }
+    )
     result = await read_slice(
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=200,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -166,14 +172,12 @@ async def test_filter_or_operator():
 @pytest.mark.asyncio
 async def test_filter_not_operator():
     """Test NOT logical operator."""
-    filter_spec = json.dumps({
-        "not": {"column": "batch_id", "op": "equal", "value": 1}
-    })
+    filter_spec = json.dumps({"not": {"column": "batch_id", "op": "equal", "value": 1}})
     result = await read_slice(
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -185,46 +189,50 @@ async def test_filter_not_operator():
 @pytest.mark.asyncio
 async def test_filter_nested_expression():
     """Test complex nested logical expression."""
-    filter_spec = json.dumps({
-        "and": [
-            {
-                "or": [
-                    {"column": "azimuth", "op": "greater", "value": 5.0},
-                    {"column": "azimuth", "op": "less", "value": 1.0}
-                ]
-            },
-            {"column": "zenith", "op": "less", "value": 1.5}
-        ]
-    })
+    filter_spec = json.dumps(
+        {
+            "and": [
+                {
+                    "or": [
+                        {"column": "azimuth", "op": "greater", "value": 5.0},
+                        {"column": "azimuth", "op": "less", "value": 1.0},
+                    ]
+                },
+                {"column": "zenith", "op": "less", "value": 1.5},
+            ]
+        }
+    )
     result = await read_slice(
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=200,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
     assert data["status"] == "success"
     for row in data["data"]:
-        assert (row["azimuth"] > 5.0 or row["azimuth"] < 1.0)
+        assert row["azimuth"] > 5.0 or row["azimuth"] < 1.0
         assert row["zenith"] < 1.5
 
 
 @pytest.mark.asyncio
 async def test_filter_multiple_and():
     """Test multiple AND conditions."""
-    filter_spec = json.dumps({
-        "and": [
-            {"column": "batch_id", "op": "equal", "value": 1},
-            {"column": "zenith", "op": "less", "value": 1.0},
-            {"column": "azimuth", "op": "greater", "value": 2.0}
-        ]
-    })
+    filter_spec = json.dumps(
+        {
+            "and": [
+                {"column": "batch_id", "op": "equal", "value": 1},
+                {"column": "zenith", "op": "less", "value": 1.0},
+                {"column": "azimuth", "op": "greater", "value": 2.0},
+            ]
+        }
+    )
     result = await read_slice(
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=200,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -237,6 +245,7 @@ async def test_filter_multiple_and():
 
 # SUITE 3: IN Clause and NULL Checks (4 tests)
 
+
 @pytest.mark.asyncio
 async def test_filter_in_clause_integers():
     """Test IN clause with integer values."""
@@ -245,7 +254,7 @@ async def test_filter_in_clause_integers():
         file_path="datasets/train_meta.parquet",
         start_row=0,
         end_row=50,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -264,7 +273,7 @@ async def test_filter_in_clause_floats():
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -286,7 +295,7 @@ async def test_filter_is_null():
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
@@ -302,11 +311,10 @@ async def test_filter_is_not_null():
         file_path="datasets/batch_1.parquet",
         start_row=0,
         end_row=100,
-        filter_json=filter_spec
+        filter_json=filter_spec,
     )
     data = json.loads(result)
 
     assert data["status"] == "success"
     for row in data["data"]:
         assert row["charge"] is not None
-

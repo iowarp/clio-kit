@@ -66,12 +66,8 @@ class TestNDPClient:
         """Test list_organizations method."""
         mock_orgs = ["org1", "org2", "org3"]
 
-        with patch.object(
-            client, "_make_request", new=AsyncMock(return_value=mock_orgs)
-        ):
-            result = await client.list_organizations(
-                name_filter="test", server="global"
-            )
+        with patch.object(client, "_make_request", new=AsyncMock(return_value=mock_orgs)):
+            result = await client.list_organizations(name_filter="test", server="global")
             assert result == mock_orgs
 
     @pytest.mark.asyncio
@@ -86,9 +82,7 @@ class TestNDPClient:
             }
         ]
 
-        with patch.object(
-            client, "_make_request", new=AsyncMock(return_value=mock_datasets)
-        ):
+        with patch.object(client, "_make_request", new=AsyncMock(return_value=mock_datasets)):
             result = await client.search_datasets_simple(["climate"], server="global")
             assert len(result) == 1
             assert isinstance(result[0], Dataset)
@@ -107,9 +101,7 @@ class TestNDPClient:
             }
         ]
 
-        with patch.object(
-            client, "_make_request", new=AsyncMock(return_value=mock_datasets)
-        ):
+        with patch.object(client, "_make_request", new=AsyncMock(return_value=mock_datasets)):
             result = await client.search_datasets_advanced(
                 dataset_name="climate_data", owner_org="noaa", server="global"
             )

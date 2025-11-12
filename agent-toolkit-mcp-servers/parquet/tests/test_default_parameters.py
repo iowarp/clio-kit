@@ -134,9 +134,7 @@ async def test_column_preview_max_items_not_specified(test_parquet_file):
 
     if len(available_columns) > 0 and total_rows >= 100:
         # Call without max_items parameter
-        result = await get_column_preview(
-            test_parquet_file, available_columns[0]
-        )
+        result = await get_column_preview(test_parquet_file, available_columns[0])
         data = json.loads(result)
 
         if data["status"] == "success":
@@ -180,9 +178,7 @@ async def test_read_slice_columns_default_matches_all(test_parquet_file):
     all_columns = [col["name"] for col in summary["schema"]["columns"]]
 
     # Read with default (no columns param)
-    result_default = await read_slice(
-        test_parquet_file, start_row=0, end_row=5
-    )
+    result_default = await read_slice(test_parquet_file, start_row=0, end_row=5)
     data_default = json.loads(result_default)
 
     # Read with explicit all columns
