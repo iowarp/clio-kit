@@ -30,6 +30,8 @@ jobs:
             path: "agent-toolkit-mcp-servers/pandas"
           - name: "parallel-sort"
             path: "agent-toolkit-mcp-servers/parallel-sort"
+          - name: "paraview"
+            path: "agent-toolkit-mcp-servers/paraview-mcp"
           - name: "parquet"
             path: "agent-toolkit-mcp-servers/parquet"
           - name: "plot"

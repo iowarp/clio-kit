@@ -1,0 +1,140 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging artifacts
+build/
+dist/
+*.egg-info/
+
+# ParaView build artifacts
+paraview/
+paraview_build/
+.paraview/
+
+# Installer logs and temporary files
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Coverage, test output, and cache directories
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+.pytest_cache/
+htmlcov/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Environment and virtual environment folders
+.env
+.venv/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+.claude/
+
+# Log files (including the ParaView logs directory)
+*.log
+*.out
+*.err
+paraview_logs/
+
+# MCP-related artifacts (if any)
+mcp_debug/
+
+# Core dumps and crash files
+core
+core.*
+*.btr
+*.dmp
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# UV lock file (keep uv.lock but ignore temporary files)
+.uv/
+
+# Data files and datasets (large binary files)
+*.bp5
+*.bp
+*.h5
+*.hdf5
+*.nc
+*.vtu
+*.vti
+*.vtp
+*.vtk
+*.pvd
+*.pvtu
+*.pvti
+*.pvtp
+*.xmf
+*.xml
+data.bp5/
+dataset*/
+
+# ParaView state and session files
+*.pvsm
+*.pvs
+
+# Scientific computing temporary files
+*.npy
+*.npz
+*.mat
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+
+# Node.js (if using any JavaScript/Node tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Rust (if using any Rust tools)
+target/
+Cargo.lock
+
+# C/C++ build artifacts
+*.o
+*.so
+*.dylib
+*.dll
+*.exe
+*.a
+*.lib
+
+# Configuration files with sensitive data
+config.local.*
+*.secret
+.secrets/
+
