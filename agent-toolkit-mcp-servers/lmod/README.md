@@ -11,7 +11,7 @@ Lmod MCP is a comprehensive Model Context Protocol (MCP) server that enables Lan
 ## Quick Start
 
 ```bash
-uvx iowarp-agent-toolkit lmod
+uvx iowarp-agent-toolkit mcp-server lmod
 ```
 
 ## Documentation
@@ -56,7 +56,7 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
   "mcpServers": {
     "lmod-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "lmod"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "lmod"]
     }
   }
 }
@@ -75,7 +75,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
     "lmod-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "lmod"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "lmod"]
     }
   }
 }
@@ -89,7 +89,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add lmod-mcp -- uvx iowarp-agent-toolkit lmod
+claude mcp add lmod-mcp -- uvx iowarp-agent-toolkit mcp-server lmod
 ```
 
 </details>
@@ -104,7 +104,7 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
   "mcpServers": {
     "lmod-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "lmod"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "lmod"]
     }
   }
 }

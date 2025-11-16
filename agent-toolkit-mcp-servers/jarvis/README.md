@@ -11,7 +11,7 @@ Jarvis MCP is a Model Context Protocol server that enables LLMs to manage the fu
 ## Quick Start
 
 ```bash
-uvx iowarp-agent-toolkit jarvis
+uvx iowarp-agent-toolkit mcp-server jarvis
 ```
 
 ## Documentation
@@ -46,7 +46,7 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
   "mcpServers": {
     "jarvis-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "jarvis"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "jarvis"]
     }
   }
 }
@@ -65,7 +65,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
     "jarvis-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "jarvis"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "jarvis"]
     }
   }
 }
@@ -79,7 +79,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add jarvis-mcp -- uvx iowarp-agent-toolkit jarvis
+claude mcp add jarvis-mcp -- uvx iowarp-agent-toolkit mcp-server jarvis
 ```
 
 </details>
@@ -94,7 +94,7 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
   "mcpServers": {
     "jarvis-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "jarvis"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "jarvis"]
     }
   }
 }

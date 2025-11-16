@@ -57,12 +57,16 @@ Agent Toolkit is part of the IoWarp platform's comprehensive tooling ecosystem f
 
 ```bash
 # List all 15 available MCP servers
-uvx iowarp-agent-toolkit
+uvx iowarp-agent-toolkit mcp-servers
 
 # Run any server instantly
-uvx iowarp-agent-toolkit hdf5
-uvx iowarp-agent-toolkit pandas
-uvx iowarp-agent-toolkit slurm
+uvx iowarp-agent-toolkit mcp-server hdf5
+uvx iowarp-agent-toolkit mcp-server pandas
+uvx iowarp-agent-toolkit mcp-server slurm
+
+# AI prompts also available
+uvx iowarp-agent-toolkit prompts                    # List all prompts
+uvx iowarp-agent-toolkit prompt code-coverage-prompt # Use a prompt
 ```
 
 <details>
@@ -75,15 +79,15 @@ Add to your Cursor `~/.cursor/mcp.json`:
   "mcpServers": {
     "hdf5-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "hdf5"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "hdf5"]
     },
     "pandas-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "pandas"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "pandas"]
     },
     "slurm-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "slurm"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "slurm"]
     }
   }
 }
@@ -98,13 +102,13 @@ See [Cursor MCP docs](https://docs.cursor.com/context/model-context-protocol) fo
 
 ```bash
 # Add HDF5 MCP
-claude mcp add hdf5-mcp -- uvx iowarp-agent-toolkit hdf5
+claude mcp add hdf5-mcp -- uvx iowarp-agent-toolkit mcp-server hdf5
 
 # Add Pandas MCP
-claude mcp add pandas-mcp -- uvx iowarp-agent-toolkit pandas
+claude mcp add pandas-mcp -- uvx iowarp-agent-toolkit mcp-server pandas
 
 # Add Slurm MCP
-claude mcp add slurm-mcp -- uvx iowarp-agent-toolkit slurm
+claude mcp add slurm-mcp -- uvx iowarp-agent-toolkit mcp-server slurm
 ```
 
 See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
@@ -122,12 +126,12 @@ Add to your VS Code MCP config:
     "hdf5-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "hdf5"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "hdf5"]
     },
     "pandas-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "pandas"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "pandas"]
     }
   }
 }
@@ -147,11 +151,11 @@ Edit `claude_desktop_config.json`:
   "mcpServers": {
     "hdf5-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "hdf5"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "hdf5"]
     },
     "arxiv-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "arxiv"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "arxiv"]
     }
   }
 }
@@ -167,21 +171,21 @@ See [Claude Desktop MCP docs](https://modelcontextprotocol.io/quickstart/user) f
 
 | 📦 **Package** | 📌 **Ver** | 🔧 **System** | 📋 **Description** | ⚡ **Install Command** |
 |:---|:---:|:---:|:---|:---|
-| **`adios`** | 1.0 | Data I/O | Read data using ADIOS2 engine | `uvx iowarp-agent-toolkit adios` |
-| **`arxiv`** | 1.0 | Research | Fetch research papers from ArXiv | `uvx iowarp-agent-toolkit arxiv` |
-| **`chronolog`** | 1.0 | Logging | Log and retrieve data from ChronoLog | `uvx iowarp-agent-toolkit chronolog` |
-| **`compression`** | 1.0 | Utilities | File compression with gzip | `uvx iowarp-agent-toolkit compression` |
-| **`darshan`** | 1.0 | Performance | I/O performance trace analysis | `uvx iowarp-agent-toolkit darshan` |
-| **`hdf5`** | 2.1 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `uvx iowarp-agent-toolkit hdf5` |
-| **`jarvis`** | 1.0 | Workflow | Data pipeline lifecycle management | `uvx iowarp-agent-toolkit jarvis` |
-| **`lmod`** | 1.0 | Environment | Environment module management | `uvx iowarp-agent-toolkit lmod` |
-| **`ndp`** | 1.0 | Data Protocol | Search and discover datasets across CKAN instances | `uvx iowarp-agent-toolkit ndp` |
-| **`node-hardware`** | 1.0 | System | System hardware information | `uvx iowarp-agent-toolkit node-hardware` |
-| **`pandas`** | 1.0 | Data Analysis | CSV data loading and filtering | `uvx iowarp-agent-toolkit pandas` |
-| **`parallel-sort`** | 1.0 | Computing | Large file sorting | `uvx iowarp-agent-toolkit parallel-sort` |
-| **`parquet`** | 1.0 | Data I/O | Read Parquet file columns | `uvx iowarp-agent-toolkit parquet` |
-| **`plot`** | 1.0 | Visualization | Generate plots from CSV data | `uvx iowarp-agent-toolkit plot` |
-| **`slurm`** | 1.0 | HPC | Job submission and management | `uvx iowarp-agent-toolkit slurm` |
+| **`adios`** | 1.0 | Data I/O | Read data using ADIOS2 engine | `uvx iowarp-agent-toolkit mcp-server adios` |
+| **`arxiv`** | 1.0 | Research | Fetch research papers from ArXiv | `uvx iowarp-agent-toolkit mcp-server arxiv` |
+| **`chronolog`** | 1.0 | Logging | Log and retrieve data from ChronoLog | `uvx iowarp-agent-toolkit mcp-server chronolog` |
+| **`compression`** | 1.0 | Utilities | File compression with gzip | `uvx iowarp-agent-toolkit mcp-server compression` |
+| **`darshan`** | 1.0 | Performance | I/O performance trace analysis | `uvx iowarp-agent-toolkit mcp-server darshan` |
+| **`hdf5`** | 2.1 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `uvx iowarp-agent-toolkit mcp-server hdf5` |
+| **`jarvis`** | 1.0 | Workflow | Data pipeline lifecycle management | `uvx iowarp-agent-toolkit mcp-server jarvis` |
+| **`lmod`** | 1.0 | Environment | Environment module management | `uvx iowarp-agent-toolkit mcp-server lmod` |
+| **`ndp`** | 1.0 | Data Protocol | Search and discover datasets across CKAN instances | `uvx iowarp-agent-toolkit mcp-server ndp` |
+| **`node-hardware`** | 1.0 | System | System hardware information | `uvx iowarp-agent-toolkit mcp-server node-hardware` |
+| **`pandas`** | 1.0 | Data Analysis | CSV data loading and filtering | `uvx iowarp-agent-toolkit mcp-server pandas` |
+| **`parallel-sort`** | 1.0 | Computing | Large file sorting | `uvx iowarp-agent-toolkit mcp-server parallel-sort` |
+| **`parquet`** | 1.0 | Data I/O | Read Parquet file columns | `uvx iowarp-agent-toolkit mcp-server parquet` |
+| **`plot`** | 1.0 | Visualization | Generate plots from CSV data | `uvx iowarp-agent-toolkit mcp-server plot` |
+| **`slurm`** | 1.0 | HPC | Job submission and management | `uvx iowarp-agent-toolkit mcp-server slurm` |
 
 </div>
 
@@ -236,11 +240,11 @@ See [Claude Desktop MCP docs](https://modelcontextprotocol.io/quickstart/user) f
 <details>
 <summary><b>Server Not Found Error</b></summary>
 
-If `uvx iowarp-agent-toolkit <server-name>` fails:
+If `uvx iowarp-agent-toolkit mcp-server <server-name>` fails:
 
 ```bash
 # Verify server name is correct
-uvx iowarp-agent-toolkit
+uvx iowarp-agent-toolkit mcp-servers
 
 # Common names: hdf5, pandas, slurm, arxiv (not hdf5-mcp, pandas-mcp)
 ```

@@ -10,7 +10,7 @@ Model Context Protocol (MCP) server for Apache Parquet files. Provides metadata 
 ## Quick Start
 
 ```bash
-uvx iowarp-agent-toolkit parquet
+uvx iowarp-agent-toolkit mcp-server parquet
 ```
 
 ## Key Features
@@ -45,7 +45,7 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
   "mcpServers": {
     "parquet-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "parquet"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "parquet"]
     }
   }
 }
@@ -64,7 +64,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
     "parquet-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "parquet"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "parquet"]
     }
   }
 }
@@ -78,7 +78,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add parquet-mcp -- uvx iowarp-agent-toolkit parquet
+claude mcp add parquet-mcp -- uvx iowarp-agent-toolkit mcp-server parquet
 ```
 
 </details>
@@ -93,7 +93,7 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
   "mcpServers": {
     "parquet-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "parquet"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "parquet"]
     }
   }
 }

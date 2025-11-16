@@ -11,7 +11,7 @@ Pandas MCP is a Model Context Protocol server that enables LLMs to perform advan
 ## Quick Start
 
 ```bash
-uvx iowarp-agent-toolkit pandas
+uvx iowarp-agent-toolkit mcp-server pandas
 ```
 
 ## Documentation
@@ -47,7 +47,7 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
   "mcpServers": {
     "pandas-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "pandas"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "pandas"]
     }
   }
 }
@@ -66,7 +66,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
     "pandas-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "pandas"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "pandas"]
     }
   }
 }
@@ -80,7 +80,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add pandas-mcp -- uvx iowarp-agent-toolkit pandas
+claude mcp add pandas-mcp -- uvx iowarp-agent-toolkit mcp-server pandas
 ```
 
 </details>
@@ -95,7 +95,7 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
   "mcpServers": {
     "pandas-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "pandas"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "pandas"]
     }
   }
 }

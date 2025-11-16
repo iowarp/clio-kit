@@ -11,7 +11,7 @@ The National Data Platform (NDP) MCP server provides comprehensive access to sea
 ## Quick Start
 
 ```bash
-uvx iowarp-agent-toolkit ndp
+uvx iowarp-agent-toolkit mcp-server ndp
 ```
 
 ## Documentation
@@ -41,7 +41,7 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file:
   "mcpServers": {
     "ndp-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "ndp"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "ndp"]
     }
   }
 }
@@ -59,7 +59,7 @@ Add the following to your VS Code MCP configuration:
   "mcpServers": {
     "ndp-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "ndp"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "ndp"]
     }
   }
 }
@@ -73,7 +73,7 @@ Add the following to your VS Code MCP configuration:
 Run the following command in your terminal:
 
 ```bash
-uvx iowarp-agent-toolkit ndp
+uvx iowarp-agent-toolkit mcp-server ndp
 ```
 
 </details>
@@ -88,7 +88,7 @@ Add the following to your `claude_desktop_config.json` file:
   "mcpServers": {
     "ndp-mcp": {
       "command": "uvx",
-      "args": ["iowarp-agent-toolkit", "ndp"]
+      "args": ["iowarp-agent-toolkit", "mcp-server", "ndp"]
     }
   }
 }
