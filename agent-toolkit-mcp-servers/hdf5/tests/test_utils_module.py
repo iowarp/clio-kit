@@ -183,7 +183,7 @@ def test_performance_monitor_get_summary_with_data():
     summary = monitor.get_summary()
 
     assert summary["total_operations"] == 2
-    assert summary["cache_hit_ratio"] == 2/3
+    assert summary["cache_hit_ratio"] == 2 / 3
     assert summary["current_memory_mb"] > 0
     assert len(summary["operation_stats"]) == 2
 

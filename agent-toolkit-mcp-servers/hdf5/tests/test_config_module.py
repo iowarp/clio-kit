@@ -298,7 +298,9 @@ def test_config_partial_update_from_dict(clean_env):
     assert cfg.async_config.max_workers == 4
 
 
-def test_config_load_from_json_file(clean_env, temp_dir, sample_config_dict, monkeypatch):
+def test_config_load_from_json_file(
+    clean_env, temp_dir, sample_config_dict, monkeypatch
+):
     """Test loading configuration from JSON file."""
     config_file = temp_dir / "config.json"
     with open(config_file, "w") as f:
@@ -410,17 +412,22 @@ def test_config_load_invalid_parallel_threshold_from_env(clean_env, monkeypatch)
     assert cfg.hdf5.parallel_threshold == 1024 * 1024 * 100  # Default
 
 
-@pytest.mark.parametrize("env_value,expected", [
-    ("true", True),
-    ("1", True),
-    ("yes", True),
-    ("false", False),
-    ("0", False),
-    ("no", False),
-    ("True", True),
-    ("FALSE", False),
-])
-def test_config_load_prefetch_enabled_from_env(clean_env, monkeypatch, env_value, expected):
+@pytest.mark.parametrize(
+    "env_value,expected",
+    [
+        ("true", True),
+        ("1", True),
+        ("yes", True),
+        ("false", False),
+        ("0", False),
+        ("no", False),
+        ("True", True),
+        ("FALSE", False),
+    ],
+)
+def test_config_load_prefetch_enabled_from_env(
+    clean_env, monkeypatch, env_value, expected
+):
     """Test loading prefetch_enabled from environment."""
     monkeypatch.setenv("HDF5_MCP_PREFETCH_ENABLED", env_value)
 
@@ -428,13 +435,16 @@ def test_config_load_prefetch_enabled_from_env(clean_env, monkeypatch, env_value
     assert cfg.hdf5.prefetch_enabled is expected
 
 
-@pytest.mark.parametrize("env_value,expected", [
-    ("true", True),
-    ("1", True),
-    ("yes", True),
-    ("false", False),
-    ("0", False),
-])
+@pytest.mark.parametrize(
+    "env_value,expected",
+    [
+        ("true", True),
+        ("1", True),
+        ("yes", True),
+        ("false", False),
+        ("0", False),
+    ],
+)
 def test_config_load_enable_sse_from_env(clean_env, monkeypatch, env_value, expected):
     """Test loading enable_sse from environment."""
     monkeypatch.setenv("HDF5_MCP_ENABLE_SSE", env_value)
@@ -507,7 +517,9 @@ def test_config_load_log_level_from_env(clean_env, monkeypatch):
     assert cfg.logging.level == "DEBUG"
 
 
-def test_config_env_overrides_json(clean_env, temp_dir, sample_config_dict, monkeypatch):
+def test_config_env_overrides_json(
+    clean_env, temp_dir, sample_config_dict, monkeypatch
+):
     """Test that environment variables override JSON config."""
     config_file = temp_dir / "config.json"
     with open(config_file, "w") as f:
@@ -645,7 +657,7 @@ def test_configure_logging_with_file(clean_env, temp_dir, monkeypatch):
     cfg.logging.file = str(log_file)
 
     # Mock get_config to return our config
-    with patch('hdf5_mcp.config.get_config', return_value=cfg):
+    with patch("hdf5_mcp.config.get_config", return_value=cfg):
         config._configure_logging("INFO")
 
     # Check that a file handler was added

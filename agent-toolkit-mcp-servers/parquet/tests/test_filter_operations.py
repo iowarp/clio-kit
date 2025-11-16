@@ -12,13 +12,26 @@ def filter_test_file(tmp_path):
     """Create a test file for filter operations."""
     file_path = tmp_path / "filter_test.parquet"
 
-    table = pa.table({
-        'int_col': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        'float_col': [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9, 10.10],
-        'str_col': ['a', 'b', 'c', 'a', 'b', 'c', 'a', 'b', 'c', 'a'],
-        'null_col': [1, None, 3, None, 5, None, 7, None, 9, None],
-        'bool_col': [True, False, True, False, True, False, True, False, True, False],
-    })
+    table = pa.table(
+        {
+            "int_col": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "float_col": [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9, 10.10],
+            "str_col": ["a", "b", "c", "a", "b", "c", "a", "b", "c", "a"],
+            "null_col": [1, None, 3, None, 5, None, 7, None, 9, None],
+            "bool_col": [
+                True,
+                False,
+                True,
+                False,
+                True,
+                False,
+                True,
+                False,
+                True,
+                False,
+            ],
+        }
+    )
 
     pq.write_table(table, file_path)
     return str(file_path)
@@ -37,7 +50,7 @@ class TestBuildFilterMask:
         assert mask is not None
         filtered = table.filter(mask)
         assert len(filtered) == 1
-        assert filtered['int_col'][0].as_py() == 5
+        assert filtered["int_col"][0].as_py() == 5
 
     def test_build_filter_not_equal(self, filter_test_file):
         """Test building not_equal filter mask."""
@@ -159,7 +172,7 @@ class TestLogicalFilterOperators:
         filter_dict = {
             "and": [
                 {"column": "int_col", "op": "greater", "value": 3},
-                {"column": "int_col", "op": "less", "value": 8}
+                {"column": "int_col", "op": "less", "value": 8},
             ]
         }
 
@@ -175,7 +188,7 @@ class TestLogicalFilterOperators:
         filter_dict = {
             "or": [
                 {"column": "int_col", "op": "less", "value": 3},
-                {"column": "int_col", "op": "greater", "value": 8}
+                {"column": "int_col", "op": "greater", "value": 8},
             ]
         }
 
@@ -188,9 +201,7 @@ class TestLogicalFilterOperators:
     def test_build_filter_not(self, filter_test_file):
         """Test building NOT filter mask."""
         table = pq.read_table(filter_test_file)
-        filter_dict = {
-            "not": {"column": "int_col", "op": "equal", "value": 5}
-        }
+        filter_dict = {"not": {"column": "int_col", "op": "equal", "value": 5}}
 
         mask = _build_filter_mask(table, filter_dict)
 
@@ -206,10 +217,10 @@ class TestLogicalFilterOperators:
                 {
                     "and": [
                         {"column": "int_col", "op": "greater", "value": 7},
-                        {"column": "bool_col", "op": "equal", "value": True}
+                        {"column": "bool_col", "op": "equal", "value": True},
                     ]
                 },
-                {"column": "int_col", "op": "less", "value": 3}
+                {"column": "int_col", "op": "less", "value": 3},
             ]
         }
 
@@ -286,7 +297,7 @@ class TestFilterErrorCases:
         filter_dict = {
             "and": [
                 {"column": "int_col", "op": "equal", "value": 5},
-                {"column": "nonexistent", "op": "equal", "value": 1}  # Invalid
+                {"column": "nonexistent", "op": "equal", "value": 1},  # Invalid
             ]
         }
 
@@ -300,7 +311,7 @@ class TestFilterErrorCases:
         filter_dict = {
             "or": [
                 {"column": "int_col", "op": "equal", "value": 5},
-                {"op": "equal", "value": 1}  # Missing column
+                {"op": "equal", "value": 1},  # Missing column
             ]
         }
 
@@ -311,9 +322,7 @@ class TestFilterErrorCases:
     def test_build_filter_not_with_invalid_subfilter(self, filter_test_file):
         """Test NOT filter with invalid subfilter."""
         table = pq.read_table(filter_test_file)
-        filter_dict = {
-            "not": {"column": "nonexistent", "op": "equal", "value": 5}
-        }
+        filter_dict = {"not": {"column": "nonexistent", "op": "equal", "value": 5}}
 
         mask = _build_filter_mask(table, filter_dict)
 
@@ -356,7 +365,11 @@ class TestApplyFilter:
         table = pq.read_table(filter_test_file)
         original_len = len(table)
         # This might cause an error during filtering
-        filter_dict = {"column": "int_col", "op": "equal", "value": "invalid_type_comparison"}
+        filter_dict = {
+            "column": "int_col",
+            "op": "equal",
+            "value": "invalid_type_comparison",
+        }
 
         # Should return unfiltered table on error
         filtered = _apply_filter(table, filter_dict)
@@ -374,12 +387,14 @@ class TestFilterIntegrationWithReadSlice:
         """Test read_slice with complex AND filter."""
         from parquet_mcp.capabilities.parquet_handler import read_slice
 
-        filter_json = json.dumps({
-            "and": [
-                {"column": "int_col", "op": "greater_equal", "value": 3},
-                {"column": "int_col", "op": "less_equal", "value": 7}
-            ]
-        })
+        filter_json = json.dumps(
+            {
+                "and": [
+                    {"column": "int_col", "op": "greater_equal", "value": 3},
+                    {"column": "int_col", "op": "less_equal", "value": 7},
+                ]
+            }
+        )
 
         result_str = await read_slice(filter_test_file, 0, 10, filter_json=filter_json)
         result = json.loads(result_str)
@@ -392,9 +407,9 @@ class TestFilterIntegrationWithReadSlice:
         """Test read_slice with NOT filter."""
         from parquet_mcp.capabilities.parquet_handler import read_slice
 
-        filter_json = json.dumps({
-            "not": {"column": "bool_col", "op": "equal", "value": True}
-        })
+        filter_json = json.dumps(
+            {"not": {"column": "bool_col", "op": "equal", "value": True}}
+        )
 
         result_str = await read_slice(filter_test_file, 0, 10, filter_json=filter_json)
         result = json.loads(result_str)

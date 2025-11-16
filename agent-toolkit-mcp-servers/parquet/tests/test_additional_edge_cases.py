@@ -11,11 +11,13 @@ def edge_test_file(tmp_path):
     """Create a test file for edge case testing."""
     file_path = tmp_path / "edge_test.parquet"
 
-    table = pa.table({
-        'int_col': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        'float_col': [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9, 10.10],
-        'str_col': ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'],
-    })
+    table = pa.table(
+        {
+            "int_col": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "float_col": [1.1, 2.2, 3.3, 4.4, 5.5, 6.6, 7.7, 8.8, 9.9, 10.10],
+            "str_col": ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"],
+        }
+    )
 
     pq.write_table(table, file_path)
     return str(file_path)
@@ -91,8 +93,8 @@ class TestColumnPreviewEdgeCases:
         from parquet_mcp.capabilities.parquet_handler import get_column_preview
 
         # Create a corrupted file
-        corrupted_file = edge_test_file.replace('.parquet', '_corrupt.parquet')
-        with open(corrupted_file, 'w') as f:
+        corrupted_file = edge_test_file.replace(".parquet", "_corrupt.parquet")
+        with open(corrupted_file, "w") as f:
             f.write("not a parquet file")
 
         result_str = await get_column_preview(corrupted_file, "int_col")
@@ -136,9 +138,7 @@ class TestAggregateTypeCoercion:
 
         # This shouldn't happen normally but tests the else branch at line 790
         # We'll test with a valid operation to ensure the code path exists
-        result_str = await aggregate_column(
-            edge_test_file, "int_col", "count"
-        )
+        result_str = await aggregate_column(edge_test_file, "int_col", "count")
         result = json.loads(result_str)
 
         # Should succeed normally
@@ -149,8 +149,8 @@ class TestAggregateTypeCoercion:
         from parquet_mcp.capabilities.parquet_handler import aggregate_column
 
         # Create a corrupted file
-        corrupted_file = edge_test_file.replace('.parquet', '_agg_corrupt.parquet')
-        with open(corrupted_file, 'w') as f:
+        corrupted_file = edge_test_file.replace(".parquet", "_agg_corrupt.parquet")
+        with open(corrupted_file, "w") as f:
             f.write("not a parquet file")
 
         result_str = await aggregate_column(corrupted_file, "int_col", "sum")
@@ -169,8 +169,8 @@ class TestReadSliceGenericException:
         from parquet_mcp.capabilities.parquet_handler import read_slice
 
         # Create a corrupted file
-        corrupted_file = edge_test_file.replace('.parquet', '_read_corrupt.parquet')
-        with open(corrupted_file, 'w') as f:
+        corrupted_file = edge_test_file.replace(".parquet", "_read_corrupt.parquet")
+        with open(corrupted_file, "w") as f:
             f.write("not a parquet file")
 
         result_str = await read_slice(corrupted_file, 0, 5)
@@ -188,7 +188,7 @@ class TestServerToolFunctions:
     def simple_file(self, tmp_path):
         """Create a simple test file."""
         file_path = tmp_path / "simple.parquet"
-        table = pa.table({'col': [1, 2, 3]})
+        table = pa.table({"col": [1, 2, 3]})
         pq.write_table(table, file_path)
         return str(file_path)
 

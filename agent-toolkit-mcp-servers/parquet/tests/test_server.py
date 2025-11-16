@@ -14,28 +14,30 @@ class TestServerToolsIntegration:
     def simple_test_file(self, tmp_path):
         """Create a simple test file for integration testing."""
         file_path = tmp_path / "simple.parquet"
-        table = pa.table({
-            'id': [1, 2, 3, 4, 5],
-            'value': [10, 20, 30, 40, 50],
-        })
+        table = pa.table(
+            {
+                "id": [1, 2, 3, 4, 5],
+                "value": [10, 20, 30, 40, 50],
+            }
+        )
         pq.write_table(table, file_path)
         return str(file_path)
 
     def test_summarize_tool_exists(self):
         """Test that summarize_tool is registered."""
-        assert hasattr(server, 'summarize_tool')
+        assert hasattr(server, "summarize_tool")
 
     def test_read_slice_tool_exists(self):
         """Test that read_slice_tool is registered."""
-        assert hasattr(server, 'read_slice_tool')
+        assert hasattr(server, "read_slice_tool")
 
     def test_get_column_preview_tool_exists(self):
         """Test that get_column_preview_tool is registered."""
-        assert hasattr(server, 'get_column_preview_tool')
+        assert hasattr(server, "get_column_preview_tool")
 
     def test_aggregate_column_tool_exists(self):
         """Test that aggregate_column_tool is registered."""
-        assert hasattr(server, 'aggregate_column_tool')
+        assert hasattr(server, "aggregate_column_tool")
 
 
 class TestServerMain:
@@ -43,12 +45,12 @@ class TestServerMain:
 
     def test_main_function_exists(self):
         """Test that main function is defined."""
-        assert hasattr(server, 'main')
+        assert hasattr(server, "main")
         assert callable(server.main)
 
     def test_main_initializes_mcp_server(self):
         """Test that main function initializes the MCP server."""
-        with patch.object(server.mcp, 'run') as mock_run:
+        with patch.object(server.mcp, "run") as mock_run:
             mock_run.side_effect = KeyboardInterrupt()
 
             try:
@@ -60,7 +62,7 @@ class TestServerMain:
 
     def test_main_handles_keyboard_interrupt(self):
         """Test that main handles KeyboardInterrupt gracefully."""
-        with patch.object(server.mcp, 'run') as mock_run:
+        with patch.object(server.mcp, "run") as mock_run:
             mock_run.side_effect = KeyboardInterrupt()
 
             # Should not raise an exception
@@ -71,7 +73,7 @@ class TestServerMain:
 
     def test_main_handles_exception(self):
         """Test that main handles exceptions and exits with error code."""
-        with patch.object(server.mcp, 'run') as mock_run:
+        with patch.object(server.mcp, "run") as mock_run:
             mock_run.side_effect = RuntimeError("Test error")
 
             with pytest.raises(SystemExit) as exc_info:
@@ -81,8 +83,8 @@ class TestServerMain:
 
     def test_main_configures_logging(self):
         """Test that main configures logging."""
-        with patch('logging.basicConfig') as mock_config:
-            with patch.object(server.mcp, 'run') as mock_run:
+        with patch("logging.basicConfig") as mock_config:
+            with patch.object(server.mcp, "run") as mock_run:
                 mock_run.side_effect = KeyboardInterrupt()
 
                 try:
@@ -93,8 +95,8 @@ class TestServerMain:
                 # Check that basicConfig was called
                 mock_config.assert_called_once()
                 call_kwargs = mock_config.call_args[1]
-                assert 'level' in call_kwargs
-                assert 'format' in call_kwargs
+                assert "level" in call_kwargs
+                assert "format" in call_kwargs
 
 
 class TestMCPServerInstance:
@@ -103,6 +105,7 @@ class TestMCPServerInstance:
     def test_mcp_server_is_fastmcp_instance(self):
         """Test that mcp is a FastMCP instance."""
         from fastmcp import FastMCP
+
         assert isinstance(server.mcp, FastMCP)
 
     def test_mcp_server_name(self):
@@ -112,10 +115,10 @@ class TestMCPServerInstance:
     def test_mcp_server_has_tools_registered(self):
         """Test that MCP server has tools registered."""
         # Verify that our tool functions are defined
-        assert hasattr(server, 'summarize_tool')
-        assert hasattr(server, 'read_slice_tool')
-        assert hasattr(server, 'get_column_preview_tool')
-        assert hasattr(server, 'aggregate_column_tool')
+        assert hasattr(server, "summarize_tool")
+        assert hasattr(server, "read_slice_tool")
+        assert hasattr(server, "get_column_preview_tool")
+        assert hasattr(server, "aggregate_column_tool")
 
     def test_tools_are_function_tool_objects(self):
         """Test that tools are wrapped in FunctionTool objects by FastMCP."""

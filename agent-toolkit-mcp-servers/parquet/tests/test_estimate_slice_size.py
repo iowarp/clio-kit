@@ -12,11 +12,13 @@ def size_test_file(tmp_path):
     file_path = tmp_path / "size_test.parquet"
 
     # Create a table with multiple row groups
-    table = pa.table({
-        'int_col': list(range(1000)),
-        'float_col': [float(i) * 1.5 for i in range(1000)],
-        'str_col': [f'string_{i:04d}' for i in range(1000)],
-    })
+    table = pa.table(
+        {
+            "int_col": list(range(1000)),
+            "float_col": [float(i) * 1.5 for i in range(1000)],
+            "str_col": [f"string_{i:04d}" for i in range(1000)],
+        }
+    )
 
     # Write with specific row group size to ensure multiple row groups
     pq.write_table(table, file_path, row_group_size=100)
@@ -51,7 +53,7 @@ class TestEstimateSliceSize:
         pq_file = pq.ParquetFile(size_test_file)
 
         all_columns_size = _estimate_slice_size(pq_file, 0, 1000)
-        one_column_size = _estimate_slice_size(pq_file, 0, 1000, columns=['int_col'])
+        one_column_size = _estimate_slice_size(pq_file, 0, 1000, columns=["int_col"])
 
         # One column should be smaller than all columns
         assert one_column_size < all_columns_size
@@ -61,8 +63,10 @@ class TestEstimateSliceSize:
         """Test estimating size with multiple columns."""
         pq_file = pq.ParquetFile(size_test_file)
 
-        two_columns_size = _estimate_slice_size(pq_file, 0, 1000, columns=['int_col', 'float_col'])
-        one_column_size = _estimate_slice_size(pq_file, 0, 1000, columns=['int_col'])
+        two_columns_size = _estimate_slice_size(
+            pq_file, 0, 1000, columns=["int_col", "float_col"]
+        )
+        one_column_size = _estimate_slice_size(pq_file, 0, 1000, columns=["int_col"])
 
         # Two columns should be larger than one column
         assert two_columns_size > one_column_size
@@ -116,7 +120,7 @@ class TestEstimateSliceSize:
 
         # Non-existent columns should be filtered out, returning 0
         estimated_size = _estimate_slice_size(
-            pq_file, 0, 100, columns=['nonexistent_col']
+            pq_file, 0, 100, columns=["nonexistent_col"]
         )
 
         assert estimated_size == 0
@@ -127,7 +131,7 @@ class TestEstimateSliceSize:
 
         # Should only count valid column
         estimated_size = _estimate_slice_size(
-            pq_file, 0, 100, columns=['int_col', 'nonexistent']
+            pq_file, 0, 100, columns=["int_col", "nonexistent"]
         )
 
         assert estimated_size > 0
@@ -205,10 +209,12 @@ class TestEstimateSliceSizeWithSmallFile:
         """Create a small test file with single row group."""
         file_path = tmp_path / "small_test.parquet"
 
-        table = pa.table({
-            'a': [1, 2, 3, 4, 5],
-            'b': ['x', 'y', 'z', 'w', 'v'],
-        })
+        table = pa.table(
+            {
+                "a": [1, 2, 3, 4, 5],
+                "b": ["x", "y", "z", "w", "v"],
+            }
+        )
 
         pq.write_table(table, file_path)
         return str(file_path)
@@ -241,7 +247,7 @@ class TestEstimateSliceSizeEdgeCases:
         file_path = tmp_path / "edge_case.parquet"
 
         # Single column, single value
-        table = pa.table({'col': [42]})
+        table = pa.table({"col": [42]})
 
         pq.write_table(table, file_path)
         return str(file_path)

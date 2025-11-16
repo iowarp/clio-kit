@@ -12,13 +12,15 @@ def aggregate_test_file(tmp_path):
     file_path = tmp_path / "aggregate_test.parquet"
 
     # Create a table with various numeric types
-    table = pa.table({
-        'int_col': [1, 2, 3, 4, 5, 10, 20, 30, 40, 50],
-        'float_col': [1.5, 2.5, 3.5, 4.5, 5.5, 10.5, 20.5, 30.5, 40.5, 50.5],
-        'str_col': ['a', 'b', 'a', 'b', 'a', 'b', 'a', 'b', 'a', 'b'],
-        'null_col': [1, None, 3, None, 5, None, 7, None, 9, None],
-        'batch_id': [1, 1, 1, 1, 1, 2, 2, 2, 2, 2],
-    })
+    table = pa.table(
+        {
+            "int_col": [1, 2, 3, 4, 5, 10, 20, 30, 40, 50],
+            "float_col": [1.5, 2.5, 3.5, 4.5, 5.5, 10.5, 20.5, 30.5, 40.5, 50.5],
+            "str_col": ["a", "b", "a", "b", "a", "b", "a", "b", "a", "b"],
+            "null_col": [1, None, 3, None, 5, None, 7, None, 9, None],
+            "batch_id": [1, 1, 1, 1, 1, 2, 2, 2, 2, 2],
+        }
+    )
 
     pq.write_table(table, file_path)
     return str(file_path)
@@ -94,7 +96,9 @@ class TestAggregateBasicOperations:
         """Test count_distinct aggregation."""
         from parquet_mcp.capabilities.parquet_handler import aggregate_column
 
-        result_str = await aggregate_column(aggregate_test_file, "str_col", "count_distinct")
+        result_str = await aggregate_column(
+            aggregate_test_file, "str_col", "count_distinct"
+        )
         result = json.loads(result_str)
 
         assert result["status"] == "success"
@@ -137,12 +141,14 @@ class TestAggregateWithFilters:
         """Test aggregation with AND filter."""
         from parquet_mcp.capabilities.parquet_handler import aggregate_column
 
-        filter_json = json.dumps({
-            "and": [
-                {"column": "batch_id", "op": "equal", "value": 2},
-                {"column": "int_col", "op": "greater", "value": 20}
-            ]
-        })
+        filter_json = json.dumps(
+            {
+                "and": [
+                    {"column": "batch_id", "op": "equal", "value": 2},
+                    {"column": "int_col", "op": "greater", "value": 20},
+                ]
+            }
+        )
         result_str = await aggregate_column(
             aggregate_test_file, "int_col", "sum", filter_json=filter_json
         )
@@ -195,7 +201,9 @@ class TestAggregateWithRange:
         assert result["status"] == "success"
         assert result["result"] == 15
 
-    async def test_aggregate_with_start_end_row_string_invalid(self, aggregate_test_file):
+    async def test_aggregate_with_start_end_row_string_invalid(
+        self, aggregate_test_file
+    ):
         """Test aggregation with invalid string start/end row."""
         from parquet_mcp.capabilities.parquet_handler import aggregate_column
 
@@ -238,7 +246,9 @@ class TestAggregateErrorCases:
         """Test aggregation on non-existent column."""
         from parquet_mcp.capabilities.parquet_handler import aggregate_column
 
-        result_str = await aggregate_column(aggregate_test_file, "nonexistent_col", "sum")
+        result_str = await aggregate_column(
+            aggregate_test_file, "nonexistent_col", "sum"
+        )
         result = json.loads(result_str)
 
         assert result["status"] == "error"
@@ -249,7 +259,9 @@ class TestAggregateErrorCases:
         """Test aggregation with invalid operation."""
         from parquet_mcp.capabilities.parquet_handler import aggregate_column
 
-        result_str = await aggregate_column(aggregate_test_file, "int_col", "invalid_op")
+        result_str = await aggregate_column(
+            aggregate_test_file, "int_col", "invalid_op"
+        )
         result = json.loads(result_str)
 
         assert result["status"] == "error"

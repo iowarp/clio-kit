@@ -100,10 +100,7 @@ def test_lru_cache_thread_safety():
         for i in range(start, start + count):
             cache.put(f"key{i}", f"value{i}")
 
-    threads = [
-        threading.Thread(target=add_items, args=(i * 10, 10))
-        for i in range(5)
-    ]
+    threads = [threading.Thread(target=add_items, args=(i * 10, 10)) for i in range(5)]
 
     for t in threads:
         t.start()
@@ -305,7 +302,7 @@ def test_resource_manager_load_storage_index(temp_dir):
     # Create a storage index file
     storage_index = {
         "files": {"test.h5": {"path": "test.h5"}},
-        "last_updated": datetime.now().isoformat()
+        "last_updated": datetime.now().isoformat(),
     }
     storage_path = temp_dir / ".storage_index.json"
     with open(storage_path, "w") as f:
@@ -350,7 +347,7 @@ def test_resource_manager_load_cache_db(temp_dir):
     cache_db = {
         "datasets": {},
         "attributes": {},
-        "last_updated": datetime.now().isoformat()
+        "last_updated": datetime.now().isoformat(),
     }
     cache_path = temp_dir / ".cache_db.json"
     with open(cache_path, "w") as f:
@@ -386,12 +383,7 @@ def test_resource_manager_save_cache_db(temp_dir):
 
 def test_resource_manager_load_history_db(temp_dir):
     """Test loading history database."""
-    history_db = {
-        "sessions": [],
-        "tool_calls": [],
-        "requests": [],
-        "errors": []
-    }
+    history_db = {"sessions": [], "tool_calls": [], "requests": [], "errors": []}
     history_path = temp_dir / ".history_db.json"
     with open(history_path, "w") as f:
         json.dump(history_db, f)
@@ -610,10 +602,7 @@ def test_resource_manager_get_dataset_sliced(temp_dir, sample_hdf5_file):
     """Test getting sliced dataset."""
     rm = resources.ResourceManager(data_dir=temp_dir)
     data = rm.get_dataset(
-        str(sample_hdf5_file),
-        "/results/temperature",
-        start=(0, 0),
-        count=(10, 10)
+        str(sample_hdf5_file), "/results/temperature", start=(0, 0), count=(10, 10)
     )
 
     assert data is not None
@@ -825,6 +814,7 @@ def test_cache_performance(temp_dir, sample_hdf5_file):
 
     # First access - cache miss
     import time
+
     start = time.time()
     data1 = rm.get_dataset(str(sample_hdf5_file), "/results/temperature")
     time.time() - start
