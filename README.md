@@ -13,7 +13,7 @@
 [![Package Manager](https://img.shields.io/badge/uv-package%20manager-orange)](https://github.com/astral-sh/uv)
 [![Security Audit](https://img.shields.io/badge/pip--audit-security%20scanned-green)](https://github.com/pypa/pip-audit)
 
-**Agent Toolkit** - Part of the IoWarp platform's tooling layer for AI agents. A comprehensive collection of tools, skills, plugins, and extensions. Currently featuring 16+ Model Context Protocol (MCP) servers for scientific computing, with plans to expand to additional agent capabilities. Enables AI agents to interact with HPC resources, scientific data formats, and research datasets.
+**Agent Toolkit** - Part of the IoWarp platform's tooling layer for AI agents. A comprehensive collection of tools, skills, plugins, and extensions. Currently featuring 15+ Model Context Protocol (MCP) servers for scientific computing, with plans to expand to additional agent capabilities. Enables AI agents to interact with HPC resources, scientific data formats, and research datasets.
 
 [**Website**](https://iowarp.github.io/agent-toolkit/) | [**IOWarp**](https://iowarp.ai)
 
