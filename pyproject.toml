@@ -18,11 +18,6 @@ dependencies = [
   "click>=8.1.0",
 ]
 
-[project.urls]
-Homepage = "https://github.com/iowarp/agent-toolkit"
-Repository = "https://github.com/iowarp/agent-toolkit"
-Issues = "https://github.com/iowarp/agent-toolkit/issues"
-
 keywords = ["mcp", "model-context-protocol", "ai-agents", "llm-tools", "scientific-computing", "hpc", "hdf5", "slurm", "parquet", "research-tools"]
 
 classifiers = [
@@ -38,6 +33,11 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Operating System :: OS Independent",
 ]
+
+[project.urls]
+Homepage = "https://github.com/iowarp/agent-toolkit"
+Repository = "https://github.com/iowarp/agent-toolkit"
+Issues = "https://github.com/iowarp/agent-toolkit/issues"
 
 [project.scripts]
 # Only the unified launcher entry point
