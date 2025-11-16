@@ -1,6 +1,6 @@
 [project]
 name = "hdf5-mcp"
-version = "2.1.0"
+version = "1.0.0"
 description = "HDF5 FastMCP - Scientific Data Access for AI Agents | Agent Toolkit MCP Server"
 readme = "README.md"
 requires-python = ">=3.10"
