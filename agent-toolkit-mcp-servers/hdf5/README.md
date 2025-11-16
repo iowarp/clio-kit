@@ -11,7 +11,7 @@
 ## Quick Start
 
 ```bash
-uvx agent-toolkit hdf5
+uvx iowarp-agent-toolkit hdf5
 ```
 
 ## Documentation
@@ -230,13 +230,13 @@ HDF5_SHOW_PERFORMANCE=false          # Show timing in results (true for dev/debu
 
 ### stdio (Default)
 ```bash
-uvx agent-toolkit hdf5
+uvx iowarp-agent-toolkit hdf5
 ```
 For local AI assistants (Claude Code, Cursor). Simple subprocess mode.
 
 ### SSE/HTTP (Advanced)
 ```bash
-uvx agent-toolkit hdf5 --transport sse --port 8765
+uvx iowarp-agent-toolkit hdf5 --transport sse --port 8765
 ```
 For streaming large datasets, multiple clients, remote servers.
 

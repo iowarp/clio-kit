@@ -11,7 +11,7 @@ Parallel Sort MCP is a comprehensive Model Context Protocol (MCP) server that en
 ## Quick Start
 
 ```bash
-uvx agent-toolkit parallel-sort
+uvx iowarp-agent-toolkit parallel-sort
 ```
 
 ## Documentation
@@ -54,7 +54,7 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
   "mcpServers": {
     "parallel-sort-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "parallel-sort"]
+      "args": ["iowarp-agent-toolkit", "parallel-sort"]
     }
   }
 }
@@ -73,7 +73,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
     "parallel-sort-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["agent-toolkit", "parallel-sort"]
+      "args": ["iowarp-agent-toolkit", "parallel-sort"]
     }
   }
 }
@@ -87,7 +87,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
  
 ```sh
-claude mcp add parallel-sort-mcp -- uvx agent-toolkit parallel-sort
+claude mcp add parallel-sort-mcp -- uvx iowarp-agent-toolkit parallel-sort
 ```
  
 </details>
@@ -102,7 +102,7 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
   "mcpServers": {
     "parallel-sort-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "parallel-sort"]
+      "args": ["iowarp-agent-toolkit", "parallel-sort"]
     }
   }
 }

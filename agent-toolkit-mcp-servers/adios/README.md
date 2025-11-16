@@ -11,7 +11,7 @@ ADIOS MCP is a comprehensive Model Context Protocol (MCP) server that enables La
 ## Quick Start
 
 ```bash
-uvx agent-toolkit adios
+uvx iowarp-agent-toolkit adios
 ```
 
 ## Documentation
@@ -58,7 +58,7 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
   "mcpServers": {
     "adios-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "adios"]
+      "args": ["iowarp-agent-toolkit", "adios"]
     }
   }
 }
@@ -77,7 +77,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
     "adios-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["agent-toolkit", "adios"]
+      "args": ["iowarp-agent-toolkit", "adios"]
     }
   }
 }
@@ -91,7 +91,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add adios-mcp -- uvx agent-toolkit adios
+claude mcp add adios-mcp -- uvx iowarp-agent-toolkit adios
 ```
 
 </details>
@@ -106,7 +106,7 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
   "mcpServers": {
     "adios-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "adios"]
+      "args": ["iowarp-agent-toolkit", "adios"]
     }
   }
 }

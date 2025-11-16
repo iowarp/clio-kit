@@ -11,7 +11,7 @@ Node Hardware MCP is a Model Context Protocol server that enables LLMs to monito
 ## Quick Start
 
 ```bash
-uvx agent-toolkit node-hardware
+uvx iowarp-agent-toolkit node-hardware
 ```
 
 ## Documentation
@@ -47,7 +47,7 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
   "mcpServers": {
     "node-hardware-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "node-hardware"]
+      "args": ["iowarp-agent-toolkit", "node-hardware"]
     }
   }
 }
@@ -66,7 +66,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
     "node-hardware-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["agent-toolkit", "node-hardware"]
+      "args": ["iowarp-agent-toolkit", "node-hardware"]
     }
   }
 }
@@ -80,7 +80,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add node-hardware-mcp -- uvx agent-toolkit node-hardware
+claude mcp add node-hardware-mcp -- uvx iowarp-agent-toolkit node-hardware
 ```
 
 </details>
@@ -95,7 +95,7 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
   "mcpServers": {
     "node-hardware-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "node-hardware"]
+      "args": ["iowarp-agent-toolkit", "node-hardware"]
     }
   }
 }

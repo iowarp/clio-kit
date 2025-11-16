@@ -11,7 +11,7 @@ ChronoLog MCP is a comprehensive Model Context Protocol (MCP) server that integr
 ## Quick Start
 
 ```bash
-uvx agent-toolkit chronolog
+uvx iowarp-agent-toolkit chronolog
 ```
 
 ## Documentation
@@ -56,7 +56,7 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
   "mcpServers": {
     "chronolog-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "chronolog"]
+      "args": ["iowarp-agent-toolkit", "chronolog"]
     }
   }
 }
@@ -75,7 +75,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
     "chronolog-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["agent-toolkit", "chronolog"]
+      "args": ["iowarp-agent-toolkit", "chronolog"]
     }
   }
 }
@@ -89,7 +89,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add chronolog-mcp -- uvx agent-toolkit chronolog
+claude mcp add chronolog-mcp -- uvx iowarp-agent-toolkit chronolog
 ```
 
 </details>
@@ -104,7 +104,7 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
   "mcpServers": {
     "chronolog-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "chronolog"]
+      "args": ["iowarp-agent-toolkit", "chronolog"]
     }
   }
 }

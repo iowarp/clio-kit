@@ -11,7 +11,7 @@ ArXiv MCP is a comprehensive Model Context Protocol (MCP) server that enables La
 ## Quick Start
 
 ```bash
-uvx agent-toolkit arxiv
+uvx iowarp-agent-toolkit arxiv
 ```
 
 ## Documentation
@@ -57,7 +57,7 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
   "mcpServers": {
     "arxiv-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "arxiv"]
+      "args": ["iowarp-agent-toolkit", "arxiv"]
     }
   }
 }
@@ -76,7 +76,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
     "arxiv-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["agent-toolkit", "arxiv"]
+      "args": ["iowarp-agent-toolkit", "arxiv"]
     }
   }
 }
@@ -90,7 +90,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add arxiv-mcp -- uvx agent-toolkit arxiv
+claude mcp add arxiv-mcp -- uvx iowarp-agent-toolkit arxiv
 ```
 
 </details>
@@ -105,7 +105,7 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
   "mcpServers": {
     "arxiv-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "arxiv"]
+      "args": ["iowarp-agent-toolkit", "arxiv"]
     }
   }
 }

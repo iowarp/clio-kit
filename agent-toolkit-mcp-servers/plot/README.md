@@ -11,7 +11,7 @@ Plot MCP is a Model Context Protocol server that enables LLMs to create professi
 ## Quick Start
 
 ```bash
-uvx agent-toolkit plot
+uvx iowarp-agent-toolkit plot
 ```
 
 ## Documentation
@@ -46,7 +46,7 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
   "mcpServers": {
     "plot-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "plot"]
+      "args": ["iowarp-agent-toolkit", "plot"]
     }
   }
 }
@@ -65,7 +65,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
     "plot-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["agent-toolkit", "plot"]
+      "args": ["iowarp-agent-toolkit", "plot"]
     }
   }
 }
@@ -79,7 +79,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add plot-mcp -- uvx agent-toolkit plot
+claude mcp add plot-mcp -- uvx iowarp-agent-toolkit plot
 ```
 
 </details>
@@ -94,7 +94,7 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
   "mcpServers": {
     "plot-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "plot"]
+      "args": ["iowarp-agent-toolkit", "plot"]
     }
   }
 }

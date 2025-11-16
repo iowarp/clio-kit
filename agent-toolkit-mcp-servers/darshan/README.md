@@ -11,7 +11,7 @@ Darshan MCP is a comprehensive Model Context Protocol (MCP) server that enables 
 ## Quick Start
 
 ```bash
-uvx agent-toolkit darshan
+uvx iowarp-agent-toolkit darshan
 ```
 
 ## Documentation
@@ -57,7 +57,7 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
   "mcpServers": {
     "darshan-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "darshan"]
+      "args": ["iowarp-agent-toolkit", "darshan"]
     }
   }
 }
@@ -76,7 +76,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
     "darshan-mcp": {
       "type": "stdio",
       "command": "uvx",
-      "args": ["agent-toolkit", "darshan"]
+      "args": ["iowarp-agent-toolkit", "darshan"]
     }
   }
 }
@@ -90,7 +90,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add darshan-mcp -- uvx agent-toolkit darshan
+claude mcp add darshan-mcp -- uvx iowarp-agent-toolkit darshan
 ```
 
 </details>
@@ -105,7 +105,7 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
   "mcpServers": {
     "darshan-mcp": {
       "command": "uvx",
-      "args": ["agent-toolkit", "darshan"]
+      "args": ["iowarp-agent-toolkit", "darshan"]
     }
   }
 }
