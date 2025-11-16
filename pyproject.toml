@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "iowarp-agent-toolkit"
-version = "1.0.0"
+version = "1.0.1"
 description = "Agent Toolkit - MCP Servers, Clients, and Tools for AI Agents"
 readme = "README.md"
 requires-python = ">=3.10"
