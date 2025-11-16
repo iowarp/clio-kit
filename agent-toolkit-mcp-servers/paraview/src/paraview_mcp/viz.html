@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Run this script on YOUR LOCAL MACHINE 
+# This creates X11 forwarding to run LM Studio GUI locally
+
+# Server configuration
+REMOTE_SERVER="chameleon"     # Using your SSH config hostname
+X11_FORWARD_PORT=6000         # X11 forwarding port
+LM_STUDIO_GUI_PORT=3000       # If LM Studio has a web GUI
+
+echo "🖥️  Setting up GUI forwarding from Chameleon server"
+echo "=================================================="
+echo ""
+echo "This script should be run on YOUR LOCAL MACHINE"
+echo "Remote server: $REMOTE_SERVER (129.114.109.32)"
+echo ""
+
+# Check if X11 is available locally
+if ! command -v xauth &> /dev/null; then
+    echo "⚠️  Warning: xauth not found. You may need to install X11 utilities:"
+    echo "   Ubuntu/Debian: sudo apt install xauth"
+    echo "   MacOS: Install XQuartz"
+    echo ""
+fi
+
+echo "🔄 Creating X11 forwarding tunnel..."
+
+# Create SSH connection with X11 forwarding
+ssh -X -Y ${REMOTE_SERVER} \
+    -o ForwardX11=yes \
+    -o ForwardX11Trusted=yes \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=3 \
+    "echo '✅ Connected with X11 forwarding!'; 
+     echo '🖥️  X11 forwarding active - GUI applications will display on your local machine';
+     echo '';
+     echo 'To run LM Studio GUI, execute:';
+     echo '  DISPLAY=\$DISPLAY ./LM_Studio.AppImage --no-sandbox';
+     echo '';
+     echo 'Or to run the server with GUI:';
+     echo '  DISPLAY=\$DISPLAY ./LM_Studio.AppImage --no-sandbox server start --port 1235 --gui';
+     echo '';
+     echo 'Press Ctrl+D to exit this session';
+     /bin/bash"
+
+echo ""
+echo "X11 forwarding session ended."

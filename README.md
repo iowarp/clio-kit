@@ -7,13 +7,13 @@
 [![CI](https://github.com/iowarp/agent-toolkit/actions/workflows/quality_control.yml/badge.svg)](https://github.com/iowarp/agent-toolkit/actions/workflows/quality_control.yml)
 [![Coverage](https://codecov.io/gh/iowarp/agent-toolkit/branch/main/graph/badge.svg)](https://codecov.io/gh/iowarp/agent-toolkit)
 
-[![MCP Servers](https://img.shields.io/badge/MCP%20Servers-15-green)](https://github.com/iowarp/agent-toolkit/tree/main/agent-toolkit-mcp-servers)
+[![MCP Servers](https://img.shields.io/badge/MCP%20Servers-16-green)](https://github.com/iowarp/agent-toolkit/tree/main/agent-toolkit-mcp-servers)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Type Checked](https://img.shields.io/badge/mypy-type%20checked-blue)](http://mypy-lang.org/)
 [![Package Manager](https://img.shields.io/badge/uv-package%20manager-orange)](https://github.com/astral-sh/uv)
 [![Security Audit](https://img.shields.io/badge/pip--audit-security%20scanned-green)](https://github.com/pypa/pip-audit)
 
-**Agent Toolkit** - Part of the IoWarp platform's tooling layer for AI agents. A comprehensive collection of tools, skills, plugins, and extensions. Currently featuring 15+ Model Context Protocol (MCP) servers for scientific computing, with plans to expand to additional agent capabilities. Enables AI agents to interact with HPC resources, scientific data formats, and research datasets.
+**Agent Toolkit** - Part of the IoWarp platform's tooling layer for AI agents. A comprehensive collection of tools, skills, plugins, and extensions. Currently featuring 16+ Model Context Protocol (MCP) servers for scientific computing, with plans to expand to additional agent capabilities. Enables AI agents to interact with HPC resources, scientific data formats, and research datasets.
 
 [**Website**](https://iowarp.github.io/agent-toolkit/) | [**IOWarp**](https://iowarp.ai)
 
@@ -43,7 +43,7 @@ AI agents handle scientific computing tasks through natural language:
 - ✅ **"Plot the results from this CSV file"** - Plot MCP visualizes
 - ✅ **"Optimize memory usage for this pandas DataFrame"** - Pandas MCP optimizes
 
-**One unified interface. 15 MCP servers. 150+ specialized tools. Built for research.**
+**One unified interface. 16 MCP servers. 150+ specialized tools. Built for research.**
 
 Agent Toolkit is part of the IoWarp platform's comprehensive tooling ecosystem for AI agents. It brings AI assistance to your scientific computing workflow—whether you're analyzing terabytes of HDF5 data, managing Slurm jobs across clusters, or exploring research papers. Built by researchers, for researchers, at Illinois Institute of Technology with NSF support.
 
@@ -56,7 +56,7 @@ Agent Toolkit is part of the IoWarp platform's comprehensive tooling ecosystem f
 ### One Command for Any Server
 
 ```bash
-# List all 15 available MCP servers
+# List all 16 available MCP servers
 uvx iowarp-agent-toolkit mcp-servers
 
 # Run any server instantly
@@ -183,6 +183,7 @@ See [Claude Desktop MCP docs](https://modelcontextprotocol.io/quickstart/user) f
 | **`node-hardware`** | 1.0 | System | System hardware information | `uvx iowarp-agent-toolkit mcp-server node-hardware` |
 | **`pandas`** | 1.0 | Data Analysis | CSV data loading and filtering | `uvx iowarp-agent-toolkit mcp-server pandas` |
 | **`parallel-sort`** | 1.0 | Computing | Large file sorting | `uvx iowarp-agent-toolkit mcp-server parallel-sort` |
+| **`paraview`** | 1.0 | Visualization | Scientific 3D visualization and analysis | `uvx iowarp-agent-toolkit mcp-server paraview` |
 | **`parquet`** | 1.0 | Data I/O | Read Parquet file columns | `uvx iowarp-agent-toolkit mcp-server parquet` |
 | **`plot`** | 1.0 | Visualization | Generate plots from CSV data | `uvx iowarp-agent-toolkit mcp-server plot` |
 | **`slurm`** | 1.0 | HPC | Job submission and management | `uvx iowarp-agent-toolkit mcp-server slurm` |

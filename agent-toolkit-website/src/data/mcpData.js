@@ -392,6 +392,35 @@ export const mcpData = {
     ],
     "slug": "plot"
   },
+  "paraview": {
+    "name": "ParaView",
+    "category": "Scientific Visualization",
+    "description": "Load scientific data. Generate isosurfaces. Create data slices. Volume rendering. Flow streamlines. 12 tools for 3D scientific visualization with ADIOS2/BP5 support.",
+    "icon": "\ud83d\udd2c",
+    "actions": [
+      "load_scientific_data",
+      "generate_isosurface",
+      "create_data_slice",
+      "configure_volume_display",
+      "generate_flow_streamlines",
+      "take_viewport_screenshot",
+      "apply_field_coloring",
+      "set_representation_type",
+      "get_available_arrays",
+      "rotate_camera",
+      "reset_camera"
+    ],
+    "stats": {
+      "version": "1.0.0",
+      "updated": "2025-11-13"
+    },
+    "platforms": [
+      "claude",
+      "cursor",
+      "vscode"
+    ],
+    "slug": "paraview"
+  },
   "jarvis": {
     "name": "Jarvis",
     "category": "Data Processing",
@@ -444,7 +473,7 @@ export const mcpData = {
 // Categories with counts and colors
 export const categories = {
   "All": {
-    "count": 15,
+    "count": 16,
     "color": "#6b7280",
     "icon": "\ud83d\udd0d"
   },
@@ -457,6 +486,11 @@ export const categories = {
     "count": 2,
     "color": "#10b981",
     "icon": "\ud83d\udcc8"
+  },
+  "Scientific Visualization": {
+    "count": 1,
+    "color": "#8b5cf6",
+    "icon": "\ud83d\udd2c"
   },
   "System Management": {
     "count": 2,
@@ -484,6 +518,7 @@ export const popularMcps = [
 export const categoryTypes = {
   "Data Processing": "data",
   "Analysis & Visualization": "analysis",
+  "Scientific Visualization": "scientific",
   "System Management": "system",
   "Utilities": "util"
 };
