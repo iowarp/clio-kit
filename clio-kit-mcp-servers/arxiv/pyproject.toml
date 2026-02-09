@@ -1,0 +1,37 @@
+[project]
+name = "arxiv-mcp"
+version = "1.0.0"
+description = "ArXiv MCP server implementation using Model Context Protocol"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+authors = [
+    { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
+]
+
+keywords = ["data processing", "arxiv", "publications", "scientific data", "research", "papers", "iowarp", "grc"]
+
+dependencies = [
+    "fastmcp>=2.13.0",
+    "httpx>=0.24.0",
+]
+
+[project.urls]
+Homepage = "https://toolkit.iowarp.ai/"
+Repository = "https://github.com/iowarp/clio-kit"
+
+[project.scripts]
+arxiv-mcp = "server:main"
+
+[dependency-groups]
+dev = [
+     "mypy>=1.17.0",
+     "pytest>=8.4.1",
+     "pytest-asyncio>=1.0.0",
+     "pytest-cov>=6.2.1",
+     "ruff>=0.12.5",
+]
+
+[build-system]
+requires = ["setuptools>=64.0", "wheel"]
+build-backend = "setuptools.build_meta"

@@ -19,17 +19,19 @@ except ImportError:
     try:
         import tomli as tomllib  # Fallback for older Python
     except ImportError:
-        print("Error: tomllib/tomli not available. Please install tomli: pip install tomli")
+        print(
+            "Error: tomllib/tomli not available. Please install tomli: pip install tomli"
+        )
         sys.exit(1)
 
 
 class MCPDataExtractor:
     """Extract MCP data from project files."""
-    
+
     def __init__(self):
         self.icon_mapping = {
             "adios": "📊",
-            "arxiv": "📄", 
+            "arxiv": "📄",
             "hdf5": "🗂️",
             "pandas": "🐼",
             "parquet": "📋",
@@ -41,25 +43,25 @@ class MCPDataExtractor:
             "compression": "🗜️",
             "parallel_sort": "🔄",
             "jarvis": "🤖",
-            "chronolog": "⏰"
+            "chronolog": "⏰",
         }
 
     def extract_mcp_data(self, mcps_dir: Path) -> Dict:
         """Extract data for all MCPs in the directory."""
         mcps_data = {}
-        
+
         for mcp_dir in mcps_dir.iterdir():
-            if mcp_dir.is_dir() and not mcp_dir.name.startswith('.'):
+            if mcp_dir.is_dir() and not mcp_dir.name.startswith("."):
                 print(f"Processing MCP: {mcp_dir.name}")
                 try:
                     mcp_data = self._extract_single_mcp_data(mcp_dir)
                     if mcp_data:
-                        mcps_data[mcp_data['slug']] = mcp_data
+                        mcps_data[mcp_data["slug"]] = mcp_data
                 except Exception as e:
                     print(f"Error processing {mcp_dir.name}: {e}")
-        
+
         return mcps_data
-    
+
     def _extract_single_mcp_data(self, mcp_dir: Path) -> Optional[Dict]:
         """Extract data for a single MCP."""
         # Read pyproject.toml
@@ -67,132 +69,152 @@ class MCPDataExtractor:
         if not pyproject_file.exists():
             print(f"Warning: No pyproject.toml found in {mcp_dir.name}")
             return None
-        
+
         try:
-            with open(pyproject_file, 'rb') as f:
+            with open(pyproject_file, "rb") as f:
                 pyproject_data = tomllib.load(f)
         except Exception as e:
             print(f"Error reading pyproject.toml in {mcp_dir.name}: {e}")
             return None
-        
+
         # Extract basic info from pyproject.toml
-        project_info = pyproject_data.get('project', {})
-        name = project_info.get('name', mcp_dir.name).replace('-mcp', '').replace('_', ' ').title()
-        description = project_info.get('description', f'{name} MCP server')
-        version = project_info.get('version', '1.0.0')
-        keywords = project_info.get('keywords', [])
-        license_info = project_info.get('license', 'MIT')
-        
+        project_info = pyproject_data.get("project", {})
+        name = (
+            project_info.get("name", mcp_dir.name)
+            .replace("-mcp", "")
+            .replace("_", " ")
+            .title()
+        )
+        description = project_info.get("description", f"{name} MCP server")
+        version = project_info.get("version", "1.0.0")
+        keywords = project_info.get("keywords", [])
+        license_info = project_info.get("license", "MIT")
+
         # Determine slug and category
-        slug = mcp_dir.name.lower().replace('_', '_').replace('-', '_')
+        slug = mcp_dir.name.lower().replace("_", "_").replace("-", "_")
         category = self._determine_category(name, description, keywords)
         icon = self.icon_mapping.get(slug, "🔧")
-        
+
         # Read README.md for enhanced description
         readme_file = mcp_dir / "README.md"
         enhanced_description = description
-        
+
         if readme_file.exists():
             try:
-                with open(readme_file, 'r', encoding='utf-8') as f:
+                with open(readme_file, "r", encoding="utf-8") as f:
                     readme_content = f.read()
-                enhanced_description = self._extract_description_from_readme(readme_content) or description
+                enhanced_description = (
+                    self._extract_description_from_readme(readme_content) or description
+                )
             except Exception as e:
                 print(f"Error reading README.md in {mcp_dir.name}: {e}")
-        
+
         # Extract tools from server.py
         tools = self._extract_tools_from_server(mcp_dir)
-        actions = [tool['name'] for tool in tools] if tools else []
-        
+        actions = [tool["name"] for tool in tools] if tools else []
+
         return {
-            'name': name,
-            'slug': slug,
-            'category': category,
-            'description': enhanced_description,
-            'icon': icon,
-            'version': version,
-            'actions': actions,
-            'tools': tools,
-            'platforms': ["claude", "cursor", "vscode"],
-            'updated': datetime.now().strftime("%Y-%m-%d"),
-            'path': str(mcp_dir),
-            'keywords': keywords,
-            'license': license_info
+            "name": name,
+            "slug": slug,
+            "category": category,
+            "description": enhanced_description,
+            "icon": icon,
+            "version": version,
+            "actions": actions,
+            "tools": tools,
+            "platforms": ["claude", "cursor", "vscode"],
+            "updated": datetime.now().strftime("%Y-%m-%d"),
+            "path": str(mcp_dir),
+            "keywords": keywords,
+            "license": license_info,
         }
-    
-    def _determine_category(self, name: str, description: str, keywords: List[str]) -> str:
+
+    def _determine_category(
+        self, name: str, description: str, keywords: List[str]
+    ) -> str:
         """Determine MCP category based on name, description, and keywords."""
         text = f"{name} {description} {' '.join(keywords)}".lower()
-        
-        if any(word in text for word in ['data', 'processing', 'pandas', 'hdf5', 'parquet', 'adios']):
+
+        if any(
+            word in text
+            for word in ["data", "processing", "pandas", "hdf5", "parquet", "adios"]
+        ):
             return "Data Processing"
-        elif any(word in text for word in ['analysis', 'visualization', 'plot', 'chart', 'graph']):
+        elif any(
+            word in text
+            for word in ["analysis", "visualization", "plot", "chart", "graph"]
+        ):
             return "Analysis & Visualization"
-        elif any(word in text for word in ['system', 'management', 'slurm', 'hardware', 'node', 'jarvis']):
+        elif any(
+            word in text
+            for word in ["system", "management", "slurm", "hardware", "node", "jarvis"]
+        ):
             return "System Management"
         else:
             return "Utilities"
-    
+
     def _extract_description_from_readme(self, readme_content: str) -> Optional[str]:
         """Extract a better description from README content."""
-        lines = readme_content.split('\n')
-        
+        lines = readme_content.split("\n")
+
         # Look for description after the title
         in_description = False
         description_lines = []
-        
+
         for line in lines:
             line = line.strip()
-            
+
             # Skip title and badges
-            if line.startswith('#') or line.startswith('[!['):
+            if line.startswith("#") or line.startswith("[!["):
                 continue
-            
+
             # Start collecting description after badges/title
-            if not in_description and line and not line.startswith('#'):
+            if not in_description and line and not line.startswith("#"):
                 in_description = True
-            
+
             if in_description:
-                if line.startswith('##') or line.startswith('# '):  # Stop at next section
+                if line.startswith("##") or line.startswith(
+                    "# "
+                ):  # Stop at next section
                     break
                 if line:
                     description_lines.append(line)
                 elif description_lines:  # Stop at first empty line after content
                     break
-        
+
         if description_lines:
-            description = ' '.join(description_lines)
+            description = " ".join(description_lines)
             # Clean up common patterns
-            description = re.sub(r'\*\*([^*]+)\*\*', r'\1', description)  # Remove bold
-            description = re.sub(r'`([^`]+)`', r'\1', description)  # Remove code quotes
-            description = re.sub(r'\s+', ' ', description)  # Normalize whitespace
+            description = re.sub(r"\*\*([^*]+)\*\*", r"\1", description)  # Remove bold
+            description = re.sub(r"`([^`]+)`", r"\1", description)  # Remove code quotes
+            description = re.sub(r"\s+", " ", description)  # Normalize whitespace
             return description.strip()
-        
+
         return None
-    
+
     def _extract_tools_from_server(self, mcp_dir: Path) -> List[Dict]:
         """Extract tool information from server.py files."""
         server_files = list(mcp_dir.glob("src/**/server.py"))
-        
+
         tools = []
         for server_file in server_files:
             try:
-                with open(server_file, 'r', encoding='utf-8') as f:
+                with open(server_file, "r", encoding="utf-8") as f:
                     content = f.read()
-                
+
                 tree = ast.parse(content)
-                
+
                 for node in ast.walk(tree):
                     if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                         tool_info = self._extract_tool_from_function(node)
                         if tool_info:
                             tools.append(tool_info)
-            
+
             except Exception as e:
                 print(f"Error parsing {server_file}: {e}")
-        
+
         return tools
-    
+
     def _extract_tool_from_function(self, node) -> Optional[Dict]:
         """Extract tool information from a function node."""
         # Check for @mcp.tool decorator
@@ -200,73 +222,79 @@ class MCPDataExtractor:
             if self._is_mcp_tool_decorator(decorator):
                 name = self._extract_decorator_name(decorator) or node.name
                 description = self._extract_decorator_description(decorator)
-                
+
                 # Get enhanced description from docstring
                 docstring = ast.get_docstring(node)
                 if docstring and not description:
-                    description = docstring.split('\n')[0].strip()
-                
+                    description = docstring.split("\n")[0].strip()
+
                 return {
-                    'name': name,
-                    'description': description or f"Tool: {name}",
-                    'function_name': node.name
+                    "name": name,
+                    "description": description or f"Tool: {name}",
+                    "function_name": node.name,
                 }
-        
+
         return None
-    
+
     def _is_mcp_tool_decorator(self, decorator) -> bool:
         """Check if decorator is @mcp.tool."""
         if isinstance(decorator, ast.Call):
             if isinstance(decorator.func, ast.Attribute):
-                return (decorator.func.attr == 'tool' and 
-                       isinstance(decorator.func.value, ast.Name) and 
-                       decorator.func.value.id == 'mcp')
+                return (
+                    decorator.func.attr == "tool"
+                    and isinstance(decorator.func.value, ast.Name)
+                    and decorator.func.value.id == "mcp"
+                )
         elif isinstance(decorator, ast.Attribute):
-            return (decorator.attr == 'tool' and 
-                   isinstance(decorator.value, ast.Name) and 
-                   decorator.value.id == 'mcp')
+            return (
+                decorator.attr == "tool"
+                and isinstance(decorator.value, ast.Name)
+                and decorator.value.id == "mcp"
+            )
         return False
-    
+
     def _extract_decorator_name(self, decorator) -> Optional[str]:
         """Extract name from decorator arguments."""
         if isinstance(decorator, ast.Call):
             for keyword in decorator.keywords:
-                if keyword.arg == 'name' and isinstance(keyword.value, ast.Constant):
+                if keyword.arg == "name" and isinstance(keyword.value, ast.Constant):
                     return keyword.value.value
         return None
-    
+
     def _extract_decorator_description(self, decorator) -> Optional[str]:
         """Extract description from decorator arguments."""
         if isinstance(decorator, ast.Call):
             for keyword in decorator.keywords:
-                if keyword.arg == 'description' and isinstance(keyword.value, ast.Constant):
+                if keyword.arg == "description" and isinstance(
+                    keyword.value, ast.Constant
+                ):
                     return keyword.value.value
         return None
 
 
 class DocusaurusGenerator:
     """Generate Docusaurus markdown files from MCP data."""
-    
+
     def __init__(self, output_dir: Path):
         self.output_dir = output_dir
         self.mcps_output_dir = output_dir / "docs" / "mcps"
         self.data_output_dir = output_dir / "src" / "data"
-    
+
     def generate_all_docs(self, mcps_data: Dict):
         """Generate all documentation files."""
         # Ensure output directories exist
         self.mcps_output_dir.mkdir(parents=True, exist_ok=True)
         self.data_output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Generate individual MCP markdown files
         for slug, mcp_data in mcps_data.items():
             self._generate_mcp_markdown(mcp_data)
-        
+
         # Generate mcpData.js file
         self._generate_mcp_data_js(mcps_data)
-        
+
         print(f"Generated {len(mcps_data)} MCP documentation files")
-    
+
     def _generate_mcp_markdown(self, mcp_data: Dict):
         """Generate markdown file for a single MCP with 4 sections."""
         # Try to load old description from existing file
@@ -275,50 +303,55 @@ class DocusaurusGenerator:
 
         if output_file.exists():
             try:
-                with open(output_file, 'r', encoding='utf-8') as f:
+                with open(output_file, "r", encoding="utf-8") as f:
                     content = f.read()
                     # Extract description from JSX prop
                     import re
+
                     match = re.search(r'description="([^"]*)"', content)
                     if match:
                         old_jsx_description = match.group(1)
             except Exception as e:
-                print(f"Warning: Could not load old description for {mcp_data['slug']}: {e}")
+                print(
+                    f"Warning: Could not load old description for {mcp_data['slug']}: {e}"
+                )
 
         # Use old description if available, otherwise use new one
-        base_description = old_jsx_description if old_jsx_description else mcp_data['description']
+        base_description = (
+            old_jsx_description if old_jsx_description else mcp_data["description"]
+        )
 
         # Escape YAML special characters in description
-        description = base_description.replace('"', '\\"').replace('\n', ' ')
+        description = base_description.replace('"', '\\"').replace("\n", " ")
         if len(description) > 300:
             description = description[:297] + "..."
 
         # Escape quotes in the full description for JSX
-        jsx_description = base_description.replace('"', '&quot;').replace('\n', ' ')
-        
+        jsx_description = base_description.replace('"', "&quot;").replace("\n", " ")
+
         # Format JSX props
-        actions_jsx = json.dumps(mcp_data['actions'])
-        platforms_jsx = json.dumps(mcp_data['platforms'])
-        keywords_jsx = json.dumps(mcp_data.get('keywords', []))
-        tools_jsx = json.dumps(mcp_data.get('tools', []))
-        
+        actions_jsx = json.dumps(mcp_data["actions"])
+        platforms_jsx = json.dumps(mcp_data["platforms"])
+        keywords_jsx = json.dumps(mcp_data.get("keywords", []))
+        tools_jsx = json.dumps(mcp_data.get("tools", []))
+
         content = f"""---
-title: {mcp_data['name']} MCP
+title: {mcp_data["name"]} MCP
 description: "{description}"
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
 
 <MCPDetail 
-  name="{mcp_data['name']}"
-  icon="{mcp_data['icon']}"
-  category="{mcp_data['category']}"
+  name="{mcp_data["name"]}"
+  icon="{mcp_data["icon"]}"
+  category="{mcp_data["category"]}"
   description="{jsx_description}"
-  version="{mcp_data['version']}"
+  version="{mcp_data["version"]}"
   actions={{{actions_jsx}}}
   platforms={{{platforms_jsx}}}
   keywords={{{keywords_jsx}}}
-  license="{mcp_data.get('license', 'MIT')}"
+  license="{mcp_data.get("license", "MIT")}"
   tools={{{tools_jsx}}}
 >
 
@@ -327,19 +360,23 @@ import MCPDetail from '@site/src/components/MCPDetail';
 </MCPDetail>
 
 """
-        
+
         output_file = self.mcps_output_dir / f"{mcp_data['slug']}.md"
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write(content)
-        
+
         print(f"Generated {output_file}")
-    
+
     def _generate_tools_section(self, mcp_data: Dict) -> str:
         """Generate tools section from extracted data."""
-        if not mcp_data['tools']:
+        if not mcp_data["tools"]:
             # Fallback to action list if no detailed tools found
-            tools_list = '\n'.join([f"- **`{action}`**: {action.replace('_', ' ').title()} functionality" 
-                                  for action in mcp_data['actions']])
+            tools_list = "\n".join(
+                [
+                    f"- **`{action}`**: {action.replace('_', ' ').title()} functionality"
+                    for action in mcp_data["actions"]
+                ]
+            )
             return f"""
 The following tools are available:
 
@@ -347,45 +384,47 @@ The following tools are available:
 
 Refer to the MCP server documentation for detailed parameter information.
 """
-        
+
         tools_content = []
-        for tool in mcp_data['tools']:
+        for tool in mcp_data["tools"]:
             # Clean up description
-            description = tool['description']
+            description = tool["description"]
             if len(description) > 150:
                 description = description[:147] + "..."
-            
+
             tools_content.append(f"""
-### `{tool['name']}`
+### `{tool["name"]}`
 
 {description}
 
 **Usage Example:**
 ```python
-# Use {tool['name']} function
-result = {tool['name']}()
+# Use {tool["name"]} function
+result = {tool["name"]}()
 print(result)
 ```
 """)
-        
-        return '\n'.join(tools_content)
-    
+
+        return "\n".join(tools_content)
+
     def _extract_installation_from_readme(self, mcp_data: Dict) -> str:
         """Extract installation section from README."""
-        readme_file = Path(mcp_data['path']) / "README.md"
-        
+        readme_file = Path(mcp_data["path"]) / "README.md"
+
         if readme_file.exists():
             try:
-                with open(readme_file, 'r', encoding='utf-8') as f:
+                with open(readme_file, "r", encoding="utf-8") as f:
                     readme_content = f.read()
-                
+
                 # Extract installation section from README
-                installation = self._extract_section_from_readme(readme_content, "installation")
+                installation = self._extract_section_from_readme(
+                    readme_content, "installation"
+                )
                 if installation:
                     return installation
             except Exception as e:
                 print(f"Error reading installation from README: {e}")
-        
+
         # Return default installation message if not found
         return f"""
 ### Requirements
@@ -400,9 +439,9 @@ Add this to your MCP client configuration:
 ```json
 {{
   "mcpServers": {{
-    "{mcp_data['name'].lower()}-mcp": {{
+    "{mcp_data["name"].lower()}-mcp": {{
       "command": "uvx",
-      "args": ["agent-toolkit", "{mcp_data['slug'].replace('_', '-')}"]
+      "args": ["clio-kit", "{mcp_data["slug"].replace("_", "-")}"]
     }}
   }}
 }}
@@ -410,48 +449,52 @@ Add this to your MCP client configuration:
 
 Refer to your MCP client documentation for specific setup instructions.
 """
-    
-    def _extract_section_from_readme(self, readme_content: str, section_name: str) -> str:
+
+    def _extract_section_from_readme(
+        self, readme_content: str, section_name: str
+    ) -> str:
         """Extract a specific section from README content."""
-        lines = readme_content.split('\n')
+        lines = readme_content.split("\n")
         in_section = False
         section_lines = []
         section_level = 0
-        
+
         for line in lines:
             # Look for section header (with various markdown styles, including emojis)
-            header_match = re.match(r'^(#+)\s*', line)
+            header_match = re.match(r"^(#+)\s*", line)
             if header_match and section_name.lower() in line.lower():
                 in_section = True
-                section_level = len(header_match.group(1))  # Count number of # characters
+                section_level = len(
+                    header_match.group(1)
+                )  # Count number of # characters
                 continue
             elif in_section and header_match:
                 # Stop at next section header of same level or higher (fewer #'s)
                 current_level = len(header_match.group(1))
                 if current_level <= section_level:
                     break
-            
+
             if in_section:
                 section_lines.append(line)
-        
+
         if section_lines:
-            content = '\n'.join(section_lines).strip()
+            content = "\n".join(section_lines).strip()
             # Clean up the content - remove trailing problematic content
             content = self._clean_extracted_content(content)
             return content
-        
+
         return ""
-    
+
     def _clean_extracted_content(self, content: str) -> str:
         """Clean extracted content to avoid MDX issues."""
-        lines = content.split('\n')
+        lines = content.split("\n")
         cleaned_lines = []
         in_code_block = False
         code_block_count = 0
-        
+
         for line in lines:
             # Track code blocks
-            if line.strip().startswith('```'):
+            if line.strip().startswith("```"):
                 if in_code_block:
                     cleaned_lines.append(line)
                     in_code_block = False
@@ -460,47 +503,47 @@ Refer to your MCP client documentation for specific setup instructions.
                     cleaned_lines.append(line)
                     in_code_block = True
                 continue
-            
+
             # Skip lines that might cause MDX issues
-            if line.strip() == '---' and len(cleaned_lines) > 10:
+            if line.strip() == "---" and len(cleaned_lines) > 10:
                 break
-            if 'Screenshot' in line or 'alt text' in line:
+            if "Screenshot" in line or "alt text" in line:
                 continue
-            if line.strip().startswith('![') and line.strip().endswith('>)'):
+            if line.strip().startswith("![") and line.strip().endswith(">)"):
                 continue
-            
+
             cleaned_lines.append(line)
-        
+
         # Ensure any open code blocks are closed
         if in_code_block:
-            cleaned_lines.append('```')
-        
-        return '\n'.join(cleaned_lines).strip()
-    
+            cleaned_lines.append("```")
+
+        return "\n".join(cleaned_lines).strip()
+
     def _extract_examples_from_readme(self, mcp_data: Dict) -> str:
         """Extract examples section from README or generate basic examples."""
-        readme_file = Path(mcp_data['path']) / "README.md"
-        
+        readme_file = Path(mcp_data["path"]) / "README.md"
+
         if readme_file.exists():
             try:
-                with open(readme_file, 'r', encoding='utf-8') as f:
+                with open(readme_file, "r", encoding="utf-8") as f:
                     readme_content = f.read()
-                
+
                 # Extract examples section from README
                 examples = self._extract_section_from_readme(readme_content, "examples")
                 if examples:
                     return examples
             except Exception as e:
                 print(f"Error reading examples from README: {e}")
-        
+
         # Fallback to generated examples
         return self._generate_basic_examples(mcp_data)
-    
+
     def _generate_basic_examples(self, mcp_data: Dict) -> str:
         """Generate basic examples based on category."""
-        name = mcp_data['name']
-        category = mcp_data['category']
-        
+        name = mcp_data["name"]
+        category = mcp_data["category"]
+
         if "Data Processing" in category:
             return f"""
 ### Basic Usage
@@ -554,7 +597,7 @@ processed = process_data(data)
 final_result = finalize_output(processed)
 ```
 """
-    
+
     def _generate_mcp_data_js(self, mcps_data: Dict):
         """Generate the mcpData.js file for the frontend."""
         # Load existing mcpData.js to preserve descriptions
@@ -562,10 +605,12 @@ final_result = finalize_output(processed)
         output_file = self.data_output_dir / "mcpData.js"
         if output_file.exists():
             try:
-                with open(output_file, 'r', encoding='utf-8') as f:
+                with open(output_file, "r", encoding="utf-8") as f:
                     content = f.read()
                     # Extract existing mcpData object (simple extraction)
-                    match = re.search(r'export const mcpData = ({.*?});', content, re.DOTALL)
+                    match = re.search(
+                        r"export const mcpData = ({.*?});", content, re.DOTALL
+                    )
                     if match:
                         # This is a simplified extraction - in production use proper JS parser
                         try:
@@ -579,7 +624,7 @@ final_result = finalize_output(processed)
         # Count categories
         category_counts = {}
         for mcp_data in mcps_data.values():
-            category = mcp_data['category']
+            category = mcp_data["category"]
             category_counts[category] = category_counts.get(category, 0) + 1
 
         # Generate JavaScript object, preserving existing descriptions
@@ -587,64 +632,61 @@ final_result = finalize_output(processed)
         for slug, mcp_data in mcps_data.items():
             # Preserve old description if it exists
             old_description = None
-            if slug in existing_mcps and 'description' in existing_mcps[slug]:
-                old_description = existing_mcps[slug]['description']
+            if slug in existing_mcps and "description" in existing_mcps[slug]:
+                old_description = existing_mcps[slug]["description"]
 
             js_mcps[slug] = {
-                'name': mcp_data['name'],
-                'category': mcp_data['category'],
-                'description': old_description or mcp_data['description'],  # Use old description if available
-                'icon': mcp_data['icon'],
-                'actions': mcp_data['actions'],
-                'stats': {
-                    'version': mcp_data['version'],
-                    'updated': mcp_data['updated']
+                "name": mcp_data["name"],
+                "category": mcp_data["category"],
+                "description": old_description
+                or mcp_data["description"],  # Use old description if available
+                "icon": mcp_data["icon"],
+                "actions": mcp_data["actions"],
+                "stats": {
+                    "version": mcp_data["version"],
+                    "updated": mcp_data["updated"],
                 },
-                'platforms': mcp_data['platforms'],
-                'slug': mcp_data['slug']
+                "platforms": mcp_data["platforms"],
+                "slug": mcp_data["slug"],
             }
-        
+
         # Generate categories object
         categories = {
-            "All": {
-                "count": len(mcps_data),
-                "color": "#6b7280",
-                "icon": "🔍"
-            }
+            "All": {"count": len(mcps_data), "color": "#6b7280", "icon": "🔍"}
         }
-        
+
         category_colors = {
             "Data Processing": "#3b82f6",
-            "Analysis & Visualization": "#10b981", 
+            "Analysis & Visualization": "#10b981",
             "System Management": "#f59e0b",
-            "Utilities": "#ef4444"
+            "Utilities": "#ef4444",
         }
-        
+
         category_icons = {
             "Data Processing": "📊",
             "Analysis & Visualization": "📈",
-            "System Management": "🖥️", 
-            "Utilities": "🔧"
+            "System Management": "🖥️",
+            "Utilities": "🔧",
         }
-        
+
         for category, count in category_counts.items():
             categories[category] = {
                 "count": count,
                 "color": category_colors.get(category, "#6b7280"),
-                "icon": category_icons.get(category, "🔧")
+                "icon": category_icons.get(category, "🔧"),
             }
-        
+
         # Popular MCPs (those with most actions)
-        popular_mcps = sorted(mcps_data.keys(), 
-                            key=lambda k: len(mcps_data[k]['actions']), 
-                            reverse=True)[:6]
-        
+        popular_mcps = sorted(
+            mcps_data.keys(), key=lambda k: len(mcps_data[k]["actions"]), reverse=True
+        )[:6]
+
         # Category types for TypeScript/JSDoc
         category_types = {
             "Data Processing": "data",
             "Analysis & Visualization": "analysis",
             "System Management": "system",
-            "Utilities": "util"
+            "Utilities": "util",
         }
 
         # GitHub stats placeholder
@@ -652,15 +694,15 @@ final_result = finalize_output(processed)
             "stars": 0,
             "forks": 0,
             "watchers": 0,
-            "url": "https://github.com/iowarp/agent-toolkit"
+            "url": "https://github.com/iowarp/clio-kit",
         }
 
         # MCP endorsements/badges
         mcp_endorsement = {
-            "hdf5": ["flagship", "v2.0"],
+            "hdf5": ["flagship", "v1.0"],
             "slurm": ["hpc"],
             "arxiv": ["research"],
-            "pandas": ["data"]
+            "pandas": ["data"],
         }
 
         content = f"""// MCP data structure for tile-based showcase
@@ -681,11 +723,11 @@ export const githubStats = {json.dumps(github_stats, indent=2)};
 // MCP endorsements and badges
 export const mcpEndorsement = {json.dumps(mcp_endorsement, indent=2)};
 """
-        
+
         output_file = self.data_output_dir / "mcpData.js"
-        with open(output_file, 'w', encoding='utf-8') as f:
+        with open(output_file, "w", encoding="utf-8") as f:
             f.write(content)
-        
+
         print(f"Generated {output_file}")
 
 
@@ -694,29 +736,29 @@ def main():
     if len(sys.argv) != 3:
         print("Usage: python generate_docs.py <mcps_directory> <docs_output_directory>")
         sys.exit(1)
-    
+
     mcps_dir = Path(sys.argv[1])
     docs_output_dir = Path(sys.argv[2])
-    
+
     if not mcps_dir.exists():
         print(f"Error: MCPs directory {mcps_dir} does not exist")
         sys.exit(1)
-    
+
     try:
         # Extract MCP data
         extractor = MCPDataExtractor()
         mcps_data = extractor.extract_mcp_data(mcps_dir)
-        
+
         if not mcps_data:
             print("Error: No MCPs found or processed")
             sys.exit(1)
-        
+
         # Generate documentation
         generator = DocusaurusGenerator(docs_output_dir)
         generator.generate_all_docs(mcps_data)
-        
+
         print(f"Successfully generated documentation for {len(mcps_data)} MCPs!")
-        
+
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)

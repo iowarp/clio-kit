@@ -102,12 +102,12 @@ jobs:
         ./deploy/local_single_user_deploy.sh -d -k 5 -r 2 --work-dir $GITHUB_WORKSPACE/ChronoLog/install/Debug
         
     - name: Install ChronoLog MCP dependencies
-      working-directory: ${{ github.workspace }}/agent-toolkit-mcp-servers/chronolog
+      working-directory: ${{ github.workspace }}/clio-kit-mcp-servers/chronolog
       run: |
         uv venv
         uv sync --python 3.11
         uv pip install -e .
         
     - name: Run ChronoLog MCP tests
-      working-directory: ${{ github.workspace }}/agent-toolkit-mcp-servers/chronolog
+      working-directory: ${{ github.workspace }}/clio-kit-mcp-servers/chronolog
       run: uv run pytest -v

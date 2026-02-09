@@ -4,20 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Agent Toolkit** is part of the IoWarp platform's tooling layer for AI agents. It is a production-grade monorepo containing 15+ MCP (Model Context Protocol) servers designed for scientific computing research, with plans to expand to additional agent capabilities (skills, plugins, extensions). The project enables AI agents and LLMs to interact with HPC resources, scientific data formats, and research datasets through a standardized protocol.
+**CLIO Kit** is part of the IoWarp platform's tooling layer for AI agents. It is a production-grade monorepo containing 15+ MCP (Model Context Protocol) servers designed for scientific computing research, with plans to expand to additional agent capabilities (skills, plugins, extensions). The project enables AI agents and LLMs to interact with HPC resources, scientific data formats, and research datasets through a standardized protocol.
 
-The repository uses a **unified launcher with auto-discovery** pattern: each MCP server is independently developed and tested, but all are launched through a single `agent-toolkit <server-name>` command.
+The repository uses a **unified launcher with auto-discovery** pattern: each MCP server is independently developed and tested, but all are launched through a single `clio-kit <server-name>` command.
 
-**Platform Context**: Agent Toolkit is the tooling layer of the IoWarp platform, providing comprehensive agent capabilities beyond just MCP servers.
+**Platform Context**: CLIO Kit is the tooling layer of the IoWarp platform, providing comprehensive agent capabilities beyond just MCP servers.
 
 **Key Technologies**: FastMCP, Python 3.10+, UV package manager, Pydantic, pytest, Ruff
 
 ## Project Structure
 
 ```
-agent-toolkit/                           # Monorepo root
-├── src/agent_toolkit/                   # Unified launcher CLI
-├── agent-toolkit-mcp-servers/                # 15 independent MCP servers
+clio-kit/                           # Monorepo root
+├── src/clio_kit/                   # Unified launcher CLI
+├── clio-kit-mcp-servers/                # 15 independent MCP servers
 │   ├── hdf5/ ⭐                       # Flagship server (v2.0, 25+ tools)
 │   ├── pandas/                        # Data analysis operations
 │   ├── slurm/                         # HPC job management
@@ -34,7 +34,7 @@ agent-toolkit/                           # Monorepo root
 │   ├── plot/                          # Data visualization
 │   ├── adios/                         # ADIOS2 data I/O
 │   └── [each has its own pyproject.toml, dependencies, tests]
-├── agent-toolkit-website/                # Docusaurus documentation site
+├── clio-kit-website/                # Docusaurus documentation site
 ├── scripts/                           # Utility scripts (generate_docs.py, etc)
 ├── .github/workflows/                 # CI/CD automation
 └── [root config files]                # pyproject.toml, uv.lock
@@ -43,7 +43,7 @@ agent-toolkit/                           # Monorepo root
 
 **Key Design Pattern:**
 - Root `pyproject.toml` only includes launcher dependencies (click)
-- Each MCP server in `agent-toolkit-mcp-servers/` is a complete Python package with its own `pyproject.toml`, entry point, and isolated dependencies
+- Each MCP server in `clio-kit-mcp-servers/` is a complete Python package with its own `pyproject.toml`, entry point, and isolated dependencies
 - Launcher auto-discovers servers by scanning for `pyproject.toml` files
 - Servers run via `uvx` with isolated environments for dependency isolation
 
@@ -56,7 +56,7 @@ agent-toolkit/                           # Monorepo root
 uv sync --all-extras --dev
 
 # For a specific MCP server
-cd agent-toolkit-mcp-servers/hdf5
+cd clio-kit-mcp-servers/hdf5
 uv sync --all-extras --dev
 ```
 
@@ -65,7 +65,7 @@ uv sync --all-extras --dev
 #### Run all quality checks (mimics CI):
 ```bash
 # For a specific MCP server
-cd agent-toolkit-mcp-servers/hdf5
+cd clio-kit-mcp-servers/hdf5
 
 # Ruff: Linting + formatting
 uv run ruff check .
@@ -84,7 +84,7 @@ uv run pip-audit
 #### Quick test runs:
 ```bash
 # Run all tests in a server
-cd agent-toolkit-mcp-servers/hdf5
+cd clio-kit-mcp-servers/hdf5
 uv run pytest -v
 
 # Run a single test file
@@ -101,21 +101,21 @@ uv run pytest --cov=src/ --cov-report=html
 
 ```bash
 # Via launcher (from root directory)
-uvx agent-toolkit hdf5
+uvx clio-kit hdf5
 
 # Direct development mode (from server directory)
-cd agent-toolkit-mcp-servers/hdf5
+cd clio-kit-mcp-servers/hdf5
 uv run hdf5-mcp
 
 # List all available MCPs
-uvx agent-toolkit
+uvx clio-kit
 ```
 
 ### Code Formatting & Fixing
 
 ```bash
 # Format code automatically (Ruff)
-cd agent-toolkit-mcp-servers/hdf5
+cd clio-kit-mcp-servers/hdf5
 uv run ruff format .
 
 # Fix linting issues automatically
@@ -223,7 +223,7 @@ The HDF5 server (v2.0) implements patterns useful for all MCPs:
 
 ## Adding a New MCP Server
 
-1. Create directory: `agent-toolkit-mcp-servers/my-server/` (use kebab-case)
+1. Create directory: `clio-kit-mcp-servers/my-server/` (use kebab-case)
 2. Create `pyproject.toml` with:
    ```toml
    [project]
@@ -262,11 +262,11 @@ The HDF5 server (v2.0) implements patterns useful for all MCPs:
 
 | Purpose | Path |
 |---------|------|
-| Main Launcher | `src/agent_toolkit/__init__.py` |
-| HDF5 Server Example | `agent-toolkit-mcp-servers/hdf5/src/hdf5_mcp/server.py` |
+| Main Launcher | `src/clio_kit/__init__.py` |
+| HDF5 Server Example | `clio-kit-mcp-servers/hdf5/src/hdf5_mcp/server.py` |
 | Quality Control CI | `.github/workflows/quality_control.yml` |
 | Main Configuration | `pyproject.toml` |
-| Main Docs Site | `agent-toolkit-website/` |
+| Main Docs Site | `clio-kit-website/` |
 
 ## Debugging Tips
 
@@ -274,7 +274,7 @@ The HDF5 server (v2.0) implements patterns useful for all MCPs:
 
 1. Check if `pyproject.toml` has correct entry point: `name-mcp = "module:server:main"`
 2. Verify server file has `async def main()` and proper MCP initialization
-3. Test directly: `cd agent-toolkit-mcp-servers/hdf5 && uv run hdf5-mcp`
+3. Test directly: `cd clio-kit-mcp-servers/hdf5 && uv run hdf5-mcp`
 
 ### Tests Failing
 
@@ -299,7 +299,7 @@ The HDF5 server (v2.0) implements patterns useful for all MCPs:
 
 ## Website Design System
 
-The Agent Toolkit website (`agent-toolkit-website/`) follows a **neobrutalist design language** with the following principles:
+The CLIO Kit website (`clio-kit-website/`) follows a **neobrutalist design language** with the following principles:
 
 ### Brand Colors (Locked from Logo)
 
@@ -375,7 +375,7 @@ Neobrutalism comes from **structure and typography**, not color contrast:
 ### File Structure
 
 ```
-agent-toolkit-website/
+clio-kit-website/
 ├── src/
 │   ├── css/custom.css              # Global design tokens, hero styling
 │   ├── pages/index.js              # Homepage hero and layout
@@ -395,7 +395,7 @@ agent-toolkit-website/
 
 ```bash
 # Start dev server
-cd agent-toolkit-website
+cd clio-kit-website
 npm start
 
 # Build for production
@@ -417,8 +417,8 @@ The site includes comprehensive metadata for:
 
 - **MCP Protocol**: https://modelcontextprotocol.io/
 - **FastMCP Documentation**: https://github.com/jlowin/FastMCP
-- **Project Website**: https://iowarp.github.io/agent-toolkit/
-- **Contribution Guide**: https://github.com/iowarp/agent-toolkit/wiki/Contribution
+- **Project Website**: https://iowarp.github.io/clio-kit/
+- **Contribution Guide**: https://github.com/iowarp/clio-kit/wiki/Contribution
 - **Community**: Zulip chat at https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit
 - **Join Community**: Invitation link at https://iowarp.zulipchat.com/join/e4wh24du356e4y2iw6x6jeay/
 

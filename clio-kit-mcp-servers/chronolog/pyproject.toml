@@ -1,0 +1,55 @@
+[project]
+name = "chronolog-mcp"
+version = "1.0.0"
+description = "ChronoLog MCP server implementation using Model Context Protocol"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+authors = [
+    { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
+]
+
+keywords = [ "distributed logging",
+    "chronolog",
+    "event logging",
+    "session management",
+    "context sharing",
+    "real-time",
+    "model context protocol",
+    "scientific data",
+    "conversational ai",
+    "high-performance",
+    "shared log",
+    "multi-client",
+    "historical retrieval",
+    "enterprise logging"
+    ]
+
+dependencies = [
+    "fastmcp",
+    "python-dotenv",
+    "google-genai",
+    "h5py",
+    "pytest",
+    "pytest-asyncio",
+    "h11>=0.16.0",
+    "requests>=2.32.4",
+    "starlette>=0.49.1",
+    "urllib3>=2.5.0"
+]
+
+[project.urls]
+Homepage = "https://toolkit.iowarp.ai/"
+Repository = "https://github.com/iowarp/clio-kit"
+
+[project.scripts]
+chronolog-mcp = "chronomcp.server:main"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.12.5",
+]
+
+[build-system]
+requires = ["setuptools>=64.0", "wheel"]
+build-backend = "setuptools.build_meta"

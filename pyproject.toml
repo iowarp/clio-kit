@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "iowarp-agent-toolkit"
-version = "1.0.4"
-description = "Agent Toolkit - MCP Servers, Clients, and Tools for AI Agents"
+name = "clio-kit"
+version = "1.0.0"
+description = "CLIO Kit - MCP Servers, Clients, and Tools for AI Agents"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "BSD-3-Clause"}
@@ -35,29 +35,29 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/iowarp/agent-toolkit"
-Repository = "https://github.com/iowarp/agent-toolkit"
-Issues = "https://github.com/iowarp/agent-toolkit/issues"
+Homepage = "https://github.com/iowarp/clio-kit"
+Repository = "https://github.com/iowarp/clio-kit"
+Issues = "https://github.com/iowarp/clio-kit/issues"
 
 [project.scripts]
 # Only the unified launcher entry point
-iowarp-agent-toolkit = "agent_toolkit:cli"
+clio-kit = "clio_kit:cli"
 
 [tool.hatch.build]
 sources = ["src"]
 
 # Include all server directories in the wheel for uvx execution
 [tool.hatch.build.targets.wheel]
-packages = ["agent_toolkit"]
+packages = ["clio_kit"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"agent-toolkit-mcp-servers" = "agent-toolkit-mcp-servers"
+"clio-kit-mcp-servers" = "clio-kit-mcp-servers"
 "prompts" = "prompts"
 
 [tool.hatch.build.targets.sdist]
 include = [
     "src/",
-    "agent-toolkit-mcp-servers/",
+    "clio-kit-mcp-servers/",
     "prompts/",
     "README.md",
     "pyproject.toml"

@@ -4,15 +4,15 @@ on:
   push:
     branches: [main]
     paths:
-      - 'agent-toolkit-website/**'
-      - 'agent-toolkit-mcp-servers/**'
+      - 'clio-kit-website/**'
+      - 'clio-kit-mcp-servers/**'
       - 'scripts/generate_docs.py'
       - '.github/workflows/docs-and-website.yml'
   pull_request:
     branches: [main, dev]
     paths:
-      - 'agent-toolkit-website/**'
-      - 'agent-toolkit-mcp-servers/**'
+      - 'clio-kit-website/**'
+      - 'clio-kit-mcp-servers/**'
       - 'scripts/generate_docs.py'
       - '.github/workflows/docs-and-website.yml'
 
@@ -51,7 +51,7 @@ jobs:
     # Update README files (for PRs to dev branch)
     - name: Update MCP README files
       if: github.event_name == 'pull_request' && github.base_ref == 'dev'
-      run: python3 scripts/readme_filler.py agent-toolkit-mcp-servers
+      run: python3 scripts/readme_filler.py clio-kit-mcp-servers
 
     - name: Commit README updates
       if: github.event_name == 'pull_request' && github.base_ref == 'dev'
@@ -60,7 +60,7 @@ jobs:
         git config --local user.name "github-actions[bot]"
 
         if [[ -n $(git status --porcelain) ]]; then
-          git add agent-toolkit-mcp-servers/*/README.md
+          git add clio-kit-mcp-servers/*/README.md
           git commit -m "Auto-update MCP README files"
           git push
         else
@@ -70,7 +70,7 @@ jobs:
     # Generate and build documentation
     - name: Generate Docusaurus documentation
       run: |
-        python3 scripts/generate_docs.py agent-toolkit-mcp-servers agent-toolkit-website/docs
+        python3 scripts/generate_docs.py clio-kit-mcp-servers clio-kit-website/docs
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -78,11 +78,11 @@ jobs:
         node-version: '18'
 
     - name: Install Node.js dependencies
-      working-directory: ./agent-toolkit-website
+      working-directory: ./clio-kit-website
       run: npm install
 
     - name: Build Docusaurus website
-      working-directory: ./agent-toolkit-website
+      working-directory: ./clio-kit-website
       run: npm run build
 
     # Store build artifacts for deployment job (only on main pushes)
@@ -91,7 +91,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: docs-build
-        path: ./agent-toolkit-website/build
+        path: ./clio-kit-website/build
         retention-days: 1
 
 
