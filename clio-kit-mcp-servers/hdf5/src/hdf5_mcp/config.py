@@ -4,7 +4,7 @@ HDF5 FastMCP Configuration Management
 @file       config.py
 @brief      Configuration handling with validation and runtime updates
 @author     IoWarp Scientific MCPs Team
-@version    2.1.0
+@version    1.0.0
 @date       2024
 @license    MIT
 
@@ -65,7 +65,7 @@ class ServerConfig(BaseModel):
     """Server-specific configuration settings."""
 
     name: str = "HDF5 MCP Server"
-    version: str = "0.1.0"
+    version: str = "1.0.0"
     request_timeout: float = 30.0
 
 
