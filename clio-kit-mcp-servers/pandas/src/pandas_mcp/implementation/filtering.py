@@ -182,15 +182,23 @@ def filter_data(
 
         filtered_df.to_csv(output_file, index=False)
 
-        # Convert to JSON-serializable format (limit to first 100 rows)
-        filtered_data = filtered_df.head(100).to_dict("records")
+        # C1 lean return (#1325): never send full dataset back into LLM context.
+        # The on-disk write above is the authoritative result; downstream skills
+        # read cleaned data from output_file by path.
+        _preview_n = 5
+        rows_written = final_shape[0]
+        preview = filtered_df.head(_preview_n).to_dict("records")
 
         return {
             "success": True,
             "file_path": file_path,
             "output_file": output_file,
+            "rows_total": original_shape[0],
+            "rows_written": rows_written,
+            "columns": list(filtered_df.columns),
+            "preview": preview,
+            "preview_truncated": rows_written > _preview_n,
             "filter_stats": filter_stats,
-            "filtered_data": filtered_data,
             "message": f"Filtered data: {original_shape[0]} -> {final_shape[0]} rows ({filter_percentage:.1f}% filtered)",
         }
 

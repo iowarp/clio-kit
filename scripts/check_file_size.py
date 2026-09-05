@@ -107,7 +107,11 @@ RATCHET_BASELINE: dict[str, int] = {
     # #362: NOT split this wave -- out of wave-1 scope. Single
     # VisualizationEngine god-class.
     "clio-kit-mcp-servers/paraview/src/paraview_mcp/implementation/paraview_capabilities.py": 2202,
-    "clio-kit-mcp-servers/pandas/src/pandas_mcp/server.py": 1274,
+    # feat/mrtr-size-guard (#1325 C1): lean file→file return for filter_data
+    # and sibling tools; TypedDicts gained rows_total/rows_written/columns/
+    # preview/preview_truncated fields; guard wiring and C2 imports removed.
+    # Net: 1274 -> 1324 (real count via `wc -l`).
+    "clio-kit-mcp-servers/pandas/src/pandas_mcp/server.py": 1324,
     "clio-kit-mcp-servers/paraview/src/paraview_mcp/server.py": 1091,
     "clio-kit-mcp-servers/spack/src/spack_mcp/backend.py": 925,
     # #362 (PR #364 review finding 5): discovery previously excluded the root

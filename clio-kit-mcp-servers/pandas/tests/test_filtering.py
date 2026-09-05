@@ -53,7 +53,11 @@ class TestFilterData:
 
         assert result["success"]
         assert "filter_stats" in result
-        assert "filtered_data" in result
+        # C1 lean return (#1325): full dataset is on disk; result has lean summary.
+        assert "output_file" in result
+        assert "rows_written" in result
+        assert "preview" in result
+        assert "filtered_data" not in result
 
     def test_filter_min_value(self, temp_csv_file):
         """Test minimum value filter"""

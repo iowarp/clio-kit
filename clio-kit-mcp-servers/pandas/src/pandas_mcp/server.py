@@ -271,11 +271,20 @@ class GroupByInfo(TypedDict):
 
 
 class GroupByOperationsResult(TypedDict):
-    """Structured result for a successful groupby operation."""
+    """Structured result for a successful groupby operation.
+
+    C1 lean shape (#1325): the full grouped result is on disk at ``output_file``.
+    ``results`` is a backward-compat alias for ``preview`` (same bounded list).
+    """
 
     success: Literal[True]
     file_path: str
     output_file: str
+    rows_total: int
+    rows_written: int
+    columns: list[str]
+    preview: list[dict[str, Any]]
+    preview_truncated: bool
     group_info: GroupByInfo
     results: list[dict[str, Any]]
     message: str
@@ -296,12 +305,21 @@ class MergeStats(TypedDict):
 
 
 class MergeDatasetsResult(TypedDict):
-    """Structured result for a successful dataset merge."""
+    """Structured result for a successful dataset merge.
+
+    C1 lean shape (#1325): the full merged dataset is on disk at ``output_file``.
+    ``merged_data`` is a backward-compat alias for ``preview`` (same bounded list).
+    """
 
     success: Literal[True]
     left_file: str
     right_file: str
     output_file: str
+    rows_total: int
+    rows_written: int
+    columns: list[str]
+    preview: list[dict[str, Any]]
+    preview_truncated: bool
     merge_stats: MergeStats
     merged_data: list[dict[str, Any]]
     message: str
@@ -319,11 +337,20 @@ class PivotInfo(TypedDict):
 
 
 class PivotTableResult(TypedDict):
-    """Structured result for a successful pivot table creation."""
+    """Structured result for a successful pivot table creation.
+
+    C1 lean shape (#1325): the full pivot table is on disk at ``output_file``.
+    ``pivot_table`` is a backward-compat alias for ``preview`` (same bounded list).
+    """
 
     success: Literal[True]
     file_path: str
     output_file: str
+    rows_total: int
+    rows_written: int
+    columns: list[str]
+    preview: list[dict[str, Any]]
+    preview_truncated: bool
     pivot_info: PivotInfo
     pivot_table: list[dict[str, Any]]
     message: str
@@ -334,11 +361,19 @@ class TimeSeriesOperationsResult(TypedDict):
 
     ``operation_info`` varies by ``operation`` (resample/rolling/lag/diff,
     each with its own field set), so it is left as ``dict[str, Any]``.
+
+    C1 lean shape (#1325): the full result is on disk at ``output_file``.
+    ``results`` is a backward-compat alias for ``preview`` (same bounded list).
     """
 
     success: Literal[True]
     file_path: str
     output_file: str
+    rows_total: int
+    rows_written: int
+    columns: list[str]
+    preview: list[dict[str, Any]]
+    preview_truncated: bool
     operation_info: dict[str, Any]
     results: list[dict[str, Any]]
     message: str
@@ -380,13 +415,22 @@ class FilterStats(TypedDict):
 
 
 class FilterDataResult(TypedDict):
-    """Structured result for a successful data filtering call."""
+    """Structured result for a successful data filtering call.
+
+    C1 lean shape (#1325): the full filtered dataset is written to disk at
+    ``output_file``; the in-context result carries only a bounded summary so
+    the LLM window is never overflowed by a large result set.
+    """
 
     success: Literal[True]
     file_path: str
     output_file: str
+    rows_total: int
+    rows_written: int
+    columns: list[str]
+    preview: list[dict[str, Any]]
+    preview_truncated: bool
     filter_stats: FilterStats
-    filtered_data: list[dict[str, Any]]
     message: str
 
 
@@ -1089,7 +1133,13 @@ async def filter_data_tool(
         Field(description="Path to save filtered data; None returns in memory"),
     ] = None,
 ) -> FilterDataResult:
-    """Perform advanced data filtering with boolean indexing and conditional expressions."""
+    """Perform advanced data filtering with boolean indexing and conditional expressions.
+
+    C1 lean return (#1325): the FULL filtered result is written to ``output_file``
+    on disk. The in-context result is a lean summary (rows_total, rows_written,
+    columns, and a bounded preview of at most 5 rows) -- never the full dataset.
+    Downstream skills read the cleaned CSV by path from ``output_file``.
+    """
     try:
         logger.info(f"Filtering data in: {file_path}")
         return cast(

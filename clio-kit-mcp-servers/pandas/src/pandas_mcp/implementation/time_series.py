@@ -185,15 +185,23 @@ def time_series_operations(
         output_path = file_path.replace(".csv", f"_{operation}.csv")
         result_df.to_csv(output_path, index=False)
 
-        # Convert to JSON-serializable format (limit to first 100 rows)
-        result_dict = result_df.head(100).to_dict("records")
+        # C1 lean return (#1325): time-series results can be large; return a
+        # bounded preview. The full result is on disk at output_file.
+        _preview_n = 5
+        rows_written = len(result_df)
+        preview = result_df.head(_preview_n).to_dict("records")
 
         return {
             "success": True,
             "file_path": file_path,
             "output_file": output_path,
+            "rows_total": df.shape[0],
+            "rows_written": rows_written,
+            "columns": list(result_df.columns),
+            "preview": preview,
+            "preview_truncated": rows_written > _preview_n,
             "operation_info": operation_info,
-            "results": result_dict,
+            "results": preview,  # backward-compat alias: same bounded preview
             "message": f"Time series {operation} operation completed",
         }
 
