@@ -637,6 +637,48 @@ class PandasMCPError(Exception):
 # ===============================================================================
 
 
+def _wrap_guarded_load_result(
+    df: "pd.DataFrame",
+    guard_result: dict[str, Any],
+    *,
+    total_rows: int,
+    file_path: str,
+    file_format: Optional[str],
+) -> LoadDataResult:
+    """Wrap a size-guard dict into the declared ``LoadDataResult`` shape.
+
+    THE one wrapper for BOTH guard rounds: the declared output schema applies to
+    the final result of every completed round-trip, so round 2 (agent answered or
+    declined -> ``narrowed_by_agent``/``hard_truncated`` records) must return the
+    same shape round 1 does — returning the raw guard dict fails FastMCP's output
+    validation (``'success' is a required property``) and errors the whole turn.
+    """
+    guarded_records = guard_result.get("records", [])
+    info = {
+        "shape": df.shape,
+        "columns": df.columns.tolist(),
+        "dtypes": df.dtypes.astype(str).to_dict(),
+        "memory_usage": int(df.memory_usage(deep=True).sum()),
+        "missing_values": {k: int(v) for k, v in df.isnull().sum().to_dict().items()},
+    }
+    return cast(
+        LoadDataResult,
+        {
+            "success": True,
+            "file_path": file_path,
+            "file_format": file_format or _detect_format(file_path),
+            "data": guarded_records,
+            "total_rows": total_rows,
+            "info": info,
+            "size_guard": {k: v for k, v in guard_result.items() if k != "records"},
+            "message": (
+                f"Successfully loaded {len(guarded_records)} of "
+                f"{total_rows} rows from {file_path}"
+            ),
+        },
+    )
+
+
 @mcp.tool(
     name="load_data",
     title="Load Data",
@@ -722,14 +764,24 @@ async def load_data_tool(
             cols = state.get("columns", columns)
             toks = int(state.get("max_tokens", effective_max_tokens))
             df = _load_full_df(fp, fmt, sn, enc, cols)
+            round2_records = df.to_dict("records")
             guard_result = await guard_records_payload(
                 ctx=ctx,
                 full_df=df,
-                records=df.to_dict("records"),
+                records=round2_records,
                 max_tokens=toks,
             )
-            # guard_result is always a dict on round 2
-            return cast(LoadDataResult, guard_result)
+            # Defensive: a re-elicitation (another InputRequiredResult) is
+            # protocol-legal and passes through as-is.
+            if isinstance(guard_result, mcp_types.InputRequiredResult):
+                return guard_result  # type: ignore[return-value]
+            return _wrap_guarded_load_result(
+                df,
+                guard_result,
+                total_rows=len(round2_records),
+                file_path=fp,
+                file_format=fmt,
+            )
 
         # Round 1: load the full DataFrame and run the guard.
         df = _load_full_df(file_path, file_format, sheet_name, encoding, columns)
@@ -773,33 +825,14 @@ async def load_data_tool(
 
         # Within budget or extension absent: return the standard LoadDataResult
         # shape, embedding the guard block for observability.
-        guarded_records = guard_result.get("records", records)
-        info = {
-            "shape": df.shape,
-            "columns": df.columns.tolist(),
-            "dtypes": df.dtypes.astype(str).to_dict(),
-            "memory_usage": int(df.memory_usage(deep=True).sum()),
-            "missing_values": {
-                k: int(v) for k, v in df.isnull().sum().to_dict().items()
-            },
-        }
-        return cast(
-            LoadDataResult,
-            {
-                "success": True,
-                "file_path": file_path,
-                "file_format": file_format or _detect_format(file_path),
-                "data": guarded_records,
-                "total_rows": len(records),
-                "info": info,
-                "size_guard": {
-                    k: v for k, v in guard_result.items() if k != "records"
-                },
-                "message": (
-                    f"Successfully loaded {len(guarded_records)} of "
-                    f"{len(records)} rows from {file_path}"
-                ),
-            },
+        if "records" not in guard_result:
+            guard_result = {**guard_result, "records": records}
+        return _wrap_guarded_load_result(
+            df,
+            guard_result,
+            total_rows=len(records),
+            file_path=file_path,
+            file_format=file_format,
         )
 
     except ToolError:
