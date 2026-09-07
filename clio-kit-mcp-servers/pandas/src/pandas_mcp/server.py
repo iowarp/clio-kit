@@ -648,10 +648,8 @@ def _wrap_guarded_load_result(
     """Wrap a size-guard dict into the declared ``LoadDataResult`` shape.
 
     THE one wrapper for BOTH guard rounds: the declared output schema applies to
-    the final result of every completed round-trip, so round 2 (agent answered or
-    declined -> ``narrowed_by_agent``/``hard_truncated`` records) must return the
-    same shape round 1 does — returning the raw guard dict fails FastMCP's output
-    validation (``'success' is a required property``) and errors the whole turn.
+    the final result of every completed round-trip, so round 2 must return the
+    same shape round 1 does — a raw guard dict fails FastMCP output validation.
     """
     guarded_records = guard_result.get("records", [])
     info = {

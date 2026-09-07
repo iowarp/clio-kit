@@ -353,11 +353,9 @@ def _build_input_required(
     # ctx.request_state.  We encode the parameters needed to reconstruct
     # the budget (max_tokens) and the fallback cap.
     #
-    # The cap is derived from THIS payload's measured tokens-per-row, so the
-    # decline fallback actually fits the budget.  The old `max_tokens // 10`
-    # guess assumed ~10 tokens/row; a 12-column row here is ~66 tokens, so the
-    # "bounded" fallback came out 6.6x over budget (live run 3103873: 800 rows,
-    # 211,988 chars against an 8,000-token budget).
+    # The cap derives from THIS payload's measured tokens-per-row (not a fixed
+    # rows-per-token guess), so the decline fallback actually fits the budget
+    # regardless of column count.
     tokens_per_row = max(1, estimate.est_tokens // max(1, estimate.rows))
     fallback_top_n = max(1, max_tokens // tokens_per_row)
     state_token = json.dumps(
