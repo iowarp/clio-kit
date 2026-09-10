@@ -536,7 +536,9 @@ def _run_locked_local_server(
     except OSError:
         pass
     with EnvironmentInUseMarker(cache_root, environment_path.name):
-        if _build_locked_environment(runtime, runtime_project, child_environment):
+        if _build_locked_environment(
+            runtime, runtime_project, entry_command, child_environment
+        ):
             try:
                 maintain_after_build(
                     cache_root,
@@ -568,6 +570,7 @@ def _run_locked_local_server(
 def _build_locked_environment(
     runtime: str,
     runtime_project: Path,
+    entry_command: str,
     child_environment: dict[str, str],
 ) -> bool:
     """Materialize the child environment for the current spec from its lock.
@@ -583,7 +586,10 @@ def _build_locked_environment(
     """
     try:
         command = build_command(
-            runtime, runtime_project, executable=runtime_executable(runtime)
+            runtime,
+            runtime_project,
+            entry_command,
+            executable=runtime_executable(runtime),
         )
     except UnsupportedRuntime as exc:
         sys.stderr.write(f"{exc}\n")

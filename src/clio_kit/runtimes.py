@@ -60,6 +60,20 @@ RUNTIME_TOOLCHAIN: dict[str, tuple[str, str]] = {
 }
 
 
+def supported_runtimes() -> tuple[str, ...]:
+    """Return every runtime this launcher can build and start, name-sorted."""
+    return tuple(sorted(RUNTIME_PROJECT_FILES))
+
+
+def go_binary(project: Path) -> Path:
+    """Where a go server's compiled binary lives inside its built project.
+
+    Named once because the build writes it and the start command runs it, and
+    the two disagreeing is a MODULE_NOT_FOUND-shaped failure at launch.
+    """
+    return project / "bin" / "server"
+
+
 def require_runtime(runtime: str) -> None:
     """Fail with the runtime's own name when it is not one we can start."""
     if runtime not in RUNTIME_PROJECT_FILES:
@@ -107,12 +121,18 @@ def lock_file_name(runtime: str) -> str:
     return required_project_files(runtime)[1]
 
 
-def build_command(runtime: str, project: Path, *, executable: str) -> list[str]:
+def build_command(
+    runtime: str, project: Path, entry: str, *, executable: str
+) -> list[str]:
     """Return the command that realises a project's lock into a built state.
 
     Every one of these installs or compiles from the lock alone and fails
     rather than resolving, which is what makes the built environment a function
     of the hashed inputs rather than of when it happened to run.
+
+    ``entry`` means the same thing in every runtime -- the thing that runs --
+    but only go needs it at build time, because go compiles that one package
+    into the binary the start command then executes.
     """
     require_runtime(runtime)
     if runtime == "python":
@@ -121,7 +141,11 @@ def build_command(runtime: str, project: Path, *, executable: str) -> list[str]:
         # npm resolves --prefix inconsistently across versions, so the project
         # is selected by working directory instead; the caller runs it there.
         return [executable, "ci", "--omit=dev"]
-    return [executable, "build", "-o", str(project / "bin" / "server"), "./..."]
+    # Build the package `entry` names, not `./...`. Go refuses to write more
+    # than one package to a non-directory -- `cannot write multiple packages to
+    # non-directory bin/server` -- so `./...` builds only for a module with
+    # exactly one package, which no real server is.
+    return [executable, "build", "-o", str(go_binary(project)), entry]
 
 
 def start_command(
@@ -142,9 +166,9 @@ def start_command(
         ]
     if runtime == "node":
         return ["node", str(project / entry)]
-    # Go compiled to a fixed path above; `entry` names the binary for humans
-    # and for the descriptor, not the file layout.
-    return [str(project / "bin" / "server")]
+    # Go compiled `entry` to this fixed path above, so the binary is addressed
+    # by where the build put it rather than by the package path it came from.
+    return [str(go_binary(project))]
 
 
 def build_runs_in_project(runtime: str) -> bool:

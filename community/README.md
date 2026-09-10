@@ -59,10 +59,12 @@ path = "tools/claude-plugin"
 ref  = "v2.0.0"                              # optional
 ```
 
-**`npm`** — published as a package. **This is the supported path for a
-TypeScript or Go MCP server**: your server lives in your repository, ships to
-npm on your schedule, and installs through our marketplace without any of its
-code living here. Not valid for `kind = "marketplace"`.
+**`npm`** — published as a package. **This is how a TypeScript or Go MCP server
+stays yours**: it lives in your repository, ships to npm on your schedule, and
+installs through our marketplace without any of its code living here. (A
+non-Python server can also be hosted in the kit instead — see
+[CONTRIBUTING.md](../CONTRIBUTING.md#contributing-a-server-in-another-language)
+for the trade-off.) Not valid for `kind = "marketplace"`.
 
 ```toml
 [source]
@@ -106,8 +108,18 @@ ref  = "main"                                # optional
 
 ## Federated marketplaces
 
-If you run your own marketplace, index it with `kind = "marketplace"` and a
-source naming the whole repository:
+If you run your own marketplace, submit it the same way as a plugin, naming the
+other kind — the command reads your `.claude-plugin/marketplace.json` and
+writes the entry:
+
+```bash
+clio-kit plugin submit /path/to/your-marketplace \
+  --repo some-lab/materials-marketplace --kind marketplace
+```
+
+Your catalogue needs a `metadata.description`: it is what a user reads before
+adding it, and an entry without one is refused when we merge. The entry it
+writes is a single file naming the whole repository:
 
 ```toml
 name        = "materials-lab"

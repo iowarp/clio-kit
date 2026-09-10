@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**CLIO Kit** is part of the IoWarp platform's tooling layer for AI agents. It is a production-grade monorepo containing 15+ MCP (Model Context Protocol) servers designed for scientific computing research, with plans to expand to additional agent capabilities (skills, plugins, extensions). The project enables AI agents and LLMs to interact with HPC resources, scientific data formats, and research datasets through a standardized protocol.
+**CLIO Kit** is part of the IoWarp platform's tooling layer for AI agents. It is a production-grade monorepo containing 22 MCP (Model Context Protocol) servers designed for scientific computing research, alongside skills, workflow bundles and an indexed community marketplace. The project enables AI agents and LLMs to interact with HPC resources, scientific data formats, and research datasets through a standardized protocol.
 
 The repository uses a **unified launcher with auto-discovery** pattern: each MCP server is independently developed and tested, but all are launched through a single `clio-kit <server-name>` command.
 
@@ -17,7 +17,7 @@ The repository uses a **unified launcher with auto-discovery** pattern: each MCP
 ```
 clio-kit/                           # Monorepo root
 ├── src/clio_kit/                   # Unified launcher CLI
-├── clio-kit-mcp-servers/                # 16 independent MCP servers
+├── clio-kit-mcp-servers/                # 22 independent MCP servers
 │   ├── hdf5/ ⭐                       # Flagship server (v2.0, 28 tools)
 │   ├── pandas/                        # Data analysis operations
 │   ├── slurm/                         # HPC job management
@@ -34,7 +34,13 @@ clio-kit/                           # Monorepo root
 │   ├── parquet/                       # Parquet file handling
 │   ├── plot/                          # Data visualization
 │   ├── adios/                         # ADIOS2 data I/O
-│   └── [each has its own pyproject.toml, dependencies, tests]
+│   ├── geo/                           # Geospatial data and maps
+│   ├── terrain/                       # Digital elevation models
+│   ├── seismology/                    # Seismic waveforms and catalogs
+│   ├── spack/                         # HPC package management
+│   ├── scientific-catalog/            # Scientific dataset catalogs
+│   ├── web/                           # Web fetching and search
+│   └── [each has its own manifest, lock file, dependencies, tests]
 ├── clio-agentic-search/             # Standalone hybrid retrieval engine (not an MCP server)
 ├── clio-kit-website/                # Docusaurus documentation site
 ├── scripts/                           # Utility scripts (generate_docs.py, etc)
@@ -45,9 +51,9 @@ clio-kit/                           # Monorepo root
 
 **Key Design Pattern:**
 - Root `pyproject.toml` only includes launcher dependencies (click)
-- Each MCP server in `clio-kit-mcp-servers/` is a complete Python package with its own `pyproject.toml`, entry point, and isolated dependencies
-- Launcher auto-discovers servers by scanning for `pyproject.toml` files
-- Servers run via `uvx` with isolated environments for dependency isolation
+- Each MCP server in `clio-kit-mcp-servers/` is a complete package with its own manifest, lock file, entry point, and isolated dependencies
+- Launcher auto-discovers servers by reading each one's `clio-server.toml`, which names the server, its runtime (`python`, `node` or `go`) and its entry point
+- Servers run in isolated, content-addressed environments built from their own lock file — `uv sync --frozen`, `npm ci` or `go build` — so a launch never resolves dependencies
 
 ## Common Development Commands
 

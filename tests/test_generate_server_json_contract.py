@@ -83,6 +83,9 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     repository_root = Path(__file__).resolve().parents[1]
     servers_root = repository_root / "clio-kit-mcp-servers"
     projects = sorted(path.parent for path in servers_root.glob("*/pyproject.toml"))
+    all_projects = sorted(
+        path for path in servers_root.iterdir() if GENERATOR.is_server_dir(path)
+    )
     manifests = sorted(servers_root.glob("*/server.json"))
     expected_version = GENERATOR.read_root_version(repository_root)
     expected_server_versions = GENERATOR.read_server_versions(repository_root)
@@ -139,7 +142,7 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     assert projects
     assert manifests == [project / "server.json" for project in projects]
     assert list(expected_server_versions) == sorted(expected_server_versions)
-    assert set(expected_server_versions) == {project.name for project in projects}
+    assert set(expected_server_versions) == {project.name for project in all_projects}
     assert publish_servers == ("geo", "lmod", "seismology", "spack", "web")
     assert marketplace["metadata"]["version"] == expected_version
     assert set(marketplace_plugins) == set(expected_server_versions)
@@ -716,3 +719,180 @@ def test_readme_server_count_matches_the_shipped_inventory() -> None:
 
     for claim in re.findall(r"(\d+) (?:available )?MCP servers", readme):
         assert int(claim) == shipped, f"README claims {claim} servers, {shipped} ship"
+
+
+# --- a server the generator cannot describe ---------------------------------
+#
+# Discovery keyed on pyproject.toml, so a node or go server was passed over as
+# though it were not there: no descriptor, no plugin manifest, no marketplace
+# row, and nothing said why. Every one of those is now either produced or
+# refused by name.
+
+
+def _node_server(root: Path, *, descriptor: str | None) -> Path:
+    server = root / "crystal"
+    server.mkdir(parents=True)
+    (server / "package.json").write_text('{"name": "crystal"}', encoding="utf-8")
+    (server / "package-lock.json").write_text("{}", encoding="utf-8")
+    if descriptor is not None:
+        (server / "clio-server.toml").write_text(descriptor, encoding="utf-8")
+    return server
+
+
+def test_a_node_server_is_a_server(tmp_path: Path) -> None:
+    """It has no pyproject.toml, which is exactly why it used to be invisible."""
+    server = _node_server(tmp_path, descriptor=None)
+
+    assert GENERATOR.is_server_dir(server)
+
+
+def test_a_node_server_is_described_by_its_descriptor(tmp_path: Path) -> None:
+    server = _node_server(
+        tmp_path,
+        descriptor=(
+            'name = "crystal"\nruntime = "node"\nversion = "1.2.0"\n'
+            'entry = "bundle/server.js"\ndescription = "Crystallography tools."\n'
+        ),
+    )
+
+    assert GENERATOR.server_runtime(server) == "node"
+    project = GENERATOR.read_project_metadata(server, "node")
+    assert project["description"] == "Crystallography tools."
+    assert project["version"] == "1.2.0"
+    assert "bundle/server.js" in project["scripts"]
+
+
+def test_a_server_that_cannot_be_described_is_refused_by_name(tmp_path: Path) -> None:
+    """The silent skip this replaced produced no output and no explanation."""
+    server = _node_server(tmp_path, descriptor=None)
+
+    with pytest.raises(ValueError, match="clio-server.toml"):
+        GENERATOR.server_runtime(server)
+
+
+def test_a_described_server_still_needs_a_description(tmp_path: Path) -> None:
+    """It is what a user reads in the marketplace before installing."""
+    server = _node_server(
+        tmp_path,
+        descriptor='name = "crystal"\nruntime = "node"\nentry = "bundle/server.js"\n',
+    )
+
+    with pytest.raises(ValueError, match="needs a description"):
+        GENERATOR.read_project_metadata(server, "node")
+
+
+def test_a_python_servers_descriptor_is_still_generated(tmp_path: Path) -> None:
+    """The non-Python path must not stop Python descriptors being written."""
+    server = tmp_path / "hdf5"
+    server.mkdir()
+    GENERATOR.write_server_descriptor(
+        server,
+        "hdf5",
+        {"scripts": {"hdf5-mcp": ""}},
+        runtime="python",
+        server_version="2.2.3",
+    )
+
+    written = (server / "clio-server.toml").read_text(encoding="utf-8")
+    assert 'runtime = "python"' in written
+    assert 'entry = "hdf5-mcp"' in written
+    assert 'version = "2.2.3"' in written
+
+
+def test_a_non_python_descriptor_is_never_overwritten(tmp_path: Path) -> None:
+    """It is the source, not a derived copy: there is nothing to regenerate from."""
+    original = (
+        'name = "crystal"\nruntime = "node"\nentry = "bundle/server.js"\n'
+        'description = "Crystallography tools."\n'
+    )
+    server = _node_server(tmp_path, descriptor=original)
+
+    GENERATOR.write_server_descriptor(
+        server, "crystal", {}, runtime="node", server_version="9.9.9"
+    )
+
+    assert (server / "clio-server.toml").read_text(encoding="utf-8") == original
+
+
+def _publishing_repository(root: Path, runtime: str, *, publish: bool) -> Path:
+    server = root / "clio-kit-mcp-servers" / "crystal"
+    server.mkdir(parents=True)
+    (root / "src" / "clio_kit").mkdir(parents=True)
+    (root / "pyproject.toml").write_text('[project]\nversion = "1.0.0"\n')
+    (root / "mcp-server-versions.toml").write_text(
+        'schema-version = 1\n[servers]\ncrystal = "1.0.0"\n'
+        f"[mcp-registry-release]\npublish = {json.dumps(['crystal'] if publish else [])}\n"
+        "[classification]\ngeneral = []\n[bundles.clio-science]\n"
+        'version = "1.0.0"\ndescription = "Scientific tools."\nservers = ["crystal"]\n'
+    )
+    (server / "clio-server.toml").write_text(
+        f'name = "crystal"\nruntime = "{runtime}"\nentry = "server"\n'
+        'description = "Crystallography tools."\n'
+    )
+    if runtime == "python":
+        (server / "pyproject.toml").write_text(
+            '[project]\nname = "crystal"\ndescription = "Crystallography tools."\n'
+        )
+    return server
+
+
+@pytest.mark.parametrize("runtime", ["node", "go"])
+def test_marketplace_only_generation_passes_the_ci_log_gate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    runtime: str,
+) -> None:
+    server = _publishing_repository(tmp_path, runtime, publish=False)
+    descriptor = (server / "clio-server.toml").read_bytes()
+    monkeypatch.setattr(GENERATOR, "generate_user_contract_artifacts", lambda root: [])
+
+    GENERATOR.generate_all(str(server.parent))
+
+    log = capsys.readouterr().out
+    workflow = (
+        Path(__file__).resolve().parents[1] / ".github/workflows/publish.yml"
+    ).read_text()
+    gate = re.search(r"if grep -Eq '([^']+)'", workflow)
+    assert gate is not None
+    assert not re.search(gate[1], log, re.M), log
+    marketplace = json.loads((tmp_path / ".claude-plugin/marketplace.json").read_text())
+    entry = next(p for p in marketplace["plugins"] if p["name"] == "clio-crystal")
+    assert entry["description"] == "Crystallography tools."
+    assert (tmp_path / "plugins/clio-crystal/.mcp.json").is_file()
+    assert not (server / "server.json").exists()
+    assert (server / "clio-server.toml").read_bytes() == descriptor
+
+
+@pytest.mark.parametrize("runtime", ["node", "go"])
+def test_registry_selection_refuses_unsupported_runtime_before_writing(
+    tmp_path: Path,
+    runtime: str,
+) -> None:
+    server = _publishing_repository(tmp_path, runtime, publish=True)
+
+    with pytest.raises(ValueError, match="mcp-registry-release.publish"):
+        GENERATOR.generate_all(str(server.parent))
+
+    assert not (tmp_path / "plugins").exists()
+    assert not (tmp_path / ".claude-plugin").exists()
+
+
+def test_python_metadata_failure_still_trips_the_ci_log_gate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    server = _publishing_repository(tmp_path, "python", publish=False)
+    monkeypatch.setattr(GENERATOR, "generate_user_contract_artifacts", lambda root: [])
+    monkeypatch.setattr(GENERATOR, "extract_metadata", lambda server: None)
+
+    GENERATOR.generate_all(str(server.parent))
+
+    log = capsys.readouterr().out
+    workflow = (
+        Path(__file__).resolve().parents[1] / ".github/workflows/publish.yml"
+    ).read_text()
+    gate = re.search(r"if grep -Eq '([^']+)'", workflow)
+    assert gate is not None
+    assert re.search(gate[1], log, re.M)

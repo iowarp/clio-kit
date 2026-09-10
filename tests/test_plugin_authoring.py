@@ -13,11 +13,12 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from clio_kit.community import read_community_entries
+from clio_kit.community import read_community_entries, read_federated_marketplaces
 from clio_kit.plugins import (
     PluginProblem,
     build_community_entry,
     plugin_group,
+    validate_marketplace,
     validate_plugin,
 )
 
@@ -199,3 +200,121 @@ def test_entry_falls_back_to_community_when_no_category_is_declared() -> None:
 
     assert 'category    = "community"' in entry
     assert 'repo = "owner/repo"' in entry
+
+
+# --- submitting a whole catalogue rather than one plugin --------------------
+#
+# The tier that makes this a meta-marketplace rather than a catalogue of our
+# own work. It had no CLI path at all: a contributor hand-wrote the TOML and
+# found out at review, while the other two tiers got init/validate/submit.
+
+
+def _scaffold_marketplace(
+    directory: Path, *, description: str = "A lab's tools."
+) -> Path:
+    manifest = directory / ".claude-plugin" / "marketplace.json"
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text(
+        json.dumps(
+            {
+                "name": "materials-lab",
+                "owner": {"name": "Materials Lab"},
+                "metadata": {
+                    "description": description,
+                    "keywords": ["materials"],
+                    "category": "materials-science",
+                },
+                "plugins": [{"name": "crystal", "source": "./plugins/crystal"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return directory
+
+
+def test_submitting_a_marketplace_round_trips_into_a_referral(tmp_path: Path) -> None:
+    """What `submit --kind marketplace` writes must read back as a referral."""
+    catalogue = _scaffold_marketplace(tmp_path / "catalogue")
+    checkout = tmp_path / "clio-kit"
+    entry_path = checkout / "community" / "entries" / "materials-lab.toml"
+    entry_path.parent.mkdir(parents=True)
+
+    result = CliRunner().invoke(
+        plugin_group,
+        [
+            "submit",
+            str(catalogue),
+            "--repo",
+            "some-lab/materials-agent-skills",
+            "--kind",
+            "marketplace",
+            "--output",
+            str(entry_path),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+
+    # Published as a referral, and specifically *not* among the installable
+    # plugins -- a marketplace listed there resolves to nothing on install.
+    assert read_community_entries(checkout) == []
+    federated = read_federated_marketplaces(checkout)
+    assert [entry["name"] for entry in federated] == ["materials-lab"]
+    assert (
+        federated[0]["add_command"]
+        == "claude plugin marketplace add some-lab/materials-agent-skills"
+    )
+
+
+def test_a_marketplace_without_a_description_is_refused(tmp_path: Path) -> None:
+    """An entry with no description is rejected at merge, so catch it here."""
+    catalogue = _scaffold_marketplace(tmp_path / "catalogue", description="")
+    with pytest.raises(PluginProblem, match="metadata.description"):
+        validate_marketplace(catalogue)
+
+
+@pytest.mark.parametrize("name", ["clio-lab", "Lab Tools", 123, None])
+def test_marketplace_submit_rejects_invalid_names_before_writing(
+    tmp_path: Path, name: object
+) -> None:
+    catalogue = _scaffold_marketplace(tmp_path / "catalogue")
+    manifest_path = catalogue / ".claude-plugin" / "marketplace.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["name"] = name
+    manifest_path.write_text(json.dumps(manifest))
+    output = tmp_path / "entry.toml"
+
+    result = CliRunner().invoke(
+        plugin_group,
+        [
+            "submit",
+            str(catalogue),
+            "--repo",
+            "lab/tools",
+            "--kind",
+            "marketplace",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert result.exit_code != 0
+    assert "name" in result.output
+    assert not output.exists()
+
+
+def test_a_plugin_directory_is_not_a_marketplace(tmp_path: Path) -> None:
+    """The two submissions are different things and the error should say so."""
+    plugin_dir = tmp_path / "materials-lab"
+    _scaffold(plugin_dir)
+    with pytest.raises(PluginProblem, match="not a marketplace"):
+        validate_marketplace(plugin_dir)
+
+
+def test_only_a_referral_carries_a_kind(tmp_path: Path) -> None:
+    """Every existing entry omits kind, and must keep parsing as a plugin."""
+    plugin_entry = build_community_entry({"name": "x", "description": "d"}, "o/r")
+    assert "kind" not in plugin_entry
+    referral = build_community_entry(
+        {"name": "x", "description": "d"}, "o/r", kind="marketplace"
+    )
+    assert 'kind        = "marketplace"' in referral

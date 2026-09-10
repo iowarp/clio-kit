@@ -18,6 +18,10 @@ BLOCKED = {
     "recording-a-session-for-provenance": "no ChronoLog deployment",
     "diagnosing-a-slow-job": "darshan-parser is not installed and there is no real Darshan log",
     "analyzing-seismic-waveforms": "no SAC archive or earthquake catalog fixture",
+    "finding-and-staging-a-dataset": (
+        "no SCIENTIFIC_CATALOG_FILE configured, and nationaldataplatform.org "
+        "returned 504 for the whole run"
+    ),
 }
 
 
@@ -26,8 +30,11 @@ def main() -> None:
     print("# Skill evaluation, full provenance\n")
     print(f"{len(records)} skills. Each was given one realistic task with only its own")
     print("plugin loaded and only the MCP servers its frontmatter declares.\n")
-    print("A failed tool call is a server or environment defect. Whether the skill")
-    print("fired, and whether the tool sequence was right, is what judges the skill.\n")
+    print("Whether the skill fired, and whether the tool sequence was right, is")
+    print("what judges the skill. A failed tool call usually judges the server or")
+    print("the environment instead -- but not always: a server correctly refusing")
+    print("a path the agent guessed on its way to the right one is a working")
+    print("server, so read a failure with its sequence rather than as a count.\n")
 
     for r in sorted(records, key=lambda x: x["skill"]):
         print("=" * 78)
@@ -37,29 +44,46 @@ def main() -> None:
             continue
         fired = r["skill"] in r.get("skill_fired", [])
         print(f"   query    : {r['prompt']}")
-        print(f"   servers  : {', '.join(r['servers_attached']) or 'none (knowledge skill)'}")
-        print(f"   skill    : {'FIRED' if fired else 'DID NOT FIRE'}"
-              + (f"  (fired instead: {r['skill_fired']})" if r["skill_fired"] and not fired else ""))
-        print(f"   tools    : {r['tools_ok']} ok, {r['tools_failed']} failed, {r['tools_total']} total")
+        print(
+            f"   servers  : {', '.join(r['servers_attached']) or 'none (knowledge skill)'}"
+        )
+        print(
+            f"   skill    : {'FIRED' if fired else 'DID NOT FIRE'}"
+            + (
+                f"  (fired instead: {r['skill_fired']})"
+                if r["skill_fired"] and not fired
+                else ""
+            )
+        )
+        print(
+            f"   tools    : {r['tools_ok']} ok, {r['tools_failed']} failed, {r['tools_total']} total"
+        )
         if r["skill"] in BLOCKED:
             print(f"   blocked  : {BLOCKED[r['skill']]}")
-        print(f"   cost     : ${r.get('cost_usd') or 0:.3f} over {r.get('turns','?')} turns, {r['seconds']}s")
+        print(
+            f"   cost     : ${r.get('cost_usd') or 0:.3f} over {r.get('turns', '?')} turns, {r['seconds']}s"
+        )
         if r["tool_calls"]:
             print("   sequence :")
             for call in r["tool_calls"]:
                 mark = "FAIL" if call["failed"] else " ok "
-                print(f"     [{mark}] {call['tool'].replace('mcp__','')}"
-                      f"  {json.dumps(call['input'])[:90]}")
+                print(
+                    f"     [{mark}] {call['tool'].replace('mcp__', '')}"
+                    f"  {json.dumps(call['input'])[:90].rstrip()}"
+                )
                 if call["failed"]:
                     print(f"            -> {call['output'][:150]}")
-        print(f"   answer   : {r['answer'][:300]}\n")
+        answer = "\n".join(line.rstrip() for line in r["answer"][:300].splitlines())
+        print(f"   answer   : {answer}\n")
 
     fired = sum(1 for r in records if r.get("skill") in r.get("skill_fired", []))
     ok = sum(r.get("tools_ok", 0) for r in records)
     bad = sum(r.get("tools_failed", 0) for r in records)
     print("=" * 78)
-    print(f"fired {fired}/{len(records)}   tool calls {ok} ok / {bad} failed"
-          f"   cost ${sum(r.get('cost_usd') or 0 for r in records):.2f}")
+    print(
+        f"fired {fired}/{len(records)}   tool calls {ok} ok / {bad} failed"
+        f"   cost ${sum(r.get('cost_usd') or 0 for r in records):.2f}"
+    )
 
 
 if __name__ == "__main__":

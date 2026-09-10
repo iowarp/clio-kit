@@ -228,9 +228,13 @@ CLAUDE.md
 # root leaves a data/ tree that is runtime state, not source.
 /data/
 
-# Files eval runs write into the fixture directory
-evals/fixtures/data/
-evals/fixtures/*_cleaned.csv
-evals/fixtures/*_imputed*.csv
-evals/fixtures/*_grouped.csv
-evals/fixtures/*.png
+# Files eval runs write into the fixture directory.
+#
+# Ignored wholesale rather than pattern by pattern: what an agent writes there
+# depends on the task it was given, and the list was already behind. Tracked
+# fixtures are unaffected -- gitignore does not apply to files git already
+# follows -- so adding a genuinely new fixture means `git add -f`.
+evals/fixtures/*
+
+# Internal planning notes. Not part of the released repository.
+rework/

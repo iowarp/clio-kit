@@ -76,6 +76,66 @@ def _node_server(root: Path) -> Path:
     return server
 
 
+GO_SERVER = """\
+package main
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"os"
+)
+
+type request struct {
+	ID     int    `json:"id"`
+	Method string `json:"method"`
+}
+
+const reply = `{"jsonrpc":"2.0","id":%d,"result":{"serverInfo":{"name":"mesh","version":"1.0.0"}}}`
+
+func main() {
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		var msg request
+		if json.Unmarshal(scanner.Bytes(), &msg) != nil {
+			continue
+		}
+		if msg.Method == "initialize" {
+			fmt.Println(fmt.Sprintf(reply, msg.ID))
+		}
+	}
+}
+"""
+
+# A second package, which is the whole point: `go build -o <file> ./...`
+# refuses a multi-package module, and every real server is one.
+GO_SUPPORT = """\
+package geometry
+
+// Version is here so the module has a package beyond main.
+const Version = "1.0.0"
+"""
+
+
+def _go_server(root: Path) -> Path:
+    server = root / "mesh"
+    (server / "cmd" / "server").mkdir(parents=True)
+    (server / "geometry").mkdir(parents=True)
+    (server / "go.mod").write_text(
+        "module example.com/mesh\n\ngo 1.21\n", encoding="utf-8"
+    )
+    # No dependencies, so the lock is empty -- but it must exist, because the
+    # launcher refuses a server that cannot prove its dependencies are pinned.
+    (server / "go.sum").write_text("", encoding="utf-8")
+    (server / "cmd" / "server" / "main.go").write_text(GO_SERVER, encoding="utf-8")
+    (server / "geometry" / "geometry.go").write_text(GO_SUPPORT, encoding="utf-8")
+    (server / "clio-server.toml").write_text(
+        'name = "mesh"\nruntime = "go"\nentry = "./cmd/server"\n',
+        encoding="utf-8",
+    )
+    return server
+
+
 def test_each_runtime_pins_with_its_own_lock() -> None:
     assert required_project_files("python") == ("pyproject.toml", "uv.lock")
     assert required_project_files("node") == ("package.json", "package-lock.json")
@@ -101,7 +161,7 @@ def test_every_build_command_refuses_to_resolve() -> None:
     """A build that resolves is a build whose result is not a function of the lock."""
     project = Path("/srv/project")
 
-    assert build_command("python", project, executable="uv") == [
+    assert build_command("python", project, "hdf5-mcp", executable="uv") == [
         "uv",
         "sync",
         "--frozen",
@@ -111,10 +171,21 @@ def test_every_build_command_refuses_to_resolve() -> None:
     ]
     # `npm ci` installs the locked tree exactly and fails when the lock and the
     # manifest disagree; `npm install` would quietly rewrite the lock.
-    assert build_command("node", project, executable="npm") == [
+    assert build_command("node", project, "dist/server.js", executable="npm") == [
         "npm",
         "ci",
         "--omit=dev",
+    ]
+    # Go builds the package `entry` names, never `./...`: go refuses to write
+    # more than one package to a non-directory ("cannot write multiple packages
+    # to non-directory bin/server"), so `./...` builds only for a module with a
+    # single package -- which no real server is.
+    assert build_command("go", project, "./cmd/server", executable="go") == [
+        "go",
+        "build",
+        "-o",
+        str(project / "bin" / "server"),
+        "./cmd/server",
     ]
     assert build_runs_in_project("node") and not build_runs_in_project("python")
 
@@ -162,7 +233,9 @@ def test_a_node_server_builds_from_its_lock_and_speaks_mcp(
     project = materialize_locked_server_project(
         server, identity=identity, runtime="node"
     )
-    assert _build_locked_environment("node", project, {"PATH": os.environ["PATH"]})
+    assert _build_locked_environment(
+        "node", project, descriptor["entry"], {"PATH": os.environ["PATH"]}
+    )
 
     # The build wrote node_modules into the project; the identity must not move,
     # or the environment it addresses would be orphaned on every launch.
@@ -182,6 +255,54 @@ def test_a_node_server_builds_from_its_lock_and_speaks_mcp(
     reply = json.loads(completed.stdout.strip().splitlines()[0])
 
     assert reply["result"]["serverInfo"]["name"] == "crystal"
+
+
+@pytest.mark.skipif(
+    subprocess.run(["which", "go"], capture_output=True).returncode != 0,
+    reason="go is not installed",
+)
+def test_a_go_server_builds_from_its_lock_and_speaks_mcp(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """End to end: descriptor, identity, locked build, and a JSON-RPC reply.
+
+    The node path had this and go did not, which is exactly how a build command
+    that cannot compile a multi-package module shipped. The fixture module has
+    two packages on purpose.
+    """
+    monkeypatch.setenv("CLIO_KIT_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setenv("GOCACHE", str(tmp_path / "gocache"))
+    server = _go_server(tmp_path / "servers")
+    descriptor = read_server_descriptor(server)
+    assert descriptor is not None and descriptor["runtime"] == "go"
+
+    identity = locked_server_project_identity(server, "go")
+    project = materialize_locked_server_project(server, identity=identity, runtime="go")
+    environment = {
+        "PATH": os.environ["PATH"],
+        "HOME": os.environ.get("HOME", str(tmp_path)),
+        "GOCACHE": str(tmp_path / "gocache"),
+    }
+    assert _build_locked_environment("go", project, descriptor["entry"], environment)
+
+    # The build wrote bin/ into the project; the identity must not move, or the
+    # environment it addresses would be orphaned on every launch.
+    assert (
+        locked_server_project_identity(project, "go")["project_sha256"]
+        == identity["project_sha256"]
+    )
+
+    command = locked_server_command(project, descriptor["entry"], "go")
+    completed = subprocess.run(
+        command,
+        input='{"jsonrpc":"2.0","id":1,"method":"initialize"}\n',
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    reply = json.loads(completed.stdout.strip().splitlines()[0])
+
+    assert reply["result"]["serverInfo"]["name"] == "mesh"
 
 
 # --- `dist/` means opposite things per runtime -----------------------------

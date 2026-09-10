@@ -44,16 +44,16 @@
     {
       "tool": "Read",
       "input": {
-        "file_path": "/home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/pts.geojson",
+        "file_path": "<repo>/pts.geojson",
         "limit": 30
       },
-      "output": "File does not exist. Note: your current working directory is /home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/evals/fixtures.",
+      "output": "File does not exist. Note: your current working directory is <repo>/evals/fixtures.",
       "failed": true
     },
     {
       "tool": "Read",
       "input": {
-        "file_path": "/home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/evals/fixtures/pts.geojson",
+        "file_path": "<repo>/evals/fixtures/pts.geojson",
         "limit": 20
       },
       "output": "1 {\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-87.63,41.88]},\"properties\":{\"name\":\"chicago\"}},{\"type\":\"Feature\",\"geometry\":{\"type\":\"Point\",\"coordinates\":[-87.70,41.95]},\"properties\":{\"name\":\"north\"}}]}",

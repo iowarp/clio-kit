@@ -21,7 +21,11 @@ from typing import Any
 
 import click
 
-from clio_kit.community import read_live_marketplaces, read_shipped_marketplaces
+from clio_kit.community import (
+    COMMUNITY_KINDS,
+    read_live_marketplaces,
+    read_shipped_marketplaces,
+)
 from clio_kit.skills import (
     SkillProblem,
     always_on_cost,
@@ -174,7 +178,63 @@ def validate_plugin(plugin_dir: Path) -> tuple[dict[str, Any], list[str]]:
     return manifest, problems
 
 
-def build_community_entry(manifest: dict[str, Any], repo: str) -> str:
+def validate_marketplace(marketplace_dir: Path) -> dict[str, Any]:
+    """Return the manifest of a marketplace we would refer users to.
+
+    A federated entry points at somebody else's whole catalogue, so what is
+    checked is that the catalogue exists and is loadable -- not its plugins,
+    which are theirs to validate and ours only to point at.
+    """
+    manifest_path = marketplace_dir / ".claude-plugin" / "marketplace.json"
+    if not manifest_path.is_file():
+        raise PluginProblem(
+            f"{marketplace_dir} has no .claude-plugin/marketplace.json, so it "
+            "is not a marketplace; submit it as a plugin instead, or point "
+            "--kind marketplace at the repository root of your catalogue"
+        )
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise PluginProblem(f"{manifest_path} is not valid JSON: {exc}") from exc
+    if not isinstance(manifest, dict):
+        raise PluginProblem(f"{manifest_path} must contain an object")
+    problems: list[str] = []
+    _check_name(manifest.get("name"), problems)
+    if problems:
+        raise PluginProblem(f"{manifest_path}: {'; '.join(problems)}")
+    if not isinstance(manifest.get("plugins"), list) or not manifest["plugins"]:
+        raise PluginProblem(
+            f"{manifest_path} lists no plugins; an empty catalogue gives a "
+            "user nothing to install once they add it"
+        )
+
+    # A marketplace describes itself under `metadata` and names its owner under
+    # `owner`, where a plugin uses `description` and `author`. Normalising here
+    # means one entry renderer rather than two, and catches the missing
+    # description now -- an entry without one is refused when the pull request
+    # is merged, which is far too late to be useful.
+    metadata = manifest.get("metadata")
+    metadata = metadata if isinstance(metadata, dict) else {}
+    description = metadata.get("description")
+    if not description:
+        raise PluginProblem(
+            f"{manifest_path} has no metadata.description; it is what a user "
+            "reads before adding your catalogue, and an entry without one is "
+            "rejected when we merge it"
+        )
+    owner = manifest.get("owner")
+    return {
+        "name": manifest["name"],
+        "description": description,
+        "author": owner if isinstance(owner, dict) else {"name": owner},
+        "keywords": metadata.get("keywords") or [],
+        "category": metadata.get("category", "community"),
+    }
+
+
+def build_community_entry(
+    manifest: dict[str, Any], repo: str, *, kind: str = "plugin"
+) -> str:
     """Render the marketplace entry that indexes a plugin we do not own."""
     name = manifest.get("name", "")
     description = manifest.get("description", "")
@@ -186,6 +246,11 @@ def build_community_entry(manifest: dict[str, Any], repo: str) -> str:
         f'description = "{description}"',
         f'category    = "{manifest.get("category", "community")}"',
     ]
+    # `plugin` is the default the reader assumes, so only the other kind needs
+    # saying. A marketplace entry that omitted this would be published as an
+    # installable plugin and resolve to nothing.
+    if kind != "plugin":
+        lines.insert(1, f'kind        = "{kind}"')
     if maintainer:
         lines.append(f'maintainer  = "{maintainer}"')
     if keywords:
@@ -315,15 +380,25 @@ def plugin_validate(directory: Path) -> None:
 @click.argument("directory", type=click.Path(exists=True, path_type=Path))
 @click.option("--repo", required=True, help="Your plugin's repository, as owner/name.")
 @click.option(
+    "--kind",
+    type=click.Choice(COMMUNITY_KINDS),
+    default="plugin",
+    help="Submit one installable plugin, or refer users to your whole marketplace.",
+)
+@click.option(
     "--output",
     type=click.Path(path_type=Path),
     default=None,
     help="Write the entry here instead of printing it.",
 )
-def plugin_submit(directory: Path, repo: str, output: Path | None) -> None:
+def plugin_submit(directory: Path, repo: str, kind: str, output: Path | None) -> None:
     """Render the marketplace entry that would index this plugin."""
     try:
-        manifest, problems = validate_plugin(directory)
+        if kind == "marketplace":
+            manifest = validate_marketplace(directory)
+            problems: list[str] = []
+        else:
+            manifest, problems = validate_plugin(directory)
     except PluginProblem as exc:
         raise click.ClickException(str(exc)) from exc
     if problems:
@@ -334,7 +409,7 @@ def plugin_submit(directory: Path, repo: str, output: Path | None) -> None:
     if repo.count("/") != 1 or repo.startswith("/") or repo.endswith("/"):
         raise click.ClickException(f"--repo {repo!r} must be in owner/name form")
 
-    entry = build_community_entry(manifest, repo)
+    entry = build_community_entry(manifest, repo, kind=kind)
     if output is not None:
         output.write_text(entry, encoding="utf-8")
         click.echo(f"Wrote {output}")
@@ -345,6 +420,13 @@ def plugin_submit(directory: Path, repo: str, output: Path | None) -> None:
         "request against iowarp/clio-kit. Your code stays in your repository; "
         "the entry is the only thing we merge."
     )
+    if kind == "marketplace":
+        click.echo(
+            "\nA marketplace is a referral, not an inline listing: Claude Code "
+            "adds one catalogue at a time, so yours is published by "
+            "`clio-kit marketplaces` with the command that adds it, rather "
+            "than appearing among our own plugins."
+        )
 
 
 @click.command("marketplaces")

@@ -216,11 +216,14 @@ request. Four source types are accepted — `github`, `git-subdir`, `npm` and
 `url` — so a plugin published as an npm package, or living in a subdirectory of
 a monorepo, is listable without moving into this repository.
 
-**A server in another language is indexed, not hosted.** Publish a TypeScript or
-Go MCP server to npm and add an `npm` entry: it installs through this
-marketplace while its code, dependencies and releases stay yours. Our own
-servers are Python because they are vendored into the `clio-kit` wheel and
-install with no network, which matters on a cluster login node.
+**A server in another language can be indexed or hosted.** To keep it yours,
+publish it to npm and add an `npm` entry: it installs through this marketplace
+while its code, dependencies and releases stay in your repository. To have it
+ship as part of the kit, contribute it here with a `clio-server.toml` naming
+its runtime — the launcher builds and starts node and go servers from their own
+lock files exactly as it does Python. See
+[CONTRIBUTING.md](CONTRIBUTING.md#contributing-a-server-in-another-language)
+for which of the two to choose.
 
 Once merged, an indexed contribution installs exactly like ours:
 

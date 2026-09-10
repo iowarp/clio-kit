@@ -50,8 +50,15 @@ async def fired_skills(prompt: str) -> tuple[list[str], str]:
         setting_sources=[],
         allowed_tools=["Skill"],
         disallowed_tools=[
-            "Bash", "Read", "Write", "Edit", "Glob", "Grep",
-            "WebFetch", "WebSearch", "Task",
+            "Bash",
+            "Read",
+            "Write",
+            "Edit",
+            "Glob",
+            "Grep",
+            "WebFetch",
+            "WebSearch",
+            "Task",
         ],
         max_turns=2,
         system_prompt=(

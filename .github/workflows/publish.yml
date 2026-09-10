@@ -19,6 +19,12 @@ on:
       - 'clio-agentic-search/pyproject.toml'
       - 'clio-agentic-search/uv.lock'
       - 'prompts/**'
+      # The root suite validates these, and an outside contribution is
+      # a change to community/ and nothing else -- without these it
+      # reached review with no check having run at all.
+      - 'community/**'
+      - 'skills/**'
+      - 'plugins/**'
   push:
     branches:
       - main  # Validate release artifacts on main commits
@@ -36,6 +42,12 @@ on:
       - 'clio-agentic-search/pyproject.toml'
       - 'clio-agentic-search/uv.lock'
       - 'prompts/**'
+      # The root suite validates these, and an outside contribution is
+      # a change to community/ and nothing else -- without these it
+      # reached review with no check having run at all.
+      - 'community/**'
+      - 'skills/**'
+      - 'plugins/**'
     tags:
       - 'v*.*.*'  # Publish releases to PyPI on version tags (paths don't apply to tags)
   workflow_dispatch:  # Allow manual triggering
@@ -72,8 +84,8 @@ jobs:
       run: |
         uv lock --check
         uv lock --check --directory clio-agentic-search
-        uv run --with ruff ruff check scripts src tests
-        uv run --with ruff ruff format --check scripts src tests
+        uv run --with ruff ruff check scripts src tests evals
+        uv run --with ruff ruff format --check scripts src tests evals
         uv run --with mypy mypy scripts/generate_server_json.py \
           scripts/generate_mcp_user_contracts.py \
           scripts/extract_mcp_metadata.py scripts/verify_pypi_release.py \

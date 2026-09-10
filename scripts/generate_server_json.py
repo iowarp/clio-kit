@@ -26,7 +26,9 @@ from clio_kit.community import (
     write_live_marketplaces,
     write_shipped_marketplaces,
 )
+from clio_kit.discovery import DESCRIPTOR_NAME, read_server_descriptor
 from clio_kit.plugins import read_skill_frontmatter
+from clio_kit.runtimes import required_project_files, supported_runtimes
 from clio_kit.mcp_contracts import generate_user_contract_artifacts
 
 try:
@@ -359,6 +361,65 @@ def write_skills_plugin(
     }
 
 
+def server_runtime(server_dir: Path) -> str:
+    """Return the runtime that starts this server, or raise saying why not.
+
+    A server this cannot describe used to be skipped in silence, so it reached
+    neither server.json nor the marketplace and nothing said why. Every skip
+    here is now an error naming the file that would fix it.
+    """
+    if (server_dir / "pyproject.toml").is_file():
+        return "python"
+    descriptor = read_server_descriptor(server_dir)
+    if descriptor is None:
+        raise ValueError(
+            f"{server_dir} has no pyproject.toml and no {DESCRIPTOR_NAME}, so "
+            "nothing states what it is or how to start it; a server in another "
+            f"language is described by committing a {DESCRIPTOR_NAME}"
+        )
+    return cast(str, descriptor["runtime"])
+
+
+def is_server_dir(server_dir: Path) -> bool:
+    """Whether a directory under the servers root is a server at all.
+
+    Keyed on every runtime's manifest rather than on ``pyproject.toml``, so a
+    node or go server is seen and then described -- or refused by name --
+    instead of being passed over as though it were not there.
+    """
+    if not server_dir.is_dir() or server_dir.name.startswith("."):
+        return False
+    if (server_dir / DESCRIPTOR_NAME).is_file():
+        return True
+    return any(
+        (server_dir / required_project_files(runtime)[0]).is_file()
+        for runtime in supported_runtimes()
+    )
+
+
+def read_project_metadata(server_dir: Path, runtime: str) -> dict[str, Any]:
+    """Return the `[project]`-shaped facts every generated manifest needs.
+
+    Python reads them from ``pyproject.toml``; every other runtime states them
+    in its descriptor, because there is no second file this generator could
+    agree with go about.
+    """
+    if runtime == "python":
+        return read_pyproject(server_dir)
+    descriptor = read_server_descriptor(server_dir)
+    assert descriptor is not None  # server_runtime() established this
+    if not descriptor.get("description"):
+        raise ValueError(
+            f"{server_dir / DESCRIPTOR_NAME} needs a description; it is what a "
+            "user reads in the marketplace before installing the server"
+        )
+    return {
+        "description": descriptor["description"],
+        "version": descriptor.get("version", ""),
+        "scripts": {descriptor["entry"]: ""},
+    }
+
+
 def read_pyproject(server_dir: Path) -> dict[str, Any]:
     """Read pyproject.toml and return the [project] table."""
     pyproject_path = server_dir / "pyproject.toml"
@@ -518,9 +579,25 @@ def write_claude_plugin_files(
     }
     _write_json(plugin_dir / ".mcp.json", mcp_json)
 
-    # Runtime descriptor: states outright what discovery used to infer by
-    # string-matching pyproject.toml, and is the seam a non-Python server
-    # would be described through.
+
+def write_server_descriptor(
+    server_dir: Path,
+    server_name: str,
+    project: dict[str, Any],
+    *,
+    runtime: str,
+    server_version: str,
+) -> None:
+    """Write the descriptor that states what a server is and how to start it.
+
+    Generated for Python, where every fact already exists in pyproject.toml and
+    a hand-written copy would drift from it. For every other runtime the
+    descriptor *is* the source -- there is no second file to derive it from --
+    so a committed one is left exactly as it is.
+    """
+    if runtime != "python":
+        return
+
     entry_point = next(
         (name for name in project.get("scripts", {}) if name.endswith("-mcp")),
         f"{server_name}-mcp",
@@ -536,7 +613,7 @@ def write_claude_plugin_files(
             "",
         ]
     )
-    (server_dir / "clio-server.toml").write_text(
+    (server_dir / DESCRIPTOR_NAME).write_text(
         descriptor, encoding="utf-8", newline="\n"
     )
 
@@ -597,11 +674,7 @@ def generate_all(mcps_dir: str) -> None:
     marketplace_plugins: list[dict[str, Any]] = []
 
     server_dirs = sorted(
-        server_dir
-        for server_dir in mcps_path.iterdir()
-        if server_dir.is_dir()
-        and not server_dir.name.startswith(".")
-        and (server_dir / "pyproject.toml").exists()
+        server_dir for server_dir in mcps_path.iterdir() if is_server_dir(server_dir)
     )
     discovered_servers = {server_dir.name for server_dir in server_dirs}
     configured_servers = set(server_versions)
@@ -618,25 +691,35 @@ def generate_all(mcps_dir: str) -> None:
             "MCP Registry release inventory contains unknown projects: "
             f"{sorted(unknown_publish_servers)}"
         )
+    runtimes = {server.name: server_runtime(server) for server in server_dirs}
+    unsupported_registry_servers = sorted(
+        name for name in registry_publish_servers if runtimes[name] != "python"
+    )
+    if unsupported_registry_servers:
+        raise ValueError(
+            "MCP Registry metadata extraction is not implemented for non-Python "
+            f"servers: {unsupported_registry_servers}. Remove them from "
+            "mcp-registry-release.publish to publish marketplace entries only."
+        )
     bundles = read_bundles(repo_root)
     assert_bundles_partition_servers(bundles, discovered_servers)
 
     for server_dir in server_dirs:
-        if not server_dir.is_dir() or server_dir.name.startswith("."):
-            continue
-
-        pyproject_file = server_dir / "pyproject.toml"
-        if not pyproject_file.exists():
-            continue
-
         server_name = server_dir.name
-        print(f"Processing {server_name}...")
+        runtime = runtimes[server_name]
+        print(f"Processing {server_name} ({runtime})...")
 
-        project = read_pyproject(server_dir)
+        project = read_project_metadata(server_dir, runtime)
 
-        # server.json: only update if metadata extraction succeeds
-        metadata = extract_metadata(server_dir)
-        if metadata is not None:
+        # server.json describes this server to the MCP Registry, and building
+        # it means running the server to list its tools -- which the extractor
+        # does through `uv run`, so it can only do it for Python. Non-Python
+        # servers may ship marketplace entries, but cannot be selected for
+        # registry publication until an extractor exists (checked above).
+        metadata = None if runtime != "python" else extract_metadata(server_dir)
+        if runtime != "python":
+            print(f"  Marketplace only ({runtime}; not selected for MCP Registry)")
+        elif metadata is not None:
             server_json = build_server_json(
                 server_name,
                 project,
@@ -654,6 +737,14 @@ def generate_all(mcps_dir: str) -> None:
             continue
         else:
             print("  Skipped server.json (using existing, extraction failed)")
+
+        write_server_descriptor(
+            server_dir,
+            server_name,
+            project,
+            runtime=runtime,
+            server_version=server_versions[server_name],
+        )
 
         # Claude Code plugin files: always write (no metadata needed)
         write_claude_plugin_files(

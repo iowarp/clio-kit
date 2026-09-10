@@ -115,10 +115,13 @@ are adding.
 
 ## Contributing a Server in Another Language
 
-**Index it; we do not host non-Python servers.** Publish your TypeScript or Go
-server to npm and add one entry under [`community/`](community/README.md) with
-`type = "npm"`. Your code stays in your repository on your own release
-schedule, and it installs through our marketplace exactly like ours do.
+TypeScript and Go servers are supported two ways. Which to pick is a question
+about ownership, not capability.
+
+**Index it** — the server stays yours. Publish to npm and add one entry under
+[`community/`](community/README.md) with `type = "npm"`. Your code, your
+dependencies and your release schedule stay in your repository, and it installs
+through our marketplace exactly like ours do.
 
 ```toml
 name        = "crystal-ts"
@@ -131,26 +134,45 @@ package = "@some-lab/crystal-mcp"
 version = "^1.0.0"
 ```
 
-This is a deliberate boundary, not a missing feature. Hosting a second language
-here would mean a second CI matrix, a second toolchain every user must have on
-PATH, and the loss of offline install — our servers are vendored into the
-`clio-kit` wheel and need no network, while a node server fetches its
-dependencies on first build and a go server compiles on first build. On a login
-node with no outbound network that difference decides whether anything works at
-all.
+**Host it** — the server ships as part of the kit, and we maintain it with the
+rest. Contribute it into `clio-kit-mcp-servers/` like any other server, with a
+`clio-server.toml` declaring its runtime. Read the rest of this section first:
+hosting is a real commitment on both sides.
 
-### If we ever do host one
+One difference is worth stating plainly, because it decides whether a server
+works at all in some places. Python servers are vendored into the `clio-kit`
+wheel and install with **no network**. A node server fetches its dependencies
+on first build and a go server compiles on first build. On a cluster login node
+with no outbound network, a hosted non-Python server will not start until it
+has been built once somewhere that has one. If your users are in that position,
+index it or ship Python.
 
-The launcher itself is ready and proven: it builds and starts node and go from
-their own locks, the same way it does Python, declared in `clio-server.toml`:
+### Hosting one
+
+The launcher builds and starts node and go from their own locks, the same way
+it does Python, declared in `clio-server.toml`:
 
 ```toml
 name    = "crystal"
 runtime = "node"              # python | node | go
 version = "1.0.0"
-lock    = "package-lock.json"
-entry   = "dist/server.js"
+entry   = "bundle/server.js"  # go: the main package, e.g. ./cmd/server
+description = "Crystallography tools."
 ```
+
+Both paths are covered end to end in `tests/test_runtimes.py`, each building
+a fixture server from its lock and reading back a JSON-RPC `initialize` reply.
+The go fixture is deliberately a two-package module: while only node had such a
+test, go shipped a build command that could not compile one. `go build -o
+<file> ./...` fails with `cannot write multiple packages to non-directory`, so
+it worked for a single-package module and no real server is one. The build
+compiles the package `entry` names instead.
+
+`entry` means the same thing in all three: the thing that runs. Python names
+its console script, node the compiled JavaScript, go the main package to
+compile. `lock` is not yours to choose -- which file pins a runtime follows
+from the runtime, so a descriptor naming a different one is refused rather
+than quietly ignored.
 
 **A TypeScript server must commit its compiled JavaScript.** The build runs
 `npm ci --omit=dev`, so `typescript` is a devDependency that is never installed
@@ -166,15 +188,25 @@ and rides into the wheel correctly. (`node_modules` is already ignored, so it
 never ships — which is what you want, since `npm ci` recreates it from the
 lock.)
 
-What is *not* ready, and would have to land first:
+**Your server needs its own CI lane, and CI will not let you skip it.** The
+shared matrix runs Python tools — ruff, mypy, pytest — and discovers what to
+run them on by looking for `pyproject.toml`. A node or go server is not in it,
+so `tests/test_ci_covers_every_server.py` fails on any server no job verifies,
+naming it. Add a workflow that lints, type-checks and tests your server with
+its own toolchain, then record it in that test's `DEDICATED_WORKFLOWS`. Without
+this a hosted server would ship entirely unverified, which is why it is a gate
+rather than a guideline.
 
-- CI discovers servers with `test -f {}/pyproject.toml`, so a node server gets
-  no lint, no type check and no lock verification. This is the blocking one:
-  without it a hosted server ships entirely unverified.
-- the manifest generator reads `pyproject.toml` for version and description and
-  **silently skips** a server without one — so a node server would never reach
-  the marketplace and nothing would say why. It needs to read the descriptor
-  instead, and fail loudly on a server it cannot describe.
+The manifest generator reads your descriptor for the name, version, entry point
+and description that a Python server states in `pyproject.toml`, so a hosted
+server reaches the marketplace like any other. A server it cannot describe is
+refused by name rather than skipped in silence.
+
+Hosted Node and Go servers currently publish marketplace entries only. Keep
+them out of `mcp-registry-release.publish` in `mcp-server-versions.toml`: live
+`server.json` metadata extraction currently supports Python only, and selecting
+a non-Python server for MCP Registry publication fails generation. Python
+metadata extraction failures still fail publishing CI.
 
 ## Contributing an MCP Server or Plugin You Maintain
 

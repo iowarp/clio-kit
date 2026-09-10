@@ -18,6 +18,7 @@ Writes evals/results/<skill>.json and prints a summary table.
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import re
 import sys
@@ -34,10 +35,16 @@ from claude_agent_sdk import (
     query,
 )
 
+# evals/ is this script's own directory, so this resolves when the runner is
+# invoked as `python evals/skill_eval.py`.
+from scoring import anonymise, call_failed, redact
+
 REPO = pathlib.Path(__file__).resolve().parents[1]
 TASKS = REPO / "evals" / "skill-tasks.json"
 RESULTS = REPO / "evals" / "results"
-BUDGET_USD = 0.60
+# A survey task legitimately costs more than a single-lookup one, so the cap is
+# a knob rather than a constant: CLIO_EVAL_BUDGET_USD raises it for one run.
+BUDGET_USD = float(os.environ.get("CLIO_EVAL_BUDGET_USD", "0.60"))
 
 
 def skill_metadata() -> dict[str, dict[str, object]]:
@@ -46,9 +53,11 @@ def skill_metadata() -> dict[str, dict[str, object]]:
     for md in sorted((REPO / "skills").rglob("SKILL.md")):
         text = md.read_text(encoding="utf-8")
         servers = re.search(r"^  servers: (.+)$", text, re.M)
-        declared = [] if not servers or servers.group(1).strip() == "none" else [
-            s.strip() for s in servers.group(1).split(",")
-        ]
+        declared = (
+            []
+            if not servers or servers.group(1).strip() == "none"
+            else [s.strip() for s in servers.group(1).split(",")]
+        )
         found[md.parent.name] = {
             "plugin": str(md.parents[2]),
             "servers": declared,
@@ -61,8 +70,14 @@ def mcp_config(servers: list[str]) -> dict[str, dict[str, object]]:
     return {
         name: {
             "command": "uv",
-            "args": ["run", "--project", str(REPO), "clio-kit",
-                     "mcp-server", name.removeprefix("clio-")],
+            "args": [
+                "run",
+                "--project",
+                str(REPO),
+                "clio-kit",
+                "mcp-server",
+                name.removeprefix("clio-"),
+            ],
         }
         for name in servers
     }
@@ -75,8 +90,14 @@ async def evaluate(skill: str, meta: dict[str, object], task: dict[str, str]) ->
         setting_sources=[],
         # No human is present in a headless run, so a question is a dead end that
         # would otherwise be scored as a tool failure.
-        disallowed_tools=["Bash", "Write", "Edit", "Task", "WebSearch",
-                          "AskUserQuestion"],
+        disallowed_tools=[
+            "Bash",
+            "Write",
+            "Edit",
+            "Task",
+            "WebSearch",
+            "AskUserQuestion",
+        ],
         permission_mode="bypassPermissions",
         cwd=str(REPO / "evals" / "fixtures"),
         max_turns=25,
@@ -89,12 +110,25 @@ async def evaluate(skill: str, meta: dict[str, object], task: dict[str, str]) ->
     started = time.time()
     result_meta: dict = {}
 
-    async for message in query(prompt=task["prompt"], options=options):
+    # The fixtures *are* the working directory, but nothing in a headless run
+    # says so. An agent that does not know where it is guesses absolute paths,
+    # gets FileNotFoundError from a server that behaved correctly, and then
+    # spends its budget globbing $HOME. A real user's files are simply there
+    # and they know it; this restores that, so the run measures the skill
+    # rather than the agent's ability to locate a fixture.
+    prompt = (
+        f"Your working directory is {options.cwd}, and it already contains the "
+        "files this task names. Use them from there.\n\n" + task["prompt"]
+    )
+
+    async for message in query(prompt=prompt, options=options):
         if isinstance(message, AssistantMessage):
             for block in message.content:
                 if isinstance(block, ToolUseBlock):
                     if block.name == "Skill":
-                        name = str(block.input.get("command") or block.input.get("skill") or "")
+                        name = str(
+                            block.input.get("command") or block.input.get("skill") or ""
+                        )
                         if "-skills:" in name:
                             fired.append(name.split(":", 1)[1])
                     else:
@@ -108,17 +142,12 @@ async def evaluate(skill: str, meta: dict[str, object], task: dict[str, str]) ->
                     body = block.content
                     if isinstance(body, list):
                         body = " ".join(
-                            part.get("text", "") for part in body if isinstance(part, dict)
+                            part.get("text", "")
+                            for part in body
+                            if isinstance(part, dict)
                         )
                     text = " ".join(str(body).split())
-                    low = text.lower()
-                    failed = bool(block.is_error) or low.startswith("error") or any(
-                        s in low for s in ('"error":', '"success":false', '"success": false',
-                                           "validation error", "missing required argument",
-                                           "no file currently open", "unknown strategy",
-                                           "no such tool", "not found", "could not",
-                                           "exceeds maximum allowed tokens")
-                    )
+                    failed = call_failed(bool(block.is_error), text)
                     calls[block.tool_use_id].update(
                         {"output": text[:400], "failed": failed}
                     )
@@ -130,6 +159,11 @@ async def evaluate(skill: str, meta: dict[str, object], task: dict[str, str]) ->
             }
 
     sequence = [calls[i] for i in order if i in calls]
+    # Recorded results are committed and published, so they must not carry the
+    # absolute path of whoever ran them -- that leaks a username, an
+    # institution and a directory layout into the repository, and makes two
+    # runs on different machines diff against each other for no reason.
+    sequence = anonymise(sequence)
     for call in sequence:
         call.setdefault("output", "(no result captured)")
         call.setdefault("failed", False)
@@ -143,7 +177,7 @@ async def evaluate(skill: str, meta: dict[str, object], task: dict[str, str]) ->
         "tools_total": len(sequence),
         "tools_ok": sum(1 for c in sequence if not c["failed"]),
         "tools_failed": sum(1 for c in sequence if c["failed"]),
-        "answer": " ".join(answer)[:700],
+        "answer": redact(" ".join(answer))[:700],
         "seconds": round(time.time() - started, 1),
         **result_meta,
     }
@@ -163,14 +197,19 @@ async def main() -> int:
         try:
             record = await evaluate(skill, meta[skill], tasks[skill])
         except Exception as exc:  # a harness failure is data too
-            record = {"skill": skill, "harness_error": f"{type(exc).__name__}: {exc}"[:300]}
+            record = {
+                "skill": skill,
+                "harness_error": f"{type(exc).__name__}: {exc}"[:300],
+            }
         (RESULTS / f"{skill}.json").write_text(json.dumps(record, indent=2) + "\n")
         if "harness_error" in record:
             print(f"  HARNESS ERROR: {record['harness_error'][:110]}")
         else:
             hit = "fired" if skill in record["skill_fired"] else "DID NOT FIRE"
-            print(f"  {hit}  tools {record['tools_ok']}/{record['tools_total']} ok"
-                  f"  {record['seconds']}s  ${record.get('cost_usd') or 0:.3f}")
+            print(
+                f"  {hit}  tools {record['tools_ok']}/{record['tools_total']} ok"
+                f"  {record['seconds']}s  ${record.get('cost_usd') or 0:.3f}"
+            )
     return 0
 
 

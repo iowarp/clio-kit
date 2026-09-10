@@ -168,9 +168,9 @@
       "tool": "Glob",
       "input": {
         "pattern": "**/spack/share/spack/setup-env.sh",
-        "path": "/home/sislam6"
+        "path": "<home>"
       },
-      "output": "<tool_use_error>Directory does not exist: /home/sislam6</tool_use_error>",
+      "output": "<tool_use_error>Directory does not exist: <home>",
       "failed": true
     },
     {
@@ -220,18 +220,18 @@
       "tool": "Glob",
       "input": {
         "pattern": "**/spack/share/spack/setup-env.sh",
-        "path": "/home/shazzadul"
+        "path": "<home>"
       },
-      "output": "/home/shazzadul/Illinois_Tech/fall25/RA/spack/share/spack/setup-env.sh /home/shazzadul/spack/share/spack/setup-env.sh",
+      "output": "<home> <home>",
       "failed": false
     },
     {
       "tool": "Glob",
       "input": {
         "pattern": "spack*",
-        "path": "/home/shazzadul"
+        "path": "<home>"
       },
-      "output": "/home/shazzadul/.spack/bootstrap/store/linux-centos7-x86_64/gcc-10.2.1/patchelf-0.18.0-afv7arjarb7nzmlh7c5slkfxykybuqce/.spack/spack-build-01-autoreconf-out.txt /home/shazzadul/.spack/bootstrap/store/linux-centos7-x86_64/gcc-10.2.1/patchelf-0.18.0-afv7arjarb7nzmlh7c5slkfxykybuqce/.spack/spack-build-out.txt /home/shazzadul/.spack/bootstrap/store/linux-centos7-x86_64/gcc-10.2.1/patchelf-0.18.0-afv7a",
+      "output": "<home> <home> <home>",
       "failed": false
     },
     {
@@ -262,7 +262,7 @@
       "tool": "Glob",
       "input": {
         "pattern": "**/ior*",
-        "path": "/home/shazzadul/spack/opt"
+        "path": "<home>"
       },
       "output": "No files found",
       "failed": false
@@ -271,7 +271,7 @@
       "tool": "Glob",
       "input": {
         "pattern": "**/ior*",
-        "path": "/home/shazzadul/Illinois_Tech/fall25/RA/spack/opt"
+        "path": "<home>"
       },
       "output": "No files found",
       "failed": false
@@ -280,7 +280,7 @@
       "tool": "Grep",
       "input": {
         "pattern": "^ior",
-        "path": "/home/shazzadul/spack/opt",
+        "path": "<home>",
         "output_mode": "files_with_matches"
       },
       "output": "No files found",
@@ -355,7 +355,7 @@
       "input": {
         "questions": [
           {
-            "question": "The Spack MCP server can't find Spack in standard locations. I found Spack installations at /home/shazzadul/spack and /home/shazzadul/Illinois_Tech/fall25/RA/spack. How would you like to proceed?",
+            "question": "The Spack MCP server can't find Spack in standard locations. I found Spack installations at <home> and <home> How would you like to proceed?",
             "header": "Spack Setup",
             "options": [
               {
@@ -377,7 +377,7 @@
     {
       "tool": "Read",
       "input": {
-        "file_path": "/home/shazzadul/.local/spack/bin/spack"
+        "file_path": "<home>"
       },
       "output": "<tool_use_error>File does not exist.</tool_use_error>",
       "failed": true
@@ -386,7 +386,7 @@
       "tool": "Glob",
       "input": {
         "pattern": "spack",
-        "path": "/home/shazzadul/.local"
+        "path": "<home>"
       },
       "output": "<tool_use_error>Sibling tool call errored</tool_use_error>",
       "failed": true
@@ -395,9 +395,9 @@
       "tool": "Glob",
       "input": {
         "pattern": "*",
-        "path": "/home/shazzadul/.local"
+        "path": "<home>"
       },
-      "output": "/home/shazzadul/.local/share/Trash/files/google/google-cloud-sdk/bin/bootstrapping/__init__.py /home/shazzadul/.local/share/Trash/files/google/google-cloud-sdk/bin/bootstrapping/java_dev_appserver.py /home/shazzadul/.local/share/Trash/files/google/google-cloud-sdk/bin/bootstrapping/gsutil.py /home/shazzadul/.local/share/Trash/files/google/google-cloud-sdk/bin/bootstrapping/setup.py /home/shazzadul",
+      "output": "<home> <home> <home> <home> <home>",
       "failed": false
     },
     {

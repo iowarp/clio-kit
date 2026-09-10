@@ -32,6 +32,19 @@ def _write_server(
     return server_dir
 
 
+def test_a_descriptor_naming_the_wrong_lock_is_refused(tmp_path: Path) -> None:
+    """The lock follows from the runtime, so a per-server choice is a mistake."""
+    server = tmp_path / "crystal"
+    server.mkdir()
+    (server / "clio-server.toml").write_text(
+        'name = "crystal"\nruntime = "node"\n'
+        'lock = "yarn.lock"\nentry = "bundle/server.js"\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="package-lock.json"):
+        read_server_descriptor(server)
+
+
 def test_descriptor_states_what_discovery_used_to_infer(tmp_path: Path) -> None:
     server = _write_server(
         tmp_path,
@@ -44,6 +57,10 @@ def test_descriptor_states_what_discovery_used_to_infer(tmp_path: Path) -> None:
         "name": "hdf5",
         "runtime": "python",
         "entry": "hdf5-mcp",
+        # Empty for a Python server, which states these in pyproject.toml; a
+        # server in another language has nowhere else to put them.
+        "description": "",
+        "version": "",
     }
 
 

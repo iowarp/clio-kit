@@ -31,11 +31,11 @@
       "tool": "Grep",
       "input": {
         "pattern": "py_chronolog_client",
-        "path": "/home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit",
+        "path": "<repo>",
         "output_mode": "files_with_matches",
         "head_limit": 20
       },
-      "output": "Found 7 files /home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/evals/results/REPORT.txt /home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/evals/results/recording-a-session-for-provenance.json /home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/clio-kit-mcp-servers/chronolog/tests/test_lazy_client.py /home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/clio-kit-m",
+      "output": "Found 7 files <repo>/evals/results/REPORT.txt <repo>/evals/results/recording-a-session-for-provenance.json <repo>/clio-kit-mcp-servers/chronolog/tests/test_lazy_client.py <repo>/clio-kit-m",
       "failed": false
     }
   ],

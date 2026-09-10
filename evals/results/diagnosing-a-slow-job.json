@@ -88,19 +88,19 @@
       "tool": "Grep",
       "input": {
         "pattern": "darshan",
-        "path": "/home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/app.log",
+        "path": "<repo>/app.log",
         "output_mode": "content",
         "-i": true,
         "head_limit": 20
       },
-      "output": "<tool_use_error>Path does not exist: /home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/app.log. Note: your current working directory is /home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/evals/fixtures.</tool_use_error>",
+      "output": "<tool_use_error>Path does not exist: <repo>/app.log. Note: your current working directory is <repo>/evals/fixtures.</tool_use_error>",
       "failed": true
     },
     {
       "tool": "Grep",
       "input": {
         "pattern": "darshan",
-        "path": "/home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/evals/fixtures/app.log",
+        "path": "<repo>/evals/fixtures/app.log",
         "output_mode": "content",
         "-i": true,
         "head_limit": 20
@@ -112,15 +112,15 @@
       "tool": "Glob",
       "input": {
         "pattern": "**/*darshan*",
-        "path": "/home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit"
+        "path": "<repo>"
       },
-      "output": "/home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/clio-kit-mcp-servers/darshan/tests/test_darshan_parser_posix_mpiio.py /home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/clio-kit-mcp-servers/darshan/tests/test_darshan_parser.py /home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/clio-kit-mcp-servers/darshan/tests/test_darshan_parser_text_parsing.py /home/shazzadul/Illin",
+      "output": "<repo>/clio-kit-mcp-servers/darshan/tests/test_darshan_parser_posix_mpiio.py <repo>/clio-kit-mcp-servers/darshan/tests/test_darshan_parser.py <repo>/clio-kit-mcp-servers/darshan/tests/test_darshan_parser_text_parsing.py <home>",
       "failed": false
     },
     {
       "tool": "Read",
       "input": {
-        "file_path": "/home/shazzadul/Illinois_Tech/fall26/RA/code_local/clio-kit/evals/fixtures/app.log",
+        "file_path": "<repo>/evals/fixtures/app.log",
         "limit": 25
       },
       "output": "1 2026-08-21 10:00:00 WARN event 0 2 2026-08-21 10:00:01 INFO event 1 3 2026-08-21 10:00:02 INFO event 2 4 2026-08-21 10:00:03 INFO event 3 5 2026-08-21 10:00:04 INFO event 4 6 2026-08-21 10:00:05 INFO event 5 7 2026-08-21 10:00:06 INFO event 6 8 2026-08-21 10:00:07 INFO event 7 9 2026-08-21 10:00:08 INFO event 8 10 2026-08-21 10:00:09 INFO event 9 11 2026-08-21 10:00:10 INFO event 10 12 2026-08-2",

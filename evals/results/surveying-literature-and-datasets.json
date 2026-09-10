@@ -1,4 +1,86 @@
 {
   "skill": "surveying-literature-and-datasets",
-  "harness_error": "ResultError: Claude Code returned an error result: Reached maximum budget ($0.6) (exit code: 1)"
+  "prompt": "Find recent arXiv work on speculative decoding for LLM inference and tell me which are worth reading.",
+  "servers_attached": [
+    "clio-arxiv",
+    "clio-ndp",
+    "clio-web"
+  ],
+  "skill_fired": [
+    "surveying-literature-and-datasets"
+  ],
+  "expected_skill": "surveying-literature-and-datasets",
+  "tool_calls": [
+    {
+      "tool": "ToolSearch",
+      "input": {
+        "query": "select:mcp__clio-arxiv__search_by_abstract,mcp__clio-arxiv__search_date_range,mcp__clio-arxiv__get_paper_details,mcp__clio-arxiv__find_similar_papers,mcp__clio-arxiv__search_arxiv",
+        "max_results": 5
+      },
+      "output": "",
+      "failed": false
+    },
+    {
+      "tool": "mcp__clio-arxiv__search_by_abstract",
+      "input": {
+        "abstract_keywords": "speculative decoding large language model inference acceleration",
+        "max_results": 15
+      },
+      "output": "{\"success\":true,\"papers\":[{\"id\":\"http://arxiv.org/abs/2402.11651v2\",\"title\":\"Learning From Failure: Integrating Negative Examples when Fine-tuning Large Language Models as Agents\",\"summary\":\"Large language models (LLMs) have achieved success in acting as agents, which interact with environments through tools such as search engines. However, LLMs are optimized for language generation instead of too",
+      "failed": false
+    },
+    {
+      "tool": "mcp__clio-arxiv__search_by_abstract",
+      "input": {
+        "abstract_keywords": "draft verify parallel token generation LLM serving latency",
+        "max_results": 15
+      },
+      "output": "{\"success\":true,\"papers\":[{\"id\":\"http://arxiv.org/abs/2603.18897v3\",\"title\":\"Parallelizing Tool Execution and LLM Generation for Low-Latency Agent Serving\",\"summary\":\"LLM-powered agents execute tasks through a sequential loop of model generation and tool execution. Today's serving systems serialize this loop, leaving tool latency exposed on the task critical path. This paper presents PASTE, a tool",
+      "failed": false
+    },
+    {
+      "tool": "mcp__clio-arxiv__search_arxiv",
+      "input": {
+        "query": "speculative decoding",
+        "max_results": 20
+      },
+      "output": "{\"success\":true,\"papers\":[{\"id\":\"http://arxiv.org/abs/2609.02887v1\",\"title\":\"A Common Measure of Communication for Speech Brain-Computer Interfaces\",\"summary\":\"Speech brain-computer interfaces (speech BCIs) translate neural activity into language, offering a path towards restoring speech for people with paralysis and, more broadly, enabling new forms of natural human-computer interaction. Despite ",
+      "failed": false
+    },
+    {
+      "tool": "mcp__clio-arxiv__search_by_abstract",
+      "input": {
+        "abstract_keywords": "speculative decoding draft model acceptance rate lossless speedup",
+        "max_results": 15
+      },
+      "output": "{\"success\":true,\"papers\":[{\"id\":\"http://arxiv.org/abs/2602.05774v6\",\"title\":\"Variational Speculative Decoding: Rethinking Draft Training from Token Likelihood to Sequence Acceptance\",\"summary\":\"Speculative decoding accelerates inference for (M)LLMs, yet a training-decoding discrepancy persists: while existing methods optimize single greedy trajectories, decoding involves verifying and ranking mult",
+      "failed": false
+    },
+    {
+      "tool": "mcp__clio-arxiv__find_similar_papers",
+      "input": {
+        "reference_paper_id": "2608.13524",
+        "max_results": 10
+      },
+      "output": "{\"success\":true,\"reference_paper\":{\"id\":\"http://arxiv.org/abs/2608.13524v1\",\"title\":\"DARTree: Speculative Diffusion Decoding with Autoregressive Draft Trees\",\"summary\":\"Speculative decoding losslessly accelerates autoregressive language models by verifying multiple draft tokens in parallel. Diffusion-based drafters further reduce proposal latency by predicting an entire token block in parallel, bu",
+      "failed": false
+    },
+    {
+      "tool": "mcp__clio-arxiv__search_by_abstract",
+      "input": {
+        "abstract_keywords": "speculative decoding benchmark survey evaluation multi-token prediction self-speculative reasoning models",
+        "max_results": 12
+      },
+      "output": "{\"success\":true,\"papers\":[{\"id\":\"http://arxiv.org/abs/2605.01106v1\",\"title\":\"Component-Aware Self-Speculative Decoding in Hybrid Language Models\",\"summary\":\"Speculative decoding accelerates autoregressive inference by drafting candidate tokens with a fast model and verifying them in parallel with the target. Self-speculative methods avoid the need for an external drafter but have been studied excl",
+      "failed": false
+    }
+  ],
+  "tools_total": 7,
+  "tools_ok": 7,
+  "tools_failed": 0,
+  "answer": "I searched arXiv by abstract (three query vocabularies plus a similarity expansion off a recent hit). Below is what's actually out there, ranked by whether I'd spend your time on it. **All judgments are from abstracts \u2014 I didn't pull PDFs \u2014 and everything here is a preprint.**\n\n## Read these four\n\n1. **An Interpretable Latency Model for Speculative Decoding in LLM Serving** \u2014 [2605.15051](https://arxiv.org/abs/2605.15051) (May 2026)\n The most useful paper on this list if you care about deployment rather than method design. Infers effective batch size from request rate via Little's Law, decomposes per-request cost into prefill/drafting/verification, validated against extensive vLLM measuremen",
+  "seconds": 89.5,
+  "turns": 10,
+  "cost_usd": 0.959341,
+  "is_error": false
 }

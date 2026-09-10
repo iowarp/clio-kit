@@ -246,7 +246,7 @@ See [CONTRIBUTING.md](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.
 ## Roadmap & Vision
 
 **v1.0.0 (Beta Public Release - November 11, 2025)**
-- 15+ MCP servers for scientific computing
+- 22 MCP servers for scientific computing
 - Unified launcher with auto-discovery
 - Comprehensive documentation and examples
 

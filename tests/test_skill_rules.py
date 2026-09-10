@@ -378,3 +378,27 @@ def test_our_own_skills_all_declare_a_rung_we_recognise() -> None:
     for skill_md in Path("skills").glob("*/skills/*/SKILL.md"):
         fields = read_skill_frontmatter(skill_md.parent)
         assert fields.get("eval-status") in EVAL_LADDER, skill_md
+
+
+# --- the entries actually committed here -----------------------------------
+#
+# Every test above builds its own entry in a tmp_path, so all of them pass on a
+# repository whose real entries are malformed. An outside contribution is a
+# pull request that adds one file under community/entries/ and touches nothing
+# else, which is exactly the shape no other check sees.
+
+
+def test_the_committed_community_entries_parse() -> None:
+    """The real entries, not a fixture: this is what a contribution changes."""
+    repo_root = Path(__file__).resolve().parents[1]
+    entries = read_community_entries(repo_root)
+    federated = read_federated_marketplaces(repo_root)
+
+    # Reading them at all is the assertion -- both readers raise ValueError on
+    # a malformed entry. That every entry lands in exactly one of the two lists
+    # is what keeps a referral from being published as an installable plugin.
+    names = [entry["name"] for entry in entries] + [f["name"] for f in federated]
+    assert names, "community/entries/ is empty; this test would prove nothing"
+    assert len(names) == len(set(names))
+    for referral in federated:
+        assert referral["add_command"].startswith("claude plugin marketplace add ")
