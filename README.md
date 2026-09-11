@@ -75,7 +75,7 @@ CLIO Kit is part of the IoWarp platform's tooling ecosystem for AI agents. Its m
 
 > **Part of IoWarp Platform:** CLIO Kit is the platform's meta-marketplace and tooling layer, bringing together MCP servers, skills, workflow plugins, agent definitions, and community marketplace collections.
 
-**One launcher for MCP servers. Individual components or workflow bundles.** BSD-3-Clause licensed, with automated checks and real installation, MCP, and HPC workflow tests. See the [validation guide](clio-kit-website/docs/marketplace.md#scientific-acceptance-boundaries) for tested coverage and environment requirements.
+> **One launcher for MCP servers. Individual components or workflow bundles.** BSD-3-Clause licensed, with automated checks and real installation, MCP, and HPC workflow tests. See the [validation guide](clio-kit-website/docs/marketplace.md#scientific-acceptance-boundaries) for tested coverage and environment requirements.
 
 ## 🚀 Quick Installation
 
@@ -143,8 +143,7 @@ Replace `codex` with `claude-code` or `antigravity`. MCP servers require separat
 
 Choose either the Python or npm installer for each skill. See the [skills CLI guide](clio-kit-website/docs/marketplace.md#optional-skills-cli) for selecting skills, updates and removal.
 
-<details>
-<summary><b>One Command for Any Server</b></summary>
+### One Command for Any Server
 
 ```bash
 # From the CLIO Kit checkout, install the CLI in a persistent tool environment
@@ -184,8 +183,6 @@ clio-kit mcp-contract clio-kit-slurm-user-v3
 clio-kit mcp-contract clio-kit-spack-user-v2.3
 clio-kit mcp-contract clio-kit-scientific-catalog-user-v1.1
 ```
-
-</details>
 
 ### Workflow Bundles
 
