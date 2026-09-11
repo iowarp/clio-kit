@@ -109,8 +109,29 @@ in the client; [setup.md](setup.md) gives complete Codex and Claude Code routes.
 Native `.claude-plugin` bundles and the two agent definitions currently target
 Claude Code; their manifest format is not shared by every agent.
 
-Alternatively, install skill files with the optional npm `skills` CLI; see
-[installation, updates and removal](https://toolkit.iowarp.ai/docs/marketplace#optional-skills-cli).
+**Optional npm skills installer.** With Node.js 22.20.0 or newer, run these
+commands from your working project, using the absolute path to your CLIO checkout:
+
+```bash
+npx skills@1.5.25 add /path/to/clio-kit --list
+npx skills@1.5.25 add /path/to/clio-kit --skill exploring-an-unfamiliar-dataset reading-large-datasets-safely choosing-a-storage-format --agent codex --copy
+```
+
+Replace `codex` with `claude-code` or `antigravity`, or supply multiple agent
+names after `--agent`. Use `--skill '*'` to install all 20 skills. This installs
+skill files; configure their required MCP servers separately using [setup.md](setup.md).
+Choose one installer per skill. Node.js is not required for the Python route above.
+
+To refresh, update your source checkout and repeat the same `add` command with
+explicit agent names and `--copy`; this replaces installed files, so review local
+edits first. To remove a skill from the project, including copies shared by agents:
+
+```bash
+npx skills@1.5.25 remove exploring-an-unfamiliar-dataset --yes
+```
+
+See the [skills CLI guide](https://toolkit.iowarp.ai/docs/marketplace#optional-skills-cli)
+for shared discovery paths and limitations in the pinned version.
 
 **Claude Code users.** From the checkout above, install the launcher and
 register its marketplace:
