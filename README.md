@@ -77,237 +77,94 @@ CLIO Kit is part of the IoWarp platform's comprehensive tooling ecosystem for AI
 
 ## 🚀 Quick Installation
 
-Clone the repository and enter its directory:
-
 ```bash
 git clone https://github.com/iowarp/clio-kit.git
 cd clio-kit
 ```
 
-**AI agent (recommended)** - tell your agent:
+**Recommended:** Ask your agent:
 
-```
+```text
 Read setup.md and set up CLIO Kit for me.
 ```
 
-The agent will check prerequisites, use your stated work (or ask if it is unknown),
-install skills and MCP tools using its supported configuration, and verify real results.
-
-**Codex and other agents with Agent Skills support.** Install the launcher
-from the checkout above, then install portable skills:
+**Manual setup:** Install the launcher, then choose an option below.
 
 ```bash
 uv tool install --force --reinstall ".[verification]"
-clio-kit skill list
+```
+
+### Claude Code
+
+Install a workflow bundle with its MCP servers and skills:
+
+```bash
+claude plugin marketplace add "$PWD"
+claude plugin install clio-hpc@clio-kit
+claude mcp list
+```
+
+Restart Claude Code after installation and confirm the servers connect.
+
+### Codex and Other Agents
+
+Install workflow skills into your project:
+
+```bash
 clio-kit skill install --bundle clio-scientific-io --target /path/to/project/.agents/skills
 ```
 
-`.agents/skills` is Codex's project discovery directory. Other agents can use
-`--target` with their own documented skill directory. All 20 standard `SKILL.md`
-folders ship in the Python package. Configure the required MCP servers separately
-in the client; [setup.md](setup.md) gives complete Codex and Claude Code routes.
-Native `.claude-plugin` bundles and the two agent definitions currently target
-Claude Code; their manifest format is not shared by every agent.
+Configure the required MCP servers using [setup.md](setup.md). Use your agent’s supported skill directory.
 
-**Optional npm skills installer.** With Node.js 22.20.0 or newer, run these
-commands from your working project, using the absolute path to your CLIO checkout:
+### Install Skills with npm
+
+Requires Node.js 22.20.0+. From your working project:
 
 ```bash
-npx skills@1.5.25 add /path/to/clio-kit --list
-npx skills@1.5.25 add /path/to/clio-kit --skill exploring-an-unfamiliar-dataset reading-large-datasets-safely choosing-a-storage-format --agent codex --copy
+npx skills@1.5.25 add /path/to/clio-kit --skill '*' --agent codex --copy
 ```
 
-Replace `codex` with `claude-code` or `antigravity`, or supply multiple agent
-names after `--agent`. Use `--skill '*'` to install all 20 skills. This installs
-skill files; configure their required MCP servers separately using [setup.md](setup.md).
-Choose one installer per skill. Node.js is not required for the Python route above.
+Replace `codex` with `claude-code` or `antigravity`. This installs all 20 skills; MCP servers require separate configuration.
 
-To refresh, update your source checkout and repeat the same `add` command with
-explicit agent names and `--copy`; this replaces installed files, so review local
-edits first. To remove a skill from the project, including copies shared by agents:
-
-```bash
-npx skills@1.5.25 remove exploring-an-unfamiliar-dataset --yes
-```
-
-See the [skills CLI guide](clio-kit-website/docs/marketplace.md#optional-skills-cli)
-for shared discovery paths and limitations in the pinned version.
-
-**Claude Code users.** From the checkout above, install the launcher and
-register its marketplace:
-
-```bash
-uv tool install --force --reinstall ".[verification]"
-claude plugin marketplace add "$PWD"
-claude plugin install clio-hpc@clio-kit      # see the table below for other workflows
-```
-
-The first line is not optional. A plugin is a manifest that runs `clio-kit`; it
-does not contain the server. Install plugins without the launcher and every one
-of them reports `enabled` while every server fails with `ENOENT: Executable not
-found in $PATH: "clio-kit"`.
-
-Optional installations and checks:
-
-```bash
-claude plugin install clio-skills@clio-kit       # all 20 skills, no MCP servers
-claude plugin install clio-agents@clio-kit       # planning and evidence review
-clio-kit doctor --server hdf5 --connect
-```
-
-First builds download locked dependencies; vendored source alone does not
-enable a cold offline installation. Contributed Node and Go projects also
-require their corresponding toolchains.
-Spack, Lmod, Slurm, ParaView, Chronolog, and site catalogue workflows have additional
-system prerequisites; `doctor` reports basic prerequisites separately from MCP
-connections. See [the feature and acceptance guide](clio-kit-website/docs/marketplace.md).
-
-Reload plugins or restart Claude Code, then confirm the servers actually connected:
-
-```bash
-claude mcp list      # every plugin:clio-* line must say ✔ Connected
-```
-
-Use `claude mcp list`, not `claude plugin list` — the latter reports `enabled`
-for plugins whose servers are completely broken.
-
-<details>
-<summary>or install servers individually</summary>
-
-### One Command for Any Server
-
-```bash
-# From this checkout, install its CLI into a persistent tool environment
-uv tool install --force --reinstall .
-# If uv reports that its executable directory is not on PATH:
-uv tool update-shell
-
-# List all 22 available MCP servers
-clio-kit mcp-servers
-
-# Run any installed server
-clio-kit mcp-server hdf5
-clio-kit mcp-server pandas
-clio-kit mcp-server slurm
-
-# Agentic search — hybrid retrieval for scientific corpora
-clio-kit search serve               # Start search API server
-clio-kit search query --namespace local_fs --q "pressure > 200 kPa"
-
-```
-
-`uv tool install` keeps CLIO Kit in a persistent, isolated tool environment.
-Use `uvx --from clio-kit clio-kit ...` only for a temporary, one-shot
-invocation. Pin a version (`clio-kit==2.11.0`) only when you need one; unpinned
-installs track the current release.
-
-Released `clio-kit` wheels execute each embedded MCP server from that server's
-shipped `uv.lock`. The launcher uses a source-and-lock-addressed environment
-under the user cache, installs only production dependencies, and refuses to
-resolve an embedded server whose lock is missing. The `--branch` launcher
-option is an explicit development path and is not an immutable
-release-artifact path.
-
-The root wheel also ships machine-readable user contracts for the locked
-JARVIS, SLURM, Spack, and Scientific Catalog servers. These artifacts are generated from real stdio
-`tools/list` exchanges and include canonical SHA-256 digests for downstream
-federation gates:
-
-```bash
-clio-kit mcp-contracts
-clio-kit mcp-contract clio-kit-jarvis-user-v3.5
-clio-kit mcp-contract clio-kit-slurm-user-v3
-clio-kit mcp-contract clio-kit-spack-user-v2.3
-clio-kit mcp-contract clio-kit-scientific-catalog-user-v1.1
-```
-</details>
+Choose either the Python or npm installer for each skill. See the [skills CLI guide](clio-kit-website/docs/marketplace.md#optional-skills-cli) for selecting skills, updates and removal.
 
 ### Workflow Bundles
 
-In Claude Code, installing a bundle pulls in every server it needs plus the skills written for
-that workflow, so you do not have to know which servers go together.
-
-| Bundle | Servers | For |
+| Bundle | Purpose | MCP servers |
 |---|---|---|
-| `clio-hpc` | spack, lmod, jarvis, slurm, node-hardware | Building software and running work on a cluster |
-| `clio-performance` | darshan, chronolog, parallel-sort | Working out why a finished job was slow |
-| `clio-scientific-io` | hdf5, adios, parquet, compression | Opening scientific data files and reading them safely |
-| `clio-analysis` | pandas, plot, paraview | Turning results into statistics and figures |
-| `clio-geoscience` | geo, seismology, terrain | Geospatial, terrain and waveform data |
-| `clio-research` | arxiv, ndp, scientific-catalog, web | Finding papers and the datasets behind them |
+| `clio-hpc` | Build software and run cluster jobs | spack, lmod, jarvis, slurm, node-hardware |
+| `clio-performance` | Diagnose slow jobs and inspect logs | darshan, chronolog, parallel-sort |
+| `clio-scientific-io` | Explore scientific data files | hdf5, adios, parquet, compression |
+| `clio-analysis` | Analyze results and create figures | pandas, plot, paraview |
+| `clio-geoscience` | Work with maps, terrain and waveforms | geo, terrain, seismology |
+| `clio-research` | Find papers and datasets | arxiv, ndp, scientific-catalog, web |
 
-Each bundle is a manifest naming its members, not a copy of them, so a bundle
-cannot drift from the servers it bundles.
+Some servers require additional system software. See [setup and prerequisites](setup.md#native-backend-setup).
 
-### Skills
+### Skills and Agents
 
-Bundles ship skills: written procedures for tool sequences that are easy to get
-wrong. They cover things the tool descriptions cannot say on their own, such as
-which of two similar tools to reach for, what order calls have to happen in, and
-how to read a number a server hands back.
-
-For any compatible agent, install procedures independently of MCP servers:
+Skills provide workflow instructions and guidance for interpreting results. Claude Code users can install skills or agent definitions separately:
 
 ```bash
-clio-kit skill install --bundle clio-hpc --target /path/to/agent/skills
+claude plugin install clio-skills@clio-kit
+claude plugin install clio-agents@clio-kit
 ```
 
-In Claude Code, skills are discovered once their bundle is installed. To install
-only the procedures through its native marketplace:
+Native plugins and agent definitions currently target Claude Code. Portable skills work with compatible agents.
+
+### Contribute Servers, Skills or Plugins
+
+Add skills here, or list a plugin maintained in your own repository:
 
 ```bash
-claude plugin install clio-hpc-skills@clio-kit
-```
-
-Skill names and descriptions are available for selection; full instructions
-load when a skill is used. Inspect installed components and the client's context
-estimate:
-
-```bash
-claude plugin details clio-hpc-skills@clio-kit    # lists installed skills and context estimates
-```
-
-### Contributing Your Own Servers or Skills
-
-The marketplace indexes work from outside this repository. Your code stays in
-your repository, on your release schedule, and your updates reach users without a
-release here.
-
-```bash
-clio-kit plugin init my-plugin      # scaffold a valid plugin
-clio-kit plugin validate my-plugin  # check it before opening anything
-claude plugin validate my-plugin --strict   # and the client's own rules
+clio-kit plugin init my-plugin
+clio-kit plugin validate my-plugin
 clio-kit plugin submit my-plugin --repo owner/name
 ```
 
-`submit` prints the entry to add as `community/entries/<name>.toml` in a pull
-request. Four source types are accepted — `github`, `git-subdir`, `npm` and
-`url` — so a plugin published as an npm package, or living in a subdirectory of
-a monorepo, is listable without moving into this repository.
+`submit` generates a community entry for a pull request. External servers can use any language; servers hosted inside CLIO currently support Python, Node.js and Go.
 
-**A server in another language can be indexed or hosted.** To keep it yours,
-publish a plugin package containing its manifest and MCP configuration, then
-add an `npm` entry: the plugin installs through this marketplace
-while its code, dependencies and releases stay in your repository. To have it
-ship as part of the kit, contribute it here with a `clio-server.toml` naming
-its runtime — the launcher builds and starts node and go servers from their own
-lock files exactly as it does Python. See
-[CONTRIBUTING.md](CONTRIBUTING.md#contributing-a-server-in-another-language)
-for which of the two to choose.
-
-Once merged, an indexed contribution installs exactly like ours:
-
-```bash
-claude plugin install materials-lab@clio-kit
-```
-
-Indexed entries carry `metadata.indexed`, so the catalogue distinguishes what we
-maintain from what we point at.
-
-See [`community/README.md`](community/README.md) for the accepted source types,
-what the generator enforces, and how to trial a contribution against a throwaway
-config before indexing it.
-
+See the [contribution guide](CONTRIBUTING.md) and [community guide](community/README.md) for requirements and submission details.
 
 <a id="agent-integrations"></a>
 
