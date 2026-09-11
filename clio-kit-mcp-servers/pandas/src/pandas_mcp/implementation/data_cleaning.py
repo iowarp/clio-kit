@@ -5,6 +5,7 @@ Data cleaning capabilities for handling missing data and outliers.
 import pandas as pd
 import numpy as np
 import os
+from pathlib import Path
 from typing import Optional, List
 import traceback
 
@@ -64,11 +65,13 @@ def handle_missing_data(
 
         elif strategy == "remove":
             # Remove rows with missing data
-            df_cleaned = df.dropna()
+            df_cleaned = df.dropna(subset=columns)
             removed_rows = len(df) - len(df_cleaned)
 
             # Save cleaned data
-            output_path = file_path.replace(".csv", "_no_missing.csv")
+            output_path = str(
+                Path(file_path).with_name(f"{Path(file_path).stem}_no_missing.csv")
+            )
             df_cleaned.to_csv(output_path, index=False)
 
             return {
@@ -86,77 +89,59 @@ def handle_missing_data(
             if method is None:
                 method = "mean"
 
+            supported = {
+                "mean",
+                "median",
+                "mode",
+                "forward_fill",
+                "backward_fill",
+                "interpolate",
+            }
+            if method not in supported:
+                raise ValueError(f"Unknown imputation method: {method}")
             df_imputed = df.copy()
             imputation_info: dict[str, dict[str, str | float | int]] = {}
-
             for col in columns if columns is not None else df_imputed.columns:
-                if df_imputed[col].isnull().sum() > 0:
-                    if method == "interpolate":
-                        # Row position is the interpolation coordinate. Do not
-                        # extrapolate endpoints or invent categorical values.
-                        numeric = pd.api.types.is_numeric_dtype(df_imputed[col])
-                        if numeric:
-                            df_imputed[col] = df_imputed[col].interpolate(
-                                method="linear", limit_area="inside"
-                            )
-                        imputation_info[col] = {
-                            "method": method,
-                            "fill_value": "linear interpolation (interior gaps only)"
-                            if numeric
-                            else "not applied (non-numeric column)",
-                            "imputed_count": int(
-                                df[col].isnull().sum() - df_imputed[col].isnull().sum()
-                            ),
-                        }
-                        continue
-                    if df_imputed[col].dtype in ["int64", "float64"]:
-                        # Numeric columns
-                        if method == "mean":
-                            fill_value = df_imputed[col].mean()
-                        elif method == "median":
-                            fill_value = df_imputed[col].median()
-                        elif method == "mode":
-                            fill_value = (
-                                df_imputed[col].mode()[0]
-                                if not df_imputed[col].mode().empty
-                                else 0
-                            )
-                        else:
-                            fill_value = df_imputed[col].mean()
-
-                        df_imputed[col] = df_imputed[col].fillna(fill_value)
-                        imputation_info[col] = {
-                            "method": method,
-                            "fill_value": float(fill_value),
-                            "imputed_count": int(df[col].isnull().sum()),
-                        }
-
-                    else:
-                        # Categorical columns
-                        if method == "mode":
-                            fill_value = (
-                                df_imputed[col].mode()[0]
-                                if not df_imputed[col].mode().empty
-                                else "Unknown"
-                            )
-                        elif method == "forward_fill":
-                            df_imputed[col] = df_imputed[col].ffill()
-                            fill_value = "forward_fill"
-                        elif method == "backward_fill":
-                            df_imputed[col] = df_imputed[col].bfill()
-                            fill_value = "backward_fill"
-                        else:
-                            fill_value = "Unknown"
-                            df_imputed[col] = df_imputed[col].fillna(fill_value)
-
-                        imputation_info[col] = {
-                            "method": method,
-                            "fill_value": str(fill_value),
-                            "imputed_count": int(df[col].isnull().sum()),
-                        }
+                series = df_imputed[col]
+                missing_before = int(series.isna().sum())
+                if not missing_before:
+                    continue
+                numeric = pd.api.types.is_numeric_dtype(series)
+                fill_value: str | float = "not applied (no observed value)"
+                if method == "forward_fill":
+                    df_imputed[col] = series.ffill()
+                    fill_value = "forward_fill"
+                elif method == "backward_fill":
+                    df_imputed[col] = series.bfill()
+                    fill_value = "backward_fill"
+                elif method == "interpolate" and numeric:
+                    df_imputed[col] = series.interpolate(
+                        method="linear", limit_area="inside"
+                    )
+                    fill_value = "linear interpolation (interior gaps only)"
+                elif method == "mode":
+                    modes = series.mode()
+                    if not modes.empty:
+                        value = modes.iloc[0]
+                        df_imputed[col] = series.fillna(value)
+                        fill_value = float(value) if numeric else str(value)
+                elif method in {"mean", "median"} and numeric:
+                    value = series.mean() if method == "mean" else series.median()
+                    if pd.notna(value):
+                        df_imputed[col] = series.fillna(value)
+                        fill_value = float(value)
+                elif not numeric:
+                    fill_value = "not applied (non-numeric column)"
+                imputation_info[col] = {
+                    "method": method,
+                    "fill_value": fill_value,
+                    "imputed_count": missing_before - int(df_imputed[col].isna().sum()),
+                }
 
             # Save imputed data
-            output_path = file_path.replace(".csv", "_imputed.csv")
+            output_path = str(
+                Path(file_path).with_name(f"{Path(file_path).stem}_imputed.csv")
+            )
             df_imputed.to_csv(output_path, index=False)
 
             return {

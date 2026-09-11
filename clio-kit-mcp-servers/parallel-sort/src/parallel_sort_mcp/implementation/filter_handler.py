@@ -3,6 +3,8 @@ Multi-condition filtering capability for log processing.
 Supports complex filtering operations with multiple criteria and logical operators.
 """
 
+from .log_levels import parse_level_message
+
 import re
 from datetime import datetime
 from typing import Dict, Any, List, Union
@@ -121,10 +123,7 @@ def parse_log_entry(line: str) -> Dict[str, Any]:
     timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
 
     remainder = line[match.end() :].strip()
-    parts = remainder.split(" ", 1)
-
-    level = parts[0] if parts else ""
-    message = parts[1] if len(parts) > 1 else ""
+    level, message = parse_level_message(remainder)
 
     return {
         "timestamp": timestamp,

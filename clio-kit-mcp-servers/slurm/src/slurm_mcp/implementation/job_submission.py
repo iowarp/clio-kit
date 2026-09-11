@@ -4,6 +4,7 @@ Handles job submission and script creation for Slurm.
 """
 
 import os
+import sys
 import subprocess
 import re
 import tempfile
@@ -128,9 +129,9 @@ def _submit_real_slurm_job(
             raise RuntimeError(f"Could not parse job ID from sbatch output: {output}")
 
         job_id = match.group(1)
-        print(f"✅ Real Slurm job submitted! Job ID: {job_id}")
-        print(f"📄 SBATCH script: {sbatch_script}")
-        print(f"💻 Cores requested: {cores}")
+        print(f"✅ Real Slurm job submitted! Job ID: {job_id}", file=sys.stderr)
+        print(f"📄 SBATCH script: {sbatch_script}", file=sys.stderr)
+        print(f"💻 Cores requested: {cores}", file=sys.stderr)
 
         return {
             "job_id": job_id,

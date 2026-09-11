@@ -793,7 +793,7 @@ async def hypothesis_testing_tool(
     title="Fix Missing Data",
     description="Detect, impute, or remove missing values using strategies like mean/median/mode fill, forward/backward fill, or interpolation.",
     annotations={
-        "readOnlyHint": True,
+        "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
     },
@@ -817,10 +817,10 @@ async def handle_missing_data_tool(
     """Handle missing data with comprehensive strategies and statistical methods."""
     try:
         logger.info(f"Handling missing data in: {file_path}")
-        return cast(
-            HandleMissingDataResult,
-            handle_missing_data(file_path, strategy, method, columns),
-        )
+        result = handle_missing_data(file_path, strategy, method, columns)
+        if not result["success"]:
+            raise ToolError(result["error"])
+        return cast(HandleMissingDataResult, result)
     except Exception as e:
         logger.error(f"Missing data handling error: {e}")
         raise ToolError(f"Missing data handling error: {e}") from e

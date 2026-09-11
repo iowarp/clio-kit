@@ -405,3 +405,44 @@ class TestCleanData:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+@pytest.mark.parametrize(
+    "method,expected",
+    [
+        ("forward_fill", [1, 1, 3, 3, 5]),
+        ("backward_fill", [1, 3, 3, 5, 5]),
+    ],
+)
+def test_numeric_directional_fill(tmp_path, method, expected):
+    source = tmp_path / "measurements.CSV"
+    pd.DataFrame({"value": [1, np.nan, 3, np.nan, 5]}).to_csv(source, index=False)
+    original = source.read_bytes()
+    result = handle_missing_data(str(source), "impute", method)
+    assert result["success"], result
+    assert pd.read_csv(result["output_file"])["value"].tolist() == expected
+    assert result["imputation_info"]["value"]["imputed_count"] == 2
+    assert source.read_bytes() == original
+
+
+def test_mode_fills_categories_and_reports_only_values_actually_filled(tmp_path):
+    source = tmp_path / "categories.csv"
+    pd.DataFrame(
+        {"category": ["red", None, "red", "blue"], "empty": [np.nan] * 4}
+    ).to_csv(source, index=False)
+    result = handle_missing_data(str(source), "impute", "mode")
+    assert result["success"], result
+    output = pd.read_csv(result["output_file"])
+    assert output["category"].tolist() == ["red", "red", "red", "blue"]
+    assert output["empty"].isna().all()
+    assert result["imputation_info"]["category"]["imputed_count"] == 1
+    assert result["imputation_info"]["empty"]["imputed_count"] == 0
+
+
+def test_unsupported_imputation_fails_without_writing_output(tmp_path):
+    source = tmp_path / "data.csv"
+    source.write_text('value\n1\n""\n3\n')
+    result = handle_missing_data(str(source), "impute", "misspelled-method")
+    assert not result["success"]
+    assert "Unknown imputation method" in result["error"]
+    assert not (tmp_path / "data_imputed.csv").exists()

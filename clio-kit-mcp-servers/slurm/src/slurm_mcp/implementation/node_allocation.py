@@ -7,6 +7,7 @@ import subprocess
 import re
 import time
 import os
+import sys
 from typing import Optional, Dict, Any
 from .utils import (
     SLURM_FIELD_SEPARATOR,
@@ -92,8 +93,8 @@ def _allocate_real_slurm_nodes(
         cmd.extend(["--no-shell"])
         timeout_duration = 60
 
-    print(f"🔄 Requesting allocation with command: {' '.join(cmd)}")
-    print(f"⏱️  Timeout: {timeout_duration} seconds")
+    print(f"🔄 Requesting allocation with command: {' '.join(cmd)}", file=sys.stderr)
+    print(f"⏱️  Timeout: {timeout_duration} seconds", file=sys.stderr)
 
     try:
         # Run salloc command with proper timeout handling
@@ -103,14 +104,17 @@ def _allocate_real_slurm_nodes(
             test_runner=subprocess.run,
         )
 
-        print(f"🔍 salloc return code: {result.returncode}")
-        print(f"🔍 salloc stdout: '{result.stdout.strip()}'")
-        print(f"🔍 salloc stderr: '{result.stderr.strip()}'")
+        print(f"🔍 salloc return code: {result.returncode}", file=sys.stderr)
+        print(f"🔍 salloc stdout: '{result.stdout.strip()}'", file=sys.stderr)
+        print(f"🔍 salloc stderr: '{result.stderr.strip()}'", file=sys.stderr)
 
         if result.returncode != 0:
             error_msg = result.stderr.strip()
-            print(f"❌ salloc failed with return code {result.returncode}")
-            print(f"❌ Error message: {error_msg}")
+            print(
+                f"❌ salloc failed with return code {result.returncode}",
+                file=sys.stderr,
+            )
+            print(f"❌ Error message: {error_msg}", file=sys.stderr)
 
             if (
                 "Immediate allocation impossible" in error_msg
@@ -146,7 +150,7 @@ def _allocate_real_slurm_nodes(
         allocation_id = _get_recent_allocation_id()
 
         if allocation_id:
-            print(f"✅ Found recent allocation ID: {allocation_id}")
+            print(f"✅ Found recent allocation ID: {allocation_id}", file=sys.stderr)
 
             # Get node information
             time.sleep(1)  # Brief wait for allocation to be visible in squeue
@@ -167,10 +171,11 @@ def _allocate_real_slurm_nodes(
             if node_info:
                 allocation_info.update(node_info)
                 print(
-                    f"🖥️  Allocated nodes: {allocation_info.get('allocated_nodes', 'Unknown')}"
+                    f"🖥️  Allocated nodes: {allocation_info.get('allocated_nodes', 'Unknown')}",
+                    file=sys.stderr,
                 )
 
-            print(f"💻 Cores per node: {cores}")
+            print(f"💻 Cores per node: {cores}", file=sys.stderr)
             return allocation_info
 
         # Parse allocation information from salloc output (fallback)
@@ -179,7 +184,8 @@ def _allocate_real_slurm_nodes(
         if allocation_info.get("allocation_id"):
             allocation_id = str(allocation_info["allocation_id"])
             print(
-                f"✅ Real Slurm allocation successful! Allocation ID: {allocation_id}"
+                f"✅ Real Slurm allocation successful! Allocation ID: {allocation_id}",
+                file=sys.stderr,
             )
 
             # Get additional info if not already present
@@ -190,9 +196,10 @@ def _allocate_real_slurm_nodes(
                     allocation_info.update(node_info)
 
             print(
-                f"🖥️  Allocated nodes: {allocation_info.get('allocated_nodes', 'Unknown')}"
+                f"🖥️  Allocated nodes: {allocation_info.get('allocated_nodes', 'Unknown')}",
+                file=sys.stderr,
             )
-            print(f"💻 Cores per node: {cores}")
+            print(f"💻 Cores per node: {cores}", file=sys.stderr)
 
             allocation_info.update(
                 {
@@ -219,7 +226,7 @@ def _allocate_real_slurm_nodes(
 
     except subprocess.TimeoutExpired:
         timeout_msg = f"Allocation request timed out ({timeout_duration} seconds)"
-        print(f"⏰ {timeout_msg}")
+        print(f"⏰ {timeout_msg}", file=sys.stderr)
         return {
             "error": timeout_msg,
             "status": "timeout",
@@ -230,7 +237,7 @@ def _allocate_real_slurm_nodes(
         }
     except subprocess.CalledProcessError as e:
         error_msg = e.stderr.decode() if e.stderr else str(e)
-        print(f"❌ salloc process failed: {error_msg}")
+        print(f"❌ salloc process failed: {error_msg}", file=sys.stderr)
         return {
             "error": f"salloc process failed: {error_msg}",
             "status": "failed",
@@ -238,7 +245,7 @@ def _allocate_real_slurm_nodes(
             "return_code": e.returncode,
         }
     except Exception as e:
-        print(f"❌ Exception during allocation: {e}")
+        print(f"❌ Exception during allocation: {e}", file=sys.stderr)
         return {"error": str(e), "status": "failed", "real_slurm": True}
 
 
@@ -266,7 +273,10 @@ def _parse_salloc_output(output: str) -> Dict[str, Any]:
             if node_info:
                 allocation_info.update(node_info)
         except Exception as e:
-            print(f"⚠️  Could not get node info for allocation {allocation_id}: {e}")
+            print(
+                f"⚠️  Could not get node info for allocation {allocation_id}: {e}",
+                file=sys.stderr,
+            )
 
     # Look for node list (alternative format)
     nodes_match = re.search(r"salloc: Nodes (.+) are ready for job", output)
@@ -385,7 +395,9 @@ def _deallocate_real_slurm_nodes(allocation_id: str) -> Dict[str, Any]:
                 }
             raise RuntimeError(f"scancel failed: {error_msg}")
 
-        print(f"✅ Allocation {allocation_id} deallocated successfully")
+        print(
+            f"✅ Allocation {allocation_id} deallocated successfully", file=sys.stderr
+        )
 
         return {
             "allocation_id": allocation_id,
@@ -516,6 +528,6 @@ def _get_recent_allocation_id() -> Optional[str]:
                     ]:
                         return job_id.strip()
     except Exception as e:
-        print(f"⚠️  Could not get recent allocation ID: {e}")
+        print(f"⚠️  Could not get recent allocation ID: {e}", file=sys.stderr)
 
     return None
