@@ -31,6 +31,10 @@ Paths refer to files accessible to the MCP process. Inspect the live input
 schema for the accepted filter and aggregation arguments, and check the result
 for errors or empty selections before interpreting it.
 
+Invalid operators, missing columns, incompatible values and malformed nested
+filters fail the request. They never return unfiltered data as a successful
+filtered result. Omit `filter_json` or pass an empty string for no filter.
+
 {/* clio-kit:usage:end */}
 
 </MCPDetail>

@@ -242,54 +242,48 @@ class TestFilterErrorCases:
         table = pq.read_table(filter_test_file)
         filter_dict = {"op": "equal", "value": 5}
 
-        mask = _build_filter_mask(table, filter_dict)
-
-        assert mask is None
+        with pytest.raises(ValueError, match="Invalid filter"):
+            _build_filter_mask(table, filter_dict)
 
     def test_build_filter_missing_op_key(self, filter_test_file):
         """Test filter without 'op' key."""
         table = pq.read_table(filter_test_file)
         filter_dict = {"column": "int_col", "value": 5}
 
-        mask = _build_filter_mask(table, filter_dict)
-
-        assert mask is None
+        with pytest.raises(ValueError, match="Invalid filter"):
+            _build_filter_mask(table, filter_dict)
 
     def test_build_filter_nonexistent_column(self, filter_test_file):
         """Test filter on non-existent column."""
         table = pq.read_table(filter_test_file)
         filter_dict = {"column": "nonexistent", "op": "equal", "value": 5}
 
-        mask = _build_filter_mask(table, filter_dict)
-
-        assert mask is None
+        with pytest.raises(ValueError, match="Invalid filter"):
+            _build_filter_mask(table, filter_dict)
 
     def test_build_filter_missing_value_for_comparison(self, filter_test_file):
         """Test comparison filter without 'value' key."""
         table = pq.read_table(filter_test_file)
         filter_dict = {"column": "int_col", "op": "equal"}
 
-        mask = _build_filter_mask(table, filter_dict)
-
-        assert mask is None
+        with pytest.raises(ValueError, match="Invalid filter"):
+            _build_filter_mask(table, filter_dict)
 
     def test_build_filter_missing_values_for_is_in(self, filter_test_file):
         """Test is_in filter without 'values' key."""
         table = pq.read_table(filter_test_file)
         filter_dict = {"column": "str_col", "op": "is_in"}
 
-        mask = _build_filter_mask(table, filter_dict)
-
-        assert mask is None
+        with pytest.raises(ValueError, match="Invalid filter"):
+            _build_filter_mask(table, filter_dict)
 
     def test_build_filter_unknown_operation(self, filter_test_file):
         """Test filter with unknown operation."""
         table = pq.read_table(filter_test_file)
         filter_dict = {"column": "int_col", "op": "unknown_op", "value": 5}
 
-        mask = _build_filter_mask(table, filter_dict)
-
-        assert mask is None
+        with pytest.raises(ValueError, match="Invalid filter"):
+            _build_filter_mask(table, filter_dict)
 
     def test_build_filter_and_with_invalid_subfilter(self, filter_test_file):
         """Test AND filter with invalid subfilter."""
@@ -301,9 +295,8 @@ class TestFilterErrorCases:
             ]
         }
 
-        mask = _build_filter_mask(table, filter_dict)
-
-        assert mask is None
+        with pytest.raises(ValueError, match="Invalid filter"):
+            _build_filter_mask(table, filter_dict)
 
     def test_build_filter_or_with_invalid_subfilter(self, filter_test_file):
         """Test OR filter with invalid subfilter."""
@@ -315,18 +308,16 @@ class TestFilterErrorCases:
             ]
         }
 
-        mask = _build_filter_mask(table, filter_dict)
-
-        assert mask is None
+        with pytest.raises(ValueError, match="Invalid filter"):
+            _build_filter_mask(table, filter_dict)
 
     def test_build_filter_not_with_invalid_subfilter(self, filter_test_file):
         """Test NOT filter with invalid subfilter."""
         table = pq.read_table(filter_test_file)
         filter_dict = {"not": {"column": "nonexistent", "op": "equal", "value": 5}}
 
-        mask = _build_filter_mask(table, filter_dict)
-
-        assert mask is None
+        with pytest.raises(ValueError, match="Invalid filter"):
+            _build_filter_mask(table, filter_dict)
 
 
 class TestApplyFilter:
@@ -350,33 +341,18 @@ class TestApplyFilter:
 
         assert len(filtered) == 4
 
-    def test_apply_filter_invalid_returns_unfiltered(self, filter_test_file):
-        """Test that invalid filter returns unfiltered table."""
+    def test_apply_filter_invalid_raises(self, filter_test_file):
         table = pq.read_table(filter_test_file)
-        original_len = len(table)
-        filter_dict = {"column": "nonexistent", "op": "equal", "value": 5}
+        with pytest.raises(ValueError, match="Invalid filter"):
+            _apply_filter(table, {"column": "nonexistent", "op": "equal", "value": 5})
 
-        filtered = _apply_filter(table, filter_dict)
-
-        assert len(filtered) == original_len
-
-    def test_apply_filter_handles_exception(self, filter_test_file):
-        """Test that filter errors are handled gracefully."""
+    def test_apply_filter_type_error_raises_without_stdout(
+        self, filter_test_file, capsys
+    ):
         table = pq.read_table(filter_test_file)
-        original_len = len(table)
-        # This might cause an error during filtering
-        filter_dict = {
-            "column": "int_col",
-            "op": "equal",
-            "value": "invalid_type_comparison",
-        }
-
-        # Should return unfiltered table on error
-        filtered = _apply_filter(table, filter_dict)
-
-        # Should return original table (error handling)
-        assert filtered is not None
-        assert len(filtered) == original_len
+        with pytest.raises(ValueError, match="Invalid filter"):
+            _apply_filter(table, {"column": "int_col", "op": "equal", "value": "bad"})
+        assert capsys.readouterr().out == ""
 
 
 class TestFilterIntegrationWithReadSlice:

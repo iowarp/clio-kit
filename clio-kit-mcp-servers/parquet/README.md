@@ -188,6 +188,10 @@ Compute statistical aggregations on columns with optional filtering and row rang
 
 JSON-based filtering.
 
+Invalid operators, missing columns, incompatible values and malformed nested
+conditions fail the entire request with an MCP error. They never return an
+unfiltered success. Omit `filter_json` or pass an empty string for no filter.
+
 ### Simple Filters
 
 ```json

@@ -42,96 +42,91 @@ def _apply_filter(table: pa.Table, filter_dict: Optional[Dict[str, Any]]) -> pa.
         return table
 
     try:
-        mask = _build_filter_mask(table, filter_dict)
-        if mask is None:
-            # If mask is None, it means the filter was invalid, so return unfiltered table
-            return table
-        return table.filter(mask)
-    except Exception as e:
-        # Return unfiltered table on filter error
-        print(f"Filter error: {e}")
-        return table
+        return table.filter(_build_filter_mask(table, filter_dict))
+    except (pa.ArrowException, TypeError) as exc:
+        raise ValueError(f"Invalid filter: {exc}") from exc
 
 
-def _build_filter_mask(
-    table: pa.Table, filter_dict: Dict[str, Any]
-) -> Optional[pa.Array]:
-    """
-    Build a boolean mask from filter specification.
+def _parse_filter(filter_json: Optional[str]) -> Optional[Dict[str, Any]]:
+    """Omitted or empty filters retain the legacy unfiltered behavior."""
+    if filter_json is None or filter_json == "":
+        return None
+    try:
+        spec = json.loads(filter_json)
+    except json.JSONDecodeError as exc:
+        raise ValueError("Invalid filter JSON format") from exc
+    if not isinstance(spec, dict) or not spec:
+        raise ValueError("Invalid filter: expected a non-empty JSON object")
+    return spec
 
-    Returns:
-        Boolean array mask, or None if filter is invalid
-    """
-    # Handle logical operators
-    if "and" in filter_dict:
-        masks = [_build_filter_mask(table, f) for f in filter_dict["and"]]
-        if any(m is None for m in masks):
-            return None
+
+def _build_filter_mask(table: pa.Table, filter_dict: Dict[str, Any]) -> pa.ChunkedArray:
+    """Build a mask or reject the entire expression, including invalid branches."""
+    if not isinstance(filter_dict, dict) or not filter_dict:
+        raise ValueError("Invalid filter: expected a non-empty object")
+    logical = set(filter_dict) & {"and", "or", "not"}
+    if logical:
+        if len(filter_dict) != 1:
+            raise ValueError("Invalid filter: use exactly one logical operator")
+        operator = next(iter(logical))
+        operand = filter_dict[operator]
+        if operator == "not":
+            return pc.invert(_build_filter_mask(table, operand))
+        if not isinstance(operand, list) or not operand:
+            raise ValueError(f"Invalid filter: {operator} needs a non-empty list")
+        masks = [_build_filter_mask(table, item) for item in operand]
         result = masks[0]
+        combine = pc.and_ if operator == "and" else pc.or_
         for mask in masks[1:]:
-            result = pc.and_(result, mask)
+            result = combine(result, mask)
         return result
 
-    if "or" in filter_dict:
-        masks = [_build_filter_mask(table, f) for f in filter_dict["or"]]
-        if any(m is None for m in masks):
-            return None
-        result = masks[0]
-        for mask in masks[1:]:
-            result = pc.or_(result, mask)
-        return result
-
-    if "not" in filter_dict:
-        inner_mask = _build_filter_mask(table, filter_dict["not"])
-        if inner_mask is None:
-            return None
-        return pc.invert(inner_mask)
-
-    # Handle comparison operations
-    if "column" not in filter_dict or "op" not in filter_dict:
-        return None
-
-    column_name = filter_dict["column"]
-    op = filter_dict["op"]
-
-    if column_name not in table.column_names:
-        return None
-
+    column_name = filter_dict.get("column")
+    operator = filter_dict.get("op")
+    if not isinstance(column_name, str) or column_name not in table.column_names:
+        raise ValueError(f"Invalid filter column: {column_name!r}")
+    comparisons = {
+        "equal": pc.equal,
+        "not_equal": pc.not_equal,
+        "less": pc.less,
+        "less_equal": pc.less_equal,
+        "greater": pc.greater,
+        "greater_equal": pc.greater_equal,
+    }
+    null_checks = {
+        "is_null": pc.is_null,
+        "is_valid": pc.is_valid,
+        "is_not_null": pc.is_valid,
+    }
+    if not isinstance(operator, str) or operator not in (
+        comparisons.keys() | null_checks.keys() | {"in", "is_in"}
+    ):
+        raise ValueError(f"Invalid filter operator: {operator!r}")
+    required = {"column", "op"}
+    if operator in comparisons:
+        required.add("value")
+    elif operator in {"in", "is_in"}:
+        required.add("values")
+    if set(filter_dict) != required:
+        raise ValueError(f"Invalid filter: {operator} requires only {sorted(required)}")
     column = table[column_name]
-
-    # Null checks
-    if op == "is_null":
-        return pc.is_null(column)
-    elif op in ("is_valid", "is_not_null"):
-        return pc.is_valid(column)
-
-    # IN operation (support both "in" and "is_in")
-    elif op in ("is_in", "in"):
-        if "values" not in filter_dict:
-            return None
+    if operator in null_checks:
+        return null_checks[operator](column)
+    if operator in {"in", "is_in"}:
         values = filter_dict["values"]
+        if not isinstance(values, list):
+            raise ValueError("Invalid filter: values must be a list")
         return pc.is_in(column, value_set=pa.array(values))
+    return comparisons[operator](column, filter_dict["value"])
 
-    # Comparison operations require value
-    if "value" not in filter_dict:
-        return None
 
-    value = filter_dict["value"]
-
-    if op == "equal":
-        return pc.equal(column, value)
-    elif op == "not_equal":
-        return pc.not_equal(column, value)
-    elif op == "less":
-        return pc.less(column, value)
-    elif op == "less_equal":
-        return pc.less_equal(column, value)
-    elif op == "greater":
-        return pc.greater(column, value)
-    elif op == "greater_equal":
-        return pc.greater_equal(column, value)
-
-    return None
+def _filter_columns(spec: Dict[str, Any]) -> set[str]:
+    """Collect the columns of an already validated filter expression."""
+    if "column" in spec:
+        return {spec["column"]}
+    if "not" in spec:
+        return _filter_columns(spec["not"])
+    return set().union(*(_filter_columns(item) for item in next(iter(spec.values()))))
 
 
 async def summarize(file_path: str) -> str:
@@ -364,29 +359,25 @@ async def read_slice(
                     }
                 )
 
-        # Parse filter if provided
-        filter_dict = None
-        if filter_json:
-            try:
-                filter_dict = json.loads(filter_json)
-            except json.JSONDecodeError:
-                return json.dumps(
-                    {
-                        "status": "error",
-                        "message": "Invalid filter JSON format",
-                        "suggestion": "Provide valid JSON filter specification",
-                    }
-                )
+        filter_dict = _parse_filter(filter_json)
 
         # Read the slice
         num_rows = end_row - start_row
-        # First read the full table with column filtering
-        table = pq.read_table(file_path, columns=columns)
+        read_columns = columns
+        if filter_dict is not None:
+            _apply_filter(pa.Table.from_batches([], schema=schema), filter_dict)
+            if columns is not None:
+                read_columns = list(
+                    dict.fromkeys([*columns, *sorted(_filter_columns(filter_dict))])
+                )
+        table = pq.read_table(file_path, columns=read_columns)
         # Then slice to get the requested row range
         table = table.slice(offset=start_row, length=num_rows)
 
         # Apply filter if provided
         table = _apply_filter(table, filter_dict)
+        if columns is not None:
+            table = table.select(columns)
         rows_after_filter = len(table)
 
         # Convert to JSON-serializable format
@@ -719,19 +710,7 @@ async def aggregate_column(
                     }
                 )
 
-        # Parse filter if provided
-        filter_dict = None
-        if filter_json:
-            try:
-                filter_dict = json.loads(filter_json)
-            except json.JSONDecodeError:
-                return json.dumps(
-                    {
-                        "status": "error",
-                        "message": "Invalid filter JSON format",
-                        "suggestion": "Provide valid JSON filter specification",
-                    }
-                )
+        filter_dict = _parse_filter(filter_json)
 
         # Read table (full or range)
         if start_row is not None and end_row is not None:

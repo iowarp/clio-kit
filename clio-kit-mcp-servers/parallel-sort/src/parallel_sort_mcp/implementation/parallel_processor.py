@@ -99,8 +99,9 @@ async def split_file_into_chunks(file_path: str, chunk_size_bytes: int) -> List[
         List of temporary file paths containing chunks
     """
     chunks = []
+    pending_line = None
 
-    async with aiofiles.open(file_path, "r", encoding="utf-8") as f:
+    async with aiofiles.open(file_path, "r", encoding="utf-8", newline="") as f:
         chunk_num = 0
 
         while True:
@@ -111,14 +112,16 @@ async def split_file_into_chunks(file_path: str, chunk_size_bytes: int) -> List[
             bytes_read = 0
             lines_in_chunk: List[str] = []
 
-            # Read lines until chunk size is reached
-            async for line in f:
-                line_bytes = len(line.encode("utf-8"))
-
-                if bytes_read + line_bytes > chunk_size_bytes and lines_in_chunk:
-                    # Chunk is full, break here to avoid splitting in middle of line
+            # Carry the boundary line into the next chunk instead of discarding it.
+            while True:
+                line = pending_line if pending_line is not None else await f.readline()
+                pending_line = None
+                if not line:
                     break
-
+                line_bytes = len(line.encode("utf-8"))
+                if bytes_read + line_bytes > chunk_size_bytes and lines_in_chunk:
+                    pending_line = line
+                    break
                 lines_in_chunk.append(line)
                 bytes_read += line_bytes
 
@@ -128,7 +131,9 @@ async def split_file_into_chunks(file_path: str, chunk_size_bytes: int) -> List[
                 break
 
             # Write chunk to temporary file
-            async with aiofiles.open(temp_path, "w", encoding="utf-8") as chunk_file:
+            async with aiofiles.open(
+                temp_path, "w", encoding="utf-8", newline=""
+            ) as chunk_file:
                 await chunk_file.writelines(lines_in_chunk)
 
             chunks.append(temp_path)

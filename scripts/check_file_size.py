@@ -118,7 +118,7 @@ RATCHET_BASELINE: dict[str, int] = {
     "src/clio_kit/mcp_contracts.py": 917,
     "src/clio_kit/env_cache.py": 712,
     "clio-kit-mcp-servers/darshan/src/darshan_mcp/capabilities/darshan_parser.py": 840,
-    "clio-kit-mcp-servers/parquet/src/parquet_mcp/capabilities/parquet_handler.py": 839,
+    "clio-kit-mcp-servers/parquet/src/parquet_mcp/capabilities/parquet_handler.py": 818,
     "clio-kit-mcp-servers/node-hardware/src/node_hardware_mcp/mcp_handlers.py": 819,
 }
 
