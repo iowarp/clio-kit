@@ -3,7 +3,8 @@
 ## `fetch`
 
 `fetch(target, to_file=False, output_dir=None, max_bytes=None, timeout=None)`
-retrieves an HTTP(S) URL or DOI as a required MCP task. HTML becomes Markdown;
+retrieves an HTTP(S) URL or DOI inline for ordinary MCP clients, or as a task
+when the client negotiates task support. HTML becomes Markdown;
 plain text is returned directly; supported PDFs, Office documents, XML, and
 images are sent to CLIO Web Search for structured conversion.
 

@@ -10,12 +10,12 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🔧"
   category="Utilities"
   description="Provider-fixed web search plus transparent URL, DOI, and document fetching"
-  version="2.1.1"
+  version="2.1.2"
   actions={["fetch", "fetch_events", "search"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["web", "fetch", "search", "mcp", "llm-integration", "agentic-web"]}
   license="BSD-3-Clause"
-  tools={[{"name": "fetch", "description": "Fetch an HTTP(S) URL or DOI as a durable task. HTML and text are read locally; supported documents use CLIO Web Search conversion when configured.", "function_name": "fetch"}, {"name": "fetch_events", "description": "Query the full ordered backend event log for a document fetch conversion.", "function_name": "fetch_events"}, {"name": "search", "description": "Search the web using this installation's fixed ddg provider.", "function_name": "search"}]}
+  tools={[{"name": "fetch", "description": "Fetch an HTTP(S) URL or DOI inline or as a task. HTML and text are read locally; supported documents use CLIO Web Search conversion when configured.", "function_name": "fetch"}, {"name": "fetch_events", "description": "Query the full ordered backend event log for a document fetch conversion.", "function_name": "fetch_events"}, {"name": "search", "description": "Search the web using this installation's fixed ddg provider.", "function_name": "search"}]}
 >
 
 {/* clio-kit:usage:start */}
@@ -24,8 +24,9 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 Use `search` to find candidate pages, then `fetch` the specific page before
 making claims about its contents. Record the source URL and retrieval context.
-`fetch(target=...)` runs as an MCP task. Use a task-capable client, follow
-progress to completion and read the terminal result before citing content.
+`fetch(target=...)` supports ordinary MCP calls, returning fetched content
+inline. A task-capable client receives a task; follow its progress to completion
+and read the terminal result before citing content. Prefer tasks for long conversions.
 Task IDs and progress messages are not source content. Request `to_file=True`
 for file output. PDF and structured-document conversion requires a configured
 CLIO Web Search service; inspect `web://capabilities` for the active setup.

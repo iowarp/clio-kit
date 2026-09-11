@@ -37,7 +37,7 @@ def _new_mcp() -> FastMCP:
         "web",
         instructions=(
             "Use search to discover sources and fetch to read HTTP(S), DOI, HTML, text, "
-            "PDF, and structured-document targets. Fetch is a durable task; query it for "
+            "PDF, and structured-document targets. Fetch supports durable tasks; query them for "
             "progress and cancel it when continued work is no longer useful."
         ),
         list_page_size=10,
@@ -71,7 +71,7 @@ async def fetch(
         Field(description="Override the configured per-request read timeout in seconds."),
     ] = None,
 ) -> dict[str, Any]:
-    """Fetch a URL or DOI as a queryable, cancellable MCP task."""
+    """Fetch a URL or DOI inline or as a queryable, cancellable MCP task."""
 
     return await fetch_target(
         settings,
@@ -174,7 +174,7 @@ def capabilities() -> dict[str, Any]:
         "active_provider": settings.search_provider,
         "search_parameters": search_parameters,
         "document_enrichment": bool((settings.effective_document_service_url or "").strip()),
-        "fetch_task_mode": "required",
+        "fetch_task_mode": "optional",
         "search_task_mode": "forbidden",
         "task_backend": "valkey" if durable_backend else "memory",
         "max_bytes": settings.max_bytes,
@@ -221,12 +221,12 @@ def create_mcp(configured: Settings | None = None) -> FastMCP:
         name="fetch",
         title="Fetch Target",
         description=(
-            "Fetch an HTTP(S) URL or DOI as a durable task. HTML and text are read locally; "
+            "Fetch an HTTP(S) URL or DOI inline or as a task. HTML and text are read locally; "
             "supported documents use CLIO Web Search conversion when configured."
         ),
-        annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
+        annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True},
         tags={"web", "fetch", "http", "documents"},
-        task=TaskConfig(mode="required", poll_interval=timedelta(seconds=1)),
+        task=TaskConfig(mode="optional", poll_interval=timedelta(seconds=1)),
     )(fetch)
     instance.tool(
         name="fetch_events",

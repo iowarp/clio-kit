@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/web-mcp",
   "title": "CLIO Web",
   "description": "Provider-fixed web search plus transparent URL, DOI, and document fetching",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -31,7 +31,7 @@
   "tools": [
     {
       "name": "fetch",
-      "description": "Fetch an HTTP(S) URL or DOI as a durable task. HTML and text are read locally; supported documents use CLIO Web Search conversion when configured."
+      "description": "Fetch an HTTP(S) URL or DOI inline or as a task. HTML and text are read locally; supported documents use CLIO Web Search conversion when configured."
     },
     {
       "name": "fetch_events",

@@ -48,7 +48,7 @@ additional server requires its own reviewed source, locks and CI coverage.
 | Node/TypeScript and Go | Locked local-project adapters tested with real SDK fixtures; no shipped non-Python scientific server |
 | External plugins and marketplaces | Entry validation, snapshot compilation and client installation; third-party code remains externally maintained |
 | GitHub contribution submission | Local entry/commit construction and API contract tests; acceptance does not open a public test PR |
-| Web fetch | Requires an MCP task-capable client; document conversion needs its backend service |
+| Web fetch | Ordinary calls and optional task execution; document conversion needs its backend service |
 | Scientific workflows and model behavior | Validate against the target data, site software, client and model; discovery is not a quality guarantee |
 
 ## Contributing and updating
@@ -152,7 +152,8 @@ on 2026-09-10; each rejected a throughput-only diagnosis and requested context.
 That is one behavioral smoke check per client, not an evaluation of every skill
 or every model. A quota failure in one client says nothing about another account.
 Deterministic installation, discovery
-and MCP checks do not require model quota. Record fresh behavioral evidence
+and MCP checks do not require model quota. A separate live Claude test also
+verified Web fetch after restoring ordinary MCP-call compatibility. Record fresh behavioral evidence
 separately for each tested client instead of treating historical results or
 another client's results as proof of the current revision.
 
@@ -181,7 +182,7 @@ The merged candidate installs 22 MCP servers, six bundles and 20 portable skills
 The installed-wheel acceptance script passed Claude plugin installation/update,
 Codex skill discovery, all 22 stdio handshakes, TypeScript/Go cold and warm calls,
 compression round-trip, grouped means and plotting, Pandas imputation,
-bracketed log filtering and sampled HDF5 coverage. A separate real Slurm job
+bracketed log filtering, plain-client Web fetch and sampled HDF5 coverage. A separate real Slurm job
 completed with exact expected output and valid JSON-RPC stdout. The setup guide's
 source installation, HDF5 connection and compression commands also passed.
 

@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+import json
 from pathlib import Path
 
 import httpx
 import pytest
 from fastmcp import Client, FastMCP
+from fastmcp.client.transports import FastMCPTransport
 from fastmcp.exceptions import ToolError
 from fastmcp_tasks.client import call_tool_task
 from pytest_httpx import HTTPXMock
@@ -33,6 +35,26 @@ def _task_mcp(tmp_path: Path) -> FastMCP:
             state_dir=str(tmp_path / "state"),
         )
     )
+
+
+@pytest.mark.asyncio
+async def test_fetch_accepts_plain_mcp_call_without_task_negotiation(
+    httpx_mock: HTTPXMock, tmp_path: Path
+) -> None:
+    """Ordinary MCP agents must receive content without extension metadata."""
+    httpx_mock.add_response(
+        url="https://example.test/readme",
+        text="Known plain MCP content",
+        headers={"content-type": "text/plain"},
+    )
+    transport = FastMCPTransport(_task_mcp(tmp_path))
+    # Connect the base SDK session directly so FastMCP's high-level client
+    # cannot auto-negotiate tasks on behalf of an ordinary MCP agent.
+    async with transport.connect_session(extensions={}) as session:
+        await session.initialize()
+        result = await session.call_tool("fetch", {"target": "https://example.test/readme"})
+    assert not result.is_error, result
+    assert json.loads(result.content[0].text)["content"] == "Known plain MCP content"
 
 
 @pytest.mark.asyncio

@@ -600,7 +600,7 @@ export const mcpData = {
       "search"
     ],
     "stats": {
-      "version": "2.1.1",
+      "version": "2.1.2",
       "updated": "2026-09-10"
     },
     "platforms": [

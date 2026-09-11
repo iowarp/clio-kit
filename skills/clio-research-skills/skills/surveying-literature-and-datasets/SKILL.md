@@ -84,11 +84,12 @@ and `scientific_dataset_describe` cover a separate curated catalog — see
 page, a software release, a dataset landing page. Use them to confirm a claim
 about current state, since a preprint describes the world at submission time.
 
-`fetch(target=...)` requires MCP task support. Submit it as a task, follow
-`tasks/get` until a terminal status, and read the completed result using
-`tasks/result`; cancel work no longer needed. If your client cannot invoke MCP
-tasks, report that limitation and use its own browsing capability. Do not treat
-a task ID or progress update as fetched content.
+`fetch(target=...)` returns content through an ordinary MCP call when the client
+has no task support. With a task-capable client, follow `tasks/get` until a
+terminal status and read the completed result using `tasks/result`; cancel
+work no longer needed. Prefer tasks for long conversions, since ordinary calls
+are subject to the agent's request timeout. Do not treat a task ID or progress
+update as fetched content.
 
 HTML becomes Markdown with a size cap and timeout; `to_file=True` writes the
 result to a local file. PDF and other structured-document conversion requires

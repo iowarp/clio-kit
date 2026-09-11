@@ -28,7 +28,8 @@ Legacy `--address` and `--document-address` options remain compatible, but only
 
 ## Task contract
 
-`fetch(target)` is declared with required MCP task support. It returns a task
+`fetch(target)` accepts ordinary MCP calls and returns content inline for
+clients without the tasks extension. Clients that negotiate tasks receive a task
 handle immediately at the protocol level. `tasks/get` reports the latest
 download or conversion message, terminal results are returned through the task,
 and `tasks/cancel` cancels any active backend document conversion. There is no

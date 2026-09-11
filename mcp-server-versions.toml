@@ -54,7 +54,7 @@ description = "Inspect and map geospatial features, terrain models, and waveform
 servers = ["geo", "seismology", "terrain"]
 
 [bundles.clio-research]
-version = "1.0.3"
+version = "1.0.4"
 description = "Find papers on a topic and the datasets behind them."
 servers = ["arxiv", "ndp", "scientific-catalog", "web"]
 
@@ -91,4 +91,4 @@ seismology = "2.3.0"
 slurm = "3.0.1"
 spack = "2.3.0"
 terrain = "2.2.4"
-web = "2.1.1"
+web = "2.1.2"

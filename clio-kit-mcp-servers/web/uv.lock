@@ -2720,7 +2720,7 @@ wheels = [
 
 [[package]]
 name = "web-mcp"
-version = "2.1.0"
+version = "2.1.2"
 source = { editable = "." }
 dependencies = [
     { name = "ddgs" },

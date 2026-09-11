@@ -17,6 +17,8 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
 from mcp import ClientSession, StdioServerParameters
@@ -412,6 +414,46 @@ class Acceptance:
         assert result["matched_lines"] == 2, result
         assert result["filtered_lines"] == lines[1:], result
 
+    async def web_plain_client(self) -> None:
+        """Fetch known HTTP content with the base MCP client, without task support."""
+        body = b"<html><title>CLIO acceptance</title><body><p>Known fetched content.</p></body></html>"
+
+        class Handler(BaseHTTPRequestHandler):
+            def do_GET(self) -> None:
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, format: str, *args: object) -> None:
+                pass
+
+        server = HTTPServer(("127.0.0.1", 0), Handler)
+        worker = threading.Thread(target=server.serve_forever, daemon=True)
+        worker.start()
+        previous = self.environment.get("WEB_ALLOW_PRIVATE_HOSTS")
+        self.environment["WEB_ALLOW_PRIVATE_HOSTS"] = "true"
+        try:
+            replies = await self.session(
+                "web-plain-client-fetch",
+                ["mcp-server", "web"],
+                [("fetch", {"target": f"http://127.0.0.1:{server.server_port}/page"})],
+            )
+            result = replies[0].get("structuredContent") or json.loads(
+                replies[0]["content"][0]["text"]
+            )
+            assert result["ok"] and result["title"] == "CLIO acceptance", result
+            assert "Known fetched content." in result["content"], result
+        finally:
+            if previous is None:
+                self.environment.pop("WEB_ALLOW_PRIVATE_HOSTS", None)
+            else:
+                self.environment["WEB_ALLOW_PRIVATE_HOSTS"] = previous
+            server.shutdown()
+            server.server_close()
+            worker.join(timeout=5)
+
     async def workflows(self, all_servers: bool) -> None:
         for runtime in ("typescript", "go"):
             for state in ("cold", "warm"):
@@ -485,6 +527,7 @@ class Acceptance:
             and image.stat().st_size > 1000
         )
         await self.scientific_regressions(data)
+        await self.web_plain_client()
         if all_servers:
             inventory = self.command(
                 "all-server-inventory", [str(self.launcher), "mcp-servers"]

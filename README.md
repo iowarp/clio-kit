@@ -419,7 +419,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`slurm`** | 3.0.1 | HPC | Job submission and management | `clio-kit mcp-server slurm` |
 | **`spack`** | 2.3.0 | Package Management | Structured package discovery, installation, and location | `clio-kit mcp-server spack` |
 | **`terrain`** | 2.2.4 | Geospatial | Analyze DEMs and terrain point clouds | `clio-kit mcp-server terrain` |
-| **`web`** | 2.1.1 | Web | Synchronous search plus durable, queryable, cancellable URL, DOI, and document fetch tasks | `clio-kit mcp-server web` |
+| **`web`** | 2.1.2 | Web | Synchronous search plus durable, queryable, cancellable URL, DOI, and document fetch tasks | `clio-kit mcp-server web` |
 
 </div>
 

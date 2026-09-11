@@ -23,7 +23,8 @@ Parallel-sort recognizes bracketed log levels consistently. Slurm diagnostics
 use stderr so job submission cannot corrupt the MCP stdout stream.
 
 This candidate incorporates main's JARVIS 1.8.1 dependency and Web task-based
-fetch support. All 22 server locks update vulnerable HTTP dependencies, and
+fetch support, with ordinary-call compatibility for agents without the tasks
+extension. All 22 server locks update vulnerable HTTP dependencies, and
 fresh registry versions point to the 2.11.0 wheel. The compatible JARVIS user
 schema remains v3.7.2; its component release is 3.7.3.
 
