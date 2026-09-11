@@ -145,3 +145,23 @@ def test_regeneration_preserves_reviewed_usage_but_updates_contract(tmp_path):
     assert "perform_operation" not in first
     generator._generate_mcp_markdown(data)
     assert page.read_text() == first
+
+
+@pytest.mark.parametrize("runtime", ["node", "go"])
+def test_docs_discover_descriptor_project_without_python_metadata(
+    tmp_path, monkeypatch, runtime
+):
+    server = tmp_path / "crystal"
+    server.mkdir()
+    (server / "clio-server.toml").write_text(
+        f'name = "crystal"\nruntime = "{runtime}"\nentry = "server"\n'
+        'description = "Crystal analysis"\nversion = "1.0.0"\n'
+    )
+    extractor = GENERATOR.MCPDataExtractor({"crystal": "2.0.0"}, "2026-09-10")
+    monkeypatch.setattr(
+        extractor, "_extract_tools_from_server", lambda _: [{"name": "inspect"}]
+    )
+    data = extractor.extract_mcp_data(tmp_path)["crystal"]
+    assert data["description"] == "Crystal analysis"
+    assert data["version"] == "2.0.0"
+    assert data["actions"] == ["inspect"]

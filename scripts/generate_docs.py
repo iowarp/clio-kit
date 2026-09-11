@@ -113,21 +113,17 @@ class MCPDataExtractor:
 
     def _extract_single_mcp_data(self, mcp_dir: Path) -> Optional[Dict]:
         """Extract data for a single MCP."""
-        # Read pyproject.toml
         pyproject_file = mcp_dir / "pyproject.toml"
-        if not pyproject_file.exists():
-            print(f"Warning: No pyproject.toml found in {mcp_dir.name}")
+        descriptor_file = mcp_dir / "clio-server.toml"
+        if descriptor_file.is_file():
+            with descriptor_file.open("rb") as stream:
+                project_info = tomllib.load(stream)
+        elif pyproject_file.is_file():
+            with pyproject_file.open("rb") as stream:
+                project_info = tomllib.load(stream).get("project", {})
+        else:
             return None
 
-        try:
-            with open(pyproject_file, "rb") as f:
-                pyproject_data = tomllib.load(f)
-        except Exception as e:
-            print(f"Error reading pyproject.toml in {mcp_dir.name}: {e}")
-            return None
-
-        # Extract basic info from pyproject.toml
-        project_info = pyproject_data.get("project", {})
         name = (
             project_info.get("name", mcp_dir.name)
             .replace("-mcp", "")
@@ -233,12 +229,27 @@ class MCPDataExtractor:
         extract_script = script_dir / "extract_mcp_metadata.py"
 
         try:
+            command = ["uv", "run", "python", str(extract_script)]
+            descriptor = mcp_dir / "clio-server.toml"
+            if descriptor.is_file():
+                command = [
+                    "uv",
+                    "run",
+                    "--project",
+                    str(script_dir.parent),
+                    "--extra",
+                    "verification",
+                    "clio-kit",
+                    "server",
+                    "inspect",
+                    str(mcp_dir.resolve()),
+                ]
             result = subprocess.run(
-                ["uv", "run", "python", str(extract_script)],
+                command,
                 cwd=str(mcp_dir),
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=180 if descriptor.is_file() else 30,
             )
             if result.returncode != 0:
                 print(
@@ -665,6 +676,7 @@ def main():
             path.name
             for path in mcps_dir.iterdir()
             if (path / "pyproject.toml").is_file()
+            or (path / "clio-server.toml").is_file()
         }
         if set(server_versions) != discovered_servers:
             raise ValueError(
