@@ -38,7 +38,7 @@
 
 **CLIO Kit** - Part of the IoWarp platform's tooling layer for AI agents. A comprehensive collection of tools, skills, plugins, and extensions. It ships 22 Model Context Protocol (MCP) servers for scientific computing and enables AI agents to interact with HPC resources, scientific data formats, and research datasets.
 
-[**Website**](https://docs.iowarp.ai/) | [**IOWarp**](https://iowarp.ai)
+[**Website**](https://toolkit.iowarp.ai/) | [**IOWarp**](https://iowarp.ai)
 
 Chat with us on [**Zulip**](https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit) or [**join us**](https://iowarp.zulipchat.com/join/e4wh24du356e4y2iw6x6jeay/)
 
@@ -647,7 +647,7 @@ clio-kit mcp-servers
 - **Join**: [Invitation Link](https://iowarp.zulipchat.com/join/e4wh24du356e4y2iw6x6jeay/)
 - **Issues**: [GitHub Issues](https://github.com/iowarp/clio-kit/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/iowarp/clio-kit/discussions)
-- **Website**: [https://docs.iowarp.ai/](https://docs.iowarp.ai/)
+- **Website**: [https://toolkit.iowarp.ai/](https://toolkit.iowarp.ai/)
 - **Project**: [IOWarp Project](https://iowarp.ai)
 
 ---

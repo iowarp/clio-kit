@@ -4,7 +4,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/slurm-mcp.svg)](https://pypi.org/project/slurm-mcp/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
 
-**Part of [CLIO Kit](https://docs.iowarp.ai/) - Gnosis Research Center**
+**Part of [CLIO Kit](https://toolkit.iowarp.ai/) - Gnosis Research Center**
 
 Slurm MCP gives agents a compact, typed interface for submitting, inspecting,
 and explicitly cancelling workloads on Slurm-managed clusters. Granular
@@ -23,7 +23,7 @@ CLIO Kit a persistent, isolated environment instead of recreating a temporary
 
 ## Documentation
 
-- **Full Documentation**: [CLIO Kit Website](https://docs.iowarp.ai/)
+- **Full Documentation**: [CLIO Kit Website](https://toolkit.iowarp.ai/)
 - **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
 - **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/wiki/Contribution)
 
