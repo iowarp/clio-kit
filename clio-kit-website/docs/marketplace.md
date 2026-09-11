@@ -32,6 +32,12 @@ stdio MCP settings. The existing `.claude-plugin` marketplace, dependency bundle
 and two agent definitions currently target Claude Code. Portable skill support
 does not imply that other clients accept those native manifests.
 
+See [Agent integrations](./intro.md#agent-integrations) for Codex, Claude Code,
+Cursor, VS Code / GitHub Copilot, Antigravity, and Claude Desktop.
+That guide lists the client-specific MCP schemas and skill directories, with
+complete scientific I/O configuration examples. VS Code Copilot and the Codex
+extension use separate MCP configurations.
+
 All 22 shipped scientific servers are Python projects. The launcher also
 supports contributed Node/TypeScript and Go projects. Real MCP SDK fixtures
 under `tests/fixtures/mcp-servers/` verify those adapters in CI; they are not

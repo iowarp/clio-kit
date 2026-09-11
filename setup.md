@@ -51,6 +51,40 @@ Use the user's stated work to select a bundle. Ask only if the work is unknown.
 | Geospatial, terrain, seismic data | `clio-geoscience` |
 | Papers and dataset discovery | `clio-research` |
 
+### Client configuration and skill locations
+
+Choose your client below. The [README integration guide](README.md#agent-integrations)
+contains complete scientific I/O examples for every listed client, including all
+four MCP servers and the three workflow skills.
+
+| Client | MCP configuration | Project skill target |
+|---|---|---|
+| Codex CLI / IDE extension | `codex mcp add`; `~/.codex/config.toml` | `.agents/skills` |
+| Claude Code | Native marketplace below, or `claude mcp add --scope project` | Bundle-managed, or `.claude/skills` |
+| Cursor | `.cursor/mcp.json`, top-level `mcpServers` | `.cursor/skills` |
+| VS Code / GitHub Copilot | `.vscode/mcp.json`, top-level `servers` | `.github/skills` |
+| Antigravity | MCP settings → raw config; workspace `.agents/mcp_config.json` | `.agents/skills` |
+| Claude Desktop | Developer settings → `claude_desktop_config.json` | Local MCP setup does not install skills |
+
+For example, install the skills for Cursor with:
+
+```bash
+clio-kit skill install --bundle clio-scientific-io --target .cursor/skills
+```
+
+Substitute the table's target for your agent.
+Current Cursor, VS Code, and Antigravity also discover `.agents/skills`,
+so reuse an existing project installation there instead of duplicating it.
+Antigravity's current global paths are `~/.gemini/config/mcp_config.json` and
+`~/.gemini/config/skills`.
+
+The Codex commands below apply to its IDE extension as well as its CLI. In VS
+Code, Copilot and Codex use different MCP configurations. Install the launcher
+where the MCP subprocess runs, including in a remote workspace or container.
+Follow step 4 after configuring any client. The client-specific directories and
+schemas are linked to official documentation in the README; that guidance does
+not imply every client UI has been exercised in this release's acceptance tests.
+
 ### Codex and other agents that support Agent Skills
 
 Install standard skill folders into your agent's documented discovery directory.

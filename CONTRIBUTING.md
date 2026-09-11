@@ -34,6 +34,12 @@ cd clio-kit
 uv sync --all-extras --dev
 ```
 
+For client setup and contribution checks, use the
+[Agent integration guide](README.md#agent-integrations). It covers MCP and skill
+configuration for Codex, Claude Code, Cursor, VS Code / GitHub Copilot,
+Antigravity, and Claude Desktop's local MCP route. Record which client you
+actually exercised; a valid portable skill does not prove native plugin support.
+
 ### For a Specific MCP Server
 
 ```bash

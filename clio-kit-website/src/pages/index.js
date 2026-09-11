@@ -62,7 +62,9 @@ export default function Home() {
               <a href="https://cursor.com/home" target="_blank" rel="noopener">Cursor</a>,{' '}
               <a href="https://code.visualstudio.com/" target="_blank" rel="noopener">VS Code</a>,{' '}
               <a href="https://github.com/openai/codex" target="_blank" rel="noopener">Codex CLI</a>,{' '}
+              <a href="https://antigravity.google/" target="_blank" rel="noopener">Antigravity</a>,{' '}
               <a href="https://github.com/sst/opencode" target="_blank" rel="noopener">OpenCode</a> and other clients.
+              {' '}<Link to="/docs/intro#agent-integrations">MCP, skill, and plugin setup</Link>.
             </p>
 
             {/* Three category cards - Inside hero */}

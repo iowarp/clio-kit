@@ -2,6 +2,8 @@
 
 Shared skills use standard `SKILL.md` folders and can be installed for Codex or
 other compatible agents with `clio-kit skill install --target DIRECTORY`.
+See [Agent integrations](../README.md#agent-integrations) for Codex, Claude Code,
+Cursor, VS Code / GitHub Copilot, Antigravity, and Claude Desktop.
 `clio-kit skill validate DIRECTORY` checks standalone skill contributions.
 The plugin entries and marketplace federation described below currently use
 Claude Code's native `.claude-plugin` format; they are not universal manifests.
@@ -174,9 +176,10 @@ An entry becomes discoverable after a marketplace update, so try
 a contribution locally first. Nothing below touches this repository or your own
 Claude Code config.
 
-**A bare skill folder is not installable.** A `SKILL.md` on its own — the shape
-most skill catalogues publish — has no `plugin.json`, so nothing can install it.
-Wrap it first:
+**A bare skill folder is not a Claude Code marketplace plugin.** A standard
+`SKILL.md` folder can be installed into a compatible agent's skill directory,
+but it needs a plugin wrapper to enter this native marketplace. For the
+marketplace trial below, wrap it first:
 
 ```bash
 clio-kit plugin init /tmp/trial            # scaffold a plugin

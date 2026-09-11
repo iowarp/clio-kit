@@ -34,8 +34,16 @@ const MCPDetail = ({
   }, []);
 
   const installationConfigs = {
+    codex: {
+      title: 'Codex',
+      description: 'Registers the server in ~/.codex/config.toml for Codex CLI and its IDE extension.',
+      language: 'bash',
+      code: `codex mcp add ${serverName}-mcp -- clio-kit mcp-server ${serverName}
+codex mcp list`
+    },
     cursor: {
       title: 'Cursor',
+      description: 'Merge into .cursor/mcp.json in your project, or ~/.cursor/mcp.json for user-wide access.',
       language: 'json',
       code: `{
   "mcpServers": {
@@ -47,9 +55,10 @@ const MCPDetail = ({
 }`
     },
     vscode: {
-      title: 'VS Code',
+      title: 'VS Code / Copilot',
+      description: 'Merge into .vscode/mcp.json, then use MCP: List Servers to start it. The Codex extension uses the Codex tab instead.',
       language: 'json',
-      code: `"mcp": {
+      code: `{
   "servers": {
     "${serverName}-mcp": {
       "type": "stdio",
@@ -61,11 +70,26 @@ const MCPDetail = ({
     },
     claude_code: {
       title: 'Claude Code',
+      description: 'Run from your working project. For workflow bundles, skills, and agents, see the integration guide below.',
       language: 'bash',
-      code: `claude mcp add ${serverName}-mcp -- clio-kit mcp-server ${serverName}`
+      code: `claude mcp add --scope project ${serverName}-mcp -- clio-kit mcp-server ${serverName}`
+    },
+    antigravity: {
+      title: 'Antigravity',
+      description: 'Open MCP Servers → Manage MCP Servers → View raw config, or use workspace .agents/mcp_config.json. Merge this entry and reload the MCP configuration.',
+      language: 'json',
+      code: `{
+  "mcpServers": {
+    "${serverName}-mcp": {
+      "command": "clio-kit",
+      "args": ["mcp-server", "${serverName}"]
+    }
+  }
+}`
     },
     claude_desktop: {
       title: 'Claude Desktop',
+      description: 'Open Settings → Developer → Edit Config, merge into claude_desktop_config.json, and restart the application.',
       language: 'json',
       code: `{
   "mcpServers": {
@@ -78,6 +102,7 @@ const MCPDetail = ({
     },
     manual: {
       title: 'Manual Setup',
+      description: 'Install this checkout before configuring a client. A directly launched stdio server waits for MCP input; use doctor --connect to check the connection.',
       language: 'bash',
       code: `git clone --branch feat/360-meta-marketplace https://github.com/iowarp/clio-kit.git
 cd clio-kit
@@ -205,9 +230,17 @@ clio-kit mcp-server ${serverName}`
                 ))}
               </div>
               <div className={styles.installContent}>
+                <p>{installationConfigs[activeInstallTab].description}</p>
                 <CodeBlock language={installationConfigs[activeInstallTab].language}>
                   {installationConfigs[activeInstallTab].code}
                 </CodeBlock>
+                <p>
+                  These commands configure this MCP server. Follow the{' '}
+                  <Link to="/docs/intro#agent-integrations">agent integration guide</Link>{' '}
+                  to install workflow skills and their other required servers, or use
+                  Claude Code's native bundles and agent plugins. Use an absolute
+                  path to clio-kit if your client cannot find it.
+                </p>
               </div>
             </div>
           </div>
