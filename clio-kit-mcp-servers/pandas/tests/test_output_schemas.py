@@ -205,3 +205,26 @@ def test_no_tool_uses_the_generic_bare_dict_schema() -> None:
         if not (tools[name].output_schema or {}).get("properties")
     }
     assert not generic, f"tools still advertising a generic bare-dict schema: {generic}"
+
+
+def test_invalid_filter_is_a_protocol_error_without_an_output_file(tmp_path):
+    source = tmp_path / "data.csv"
+    source.write_text("machine\nalpha\ngamma\n")
+    output = tmp_path / "filtered.csv"
+
+    async def run():
+        async with Client(mcp) as client:
+            result = await client.call_tool(
+                "filter_data",
+                {
+                    "file_path": str(source),
+                    "filter_conditions": {"machine": {"typo": "gamma"}},
+                    "output_file": str(output),
+                },
+                raise_on_error=False,
+            )
+            assert result.is_error
+            assert "Invalid filter" in str(result.content)
+            assert not output.exists()
+
+    asyncio.run(run())

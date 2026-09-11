@@ -1080,23 +1080,22 @@ async def filter_data_tool(
     filter_conditions: Annotated[
         Dict[str, Any],
         Field(
-            description="Filter conditions: {column: {operator: value}}. Operators: eq, ne, gt, lt, ge, le, in, not_in, contains, regex"
+            description="Filter conditions: {column: {operator: value}}, e.g. {'machine': {'eq': 'gamma'}}. Each column accepts one operator; columns are combined with AND. Also accepts scalar equality or {'operator': 'eq', 'value': 'gamma'}. Operators: eq, ne, gt, lt, ge, le, in, not_in, contains, regex, startswith, endswith, between, isnull, notnull."
         ),
     ],
     output_file: Annotated[
         Optional[str],
-        Field(description="Path to save filtered data; None returns in memory"),
+        Field(
+            description="Path to save filtered data; None writes beside the input with a _filtered.csv suffix"
+        ),
     ] = None,
 ) -> FilterDataResult:
     """Perform advanced data filtering with boolean indexing and conditional expressions."""
-    try:
-        logger.info(f"Filtering data in: {file_path}")
-        return cast(
-            FilterDataResult, filter_data(file_path, filter_conditions, output_file)
-        )
-    except Exception as e:
-        logger.error(f"Data filtering error: {e}")
-        raise ToolError(f"Data filtering error: {e}") from e
+    logger.info(f"Filtering data in: {file_path}")
+    result = filter_data(file_path, filter_conditions, output_file)
+    if not result.get("success"):
+        raise ToolError(result.get("error", "Data filtering failed"))
+    return cast(FilterDataResult, result)
 
 
 # ===============================================================================

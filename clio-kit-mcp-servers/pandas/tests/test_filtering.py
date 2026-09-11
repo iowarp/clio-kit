@@ -190,9 +190,8 @@ class TestFilterData:
             result = filter_data(temp_file, {"value": {"operator": "isnull"}})
 
             assert result["success"]
-            # CSV may store NaN values differently, so just verify filtering worked
             assert "filter_stats" in result
-            assert result["filter_stats"]["final_shape"][0] <= 5
+            assert result["filter_stats"]["final_shape"][0] == 2
         finally:
             if os.path.exists(temp_file):
                 os.unlink(temp_file)
@@ -216,9 +215,8 @@ class TestFilterData:
             result = filter_data(temp_file, {"value": {"operator": "notnull"}})
 
             assert result["success"]
-            # CSV may store NaN values differently, so just verify filtering worked
             assert "filter_stats" in result
-            assert result["filter_stats"]["final_shape"][0] <= 5
+            assert result["filter_stats"]["final_shape"][0] == 3
         finally:
             if os.path.exists(temp_file):
                 os.unlink(temp_file)
@@ -496,3 +494,51 @@ class TestSampleData:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+@pytest.mark.parametrize(
+    "condition", [{"eq": "gamma"}, {"operator": "eq", "value": "gamma"}, "gamma"]
+)
+def test_advertised_filter_syntax_matches_saved_rows(tmp_path, condition):
+    source = tmp_path / "runs.csv"
+    source.write_text("machine,size\nalpha,8000\ngamma,4000\ngamma,8000\ngamma,8000\n")
+    result = filter_data(str(source), {"machine": condition, "size": {"eq": 8000}})
+    assert result["success"]
+    assert result["filter_stats"]["final_shape"][0] == 2
+    assert len(result["filter_stats"]["applied_filters"]) == 2
+    saved = pd.read_csv(result["output_file"])
+    assert saved.to_dict("records") == [{"machine": "gamma", "size": 8000}] * 2
+
+
+@pytest.mark.parametrize(
+    "condition",
+    [{}, {"typo": 1}, {"operator": "eq"}, {"range": [1]}, {"eq": 1, "typo": 2}],
+)
+def test_invalid_filter_never_succeeds_or_writes_output(tmp_path, condition):
+    source = tmp_path / "data.csv"
+    source.write_text("value\n1\n2\n3\n")
+    output = tmp_path / "filtered.csv"
+    output.write_text("preserve existing artifact\n")
+    result = filter_data(str(source), {"value": condition}, str(output))
+    assert not result["success"]
+    assert output.read_text() == "preserve existing artifact\n"
+
+
+def test_filter_applies_both_bounds_and_advertised_regex(tmp_path):
+    source = tmp_path / "data.csv"
+    source.write_text("name,value\nalpha,1\nalpha,2\nbeta,3\nalpha,4\n")
+    result = filter_data(
+        str(source),
+        {"name": {"regex": "^a"}, "value": {"min_value": 2, "max_value": 3}},
+    )
+    assert result["success"]
+    assert result["filtered_data"] == [{"name": "alpha", "value": 2}]
+
+
+def test_filter_empty_input_returns_empty_output(tmp_path):
+    source = tmp_path / "empty.csv"
+    source.write_text("value\n")
+    result = filter_data(str(source), {"value": {"eq": 1}})
+    assert result["success"]
+    assert result["filter_stats"]["filter_percentage"] == 0
+    assert pd.read_csv(result["output_file"]).empty

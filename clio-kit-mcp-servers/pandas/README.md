@@ -311,6 +311,11 @@ Analyze my time series data by resampling to different frequencies, calculating 
 - `filter_data` - Apply complex time-based filtering conditions
 - `statistical_summary` - Analyze time series patterns and trends
 
+For example, `filter_conditions={"machine": {"eq": "gamma"}, "size": {"eq": 8000}}`
+applies both conditions. Scalar equality and explicit `operator`/`value` pairs
+are also supported. Invalid conditions return an error without writing a
+filtered output file.
+
 ### 6. Data Export and Memory Optimization
 ```
 Optimize memory usage of my large dataset and export the cleaned data to multiple formats for different teams.

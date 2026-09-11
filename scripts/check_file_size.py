@@ -92,7 +92,7 @@ RATCHET_BASELINE: dict[str, int] = {
     # #362: NOT split this wave -- out of wave-1 scope. Single
     # VisualizationEngine god-class.
     "clio-kit-mcp-servers/paraview/src/paraview_mcp/implementation/paraview_capabilities.py": 2202,
-    "clio-kit-mcp-servers/pandas/src/pandas_mcp/server.py": 1273,
+    "clio-kit-mcp-servers/pandas/src/pandas_mcp/server.py": 1272,
     "clio-kit-mcp-servers/paraview/src/paraview_mcp/server.py": 1016,
     # clio-kit#370: SpackInstallResult + install_spec moved to a new owner
     # module (provisioning.py, real installs with a full on-disk build log

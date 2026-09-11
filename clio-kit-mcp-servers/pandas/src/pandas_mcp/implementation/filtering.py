@@ -48,6 +48,47 @@ def filter_data(
 
             # Apply different types of filters
             if isinstance(condition, dict):
+                # Accept the shorthand advertised by the MCP input schema as
+                # well as the original explicit operator/value representation.
+                operators = {
+                    "eq",
+                    "ne",
+                    "gt",
+                    "ge",
+                    "lt",
+                    "le",
+                    "in",
+                    "not_in",
+                    "contains",
+                    "regex",
+                    "startswith",
+                    "endswith",
+                    "between",
+                    "isnull",
+                    "notnull",
+                }
+                keys = set(condition)
+                if len(keys) == 1 and keys <= operators:
+                    operator, value = next(iter(condition.items()))
+                    condition = {"operator": operator, "value": value}
+                elif keys == {"min_value", "max_value"}:
+                    condition = {
+                        "operator": "between",
+                        "value": [condition["min_value"], condition["max_value"]],
+                    }
+                elif keys == {"range"}:
+                    condition = {"operator": "between", "value": condition["range"]}
+                elif keys == {"operator"} and condition["operator"] in {
+                    "isnull",
+                    "notnull",
+                }:
+                    condition = {"operator": condition["operator"], "value": None}
+                elif keys not in ({"min_value"}, {"max_value"}, {"operator", "value"}):
+                    raise ValueError(
+                        f"Invalid filter for '{column}': use a scalar, "
+                        "{operator: value}, or {'operator': name, 'value': value}"
+                    )
+
                 # Handle validation-style conditions
                 if "min_value" in condition:
                     mask = filtered_df[column] >= condition["min_value"]
@@ -84,6 +125,10 @@ def filter_data(
                         mask = ~filtered_df[column].isin(value)
                     elif operator == "contains":
                         mask = filtered_df[column].str.contains(str(value), na=False)
+                    elif operator == "regex":
+                        mask = filtered_df[column].str.contains(
+                            str(value), regex=True, na=False
+                        )
                     elif operator == "startswith":
                         mask = filtered_df[column].str.startswith(str(value), na=False)
                     elif operator == "endswith":
@@ -123,28 +168,6 @@ def filter_data(
                         }
                     )
 
-                elif "range" in condition:
-                    # Range filter
-                    range_values = condition["range"]
-                    if isinstance(range_values, list) and len(range_values) == 2:
-                        mask = filtered_df[column].between(
-                            range_values[0], range_values[1]
-                        )
-                        rows_before = len(filtered_df)
-                        filtered_df = filtered_df[mask]
-                        rows_after = len(filtered_df)
-
-                        applied_filters.append(
-                            {
-                                "column": column,
-                                "operator": "range",
-                                "value": range_values,
-                                "rows_before": rows_before,
-                                "rows_after": rows_after,
-                                "rows_filtered": rows_before - rows_after,
-                            }
-                        )
-
             else:
                 # Simple equality filter
                 mask = filtered_df[column] == condition
@@ -166,7 +189,11 @@ def filter_data(
         # Filter statistics
         final_shape = filtered_df.shape
         total_rows_filtered = original_shape[0] - final_shape[0]
-        filter_percentage = (total_rows_filtered / original_shape[0]) * 100
+        filter_percentage = (
+            (total_rows_filtered / original_shape[0]) * 100
+            if original_shape[0]
+            else 0.0
+        )
 
         filter_stats = {
             "original_shape": original_shape,
