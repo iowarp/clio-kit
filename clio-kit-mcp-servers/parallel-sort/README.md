@@ -10,15 +10,17 @@ Parallel Sort MCP is a comprehensive Model Context Protocol (MCP) server that en
 
 ## Quick Start
 
+Install the launcher with the [setup guide](../../setup.md) first.
+
 ```bash
-uvx clio-kit mcp-server parallel-sort
+clio-kit mcp-server parallel-sort
 ```
 
 ## Documentation
 
 - **Full Documentation**: [CLIO Kit Website](https://toolkit.iowarp.ai/)
-- **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
-- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/wiki/Contribution)
+- **Installation Guide**: See [setup guide](../../setup.md)
+- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
 
 ---
 
@@ -53,8 +55,11 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 {
   "mcpServers": {
     "parallel-sort-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "parallel-sort"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "parallel-sort"
+      ]
     }
   }
 }
@@ -65,15 +70,18 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 <details>
 <summary><b>Install in VS Code</b></summary>
  
-Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
+Add this to `.vscode/mcp.json` in your project. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
  
 ```json
-"mcp": {
+{
   "servers": {
     "parallel-sort-mcp": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "parallel-sort"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "parallel-sort"
+      ]
     }
   }
 }
@@ -87,7 +95,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
  
 ```sh
-claude mcp add parallel-sort-mcp -- uvx clio-kit mcp-server parallel-sort
+claude mcp add parallel-sort-mcp -- clio-kit mcp-server parallel-sort
 ```
  
 </details>
@@ -101,8 +109,11 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
 {
   "mcpServers": {
     "parallel-sort-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "parallel-sort"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "parallel-sort"
+      ]
     }
   }
 }
@@ -206,14 +217,14 @@ uv --directory=$env:CLONE_DIR\clio-kit\clio-kit-mcp-servers\parallel-sort run pa
 ## Claude Code
 
 ```bash
-claude mcp add clio-parallel-sort -- uvx clio-kit parallel-sort
+claude mcp add clio-parallel-sort -- clio-kit mcp-server parallel-sort
 ```
 
 Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-parallel-sort@iowarp-clio-kit
+/plugin install clio-parallel-sort@clio-kit
 ```
 ## Claude Desktop
 
@@ -223,9 +234,9 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "clio-parallel-sort": {
-      "command": "uvx",
+      "command": "clio-kit",
       "args": [
-        "clio-kit",
+        "mcp-server",
         "parallel-sort"
       ]
     }

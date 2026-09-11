@@ -10,15 +10,17 @@ Plot MCP is a Model Context Protocol server that enables LLMs to create professi
 
 ## Quick Start
 
+Install the launcher with the [setup guide](../../setup.md) first.
+
 ```bash
-uvx clio-kit mcp-server plot
+clio-kit mcp-server plot
 ```
 
 ## Documentation
 
 - **Full Documentation**: [CLIO Kit Website](https://toolkit.iowarp.ai/)
-- **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
-- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/wiki/Contribution)
+- **Installation Guide**: See [setup guide](../../setup.md)
+- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
 
 ---
 
@@ -45,8 +47,11 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 {
   "mcpServers": {
     "plot-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "plot"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "plot"
+      ]
     }
   }
 }
@@ -57,15 +62,18 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 <details>
 <summary><b>Install in VS Code</b></summary>
 
-Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
+Add this to `.vscode/mcp.json` in your project. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
 
 ```json
-"mcp": {
+{
   "servers": {
     "plot-mcp": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "plot"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "plot"
+      ]
     }
   }
 }
@@ -79,7 +87,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add plot-mcp -- uvx clio-kit mcp-server plot
+claude mcp add plot-mcp -- clio-kit mcp-server plot
 ```
 
 </details>
@@ -93,8 +101,11 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
 {
   "mcpServers": {
     "plot-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "plot"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "plot"
+      ]
     }
   }
 }
@@ -175,14 +186,14 @@ uv --directory=$env:CLONE_DIR\clio-kit\clio-kit-mcp-servers\plot run plot-mcp --
 ## Claude Code
 
 ```bash
-claude mcp add clio-plot -- uvx clio-kit plot
+claude mcp add clio-plot -- clio-kit mcp-server plot
 ```
 
 Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-plot@iowarp-clio-kit
+/plugin install clio-plot@clio-kit
 ```
 ## Claude Desktop
 
@@ -192,9 +203,9 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "clio-plot": {
-      "command": "uvx",
+      "command": "clio-kit",
       "args": [
-        "clio-kit",
+        "mcp-server",
         "plot"
       ]
     }
@@ -218,10 +229,7 @@ This prompt will:
 - Create time-series plots using `line_plot` showing sales trends
 - Provide statistical insights about the data
 
-<!-- **Output:** -->
 <!-- Add your output images here -->
-<!-- ![Data Info Output](images/example1_data_info.png) -->
-<!-- ![Sales Trends Line Plot](images/example1_sales_trends.png) -->
 
 ### 2. Comparative Analysis with Multiple Charts
 ```
@@ -242,11 +250,7 @@ This prompt will:
 - Show data relationships and distributions
 - Create professional publication-ready plots
 
-<!-- **Output:** -->
 <!-- Add your output images here -->
-<!-- ![Age Distribution Histogram](images/example2_age_histogram.png) -->
-<!-- ![Satisfaction Scores Heatmap](images/example2_satisfaction_heatmap.png) -->
-<!-- ![Department Salary Comparison](images/example2_department_salary.png) -->
 
 ### 3. Scientific Data Visualization
 ```
@@ -262,9 +266,7 @@ This prompt will:
 - Provide statistical correlation metrics
 - Include uncertainty analysis if applicable
 
-<!-- **Output:** -->
 <!-- Add your output images here -->
-<!-- ![Temperature vs Performance Scatter Plot](images/example3_temperature_scatter.png) -->
 
 ### 4. Business Intelligence Dashboard
 ```
@@ -285,11 +287,7 @@ This prompt will:
 - Provide executive summary statistics
 - Generate dashboard-style layouts
 
-<!-- **Output:** -->
 <!-- Add your output images here -->
-<!-- ![Revenue Trends Line Plot](images/example4_revenue_trends.png) -->
-<!-- ![Performance Metrics Histogram](images/example4_performance_histogram.png) -->
-<!-- ![Regional Comparison Bar Chart](images/example4_regional_comparison.png) -->
 
 ### 5. Research Data Publication
 ```
@@ -308,11 +306,7 @@ This prompt will:
 - Generate publication-ready 300 DPI plots
 - Include proper statistical annotations
 
-<!-- **Output:** -->
 <!-- Add your output images here -->
-<!-- ![Data Quality Report](images/example5_data_quality.png) -->
-<!-- ![Experimental Conditions vs Outcomes](images/example5_experiment_scatter.png) -->
-<!-- ![Correlation Matrix Heatmap](images/example5_correlation_heatmap.png) -->
 
 ### 6. Quick Data Quality Check
 ```
@@ -328,7 +322,4 @@ This prompt will:
 - Suggest optimal visualization strategies
 - Provide data cleaning recommendations
 
-<!-- **Output:** -->
 <!-- Add your output images here -->
-<!-- ![Data Quality Assessment](images/example6_data_quality.png) -->
-<!-- ![Data Completeness Report](images/example6_completeness_report.png) -->

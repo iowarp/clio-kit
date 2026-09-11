@@ -12,8 +12,10 @@ scheduler and interactive-allocation operations remain available to operators.
 
 ## Quick Start
 
+Install the launcher with the [setup guide](../../setup.md) first.
+
 ```bash
-uv tool install "clio-kit==2.3.0"
+uv tool install "clio-kit"
 clio-kit mcp-server slurm
 ```
 
@@ -24,8 +26,8 @@ CLIO Kit a persistent, isolated environment instead of recreating a temporary
 ## Documentation
 
 - **Full Documentation**: [CLIO Kit Website](https://toolkit.iowarp.ai/)
-- **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
-- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/wiki/Contribution)
+- **Installation Guide**: See [setup guide](../../setup.md)
+- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
 
 ---
 
@@ -47,12 +49,12 @@ closed machine-readable contracts.
 Install the released CLIO Kit command once:
 
 ```bash
-uv tool install "clio-kit==2.3.0"
+uv tool install "clio-kit"
 clio-kit mcp-server slurm --help
 ```
 
 For a one-shot probe or development check only, the equivalent temporary command
-is `uvx --from "clio-kit==2.3.0" clio-kit mcp-server slurm`.
+is `uvx --from "clio-kit" clio-kit mcp-server slurm`.
 
 <details>
 <summary><b>Install in Cursor</b></summary>
@@ -77,15 +79,18 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 <details>
 <summary><b>Install in VS Code</b></summary>
 
-Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
+Add this to `.vscode/mcp.json` in your project. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
 
 ```json
-"mcp": {
+{
   "servers": {
     "slurm-mcp": {
       "type": "stdio",
       "command": "clio-kit",
-      "args": ["mcp-server", "slurm"]
+      "args": [
+        "mcp-server",
+        "slurm"
+      ]
     }
   }
 }
@@ -184,7 +189,7 @@ Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-slurm@iowarp-clio-kit
+/plugin install clio-slurm@clio-kit
 ```
 ## Claude Desktop
 

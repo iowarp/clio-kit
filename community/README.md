@@ -57,7 +57,7 @@ acceptance tests. External code and update ownership remain with the publisher.
 type = "github"
 repo = "owner/repo"
 ref  = "v2.0.0"                              # optional: branch or tag
-sha  = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6"    # optional: exact commit, wins over ref
+sha  = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0"    # optional: exact commit, wins over ref
 ```
 
 **`git-subdir`** — the plugin lives in a subdirectory of a larger repository.
@@ -181,21 +181,34 @@ Claude Code config.
 but it needs a plugin wrapper to enter this native marketplace. For the
 marketplace trial below, wrap it first:
 
+Create a temporary plugin and the marketplace that will contain it:
+
 ```bash
-clio-kit plugin init /tmp/trial            # scaffold a plugin
-rm -rf /tmp/trial/skills/example-workflow  # drop the placeholder
-cp -r <their-skill-folder> /tmp/trial/skills/
-clio-kit plugin validate /tmp/trial
-claude plugin validate /tmp/trial --strict
+trial_root="$(mktemp -d /tmp/clio-trial.XXXXXX)"
+clio-kit plugin init "$trial_root/trial"
+rm -r "$trial_root/trial/skills/example-workflow"
+cp -r /path/to/their-skill-folder "$trial_root/trial/skills/"
+clio-kit plugin validate "$trial_root/trial"
+claude plugin validate "$trial_root/trial" --strict
+mkdir -p "$trial_root/.claude-plugin"
+cat > "$trial_root/.claude-plugin/marketplace.json" <<'JSON'
+{
+  "name": "clio-trial",
+  "owner": {"name": "Local trial"},
+  "plugins": [{"name": "trial", "source": "./trial"}]
+}
+JSON
 ```
 
-**Then install it into a throwaway config**, so your real one is untouched:
+Install into an isolated client configuration in a subshell:
 
 ```bash
-export CLAUDE_CONFIG_DIR="$(mktemp -d /tmp/clio-trial.XXXXXX)"
-claude plugin marketplace add /tmp/trial-marketplace
-claude plugin install <name>@<marketplace> --scope user
-claude plugin details <name>@<marketplace>   # skills found, and what they cost
+(
+  export CLAUDE_CONFIG_DIR="$trial_root/client-config"
+  claude plugin marketplace add "$trial_root"
+  claude plugin install trial@clio-trial --scope user
+  claude plugin details trial@clio-trial
+)
 ```
 
 `plugin details` shows installed components and a context estimate. Skill

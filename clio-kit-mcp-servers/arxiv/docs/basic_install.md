@@ -1,115 +1,31 @@
-# ArXiv MCP Server - Installation Guide
+# ArXiv MCP installation
 
-## Overview
+Install the launcher using the [CLIO Kit setup guide](../../../setup.md).
+The server needs network access to the arXiv API; PDF tools also need a writable
+output directory. Configure any supported stdio client with command `clio-kit`
+and arguments `["mcp-server", "arxiv"]`. See the shared
+[agent integrations](../../../README.md#agent-integrations).
 
-The ArXiv MCP Server provides comprehensive access to ArXiv research papers through the Model Context Protocol (MCP). It offers advanced search capabilities, paper analysis, and citation management tools.
+Check the installed server:
 
-## Prerequisites
+```bash
+clio-kit doctor --server arxiv --connect
+```
 
-- Python 3.10 or higher
-- [uv](https://docs.astral.sh/uv/) package manager
-- Internet connection for ArXiv API access
+Then ask the client to call `search_by_title` with a known paper title and check
+the returned identifier and title. A successful connection alone does not verify
+API access; public API availability and rate limits can affect queries.
 
-## Installation
-
-### 1. Clone the Repository
+## Develop from source
 
 ```bash
 git clone https://github.com/iowarp/clio-kit.git
 cd clio-kit/clio-kit-mcp-servers/arxiv
+uv sync --frozen --dev
+uv run --frozen arxiv-mcp --help
+uv run --frozen pytest -q
 ```
 
-### 2. Install Dependencies
-
-Using uv (recommended):
-```bash
-uv sync
-```
-
-Using pip:
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Test Installation
-
-Run the demo to verify everything works:
-```bash
-uv run python demo.py
-```
-
-## Usage
-
-### Start the Server
-
-```bash
-# Using uv
-uv run arxiv-mcp
-
-# Direct execution
-uv run python src/arxiv_mcp/server.py
-```
-
-### Configuration
-
-The server supports environment variables for configuration:
-
-- `MCP_TRANSPORT`: Transport type (`stdio` or `sse`)
-- `MCP_SSE_HOST`: Host for SSE transport (default: `0.0.0.0`)
-- `MCP_SSE_PORT`: Port for SSE transport (default: `8000`)
-
-### Available Tools
-
-1. **search_arxiv** - Search by category
-2. **get_recent_papers** - Get recent papers
-3. **search_papers_by_author** - Search by author
-4. **search_by_title** - Search by title keywords
-5. **search_by_abstract** - Search by abstract
-6. **search_by_subject** - Search by subject
-7. **search_date_range** - Search by date range
-8. **get_paper_details** - Get paper details
-9. **export_to_bibtex** - Export to BibTeX
-10. **find_similar_papers** - Find similar papers
-
-## Common ArXiv Categories
-
-- `cs.AI` - Artificial Intelligence
-- `cs.LG` - Machine Learning
-- `cs.CV` - Computer Vision and Pattern Recognition
-- `cs.CL` - Computation and Language
-- `physics.astro-ph` - Astrophysics
-- `math.CO` - Combinatorics
-- `q-bio.QM` - Quantitative Methods in Biology
-
-## Troubleshooting
-
-### Import Errors
-Make sure all dependencies are installed:
-```bash
-uv sync
-```
-
-### Network Issues
-Ensure you have internet access for ArXiv API calls.
-
-### Timeout Issues
-The server has a 30-second timeout for ArXiv API calls. For slow connections, this might need adjustment.
-
-## Integration with MCP Clients
-
-### Claude Desktop
-Add to your Claude Desktop configuration:
-```json
-{
-  "arxiv-mcp": {
-    "command": "uv",
-    "args": [
-      "--directory", "/path/to/clio-kit/clio-kit-mcp-servers/arxiv",
-      "run", "arxiv-mcp"
-    ]
-  }
-}
-```
-
-### Other MCP Clients
-The server uses stdio transport by default and is compatible with any MCP client supporting the protocol.
+Use `uv run --frozen arxiv-mcp` for stdio. Inspect `--help` for supported
+transport options. The complete tool inventory is in the
+[server reference](../README.md#capabilities).

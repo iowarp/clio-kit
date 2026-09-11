@@ -117,7 +117,7 @@ def format_claude_code_section(server_name: str) -> str:
         "Or install via the CLIO Kit plugin marketplace:\n",
         "```",
         "/plugin marketplace add iowarp/clio-kit",
-        f"/plugin install clio-{server_name}@iowarp-clio-kit",
+        f"/plugin install clio-{server_name}@clio-kit",
         "```",
         "",
     ]

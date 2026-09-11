@@ -1,5 +1,9 @@
 # Geo MCP
 
+Install the launcher using the [CLIO Kit setup guide](../../setup.md) before
+using the commands below. See [agent integrations](../../README.md#agent-integrations)
+for MCP and skill configuration.
+
 Renders GeoJSON vector layers into map images. Any tool that returns GeoJSON
 features — catalog feature queries, file inspection, analysis output — can be
 visualized as a single layered map with an optional web-tile basemap.
@@ -42,14 +46,14 @@ colored by `epa_aqi`. One call produces the full situational map.
 ## Run
 
 ```sh
-uvx clio-kit geo          # via the clio-kit launcher
+clio-kit mcp-server geo          # via the clio-kit launcher
 geo-mcp                   # direct entry point
 ```
 
 ## Test
 
 ```sh
-uv run --extra dev pytest
+uv run --frozen pytest
 ```
 
 Tests disable the basemap so they run without network access.
@@ -67,7 +71,7 @@ Tests disable the basemap so they run without network access.
 **Tags**: geojson, geospatial, overlap, spatial-join
 
 ### `bounding_box`
-**Description**: Compute the bounding box [min_lon, min_lat, max_lon, max_lat] of GeoJSON features (inline or file path), optionally padded by buffer_km. A deterministic geometry op for deriving an analysis region from a fire perimeter.
+**Description**: Compute the bounding box [min_lon, min_lat, max_lon, max_lat] of the VALID geometry in GeoJSON features (inline or file path), optionally padded by pad_km and rounded to 4 decimal places. Features whose geometry cannot be parsed are skipped, so feature_count reports valid geometries only. Use this to derive an analysis region for mapping or a spatial query; use feature_bbox instead to measure a document's raw coordinate extent including malformed features.
 **Hints**: read-only, idempotent
 **Tags**: bbox, geojson, geospatial, region
 
@@ -86,6 +90,26 @@ Tests disable the basemap so they run without network access.
 **Hints**: read-only, idempotent
 **Tags**: distance, filter, geospatial, haversine, proximity
 
+### `inspect_geojson`
+**Description**: Inspect a GeoJSON document and report its geometry types and counts, feature count, property keys (schema), bounding box [min_lon, min_lat, max_lon, max_lat], CRS if present, and total vertex count. Reads the document as written, without a geometry engine, so it reports what the file actually contains. Accepts a file path or inline GeoJSON.
+**Hints**: read-only, idempotent
+**Tags**: geojson, inspection, metadata, schema
+
+### `validate_geojson`
+**Description**: Validate the structural well-formedness of a GeoJSON document: that the top-level type is recognized and every geometry's type and coordinates are well-formed (correct nesting depth, finite numeric positions). Returns {valid, errors}. Run this before a rendering or overlap tool, which silently skip geometry they cannot parse.
+**Hints**: read-only, idempotent
+**Tags**: geojson, linting, validation
+
+### `summarize_geojson`
+**Description**: Produce a compact human-readable summary of a GeoJSON document: counts per geometry type, bounding box, property keys, and a few sample feature property sets. Accepts a file path or inline GeoJSON.
+**Hints**: read-only, idempotent
+**Tags**: geojson, inspection, summary
+
+### `feature_bbox`
+**Description**: Compute the bounding box [min_lon, min_lat, max_lon, max_lat] of EVERY coordinate in a GeoJSON document, without validating geometry and without rounding. feature_count counts all features in the document, including malformed ones. Use this to inspect a file's raw extent; use bounding_box instead for the extent of valid geometry, padded and rounded, when feeding a map render or spatial query.
+**Hints**: read-only, idempotent
+**Tags**: bbox, geojson, inspection
+
 ### Resources
 
 - `geo://capabilities` - Describe what the geo MCP server can do.
@@ -96,14 +120,14 @@ Tests disable the basemap so they run without network access.
 ## Claude Code
 
 ```bash
-claude mcp add clio-geo -- uvx clio-kit geo
+claude mcp add clio-geo -- clio-kit mcp-server geo
 ```
 
 Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-geo@iowarp-clio-kit
+/plugin install clio-geo@clio-kit
 ```
 ## Claude Desktop
 
@@ -113,9 +137,9 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "clio-geo": {
-      "command": "uvx",
+      "command": "clio-kit",
       "args": [
-        "clio-kit",
+        "mcp-server",
         "geo"
       ]
     }

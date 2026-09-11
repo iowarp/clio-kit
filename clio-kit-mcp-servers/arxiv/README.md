@@ -10,15 +10,17 @@ ArXiv MCP is a comprehensive Model Context Protocol (MCP) server that enables La
 
 ## Quick Start
 
+Install the launcher with the [setup guide](../../setup.md) first.
+
 ```bash
-uvx clio-kit mcp-server arxiv
+clio-kit mcp-server arxiv
 ```
 
 ## Documentation
 
 - **Full Documentation**: [CLIO Kit Website](https://toolkit.iowarp.ai/)
-- **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
-- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/wiki/Contribution)
+- **Installation Guide**: See [setup guide](../../setup.md)
+- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
 
 ---
 
@@ -56,8 +58,11 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 {
   "mcpServers": {
     "arxiv-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "arxiv"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "arxiv"
+      ]
     }
   }
 }
@@ -68,15 +73,18 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 <details>
 <summary><b>Install in VS Code</b></summary>
 
-Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
+Add this to `.vscode/mcp.json` in your project. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
 
 ```json
-"mcp": {
+{
   "servers": {
     "arxiv-mcp": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "arxiv"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "arxiv"
+      ]
     }
   }
 }
@@ -90,7 +98,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add arxiv-mcp -- uvx clio-kit mcp-server arxiv
+claude mcp add arxiv-mcp -- clio-kit mcp-server arxiv
 ```
 
 </details>
@@ -104,8 +112,11 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
 {
   "mcpServers": {
     "arxiv-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "arxiv"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "arxiv"
+      ]
     }
   }
 }
@@ -216,14 +227,14 @@ uv --directory=$env:CLONE_DIR\clio-kit\clio-kit-mcp-servers\arxiv run arxiv-mcp 
 ## Claude Code
 
 ```bash
-claude mcp add clio-arxiv -- uvx clio-kit arxiv
+claude mcp add clio-arxiv -- clio-kit mcp-server arxiv
 ```
 
 Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-arxiv@iowarp-clio-kit
+/plugin install clio-arxiv@clio-kit
 ```
 ## Claude Desktop
 
@@ -233,9 +244,9 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "clio-arxiv": {
-      "command": "uvx",
+      "command": "clio-kit",
       "args": [
-        "clio-kit",
+        "mcp-server",
         "arxiv"
       ]
     }

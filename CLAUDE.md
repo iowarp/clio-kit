@@ -6,11 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **CLIO Kit** is part of the IoWarp platform's tooling layer for AI agents. It is a production-grade monorepo containing 22 MCP (Model Context Protocol) servers designed for scientific computing research, alongside skills, workflow bundles and an indexed community marketplace. The project enables AI agents and LLMs to interact with HPC resources, scientific data formats, and research datasets through a standardized protocol.
 
-The repository uses a **unified launcher with auto-discovery** pattern: each MCP server is independently developed and tested, but all are launched through a single `clio-kit <server-name>` command.
+The repository uses a **unified launcher with auto-discovery** pattern: each MCP server is independently developed and tested, but all are launched through a single `clio-kit mcp-server <server-name>` command.
 
 **Platform Context**: CLIO Kit is the tooling layer of the IoWarp platform, providing comprehensive agent capabilities beyond just MCP servers.
 
-**Key Technologies**: FastMCP 3.0, Python 3.10+, UV package manager, Pydantic, pytest, Ruff
+**Key Technologies**: FastMCP 4, Python 3.10+, UV package manager, Pydantic, pytest, Ruff
 
 ## Project Structure
 
@@ -18,7 +18,7 @@ The repository uses a **unified launcher with auto-discovery** pattern: each MCP
 clio-kit/                           # Monorepo root
 ├── src/clio_kit/                   # Unified launcher CLI
 ├── clio-kit-mcp-servers/                # 22 independent MCP servers
-│   ├── hdf5/ ⭐                       # Flagship server (v2.0, 28 tools)
+│   ├── hdf5/ ⭐                       # HDF5 access (27 tools)
 │   ├── pandas/                        # Data analysis operations
 │   ├── slurm/                         # HPC job management
 │   ├── arxiv/                         # Research paper fetching
@@ -50,7 +50,7 @@ clio-kit/                           # Monorepo root
 ```
 
 **Key Design Pattern:**
-- Root `pyproject.toml` only includes launcher dependencies (click)
+- Root `pyproject.toml` includes only launcher dependencies; MCP SDK clients are a verification extra
 - Each MCP server in `clio-kit-mcp-servers/` is a complete package with its own manifest, lock file, entry point, and isolated dependencies
 - Launcher auto-discovers servers by reading each one's `clio-server.toml`, which names the server, its runtime (`python`, `node` or `go`) and its entry point
 - Servers run in isolated, content-addressed environments built from their own lock file — `uv sync --frozen`, `npm ci` or `go build` — so a launch never resolves dependencies
@@ -88,7 +88,7 @@ uv run pytest -v --cov=src/
 # pip-audit: Security vulnerabilities
 uv run pip-audit
 
-# FastMCP 3.0 validation (instructions, annotations, tags, resources, prompts)
+# FastMCP 4 validation (instructions, annotations, tags, resources, prompts)
 uv run python ../../scripts/validate_fastmcp.py
 ```
 
@@ -112,14 +112,14 @@ uv run pytest --cov=src/ --cov-report=html
 
 ```bash
 # Via launcher (from root directory)
-uvx clio-kit hdf5
+uv run clio-kit mcp-server hdf5
 
 # Direct development mode (from server directory)
 cd clio-kit-mcp-servers/hdf5
 uv run hdf5-mcp
 
 # List all available MCPs
-uvx clio-kit
+uv run clio-kit mcp-servers
 ```
 
 ### Code Formatting & Fixing
@@ -170,7 +170,7 @@ Each server follows this proven pattern:
 
 ```
 ServerName/
-├── pyproject.toml                     # Entry point: {name}-mcp = "module:server:main"
+├── pyproject.toml                     # Entry point: {name}-mcp = "module.server:main"
 ├── README.md                          # Server documentation
 ├── src/{name}_mcp/
 │   ├── __init__.py
@@ -185,9 +185,9 @@ ServerName/
 └── uv.lock                            # Dependency lock
 ```
 
-### FastMCP 3.0 Server Pattern
+### FastMCP 4 Server Pattern
 
-All servers use FastMCP 3.0 and must include: instructions, tool annotations, tool tags, at least 1 resource, and at least 1 prompt.
+All servers use FastMCP 4 and must include: instructions, tool annotations, tool tags, at least 1 resource, and at least 1 prompt.
 
 ```python
 from fastmcp import FastMCP
@@ -197,7 +197,6 @@ from fastmcp.prompts import Message
 mcp = FastMCP(
     "server-name",
     instructions="Brief description of what this server does and when to use each tool.",
-    list_page_size=10,  # Required for servers with 10+ tools
 )
 
 # Tools: always include annotations and tags
@@ -243,10 +242,13 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
     transport = args.transport or os.getenv("MCP_TRANSPORT", "stdio")
-    mcp.run(transport=transport, host=args.host, port=args.port)
+    if transport == "http":
+        mcp.run(transport="http", host=args.host, port=args.port)
+    else:
+        mcp.run(transport="stdio")
 ```
 
-### Key FastMCP 3.0 Imports
+### Key FastMCP 4 Imports
 
 ```python
 from fastmcp import FastMCP, Context
@@ -283,7 +285,7 @@ class Config(BaseSettings):
 - **Unit Tests**: Per-capability/feature testing
 - **Integration Tests**: Server lifecycle and tool registration
 - **Multi-Python Support**: CI tests against Python 3.10, 3.11, 3.12
-- **Parallel Execution**: GitHub Actions runs tests in parallel (20 parallel jobs)
+- **Parallel Execution**: GitHub Actions discovers the applicable server matrix
 - **Coverage Tracking**: pytest-cov with Codecov integration
 
 ### Code Quality Standards
@@ -293,10 +295,10 @@ class Config(BaseSettings):
 - **Security**: pip-audit scans for vulnerabilities
 - **Format**: Single tool (Ruff) for consistent formatting - no manual formatting
 
-### Performance Optimization (HDF5 v2.0 Reference)
+### HDF5 implementation patterns
 
-The HDF5 server (v2.0) implements patterns useful for all MCPs:
-- **LRU Cache**: 1000-item cache for repeated queries (100-1000x speedup)
+The HDF5 server implements patterns useful for other MCPs:
+- **LRU Cache**: bounded caching for repeated queries; measure performance on the target workload
 - **Resource Pooling**: Lazy loading with proper cleanup
 - **Performance Monitoring**: Adaptive units (B, KB, MB, etc.)
 - **Async Handling**: asyncio for I/O-bound operations
@@ -313,21 +315,21 @@ The HDF5 server (v2.0) implements patterns useful for all MCPs:
    [project]
    name = "my-server-mcp"
    version = "1.0.0"
-   dependencies = ["fastmcp>=3.0.0rc2"]
+   dependencies = ["fastmcp>=4.0.3,<5"]
 
    [project.scripts]
    my-server-mcp = "my_server_mcp.server:main"
    ```
-3. Implement `src/my_server_mcp/server.py` following the FastMCP 3.0 pattern above. **Required**:
+3. Implement `src/my_server_mcp/server.py` following the FastMCP 4 pattern above. **Required**:
    - `instructions=` on `FastMCP()` constructor
    - `annotations=` and `tags=` on every `@mcp.tool()`
    - `ToolError` for all error paths (not error dicts)
    - At least 1 `@mcp.resource()`
    - At least 1 `@mcp.prompt()` returning `list[Message]`
-   - `list_page_size=10` if server has 10+ tools
+   - Keep small tool inventories on one page; some clients do not follow pagination
 4. Add tests in `tests/` directory
 5. Validate: `uv run python ../../scripts/validate_fastmcp.py`
-6. Launcher auto-discovers it on next run
+6. Add `clio-server.toml`, register the server in `mcp-server-versions.toml`, and generate its manifests. Follow the [contributor guide](CONTRIBUTING.md#adding-a-new-mcp-server).
 
 ## CI/CD Pipeline
 
@@ -339,7 +341,7 @@ The HDF5 server (v2.0) implements patterns useful for all MCPs:
   - MyPy type checking (advisory, non-blocking)
   - pytest with coverage (matrix: Python 3.10, 3.11, 3.12)
   - pip-audit security scan
-  - FastMCP 3.0 validation (`scripts/validate_fastmcp.py`)
+  - FastMCP 4 validation (`scripts/validate_fastmcp.py`)
 - Coverage uploaded to Codecov (Python 3.12 only)
 
 **Docs & Website** (`.github/workflows/docs-and-website.yml`):
@@ -354,7 +356,7 @@ The HDF5 server (v2.0) implements patterns useful for all MCPs:
 - **Minimum Python**: 3.10 (enforced in root `pyproject.toml`)
 - **Package Manager**: UV (not pip/conda)
 - **Build System**: Hatchling
-- **Key Frameworks**: FastMCP 3.0.0rc2+, Pydantic 2.4.2+
+- **Key Frameworks**: FastMCP 4.0.3+ (below 5), MCP Python SDK 2.2+ (below 3), Pydantic 2.4.2+
 
 ## Important Files Reference
 
@@ -375,7 +377,7 @@ The HDF5 server (v2.0) implements patterns useful for all MCPs:
 
 ### Server Won't Start
 
-1. Check if `pyproject.toml` has correct entry point: `name-mcp = "module:server:main"`
+1. Check if `pyproject.toml` has correct entry point: `name-mcp = "module.server:main"`
 2. Verify server file has `def main()` with argparse and `mcp.run()` call
 3. Test directly: `cd clio-kit-mcp-servers/hdf5 && uv run hdf5-mcp`
 
@@ -520,15 +522,14 @@ The site includes comprehensive metadata for:
 
 - **MCP Protocol**: https://modelcontextprotocol.io/
 - **FastMCP Documentation**: https://github.com/jlowin/FastMCP
-- **Project Website**: https://iowarp.github.io/clio-kit/
-- **Contribution Guide**: https://github.com/iowarp/clio-kit/wiki/Contribution
+- **Project Website**: https://toolkit.iowarp.ai/
+- **Contribution Guide**: https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md
 - **Community**: Zulip chat at https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit
 - **Join Community**: Invitation link at https://iowarp.zulipchat.com/join/e4wh24du356e4y2iw6x6jeay/
 
 ## Branch Strategy
 
 - **main**: Stable releases and merging PRs
-- **dev**: Development branch for integration
 - **feature/\***: Feature branches for new work
 
 When creating PRs, target `main` branch for releases.

@@ -1,5 +1,9 @@
 # Jarvis MCP
 
+Install the launcher using the [CLIO Kit setup guide](../../setup.md) before
+using the commands below. See [agent integrations](../../README.md#agent-integrations)
+for MCP and skill configuration.
+
 Jarvis MCP exposes JARVIS-CD pipeline work to agents through a small user
 surface and a separate admin surface. This server requires Python 3.11 or newer;
 the root CLIO Kit launcher resolves that requirement from the shipped lock.
@@ -9,7 +13,7 @@ the root CLIO Kit launcher resolves that requirement from the shipped lock.
 Use this for normal agent workflows:
 
 ```bash
-uv tool install 'clio-kit==2.3.0'
+uv tool install 'clio-kit'
 clio-kit mcp-server jarvis
 ```
 
@@ -64,6 +68,7 @@ them. The lower-level admin `append_pkg` tool retains its explicit
 `jarvis_describe` supports:
 
 ```text
+target="package_search"
 target="packages"
 target="package"
 target="pipeline"
@@ -96,7 +101,7 @@ clio-kit mcp-server jarvis -- --profile all
 A normal agent should work at the pipeline level:
 
 1. `jarvis_create_pipeline`
-2. `jarvis_describe(target="packages")`
+2. `jarvis_describe(target="package_search", query="APPLICATION")`, then describe the selected package with `target="package"`
 3. `jarvis_add_step`
 4. `jarvis_edit_step`
 5. `jarvis_describe(target="pipeline")`
@@ -203,7 +208,7 @@ Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-jarvis@iowarp-clio-kit
+/plugin install clio-jarvis@clio-kit
 ```
 ## Claude Desktop
 

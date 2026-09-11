@@ -20,22 +20,19 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 {/* clio-kit:usage:start */}
 
-### Basic Usage
-```python
-# Load and process data with Jarvis
-data = load_data("input_file")
-processed_data = process_data(data)
-save_data(processed_data, "output_file")
-```
+### Create and inspect a pipeline execution
 
-### Integration Example
-```python
-# Use Jarvis in a data pipeline
-for file in data_files:
-    data = load_data(file)
-    result = analyze_data(data)
-    export_results(result, f"analysis_{file}")
-```
+Use `jarvis_describe` with `target="package_search"` for bounded recipe discovery,
+then `target="package"` for the selected canonical name and its configuration.
+Create the pipeline with `jarvis_create_pipeline` and add the configured recipe
+with `jarvis_add_step`. Start it with `jarvis_run` and query the returned pipeline
+and execution IDs with `jarvis_get_execution` until terminal. Verify the reported
+status and output artifacts.
+
+For an initial local check, use a small `echo` recipe with `submit=false`.
+Scheduler execution additionally needs site setup; JARVIS 1.8.1 has a known
+failure for Slurm's literal `(null)` cluster value. See
+[deployment limits](../marketplace.md#scientific-acceptance-boundaries).
 
 {/* clio-kit:usage:end */}
 

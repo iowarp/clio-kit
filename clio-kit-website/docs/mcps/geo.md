@@ -20,22 +20,17 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 {/* clio-kit:usage:start */}
 
-### Basic Usage
-```python
-# Load and process data with Geo
-data = load_data("input_file")
-processed_data = process_data(data)
-save_data(processed_data, "output_file")
-```
+### Validate and map geospatial data
 
-### Integration Example
-```python
-# Use Geo in a data pipeline
-for file in data_files:
-    data = load_data(file)
-    result = analyze_data(data)
-    export_results(result, f"analysis_{file}")
-```
+Start with `validate_geojson`, then inspect extent with `feature_bbox`.
+Confirm the data's coordinate reference system before testing spatial relations
+with `points_in_polygons`. Use `render_feature_map` to render the selected layers
+to a PNG and verify the returned file.
+
+Web basemaps and remote feature queries need network access. Use local geometry
+for a reproducible check, and distinguish a missing basemap from invalid input.
+The [server guide](https://github.com/iowarp/clio-kit/blob/main/clio-kit-mcp-servers/geo/README.md)
+describes layer styling and output fields.
 
 {/* clio-kit:usage:end */}
 

@@ -1,5 +1,9 @@
 # Web MCP Server
 
+Install the launcher using the [CLIO Kit setup guide](../../setup.md) before
+using the commands below. See [agent integrations](../../README.md#agent-integrations)
+for MCP and skill configuration.
+
 The Web MCP exposes synchronous `search`, durable task-enabled `fetch`, and
 `fetch_events` for the complete backend conversion log. The selected search
 provider is fixed when the MCP starts; no tool call can silently switch it.
@@ -9,7 +13,7 @@ provider is fixed when the MCP starts; no tool call can silently switch it.
 Connect a local stdio MCP to one unified CLIO Web Search deployment:
 
 ```bash
-claude mcp add web -- uvx clio-kit mcp-server web --remote-url http://homelab:8089
+claude mcp add web -- clio-kit mcp-server web --remote-url http://homelab:8089
 ```
 
 `--remote_url` is accepted as an alias for clients or scripts that prefer
@@ -20,7 +24,7 @@ deployment requires authentication, set `WEB_REMOTE_TOKEN` in the MCP process.
 For standalone keyless search without remote document conversion:
 
 ```bash
-claude mcp add web -- uvx clio-kit mcp-server web --provider ddg
+claude mcp add web -- clio-kit mcp-server web --provider ddg
 ```
 
 Legacy `--address` and `--document-address` options remain compatible, but only

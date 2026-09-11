@@ -1,5 +1,9 @@
 # Scientific Catalog MCP
 
+Install the launcher using the [CLIO Kit setup guide](../../setup.md) before
+using the commands below. See [agent integrations](../../README.md#agent-integrations)
+for MCP and skill configuration.
+
 This server exposes an operator-maintained catalog of scientific datasets through two compact,
 read-only tools: `scientific_dataset_search` and `scientific_dataset_describe`. It is designed to
 run on a cluster through clio-relay's generic remote-MCP federation.

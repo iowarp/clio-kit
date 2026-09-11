@@ -9,15 +9,17 @@ Model Context Protocol (MCP) server for Apache Parquet files. Provides metadata 
 
 ## Quick Start
 
+Install the launcher with the [setup guide](../../setup.md) first.
+
 ```bash
-uvx clio-kit mcp-server parquet
+clio-kit mcp-server parquet
 ```
 
 ## Key Features
 
 - **Full Documentation**: [CLIO Kit Website](https://toolkit.iowarp.ai/)
-- **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
-- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/wiki/Contribution)
+- **Installation Guide**: See [setup guide](../../setup.md)
+- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
 - 16KB payload limit with error messages and suggested slice sizes
 - JSON filtering with compound/nested operations (AND/OR/NOT, comparisons, NULL checks, IN clauses)
 - Column projection and pagination
@@ -44,8 +46,11 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 {
   "mcpServers": {
     "parquet-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "parquet"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "parquet"
+      ]
     }
   }
 }
@@ -56,15 +61,18 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 <details>
 <summary><b>Install in VS Code</b></summary>
 
-Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
+Add this to `.vscode/mcp.json` in your project. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
 
 ```json
-"mcp": {
+{
   "servers": {
     "parquet-mcp": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "parquet"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "parquet"
+      ]
     }
   }
 }
@@ -78,7 +86,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add parquet-mcp -- uvx clio-kit mcp-server parquet
+claude mcp add parquet-mcp -- clio-kit mcp-server parquet
 ```
 
 </details>
@@ -92,8 +100,11 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
 {
   "mcpServers": {
     "parquet-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "parquet"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "parquet"
+      ]
     }
   }
 }
@@ -317,14 +328,14 @@ MIT License - see LICENSE for details
 ## Claude Code
 
 ```bash
-claude mcp add clio-parquet -- uvx clio-kit parquet
+claude mcp add clio-parquet -- clio-kit mcp-server parquet
 ```
 
 Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-parquet@iowarp-clio-kit
+/plugin install clio-parquet@clio-kit
 ```
 ## Claude Desktop
 
@@ -334,9 +345,9 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "clio-parquet": {
-      "command": "uvx",
+      "command": "clio-kit",
       "args": [
-        "clio-kit",
+        "mcp-server",
         "parquet"
       ]
     }

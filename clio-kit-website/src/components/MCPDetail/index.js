@@ -104,7 +104,7 @@ codex mcp list`
       title: 'Manual Setup',
       description: 'Install this checkout before configuring a client. A directly launched stdio server waits for MCP input; use doctor --connect to check the connection.',
       language: 'bash',
-      code: `git clone --branch feat/360-meta-marketplace https://github.com/iowarp/clio-kit.git
+      code: `git clone https://github.com/iowarp/clio-kit.git
 cd clio-kit
 uv tool install --force --reinstall ".[verification]"
 clio-kit mcp-server ${serverName}`

@@ -8,7 +8,7 @@
 cd /path/to/clio-kit/clio-kit-mcp-servers/parallel-sort
 
 # Install dependencies
-uv sync
+uv sync --frozen
 
 # Run tests to verify installation
 uv run pytest tests/ -v
@@ -21,10 +21,10 @@ uv run pytest tests/ -v
 uv run parallel-sort-mcp
 
 # Or start directly
-uv run python -m parallel_sort.server
+uv run --frozen python -m parallel_sort_mcp.server
 
-# Start with SSE transport for web clients
-MCP_TRANSPORT=sse MCP_SSE_HOST=0.0.0.0 MCP_SSE_PORT=8000 uv run parallel-sort-mcp
+# Start an HTTP MCP endpoint on loopback
+uv run --frozen parallel-sort-mcp --transport http --host 127.0.0.1 --port 8000
 ```
 
 ### 3. Available MCP Tools
@@ -39,7 +39,7 @@ MCP_TRANSPORT=sse MCP_SSE_HOST=0.0.0.0 MCP_SSE_PORT=8000 uv run parallel-sort-mc
 
 #### Filtering
 - `filter_by_time_range(file_path, start_time, end_time)` - Filter by time range
-- `filter_by_log_level(file_path, levels, exclude=False)` - Filter by log levels
+- `filter_by_log_level(file_path, levels)` - Filter by log levels
 - `filter_by_keyword(file_path, keywords, case_sensitive=False, match_all=False)` - Filter by keywords
 - `apply_filter_preset(file_path, preset_name)` - Apply predefined filters
 
@@ -126,9 +126,9 @@ Add to your Claude Desktop config file:
 
 ### Environment Variables
 
-- `MCP_TRANSPORT` - Transport type: `stdio` (default) or `sse`
-- `MCP_SSE_HOST` - Host for SSE transport (default: `0.0.0.0`)
-- `MCP_SSE_PORT` - Port for SSE transport (default: `8000`)
+- `MCP_TRANSPORT` - Transport type: `stdio` (default) or `http`
+For HTTP, pass `--host 127.0.0.1 --port 8000` explicitly and connect to `/mcp`.
+The CLI defaults to `0.0.0.0` when no host is given.
 
 ## Performance Features
 
@@ -169,7 +169,7 @@ uv run pytest -v -s
 
 ### Server Won't Start
 - Check Python version (>=3.10 required)
-- Verify dependencies: `uv sync`
+- Verify dependencies: `uv sync --frozen`
 - Check environment variables
 
 ### Import Errors

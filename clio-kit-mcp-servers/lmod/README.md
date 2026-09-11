@@ -10,15 +10,17 @@ Lmod MCP is a comprehensive Model Context Protocol (MCP) server that enables Lan
 
 ## Quick Start
 
+Install the launcher with the [setup guide](../../setup.md) first.
+
 ```bash
-uvx clio-kit mcp-server lmod
+clio-kit mcp-server lmod
 ```
 
 ## Documentation
 
 - **Full Documentation**: [CLIO Kit Website](https://toolkit.iowarp.ai/)
-- **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
-- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/wiki/Contribution)
+- **Installation Guide**: See [setup guide](../../setup.md)
+- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
 
 ---
 
@@ -61,8 +63,11 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 {
   "mcpServers": {
     "lmod-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "lmod"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "lmod"
+      ]
     }
   }
 }
@@ -73,15 +78,18 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 <details>
 <summary><b>Install in VS Code</b></summary>
 
-Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
+Add this to `.vscode/mcp.json` in your project. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
 
 ```json
-"mcp": {
+{
   "servers": {
     "lmod-mcp": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "lmod"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "lmod"
+      ]
     }
   }
 }
@@ -95,7 +103,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add lmod-mcp -- uvx clio-kit mcp-server lmod
+claude mcp add lmod-mcp -- clio-kit mcp-server lmod
 ```
 
 </details>
@@ -109,8 +117,11 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
 {
   "mcpServers": {
     "lmod-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "lmod"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "lmod"
+      ]
     }
   }
 }
@@ -161,18 +172,6 @@ uv --directory=$env:CLONE_DIR\clio-kit\clio-kit-mcp-servers\lmod run lmod-mcp --
 **Hints**: read-only, idempotent
 **Tags**: modules, query
 
-### `module_load`
-**Description**: Load one or more environment modules into the current session.
-**Tags**: management, modules
-
-### `module_unload`
-**Description**: Unload one or more currently loaded modules from the environment.
-**Tags**: management, modules
-
-### `module_swap`
-**Description**: Swap one module for another atomically.
-**Tags**: management, modules
-
 ### `module_spider`
 **Description**: Search the entire module tree comprehensively for matching modules.
 **Hints**: read-only, idempotent
@@ -194,6 +193,7 @@ uv --directory=$env:CLONE_DIR\clio-kit\clio-kit-mcp-servers\lmod run lmod-mcp --
 ### Resources
 
 - `lmod://status` - Current Lmod module system status.
+- `lmod://capabilities` - Describe the stateless Lmod contract exposed by this server.
 
 ### Prompts
 
@@ -201,14 +201,14 @@ uv --directory=$env:CLONE_DIR\clio-kit\clio-kit-mcp-servers\lmod run lmod-mcp --
 ## Claude Code
 
 ```bash
-claude mcp add clio-lmod -- uvx clio-kit lmod
+claude mcp add clio-lmod -- clio-kit mcp-server lmod
 ```
 
 Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-lmod@iowarp-clio-kit
+/plugin install clio-lmod@clio-kit
 ```
 ## Claude Desktop
 
@@ -218,9 +218,9 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "clio-lmod": {
-      "command": "uvx",
+      "command": "clio-kit",
       "args": [
-        "clio-kit",
+        "mcp-server",
         "lmod"
       ]
     }
@@ -230,83 +230,20 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 
 ## Examples
 
-### 1. HPC Development Environment Setup
-```
-Set up my development environment by loading the latest GCC compiler, Python 3.9, and OpenMPI. Save this configuration as 'dev_env' for future use.
-```
+### Discover a software environment
 
-**Tools called:**
-- `module_avail` - Search for available versions
-- `module_load` - Load development tools
-- `module_save` - Save configuration as collection
+Use `module_avail` to search visible modules, `module_spider` for hierarchical
+search, and `module_show` to inspect a selected module's prerequisites and
+settings. Select versions from the site's actual inventory.
 
-This prompt will:
-- Use `module_avail` to find latest versions of GCC, Python, and OpenMPI
-- Load required modules using `module_load` with dependency resolution
-- Save the configuration using `module_save` for reproducible environments
-- Provide complete development environment setup
+### Record and restore a collection
 
-### 2. Scientific Computing Environment
-```
-I need to switch from Intel compilers to GNU compilers for my simulation. Show me what's currently loaded, find GNU alternatives, and make the switch safely.
-```
+Use `module_list` to inspect the MCP process's environment, `module_save` to
+record it, and `module_savelist` to inspect available collections. Restore a
+selected collection with `module_restore`, then call `module_list` again to
+verify its contents. Collection changes persist for subsequent calls in that
+MCP process, but do not change the parent shell or other MCP servers.
 
-**Tools called:**
-- `module_list` - Show current environment
-- `module_avail` - Find GNU compiler alternatives
-- `module_swap` - Switch compiler toolchains
-- `module_show` - Verify new configuration
-
-This prompt will:
-- List current modules using `module_list`
-- Search for GNU alternatives using `module_avail`
-- Perform safe compiler switch using `module_swap`
-- Verify configuration using `module_show`
-
-### 3. Reproducible Research Environment
-```
-Create a reproducible environment for my research project by restoring my 'research_v2' module collection and verifying all dependencies are properly loaded.
-```
-
-**Tools called:**
-- `module_savelist` - List available collections
-- `module_restore` - Restore research environment
-- `module_list` - Verify loaded modules
-
-This prompt will:
-- List available collections using `module_savelist`
-- Restore specific environment using `module_restore`
-- Verify environment using `module_list`
-- Ensure reproducible research conditions
-
-### 4. Module Discovery and Analysis
-```
-I'm looking for machine learning libraries and frameworks. Search the module system comprehensively and show me detailed information about the most relevant options.
-```
-
-**Tools called:**
-- `module_spider` - Comprehensive module search
-- `module_avail` - Search for ML-related modules
-- `module_show` - Get detailed module information
-
-This prompt will:
-- Perform comprehensive search using `module_spider`
-- Find ML-related modules using `module_avail`
-- Extract detailed information using `module_show`
-- Provide comprehensive module discovery and analysis
-
-### 5. Environment Cleanup and Optimization
-```
-Clean up my current module environment by unloading unnecessary modules and optimizing for performance computing workflows.
-```
-
-**Tools called:**
-- `module_list` - Assess current environment
-- `module_show` - Analyze module dependencies
-- `module_unload` - Remove unnecessary modules
-
-This prompt will:
-- Assess current environment using `module_list`
-- Analyze dependencies using `module_show`
-- Remove unnecessary modules using `module_unload`
-- Optimize environment for performance computing
+The seven-tool surface does not expose module loading, unloading or swapping.
+For a JARVIS workload, resolve software with Spack and pass the exact returned
+load specifications to `jarvis_run`. Verify the actual workload environment.

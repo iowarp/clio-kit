@@ -10,8 +10,10 @@ ParaView MCP is a Model Context Protocol server that enables LLMs to create scie
 
 ## Quick Start
 
+Install the launcher with the [setup guide](../../setup.md) first.
+
 ```bash
-uvx clio-kit mcp-server paraview
+clio-kit mcp-server paraview
 ```
 
 ---
@@ -35,8 +37,11 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 {
   "mcpServers": {
     "paraview-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "paraview"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "paraview"
+      ]
     }
   }
 }
@@ -47,15 +52,18 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 <details>
 <summary><b>Install in VS Code</b></summary>
 
-Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
+Add this to `.vscode/mcp.json` in your project. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
 
 ```json
-"mcp": {
+{
   "servers": {
     "paraview-mcp": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "paraview"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "paraview"
+      ]
     }
   }
 }
@@ -69,7 +77,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add paraview-mcp -- uvx clio-kit mcp-server paraview
+claude mcp add paraview-mcp -- clio-kit mcp-server paraview
 ```
 
 </details>
@@ -83,8 +91,11 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
 {
   "mcpServers": {
     "paraview-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "paraview"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "paraview"
+      ]
     }
   }
 }
@@ -450,14 +461,14 @@ Returns:
 ## Claude Code
 
 ```bash
-claude mcp add clio-paraview -- uvx clio-kit paraview
+claude mcp add clio-paraview -- clio-kit mcp-server paraview
 ```
 
 Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-paraview@iowarp-clio-kit
+/plugin install clio-paraview@clio-kit
 ```
 ## Claude Desktop
 
@@ -467,9 +478,9 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "clio-paraview": {
-      "command": "uvx",
+      "command": "clio-kit",
       "args": [
-        "clio-kit",
+        "mcp-server",
         "paraview"
       ]
     }
@@ -528,8 +539,8 @@ This project builds upon concepts from the original LLNL ParaView MCP work:
 ## Documentation
 
 - **Full Documentation**: [CLIO Kit Website](https://toolkit.iowarp.ai/)
-- **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
-- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/wiki/Contribution)
+- **Installation Guide**: See [setup guide](../../setup.md)
+- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
 - **Detailed Setup**: See [USAGE_README.md](./USAGE_README.md) for complete ParaView installation and configuration
 
 ## License

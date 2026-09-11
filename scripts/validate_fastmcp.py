@@ -54,7 +54,7 @@ def find_server_module() -> str:
 
 
 async def validate(module_path: str) -> list[str]:
-    """Import the server module and validate FastMCP 3.0 compliance."""
+    """Import the server module and validate FastMCP 4 compliance."""
     errors: list[str] = []
 
     try:

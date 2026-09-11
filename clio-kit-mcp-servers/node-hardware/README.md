@@ -10,15 +10,17 @@ Node Hardware MCP is a Model Context Protocol server that enables LLMs to monito
 
 ## Quick Start
 
+Install the launcher with the [setup guide](../../setup.md) first.
+
 ```bash
-uvx clio-kit mcp-server node-hardware
+clio-kit mcp-server node-hardware
 ```
 
 ## Documentation
 
 - **Full Documentation**: [CLIO Kit Website](https://toolkit.iowarp.ai/)
-- **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
-- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/wiki/Contribution)
+- **Installation Guide**: See [setup guide](../../setup.md)
+- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
 
 ---
 
@@ -46,8 +48,11 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 {
   "mcpServers": {
     "node-hardware-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "node-hardware"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "node-hardware"
+      ]
     }
   }
 }
@@ -58,15 +63,18 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 <details>
 <summary><b>Install in VS Code</b></summary>
 
-Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
+Add this to `.vscode/mcp.json` in your project. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
 
 ```json
-"mcp": {
+{
   "servers": {
     "node-hardware-mcp": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "node-hardware"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "node-hardware"
+      ]
     }
   }
 }
@@ -80,7 +88,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add node-hardware-mcp -- uvx clio-kit mcp-server node-hardware
+claude mcp add node-hardware-mcp -- clio-kit mcp-server node-hardware
 ```
 
 </details>
@@ -94,8 +102,11 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
 {
   "mcpServers": {
     "node-hardware-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "node-hardware"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "node-hardware"
+      ]
     }
   }
 }
@@ -196,14 +207,14 @@ uv --directory=$env:CLONE_DIR\clio-kit\clio-kit-mcp-servers\node-hardware run no
 ## Claude Code
 
 ```bash
-claude mcp add clio-node-hardware -- uvx clio-kit node-hardware
+claude mcp add clio-node-hardware -- clio-kit mcp-server node-hardware
 ```
 
 Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-node-hardware@iowarp-clio-kit
+/plugin install clio-node-hardware@clio-kit
 ```
 ## Claude Desktop
 
@@ -213,9 +224,9 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "clio-node-hardware": {
-      "command": "uvx",
+      "command": "clio-kit",
       "args": [
-        "clio-kit",
+        "mcp-server",
         "node-hardware"
       ]
     }

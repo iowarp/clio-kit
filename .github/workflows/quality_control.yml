@@ -385,7 +385,7 @@ jobs:
       with:
         mcp: ${{ matrix.mcp }}
 
-    - name: Validate FastMCP 3.0 compliance for ${{ matrix.mcp }}
+    - name: Validate FastMCP 4 compliance for ${{ matrix.mcp }}
       run: |
         cd clio-kit-mcp-servers/${{ matrix.mcp }}
         uv run python ../../scripts/validate_fastmcp.py

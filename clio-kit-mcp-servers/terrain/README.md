@@ -1,5 +1,9 @@
 # Terrain MCP
 
+Install the launcher using the [CLIO Kit setup guide](../../setup.md) before
+using the commands below. See [agent integrations](../../README.md#agent-integrations)
+for MCP and skill configuration.
+
 Generic terrain analysis over gridded elevation data and point clouds. Analyze a
 Digital Elevation Model (DEM) for elevation, slope, aspect, and site
 suitability, or read an x/y/z point cloud and grid it into a DEM-like surface.
@@ -44,7 +48,7 @@ LAS/LAZ returns an actionable tool error.
 ## Run
 
 ```sh
-uvx clio-kit terrain   # via the clio-kit launcher
+clio-kit mcp-server terrain   # via the clio-kit launcher
 terrain-mcp            # direct entry point
 ```
 
@@ -76,14 +80,14 @@ uv run pytest -v
 ## Claude Code
 
 ```bash
-claude mcp add clio-terrain -- uvx clio-kit terrain
+claude mcp add clio-terrain -- clio-kit mcp-server terrain
 ```
 
 Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-terrain@iowarp-clio-kit
+/plugin install clio-terrain@clio-kit
 ```
 ## Claude Desktop
 
@@ -93,9 +97,9 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "clio-terrain": {
-      "command": "uvx",
+      "command": "clio-kit",
       "args": [
-        "clio-kit",
+        "mcp-server",
         "terrain"
       ]
     }

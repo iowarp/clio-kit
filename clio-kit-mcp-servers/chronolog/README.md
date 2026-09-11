@@ -10,15 +10,17 @@ ChronoLog MCP is a comprehensive Model Context Protocol (MCP) server that integr
 
 ## Quick Start
 
+Install the launcher with the [setup guide](../../setup.md) first.
+
 ```bash
-uvx clio-kit mcp-server chronolog
+clio-kit mcp-server chronolog
 ```
 
 ## Documentation
 
 - **Full Documentation**: [CLIO Kit Website](https://toolkit.iowarp.ai/)
-- **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
-- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/wiki/Contribution)
+- **Installation Guide**: See [setup guide](../../setup.md)
+- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
 
 ---
 
@@ -84,8 +86,11 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 {
   "mcpServers": {
     "chronolog-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "chronolog"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "chronolog"
+      ]
     }
   }
 }
@@ -96,15 +101,18 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 <details>
 <summary><b>Install in VS Code</b></summary>
 
-Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
+Add this to `.vscode/mcp.json` in your project. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
 
 ```json
-"mcp": {
+{
   "servers": {
     "chronolog-mcp": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "chronolog"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "chronolog"
+      ]
     }
   }
 }
@@ -118,7 +126,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add chronolog-mcp -- uvx clio-kit mcp-server chronolog
+claude mcp add chronolog-mcp -- clio-kit mcp-server chronolog
 ```
 
 </details>
@@ -132,8 +140,11 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
 {
   "mcpServers": {
     "chronolog-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "chronolog"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "chronolog"
+      ]
     }
   }
 }

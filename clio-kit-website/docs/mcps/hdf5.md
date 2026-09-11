@@ -20,23 +20,16 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 {/* clio-kit:usage:start */}
 
-### Basic Usage
-```python
-# Load and process data with Hdf5
-data = load_data("input_file")
-processed_data = process_data(data)
-save_data(processed_data, "output_file")
-```
+### Inspect a file before reading data
 
-### Integration Example
-```python
-# Use Hdf5 in a data pipeline
-for file in data_files:
-    data = load_data(file)
-    result = analyze_data(data)
-    export_results(result, f"analysis_{file}")
-```
+Call `open_file`, then `list_keys`, `get_shape` and `get_dtype` for the selected
+dataset. Read a bounded preview with `read_partial_dataset`; `start` and `count`
+are comma-separated strings, such as `"0,0"` and `"5,4"`.
+Use `export_dataset` with an explicit `export_format` only when the dataset fits
+in memory, and call `close_file` after the workflow.
 
+The [runnable HDF5 example](https://github.com/iowarp/clio-kit/blob/main/clio-kit-mcp-servers/hdf5/docs/EXAMPLES.md)
+creates a known dataset, calls the installed server and verifies exported values.
 
 ### Current state and coverage limits
 

@@ -1,6 +1,12 @@
 # Slurm Installation and Testing Guide
 
-**Complete guide for installing, configuring, and testing Slurm on Linux systems**
+This is a single-node development setup. Review the configuration and package
+names for your distribution; an existing cluster should use its site-managed
+Slurm installation. Run the local helper commands from this document's directory:
+
+```bash
+cd clio-kit-mcp-servers/slurm/docs/slurm_installation
+```
 
 ---
 

@@ -10,15 +10,17 @@ The National Data Platform (NDP) MCP server provides comprehensive access to sea
 
 ## Quick Start
 
+Install the launcher with the [setup guide](../../setup.md) first.
+
 ```bash
-uvx clio-kit mcp-server ndp
+clio-kit mcp-server ndp
 ```
 
 ## Documentation
 
 - **Full Documentation**: [CLIO Kit Website](https://toolkit.iowarp.ai/)
-- **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
-- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/wiki/Contribution)
+- **Installation Guide**: See [setup guide](../../setup.md)
+- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
 
 ---
 
@@ -40,8 +42,11 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file:
 {
   "mcpServers": {
     "ndp-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "ndp"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "ndp"
+      ]
     }
   }
 }
@@ -52,14 +57,17 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file:
 <details>
 <summary><b>Install in VS Code</b></summary>
 
-Add the following to your VS Code MCP configuration:
+Add the following to `.vscode/mcp.json` in your project:
 
 ```json
 {
-  "mcpServers": {
+  "servers": {
     "ndp-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "ndp"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "ndp"
+      ]
     }
   }
 }
@@ -73,7 +81,7 @@ Add the following to your VS Code MCP configuration:
 Run the following command in your terminal:
 
 ```bash
-uvx clio-kit mcp-server ndp
+clio-kit mcp-server ndp
 ```
 
 </details>
@@ -87,8 +95,11 @@ Add the following to your `claude_desktop_config.json` file:
 {
   "mcpServers": {
     "ndp-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "ndp"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "ndp"
+      ]
     }
   }
 }
@@ -112,7 +123,7 @@ uv sync --all-extras --dev
 
 3. Run the server:
 ```bash
-uv run python src/server.py
+uv run --frozen ndp-mcp
 ```
 
 </details>
@@ -148,14 +159,14 @@ uv run python src/server.py
 ## Claude Code
 
 ```bash
-claude mcp add clio-ndp -- uvx clio-kit ndp
+claude mcp add clio-ndp -- clio-kit mcp-server ndp
 ```
 
 Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-ndp@iowarp-clio-kit
+/plugin install clio-ndp@clio-kit
 ```
 ## Claude Desktop
 
@@ -165,9 +176,9 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "clio-ndp": {
-      "command": "uvx",
+      "command": "clio-kit",
       "args": [
-        "clio-kit",
+        "mcp-server",
         "ndp"
       ]
     }

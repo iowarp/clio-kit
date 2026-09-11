@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from typing import Any, Protocol, cast
 
 import pytest
+from mcp.types import ToolAnnotations
 
 
 class _ExtractorModule(Protocol):
@@ -68,3 +69,31 @@ def test_extract_selects_user_profile_before_listing(
     assert profiles == ["user"]
     assert result["name"] == "profiled"
     assert result["tools"] == []
+
+
+def test_extract_preserves_tool_hints_for_readme_generation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class ToolMcp(_MetadataMcp):
+        async def list_tools(self) -> list[Any]:
+            return [
+                SimpleNamespace(
+                    name="inspect",
+                    description="Inspect data.",
+                    annotations=ToolAnnotations(
+                        readOnlyHint=True, destructiveHint=False, idempotentHint=True
+                    ),
+                    tags={"inspection"},
+                )
+            ]
+
+    monkeypatch.setattr(
+        extract_mcp_metadata.importlib,
+        "import_module",
+        lambda _: SimpleNamespace(mcp=ToolMcp()),
+    )
+    result = asyncio.run(extract_mcp_metadata.extract("example.server"))
+    hints = result["tools"][0]["annotations"]
+    assert hints["readOnlyHint"] is True
+    assert hints["destructiveHint"] is False
+    assert hints["idempotentHint"] is True

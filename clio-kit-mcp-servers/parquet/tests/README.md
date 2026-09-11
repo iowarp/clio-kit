@@ -71,7 +71,7 @@ Complete test suite with **192 tests** across **17 test files**.
 ### Quick Start
 ```bash
 # From the parquet directory
-cd iowarp-mcps/iowarp_mcp_servers/parquet
+cd clio-kit-mcp-servers/parquet
 
 # Run JSON validation tests (most important)
 uv run pytest tests/test_json_response_validation.py -v

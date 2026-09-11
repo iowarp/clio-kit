@@ -1,57 +1,45 @@
-# Slurm MCP Server Guide
+# Slurm MCP setup and verification
 
-**Complete guide for using the Model Context Protocol (MCP) server for Slurm job management**
-
-## Quick Start
+Install the launcher using the [CLIO Kit setup guide](../../../setup.md).
+The MCP process needs working Slurm client commands and permission to access the
+site's scheduler. Check `sinfo` and `squeue` in the same environment first.
+For native setup, see the [Slurm installation guide](slurm_installation/SLURM_INSTALLATION_GUIDE.md).
 
 ```bash
-# Start the MCP server
-./server_manager.sh start
-
-# Test functionality  
-python3 sbatch_mcp_demo.py
-
-# Stop the server
-./server_manager.sh stop
+clio-kit doctor --server slurm --connect
+clio-kit mcp-server slurm -- --help
 ```
 
-## Server Management
+Configure your agent with command `clio-kit` and arguments
+`["mcp-server", "slurm"]`. The agent starts the stdio subprocess. There are no
+per-tool REST endpoints such as `/submit_slurm_job_handler` or `/health`.
 
-### Available Commands
+## Verify a real job
+
+1. Use `slurm_cluster` to inspect available partitions and queue state.
+2. Write a small shell script with a known output, using a site-approved
+   partition and resource request.
+3. Call `slurm_submit` with the script's absolute path and retain its
+   `scheduler_native_id`.
+4. Call `slurm_describe` with that ID and `output="both"` until terminal;
+   check the exit status and exact output.
+5. For a cancellation test, submit a separate short sleep job and call
+   `slurm_cancel` with matching `job_id` and `confirm_job_id`. Verify its eventual
+   state; an accepted cancellation request is not a terminal-state guarantee.
+
+The [agent contract](agent-contract-v3.md) defines all five default tools,
+result limits and the optional legacy/admin profiles. The
+[example scripts](../example_scripts/README.md) need local resource settings.
+
+## Developer checks
+
+From the repository root:
+
 ```bash
-./server_manager.sh start    # Start the server
-./server_manager.sh stop     # Stop the server  
-./server_manager.sh restart  # Restart the server
-./server_manager.sh status   # Check server status
-./server_manager.sh logs     # View server logs
+uv run --frozen --directory clio-kit-mcp-servers/slurm pytest -q
+uv run --frozen --directory clio-kit-mcp-servers/slurm slurm-mcp --help
 ```
 
-
-## API Endpoints
-
-### Job Management
-- `POST /submit_slurm_job_handler` - Submit jobs
-- `GET /list_slurm_jobs_handler` - List jobs
-- `GET /get_job_details_handler` - Job details
-- `POST /cancel_slurm_job_handler` - Cancel jobs
-
-### Cluster Information  
-- `GET /get_slurm_info_handler` - Cluster info
-- `GET /health` - Server health
-
-## Demo Scripts
-
-- `sbatch_mcp_demo.py` - Complete functionality demo
-- `quick_demo.py` - Quick verification test
-- `server_status_checker.py` - Interactive management
-
-## Success Verification
-
-The MCP server is working when:
-
-- ✅ Server starts: `./server_manager.sh status`
-- ✅ Health check passes: `curl http://localhost:8000/health`
-- ✅ Jobs submit successfully: Returns valid job IDs
-- ✅ API endpoints respond correctly
-
-**For complete native Slurm installation, see: [../SLURM_INSTALLATION_GUIDE.md](../SLURM_INSTALLATION_GUIDE.md)**
+Tests and successful MCP initialization do not replace a real scheduler job.
+Read stderr and the job's output files when diagnosing errors; keep stdout
+reserved for protocol messages.

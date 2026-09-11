@@ -77,7 +77,14 @@ CLIO Kit is part of the IoWarp platform's comprehensive tooling ecosystem for AI
 
 ## 🚀 Quick Installation
 
-**AI agent (recommended)** - clone the repo, then tell your agent:
+Clone the repository and enter its directory:
+
+```bash
+git clone https://github.com/iowarp/clio-kit.git
+cd clio-kit
+```
+
+**AI agent (recommended)** - tell your agent:
 
 ```
 Read setup.md and set up CLIO Kit for me.
@@ -86,8 +93,8 @@ Read setup.md and set up CLIO Kit for me.
 The agent will check prerequisites, use your stated work (or ask if it is unknown),
 install skills and MCP tools using its supported configuration, and verify real results.
 
-**Codex and other agents with Agent Skills support.** Install this branch's
-launcher from a checkout (clone commands below), then install portable skills:
+**Codex and other agents with Agent Skills support.** Install the launcher
+from the checkout above, then install portable skills:
 
 ```bash
 uv tool install --force --reinstall ".[verification]"
@@ -102,14 +109,8 @@ in the client; [setup.md](setup.md) gives complete Codex and Claude Code routes.
 Native `.claude-plugin` bundles and the two agent definitions currently target
 Claude Code; their manifest format is not shared by every agent.
 
-**Claude Code users — install this feature branch from a matching checkout.**
-The default GitHub branch and published PyPI package do not yet contain this
-marketplace. Install the launcher and catalogue from the same checkout:
-
-```bash
-git clone --branch feat/360-meta-marketplace https://github.com/iowarp/clio-kit.git
-cd clio-kit
-```
+**Claude Code users.** From the checkout above, install the launcher and
+register its marketplace:
 
 ```bash
 uv tool install --force --reinstall ".[verification]"

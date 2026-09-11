@@ -5,11 +5,9 @@ title: Marketplace and Contributions
 
 # Marketplace features and acceptance
 
-Use the checkout installation in the root README while this work remains on
-`feat/360-meta-marketplace`. The public PyPI package and default GitHub branch
-are not a coordinated release of this feature branch. A maintainer must review
-and release that transition separately. The coordinated candidate version is
-`2.11.0`; source installation is required until that version is published.
+Follow [Getting Started](./intro.md) to install the launcher, register the
+marketplace and configure your agent. Source installation uses one checkout
+for the launcher and catalogue; publishing a package is a separate release step.
 
 ## Installable components
 
@@ -53,7 +51,7 @@ additional server requires its own reviewed source, locks and CI coverage.
 | Native bundles and agent definitions | Claude Code; other clients use portable skills and explicit MCP configuration |
 | Node/TypeScript and Go | Locked local-project adapters tested with real SDK fixtures; no shipped non-Python scientific server |
 | External plugins and marketplaces | Entry validation, snapshot compilation and client installation; third-party code remains externally maintained |
-| GitHub contribution submission | Local entry/commit construction and API contract tests; acceptance does not open a public test PR |
+| GitHub contribution submission | Regression tests plus a manually verified PR in a contributor-owned fork; automated acceptance does not create public PRs |
 | Web fetch | Ordinary calls and optional task execution; document conversion needs its backend service |
 | Scientific workflows and model behavior | Validate against the target data, site software, client and model; discovery is not a quality guarantee |
 
@@ -172,9 +170,9 @@ an `evals.md` file. Names/descriptions are used for discovery; the full body loa
 on invocation, following the [Agent Skills specification](https://agentskills.io/specification).
 
 The current review checks tool names, argument shapes, state and file handoffs,
-size limits, provenance and interpretation. Evaluation metadata is deliberately
-`scenarios-recorded` until new model runs validate this revision. Historical
-results remain labeled in the scenario files.
+size limits, provenance and interpretation. The `scenarios-recorded` metadata identifies scenario definitions, not a
+quality certification. The dated behavioral checks above provide separate,
+limited evidence; retain the client, revision and outcome when repeating them.
 
 Specific limits matter: HDF5 aggregate statistics may sample data above 500 MiB.
 A live 70-million-element array of ones returns sample sum/count 700,000, now
@@ -182,9 +180,9 @@ explicitly labeled as 1% coverage rather than full-dataset totals. Stream summar
 sample. None should be presented as exact full-data calculations without checking
 coverage. Skill instructions require checking these coverage labels.
 
-## Candidate validation, 2026-09-10
+## Recorded validation, 2026-09-10
 
-The local candidate installs 22 MCP servers, six bundles and 20 portable skills.
+The tested checkout installed 22 MCP servers, six bundles and 20 portable skills.
 The installed-wheel acceptance script passed Claude plugin installation/update,
 Codex skill discovery, all 22 stdio handshakes, TypeScript/Go cold and warm calls,
 compression round-trip, grouped means and plotting, Pandas imputation,
@@ -197,7 +195,7 @@ All 22 server dependency environments, the launcher and agentic-search passed
 Git-hosted JARVIS dependency are not covered by PyPI advisory matching.
 The website build has an unpatched upstream image-parser advisory with a
 pre-build format restriction; see the
-[website maintenance notes](https://github.com/iowarp/clio-kit/blob/feat/360-meta-marketplace/clio-kit-website/README.md#image-parser-advisory).
+[website maintenance notes](https://github.com/iowarp/clio-kit/blob/main/clio-kit-website/README.md#image-parser-advisory).
 This is a disclosed build dependency limitation, not a clean npm audit.
 
 Use the GitHub Actions results for the exact commit being reviewed. Public
@@ -273,7 +271,7 @@ Remaining release and deployment limits:
 - An empty-cache install exceeded the acceptance test's 300-second limit while
   downloading the Pandas stack. Dependency installation succeeded on retry.
   Prepare large servers before starting an agent with a short startup deadline;
-  see the [setup guide](https://github.com/iowarp/clio-kit/blob/feat/360-meta-marketplace/setup.md).
+  see the [setup guide](https://github.com/iowarp/clio-kit/blob/main/setup.md).
 - Native bundle/agent manifests remain Claude Code-specific. Portable skills
   and explicit MCP registrations are the supported path for other clients.
 - The website's upstream image-parser advisory remains unpatched; the build

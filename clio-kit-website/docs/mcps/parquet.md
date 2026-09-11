@@ -20,22 +20,16 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 {/* clio-kit:usage:start */}
 
-### Basic Usage
-```python
-# Load and process data with Parquet
-data = load_data("input_file")
-processed_data = process_data(data)
-save_data(processed_data, "output_file")
-```
+### Inspect and summarize a Parquet file
 
-### Integration Example
-```python
-# Use Parquet in a data pipeline
-for file in data_files:
-    data = load_data(file)
-    result = analyze_data(data)
-    export_results(result, f"analysis_{file}")
-```
+Use `summarize_tool` to inspect schema and row count before reading values.
+Select a column with `get_column_preview_tool`, or use `read_slice_tool` for a
+bounded row range with column projection. Use `aggregate_column_tool` to compute
+supported statistics without returning the complete column to the agent.
+
+Paths refer to files accessible to the MCP process. Inspect the live input
+schema for the accepted filter and aggregation arguments, and check the result
+for errors or empty selections before interpreting it.
 
 {/* clio-kit:usage:end */}
 

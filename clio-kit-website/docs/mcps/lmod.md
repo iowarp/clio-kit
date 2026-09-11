@@ -34,9 +34,9 @@ JARVIS execution, resolve software through Spack and pass exact load specs to
 ### Saved collections
 
 `module_save` writes a named collection; `module_savelist` lists collections.
-`module_restore` acts in its child process and does not establish the environment
-of subsequent tools. Treat a collection as an environment record and verify the
-actual workload environment separately.
+`module_restore` updates the environment retained by this MCP process for
+subsequent Lmod calls. It does not change the parent shell or another MCP server.
+Verify the actual workload environment separately.
 
 Lmod and its configured module tree must be present on the host. An MCP
 connection alone does not confirm either prerequisite.

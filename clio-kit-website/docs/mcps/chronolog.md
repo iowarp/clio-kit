@@ -69,7 +69,7 @@ This prompt will:
 
 ### Native backend configuration
 
-Build the archive reader against your native ChronoLog checkout and set `HDF5_READER_BIN`, `CHRONO_CONF`, `PYTHONPATH`, and `LD_LIBRARY_PATH`. Select `UV_PYTHON` matching the native client ABI. Retrieval preserves quotes/newlines; allow the configured archive flush interval after recording. See the [native reader build instructions](https://github.com/iowarp/clio-kit/blob/feat/360-meta-marketplace/clio-kit-mcp-servers/chronolog/README.md#native-client-and-archive-reader).
+Build the archive reader against your native ChronoLog checkout and set `HDF5_READER_BIN`, `CHRONO_CONF`, `PYTHONPATH`, and `LD_LIBRARY_PATH`. Select `UV_PYTHON` matching the native client ABI. Retrieval preserves quotes/newlines; allow the configured archive flush interval after recording. See the [native reader build instructions](https://github.com/iowarp/clio-kit/blob/main/clio-kit-mcp-servers/chronolog/README.md#native-client-and-archive-reader).
 
 {/* clio-kit:usage:end */}
 

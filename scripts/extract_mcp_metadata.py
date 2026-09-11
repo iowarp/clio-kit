@@ -64,7 +64,9 @@ async def extract(module_path: str) -> dict[str, Any]:
             {
                 "name": t.name,
                 "description": t.description or "",
-                "annotations": t.annotations.model_dump() if t.annotations else {},
+                "annotations": t.annotations.model_dump(by_alias=True)
+                if t.annotations
+                else {},
                 "tags": sorted(t.tags) if hasattr(t, "tags") and t.tags else [],
             }
             for t in tools

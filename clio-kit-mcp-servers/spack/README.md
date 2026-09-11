@@ -1,5 +1,9 @@
 # Spack MCP
 
+Install the launcher using the [CLIO Kit setup guide](../../setup.md) before
+using the commands below. See [agent integrations](../../README.md#agent-integrations)
+for MCP and skill configuration.
+
 Spack MCP exposes a compact, structured package-management surface:
 
 ```text
@@ -107,7 +111,7 @@ either removed field at the time of the v2.2 release.
 Run the default server with:
 
 ```bash
-uv tool install 'clio-kit==2.5.10'
+uv tool install 'clio-kit'
 clio-kit mcp-server spack
 ```
 

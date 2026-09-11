@@ -20,22 +20,17 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 {/* clio-kit:usage:start */}
 
-### Basic Usage
-```python
-# Load and process data with Scientific-Catalog
-data = load_data("input_file")
-processed_data = process_data(data)
-save_data(processed_data, "output_file")
-```
+### Discover a site dataset
 
-### Integration Example
-```python
-# Use Scientific-Catalog in a data pipeline
-for file in data_files:
-    data = load_data(file)
-    result = analyze_data(data)
-    export_results(result, f"analysis_{file}")
-```
+Configure `SCIENTIFIC_CATALOG_FILE` or `--catalog-file` with the operator's
+catalogue. Call `scientific_dataset_search`, select a returned dataset ID and
+use `scientific_dataset_describe` for its metadata and descriptor. This service
+describes existing datasets; it does not download or render them.
+
+When a JARVIS package accepts `dataset_descriptor`, pass the result's named
+`dataset_descriptor` unchanged, not the surrounding catalogue record. Confirm
+that referenced locations are accessible to the downstream runtime. See the
+[catalogue format](https://github.com/iowarp/clio-kit/blob/main/clio-kit-mcp-servers/scientific-catalog/README.md).
 
 {/* clio-kit:usage:end */}
 

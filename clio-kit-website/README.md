@@ -1,8 +1,8 @@
 # CLIO Kit Documentation Website
 
 This Docusaurus site documents the scientific servers, workflow skills, plugins,
-agents and community marketplace in this branch. The live site is deployed from
-`main`; it may differ from this checkout until the feature is merged.
+agents and community marketplace. The live site at
+[toolkit.iowarp.ai](https://toolkit.iowarp.ai/) is deployed from `main`.
 
 ## Structure
 

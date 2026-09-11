@@ -1,12 +1,18 @@
 # Set up CLIO Kit
 
 Use this guide with any agent that supports Agent Skills and/or stdio MCP.
-Follow it from the repository root. Install the launcher and marketplace
-from the same checkout: the published PyPI package and GitHub default branch do
-not yet represent `feat/360-meta-marketplace`. This checkout prepares `2.11.0`;
-use the source installation below until that release is published.
+Install the launcher and marketplace from the same checkout, following the
+commands below from the repository root. This source installation uses the
+checked-out code independently of the most recent package release.
 
 ## 1. Check prerequisites and the checkout
+
+If you do not have this checkout yet:
+
+```bash
+git clone https://github.com/iowarp/clio-kit.git
+cd clio-kit
+```
 
 ```bash
 uv --version
@@ -17,13 +23,6 @@ test -f pyproject.toml && test -f .claude-plugin/marketplace.json
 Skill discovery is tested with Codex 0.154.0; native plugin installation is
 tested with Claude Code 2.1.266. Claude is not a prerequisite for portable
 skills or MCP servers. If `uv` is missing, install it using [the official instructions](https://docs.astral.sh/uv/getting-started/installation/).
-
-If you do not have this checkout yet:
-
-```bash
-git clone --branch feat/360-meta-marketplace https://github.com/iowarp/clio-kit.git
-cd clio-kit
-```
 
 ## 2. Install the launcher
 
@@ -256,8 +255,8 @@ external catalogue snapshots with `clio-kit marketplace refresh --root .`.
 See the [marketplace guide](clio-kit-website/docs/marketplace.md) for contribution
 and multi-language runtime instructions.
 
-- **Unknown plugin:** verify the marketplace source and the README name. A
-  catalogue from `main` differs from this feature branch.
+- **Unknown plugin:** verify the marketplace source and the README name, then
+  update the checkout and refresh the registered marketplace.
 - **Executable not found:** check `command -v clio-kit` in the client's environment.
 - **Connection failure:** run `clio-kit doctor --server NAME --connect` for the
   specific server; check network access and backend prerequisites. A directly
@@ -267,7 +266,7 @@ and multi-language runtime instructions.
   `clio-kit mcp-server pandas </dev/null` on Unix, and wait for installation to
   finish. Then run the connection check and restart the agent. This preparation
   command only installs/starts the server; it does not verify a scientific query.
-- **Missing tools in an existing session:** reinstall this candidate and restart
+- **Missing tools in an existing session:** reinstall the launcher and restart
   the client. The current servers expose their complete small tool inventories
   on the first page, including clients that do not follow pagination.
 

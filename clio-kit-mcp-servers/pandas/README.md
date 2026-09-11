@@ -10,15 +10,17 @@ Pandas MCP is a Model Context Protocol server that enables LLMs to perform advan
 
 ## Quick Start
 
+Install the launcher with the [setup guide](../../setup.md) first.
+
 ```bash
-uvx clio-kit mcp-server pandas
+clio-kit mcp-server pandas
 ```
 
 ## Documentation
 
 - **Full Documentation**: [CLIO Kit Website](https://toolkit.iowarp.ai/)
-- **Installation Guide**: See [INSTALLATION.md](../../../CLAUDE.md#setup--installation)
-- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/wiki/Contribution)
+- **Installation Guide**: See [setup guide](../../setup.md)
+- **Contributing**: See [Contribution Guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
 
 ---
 
@@ -46,8 +48,11 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 {
   "mcpServers": {
     "pandas-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "pandas"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "pandas"
+      ]
     }
   }
 }
@@ -58,15 +63,18 @@ Pasting the following configuration into your Cursor `~/.cursor/mcp.json` file i
 <details>
 <summary><b>Install in VS Code</b></summary>
 
-Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
+Add this to `.vscode/mcp.json` in your project. See [VS Code MCP docs](https://code.visualstudio.com/docs/copilot/chat/mcp-servers) for more info.
 
 ```json
-"mcp": {
+{
   "servers": {
     "pandas-mcp": {
       "type": "stdio",
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "pandas"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "pandas"
+      ]
     }
   }
 }
@@ -80,7 +88,7 @@ Add this to your VS Code MCP config file. See [VS Code MCP docs](https://code.vi
 Run this command. See [Claude Code MCP docs](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/tutorials#set-up-model-context-protocol-mcp) for more info.
 
 ```sh
-claude mcp add pandas-mcp -- uvx clio-kit mcp-server pandas
+claude mcp add pandas-mcp -- clio-kit mcp-server pandas
 ```
 
 </details>
@@ -94,8 +102,11 @@ Add this to your Claude Desktop `claude_desktop_config.json` file. See [Claude D
 {
   "mcpServers": {
     "pandas-mcp": {
-      "command": "uvx",
-      "args": ["clio-kit", "mcp-server", "pandas"]
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "pandas"
+      ]
     }
   }
 }
@@ -221,14 +232,14 @@ uv --directory=$env:CLONE_DIR\clio-kit\clio-kit-mcp-servers\pandas run pandas-mc
 ## Claude Code
 
 ```bash
-claude mcp add clio-pandas -- uvx clio-kit pandas
+claude mcp add clio-pandas -- clio-kit mcp-server pandas
 ```
 
 Or install via the CLIO Kit plugin marketplace:
 
 ```
 /plugin marketplace add iowarp/clio-kit
-/plugin install clio-pandas@iowarp-clio-kit
+/plugin install clio-pandas@clio-kit
 ```
 ## Claude Desktop
 
@@ -238,9 +249,9 @@ Add to your Claude Desktop config (`claude_desktop_config.json`):
 {
   "mcpServers": {
     "clio-pandas": {
-      "command": "uvx",
+      "command": "clio-kit",
       "args": [
-        "clio-kit",
+        "mcp-server",
         "pandas"
       ]
     }

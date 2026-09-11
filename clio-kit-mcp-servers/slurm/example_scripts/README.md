@@ -66,32 +66,22 @@ Comprehensive prompt template for asking other MCP servers or AI assistants to g
 
 ## 🚀 How to Use These Scripts
 
-### Method 1: Direct Submission with MCP Server
-1. Start the MCP server:
-   ```bash
-   ./server_manager.sh start
-   ```
+### Through an MCP client
 
-2. Use the MCP submit_slurm_job tool with any script:
-   ```python
-   # Example using Python MCP client
-   submit_slurm_job_handler(
-       script_path="example_scripts/hello_world.sh",
-       cores=1,
-       memory="1GB",
-       time_limit="00:05:00",
-       job_name="test_job"
-   )
-   ```
+Install and configure the server using the [MCP guide](../docs/MCP_SERVER_GUIDE.md).
+Call `slurm_submit` with the script's absolute path and a site-approved resource
+request. Retain the returned `scheduler_native_id`, then use `slurm_describe`
+with `output="both"` to verify the result. These are MCP tool calls, not direct
+Python handler imports.
 
-### Method 2: Direct sbatch Submission
+### Direct submission
+
+From `clio-kit-mcp-servers/slurm`, inspect the script and adjust its partition
+and resource requests before submitting:
+
 ```bash
+mkdir -p logs/slurm_output
 sbatch example_scripts/hello_world.sh
-```
-
-### Method 3: Test with Comprehensive Test
-```bash
-python comprehensive_capability_test.py
 ```
 
 ## 📋 Script Customization

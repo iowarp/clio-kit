@@ -150,13 +150,11 @@ rest. Contribute it into `clio-kit-mcp-servers/` like any other server, with a
 `clio-server.toml` declaring its runtime. Read the rest of this section first:
 hosting is a real commitment on both sides.
 
-One difference is worth stating plainly, because it decides whether a server
-works at all in some places. Python servers are vendored into the `clio-kit`
-wheel and install with **no network**. A node server fetches its dependencies
-on first build and a go server compiles on first build. On a cluster login node
-with no outbound network, a hosted non-Python server will not start until it
-has been built once somewhere that has one. If your users are in that position,
-index it or ship Python.
+All runtimes need their dependencies available on first build. Python source is
+vendored in the wheel, but `uv sync --frozen` still downloads missing packages.
+Node uses `npm ci`; Go may download modules before compilation. Prepare and test
+the runtime cache on the target platform before using a host without outbound
+network access. Indexing an external server does not make its installation offline.
 
 ### Hosting one
 
@@ -176,7 +174,7 @@ a fixture server from its lock and reading back a JSON-RPC `initialize` reply.
 The go fixture is deliberately a two-package module: while only node had such a
 test, go shipped a build command that could not compile one. `go build -o
 <file> ./...` fails with `cannot write multiple packages to non-directory`, so
-it worked for a single-package module for multi-package projects. The build
+it worked for a single-package module but failed for multi-package projects. The build
 compiles the package `entry` names instead.
 
 `entry` means the same thing in all three: the thing that runs. Python names
@@ -413,7 +411,7 @@ authors = [
 ]
 
 dependencies = [
-    "fastmcp>=0.2.0",
+    "fastmcp>=4.0.3,<5",
     # Add your dependencies
 ]
 
@@ -422,7 +420,8 @@ my-server-mcp = "my_server_mcp.server:main"
 
 [dependency-groups]
 dev = [
-    "pytest>=7.0.0",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.1.0",
     "pytest-cov>=4.0.0",
     "ruff>=0.1.0",
     "mypy>=1.0.0",
@@ -438,33 +437,45 @@ build-backend = "hatchling.build"
 
 ```python
 from fastmcp import FastMCP
+from fastmcp.prompts import Message
 
-mcp = FastMCP("my-server")
+mcp = FastMCP("my-server", instructions="Use my_tool to format a labeled count.")
 
-@mcp.tool(description="What this tool does")
+@mcp.tool(
+    description="Format a label and count.",
+    annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
+    tags={"formatting"},
+)
 def my_tool(param1: str, param2: int) -> str:
-    """Detailed docstring"""
     return f"Result: {param1} {param2}"
 
-async def main():
-    """Entry point for the server"""
-    await mcp.run()
+@mcp.resource("my-server://capabilities")
+def capabilities() -> dict:
+    return {"tools": ["my_tool"]}
+
+@mcp.prompt()
+def format_count(label: str) -> list[Message]:
+    return [Message(f"Use my_tool to format the count for {label}.")]
+
+def main() -> None:
+    mcp.run(transport="stdio")
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()
 ```
 
 ### 4. Create Tests (`tests/test_server.py`)
 
 ```python
 import pytest
+from fastmcp import Client
 from my_server_mcp.server import mcp
 
-def test_my_tool():
-    result = my_tool("test", 42)
-    assert "test" in result
-    assert "42" in result
+@pytest.mark.asyncio
+async def test_my_tool():
+    async with Client(mcp) as client:
+        result = await client.call_tool("my_tool", {"param1": "test", "param2": 42})
+        assert result.data == "Result: test 42"
 ```
 
 ### 5. Create README.md
@@ -481,7 +492,25 @@ uv run ruff check .
 uv run mypy src/
 ```
 
-### 7. Verify Auto-Discovery
+### 7. Register and verify discovery
+
+Add `clio-server.toml` in the server directory:
+
+```toml
+name = "my-server"
+runtime = "python"
+version = "1.0.0"
+lock = "uv.lock"
+entry = "my-server-mcp"
+```
+
+Add the server's version, description and category to
+`mcp-server-versions.toml`, following an existing entry. From the repository
+root, generate manifests with `uv run python scripts/generate_server_json.py`
+and website references with
+`uv run python scripts/generate_docs.py clio-kit-mcp-servers clio-kit-website`.
+Review the generated plugin and registry metadata, and add an installed-server
+check to CI. For Node and Go, follow [Contributing a Server in Another Language](#contributing-a-server-in-another-language).
 
 ```bash
 # From root directory
@@ -594,7 +623,6 @@ uv run <server-name>-mcp
 ### Branch Strategy
 
 - **main**: Stable releases (target for PRs)
-- **dev**: Development integration
 - **feature/***: Feature branches
 
 ### Code Style

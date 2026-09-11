@@ -5,7 +5,7 @@ sidebar_position: 1
 # Getting Started
 
 CLIO Kit brings scientific MCP servers, workflow skills, agents and contributed
-plugins into one marketplace. This branch contains 22 server plugins, six
+plugins into one marketplace. The catalogue contains 22 server plugins, six
 workflow bundles, 20 skills and two planning/review agents. External plugin
 repositories and marketplace collections remain under their maintainers' control.
 
@@ -14,13 +14,13 @@ Node/TypeScript and Go descriptors with runtime-specific dependency locks.
 See [Marketplace and Contributions](./marketplace.md) for supported components,
 contribution commands, update behavior and tested runtime boundaries.
 
-## Install this branch
+## Install from source
 
-Use the same checkout for the launcher and marketplace. The public PyPI release
-and default GitHub branch currently have a different catalogue.
+Use the same checkout for the launcher and marketplace. The commands below
+install the checked-out code; package releases are published separately.
 
 ```bash
-git clone --branch feat/360-meta-marketplace https://github.com/iowarp/clio-kit.git
+git clone https://github.com/iowarp/clio-kit.git
 cd clio-kit
 uv tool install --force --reinstall ".[verification]"
 clio-kit mcp-servers
@@ -54,7 +54,7 @@ This route requires Claude Code with plugin dependency support. Reload plugins
 or restart an existing session before using its new tools. Plugin registration
 alone does not establish that servers connect.
 
-The repository's [setup guide](https://github.com/iowarp/clio-kit/blob/feat/360-meta-marketplace/setup.md)
+The repository's [setup guide](https://github.com/iowarp/clio-kit/blob/main/setup.md)
 includes an actual compression round-trip check and troubleshooting steps.
 
 ## Choose a workflow
@@ -203,7 +203,7 @@ a cold installation works offline.
 
 ## Contribute and get help
 
-Read the [contributor guide](https://github.com/iowarp/clio-kit/blob/feat/360-meta-marketplace/CONTRIBUTING.md)
+Read the [contributor guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
 for local skills, hosted servers and indexed contributions. Use
 `clio-kit plugin init`, `plugin validate` and `plugin submit` for plugin authoring.
 The marketplace guide explains what each command validates and publishes.
