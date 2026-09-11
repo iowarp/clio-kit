@@ -2,6 +2,36 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
+## 2.11.0 — release candidate
+
+CLIO Kit now provides a meta-marketplace with 22 MCP servers, six workflow
+bundles, 20 portable Agent Skills, and two Claude Code agent definitions.
+External authors can validate and submit plugin entries; indexed marketplace
+collections compile into a versioned catalogue with recorded provenance.
+Node/TypeScript and Go projects can use the locked local-project launcher.
+The shipped scientific servers remain Python projects.
+
+The CLI can install portable skill folders into an agent's discovery directory.
+Native dependency bundles and agent manifests currently target Claude Code;
+other clients configure skills and stdio MCP separately. See `setup.md` and the
+website's marketplace documentation for tested paths and backend prerequisites.
+
+Scientific fixes make Pandas interpolation, directional fills and categorical
+mode fills honor the requested method and report actual fill counts. HDF5
+labels sampled statistics with coverage and omits misleading combined totals.
+Parallel-sort recognizes bracketed log levels consistently. Slurm diagnostics
+use stderr so job submission cannot corrupt the MCP stdout stream.
+
+This candidate incorporates main's JARVIS 1.8.1 dependency and Web task-based
+fetch support. All 22 server locks update vulnerable HTTP dependencies, and
+fresh registry versions point to the 2.11.0 wheel. The compatible JARVIS user
+schema remains v3.7.2; its component release is 3.7.3.
+
+Website builds now use a committed npm lock, updated Docusaurus dependencies
+and a format check for the remaining unpatched image-size advisory. That
+workaround is documented in `clio-kit-website/README.md`; it does not produce
+a clean npm audit. No public release has been published by this preparation.
+
 ## 2.10.5
 
 ### Python 3.13: pandas and plot servers install again
