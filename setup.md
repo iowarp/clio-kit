@@ -115,7 +115,7 @@ npx skills@1.5.25 add /path/to/clio-kit --skill exploring-an-unfamiliar-dataset 
 Replace `codex` with `claude-code` or `antigravity` for those clients. This is
 an alternative to `clio-kit skill install`; choose one installer for each skill.
 Continue with MCP configuration below. See the
-[skills CLI guide](https://toolkit.iowarp.ai/docs/marketplace#optional-skills-cli)
+[skills CLI guide](clio-kit-website/docs/marketplace.md#optional-skills-cli)
 for updates and removal. Node.js is not required for the Python installer.
 
 Skill folders contain instructions. Configure their required MCP servers

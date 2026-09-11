@@ -130,7 +130,7 @@ edits first. To remove a skill from the project, including copies shared by agen
 npx skills@1.5.25 remove exploring-an-unfamiliar-dataset --yes
 ```
 
-See the [skills CLI guide](https://toolkit.iowarp.ai/docs/marketplace#optional-skills-cli)
+See the [skills CLI guide](clio-kit-website/docs/marketplace.md#optional-skills-cli)
 for shared discovery paths and limitations in the pinned version.
 
 **Claude Code users.** From the checkout above, install the launcher and
@@ -674,7 +674,6 @@ clio-kit mcp-servers
 - **Chat**: [Zulip Community](https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit)
 - **Join**: [Invitation Link](https://iowarp.zulipchat.com/join/e4wh24du356e4y2iw6x6jeay/)
 - **Issues**: [GitHub Issues](https://github.com/iowarp/clio-kit/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/iowarp/clio-kit/discussions)
 - **Website**: [https://toolkit.iowarp.ai/](https://toolkit.iowarp.ai/)
 - **Project**: [IOWarp Project](https://iowarp.ai)
 

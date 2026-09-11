@@ -574,7 +574,6 @@ What actually happens
 ### Get Help
 
 - **Zulip Chat**: [CLIO Kit Community](https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit)
-- **GitHub Discussions**: [Ask questions](https://github.com/iowarp/clio-kit/discussions)
 - **GitHub Issues**: [Report bugs](https://github.com/iowarp/clio-kit/issues)
 
 ### Contributing Guidelines
