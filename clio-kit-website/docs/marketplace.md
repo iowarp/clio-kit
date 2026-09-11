@@ -42,6 +42,58 @@ under `tests/fixtures/mcp-servers/` verify those adapters in CI; they are not
 installed marketplace products or bundled wheel components. Hosting an
 additional server requires its own reviewed source, locks and CI coverage.
 
+## Optional skills CLI
+
+The [open-source `skills` CLI](https://github.com/vercel-labs/skills) is an
+alternative way to install CLIO's existing skill folders. Version `1.5.25`
+requires Node.js 22.20.0 or newer. The Python installer above remains available
+without Node.js and uses the skills shipped in the wheel.
+
+From your working project, use the absolute path to your CLIO checkout:
+
+```bash
+npx skills@1.5.25 add /path/to/clio-kit --list
+npx skills@1.5.25 add /path/to/clio-kit --skill exploring-an-unfamiliar-dataset reading-large-datasets-safely choosing-a-storage-format --agent codex --copy
+```
+
+Use `--agent claude-code` or `--agent antigravity` for those clients; multiple
+agent names can follow `--agent`. Use `--skill '*'` for all 20 skills. Codex and
+Antigravity share `.agents/skills`; Claude Code uses `.claude/skills`. Other
+agents that read the shared directory will also discover those skills.
+Antigravity CLI still needs the project selection described in
+[Getting Started](./intro.md#agent-integrations).
+
+The CLI also accepts `iowarp/clio-kit` as a GitHub source for skills on its
+default branch. A checkout source keeps skills aligned with a source-installed
+launcher. Neither route registers MCP servers, installs bundle dependencies,
+or installs agent definitions. Continue with the MCP setup in Getting Started.
+
+To refresh, update your source checkout to the reviewed revision and repeat
+the same `add` command with the same agent names and `--copy`. Review local
+edits first: refreshing replaces installed files. This explicit route avoids
+`skills@1.5.25 update` leaving another agent's copied directory stale. Choose
+one installer to manage each installed skill; avoid duplicating a native
+Claude plugin's skills with a separate portable installation.
+
+To remove one skill from the project, including its shared copy:
+
+```bash
+npx skills@1.5.25 remove exploring-an-unfamiliar-dataset --yes
+```
+
+Omit agent filters for complete removal; this also affects other agents reading
+the shared copy. The pinned version rejects `remove --agent '*'`.
+Set `DISABLE_TELEMETRY=1` to opt out of upstream telemetry. A source reference
+and content hash in `skills-lock.json` do not make a moving branch immutable.
+
+CI checks discovery, complete installed file contents, explicit refresh after a
+source change, and removal in temporary projects with the pinned CLI. To repeat:
+
+```bash
+npm install --global skills@1.5.25
+uv run --frozen python scripts/verify_skills_cli.py
+```
+
 ## Supported and deployment-dependent paths
 
 | Capability | Release scope |
@@ -145,7 +197,9 @@ with actual coverage and omits cross-dataset totals when sampling is involved.
 Forward/backward fill now follows row order for numeric and categorical data,
 and mode fills use observed values with accurate fill counts. Parallel-sort
 accepts bare and bracketed log levels consistently across filtering, statistics
-and pattern detection. Slurm submission and allocation diagnostics use stderr
+and pattern detection, and preserves records at chunk boundaries. Parquet
+rejects invalid filters instead of reporting an unfiltered result as filtered.
+Slurm submission and allocation diagnostics use stderr
 to preserve the MCP protocol stream. These fixes have targeted regressions;
 installation and connection results alone still do not verify a scientific
 workflow.

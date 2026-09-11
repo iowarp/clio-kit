@@ -42,6 +42,9 @@ Omit `--bundle` for all 20 skills. Configure required MCP servers separately;
 for example `codex mcp add clio-hdf5 -- clio-kit mcp-server hdf5` registers HDF5.
 The scientific I/O workflow also requires ADIOS, Parquet and compression.
 
+The optional npm [`skills` CLI](./marketplace.md#optional-skills-cli) can also
+install these folders into agent projects. It does not configure MCP servers.
+
 ### Claude Code native plugins
 
 ```bash

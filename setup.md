@@ -105,6 +105,19 @@ Omit `--bundle` to install all 20 skills, or give individual skill names before
 Skills are included in the installed CLIO Kit package; the checkout is not
 needed for subsequent skill installation.
 
+Alternatively, with Node.js 22.20.0 or newer, run this from your working project,
+using the absolute path to this CLIO checkout as the source:
+
+```bash
+npx skills@1.5.25 add /path/to/clio-kit --skill exploring-an-unfamiliar-dataset reading-large-datasets-safely choosing-a-storage-format --agent codex --copy
+```
+
+Replace `codex` with `claude-code` or `antigravity` for those clients. This is
+an alternative to `clio-kit skill install`; choose one installer for each skill.
+Continue with MCP configuration below. See the
+[skills CLI guide](https://toolkit.iowarp.ai/docs/marketplace#optional-skills-cli)
+for updates and removal. Node.js is not required for the Python installer.
+
 Skill folders contain instructions. Configure their required MCP servers
 separately in your agent. For the scientific I/O workflow in Codex:
 

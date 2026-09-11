@@ -109,6 +109,9 @@ in the client; [setup.md](setup.md) gives complete Codex and Claude Code routes.
 Native `.claude-plugin` bundles and the two agent definitions currently target
 Claude Code; their manifest format is not shared by every agent.
 
+Alternatively, install skill files with the optional npm `skills` CLI; see
+[installation, updates and removal](https://toolkit.iowarp.ai/docs/marketplace#optional-skills-cli).
+
 **Claude Code users.** From the checkout above, install the launcher and
 register its marketplace:
 

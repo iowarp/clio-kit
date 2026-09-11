@@ -33,7 +33,10 @@ jobs:
       - name: Install test tools
         run: |
           uv sync --frozen --dev --extra verification
-          npm install --global @anthropic-ai/claude-code@2.1.266 @openai/codex@0.154.0
+          npm install --global @anthropic-ai/claude-code@2.1.266 @openai/codex@0.154.0 skills@1.5.25
+      - name: Optional skills CLI compatibility
+        if: matrix.protocol == '2026-07-28'
+        run: uv run --frozen python scripts/verify_skills_cli.py
       - name: Check TypeScript fixture source matches compiled JavaScript
         working-directory: tests/fixtures/mcp-servers/typescript
         run: |
@@ -50,7 +53,8 @@ jobs:
         run: |
           uv run --frozen --directory clio-kit-mcp-servers/pandas pytest -q tests/test_data_cleaning.py
           uv run --frozen --directory clio-kit-mcp-servers/hdf5 pytest -q tests/test_statistics.py tests/test_export_protocol.py
-          uv run --frozen --directory clio-kit-mcp-servers/parallel-sort pytest -q tests/test_bracketed_levels.py
+          uv run --frozen --directory clio-kit-mcp-servers/parallel-sort pytest -q tests/test_bracketed_levels.py tests/test_chunk_integrity.py
+          uv run --frozen --directory clio-kit-mcp-servers/parquet pytest -q tests/test_filter_operations.py tests/test_filter_protocol.py
           uv run --frozen --directory clio-kit-mcp-servers/slurm pytest -q tests/test_protocol_stdout.py
           uv run --frozen --directory clio-kit-mcp-servers/web pytest -q tests/test_tasks.py
       - name: Root regressions
