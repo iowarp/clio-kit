@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <Layout
       title={`${siteConfig.title}`}
-      description="CLIO Kit - Part of the IoWarp platform. Tools, skills, plugins, and extensions for AI agents. 22 MCP servers for scientific computing. Connect AI to HDF5, ADIOS, Slurm, Pandas.">
+      description="CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions">
       <main className="landingPage">
 
         {/* Hero */}
@@ -38,7 +38,7 @@ export default function Home() {
             {/* Title */}
             <h2 className="hero__title">
               Talk to Data, Devices, Apps<br/>
-              Science Skill for Agents
+              A Meta-Marketplace for Agents
             </h2>
 
             {/* Buttons */}
@@ -56,8 +56,8 @@ export default function Home() {
 
             {/* Subtitle - 2 lines */}
             <p className="hero__subtitle">
-              CLIO Kit provides comprehensive science capabilities for AI agents.<br/>
-              150+ tools across 22 MCP servers for scientific computing.<br/>
+              A meta-marketplace for scientific AI agents.<br/>
+              22 MCP servers, skills, plugins, agents, and community contributions.<br/>
               Works with <a href="https://www.claude.com/product/claude-code" target="_blank" rel="noopener">Claude Code</a>,{' '}
               <a href="https://cursor.com/home" target="_blank" rel="noopener">Cursor</a>,{' '}
               <a href="https://code.visualstudio.com/" target="_blank" rel="noopener">VS Code</a>,{' '}
@@ -67,41 +67,33 @@ export default function Home() {
               {' '}<Link to="/docs/intro#agent-integrations">MCP, skill, and plugin setup</Link>.
             </p>
 
-            {/* Three category cards - Inside hero */}
+            {/* Marketplace features */}
             <div className="hero__highlights">
               <div className="hero__highlightCard">
-                <h3>Data Formats</h3>
+                <h3>Scientific MCP Servers</h3>
                 <p>
-                  Give your AI agents the ability to read and explore scientific file formats.
-                  They can navigate{' '}
-                  <a href="https://www.hdfgroup.org/solutions/hdf5/" target="_blank" rel="noopener"><strong>HDF5</strong></a> hierarchies, inspect{' '}
-                  <a href="https://adios2.readthedocs.io/" target="_blank" rel="noopener"><strong>ADIOS</strong></a> simulation outputs, and process{' '}
-                  <a href="https://parquet.apache.org/" target="_blank" rel="noopener"><strong>Parquet</strong></a> columnar data.
-                  Your agents understand real research data, not just CSV files.
+                  Explore data, analyze results, search papers, and manage HPC jobs
+                  with 22 MCP servers and hybrid search.{' '}
+                  <a href="#browse">Browse servers</a>.
                 </p>
               </div>
 
               <div className="hero__highlightCard">
-                <h3>Data Analytics</h3>
+                <h3>Skills, Bundles &amp; Agents</h3>
                 <p>
-                  Turn AI agents into research support tools that accelerate discovery.
-                  They can search{' '}
-                  <a href="https://arxiv.org/" target="_blank" rel="noopener"><strong>ArXiv</strong></a> papers, analyze{' '}
-                  <a href="https://pandas.pydata.org/" target="_blank" rel="noopener"><strong>Pandas</strong></a> tabular datasets, generate{' '}
-                  <a href="https://matplotlib.org/" target="_blank" rel="noopener"><strong>Matplotlib</strong></a> visualizations, and compile citations.
-                  Your agents handle the tedious parts of research.
+                  Use 20 skills and six workflow bundles, with two optional planning
+                  and review agents for Claude Code.{' '}
+                  <Link to="/docs/intro#agent-integrations">Choose your agent setup</Link>.
                 </p>
               </div>
 
               <div className="hero__highlightCard">
-                <h3>HPC Resources</h3>
+                <h3>Community Contributions</h3>
                 <p>
-                  Equip AI agents to operate HPC clusters and manage computational resources.
-                  They can submit jobs to{' '}
-                  <a href="https://slurm.schedmd.com/" target="_blank" rel="noopener"><strong>Slurm</strong></a>, load environment modules, monitor{' '}
-                  <a href="https://www.mcs.anl.gov/research/projects/darshan/" target="_blank" rel="noopener"><strong>Darshan</strong></a> I/O performance, and orchestrate{' '}
-                  <a href="https://github.com/grc-iit/jarvis-cd" target="_blank" rel="noopener"><strong>Jarvis</strong></a> workflows.
-                  Your agents become cluster operators.
+                  Share skills, plugins, or MCP servers in any language. Index
+                  external marketplace collections while maintainers keep control
+                  of their code and releases.{' '}
+                  <Link to="/docs/marketplace#contributing-and-updating">Contribute</Link>.
                 </p>
               </div>
             </div>

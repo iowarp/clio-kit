@@ -36,7 +36,7 @@
 [![Package Manager](https://img.shields.io/badge/uv-package%20manager-orange)](https://github.com/astral-sh/uv)
 [![Security Audit](https://img.shields.io/badge/pip--audit-security%20scanned-green)](https://github.com/pypa/pip-audit)
 
-**CLIO Kit** - Part of the IoWarp platform's tooling layer for AI agents. A comprehensive collection of tools, skills, plugins, and extensions. It ships 22 Model Context Protocol (MCP) servers for scientific computing and enables AI agents to interact with HPC resources, scientific data formats, and research datasets.
+**CLIO Kit** is the IoWarp meta-marketplace for scientific computing. It brings together MCP servers, workflow skills, plugins, agent definitions, and community contributions—including plugins from external marketplaces—and enables AI agents to interact with HPC resources, scientific data formats, and research datasets.
 
 [**Website**](https://toolkit.iowarp.ai/) | [**IOWarp**](https://iowarp.ai)
 
@@ -58,7 +58,7 @@ Working with scientific data and HPC resources requires manual scripting and too
 
 ## ✅ With CLIO Kit
 
-AI agents handle scientific computing tasks through natural language:
+Install workflow bundles, use skills to guide your agent, and discover community tools:
 
 - ✅ **"Analyze the temperature dataset in this HDF5 file"** - HDF5 MCP does it
 - ✅ **"Submit this simulation to Slurm with 32 cores"** - Slurm MCP handles it
@@ -66,14 +66,14 @@ AI agents handle scientific computing tasks through natural language:
 - ✅ **"Plot the results from this CSV file"** - Plot MCP visualizes
 - ✅ **"Optimize memory usage for this pandas DataFrame"** - Pandas MCP optimizes
 - ✅ **"Find all documents where pressure exceeds 200 kPa"** - Agentic Search retrieves
+- ✅ **Workflow guidance** - Skills explain tool sequences; optional agents help plan and review results
+- ✅ **Community contributions** - Discover external plugins and marketplace collections
 
-**One unified interface. 22 MCP servers. Hybrid search engine. 150+ specialized tools. Built for research.**
+**MCP servers · Skills · Workflow bundles · Agents · Community marketplaces · Hybrid search**
 
-CLIO Kit is part of the IoWarp platform's comprehensive tooling ecosystem for AI agents. It brings AI assistance to your scientific computing workflow—whether you're analyzing terabytes of HDF5 data, managing Slurm jobs across clusters, or exploring research papers. Built by researchers, for researchers, at Illinois Institute of Technology with NSF support.
+CLIO Kit combines scientific tools with reusable workflows and community contributions. Built at Illinois Institute of Technology as part of the IoWarp platform, with NSF support.
 
-> **Part of IoWarp Platform**: CLIO Kit is the tooling layer of the IoWarp platform, providing skills, plugins, and extensions for AI agents working in scientific computing environments.
-
-> Scientific MCP servers, workflow skills, agents, and external collections in one marketplace.
+> Install individual components or workflow bundles. Contribute your own skills, plugins, MCP servers, or marketplace.
 
 ## 🚀 Quick Installation
 
@@ -577,7 +577,9 @@ clio-kit mcp-servers
 ## Ways to Contribute
 
 - **Submit Issues**: Report bugs or request features via [GitHub Issues](https://github.com/iowarp/clio-kit/issues)
-- **Develop New MCPs**: Add servers for your research tools ([CONTRIBUTING.md](CONTRIBUTING.md))
+- **Build MCP Servers**: Contribute Python, Node.js or Go servers ([guide](CONTRIBUTING.md#contributing-a-server-in-another-language))
+- **Write Skills**: Share reusable scientific workflows ([guide](CONTRIBUTING.md#contributing-a-skill))
+- **Share Plugins or Marketplaces**: List tools maintained in your own repository ([guide](community/README.md))
 - **Improve Documentation**: Help make guides clearer
 - **Share Use Cases**: Tell us how you're using CLIO Kit in your research
 

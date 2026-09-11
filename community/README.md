@@ -9,8 +9,8 @@ The plugin entries and marketplace federation described below currently use
 Claude Code's native `.claude-plugin` format; they are not universal manifests.
 
 
-Plugins, skills and MCP servers that live in **someone else's repository** and
-appear in the CLIO Kit marketplace. One file here per contribution.
+List externally maintained plugins, MCP servers, skills and marketplace
+collections in the CLIO Kit meta-marketplace. One entry file per contribution.
 
 Your code stays yours. You release on your own schedule, and your updates reach
 users through catalogue refresh and plugin updates without a CLIO package release.

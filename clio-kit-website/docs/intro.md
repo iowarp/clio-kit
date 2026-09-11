@@ -4,9 +4,10 @@ sidebar_position: 1
 
 # Getting Started
 
-CLIO Kit brings scientific MCP servers, workflow skills, agents and contributed
-plugins into one marketplace. The catalogue contains 22 server plugins, six
-workflow bundles, 20 skills and two planning/review agents. External plugin
+CLIO Kit is a meta-marketplace for scientific MCP servers, workflow skills,
+plugins, agent definitions and external marketplace collections. The catalogue
+contains 22 server plugins, six workflow bundles, 20 skills and two planning/review
+agents. External plugin
 repositories and marketplace collections remain under their maintainers' control.
 
 The shipped scientific servers are Python projects. The launcher also supports

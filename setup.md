@@ -1,6 +1,7 @@
 # Set up CLIO Kit
 
-Use this guide with any agent that supports Agent Skills and/or stdio MCP.
+Set up the CLIO Kit meta-marketplace with an agent that supports Agent Skills
+and/or stdio MCP. Choose individual skills and servers or a workflow bundle.
 Install the launcher and marketplace from the same checkout, following the
 commands below from the repository root. This source installation uses the
 checked-out code independently of the most recent package release.

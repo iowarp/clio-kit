@@ -1,6 +1,6 @@
 # Contributing to CLIO Kit
 
-Thank you for your interest in contributing to CLIO Kit! This guide will help you get started with development, testing, and submitting contributions.
+Contribute to the CLIO Kit meta-marketplace: add skills, MCP servers, plugins or agent definitions, or index an external marketplace. This guide covers development, validation and pull requests.
 
 ## Table of Contents
 
@@ -69,8 +69,8 @@ clio-kit/
 ├── skills/                    # Workflow skills, grouped per bundle
 │   └── clio-hpc-skills/
 │       └── skills/<name>/     # SKILL.md + evals.md
-├── plugins/                   # Workflow bundles (manifests only)
-├── community/                 # Entries pointing at outside repositories
+├── plugins/                   # Server plugins, bundles and agent definitions
+├── community/                 # External plugin and marketplace entries
 ├── .claude-plugin/            # Generated marketplace index
 ├── .github/workflows/         # CI/CD automation
 └── pyproject.toml             # Root configuration
@@ -79,9 +79,10 @@ clio-kit/
 **Key Principles:**
 - Each MCP server is **independently developed and tested**
 - Servers are **launched through a single unified command**: `clio-kit mcp-server <name>`
-- **Dependency isolation** via individual `pyproject.toml` files
+- **Dependency isolation** via per-server runtime descriptors and lock files
 - **Auto-discovery** from each server's `clio-server.toml` descriptor
 - **Bundles reference, never copy** the servers and skills they group
+- **External contributions stay with their maintainers**; the marketplace indexes their sources
 
 ## Contributing a Skill
 

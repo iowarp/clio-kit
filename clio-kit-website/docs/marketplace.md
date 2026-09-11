@@ -5,6 +5,9 @@ title: Marketplace and Contributions
 
 # Marketplace features and acceptance
 
+CLIO Kit is a meta-marketplace: it combines its own MCP servers, skills,
+plugins and agents with contributions from external repositories and marketplaces.
+
 Follow [Getting Started](./intro.md) to install the launcher, register the
 marketplace and configure your agent. Source installation uses one checkout
 for the launcher and catalogue; publishing a package is a separate release step.

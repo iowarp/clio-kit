@@ -654,7 +654,7 @@ def build_marketplace_json(
             "email": "grc@illinoistech.edu",
         },
         "metadata": {
-            "description": "CLIO Kit - MCP Servers for Scientific Computing and HPC",
+            "description": "CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions",
             "version": pypi_version,
             "pluginRoot": "./plugins",
         },

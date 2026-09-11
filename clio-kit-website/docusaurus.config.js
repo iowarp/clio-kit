@@ -11,7 +11,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'CLIO Kit - Gnosis Research Center',
-  tagline: 'Tools, skills, plugins, and extensions for AI agents. Part of the IoWarp platform. | Developed by Gnosis Research Center (GRC) at Illinois Institute of Technology',
+  tagline: 'A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions. Part of the IoWarp platform.',
   favicon: 'img/iowarp_logo.png',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -68,13 +68,13 @@ const config = {
     ({
       // Enhanced metadata for social sharing
       metadata: [
-        {name: 'description', content: 'CLIO Kit - Tools, skills, plugins, and extensions for AI agents. Part of the IoWarp platform. Features 22 MCP servers for scientific computing: HDF5, Slurm, Pandas, ArXiv, and more. Built with FastMCP, 150+ tools for HPC workflows. Developed by Gnosis Research Center at Illinois Institute of Technology, supported by NSF.'},
-        {name: 'keywords', content: 'CLIO Kit, AI agents, tools, skills, plugins, extensions, MCP, Model Context Protocol, scientific computing, HPC, HDF5, Slurm, Pandas, ADIOS, Parquet, FastMCP, research computing, IoWarp platform, Gnosis Research Center, Illinois Tech, NSF'},
-        {property: 'og:title', content: 'CLIO Kit - Tools for AI Agents | IoWarp Platform | Gnosis Research Center'},
-        {property: 'og:description', content: 'CLIO Kit: 22 MCP servers for scientific computing. Part of the IoWarp platform providing tools, skills, plugins, and extensions for AI agents. HDF5, Slurm, Pandas, ArXiv. Built with FastMCP at Illinois Institute of Technology.'},
+        {name: 'description', content: 'CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions'},
+        {name: 'keywords', content: 'CLIO Kit, meta-marketplace, AI agents, tools, skills, plugins, agents, community contributions, MCP, Model Context Protocol, scientific computing, HPC, HDF5, Slurm, Pandas, ADIOS, Parquet, FastMCP, research computing, IoWarp platform, Gnosis Research Center, Illinois Tech, NSF'},
+        {property: 'og:title', content: 'CLIO Kit - Scientific AI Meta-Marketplace | IoWarp Platform | Gnosis Research Center'},
+        {property: 'og:description', content: 'CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions'},
         {name: 'twitter:card', content: 'summary_large_image'},
-        {name: 'twitter:title', content: 'CLIO Kit - Tools for AI Agents | IoWarp Platform'},
-        {name: 'twitter:description', content: 'CLIO Kit: MCP servers for scientific computing. Part of the IoWarp platform providing comprehensive agent tooling.'},
+        {name: 'twitter:title', content: 'CLIO Kit - Scientific AI Meta-Marketplace | IoWarp Platform'},
+        {name: 'twitter:description', content: 'CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions'},
       ],
       // Social card for link previews
       image: 'img/iowarp_logo.png',
