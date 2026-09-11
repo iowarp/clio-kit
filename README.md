@@ -106,12 +106,22 @@ claude mcp list
 
 Restart Claude Code after installation and confirm the servers connect.
 
-### Codex and Other Agents
-
-Install workflow skills into your project:
+Or install a single MCP plugin or a skills-only plugin:
 
 ```bash
+claude plugin install clio-hdf5@clio-kit                  # HDF5 server
+claude plugin install clio-scientific-io-skills@clio-kit  # Scientific I/O skills
+```
+
+### Codex and Other Agents
+
+Install a bundle or one skill into your project:
+
+```bash
+# Bundle
 clio-kit skill install --bundle clio-scientific-io --target /path/to/project/.agents/skills
+# Individual skill
+clio-kit skill install exploring-an-unfamiliar-dataset --target /path/to/project/.agents/skills
 ```
 
 Configure the required MCP servers using [setup.md](setup.md). Use your agent’s supported skill directory.
@@ -121,10 +131,13 @@ Configure the required MCP servers using [setup.md](setup.md). Use your agent’
 Requires Node.js 22.20.0+. From your working project:
 
 ```bash
+# All skills
 npx skills@1.5.25 add /path/to/clio-kit --skill '*' --agent codex --copy
+# Individual skill
+npx skills@1.5.25 add /path/to/clio-kit --skill exploring-an-unfamiliar-dataset --agent codex --copy
 ```
 
-Replace `codex` with `claude-code` or `antigravity`. This installs all 20 skills; MCP servers require separate configuration.
+Replace `codex` with `claude-code` or `antigravity`. MCP servers require separate configuration.
 
 Choose either the Python or npm installer for each skill. See the [skills CLI guide](clio-kit-website/docs/marketplace.md#optional-skills-cli) for selecting skills, updates and removal.
 
