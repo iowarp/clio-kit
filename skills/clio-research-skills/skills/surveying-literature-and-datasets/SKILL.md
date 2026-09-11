@@ -1,7 +1,7 @@
 ---
 name: surveying-literature-and-datasets
 description: Use when searching prior work and identifying datasets associated with research claims. Triggers on "find papers on", "literature survey", "prior work". Not for formatting a known citation list; use building-a-bibliography.
-clio-kit:
+metadata:
   bundle: clio-research
   servers: clio-arxiv, clio-ndp, clio-scientific-catalog, clio-web
   provenance: designed
@@ -97,6 +97,13 @@ anything long.
 - Do not loop `download_paper_pdf` where `download_multiple_pdfs` exists.
 - Do not treat a preprint as peer reviewed.
 - Do not try to analyse a dataset that has not been staged.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

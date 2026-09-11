@@ -1,7 +1,7 @@
 ---
 name: cleaning-and-validating-a-dataset
 description: Use when profiling missing values, duplicates, outliers and validation rules before analysis. Triggers on "clean this data", "missing values", "validate this CSV". Not for plotting; use summarizing-and-plotting-results.
-clio-kit:
+metadata:
   bundle: clio-analysis
   servers: clio-pandas
   provenance: designed
@@ -107,6 +107,13 @@ with no record of the cleaning is not reproducible.
 - Do not delete outliers without looking at them.
 - Do not deduplicate before knowing what identifies a row.
 - Do not report results from cleaned data without saying what was cleaned.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

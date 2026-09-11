@@ -1,7 +1,7 @@
 ---
 name: choosing-the-right-chart
 description: Use when choosing a chart, axes, bins or color scale for scientific data. Triggers on "which chart", "log scale", "color map". Calls no tools. Not for rendering a chart; use summarizing-and-plotting-results.
-clio-kit:
+metadata:
   bundle: clio-analysis
   servers: none
   provenance: designed

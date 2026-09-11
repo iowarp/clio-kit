@@ -1,7 +1,7 @@
 ---
 name: building-a-bibliography
 description: Use when assembling verified citations, BibTeX records or a research reading list. Triggers on "BibTeX", "cite these papers", "reference list". Not for broad topic discovery; use surveying-literature-and-datasets.
-clio-kit:
+metadata:
   bundle: clio-research
   servers: clio-arxiv, clio-ndp, clio-web
   provenance: designed
@@ -75,6 +75,13 @@ be checked by anyone.
 - Do not cite a preprint as published without checking.
 - Do not loop single downloads where the concurrent tool exists.
 - Do not leave the datasets uncited.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

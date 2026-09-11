@@ -1,7 +1,7 @@
 ---
 name: finding-and-staging-a-dataset
 description: Use when finding dataset metadata and downloading a supported resource to a verified local path. Triggers on "find a dataset", "download this data", "stage this resource". Not for literature surveys; use surveying-literature-and-datasets.
-clio-kit:
+metadata:
   bundle: clio-research
   servers: clio-ndp, clio-scientific-catalog, clio-web
   provenance: designed
@@ -76,6 +76,13 @@ shared filesystem it is someone else's cost too.
   until then.
 - Do not rebuild or extract from a `dataset_descriptor`; pass it through.
 - Do not ignore the returned content type when choosing a reader.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

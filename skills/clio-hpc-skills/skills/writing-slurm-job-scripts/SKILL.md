@@ -1,7 +1,7 @@
 ---
 name: writing-slurm-job-scripts
 description: Use when preparing Slurm resource requests, arrays and dependencies or diagnosing pending jobs. Triggers on "sbatch", "job array", "why is my job pending". Not for JARVIS execution; use running-a-simulation-on-a-cluster.
-clio-kit:
+metadata:
   bundle: clio-hpc
   servers: clio-slurm, clio-node-hardware
   provenance: designed
@@ -122,6 +122,13 @@ stops a wrong ID from ending someone else's run.
 - Do not read a pending job as "working" without checking the reason — several
   reasons mean it will never start.
 - Do not treat a truncated `slurm_list` as a complete picture of the queue.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

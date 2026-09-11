@@ -89,6 +89,7 @@ packages = ["src/clio_kit"]
 "clio-kit-mcp-servers" = "clio-kit-mcp-servers"
 "clio-agentic-search" = "clio-agentic-search"
 "prompts" = "prompts"
+"skills" = "clio-kit-skills"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -96,6 +97,7 @@ include = [
     "clio-kit-mcp-servers/",
     "clio-agentic-search/",
     "prompts/",
+    "skills/",
     "README.md",
     "mcp-server-versions.toml",
     "pyproject.toml"

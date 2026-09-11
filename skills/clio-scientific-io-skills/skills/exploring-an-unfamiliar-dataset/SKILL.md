@@ -1,7 +1,7 @@
 ---
 name: exploring-an-unfamiliar-dataset
 description: Use when inspecting structure, shapes, types and units in HDF5, BP5, Parquet or compressed files. Triggers on "what is in this file", "open this dataset", "inspect this HDF5". Not for large-data reductions; use reading-large-datasets-safely.
-clio-kit:
+metadata:
   bundle: clio-scientific-io
   servers: clio-hdf5, clio-adios, clio-parquet, clio-compression
   provenance: designed
@@ -111,6 +111,13 @@ next step is not a read — see `reading-large-datasets-safely`.
 - Do not skip the attributes — an array without its units is not a result.
 - Do not read "No file currently open" as an empty file. It means the open
   failed, usually on the argument name.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

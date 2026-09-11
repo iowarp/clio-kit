@@ -1,7 +1,7 @@
 ---
 name: searching-large-log-files
 description: Use when narrowing large application logs by timestamp, level, keyword or error pattern. Triggers on "find the error", "search this log", "what happened at". Not for Darshan profiles; use diagnosing-a-slow-job.
-clio-kit:
+metadata:
   bundle: clio-performance
   servers: clio-parallel-sort
   provenance: designed
@@ -81,6 +81,13 @@ format. A controlled log using `[ERROR]` returned no matches despite containing
 errors. Inspect a short sample and compare a known matching line before
 interpreting zero matches. Preserve the original file if a normalized working
 copy is needed, and record the normalization.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

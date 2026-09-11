@@ -1,7 +1,7 @@
 ---
 name: recording-a-session-for-provenance
 description: Use when explicitly recording or retrieving a research decision trail with ChronoLog. Triggers on "record this session", "ChronoLog", "retrieve our decisions". Not for job execution profiling; use diagnosing-a-slow-job.
-clio-kit:
+metadata:
   bundle: clio-performance
   servers: clio-chronolog
   provenance: designed
@@ -59,6 +59,13 @@ feeds a paper and has to be reconstructable.
 - Do not leave the handle open at the end of a session.
 - Do not assume anything was captured — recording is explicit, per interaction.
 - Do not name a chronicle something you could not search for later.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

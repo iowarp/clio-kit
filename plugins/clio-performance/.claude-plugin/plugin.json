@@ -1,7 +1,7 @@
 {
   "name": "clio-performance",
   "description": "Work out why a finished job was slower than it should have been.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

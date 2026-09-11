@@ -1,21 +1,21 @@
 # Set up CLIO Kit
 
-Follow this guide from the repository root. Install the launcher and marketplace
+Use this guide with any agent that supports Agent Skills and/or stdio MCP.
+Follow it from the repository root. Install the launcher and marketplace
 from the same checkout: the published PyPI package and GitHub default branch do
 not yet represent `feat/360-meta-marketplace`.
 
 ## 1. Check prerequisites and the checkout
 
 ```bash
-claude --version
 uv --version
 git branch --show-current
 test -f pyproject.toml && test -f .claude-plugin/marketplace.json
 ```
 
-This guide is tested with Claude Code 2.1.266. Use a client that supports plugin
-dependencies; older clients may not install a bundle's members. If `uv` is
-missing, install it using [the official instructions](https://docs.astral.sh/uv/getting-started/installation/).
+Skill discovery is tested with Codex 0.154.0; native plugin installation is
+tested with Claude Code 2.1.266. Claude is not a prerequisite for portable
+skills or MCP servers. If `uv` is missing, install it using [the official instructions](https://docs.astral.sh/uv/getting-started/installation/).
 
 If you do not have this checkout yet:
 
@@ -37,18 +37,7 @@ The verification extra provides the MCP client used by `doctor --connect` and
 `server inspect`. Server dependencies remain isolated and install on first use;
 allow network access and time for that first start.
 
-## 3. Register this marketplace
-
-```bash
-claude plugin marketplace add "$PWD"
-claude plugin marketplace list
-```
-
-Expect `clio-kit` registered with this checkout as its source. If that name is
-already registered from another source, inspect it before replacing it. Keep
-the checkout available for later marketplace updates.
-
-## 4. Install the relevant workflow
+## 3. Choose a workflow and your agent's installation route
 
 Use the user's stated work to select a bundle. Ask only if the work is unknown.
 
@@ -61,7 +50,61 @@ Use the user's stated work to select a bundle. Ask only if the work is unknown.
 | Geospatial, terrain, seismic data | `clio-geoscience` |
 | Papers and dataset discovery | `clio-research` |
 
+### Codex and other agents that support Agent Skills
+
+Install standard skill folders into your agent's documented discovery directory.
+For Codex, use `.agents/skills` inside the project where you will work, or
+`~/.agents/skills` for user-wide discovery. See [Codex skill discovery](https://developers.openai.com/codex/skills).
+For example, from that project:
+
+```bash
+clio-kit skill list --bundle clio-scientific-io
+clio-kit skill install --bundle clio-scientific-io --target .agents/skills
+```
+
+Omit `--bundle` to install all 20 skills, or give individual skill names before
+`--target`. Other agents can use the same command with their own skill directory.
+Skills are included in the installed CLIO Kit package; the checkout is not
+needed for subsequent skill installation.
+
+Skill folders contain instructions. Configure their required MCP servers
+separately in your agent. For the scientific I/O workflow in Codex:
+
+```bash
+codex mcp add clio-hdf5 -- clio-kit mcp-server hdf5
+codex mcp add clio-adios -- clio-kit mcp-server adios
+codex mcp add clio-parquet -- clio-kit mcp-server parquet
+codex mcp add clio-compression -- clio-kit mcp-server compression
+codex mcp list
+```
+
+Start Codex in the target project and check `/skills` for the three installed
+skills. Restart the client if it has not refreshed discovery. Check the client's
+MCP tool inventory too: configuration registration alone does not prove a live
+connection. Other MCP clients should configure command `clio-kit` with arguments
+`["mcp-server", "NAME"]` using their own configuration schema.
+
+The `.claude-plugin` catalogue, dependency bundles and `clio-agents` definitions
+currently target Claude Code. They are not universal plugin/agent manifests;
+Codex and other agents use the portable skill and MCP route above.
+
+### Claude Code native marketplace
+
+Use a client that supports plugin dependencies; older clients may not install
+all bundle members. From the CLIO Kit checkout:
+
+```bash
+claude --version
+claude plugin marketplace add "$PWD"
+claude plugin marketplace list
+```
+
+Expect `clio-kit` registered with this checkout as its source. If that name is
+already registered from another source, inspect it before replacing it. Keep
+the checkout available for later marketplace updates.
+
 For example, install the scientific file workflow:
+
 
 ```bash
 claude plugin install clio-scientific-io@clio-kit
@@ -76,17 +119,18 @@ for all 20 skills. `clio-agents@clio-kit` adds planning and evidence-review agen
 `claude plugin marketplace list` lists marketplaces, not their entries. Refer
 to the [README catalogue](README.md#workflow-bundles) for bundle names.
 
-## 5. Verify connections and a real tool result
+## 4. Verify connections and a real tool result
+
+For every client, check the installed launcher independently:
 
 ```bash
-claude mcp list
 clio-kit doctor --server hdf5 --connect
-claude plugin details clio-scientific-io-skills@clio-kit
 ```
 
-Every installed CLIO server should connect. `plugin list` showing `enabled`
-proves registration only. In an existing interactive Claude session, use
-`/reload-plugins` or restart before using the new tools.
+In Claude Code, also run `claude mcp list` and
+`claude plugin details clio-scientific-io-skills@clio-kit`, then use
+`/reload-plugins` or restart an existing session. Every installed CLIO server
+should connect. `plugin list` showing `enabled` proves registration only.
 
 For the scientific I/O bundle, run this bounded compression check. It creates
 only temporary files, calls the real installed server over MCP, and verifies
@@ -134,7 +178,12 @@ but its token estimate is not an exact per-conversation bill.
 
 ## Update and troubleshoot
 
-After updating this checkout, reinstall the launcher with step 2, then:
+After updating this checkout, reinstall the launcher with step 2. For portable
+skills, rerun `clio-kit skill install` with the same selection and target.
+Identical folders are left intact. If files differ, review your local edits
+before adding `--replace`; it replaces only selected skill folders.
+
+For Claude Code plugins:
 
 ```bash
 claude plugin marketplace update clio-kit
@@ -156,7 +205,12 @@ and multi-language runtime instructions.
 
 ## Remove this installation when requested
 
-Do not run this section during setup. Substitute the bundle you installed.
+Do not run this section during setup. For portable skills, remove only the
+skill folders you installed from the chosen target. Remove corresponding MCP
+registrations through your client's settings or commands. Do not delete the
+whole discovery directory if it contains other skills.
+
+For Claude Code, substitute the bundle you installed:
 
 ```bash
 claude plugin uninstall clio-scientific-io@clio-kit

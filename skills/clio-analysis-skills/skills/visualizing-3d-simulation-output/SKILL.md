@@ -1,7 +1,7 @@
 ---
 name: visualizing-3d-simulation-output
 description: Use when inspecting and rendering simulation fields with ParaView. Triggers on "isosurface", "slice this volume", "render the field". Not for tabular charts; use summarizing-and-plotting-results.
-clio-kit:
+metadata:
   bundle: clio-analysis
   servers: clio-paraview
   provenance: designed
@@ -93,6 +93,13 @@ Excel directly and needs none of this. See `summarizing-and-plotting-results`.
 - Do not use a rainbow colour map for continuous scalar data.
 - Do not screenshot before resetting the camera.
 - Do not compute surface area on a volume.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

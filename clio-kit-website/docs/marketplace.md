@@ -17,6 +17,20 @@ and release that transition separately.
 - `clio-agents`: a scientific workflow planner and an evidence reviewer.
 - Direct external plugins and compiled external marketplace collections.
 
+Skills use the [Agent Skills format](https://agentskills.io/specification),
+independently of the client. Install them from the packaged CLI:
+
+```bash
+clio-kit skill list
+clio-kit skill install --bundle clio-scientific-io --target /path/to/project/.agents/skills
+```
+
+Use `.agents/skills` for a Codex project, or another agent's documented discovery
+directory. Required MCP servers are configured separately through the client's
+stdio MCP settings. The existing `.claude-plugin` marketplace, dependency bundles
+and two agent definitions currently target Claude Code. Portable skill support
+does not imply that other clients accept those native manifests.
+
 All 22 shipped scientific servers are Python projects. The launcher also
 supports contributed Node/TypeScript and Go projects. Real MCP SDK fixtures
 under `tests/fixtures/mcp-servers/` verify those adapters in CI; they are not
@@ -24,6 +38,11 @@ installed marketplace products or bundled wheel components. Hosting an
 additional server requires its own reviewed source, locks and CI coverage.
 
 ## Contributing and updating
+
+For a standalone portable skill, use
+`clio-kit skill validate /path/to/your-skill`. Put CLIO-specific frontmatter
+values under standard `metadata`, with string values. The following authoring
+commands scaffold and submit **Claude Code native plugins**:
 
 ```bash
 clio-kit plugin init my-plugin --agent
@@ -73,18 +92,23 @@ referenced artifact and meeting that registry's ownership requirements.
 ```bash
 uv sync --frozen --dev --extra verification
 uv run --frozen pytest -q tests
-uv run --frozen python scripts/verify_marketplace_install.py --all-servers
+uv run --frozen python scripts/verify_marketplace_install.py --all-servers --codex
 ```
 
-The script builds a source distribution and wheel, installs the wheel in a
-fresh environment, registers an isolated marketplace, installs bundles,
+Install Codex and Claude Code to run both client checks. The script builds a
+source distribution and wheel, installs all 20 portable skills from that wheel,
+and uses Codex's actual `skills/list` discovery API to verify they are enabled.
+It also registers an isolated marketplace, installs bundles,
 skills, agents and real external plugins, then exercises actual MCP
 sessions. It launches the Go and TypeScript test fixtures through the installed
 launcher and verifies cold/warm tool results, decompression,
 independently calculated grouped means, and a plot of the transformed data.
 `--all-servers` additionally initializes every shipped scientific MCP server.
 Logs, tool responses, and generated artifacts are retained in the printed
-output directory. It does not modify the user's Claude configuration.
+output directory. It does not modify the user's client configuration.
+`--skip-client` skips Claude-specific plugin checks; `--codex` independently
+selects Codex discovery. These checks send no model requests. Discovery proves
+that a client can load skills, not that a model follows them correctly.
 
 ## Scientific acceptance boundaries
 
@@ -102,10 +126,12 @@ implementation defects require separate MCP-owner changes; packaging does not
 repair scientific calculations. Never label all scientific workflows verified
 based only on installation, pytest, or connection results.
 
-Model-driven skill trigger and quality evaluation requires an available model
-account/quota. Deterministic acceptance is independent of it. Record fresh
-model evaluation evidence separately rather than treating historical results
-as proof of the current revision.
+Model-driven skill trigger and quality evaluation must be recorded per agent
+and model. The audit's quota failure affected Claude evaluations only; it says
+nothing about Codex or other accounts. Deterministic installation, discovery
+and MCP checks do not require model quota. Record fresh behavioral evidence
+separately for each tested client instead of treating historical results or
+another client's results as proof of the current revision.
 
 ## Skill maintenance
 
@@ -113,7 +139,7 @@ The six workflow packages contain 20 skills. Public skill IDs remain stable;
 titles describe the professional task, while descriptions identify when to use
 it and distinguish adjacent workflows. Each skill has completion criteria and
 an `evals.md` file. Names/descriptions are used for discovery; the full body loads
-on invocation, as described in the [Claude skills documentation](https://code.claude.com/docs/en/skills).
+on invocation, following the [Agent Skills specification](https://agentskills.io/specification).
 
 The current review checks tool names, argument shapes, state and file handoffs,
 size limits, provenance and interpretation. Evaluation metadata is deliberately

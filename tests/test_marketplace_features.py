@@ -191,12 +191,15 @@ def test_registry_rejects_invented_go_package_type() -> None:
         )
 
 
-def test_nested_metadata_cannot_replace_skill_identity(tmp_path: Path) -> None:
+@pytest.mark.parametrize("metadata_key", ["metadata", "clio-kit"])
+def test_nested_metadata_cannot_replace_skill_identity(
+    tmp_path: Path, metadata_key: str
+) -> None:
     skill = tmp_path / "crystal"
     skill.mkdir()
     (skill / "SKILL.md").write_text(
         "---\nname: crystal\ndescription: Use when examining crystals.\n"
-        "clio-kit:\n  name: different\n  description: Hidden override\n"
+        f"{metadata_key}:\n  name: different\n  description: Hidden override\n"
         "  eval-status: scenarios-recorded\n---\nInspect the crystal.\n"
     )
     fields = read_skill_frontmatter(skill)

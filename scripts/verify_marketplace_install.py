@@ -180,6 +180,106 @@ class Acceptance:
             ["claude", "plugin", "install", "clio-agents@clio-kit"],
         )
 
+    def portable_skills(self) -> Path:
+        project = self.output / "project"
+        target = project / ".agents" / "skills"
+        self.command(
+            "install-portable-skills",
+            [str(self.launcher), "skill", "install", "--target", str(target)],
+            cwd=self.output,
+        )
+        inventory = json.loads(
+            self.command(
+                "installed-skill-inventory",
+                [str(self.launcher), "skill", "list", "--json"],
+                cwd=self.output,
+            )
+        )
+        assert len(inventory) == 20, inventory
+        assert {path.parent.name for path in target.glob("*/SKILL.md")} == {
+            skill["name"] for skill in inventory
+        }
+        return project
+
+    async def codex_skills(self, project: Path) -> None:
+        """Ask a real Codex client to discover skills, without a model request."""
+        target = project / ".agents" / "skills"
+        with (self.output / "codex-skills.stderr").open("w") as errors:
+            process = await asyncio.create_subprocess_exec(
+                "codex",
+                "app-server",
+                "--stdio",
+                cwd=project,
+                env=self.environment,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=errors,
+            )
+            assert process.stdin is not None and process.stdout is not None
+
+            async def send(message: dict) -> None:
+                process.stdin.write((json.dumps(message) + "\n").encode())
+                await process.stdin.drain()
+
+            async def request(identifier: int, method: str, params: dict) -> dict:
+                await send({"id": identifier, "method": method, "params": params})
+                while raw := await process.stdout.readline():
+                    reply = json.loads(raw)
+                    if reply.get("id") == identifier:
+                        if "error" in reply:
+                            raise RuntimeError(str(reply["error"]))
+                        return reply["result"]
+                raise RuntimeError("Codex exited before responding")
+
+            async def discover() -> list[dict]:
+                await request(
+                    1,
+                    "initialize",
+                    {"clientInfo": {"name": "clio_acceptance", "version": "1.0.0"}},
+                )
+                await send({"method": "initialized"})
+                result = await request(
+                    2,
+                    "skills/list",
+                    {
+                        "cwds": [str(project)],
+                        "forceReload": True,
+                    },
+                )
+                records = []
+                for row in result["data"]:
+                    # Retain only test-project data, never unrelated user skills.
+                    records.extend(
+                        skill
+                        for skill in row["skills"]
+                        if Path(skill["path"]).is_relative_to(target)
+                    )
+                    assert not [
+                        error
+                        for error in row.get("errors", [])
+                        if Path(error["path"]).is_relative_to(target)
+                    ]
+                return records
+
+            try:
+                records = await asyncio.wait_for(discover(), timeout=60)
+            finally:
+                if process.returncode is None:
+                    process.terminate()
+                    try:
+                        await asyncio.wait_for(process.wait(), timeout=5)
+                    except asyncio.TimeoutError:
+                        process.kill()
+                        await process.wait()
+        expected = {path.parent.name for path in target.glob("*/SKILL.md")}
+        assert len(records) == len(expected) == 20, records
+        assert {skill["name"] for skill in records} == expected, records
+        assert all(skill["enabled"] for skill in records), records
+        (self.output / "codex-skills.json").write_text(json.dumps(records, indent=2))
+        self.records.append({"name": "codex-skill-discovery", "enabled": len(records)})
+        self.save()
+        print(f"PASS Codex discovers and enables {len(records)} skills", flush=True)
+
     async def workflows(self, all_servers: bool) -> None:
         for runtime in ("typescript", "go"):
             for state in ("cold", "warm"):
@@ -265,6 +365,9 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--all-servers", action="store_true")
     parser.add_argument(
+        "--codex", action="store_true", help="Verify real Codex skill discovery"
+    )
+    parser.add_argument(
         "--skip-client",
         action="store_true",
         help="Only for systems without Claude Code installed",
@@ -275,6 +378,9 @@ def main() -> None:
     ).resolve()
     suite = Acceptance(output)
     suite.install()
+    project = suite.portable_skills()
+    if args.codex:
+        asyncio.run(suite.codex_skills(project))
     if not args.skip_client:
         suite.plugins()
     asyncio.run(suite.workflows(args.all_servers))

@@ -93,7 +93,12 @@ skills/clio-<bundle>-skills/skills/<your-skill>/
 └── evals.md
 ```
 
+Skills must work with agents that support the standard
+[Agent Skills format](https://agentskills.io/specification), including Codex.
 `SKILL.md` frontmatter needs a `name` matching the folder and a `description`.
+Put `bundle`, `servers`, `provenance` and `eval-status` under standard `metadata`
+as string values. Use live MCP discovery to resolve client-specific tool names;
+do not require Claude-only commands inside shared skill procedures.
 Write the description as triggers only, in the words a user actually types, and
 add a `Not for X; use Y` clause wherever another skill could plausibly claim the
 same request. Descriptions support discovery; full bodies load when invoked. Keep
@@ -103,14 +108,14 @@ descriptions concise and put procedural detail in the body.
 separate the skill's behaviour from the baseline: the exact prompt, checkable
 expectations, and the failure modes the agent shows without the skill.
 
-`clio-kit plugin validate` enforces the rules above rather than trusting a
+`clio-kit skill validate /path/to/your-skill` enforces these rules for standalone
+skills. `clio-kit plugin validate` also applies them to plugin contents, rather than trusting a
 reviewer to notice. It refuses a skill whose frontmatter does not parse, whose
 `name` disagrees with its folder, that records no scenarios, whose description
 does not open with `Use when`, or that carries no `Triggers on` clause. A
 missing `Not for X; use Y` boundary and an over-long description are reported
 as advisories, because a first skill with nothing to collide against is
-legitimately unbounded. The command also prints the description character count for what you
-are adding.
+legitimately unbounded. Plugin validation also reports description character counts.
 
 ## Contributing a Server in Another Language
 

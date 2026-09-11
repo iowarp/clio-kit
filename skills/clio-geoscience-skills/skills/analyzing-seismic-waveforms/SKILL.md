@@ -1,7 +1,7 @@
 ---
 name: analyzing-seismic-waveforms
 description: Use when inspecting SAC waveforms or evaluating a saved earthquake event catalogue. Triggers on "SAC", "waveform statistics", "b-value", "magnitude completeness". Not for geospatial mapping; use mapping-geospatial-and-terrain-data.
-clio-kit:
+metadata:
   bundle: clio-geoscience
   servers: clio-seismology
   provenance: designed
@@ -78,6 +78,13 @@ mainshock-aftershock pattern or a swarm.
 - Do not compare traces with different `delta_s` without resampling.
 - Do not interpret a b-value without Mc and the uncertainty.
 - Do not read the roll-off below Mc as a physical result.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

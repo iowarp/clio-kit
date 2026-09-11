@@ -1,7 +1,7 @@
 ---
 name: choosing-a-storage-format
 description: Use when selecting scientific file formats, chunk layouts or compression for an access pattern. Triggers on "HDF5 versus Parquet", "chunk size", "should I compress". Calls no tools. Not for interpreting profiler counters; use interpreting-io-performance-numbers.
-clio-kit:
+metadata:
   bundle: clio-scientific-io
   servers: none
   provenance: designed

@@ -1,7 +1,7 @@
 ---
 name: running-a-simulation-on-a-cluster
 description: Use when resolving Spack software, configuring a JARVIS pipeline and following its execution. Triggers on "run this on the cluster", "JARVIS pipeline", "install and run". Not for handwritten batch scripts; use writing-slurm-job-scripts.
-clio-kit:
+metadata:
   bundle: clio-hpc
   servers: clio-spack, clio-lmod, clio-jarvis, clio-slurm, clio-node-hardware
   provenance: designed
@@ -108,6 +108,13 @@ Poll it. The run is finished when the lifecycle record says so, not when
 - Do not look for a tool that loads a module to prepare the run. The lmod
   server does not expose module loading, for the same reason spack refuses to load: a load inside
   a tool call dies with the call. See `managing-software-environments`.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

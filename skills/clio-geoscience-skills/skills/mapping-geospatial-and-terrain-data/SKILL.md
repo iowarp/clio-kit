@@ -1,7 +1,7 @@
 ---
 name: mapping-geospatial-and-terrain-data
 description: Use when validating GeoJSON, querying spatial relationships, mapping features or analyzing terrain grids. Triggers on "GeoJSON", "render a map", "DEM", "point cloud". Not for CRS interpretation alone; use working-with-coordinate-systems.
-clio-kit:
+metadata:
   bundle: clio-geoscience
   servers: clio-geo, clio-terrain
   provenance: designed
@@ -96,6 +96,13 @@ looks like a map either way.
 - Do not query an ArcGIS layer without a bbox or where clause.
 - Do not grid a point cloud without choosing the cell size deliberately.
 - Do not treat a rendered map as evidence the data is sound.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

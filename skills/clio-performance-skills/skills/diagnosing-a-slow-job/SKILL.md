@@ -1,7 +1,7 @@
 ---
 name: diagnosing-a-slow-job
 description: Use when investigating I/O bottlenecks using a genuine Darshan profile and application logs. Triggers on "Darshan log", "why was this job slow", "I/O bottleneck". Not for metric interpretation alone; use interpreting-io-performance-numbers.
-clio-kit:
+metadata:
   bundle: clio-performance
   servers: clio-darshan, clio-parallel-sort
   provenance: designed
@@ -87,6 +87,13 @@ remembering the numbers. It is the only tool that sees both at once.
   checking the MPI-IO layer first.
 - Do not reach for `clio-chronolog` here. It records LLM interactions, not job
   execution; it has nothing to say about a Slurm job's runtime.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

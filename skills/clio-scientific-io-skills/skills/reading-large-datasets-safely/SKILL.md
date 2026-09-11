@@ -1,7 +1,7 @@
 ---
 name: reading-large-datasets-safely
 description: Use when choosing bounded reads and distinguishing sampled summaries from exact large-data statistics. Triggers on "file is huge", "compute this mean", "out of memory". Not for initial format discovery; use exploring-an-unfamiliar-dataset.
-clio-kit:
+metadata:
   bundle: clio-scientific-io
   servers: clio-hdf5, clio-parquet, clio-adios
   provenance: designed
@@ -88,6 +88,13 @@ describe, and `clio-hdf5:identify_io_bottlenecks` inspects the file's own layout
 - Do not loop single reads where `hdf5_batch_read` takes them together.
 - Do not read every Parquet column to aggregate one.
 - Do not slice across the chunk grain when the same data can be taken along it.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

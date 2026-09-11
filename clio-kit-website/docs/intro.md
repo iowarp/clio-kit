@@ -24,16 +24,35 @@ git clone --branch feat/360-meta-marketplace https://github.com/iowarp/clio-kit.
 cd clio-kit
 uv tool install --force --reinstall ".[verification]"
 clio-kit mcp-servers
+```
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first.
+If the launcher is not on PATH, run `uv tool update-shell` and open a new shell.
+First server launches may download dependencies.
+
+### Portable skills: Codex and other compatible agents
+
+```bash
+clio-kit skill install --bundle clio-scientific-io --target /path/to/project/.agents/skills
+```
+
+For Codex, `.agents/skills` is a project skill directory; `~/.agents/skills` is
+user-wide. Other agents use their own documented discovery path as `--target`.
+Omit `--bundle` for all 20 skills. Configure required MCP servers separately;
+for example `codex mcp add clio-hdf5 -- clio-kit mcp-server hdf5` registers HDF5.
+The scientific I/O workflow also requires ADIOS, Parquet and compression.
+
+### Claude Code native plugins
+
+```bash
 claude plugin marketplace add "$PWD"
 claude plugin install clio-scientific-io@clio-kit
 claude mcp list
 ```
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/) and Claude
-Code first. If the launcher is not on PATH, run `uv tool update-shell` and open
-a new shell. Plugin registration alone does not establish that servers connect.
-First launches may download dependencies. Reload plugins or restart an existing
-Claude session before using its new tools.
+This route requires Claude Code with plugin dependency support. Reload plugins
+or restart an existing session before using its new tools. Plugin registration
+alone does not establish that servers connect.
 
 The repository's [setup guide](https://github.com/iowarp/clio-kit/blob/feat/360-meta-marketplace/setup.md)
 includes an actual compression round-trip check and troubleshooting steps.
@@ -49,7 +68,7 @@ includes an actual compression round-trip check and troubleshooting steps.
 | `clio-geoscience` | Geospatial, terrain and seismic analysis |
 | `clio-research` | Literature, public datasets and operator catalogues |
 
-A bundle installs its member servers and matching skills. Install a server alone
+In Claude Code, a bundle installs its member servers and matching skills. Install a server alone
 with `claude plugin install clio-hdf5@clio-kit`, a workflow's procedures with
 `clio-scientific-io-skills@clio-kit`, or all procedures with `clio-skills@clio-kit`.
 `clio-agents@clio-kit` provides a workflow planner and evidence reviewer.
@@ -69,9 +88,10 @@ The launcher also supports clients that accept stdio MCP configurations:
 }
 ```
 
-Use the client's documented configuration location and schema. Claude plugin
-bundles, dependency resolution, skills and agents require plugin support in the
-client; a plain MCP configuration starts only the named server.
+Use the client's documented configuration location and schema. Skills are
+installed separately with `clio-kit skill install`. Native `.claude-plugin`
+bundles, dependency resolution and agent definitions currently target Claude
+Code; a plain MCP configuration starts only the named server.
 
 ## Verify the workflow
 

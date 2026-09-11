@@ -1,7 +1,7 @@
 ---
 name: managing-software-environments
 description: Use when checking installed Spack packages and available or saved module environments. Triggers on "module avail", "which MPI", "is this installed". Not for executing a workload; use running-a-simulation-on-a-cluster.
-clio-kit:
+metadata:
   bundle: clio-hpc
   servers: clio-lmod, clio-spack
   provenance: designed
@@ -76,6 +76,13 @@ intended environment rather than a way to establish one.
 - Do not mix the two systems in one answer without saying which is which. A
   module named `openmpi/4.1.5` and a Spack spec `openmpi@4.1.5` are different
   installations that happen to share a version number.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

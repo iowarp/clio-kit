@@ -1,7 +1,7 @@
 ---
 name: working-with-coordinate-systems
 description: Use when interpreting axis order, projections, distance units or vertical datums. Triggers on "lat lon", "CRS", "UTM", "map offset". Calls no tools. Not for executing map operations; use mapping-geospatial-and-terrain-data.
-clio-kit:
+metadata:
   bundle: clio-geoscience
   servers: none
   provenance: designed

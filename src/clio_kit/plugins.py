@@ -32,6 +32,7 @@ from clio_kit.plugin_components import (
 from clio_kit.marketplace_cli import marketplace_group
 from clio_kit.server_cli import server_group
 from clio_kit.doctor import doctor_command
+from clio_kit.skill_cli import skill_group
 
 from clio_kit.community import (
     COMMUNITY_KINDS,
@@ -498,4 +499,5 @@ PLUGIN_COMMANDS = (
     marketplace_group,
     server_group,
     doctor_command,
+    skill_group,
 )

@@ -1,5 +1,12 @@
 # Community contributions
 
+Shared skills use standard `SKILL.md` folders and can be installed for Codex or
+other compatible agents with `clio-kit skill install --target DIRECTORY`.
+`clio-kit skill validate DIRECTORY` checks standalone skill contributions.
+The plugin entries and marketplace federation described below currently use
+Claude Code's native `.claude-plugin` format; they are not universal manifests.
+
+
 Plugins, skills and MCP servers that live in **someone else's repository** and
 appear in the CLIO Kit marketplace. One file here per contribution.
 

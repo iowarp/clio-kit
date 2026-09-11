@@ -29,7 +29,7 @@ jobs:
       - name: Install test tools
         run: |
           uv sync --frozen --dev --extra verification
-          npm install --global @anthropic-ai/claude-code@2.1.266
+          npm install --global @anthropic-ai/claude-code@2.1.266 @openai/codex@0.154.0
       - name: Check TypeScript fixture source matches compiled JavaScript
         working-directory: tests/fixtures/mcp-servers/typescript
         run: |
@@ -45,13 +45,14 @@ jobs:
       - name: Root regressions
         run: uv run --frozen pytest -q tests
       - name: Install built wheel and exercise real client and tools
-        run: uv run --frozen python scripts/verify_marketplace_install.py --output /tmp/clio-acceptance
+        run: uv run --frozen python scripts/verify_marketplace_install.py --output /tmp/clio-acceptance --codex
       - name: Python 3.10 installed compatibility
         run: |
           uv venv --python 3.10 /tmp/clio-python310
           uv pip install --python /tmp/clio-python310/bin/python /tmp/clio-acceptance/dist/*.whl
           /tmp/clio-python310/bin/clio-kit mcp-servers
           /tmp/clio-python310/bin/clio-kit plugin --help
+          /tmp/clio-python310/bin/clio-kit skill list
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
@@ -60,4 +61,5 @@ jobs:
             /tmp/clio-acceptance/*.log
             /tmp/clio-acceptance/*.stderr
             /tmp/clio-acceptance/results.json
+            /tmp/clio-acceptance/codex-skills.json
             /tmp/clio-acceptance/data/

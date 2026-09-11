@@ -1,7 +1,7 @@
 ---
 name: interpreting-io-performance-numbers
 description: Use when interpreting bandwidth, IOPS, request sizes and MPI-IO counters already provided. Triggers on "is 40 MB/s bad", "small writes", "collective versus independent". Calls no tools. Not for loading a profile; use diagnosing-a-slow-job.
-clio-kit:
+metadata:
   bundle: clio-performance
   servers: none
   provenance: designed

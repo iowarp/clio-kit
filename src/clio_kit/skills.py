@@ -112,7 +112,7 @@ def read_skill_frontmatter(skill_dir: Path) -> dict[str, str]:
         for key, value in loaded.items()
         if isinstance(key, str) and isinstance(value, (str, int, float, bool))
     }
-    metadata = loaded.get("clio-kit", {})
+    metadata = loaded.get("metadata", loaded.get("clio-kit", {}))
     if isinstance(metadata, dict):
         fields.update(
             {

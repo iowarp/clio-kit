@@ -1,7 +1,7 @@
 ---
 name: summarizing-and-plotting-results
 description: Use when calculating tabular summaries and plotting transformed CSV or Excel data. Triggers on "summarize this table", "plot these results", "grouped mean". Not for mesh or volume rendering; use visualizing-3d-simulation-output.
-clio-kit:
+metadata:
   bundle: clio-analysis
   servers: clio-pandas, clio-plot
   provenance: designed
@@ -110,6 +110,13 @@ simulation field goes to ParaView instead — see
 - Do not reach for a chart type before deciding what the figure has to show.
 - Do not assume `file_path` on `profile_csv` or `plot_timeseries`; both take
   `data_path`.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 

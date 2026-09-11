@@ -339,10 +339,41 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
+      "name": "iowarp-dev-setup",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-core.git",
+        "path": ".claude-plugin/plugins/iowarp-dev-setup",
+        "sha": "97fca746e75b3144b025d9920bad54b26c2c06da"
+      },
+      "description": "Complete development environment setup for IOWarp Core \u2014 Docker devcontainers, builds, debugging, and IDE configuration. Gets any team member from zero to a running dev environment.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Gnosis Research Center"
+      },
+      "category": "development",
+      "keywords": [
+        "build",
+        "clio-core",
+        "cmake",
+        "debugging",
+        "devcontainer",
+        "development-environment",
+        "docker",
+        "ide",
+        "iowarp",
+        "setup"
+      ],
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio"
+      }
+    },
+    {
       "name": "clio-hpc-skills",
       "source": "./skills/clio-hpc-skills",
       "description": "Skills for the clio-hpc workflow: install a code, wrap it in a pipeline, submit it, and follow it on a cluster.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "skills",
       "keywords": [
         "managing-software-environments",
@@ -356,7 +387,7 @@
       "name": "clio-hpc",
       "source": "./plugins/clio-hpc",
       "description": "Install a code, wrap it in a pipeline, submit it, and follow it on a cluster.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "workflow",
       "keywords": [
         "cluster-management",
@@ -381,7 +412,7 @@
       "name": "clio-performance-skills",
       "source": "./skills/clio-performance-skills",
       "description": "Skills for the clio-performance workflow: work out why a finished job was slower than it should have been.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "skills",
       "keywords": [
         "diagnosing-a-slow-job",
@@ -396,7 +427,7 @@
       "name": "clio-performance",
       "source": "./plugins/clio-performance",
       "description": "Work out why a finished job was slower than it should have been.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "workflow",
       "keywords": [
         "darshan",
@@ -417,7 +448,7 @@
       "name": "clio-scientific-io-skills",
       "source": "./skills/clio-scientific-io-skills",
       "description": "Skills for the clio-scientific-io workflow: open a scientific data file, see its structure, and read part of it.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "skills",
       "keywords": [
         "choosing-a-storage-format",
@@ -431,7 +462,7 @@
       "name": "clio-scientific-io",
       "source": "./plugins/clio-scientific-io",
       "description": "Open a scientific data file, see its structure, and read part of it.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "workflow",
       "keywords": [
         "adios2",
@@ -457,7 +488,7 @@
       "name": "clio-analysis-skills",
       "source": "./skills/clio-analysis-skills",
       "description": "Skills for the clio-analysis workflow: turn a dataset into summary statistics and a figure.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "skills",
       "keywords": [
         "choosing-the-right-chart",
@@ -472,7 +503,7 @@
       "name": "clio-analysis",
       "source": "./plugins/clio-analysis",
       "description": "Turn a dataset into summary statistics and a figure.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "workflow",
       "keywords": [
         "3d-rendering",
@@ -495,7 +526,7 @@
       "name": "clio-geoscience-skills",
       "source": "./skills/clio-geoscience-skills",
       "description": "Skills for the clio-geoscience workflow: inspect and map geospatial features, terrain models, and waveform archives.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "skills",
       "keywords": [
         "analyzing-seismic-waveforms",
@@ -509,7 +540,7 @@
       "name": "clio-geoscience",
       "source": "./plugins/clio-geoscience",
       "description": "Inspect and map geospatial features, terrain models, and waveform archives.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "workflow",
       "keywords": [
         "catalog",
@@ -532,7 +563,7 @@
       "name": "clio-research-skills",
       "source": "./skills/clio-research-skills",
       "description": "Skills for the clio-research workflow: find papers on a topic and the datasets behind them.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "skills",
       "keywords": [
         "building-a-bibliography",
@@ -546,7 +577,7 @@
       "name": "clio-research",
       "source": "./plugins/clio-research",
       "description": "Find papers on a topic and the datasets behind them.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "workflow",
       "keywords": [
         "agentic-web",
@@ -601,37 +632,6 @@
       "metadata": {
         "maintainer": "Gnosis Research Center",
         "indexed": true
-      }
-    },
-    {
-      "name": "iowarp-dev-setup",
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/iowarp/clio-core.git",
-        "path": ".claude-plugin/plugins/iowarp-dev-setup",
-        "sha": "97fca746e75b3144b025d9920bad54b26c2c06da"
-      },
-      "description": "Complete development environment setup for IOWarp Core \u2014 Docker devcontainers, builds, debugging, and IDE configuration. Gets any team member from zero to a running dev environment.",
-      "version": "1.0.0",
-      "author": {
-        "name": "Gnosis Research Center"
-      },
-      "category": "development",
-      "keywords": [
-        "build",
-        "clio-core",
-        "cmake",
-        "debugging",
-        "devcontainer",
-        "development-environment",
-        "docker",
-        "ide",
-        "iowarp",
-        "setup"
-      ],
-      "metadata": {
-        "indexed": true,
-        "clioFederation": "iowarp-clio"
       }
     }
   ]

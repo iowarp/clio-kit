@@ -1,7 +1,7 @@
 {
   "name": "clio-hpc-skills",
   "description": "Skills for the clio-hpc workflow: install a code, wrap it in a pipeline, submit it, and follow it on a cluster.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

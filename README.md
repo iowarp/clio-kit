@@ -83,8 +83,24 @@ CLIO Kit is part of the IoWarp platform's comprehensive tooling ecosystem for AI
 Read setup.md and set up CLIO Kit for me.
 ```
 
-The agent will check prerequisites, add the marketplace, use your stated work (or ask if it is unknown),
-install the matching workflow, and verify the tools respond.
+The agent will check prerequisites, use your stated work (or ask if it is unknown),
+install skills and MCP tools using its supported configuration, and verify real results.
+
+**Codex and other agents with Agent Skills support.** Install this branch's
+launcher from a checkout (clone commands below), then install portable skills:
+
+```bash
+uv tool install --force --reinstall ".[verification]"
+clio-kit skill list
+clio-kit skill install --bundle clio-scientific-io --target /path/to/project/.agents/skills
+```
+
+`.agents/skills` is Codex's project discovery directory. Other agents can use
+`--target` with their own documented skill directory. All 20 standard `SKILL.md`
+folders ship in the Python package. Configure the required MCP servers separately
+in the client; [setup.md](setup.md) gives complete Codex and Claude Code routes.
+Native `.claude-plugin` bundles and the two agent definitions currently target
+Claude Code; their manifest format is not shared by every agent.
 
 **Claude Code users — install this feature branch from a matching checkout.**
 The default GitHub branch and published PyPI package do not yet contain this
@@ -183,7 +199,7 @@ clio-kit mcp-contract clio-kit-scientific-catalog-user-v1.1
 
 ### Workflow Bundles
 
-Installing a bundle pulls in every server it needs plus the skills written for
+In Claude Code, installing a bundle pulls in every server it needs plus the skills written for
 that workflow, so you do not have to know which servers go together.
 
 | Bundle | Servers | For |
@@ -205,8 +221,14 @@ wrong. They cover things the tool descriptions cannot say on their own, such as
 which of two similar tools to reach for, what order calls have to happen in, and
 how to read a number a server hands back.
 
-Skills load automatically once their bundle is installed. To take the written
-procedures without the servers — useful when the servers are already present:
+For any compatible agent, install procedures independently of MCP servers:
+
+```bash
+clio-kit skill install --bundle clio-hpc --target /path/to/agent/skills
+```
+
+In Claude Code, skills are discovered once their bundle is installed. To install
+only the procedures through its native marketplace:
 
 ```bash
 claude plugin install clio-hpc-skills@clio-kit
