@@ -21,7 +21,8 @@ test -f pyproject.toml && test -f .claude-plugin/marketplace.json
 ```
 
 Skill discovery is tested with Codex 0.154.0; native plugin installation is
-tested with Claude Code 2.1.266. Claude is not a prerequisite for portable
+tested with Claude Code 2.1.266. Antigravity CLI checks use version 1.2.0.
+Claude is not a prerequisite for portable
 skills or MCP servers. If `uv` is missing, install it using [the official instructions](https://docs.astral.sh/uv/getting-started/installation/).
 
 ## 2. Install the launcher
@@ -75,7 +76,10 @@ Substitute the table's target for your agent.
 Current Cursor, VS Code, and Antigravity also discover `.agents/skills`,
 so reuse an existing project installation there instead of duplicating it.
 Antigravity's current global paths are `~/.gemini/config/mcp_config.json` and
-`~/.gemini/config/skills`.
+`~/.gemini/config/skills`. For Antigravity CLI, start the first session from
+your project with `agy --new-project`; the default CLI project may not load
+that directory's skills and MCP configuration. Reopen it with
+`agy --project <project-name-or-id>`.
 
 The Codex commands below apply to its IDE extension as well as its CLI. In VS
 Code, Copilot and Codex use different MCP configurations. Install the launcher

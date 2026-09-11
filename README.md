@@ -434,8 +434,11 @@ Install the workflow skills from your project:
 clio-kit skill install --bundle clio-scientific-io --target .agents/skills
 ```
 
-Reload the MCP configuration. Reuse `.agents/skills` if already installed for
-Codex. CLIO does not yet ship a native Antigravity plugin.
+Reload the MCP configuration. For Antigravity CLI, start the first session from
+this project with `agy --new-project` so its local skills and MCP configuration
+are loaded. Reopen it with `agy --project <project-name-or-id>`.
+Reuse `.agents/skills` if already installed for Codex.
+CLIO does not yet ship a native Antigravity plugin.
 See [Antigravity MCP docs](https://antigravity.google/docs/mcp) and
 [skills docs](https://antigravity.google/docs/skills/).
 

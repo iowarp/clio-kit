@@ -146,6 +146,9 @@ Antigravity also supports the older `.agent/skills` directory. Its current globa
 locations are `~/.gemini/config/mcp_config.json` for servers and
 `~/.gemini/config/skills` for skills. Use the IDE's **MCP Servers → Manage MCP
 Servers → View raw config** to locate the configuration for your installed version.
+For Antigravity CLI, start the first session from your project with
+`agy --new-project` so its local skills and MCP configuration are loaded.
+Reopen it with `agy --project <project-name-or-id>`.
 
 CLIO's native `.claude-plugin` bundles and agent definitions currently target
 Claude Code. Other clients have their own plugin systems; the portable routes

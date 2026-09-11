@@ -95,6 +95,10 @@ correctness.
 Match the chart to the question, not to preference — see
 `choosing-the-right-chart`.
 
+Use units supplied by the input metadata or the user in axis labels and
+reported aggregates. A column named `runtime` does not establish seconds.
+When units are absent, label them as unspecified; do not invent or convert them.
+
 ## When the data is not a table
 
 Mesh and volume data does not belong here. `clio-plot` reads CSV and Excel; a

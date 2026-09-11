@@ -161,6 +161,18 @@ and Antigravity's GUI workflow was not automated. These results do not establish
 behavioral support in those clients. Native plugin installation and deterministic
 checks do not require a model quota.
 
+The September 11 follow-up tested Codex 0.154.0, Claude Code 2.1.266 after its
+quota reset, and Antigravity CLI 1.2.0. All three discovered the 20 skills;
+nine fixture or conceptual workflows were exercised per client, along with
+both read-only Claude agent definitions. The run found and fixed Pandas'
+advertised filter syntax being silently ignored, and added guidance against
+inventing units in plots. Antigravity CLI needs an explicitly selected project
+to load workspace configuration. Model behavior still varied: its GPT-OSS
+model produced malformed tool calls, and one Claude plot required correction.
+The repeated Codex routing check matched 22 of 23 expected choices, with the
+same ambiguous slow-HDF5 request as before. Cursor testing was stopped at the
+operator's request; GUI client flows were not automated.
+
 ## Skill maintenance
 
 The six workflow packages contain 20 skills. Public skill IDs remain stable;

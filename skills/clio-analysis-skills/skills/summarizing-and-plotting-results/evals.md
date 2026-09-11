@@ -80,3 +80,13 @@ kit fired nothing.
 Selection is checked. Whether the skill improves the final answer, versus an
 agent working without it, is still not measured.
 
+
+## S4 - units are absent
+
+Setup: A CSV has `machine`, `size`, and `runtime` columns with no unit metadata.
+Prompt: "Give mean runtime by machine and plot runtime against size."
+
+Expected:
+
+- Summary and chart preserve unspecified units rather than assuming seconds.
+- No unit conversion occurs without a unit supplied by the user or metadata.
