@@ -71,9 +71,11 @@ Install workflow bundles, use skills to guide your agent, and discover community
 
 **MCP servers · Skills · Workflow bundles · Agents · Community marketplaces · Hybrid search**
 
-CLIO Kit combines scientific tools with reusable workflows and community contributions. Built at Illinois Institute of Technology as part of the IoWarp platform, with NSF support.
+CLIO Kit is part of the IoWarp platform's tooling ecosystem for AI agents. Its meta-marketplace brings tools and reusable workflows together for scientific computing—from exploring HDF5 datasets and managing Slurm jobs to analyzing results and finding research papers. Built by researchers, for researchers, at Illinois Institute of Technology with NSF support.
 
-> Install individual components or workflow bundles. Contribute your own skills, plugins, MCP servers, or marketplace.
+> **Part of IoWarp Platform:** CLIO Kit is the platform's meta-marketplace and tooling layer, bringing together MCP servers, skills, workflow plugins, agent definitions, and community marketplace collections.
+
+**One launcher for MCP servers. Individual components or workflow bundles.** BSD-3-Clause licensed, with automated checks and real installation, MCP, and HPC workflow tests. See the [validation guide](clio-kit-website/docs/marketplace.md#scientific-acceptance-boundaries) for tested coverage and environment requirements.
 
 ## 🚀 Quick Installation
 
