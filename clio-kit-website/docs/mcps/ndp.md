@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🔧"
   category="Data Processing"
   description="National Data Platform (NDP) MCP server for searching and discovering datasets across multiple CKAN instances"
-  version="2.2.3"
+  version="2.2.4"
   actions={["list_organizations", "search_datasets", "get_dataset_details", "stage_resource"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["ndp", "dataset-search", "ckan", "mcp", "llm-integration", "scientific-data"]}

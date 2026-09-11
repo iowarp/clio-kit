@@ -119,14 +119,11 @@ def read_server_versions(repo_root: Path) -> dict[str, str]:
 
 
 def read_registry_publish_servers(repo_root: Path) -> tuple[str, ...]:
-    """Read the MCP servers whose contract versions this release publishes.
+    """Read the servers receiving new immutable Registry releases.
 
-    An empty list is valid and expected: it means no server's registry
-    contract (tool names/schemas under [servers]) changed this release, so
-    there is nothing to republish. A server is only listed here alongside a
-    real version bump under [servers], in the same PR that changes its
-    contract; it is removed again once published so the next release does
-    not collide with an already-published version.
+    Schema, runtime behavior and dependency fixes require a fresh server version.
+    An empty list means no server release is needed. Remove published entries
+    before the next release; never republish changed metadata under an old ID.
     """
     versions_path = repo_root / SERVER_VERSIONS_FILE
     with open(versions_path, "rb") as f:

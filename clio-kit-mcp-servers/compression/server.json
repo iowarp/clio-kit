@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/compression-mcp",
   "title": "CLIO Compression",
   "description": "Compression MCP server implementation using Model Context Protocol",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"

@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="📋"
   category="Data Processing"
   description="MCP server for Apache Parquet files"
-  version="2.2.3"
+  version="2.2.4"
   actions={["summarize_tool", "read_slice_tool", "get_column_preview_tool", "aggregate_column_tool"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["parquet", "columnar-data", "data-analysis", "scientific-computing", "mcp", "llm-integration", "apache-arrow"]}

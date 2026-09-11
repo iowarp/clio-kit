@@ -1,7 +1,7 @@
 {
   "name": "clio-adios",
   "description": "Fetch and analyze BP5 data files using ADIOS2. Access scientific data, metadata, and attributes for research and analysis purposes.",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

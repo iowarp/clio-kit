@@ -143,16 +143,8 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     assert manifests == [project / "server.json" for project in projects]
     assert list(expected_server_versions) == sorted(expected_server_versions)
     assert set(expected_server_versions) == {project.name for project in all_projects}
-    assert publish_servers == (
-        "geo",
-        "hdf5",
-        "lmod",
-        "pandas",
-        "parallel-sort",
-        "seismology",
-        "slurm",
-        "spack",
-    )
+    # Every server has a patched HTTP runtime in this coordinated release.
+    assert publish_servers == tuple(sorted(expected_server_versions))
     assert marketplace["metadata"]["version"] == expected_version
     gemini = json.loads((repository_root / "gemini-extension.json").read_text())
     assert gemini["version"] == expected_version

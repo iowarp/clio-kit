@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/terrain-mcp",
   "title": "CLIO Terrain",
   "description": "MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"

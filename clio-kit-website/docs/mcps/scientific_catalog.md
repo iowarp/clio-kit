@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🔧"
   category="Data Processing"
   description="Operator-owned scientific dataset discovery for remote agents"
-  version="1.1.2"
+  version="1.1.3"
   actions={["scientific_dataset_search", "scientific_dataset_describe"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={[]}

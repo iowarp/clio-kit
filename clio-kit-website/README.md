@@ -23,7 +23,7 @@ clio-kit-website/
 
 ## Develop and build
 
-From this directory, with Node and npm installed:
+From this directory, with Node 20 or newer, npm and Python 3.10 or newer installed:
 
 ```bash
 npm ci
@@ -56,3 +56,16 @@ is performed by running the local build.
 Developed by the [Gnosis Research Center](https://grc.iit.edu/) at
 [Illinois Institute of Technology](https://www.iit.edu/), part of
 [IoWarp](https://iowarp.ai).
+
+## Image parser advisory
+
+The locked Docusaurus dependency `image-size@2.0.2` has no published fix for
+[ICNS](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) and
+[JPEG XL/HEIF](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) parser loops.
+`npm run build` and `npm start` run a byte-signature check before Docusaurus
+starts, rejecting those containers even if their extensions are misleading.
+Use PNG, JPEG, GIF, WebP or SVG website assets. Do not bypass the check with a
+direct Docusaurus command when processing contributed files. The check limits
+exposure; it does not patch the dependency, and `npm audit` still reports it.
+The deployed site is static; this parser runs during builds, not in visitors'
+browsers. Remove the workaround once an upstream patched release is available.

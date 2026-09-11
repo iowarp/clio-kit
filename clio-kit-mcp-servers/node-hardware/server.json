@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/node-hardware-mcp",
   "title": "CLIO Node Hardware",
   "description": "Node Hardware MCP - Comprehensive Hardware Monitoring and System Analysis for LLMs with...",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"

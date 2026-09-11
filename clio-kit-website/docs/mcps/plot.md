@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="📈"
   category="Data Processing"
   description="MCP server for advanced data visualization and plotting operations"
-  version="2.2.3"
+  version="2.2.4"
   actions={["line_plot", "bar_plot", "scatter_plot", "histogram_plot", "heatmap_plot", "plot_timeseries", "data_info"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["MCP", "plotting", "visualization", "analytics", "matplotlib", "seaborn", "data-science"]}
@@ -34,10 +34,6 @@ This prompt will:
 - Create time-series plots using `line_plot` showing sales trends
 - Provide statistical insights about the data
 
-<!-- **Output:** -->
-<!-- Add your output images here -->
-<!-- ![Data Info Output](images/example1_data_info.png) -->
-<!-- ![Sales Trends Line Plot](images/example1_sales_trends.png) -->
 
 ### 2. Comparative Analysis with Multiple Charts
 ```
@@ -58,11 +54,6 @@ This prompt will:
 - Show data relationships and distributions
 - Create professional publication-ready plots
 
-<!-- **Output:** -->
-<!-- Add your output images here -->
-<!-- ![Age Distribution Histogram](images/example2_age_histogram.png) -->
-<!-- ![Satisfaction Scores Heatmap](images/example2_satisfaction_heatmap.png) -->
-<!-- ![Department Salary Comparison](images/example2_department_salary.png) -->
 
 ### 3. Scientific Data Visualization
 ```
@@ -78,9 +69,6 @@ This prompt will:
 - Provide statistical correlation metrics
 - Include uncertainty analysis if applicable
 
-<!-- **Output:** -->
-<!-- Add your output images here -->
-<!-- ![Temperature vs Performance Scatter Plot](images/example3_temperature_scatter.png) -->
 
 ### 4. Business Intelligence Dashboard
 ```
@@ -101,11 +89,6 @@ This prompt will:
 - Provide executive summary statistics
 - Generate dashboard-style layouts
 
-<!-- **Output:** -->
-<!-- Add your output images here -->
-<!-- ![Revenue Trends Line Plot](images/example4_revenue_trends.png) -->
-<!-- ![Performance Metrics Histogram](images/example4_performance_histogram.png) -->
-<!-- ![Regional Comparison Bar Chart](images/example4_regional_comparison.png) -->
 
 ### 5. Research Data Publication
 ```
@@ -124,11 +107,6 @@ This prompt will:
 - Generate publication-ready 300 DPI plots
 - Include proper statistical annotations
 
-<!-- **Output:** -->
-<!-- Add your output images here -->
-<!-- ![Data Quality Report](images/example5_data_quality.png) -->
-<!-- ![Experimental Conditions vs Outcomes](images/example5_experiment_scatter.png) -->
-<!-- ![Correlation Matrix Heatmap](images/example5_correlation_heatmap.png) -->
 
 ### 6. Quick Data Quality Check
 ```
@@ -143,11 +121,6 @@ This prompt will:
 - Identify missing values and data issues
 - Suggest optimal visualization strategies
 - Provide data cleaning recommendations
-
-<!-- **Output:** -->
-<!-- Add your output images here -->
-<!-- ![Data Quality Assessment](images/example6_data_quality.png) -->
-<!-- ![Data Completeness Report](images/example6_completeness_report.png) -->
 
 {/* clio-kit:usage:end */}
 

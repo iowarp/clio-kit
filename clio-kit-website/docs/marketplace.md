@@ -97,7 +97,10 @@ clio-kit doctor --server hdf5 --connect
 Inspection and connection checks require `clio-kit[verification]`. Registry
 generation uses real stdio discovery for selected Python, Node and Go projects.
 The descriptor's optional `[registry]` table describes the distribution package,
-not its source language. Supported `registryType` values are `npm`, `pypi`,
+not its source language. Registry server patch versions also advance for runtime
+and dependency fixes, even when tool schemas stay compatible. This release
+selects all 22 servers so their registry entries point to the patched `2.11.0`
+wheel. Supported `registryType` values are `npm`, `pypi`,
 `oci`, `nuget`, and `mcpb`. The publisher remains responsible for uploading the
 referenced artifact and meeting that registry's ownership requirements.
 
@@ -144,7 +147,11 @@ installation and connection results alone still do not verify a scientific
 workflow.
 
 Model-driven skill trigger and quality evaluation must be recorded per agent
-and model. A quota failure in one client says nothing about another client or account. Deterministic installation, discovery
+and model. Fresh Claude and Codex runs exercised the I/O interpretation skill
+on 2026-09-10; each rejected a throughput-only diagnosis and requested context.
+That is one behavioral smoke check per client, not an evaluation of every skill
+or every model. A quota failure in one client says nothing about another account.
+Deterministic installation, discovery
 and MCP checks do not require model quota. Record fresh behavioral evidence
 separately for each tested client instead of treating historical results or
 another client's results as proof of the current revision.
@@ -167,3 +174,25 @@ A live 70-million-element array of ones returns sample sum/count 700,000, now
 explicitly labeled as 1% coverage rather than full-dataset totals. Stream summaries can cover only part of a dataset; CSV profiles retain a bounded
 sample. None should be presented as exact full-data calculations without checking
 coverage. Skill instructions describe these limits instead of changing MCP code.
+
+## Candidate validation, 2026-09-10
+
+The merged candidate installs 22 MCP servers, six bundles and 20 portable skills.
+The installed-wheel acceptance script passed Claude plugin installation/update,
+Codex skill discovery, all 22 stdio handshakes, TypeScript/Go cold and warm calls,
+compression round-trip, grouped means and plotting, Pandas imputation,
+bracketed log filtering and sampled HDF5 coverage. A separate real Slurm job
+completed with exact expected output and valid JSON-RPC stdout. The setup guide's
+source installation, HDF5 connection and compression commands also passed.
+
+All 22 server dependency environments, the launcher and agentic-search passed
+`pip-audit` after updating HTTP dependencies. Locally built packages and the
+Git-hosted JARVIS dependency are not covered by PyPI advisory matching.
+The website build has an unpatched upstream image-parser advisory with a
+pre-build format restriction; see the
+[website maintenance notes](https://github.com/iowarp/clio-kit/blob/feat/360-meta-marketplace/clio-kit-website/README.md#image-parser-advisory).
+This is a disclosed build dependency limitation, not a clean npm audit.
+
+Use the GitHub Actions results for the exact commit being reviewed. Public
+publication and target-site backend acceptance remain separate steps; the
+checks above do not establish universal agent or scientific-workflow support.

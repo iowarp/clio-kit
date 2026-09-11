@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/plot-mcp",
   "title": "CLIO Plot",
   "description": "MCP server for advanced data visualization and plotting operations",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"

@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="⏰"
   category="Data Processing"
   description="ChronoLog MCP server implementation using Model Context Protocol"
-  version="2.0.1"
+  version="2.0.2"
   actions={["start_chronolog", "record_interaction", "stop_chronolog", "retrieve_interaction"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["distributed logging", "chronolog", "event logging", "session management", "context sharing", "real-time", "model context protocol", "scientific data", "conversational ai", "high-performance", "shared log", "multi-client", "historical retrieval", "enterprise logging"]}

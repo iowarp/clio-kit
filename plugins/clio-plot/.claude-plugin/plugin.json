@@ -1,7 +1,7 @@
 {
   "name": "clio-plot",
   "description": "MCP server for advanced data visualization and plotting operations",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

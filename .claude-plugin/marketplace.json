@@ -14,7 +14,7 @@
       "name": "clio-adios",
       "source": "./plugins/clio-adios",
       "description": "Fetch and analyze BP5 data files using ADIOS2. Access scientific data, metadata, and attributes for research and analysis purposes.",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "scientific",
       "keywords": [
         "scientific-computing",
@@ -30,7 +30,7 @@
       "name": "clio-arxiv",
       "source": "./plugins/clio-arxiv",
       "description": "ArXiv MCP server implementation using Model Context Protocol",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "scientific",
       "keywords": [
         "research",
@@ -45,7 +45,7 @@
       "name": "clio-chronolog",
       "source": "./plugins/clio-chronolog",
       "description": "ChronoLog MCP server implementation using Model Context Protocol",
-      "version": "2.0.1",
+      "version": "2.0.2",
       "category": "scientific",
       "keywords": [
         "logging",
@@ -60,7 +60,7 @@
       "name": "clio-compression",
       "source": "./plugins/clio-compression",
       "description": "Compression MCP server implementation using Model Context Protocol",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "general",
       "keywords": [
         "compression",
@@ -75,7 +75,7 @@
       "name": "clio-darshan",
       "source": "./plugins/clio-darshan",
       "description": "Darshan I/O profiler MCP server for analyzing I/O trace files",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "scientific",
       "keywords": [
         "io-profiling",
@@ -120,7 +120,7 @@
       "name": "clio-jarvis",
       "source": "./plugins/clio-jarvis",
       "description": "JARVIS-CD MCP with a compact user pipeline contract and explicit admin compatibility profiles",
-      "version": "3.7.2",
+      "version": "3.7.3",
       "category": "scientific",
       "keywords": [
         "pipeline-management",
@@ -149,7 +149,7 @@
       "name": "clio-ndp",
       "source": "./plugins/clio-ndp",
       "description": "National Data Platform (NDP) MCP server for searching and discovering datasets across multiple CKAN instances",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "scientific",
       "keywords": [
         "datasets",
@@ -164,7 +164,7 @@
       "name": "clio-node-hardware",
       "source": "./plugins/clio-node-hardware",
       "description": "Node Hardware MCP - Comprehensive Hardware Monitoring and System Analysis for LLMs with real-time performance metrics",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "scientific",
       "keywords": [
         "hardware-monitoring",
@@ -208,7 +208,7 @@
       "name": "clio-paraview",
       "source": "./plugins/clio-paraview",
       "description": "MCP server for ParaView scientific visualization",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "scientific",
       "keywords": [
         "scientific-visualization",
@@ -223,7 +223,7 @@
       "name": "clio-parquet",
       "source": "./plugins/clio-parquet",
       "description": "MCP server for Apache Parquet files",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "scientific",
       "keywords": [
         "parquet",
@@ -238,7 +238,7 @@
       "name": "clio-plot",
       "source": "./plugins/clio-plot",
       "description": "MCP server for advanced data visualization and plotting operations",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "scientific",
       "keywords": [
         "data-visualization",
@@ -253,7 +253,7 @@
       "name": "clio-scientific-catalog",
       "source": "./plugins/clio-scientific-catalog",
       "description": "Operator-owned scientific dataset discovery for remote agents",
-      "version": "1.1.2",
+      "version": "1.1.3",
       "category": "scientific",
       "keywords": [
         "dataset-catalog",
@@ -312,7 +312,7 @@
       "name": "clio-terrain",
       "source": "./plugins/clio-terrain",
       "description": "MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "scientific",
       "keywords": [
         "terrain",
@@ -327,7 +327,7 @@
       "name": "clio-web",
       "source": "./plugins/clio-web",
       "description": "Provider-fixed web search plus transparent URL, DOI, and document fetching",
-      "version": "2.1.0",
+      "version": "2.1.1",
       "category": "general",
       "keywords": [
         "web",

@@ -382,8 +382,8 @@ See [Claude Desktop MCP docs](https://modelcontextprotocol.io/quickstart/user) f
 
 ## Available Packages
 
-The version below is each MCP server's agent-facing contract version, not the
-containing `clio-kit` wheel version. JARVIS 3.7 and SLURM 3.0 have contracts
+The version below identifies each MCP server's contract and runtime release,
+independently of the containing `clio-kit` wheel version. JARVIS 3.7 and SLURM 3.0 have contracts
 redesigned for agent use. Spack is at 2.3, while the other
 contracts retain their existing 2.x identities until a focused upgrade.
 
@@ -398,28 +398,28 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 
 | 📦 **Package** | 📌 **Ver** | 🔧 **System** | 📋 **Description** | ⚡ **Install Command** |
 |:---|:---:|:---:|:---|:---|
-| **`adios`** | 2.2.3 | Data I/O | Read data using ADIOS2 engine | `clio-kit mcp-server adios` |
-| **`arxiv`** | 2.2.3 | Research | Fetch research papers from ArXiv | `clio-kit mcp-server arxiv` |
-| **`chronolog`** | 2.0.1 | Logging | Log and retrieve data from ChronoLog | `clio-kit mcp-server chronolog` |
-| **`compression`** | 2.2.3 | Utilities | File compression with gzip | `clio-kit mcp-server compression` |
-| **`darshan`** | 2.2.3 | Performance | I/O performance trace analysis | `clio-kit mcp-server darshan` |
+| **`adios`** | 2.2.4 | Data I/O | Read data using ADIOS2 engine | `clio-kit mcp-server adios` |
+| **`arxiv`** | 2.2.4 | Research | Fetch research papers from ArXiv | `clio-kit mcp-server arxiv` |
+| **`chronolog`** | 2.0.2 | Logging | Log and retrieve data from ChronoLog | `clio-kit mcp-server chronolog` |
+| **`compression`** | 2.2.4 | Utilities | File compression with gzip | `clio-kit mcp-server compression` |
+| **`darshan`** | 2.2.4 | Performance | I/O performance trace analysis | `clio-kit mcp-server darshan` |
 | **`geo`** | 2.3.0 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
 | **`hdf5`** | 2.2.4 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
-| **`jarvis`** | 3.7.2 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |
+| **`jarvis`** | 3.7.3 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |
 | **`lmod`** | 3.0.0 | Environment | Environment module management | `clio-kit mcp-server lmod` |
-| **`ndp`** | 2.2.3 | Data Protocol | Search and discover datasets across CKAN instances | `clio-kit mcp-server ndp` |
-| **`node-hardware`** | 2.2.3 | System | System hardware information | `clio-kit mcp-server node-hardware` |
+| **`ndp`** | 2.2.4 | Data Protocol | Search and discover datasets across CKAN instances | `clio-kit mcp-server ndp` |
+| **`node-hardware`** | 2.2.4 | System | System hardware information | `clio-kit mcp-server node-hardware` |
 | **`pandas`** | 2.2.5 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
 | **`parallel-sort`** | 2.2.4 | Computing | Large file sorting | `clio-kit mcp-server parallel-sort` |
-| **`paraview`** | 2.2.3 | Visualization | Scientific 3D visualization and analysis | `clio-kit mcp-server paraview` |
-| **`parquet`** | 2.2.3 | Data I/O | Read Parquet file columns | `clio-kit mcp-server parquet` |
-| **`plot`** | 2.2.3 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |
+| **`paraview`** | 2.2.4 | Visualization | Scientific 3D visualization and analysis | `clio-kit mcp-server paraview` |
+| **`parquet`** | 2.2.4 | Data I/O | Read Parquet file columns | `clio-kit mcp-server parquet` |
+| **`plot`** | 2.2.4 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |
 | **`seismology`** | 2.3.0 | Seismology | Analyze SAC waveforms and archives | `clio-kit mcp-server seismology` |
-| **`scientific-catalog`** | 1.1.2 | Discovery | Operator-owned scientific dataset discovery | `clio-kit mcp-server scientific-catalog` |
+| **`scientific-catalog`** | 1.1.3 | Discovery | Operator-owned scientific dataset discovery | `clio-kit mcp-server scientific-catalog` |
 | **`slurm`** | 3.0.1 | HPC | Job submission and management | `clio-kit mcp-server slurm` |
 | **`spack`** | 2.3.0 | Package Management | Structured package discovery, installation, and location | `clio-kit mcp-server spack` |
-| **`terrain`** | 2.2.3 | Geospatial | Analyze DEMs and terrain point clouds | `clio-kit mcp-server terrain` |
-| **`web`** | 2.1.0 | Web | Synchronous search plus durable, queryable, cancellable URL, DOI, and document fetch tasks | `clio-kit mcp-server web` |
+| **`terrain`** | 2.2.4 | Geospatial | Analyze DEMs and terrain point clouds | `clio-kit mcp-server terrain` |
+| **`web`** | 2.1.1 | Web | Synchronous search plus durable, queryable, cancellable URL, DOI, and document fetch tasks | `clio-kit mcp-server web` |
 
 </div>
 

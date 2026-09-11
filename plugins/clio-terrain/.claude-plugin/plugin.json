@@ -1,7 +1,7 @@
 {
   "name": "clio-terrain",
   "description": "MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

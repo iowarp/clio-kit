@@ -2,7 +2,7 @@ name: Update Documentation and Build Website
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/360-meta-marketplace]
     paths:
       - 'clio-kit-website/**'
       - 'clio-kit-mcp-servers/**'
@@ -24,6 +24,7 @@ jobs:
   # Job 1: Build and test documentation (runs on all branches/PRs)
   build-docs:
     name: Build Documentation
+    timeout-minutes: 20
     runs-on: ubuntu-latest
 
     steps:
@@ -65,11 +66,11 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '24'
 
     - name: Install Node.js dependencies
       working-directory: ./clio-kit-website
-      run: npm install
+      run: npm ci
 
     - name: Build Docusaurus website
       working-directory: ./clio-kit-website

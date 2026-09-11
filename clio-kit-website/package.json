@@ -11,12 +11,13 @@
     "clear": "docusaurus clear",
     "serve": "docusaurus serve --port 5100",
     "write-translations": "docusaurus write-translations",
-    "write-heading-ids": "docusaurus write-heading-ids"
+    "write-heading-ids": "docusaurus write-heading-ids",
+    "prebuild": "python3 ../scripts/check_website_images.py",
+    "prestart": "python3 ../scripts/check_website_images.py"
   },
   "dependencies": {
-    "@docusaurus/core": "3.8.1",
-    "@docusaurus/plugin-ideal-image": "^3.8.1",
-    "@docusaurus/preset-classic": "3.8.1",
+    "@docusaurus/core": "3.10.2",
+    "@docusaurus/preset-classic": "3.10.2",
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
     "prism-react-renderer": "^2.3.0",
@@ -24,12 +25,8 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "3.8.1",
-    "@docusaurus/types": "3.8.1",
-    "webpack": "5.99.9"
-  },
-  "overrides": {
-    "webpack": "5.99.9"
+    "@docusaurus/module-type-aliases": "3.10.2",
+    "@docusaurus/types": "3.10.2"
   },
   "browserslist": {
     "production": [
@@ -44,6 +41,13 @@
     ]
   },
   "engines": {
-    "node": ">=18.0"
+    "node": ">=20.0"
+  },
+  "overrides": {
+    "serialize-javascript": "7.1.1",
+    "qs": "6.16.0",
+    "sockjs": {
+      "uuid": "11.1.1"
+    }
   }
 }

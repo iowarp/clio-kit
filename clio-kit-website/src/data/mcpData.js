@@ -40,7 +40,7 @@ export const mcpData = {
       "read_variable_at_step"
     ],
     "stats": {
-      "version": "2.2.3",
+      "version": "2.2.4",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -71,7 +71,7 @@ export const mcpData = {
       "download_multiple_pdfs"
     ],
     "stats": {
-      "version": "2.2.3",
+      "version": "2.2.4",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -93,7 +93,7 @@ export const mcpData = {
       "retrieve_interaction"
     ],
     "stats": {
-      "version": "2.0.1",
+      "version": "2.0.2",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -113,7 +113,7 @@ export const mcpData = {
       "decompress_file_tool"
     ],
     "stats": {
-      "version": "2.2.3",
+      "version": "2.2.4",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -141,7 +141,7 @@ export const mcpData = {
       "generate_io_summary_report"
     ],
     "stats": {
-      "version": "2.2.3",
+      "version": "2.2.4",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -238,7 +238,7 @@ export const mcpData = {
       "jarvis_get_execution"
     ],
     "stats": {
-      "version": "3.7.2",
+      "version": "3.7.3",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -285,7 +285,7 @@ export const mcpData = {
       "stage_resource"
     ],
     "stats": {
-      "version": "2.2.3",
+      "version": "2.2.4",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -314,7 +314,7 @@ export const mcpData = {
       "health_check"
     ],
     "stats": {
-      "version": "2.2.3",
+      "version": "2.2.4",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -423,7 +423,7 @@ export const mcpData = {
       "list_commands"
     ],
     "stats": {
-      "version": "2.2.3",
+      "version": "2.2.4",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -445,7 +445,7 @@ export const mcpData = {
       "aggregate_column_tool"
     ],
     "stats": {
-      "version": "2.2.3",
+      "version": "2.2.4",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -470,7 +470,7 @@ export const mcpData = {
       "data_info"
     ],
     "stats": {
-      "version": "2.2.3",
+      "version": "2.2.4",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -490,7 +490,7 @@ export const mcpData = {
       "scientific_dataset_describe"
     ],
     "stats": {
-      "version": "1.1.2",
+      "version": "1.1.3",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -579,7 +579,7 @@ export const mcpData = {
       "pointcloud_read"
     ],
     "stats": {
-      "version": "2.2.3",
+      "version": "2.2.4",
       "updated": "2026-09-10"
     },
     "platforms": [
@@ -600,7 +600,7 @@ export const mcpData = {
       "search"
     ],
     "stats": {
-      "version": "2.1.0",
+      "version": "2.1.1",
       "updated": "2026-09-10"
     },
     "platforms": [

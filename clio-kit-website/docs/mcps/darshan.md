@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="⚡"
   category="Analysis & Visualization"
   description="Darshan I/O profiler MCP server for analyzing I/O trace files"
-  version="2.2.3"
+  version="2.2.4"
   actions={["load_darshan_log", "get_job_summary", "analyze_file_access_patterns", "get_io_performance_metrics", "analyze_posix_operations", "analyze_mpiio_operations", "identify_io_bottlenecks", "get_timeline_analysis", "compare_darshan_logs", "generate_io_summary_report"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["darshan", "i/o profiling", "performance analysis", "hpc", "mcp", "iowarp", "grc"]}

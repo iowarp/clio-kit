@@ -1,7 +1,7 @@
 {
   "name": "clio-web",
   "description": "Provider-fixed web search plus transparent URL, DOI, and document fetching",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",
