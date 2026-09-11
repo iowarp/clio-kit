@@ -172,13 +172,12 @@ only temporary files, calls the real installed server over MCP, and verifies
 that decompression restores the exact bytes:
 
 ```bash
-uv run --no-project --with 'mcp>=1.20,<2' python - <<'PY'
+uv run --no-project --with 'mcp>=2.2,<3' python - <<'PY'
 import asyncio
 import gzip
 import tempfile
 from pathlib import Path
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+from mcp import Client, StdioServerParameters
 
 async def check():
     with tempfile.TemporaryDirectory(prefix="clio-setup-") as directory:
@@ -188,14 +187,12 @@ async def check():
         parameters = StdioServerParameters(
             command="clio-kit", args=["mcp-server", "compression"]
         )
-        async with stdio_client(parameters) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                result = await session.call_tool(
-                    "decompress_file_tool", {"file_path": str(source)}
-                )
-                assert not result.isError, result
-                assert source.with_suffix("").read_bytes() == expected
+        async with Client(parameters) as client:
+            result = await client.call_tool(
+                "decompress_file_tool", {"file_path": str(source)}
+            )
+            assert not result.is_error, result
+            assert source.with_suffix("").read_bytes() == expected
     print("PASS: installed MCP server restored the exact input bytes")
 
 asyncio.run(asyncio.wait_for(check(), timeout=300))
@@ -210,6 +207,35 @@ Report which checks passed and which prerequisites remain unavailable.
 Skill names and descriptions help the client select procedures; full bodies
 load when used. `plugin details` is useful for inspecting installed components,
 but its token estimate is not an exact per-conversation bill.
+
+## Native backend setup
+
+Set these variables in the individual MCP server's environment in your agent
+configuration. The kit installs Python dependencies; the native applications
+and services still need a site installation.
+
+| Server | Backend and launch requirements | Real acceptance check |
+| --- | --- | --- |
+| Darshan | Install Darshan utilities and put `darshan-parser` on `PATH`. Generate a real log using the matching Darshan runtime. | Compare MCP bytes/operations with `darshan-parser --base LOG`. |
+| Lmod | Install Lmod and Bash; set `LMOD_CMD` to its `libexec/lmod` executable and `MODULEPATH` to your modulefiles. | Inspect a module, save a collection, then restore/list it in a new MCP process. |
+| Spack | Set `SPACK_MCP_COMMAND` to `spack`; use `SPACK_PYTHON` if that Spack release needs a different Python. | Install a small package, locate its prefix, and verify the installation. Use `package/HASH` when several builds match. |
+| JARVIS | Use a writable `JARVIS_ROOT`; configure its private/shared directories and available recipes. Administrative setup requires `--profile all`. | Create an `echo` pipeline, run with `submit=false`, and inspect its execution status and stdout. |
+| ParaView | Run `pvserver`; use `UV_PYTHON` matching ParaView's Python ABI, with its modules on `PYTHONPATH` and shared libraries on `LD_LIBRARY_PATH`. Forward `--server HOST --pv-port PORT` after `--`. | Create a sphere, compute its area, and save a PNG screenshot. Headless builds may require a display such as Xvfb or an EGL/OSMesa-capable build. |
+| ChronoLog | Run its visor/keeper/grapher/player services. Set `UV_PYTHON` to match `py_chronolog_client`, `PYTHONPATH`, `LD_LIBRARY_PATH`, `CHRONO_PORT`, `CHRONO_CONF`, and `HDF5_READER_BIN`. | Start, record, stop, then retrieve and compare the exact archived text. Archiving is asynchronous; allow the configured flush interval. |
+
+For ChronoLog reader compilation, see the
+[server instructions](clio-kit-mcp-servers/chronolog/README.md#native-client-and-archive-reader).
+Keep native Python environments separate: for example, a Python 3.11 ChronoLog
+extension cannot load in a Python 3.13 ParaView process. Give them distinct
+`CLIO_KIT_CACHE_DIR` paths when both interpreters are needed on one machine.
+The JARVIS 1.8.1 scheduler backend currently fails if Slurm exports the literal
+`SLURM_CLUSTER_NAME=(null)`. Local/direct execution was verified; do not assume
+scheduler execution is ready until the upstream fix is released and tested.
+ParaView MPI rendering additionally requires an MPI-enabled native build; the
+local single-process rendering test does not establish distributed support.
+
+Lmod collection changes remain within that MCP process; they do not change
+another server's environment or your parent shell.
 
 ## Update and troubleshoot
 
@@ -236,7 +262,14 @@ and multi-language runtime instructions.
 - **Connection failure:** run `clio-kit doctor --server NAME --connect` for the
   specific server; check network access and backend prerequisites. A directly
   launched stdio server may wait for protocol input rather than print a result.
-- **Missing tools in an existing session:** reload plugins or restart the client.
+- **Slow first launch:** large scientific dependencies may exceed an agent's
+  startup deadline on an empty cache. Prepare the server first, for example
+  `clio-kit mcp-server pandas </dev/null` on Unix, and wait for installation to
+  finish. Then run the connection check and restart the agent. This preparation
+  command only installs/starts the server; it does not verify a scientific query.
+- **Missing tools in an existing session:** reinstall this candidate and restart
+  the client. The current servers expose their complete small tool inventories
+  on the first page, including clients that do not follow pagination.
 
 ## Remove this installation when requested
 

@@ -41,8 +41,14 @@ Lmod MCP is a comprehensive Model Context Protocol (MCP) server that enables Lan
 
 - Python 3.10 or higher
 - [uv](https://docs.astral.sh/uv/) package manager (recommended)
-- Lmod system installed and available in PATH
+- Lmod and Bash installed; set `LMOD_CMD` to Lmod's `libexec/lmod` executable (or put `lmod` on `PATH`) and `MODULEPATH` to the site modulefiles
 - HPC environment with module system access
+
+The server evaluates Lmod's shell integration and retains collection changes
+for subsequent calls in the same MCP process. A shell `module` function does
+not need to be an executable on `PATH`. These changes do not modify the parent
+shell or other MCP servers. Modulefiles execute site-provided shell code and
+must come from a trusted installation.
 
 <details>
 <summary><b>Install in Cursor</b></summary>

@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/chronolog-mcp",
   "title": "CLIO Chronolog",
   "description": "ChronoLog MCP server implementation using Model Context Protocol",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"

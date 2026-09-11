@@ -33,7 +33,7 @@ HDF5 FastMCP Configuration Management
 #!/usr/bin/env python3
 # /// script
 # dependencies = [
-#   "fastmcp>=0.2.0",
+#   "fastmcp>=4.0.3,<5",
 #   "h5py>=3.9.0",
 #   "numpy>=1.24.0,<2.0.0",
 #   "pydantic>=2.4.2,<3.0.0",

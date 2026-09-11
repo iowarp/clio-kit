@@ -22,7 +22,6 @@ def inspect_variables_at_step(filename: str, variable_name: str, step: int):
             # Iterate to the desired step
             for i, _ in enumerate(s.steps(timeout=3)):
                 if i == step:
-                    print(f"Current step is {s.current_step()}")
                     # Get variable info at this step
                     variables = s.available_variables()
                     if variable_name in variables:

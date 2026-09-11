@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="📊"
   category="Data Processing"
   description="Fetch and analyze BP5 data files using ADIOS2. Access scientific data, metadata, and attributes for research and analysis purposes."
-  version="2.2.4"
+  version="2.2.5"
   actions={["list_bp5", "inspect_variables", "inspect_variables_at_step", "inspect_attributes", "read_variable_at_step"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["mcp", "adios2", "bp5", "scientific data", "data access", "variable inspection", "attribute extraction", "iowarp", "grc"]}

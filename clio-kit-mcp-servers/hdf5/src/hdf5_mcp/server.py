@@ -12,7 +12,7 @@ HDF5 FastMCP Server - Scientific Data Access for AI Agents
     Part of the IoWarp MCP Server Collection for AI-powered scientific computing.
 
     This module implements a comprehensive HDF5 (Hierarchical Data Format) server
-    using FastMCP 2.0 patterns, providing AI agents with powerful tools for working
+    using FastMCP 4 and MCP SDK v2, providing AI agents with powerful tools for working
     with scientific and engineering data stored in HDF5 format.
 
     Key Features:
@@ -40,7 +40,7 @@ HDF5 FastMCP Server - Scientific Data Access for AI Agents
 #!/usr/bin/env python3
 # /// script
 # dependencies = [
-#   "fastmcp>=0.2.0",
+#   "fastmcp>=4.0.3,<5",
 #   "h5py>=3.9.0",
 #   "numpy>=1.24.0,<2.0.0",
 #   "pydantic>=2.4.2,<3.0.0",
@@ -55,7 +55,7 @@ import os
 import time
 import json
 from pathlib import Path
-from typing import Any, Callable, Optional, List
+from typing import Any, Callable, Optional, List, Literal
 from functools import wraps
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import asynccontextmanager
@@ -67,6 +67,7 @@ from fastmcp import FastMCP, Context
 from fastmcp.exceptions import ToolError, ResourceError
 from fastmcp.prompts import Message
 
+from .exports import select_export_format
 from .statistics import (
     compute_dataset_stats as _compute_dataset_stats,
     format_statistics,
@@ -178,7 +179,6 @@ mcp = FastMCP(
         - Interactive export with format selection
     """,
     lifespan=lifespan,
-    list_page_size=10,
 )
 
 # =========================================================================
@@ -851,7 +851,7 @@ async def hdf5_parallel_scan(
         return f"No HDF5 files found in {directory} matching {pattern}"
 
     if ctx:
-        await ctx.info(f"Scanning {len(files)} files in {directory}")
+        logger.info(f"Scanning {len(files)} files in {directory}")
         await ctx.report_progress(0, len(files), "Starting parallel scan")
 
     # Parallel scanning
@@ -937,7 +937,7 @@ async def hdf5_batch_read(
         path_list = [p.strip() for p in paths.split(",") if p.strip()]
 
     if ctx:
-        await ctx.info(f"Reading {len(path_list)} datasets in parallel")
+        logger.info(f"Reading {len(path_list)} datasets in parallel")
         await ctx.report_progress(0, len(path_list), "Starting batch read")
 
     # Parse slice
@@ -1035,7 +1035,7 @@ async def hdf5_stream_data(
     )
 
     if ctx:
-        await ctx.info(f"Streaming {total_chunks} chunks from {path}")
+        logger.info(f"Streaming {total_chunks} chunks from {path}")
         await ctx.report_progress(0, total_chunks, "Starting stream")
 
     # Stream processing
@@ -1140,7 +1140,7 @@ async def hdf5_aggregate_stats(
         stats_list = ["mean", "std", "min", "max", "sum", "count"]
 
     if ctx:
-        await ctx.info(f"Computing statistics for {len(path_list)} datasets")
+        logger.info(f"Computing statistics for {len(path_list)} datasets")
         await ctx.report_progress(0, len(path_list), "Starting statistics computation")
 
     # Parallel statistics computation
@@ -1748,7 +1748,7 @@ async def refresh_hdf5_resources(ctx: Optional[Context] = None) -> str:
         Summary of refreshed resources
     """
     if ctx:
-        await ctx.info("Scanning for HDF5 files...")
+        logger.info("Scanning for HDF5 files...")
 
     discovered = discover_hdf5_files_in_roots(client_roots)
 
@@ -1816,7 +1816,10 @@ async def list_available_hdf5_files() -> str:
 @with_error_handling
 @with_performance_tracking
 async def export_dataset(
-    path: str, output_path: Optional[str] = None, ctx: Optional[Context] = None
+    path: str,
+    output_path: Optional[str] = None,
+    ctx: Optional[Context] = None,
+    export_format: Optional[Literal["csv", "json", "numpy"]] = None,
 ) -> str:
     """Export dataset to various formats with user format selection.
 
@@ -1824,6 +1827,8 @@ async def export_dataset(
         path: Path to dataset within file
         output_path: Optional output file path
         ctx: Context for elicitation
+        export_format: Explicit format; defaults to JSON on modern MCP connections.
+            Legacy clients may select a format through elicitation when omitted.
 
     Returns:
         Export summary
@@ -1839,30 +1844,9 @@ async def export_dataset(
     if not isinstance(dataset, h5py.Dataset):
         raise ToolError(f"{path} is not a dataset")
 
-    # Ask user for format (if ctx available and client supports elicitation)
-    export_format = "json"
-    if ctx:
-        try:
-            format_result = await ctx.elicit(
-                "What format should I export to?",
-                response_type=["csv", "json", "numpy"],  # type: ignore[arg-type]
-            )
-
-            if format_result.action == "accept":
-                export_format = format_result.data  # type: ignore[assignment]
-            elif format_result.action == "decline":
-                return "Export declined by user"
-            else:  # cancel
-                raise ToolError("Export cancelled")
-        except ValueError as e:
-            logger.debug(f"Elicitation not supported: {e}")
-        except Exception as e:
-            logger.warning(f"Error during elicitation: {e}")
-            import traceback
-
-            logger.debug(traceback.format_exc())
-            # Fall back to default format
-            export_format = "json"
+    export_format = await select_export_format(ctx, export_format)
+    if export_format is None:
+        return "Export declined by user"
 
     # Read dataset
     data = dataset[:]

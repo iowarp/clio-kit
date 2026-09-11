@@ -19,6 +19,8 @@ import logging
 import argparse
 from typing import Optional, TYPE_CHECKING
 
+from mcp.types import ImageContent, TextContent
+
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 from fastmcp.prompts import Message
@@ -56,9 +58,10 @@ mcp: FastMCP = FastMCP(
         "Controls ParaView for scientific visualization. "
         "Open data files, apply filters, create renderings, and manage visualization pipelines."
     ),
-    list_page_size=10,
 )
 
+# ParaView/VTK rendering state is thread-affine. All tools run on the MCP
+# event-loop thread; mixing worker-thread tools with async screenshots breaks GLX.
 # ParaView manager will be initialized when needed
 pv_manager: Optional["VisualizationEngine"] = None
 server_host = "localhost"
@@ -170,7 +173,7 @@ async def read_datafile_tool(file_path: str) -> str:
     },
     tags={"paraview", "pipeline"},
 )
-def save_contour_as_stl(stl_filename: str = "contour.stl") -> str:
+async def save_contour_as_stl(stl_filename: str = "contour.stl") -> str:
     """Save the active contour or surface as an STL file in the data directory.
 
     Args:
@@ -195,7 +198,7 @@ def save_contour_as_stl(stl_filename: str = "contour.stl") -> str:
     },
     tags={"paraview", "pipeline"},
 )
-def create_source(source_type: str) -> str:
+async def create_source(source_type: str) -> str:
     """Create a geometric source (Sphere, Cone, Cylinder, Plane, or Box).
 
     Args:
@@ -221,7 +224,7 @@ def create_source(source_type: str) -> str:
     },
     tags={"paraview", "pipeline"},
 )
-def create_isosurface(value: float, field: Optional[str] = None) -> str:
+async def create_isosurface(value: float, field: Optional[str] = None) -> str:
     """Create an isosurface visualization of the active source at the given isovalue.
 
     Args:
@@ -250,7 +253,7 @@ def create_isosurface(value: float, field: Optional[str] = None) -> str:
     },
     tags={"paraview", "pipeline"},
 )
-def create_slice(
+async def create_slice(
     origin_x: Optional[float] = None,
     origin_y: Optional[float] = None,
     origin_z: Optional[float] = None,
@@ -287,7 +290,7 @@ def create_slice(
     },
     tags={"paraview", "rendering"},
 )
-def toggle_volume_rendering(enable: bool = True) -> str:
+async def toggle_volume_rendering(enable: bool = True) -> str:
     """Toggle volume rendering visibility for the active source.
 
     Args:
@@ -312,7 +315,7 @@ def toggle_volume_rendering(enable: bool = True) -> str:
     },
     tags={"paraview", "rendering"},
 )
-def toggle_visibility(enable: bool = True) -> str:
+async def toggle_visibility(enable: bool = True) -> str:
     """Toggle visibility for the active source.
 
     Args:
@@ -337,7 +340,7 @@ def toggle_visibility(enable: bool = True) -> str:
     },
     tags={"paraview", "pipeline"},
 )
-def set_active_source(name: str) -> str:
+async def set_active_source(name: str) -> str:
     """Set the active pipeline object by its registered name.
 
     Args:
@@ -361,7 +364,7 @@ def set_active_source(name: str) -> str:
     },
     tags={"paraview", "pipeline"},
 )
-def get_active_source_names_by_type(source_type: Optional[str] = None) -> str:
+async def get_active_source_names_by_type(source_type: Optional[str] = None) -> str:
     """List pipeline source names, optionally filtered by type.
 
     Args:
@@ -384,26 +387,6 @@ def get_active_source_names_by_type(source_type: Optional[str] = None) -> str:
         return message
 
 
-# @mcp.tool()
-# def edit_volume_opacity(field_name: str, opacity_points: list) -> str:
-#     """
-#     Edit ONLY the opacity transfer function for the specified field,
-#     ensuring we pass only (value, alpha) pairs.
-
-#     [Tips: only needed by volume rendering particularly finetuning the result, likely not needed when the color is ideal, usually the lower value should always have lower opacity]
-
-#     Args:
-#         field_name (str): The data array (field) name whose opacity we're adjusting.
-#         opacity_points (list of [value, alpha] pairs):
-#             Example: [[0.0, 0.0], [50.0, 0.3], [100.0, 1.0]]
-
-#     Returns:
-#         A status message (success or error)
-#     """
-#     success, message = pv_manager.edit_volume_opacity(field_name, opacity_points)
-#     return message
-
-
 @mcp.tool(
     title="Edit Opacity",
     annotations={
@@ -413,7 +396,9 @@ def get_active_source_names_by_type(source_type: Optional[str] = None) -> str:
     },
     tags={"paraview", "rendering"},
 )
-def edit_volume_opacity(field_name: str, opacity_points: list[dict[str, float]]) -> str:
+async def edit_volume_opacity(
+    field_name: str, opacity_points: list[dict[str, float]]
+) -> str:
     """Edit the opacity transfer function for a scalar field.
 
     Args:
@@ -432,26 +417,6 @@ def edit_volume_opacity(field_name: str, opacity_points: list[dict[str, float]])
     return message
 
 
-# @mcp.tool()
-# def set_color_map(field_name: str, color_points: list) -> str:
-#     """
-#     Sets the color transfer function for the specified field.
-
-#     [Tips: only volume rendering should be using the set_color_map function, the lower values range corresponds to lower density objects, whereas higher values indicate high physical density. When design the color mapping try to assess the object of interest's density first from the default colormap (low value assigned to blue, high value assigned to red) and re-assign customized color accordingly, the order of the color may need to be adjust based on the rendering result. The more solid object should have higher density (!high value range). And a screen_shot should always be taken once this function is called to assess how to adjust the color_map again.]
-
-#     Args:
-#         field_name (str): The name of the field/array (as it appears in ParaView).
-#         color_points (list of [value, [r, g, b]]):
-#             e.g., [[0.0, [0.0, 0.0, 1.0]], [50.0, [0.0, 1.0, 0.0]], [100.0, [1.0, 0.0, 0.0]]]
-#             Each element is (value, (r, g, b)) with r,g,b in [0,1].
-
-#     Returns:
-#         A status message as a string (e.g., success or error).
-#     """
-#     success, message = pv_manager.set_color_map(field_name, color_points)
-#     return message
-
-
 @mcp.tool(
     title="Set Color Map",
     annotations={
@@ -461,7 +426,7 @@ def edit_volume_opacity(field_name: str, opacity_points: list[dict[str, float]])
     },
     tags={"paraview", "rendering"},
 )
-def set_color_map(field_name: str, color_points: list[dict]) -> str:
+async def set_color_map(field_name: str, color_points: list[dict]) -> str:
     """Set a custom color transfer function for volume rendering.
 
     Args:
@@ -492,7 +457,7 @@ def set_color_map(field_name: str, color_points: list[dict]) -> str:
     },
     tags={"paraview", "rendering"},
 )
-def color_by(field: str, component: int = -1) -> str:
+async def color_by(field: str, component: int = -1) -> str:
     """Color the active visualization by a specific data field.
 
     Args:
@@ -517,7 +482,7 @@ def color_by(field: str, component: int = -1) -> str:
     },
     tags={"paraview", "visualization"},
 )
-def compute_surface_area() -> str:
+async def compute_surface_area() -> str:
     """Compute the surface area of the active dataset (must be a surface mesh).
 
     Returns:
@@ -538,7 +503,7 @@ def compute_surface_area() -> str:
     },
     tags={"paraview", "rendering"},
 )
-def set_color_map_preset(preset_name: str = "Cool to Warm") -> str:
+async def set_color_map_preset(preset_name: str = "Cool to Warm") -> str:
     """Apply a predefined color map preset (e.g., Viridis, Plasma, Cool to Warm).
 
     Args:
@@ -562,7 +527,7 @@ def set_color_map_preset(preset_name: str = "Cool to Warm") -> str:
     },
     tags={"paraview", "rendering"},
 )
-def set_representation_type(rep_type: str) -> str:
+async def set_representation_type(rep_type: str) -> str:
     """Set the representation type for the active source (Surface, Wireframe, Points, etc.).
 
     Args:
@@ -586,7 +551,7 @@ def set_representation_type(rep_type: str) -> str:
     },
     tags={"paraview", "pipeline"},
 )
-def get_pipeline() -> str:
+async def get_pipeline() -> str:
     """Get the current visualization pipeline structure.
 
     Returns:
@@ -607,7 +572,7 @@ def get_pipeline() -> str:
     },
     tags={"paraview", "visualization"},
 )
-def get_available_arrays() -> str:
+async def get_available_arrays() -> str:
     """List available data arrays in the active source.
 
     Returns:
@@ -628,7 +593,7 @@ def get_available_arrays() -> str:
     },
     tags={"paraview", "visualization"},
 )
-def get_histogram(
+async def get_histogram(
     field: Optional[str] = None, num_bins: int = 256, data_location: str = "POINTS"
 ) -> str:
     """Compute histogram data for a field in the active source.
@@ -660,11 +625,13 @@ def get_histogram(
             hist_summary += (
                 f"  ... ({len(histogram_data) - preview_count * 2} bins omitted) ...\n"
             )
-            for i in range(len(histogram_data) - preview_count, len(histogram_data)):
-                bin_center, frequency = histogram_data[i]
-                hist_summary += (
-                    f"  Bin {i + 1}: value={bin_center:.2f}, count={frequency}\n"
-                )
+        for i in range(
+            max(preview_count, len(histogram_data) - preview_count), len(histogram_data)
+        ):
+            bin_center, frequency = histogram_data[i]
+            hist_summary += (
+                f"  Bin {i + 1}: value={bin_center:.2f}, count={frequency}\n"
+            )
 
         return hist_summary
     else:
@@ -681,7 +648,7 @@ def get_histogram(
     },
     tags={"paraview", "pipeline"},
 )
-def create_streamline(
+async def create_streamline(
     seed_point_number: int,
     vector_field: Optional[str] = None,
     integration_direction: str = "BOTH",
@@ -765,60 +732,18 @@ async def get_screenshot_tool() -> str:
     },
     tags={"paraview", "rendering"},
 )
-async def show_screenshot_preview() -> str:
-    """Capture a screenshot with inline preview handling.
-
-    Returns:
-        Screenshot preview with file path information.
-    """
-    import os
-    import shutil
-    import tempfile
-    import threading
-    import time
-
-    logger.info("Capturing ParaView viewport screenshot with improved preview")
-
-    current_dir = os.getcwd()
+async def show_screenshot_preview() -> list[TextContent | ImageContent]:
+    """Capture the viewport and return its PNG bytes as native MCP image content."""
     success, message, img_path = get_pv_manager().get_screenshot()
-
     if not success:
-        logger.error(f"Screenshot capture failed: {message}")
         raise ToolError(f"Screenshot failed: {message}")
-    else:
-        filename = os.path.basename(img_path)
-        logger.info(f"Screenshot saved: {filename}")
-
-        temp_preview_path = None
-        try:
-            with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
-                temp_preview_path = temp_file.name
-
-            shutil.copy2(img_path, temp_preview_path)
-
-            def cleanup_preview() -> None:
-                time.sleep(30)
-                try:
-                    if temp_preview_path and os.path.exists(temp_preview_path):
-                        os.remove(temp_preview_path)
-                        logger.debug(
-                            f"Cleaned up preview temp file: {temp_preview_path}"
-                        )
-                except Exception as e:
-                    logger.warning(f"Failed to cleanup preview temp: {e}")
-
-            threading.Thread(target=cleanup_preview, daemon=True).start()
-
-            result = (
-                f"Screenshot Preview\nSaved as: {filename}\nLocation: {current_dir}\n\n"
-            )
-            result += str(Image(path=temp_preview_path))
-
-            return result
-
-        except Exception as e:
-            logger.error(f"Failed to create preview: {e}")
-            return f"Screenshot saved: {filename}\nLocation: {current_dir}\nPreview failed: {e}"
+    try:
+        return [
+            TextContent(type="text", text=f"Screenshot saved: {img_path}"),
+            Image(path=img_path).to_image_content(),
+        ]
+    except Exception as exc:
+        raise ToolError(f"Screenshot preview failed: {exc}") from exc
 
 
 @mcp.tool(
@@ -830,7 +755,7 @@ async def show_screenshot_preview() -> str:
     },
     tags={"paraview", "rendering"},
 )
-def rotate_camera(azimuth: float = 30.0, elevation: float = 0.0) -> str:
+async def rotate_camera(azimuth: float = 30.0, elevation: float = 0.0) -> str:
     """Rotate the camera by azimuth and elevation angles in degrees.
 
     Args:
@@ -855,7 +780,7 @@ def rotate_camera(azimuth: float = 30.0, elevation: float = 0.0) -> str:
     },
     tags={"paraview", "rendering"},
 )
-def reset_camera() -> str:
+async def reset_camera() -> str:
     """Reset the camera to show all data in the viewport.
 
     Returns:
@@ -893,7 +818,7 @@ def reset_camera() -> str:
     },
     tags={"paraview", "pipeline"},
 )
-def plot_over_line(
+async def plot_over_line(
     point1: Optional[list[float]] = None,
     point2: Optional[list[float]] = None,
     resolution: int = 100,
@@ -925,7 +850,7 @@ def plot_over_line(
     },
     tags={"paraview", "pipeline"},
 )
-def warp_by_vector(
+async def warp_by_vector(
     vector_field: Optional[str] = None, scale_factor: float = 1.0
 ) -> str:
     """Apply a 'Warp By Vector' filter to the active source.
@@ -954,7 +879,7 @@ def warp_by_vector(
     },
     tags={"paraview", "visualization"},
 )
-def list_commands() -> str:
+async def list_commands() -> str:
     """List all available commands in this ParaView MCP server.
 
     Returns:

@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/web-mcp",
   "title": "CLIO Web",
   "description": "Provider-fixed web search plus transparent URL, DOI, and document fetching",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"

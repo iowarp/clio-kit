@@ -347,7 +347,6 @@ class TestSetColorMapPreset:
             GetActiveSource,
             GetActiveView,
             GetDisplayProperties,
-            ApplyPreset,
         )
 
         mock_source = Mock()
@@ -365,7 +364,7 @@ class TestSetColorMapPreset:
 
         assert success is True
         assert "Viridis" in message
-        ApplyPreset.assert_called_once_with(mock_color_tf, "Viridis", True)
+        mock_color_tf.ApplyPreset.assert_called_once_with("Viridis", True)
 
     def test_set_color_map_preset_no_source(self, engine, mock_paraview):
         """Test with no active source"""

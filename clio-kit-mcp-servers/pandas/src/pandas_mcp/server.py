@@ -169,7 +169,7 @@ class HypothesisTestInterpretation(TypedDict):
     alpha: float
     is_significant: bool
     conclusion: Literal["Reject null hypothesis", "Fail to reject null hypothesis"]
-    effect_size: Literal["large", "medium", "small"]
+    effect_size: Literal["not_computed"]
 
 
 class HypothesisTestingResult(TypedDict):
@@ -567,7 +567,6 @@ mcp: FastMCP = FastMCP(
         "Load CSV/Excel files, compute statistics, filter data, group and aggregate, "
         "and run hypothesis tests."
     ),
-    list_page_size=10,
 )
 
 
@@ -744,7 +743,7 @@ async def correlation_analysis_tool(
 @mcp.tool(
     name="hypothesis_testing",
     title="Hypothesis Test",
-    description="Run statistical hypothesis tests (t-test, chi-square, ANOVA, normality, Mann-Whitney) with p-values and effect sizes.",
+    description="Run statistical hypothesis tests (t-test, chi-square, ANOVA, normality, Mann-Whitney) with test statistics and p-values; effect sizes are not computed.",
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,
@@ -771,13 +770,13 @@ async def hypothesis_testing_tool(
         float, Field(description="Significance level (e.g. 0.05, 0.01)")
     ] = 0.05,
 ) -> HypothesisTestingResult:
-    """Perform statistical hypothesis testing with effect size and confidence intervals."""
+    """Perform a hypothesis test and report its statistic and p-value."""
     try:
         logger.info(f"Performing hypothesis testing on: {file_path}")
-        return cast(
-            HypothesisTestingResult,
-            hypothesis_testing(file_path, test_type, column1, column2, alpha),
-        )
+        result = hypothesis_testing(file_path, test_type, column1, column2, alpha)
+        if not result.get("success"):
+            raise ToolError(result.get("error", "Hypothesis test failed"))
+        return cast(HypothesisTestingResult, result)
     except Exception as e:
         logger.error(f"Hypothesis testing error: {e}")
         raise ToolError(f"Hypothesis testing error: {e}") from e

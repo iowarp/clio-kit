@@ -2,6 +2,8 @@
 Data validation and hypothesis testing capabilities.
 """
 
+import math
+
 import pandas as pd
 import os
 from scipy import stats
@@ -142,7 +144,7 @@ def validate_data(
                     column_results["valid"] = False
 
             # Pattern validation (for string columns)
-            if "pattern" in rules and col_data.dtype == "object":
+            if "pattern" in rules and pd.api.types.is_string_dtype(col_data):
                 pattern = rules["pattern"]
                 try:
                     pattern_matches = col_data.str.match(pattern, na=False)
@@ -274,6 +276,9 @@ def hypothesis_testing(
                 "error_type": "ValueError",
             }
 
+        if not 0 < alpha < 1:
+            raise ValueError("alpha must be strictly between 0 and 1")
+
         # Perform hypothesis tests
         if test_type in ["t_test", "ttest_ind", "ttest"]:
             if column2 is None:
@@ -376,6 +381,33 @@ def hypothesis_testing(
                 },
             }
 
+        elif test_type == "normality":
+            data = df[column1].dropna()
+            if not 3 <= len(data) <= 5000:
+                raise ValueError(
+                    "Shapiro-Wilk normality requires 3 to 5000 observations"
+                )
+            statistic, p_value = stats.shapiro(data)
+            test_info = {
+                "test_type": "shapiro_wilk",
+                "sample_size": len(data),
+                "null_hypothesis": "Data follows a normal distribution",
+            }
+
+        elif test_type == "mann_whitney":
+            if column2 is None:
+                raise ValueError("Mann-Whitney test requires two columns")
+            data1, data2 = df[column1].dropna(), df[column2].dropna()
+            statistic, p_value = stats.mannwhitneyu(
+                data1, data2, alternative="two-sided"
+            )
+            test_info = {
+                "test_type": "mann_whitney_u",
+                "sample1_size": len(data1),
+                "sample2_size": len(data2),
+                "null_hypothesis": "Sample distributions are equal",
+            }
+
         else:
             return {
                 "success": False,
@@ -384,7 +416,11 @@ def hypothesis_testing(
             }
 
         # Interpret results
-        is_significant = p_value < alpha
+        if not math.isfinite(statistic) or not math.isfinite(p_value):
+            raise ValueError(
+                "Test is undefined for these observations; check sample size and variance"
+            )
+        is_significant = bool(p_value < alpha)
         interpretation = {
             "statistic": float(statistic),
             "p_value": float(p_value),
@@ -393,11 +429,8 @@ def hypothesis_testing(
             "conclusion": "Reject null hypothesis"
             if is_significant
             else "Fail to reject null hypothesis",
-            "effect_size": "large"
-            if p_value < 0.01
-            else "medium"
-            if p_value < 0.05
-            else "small",
+            # Statistical significance is not an effect-size estimate.
+            "effect_size": "not_computed",
         }
 
         return {

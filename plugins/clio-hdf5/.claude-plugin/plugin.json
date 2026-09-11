@@ -1,7 +1,7 @@
 {
   "name": "clio-hdf5",
   "description": "HDF5 FastMCP - Scientific Data Access for AI Agents | CLIO Kit MCP Server",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

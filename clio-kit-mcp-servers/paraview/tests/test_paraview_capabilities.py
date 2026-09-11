@@ -168,14 +168,14 @@ class TestReadDatafile:
 
     def test_read_datafile_vtk_success(self, engine, mock_paraview):
         """Test reading VTK file successfully"""
-        from paraview.simple import OpenDataFile, Show, GetActiveView
+        from paraview.simple import OpenDataFile, Show, GetActiveViewOrCreate
 
         mock_reader = Mock()
         mock_view = Mock()
         mock_display = Mock()
 
         OpenDataFile.return_value = mock_reader
-        GetActiveView.return_value = mock_view
+        GetActiveViewOrCreate.return_value = mock_view
         Show.return_value = mock_display
 
         with (
@@ -188,6 +188,7 @@ class TestReadDatafile:
         ):
             success, message, reader, name = engine.read_datafile("/test/dir/test.vtk")
 
+            GetActiveViewOrCreate.assert_called_once_with("RenderView")
             assert success is True
             assert "Successfully loaded" in message
             assert reader == mock_reader
@@ -313,10 +314,10 @@ class TestReadDatafile:
 
     def test_read_datafile_no_active_view(self, engine, mock_paraview):
         """Test when no active view available"""
-        from paraview.simple import OpenDataFile, GetActiveView
+        from paraview.simple import OpenDataFile, GetActiveViewOrCreate
 
         OpenDataFile.return_value = Mock()
-        GetActiveView.return_value = None
+        GetActiveViewOrCreate.return_value = None
 
         with (
             patch("os.path.exists", return_value=True),

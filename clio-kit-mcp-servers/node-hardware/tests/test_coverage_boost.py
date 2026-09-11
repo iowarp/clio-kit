@@ -220,6 +220,11 @@ class TestServerHealthCheck:
 
         assert result is not None
         assert result["server_status"] == "healthy"
+        from datetime import datetime, timezone
+        observed = datetime.fromisoformat(result["timestamp"])
+        assert abs((datetime.now(timezone.utc) - observed).total_seconds()) < 5
+        assert set(result["performance_metrics"].values()) == {"not_measured"}
+        assert set(result["health_indicators"].values()) == {"not_measured"}
         assert "capabilities" in result
         assert result["capabilities"]["get_node_info"] == "available"
         assert result["capabilities"]["get_remote_node_info"] == "available"
@@ -231,10 +236,8 @@ class TestServerHealthCheck:
     async def test_health_check_tool_error_path(self):
         """Test health check error handling"""
         from node_hardware_mcp import server
-        import json as json_module
-
-        with patch.object(json_module, "dumps") as mock_dumps:
-            mock_dumps.side_effect = Exception("JSON serialization failed")
+        with patch.object(server, "datetime") as mock_datetime:
+            mock_datetime.now.side_effect = Exception("clock unavailable")
 
             with pytest.raises(ToolError, match="Health check failed"):
                 await server.health_check_tool()

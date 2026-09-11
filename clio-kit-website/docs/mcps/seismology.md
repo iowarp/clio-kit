@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🔧"
   category="Analysis & Visualization"
   description="MCP server for analyzing SAC seismic-waveform files and TAR archives: inspect members, compute per-trace statistics, and plot traces"
-  version="2.3.0"
+  version="2.3.1"
   actions={["inspect_archive", "compute_trace_statistics", "plot_traces", "analyze_sequence", "plot_sequence"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["MCP", "seismology", "seismic", "sac", "waveform", "earthquake", "catalog", "geophysics"]}

@@ -1,7 +1,7 @@
 {
   "name": "clio-seismology",
   "description": "MCP server for analyzing SAC seismic-waveform files and TAR archives: inspect members, compute per-trace statistics, and plot traces",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

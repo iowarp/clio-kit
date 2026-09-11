@@ -42,7 +42,36 @@ ChronoLog MCP is a comprehensive Model Context Protocol (MCP) server that integr
 - Python 3.11 or higher
 - [py_chronolog_client](https://github.com/grc-iit/ChronoLog) Python package
 - [uv](https://docs.astral.sh/uv/) package manager (recommended)
-- ChronoLog deployment (see [setup guide](https://github.com/iowarp/clio-kit/blob/main/Chronolog/docs/Chronolog_setup.md))
+- A running [ChronoLog deployment](https://github.com/grc-iit/ChronoLog), its matching Python extension, and an archive reader built against that checkout.
+
+### Native client and archive reader
+
+The native `py_chronolog_client` extension must match the Python interpreter
+selected by `UV_PYTHON`. Set `PYTHONPATH` to the extension directory and
+`LD_LIBRARY_PATH` to the native client and its dependency libraries. Configure
+`CHRONO_HOST`, `CHRONO_PORT`, and `CHRONO_CONF` for your deployment.
+
+Build the reader from this repository against the same ChronoLog source/build
+used by the services (CMake 3.25+, a C++17 compiler, Thallium, spdlog, HDF5,
+pkg-config, and json-c development files are required):
+
+```bash
+cmake -S clio-kit-mcp-servers/chronolog/src/chronomcp/reader_script -B /tmp/clio-reader-build \
+  -DCHRONOLOG_ROOT="$HOME/ChronoLog" \
+  -DCHRONOLOG_BUILD="$HOME/chronolog-build/Debug" \
+  -DCMAKE_PREFIX_PATH="$HOME/ChronoLog/.spack-env/view" \
+  -DCMAKE_INSTALL_PREFIX="$HOME/.local"
+cmake --build /tmp/clio-reader-build
+cmake --install /tmp/clio-reader-build
+export HDF5_READER_BIN="$HOME/.local/bin/hdf5_file_reader"
+```
+
+Adapt these paths to your installation. The archive directory in `CHRONO_CONF`
+must be readable from the MCP host. Retrieval preserves quoted/multiline records
+and writes a uniquely named text file in the MCP working directory. Reader
+process failures are reported as tool errors. Archives appear after the native
+keeper/grapher flush interval; an immediate empty result does not prove a write
+failed. The default retrieval range includes all archived timestamps.
 
 <details>
 <summary><b>Install in Cursor</b></summary>

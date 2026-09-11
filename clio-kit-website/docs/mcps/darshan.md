@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="⚡"
   category="Analysis & Visualization"
   description="Darshan I/O profiler MCP server for analyzing I/O trace files"
-  version="2.2.4"
+  version="2.2.5"
   actions={["load_darshan_log", "get_job_summary", "analyze_file_access_patterns", "get_io_performance_metrics", "analyze_posix_operations", "analyze_mpiio_operations", "identify_io_bottlenecks", "get_timeline_analysis", "compare_darshan_logs", "generate_io_summary_report"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["darshan", "i/o profiling", "performance analysis", "hpc", "mcp", "iowarp", "grc"]}
@@ -100,6 +100,10 @@ This prompt will:
 - Generate complete report using `generate_io_summary_report`
 - Add timeline analysis using `get_timeline_analysis`
 - Provide production-ready performance assessment with actionable insights
+
+### Native backend configuration
+
+Native logs use `darshan-parser --base`. Request-size statistics are operation-weighted per-file averages, not individual requests. Job timing preserves subsecond precision. The timeline tool reports job duration; event-level peak and idle phases are not implemented.
 
 {/* clio-kit:usage:end */}
 

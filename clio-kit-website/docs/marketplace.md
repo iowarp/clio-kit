@@ -152,16 +152,16 @@ to preserve the MCP protocol stream. These fixes have targeted regressions;
 installation and connection results alone still do not verify a scientific
 workflow.
 
-Model-driven skill trigger and quality evaluation must be recorded per agent
-and model. Fresh Claude and Codex runs exercised the I/O interpretation skill
-on 2026-09-10; each rejected a throughput-only diagnosis and requested context.
-That is one behavioral smoke check per client, not an evaluation of every skill
-or every model. A quota failure in one client says nothing about another account.
-Deterministic installation, discovery
-and MCP checks do not require model quota. A separate live Claude test also
-verified Web fetch after restoring ordinary MCP-call compatibility. Record fresh behavioral evidence
-separately for each tested client instead of treating historical results or
-another client's results as proof of the current revision.
+Model evaluation is specific to the client, model and task. The September 10
+follow-up ran all 20 skills through Codex with real attached MCP services and
+retained their traces and outputs. These are one-scenario behavioral checks,
+not comparative quality scores or coverage of every workflow. A separate
+23-case skill-selection test matched 22 expected choices; the ambiguous slow-HDF5
+request selected the large-dataset skill instead of storage-format advice.
+Claude model calls were quota-blocked in this follow-up; Cursor requested login,
+and Antigravity's GUI workflow was not automated. These results do not establish
+behavioral support in those clients. Native plugin installation and deterministic
+checks do not require a model quota.
 
 ## Skill maintenance
 
@@ -180,11 +180,11 @@ Specific limits matter: HDF5 aggregate statistics may sample data above 500 MiB.
 A live 70-million-element array of ones returns sample sum/count 700,000, now
 explicitly labeled as 1% coverage rather than full-dataset totals. Stream summaries can cover only part of a dataset; CSV profiles retain a bounded
 sample. None should be presented as exact full-data calculations without checking
-coverage. Skill instructions describe these limits instead of changing MCP code.
+coverage. Skill instructions require checking these coverage labels.
 
 ## Candidate validation, 2026-09-10
 
-The merged candidate installs 22 MCP servers, six bundles and 20 portable skills.
+The local candidate installs 22 MCP servers, six bundles and 20 portable skills.
 The installed-wheel acceptance script passed Claude plugin installation/update,
 Codex skill discovery, all 22 stdio handshakes, TypeScript/Go cold and warm calls,
 compression round-trip, grouped means and plotting, Pandas imputation,
@@ -203,3 +203,89 @@ This is a disclosed build dependency limitation, not a clean npm audit.
 Use the GitHub Actions results for the exact commit being reviewed. Public
 publication and target-site backend acceptance remain separate steps; the
 checks above do not establish universal agent or scientific-workflow support.
+
+
+## MCP SDK v2 migration, 2026-09-10
+
+All 22 Python servers lock MCP SDK 2.2.0 and stable FastMCP 4.0.3. The shared
+verification client follows the [official SDK migration guide](https://py.sdk.modelcontextprotocol.io/migration/)
+and [FastMCP upgrade guide](https://gofastmcp.com/getting-started/upgrading/from-fastmcp-3).
+SDK versions and wire protocol versions are separate: modern connections use
+`2026-07-28`, while legacy clients can still negotiate `2025-11-25`.
+
+HDF5 `export_dataset` accepts `export_format` (`csv`, `json`, or `numpy`).
+Modern connections default to JSON without asking a mid-call question; legacy
+clients retain elicitation when the argument is omitted. HDF5 operational logs
+use standard stderr logging. Existing JARVIS user-tool schemas are unchanged;
+stable FastMCP no longer infers output schemas for its untyped admin-tool lists.
+
+Validation includes fresh-wheel installation, all 22 server tool inventories in
+both protocol eras, and an actual SDK v1.30.0 client connecting to all 22 servers.
+Real tool workflows cover ADIOS, arXiv, compression, Geo, HDF5, NDP, node hardware,
+Pandas, parallel-sort, Parquet, Plot, scientific catalogue, seismology, Slurm,
+terrain and Web. Checks include actual file contents and generated images;
+arXiv also returned the expected paper from its public API. TypeScript and Go
+launcher fixtures still return the expected results after cold and warm starts.
+
+The native-backend follow-up also passed real installed-wheel workflows:
+
+| Backend | Observed result |
+| --- | --- |
+| Darshan 3.5.0 | A native instrumented workload produced a log with 4 reads, 4 writes, and 16,384 bytes in each direction; MCP totals matched the native parser. |
+| Lmod 8.6.19 | All seven tools ran against real modulefiles, including saving a collection and restoring it in a new MCP process. |
+| Spack 0.21.2 | Built zlib-ng 2.1.4, located its exact prefix, and confirmed reuse using a qualified package/hash spec. |
+| JARVIS 1.8.1 | Created and executed the built-in echo pipeline and inspected its completed execution and stdout. |
+| ParaView 6.0.0 | Connected to native pvserver, created a sphere, computed surface area, and rendered a PNG through Xvfb. |
+| ChronoLog | Ran visor/keeper/grapher/player with the Python 3.11 native client and recovered the exact quoted, multiline interaction from its HDF5 archive. |
+
+These tests exposed and fixed Lmod shell integration, ParaView render-thread
+affinity, native Darshan text parsing, and ChronoLog reader build/retrieval bugs.
+Darshan request-size estimates now label their basis and use bounded memory;
+subsecond job timing remains precise. ChronoLog's native suite includes the
+previously skipped archive round trip.
+
+The broader follow-up exercised every default tool at least once, including
+all 26 ParaView tools, two-rank Darshan MPI-IO on one host, real SSH collection,
+Slurm submission/cancellation, arXiv PDF downloads and NDP CSV staging. This
+counts attempted tool coverage; it does not mean every operation or parameter
+passed. Web's optional remote conversion-events service was unconfigured.
+The community submission function also created a real one-file PR in the
+contributor's existing renamed fork; the test PR was closed without merging.
+
+These checks fixed tool pagination that hid later tools from Codex, ADIOS stdout
+contamination, ParaView first-file loading/presets/histograms/image previews,
+remote SSH command quoting, and Pandas hypothesis serialization and string-pattern
+validation. Pandas no longer calls p-value thresholds effect sizes; its result
+explicitly says `not_computed`. Node Hardware's health endpoint reports process
+availability, with unmeasured hardware/security indicators labeled accordingly.
+
+Remaining release and deployment limits:
+
+- JARVIS 1.8.1 scheduler execution failed when Slurm supplied the literal
+  `SLURM_CLUSTER_NAME=(null)`. An audit-only backend copy with that handling fixed
+  completed job 14. The dependency shipped by CLIO is unchanged and still needs
+  an upstream fix and release; the patched-copy result is not a product pass.
+- This machine's ParaView build exposed one data partition under a two-process
+  MPI launch. Distributed rendering needs an MPI-enabled build and another test.
+- Darshan's timeline provides summary duration, not event-level peak/idle phases.
+  Multi-node scaling, production fault recovery and arbitrary external recipes
+  remain unverified.
+- An empty-cache install exceeded the acceptance test's 300-second limit while
+  downloading the Pandas stack. Dependency installation succeeded on retry.
+  Prepare large servers before starting an agent with a short startup deadline;
+  see the [setup guide](https://github.com/iowarp/clio-kit/blob/feat/360-meta-marketplace/setup.md).
+- Native bundle/agent manifests remain Claude Code-specific. Portable skills
+  and explicit MCP registrations are the supported path for other clients.
+- The website's upstream image-parser advisory remains unpatched; the build
+  guard restricts affected formats, but this is not a clean dependency audit.
+
+To repeat installed-wheel acceptance with the verification extra installed:
+
+```bash
+uv run --frozen python scripts/verify_marketplace_install.py --all-servers --protocol-mode 2026-07-28 --output /tmp/clio-v2-modern
+uv run --frozen python scripts/verify_marketplace_install.py --all-servers --protocol-mode legacy --skip-client --output /tmp/clio-v2-legacy
+```
+
+Use `--skip-client` on systems without Claude Code; MCP checks require no model
+credentials. Detailed per-server logs belong with the local audit evidence,
+not in the package or website assets.

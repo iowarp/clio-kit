@@ -34,7 +34,7 @@ async def test_analyze_posix_operations_success():
         assert result["operations"]["seeks"] == 1200
 
         # Verify the command was called with correct arguments
-        mock_run.assert_called_once_with(["--module", "POSIX"], "/test/file.darshan")
+        mock_run.assert_called_once_with(["--base"], "/test/file.darshan")
 
 
 @pytest.mark.asyncio
@@ -185,7 +185,7 @@ async def test_analyze_mpiio_operations_success():
         assert result["independent_operations"]["writes"] == 750
 
         # Verify the command was called with correct arguments
-        mock_run.assert_called_once_with(["--module", "MPIIO"], "/test/file.darshan")
+        mock_run.assert_called_once_with(["--base"], "/test/file.darshan")
 
 
 @pytest.mark.asyncio
@@ -213,8 +213,8 @@ async def test_analyze_mpiio_operations_partial_data():
 
 
 @pytest.mark.asyncio
-async def test_analyze_mpiio_operations_no_data():
-    """Test analyze_mpiio_operations with no MPI-IO data (returncode != 0)."""
+async def test_analyze_mpiio_operations_parser_failure():
+    """Parser failures must not be reported as an absent optional module."""
     mock_stderr = "No MPI-IO data in log file"
 
     with patch(
@@ -224,11 +224,9 @@ async def test_analyze_mpiio_operations_no_data():
 
         result = await darshan_parser.analyze_mpiio_operations("/test/file.darshan")
 
-        # Note: The function returns success=True when MPI-IO data is not found
-        # This is intentional design as MPI-IO is optional
-        assert result["success"] is True
-        assert result["message"] == "No MPI-IO operations found in trace"
-        assert result["operations"] == {}
+        assert result["success"] is False
+        assert result["message"] == mock_stderr
+        assert result["error"] == "Failed to extract MPI-IO module data"
 
 
 @pytest.mark.asyncio

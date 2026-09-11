@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🔧"
   category="Analysis & Visualization"
   description="MCP server for ParaView scientific visualization"
-  version="2.2.4"
+  version="2.2.5"
   actions={["load_scientific_data", "save_contour_as_stl", "create_geometric_shape", "generate_isosurface", "create_data_slice", "configure_volume_display", "toggle_visibility", "set_active_source", "get_active_source_names_by_type", "edit_volume_opacity", "set_color_map", "apply_field_coloring", "compute_surface_area", "set_color_map_preset", "set_representation_type", "get_pipeline", "get_available_arrays", "get_histogram", "generate_flow_streamlines", "take_viewport_screenshot", "show_screenshot_preview", "rotate_camera", "reset_camera", "plot_over_line", "warp_by_vector", "list_commands"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["MCP", "ParaView", "visualization", "scientific", "3D"]}
@@ -50,6 +50,10 @@ to extract hot regions (>500K), and visualize with appropriate color mapping.
 Load /data/molecule.vtk, create isosurface of electron density, rotate camera 45 degrees around Y axis,
 zoom in to focus on binding site, set camera position for optimal viewing angle, and save multiple viewpoints.
 ```
+
+### Native backend configuration
+
+Use a Python interpreter matching the ParaView build, with native modules on `PYTHONPATH` and dependency libraries on `LD_LIBRARY_PATH`. Rendering tools run on the same MCP thread to preserve the graphics context. Headless GLX builds may require Xvfb; the local acceptance test rendered a sphere through native pvserver.
 
 {/* clio-kit:usage:end */}
 

@@ -360,7 +360,6 @@ mcp: FastMCP = FastMCP(
         "Manages JARVIS data pipelines for scientific computing. "
         "Create, configure, monitor, and manage data processing pipelines."
     ),
-    list_page_size=10,
 )
 MCP_METADATA_PROFILE = "user"
 

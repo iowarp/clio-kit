@@ -1,7 +1,10 @@
 # capabilities/retrieve_interaction.py
 
 import re
-from datetime import datetime
+import json
+import asyncio
+from pathlib import Path
+import tempfile
 from chronomcp.utils import config, helpers
 
 
@@ -32,14 +35,27 @@ async def retrieve_interaction(
         et_ns = helpers.parse_time_arg(end_time, is_end=True)
         cmd += ["-et", et_ns]
 
-    out, err = helpers.run_reader(cmd)
+    out, err = await asyncio.to_thread(helpers.run_reader, cmd)
 
-    records = re.findall(r'record="([^"]*)"', out)
+    records = [
+        json.loads(line.removeprefix("CLIO_RECORD_JSON "))
+        for line in out.splitlines()
+        if line.startswith("CLIO_RECORD_JSON ")
+    ]
+    if not records:
+        # Support older site-provided reader binaries.
+        records = re.findall(r'record="([^"]*)"', out)
     if not records:
         return "No records found."
 
-    ts = datetime.now().strftime("%Y%m%d%H%M%S")
-    filename = f"records_{chronicle}_{story}_{ts}.txt"
-    with open(filename, "w") as f:
+    # Chronicle/story identifiers are data, never output path components.
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        prefix="chronolog-records-",
+        suffix=".txt",
+        dir=Path.cwd(),
+        delete=False,
+    ) as f:
+        filename = f.name
         f.write("\n".join(records))
     return filename

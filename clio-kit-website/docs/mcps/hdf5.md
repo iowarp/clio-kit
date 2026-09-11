@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🗂️"
   category="Data Processing"
   description="HDF5 FastMCP - Scientific Data Access for AI Agents | CLIO Kit MCP Server"
-  version="2.2.4"
+  version="2.2.5"
   actions={["open_file", "close_file", "get_filename", "get_mode", "get_by_path", "list_keys", "visit", "read_full_dataset", "read_partial_dataset", "get_shape", "get_dtype", "get_size", "get_chunks", "read_attribute", "list_attributes", "hdf5_parallel_scan", "hdf5_batch_read", "hdf5_stream_data", "hdf5_aggregate_stats", "analyze_dataset_structure", "find_similar_datasets", "suggest_next_exploration", "identify_io_bottlenecks", "optimize_access_pattern", "refresh_hdf5_resources", "list_available_hdf5_files", "export_dataset"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["hdf5", "scientific-data", "hierarchical-data", "data-analysis", "scientific-computing", "mcp", "llm-integration", "data-structures"]}

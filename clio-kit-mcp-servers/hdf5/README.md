@@ -258,7 +258,7 @@ See [docs/TRANSPORTS.md](docs/TRANSPORTS.md) for details.
 ## Requirements
 
 - Python >= 3.10
-- fastmcp >= 0.2.0
+- fastmcp >= 4.0.3, < 5 (MCP Python SDK v2)
 - h5py >= 3.9.0
 - numpy >= 1.24.0, <2.0.0
 - pydantic >= 2.4.2, <3.0.0
@@ -607,6 +607,8 @@ Args:
     path: Path to dataset within file
     output_path: Optional output file path
     ctx: Context for elicitation
+    export_format: Optional `csv`, `json`, or `numpy`. Modern MCP defaults to JSON;
+        legacy clients may choose through elicitation when omitted.
 
 Returns:
     Export summary

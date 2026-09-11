@@ -31,7 +31,7 @@ Darshan MCP is a comprehensive Model Context Protocol (MCP) server that enables 
 - **Performance Metrics**: Calculate bandwidth, IOPS, request size statistics, and access pattern analysis
 - **Bottleneck Detection**: Automatically identify potential I/O performance issues and optimization opportunities
 - **Multi-Protocol Support**: Analyze both POSIX system calls and MPI-IO operations with detailed pattern recognition
-- **Timeline Analysis**: Understand I/O activity over time with temporal performance visualization
+- **Timing Summary**: Report job duration; detailed peak/idle phases require event-level data and are not currently computed
 - **Comparative Analysis**: Compare multiple trace files to identify performance changes and optimization results
 - **MCP Integration**: Full Model Context Protocol compliance for seamless LLM integration
 
@@ -44,6 +44,13 @@ Darshan MCP is a comprehensive Model Context Protocol (MCP) server that enables 
 - [uv](https://docs.astral.sh/uv/) package manager (recommended)
 - Darshan tools (`darshan-parser` in PATH)
 - Python libraries: numpy, pandas, matplotlib
+
+Native Darshan text logs are read with `darshan-parser --base`. Totals prefer
+POSIX over MPI-IO/STDIO when several layers describe the same file, avoiding
+double counting. Request-size statistics summarize operation-weighted per-file
+averages, not individual I/O requests. Job timing preserves the native runtime's
+subsecond precision. The timeline tool reports duration and leaves unavailable
+peak/idle phase lists empty; it does not reconstruct an event timeline.
 
 <details>
 <summary><b>Install in Cursor</b></summary>

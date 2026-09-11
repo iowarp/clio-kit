@@ -95,7 +95,7 @@ class TestEdgeCases:
         """Test paper_details.py error handling lines 42, 54, 61, 99."""
 
         with patch(
-            "arxiv_mcp.capabilities.paper_details.execute_arxiv_query"
+            "arxiv_mcp.capabilities.paper_details.httpx.AsyncClient"
         ) as mock_query:
             # Test different exception types to hit all error handling branches (reduced for speed)
             error_scenarios = [
@@ -284,7 +284,7 @@ class TestEdgeCases:
 
             # Test paper_details module
             with patch(
-                "arxiv_mcp.capabilities.paper_details.execute_arxiv_query"
+                "arxiv_mcp.capabilities.paper_details.httpx.AsyncClient"
             ) as mock_query:
                 mock_query.side_effect = error_class(error_message)
 

@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🔧"
   category="Analysis & Visualization"
   description="MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding"
-  version="2.2.4"
+  version="2.2.5"
   actions={["dem_terrain", "pointcloud_read"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["MCP", "terrain", "dem", "slope", "aspect", "point-cloud", "geospatial", "numpy"]}

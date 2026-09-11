@@ -14,7 +14,7 @@ try:
 except ImportError:
     HAS_DEPENDENCIES = False
 
-from .test_utils import are_chronolog_processes_running
+from .test_utils import are_chronolog_processes_running, wait_for_archived_record
 
 pytestmark = pytest.mark.skipif(
     not HAS_DEPENDENCIES,
@@ -40,7 +40,6 @@ class TestRetrieveHandler:
         assert result == "No records found."
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="TBD - Verify ChronoMCP integrity")
     async def test_retrieve_after_record(self):
         """Test retrieving interaction after recording one"""
         if not are_chronolog_processes_running():
@@ -56,16 +55,13 @@ class TestRetrieveHandler:
         assert isinstance(start_result, str)
         assert "ChronoLog session started" in start_result
 
-        # Record an interaction
-        record_result = await record_interaction("Test question", "Test answer")
-        assert isinstance(record_result, str)
-        assert "Interaction recorded to ChronoLog" in record_result
-
-        # Retrieve the recorded interaction
-        retrieve_result = await retrieve_interaction(chronicle_name, story_name)
-        assert isinstance(retrieve_result, str)
-        assert "No records found." not in retrieve_result
-
-        # Stop the session
-        stop_result = await stop_chronolog()
-        assert isinstance(stop_result, str)
+        try:
+            record_result = await record_interaction("Test question", "Test answer")
+            assert "Interaction recorded to ChronoLog" in record_result
+        finally:
+            await stop_chronolog()
+        await wait_for_archived_record(
+            chronicle_name,
+            story_name,
+            "user: Test question, assistant: Test answer",
+        )

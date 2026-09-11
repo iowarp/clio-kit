@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="📦"
   category="System Management"
   description="Lmod MCP - Environment Module Management for LLMs with comprehensive module operations"
-  version="3.0.0"
+  version="3.0.1"
   actions={["module_list", "module_avail", "module_show", "module_spider", "module_save", "module_restore", "module_savelist"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["lmod", "environment-modules", "module-management", "hpc", "scientific-computing", "supercomputing", "cluster-computing", "module-system"]}
@@ -40,6 +40,10 @@ actual workload environment separately.
 
 Lmod and its configured module tree must be present on the host. An MCP
 connection alone does not confirm either prerequisite.
+
+### Native backend configuration
+
+Set `LMOD_CMD` to the site Lmod executable and `MODULEPATH` to trusted modulefiles. The server uses Bash to evaluate Lmod and retains collection changes for subsequent calls in the same MCP process. It does not change your parent shell or other MCP servers.
 
 {/* clio-kit:usage:end */}
 

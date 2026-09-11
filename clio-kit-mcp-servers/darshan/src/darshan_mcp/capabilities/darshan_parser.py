@@ -6,9 +6,15 @@ import asyncio
 import subprocess
 import json
 import os
-import numpy as np
 from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
+from .native_text import (
+    parse_native_text,
+    parse_legacy_text,
+    module_counters,
+    weighted_size_stats,
+    job_runtime,
+)
 
 
 async def _run_darshan_command(
@@ -61,45 +67,16 @@ async def _parse_darshan_json(log_file: str) -> Dict[str, Any]:
 async def _parse_darshan_text(log_file: str) -> Dict[str, Any]:
     """Parse Darshan log using text output format."""
 
-    stdout, stderr, returncode = await _run_darshan_command(["-l"], log_file)
+    stdout, stderr, returncode = await _run_darshan_command(["--base"], log_file)
 
     if returncode != 0:
         return {"error": stderr or "Failed to parse Darshan log", "success": False}
 
-    # Parse text output to extract key information
-    parsed_data: Dict[str, Any] = {
-        "job": {},
-        "modules": [],
-        "files": {},
-        "success": True,
-    }
+    native = parse_native_text(stdout)
+    if native is not None:
+        return native
 
-    lines = stdout.split("\n")
-    current_section: Optional[str] = None
-
-    for line in lines:
-        line = line.strip()
-        if not line:
-            continue
-
-        # Parse job information
-        if "Job ID:" in line:
-            parsed_data["job"]["job_id"] = line.split(":", 1)[1].strip()
-        elif "User ID:" in line:
-            parsed_data["job"]["user_id"] = line.split(":", 1)[1].strip()
-        elif "Start time:" in line:
-            parsed_data["job"]["start_time"] = line.split(":", 1)[1].strip()
-        elif "End time:" in line:
-            parsed_data["job"]["end_time"] = line.split(":", 1)[1].strip()
-        elif "Number of processes:" in line:
-            parsed_data["job"]["nprocs"] = int(line.split(":", 1)[1].strip())
-        elif "Modules in log:" in line:
-            current_section = "modules"
-        elif current_section == "modules" and line.startswith("-"):
-            module_name = line.lstrip("- ").strip()
-            parsed_data["modules"].append(module_name)
-
-    return parsed_data
+    return parse_legacy_text(stdout)
 
 
 async def load_darshan_log(log_file_path: str) -> Dict[str, Any]:
@@ -155,19 +132,7 @@ async def get_job_summary(log_file_path: str) -> Dict[str, Any]:
 
         job_info = parsed_data.get("job", {})
 
-        # Calculate runtime if start/end times available
-        runtime = None
-        if "start_time" in job_info and "end_time" in job_info:
-            try:
-                start = datetime.fromisoformat(
-                    job_info["start_time"].replace("Z", "+00:00")
-                )
-                end = datetime.fromisoformat(
-                    job_info["end_time"].replace("Z", "+00:00")
-                )
-                runtime = (end - start).total_seconds()
-            except (ValueError, TypeError, KeyError):
-                runtime = job_info.get("runtime", None)
+        runtime = job_runtime(job_info)
 
         # Aggregate I/O statistics from all files
         total_bytes_read = 0
@@ -299,8 +264,9 @@ async def analyze_file_access_patterns(
                 access_patterns["random_access"] += 1
                 pattern_type = "random"
 
-            file_size = file_data.get("file_size", 0)
-            access_patterns["file_sizes"].append(file_size)
+            file_size = file_data.get("file_size")
+            if file_size is not None:
+                access_patterns["file_sizes"].append(file_size)
 
             access_patterns["files_analysis"].append(
                 {
@@ -322,7 +288,10 @@ async def analyze_file_access_patterns(
                 "min_size": min(file_sizes),
                 "max_size": max(file_sizes),
                 "avg_size": sum(file_sizes) / len(file_sizes),
-                "total_size": sum(file_sizes),
+                "total_size": sum(file_sizes)
+                if len(file_sizes) == len(filtered_files)
+                else None,
+                "files_with_known_size": len(file_sizes),
             }
 
         access_patterns["success"] = True
@@ -365,8 +334,8 @@ async def get_io_performance_metrics(log_file_path: str) -> Dict[str, Any]:
         total_read_time = 0
         total_write_time = 0
 
-        read_sizes: List[float] = []
-        write_sizes: List[float] = []
+        read_sizes: List[Tuple[float, int]] = []
+        write_sizes: List[Tuple[float, int]] = []
 
         for file_data in files.values():
             if not isinstance(file_data, dict):
@@ -385,11 +354,11 @@ async def get_io_performance_metrics(log_file_path: str) -> Dict[str, Any]:
             # Collect request sizes
             if read_ops > 0:
                 avg_read_size = bytes_read / read_ops
-                read_sizes.extend([avg_read_size] * read_ops)
+                read_sizes.append((avg_read_size, read_ops))
 
             if write_ops > 0:
                 avg_write_size = bytes_written / write_ops
-                write_sizes.extend([avg_write_size] * write_ops)
+                write_sizes.append((avg_write_size, write_ops))
 
             # Time metrics (if available)
             total_read_time += file_data.get("read_time", 0)
@@ -411,12 +380,9 @@ async def get_io_performance_metrics(log_file_path: str) -> Dict[str, Any]:
                 metrics["read_metrics"]["iops"] = total_read_ops / total_read_time
 
             if read_sizes:
-                metrics["read_metrics"]["request_size_stats"] = {
-                    "min": min(read_sizes),
-                    "max": max(read_sizes),
-                    "avg": sum(read_sizes) / len(read_sizes),
-                    "std": np.std(read_sizes) if len(read_sizes) > 1 else 0,
-                }
+                metrics["read_metrics"]["request_size_stats"] = weighted_size_stats(
+                    read_sizes
+                )
 
         # Calculate write metrics
         if total_write_ops > 0:
@@ -434,12 +400,9 @@ async def get_io_performance_metrics(log_file_path: str) -> Dict[str, Any]:
                 metrics["write_metrics"]["iops"] = total_write_ops / total_write_time
 
             if write_sizes:
-                metrics["write_metrics"]["request_size_stats"] = {
-                    "min": min(write_sizes),
-                    "max": max(write_sizes),
-                    "avg": sum(write_sizes) / len(write_sizes),
-                    "std": np.std(write_sizes) if len(write_sizes) > 1 else 0,
-                }
+                metrics["write_metrics"]["request_size_stats"] = weighted_size_stats(
+                    write_sizes
+                )
 
         # Overall metrics
         total_time = max(total_read_time, total_write_time)
@@ -469,7 +432,7 @@ async def analyze_posix_operations(log_file_path: str) -> Dict[str, Any]:
     try:
         # Use darshan-parser to get POSIX module data
         stdout, stderr, returncode = await _run_darshan_command(
-            ["--module", "POSIX"], log_file_path
+            ["--base"], log_file_path
         )
 
         if returncode != 0:
@@ -508,6 +471,24 @@ async def analyze_posix_operations(log_file_path: str) -> Dict[str, Any]:
             elif "POSIX_SEEKS:" in line:
                 posix_analysis["operations"]["seeks"] = int(line.split(":")[1].strip())
 
+        counters = module_counters(stdout).get("POSIX", {})
+        for name, suffix in (
+            ("opens", "OPENS"),
+            ("closes", "CLOSES"),
+            ("reads", "READS"),
+            ("writes", "WRITES"),
+            ("seeks", "SEEKS"),
+            ("stats", "STATS"),
+            ("fsyncs", "FSYNCS"),
+        ):
+            if f"POSIX_{suffix}" in counters:
+                posix_analysis["operations"][name] = int(counters[f"POSIX_{suffix}"])
+
+        if "# darshan log version:" in stdout:
+            for name in posix_analysis["operations"]:
+                if f"POSIX_{name.upper()}" not in counters:
+                    posix_analysis["operations"][name] = None
+
         # Type cast the nested dictionaries to avoid mypy errors
         posix_analysis["operations"] = dict(posix_analysis["operations"])
 
@@ -525,14 +506,14 @@ async def analyze_mpiio_operations(log_file_path: str) -> Dict[str, Any]:
     try:
         # Use darshan-parser to get MPI-IO module data
         stdout, stderr, returncode = await _run_darshan_command(
-            ["--module", "MPIIO"], log_file_path
+            ["--base"], log_file_path
         )
 
         if returncode != 0:
             return {
-                "success": True,
-                "message": "No MPI-IO operations found in trace",
-                "operations": {},
+                "success": False,
+                "error": "Failed to extract MPI-IO module data",
+                "message": stderr,
             }
 
         mpiio_analysis: Dict[str, Any] = {
@@ -572,6 +553,17 @@ async def analyze_mpiio_operations(log_file_path: str) -> Dict[str, Any]:
                     line.split(":")[1].strip()
                 )
 
+        modules = module_counters(stdout)
+        counters = modules.get("MPI-IO", modules.get("MPIIO", {}))
+        for group, prefix in (
+            ("collective_operations", "COLL"),
+            ("independent_operations", "INDEP"),
+        ):
+            for operation in ("reads", "writes"):
+                key = f"MPIIO_{prefix}_{operation.upper()}"
+                if key in counters:
+                    mpiio_analysis[group][operation] = int(counters[key])
+        mpiio_analysis["file_views"] = int(counters.get("MPIIO_VIEWS", 0))
         return mpiio_analysis
 
     except Exception as e:
@@ -716,20 +708,11 @@ async def get_timeline_analysis(
 
         # Try to get basic timing information
         parsed_data = await _parse_darshan_json(log_file_path)
+        if not parsed_data.get("success", True):
+            return parsed_data
         job_info = parsed_data.get("job", {})
 
-        if "start_time" in job_info and "end_time" in job_info:
-            try:
-                start = datetime.fromisoformat(
-                    job_info["start_time"].replace("Z", "+00:00")
-                )
-                end = datetime.fromisoformat(
-                    job_info["end_time"].replace("Z", "+00:00")
-                )
-                duration = (end - start).total_seconds()
-                timeline["analysis"]["total_duration"] = duration
-            except (ValueError, TypeError, KeyError):
-                pass
+        timeline["analysis"]["total_duration"] = job_runtime(job_info)
 
         return timeline
 

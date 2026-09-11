@@ -98,14 +98,17 @@ pgrep -laf "chronovisor_server|chrono_grapher|chrono_keeper|chrono_player"
 You should see four processes corresponding to ChronoLog components.
 
 
-**Ensure Python bindings by adding the following to your shell configuration (e.g., `.bashrc` or `.zshrc`):**
+Configure the MCP process with the interpreter matching the native extension:
 
 ```bash
-export LD_LIBRARY_PATH=$HOME/chronolog/Debug/lib:$LD_LIBRARY_PATH
-export PYTHONPATH=$HOME/chronolog/Debug/lib:$PYTHONPATH
-
-ln -s /path/to/chronolog/lib/py_chronolog_client.[python-version-linux-version].so /path/to/chronolog/lib/py_chronolog_client.so
+export UV_PYTHON=3.11  # use the ABI of your py_chronolog_client build
+export LD_LIBRARY_PATH="$HOME/chronolog/Debug/lib:${LD_LIBRARY_PATH:-}"
+export PYTHONPATH="$HOME/chronolog/Debug/lib:${PYTHONPATH:-}"
 ```
+
+Use the actual build/install paths on your machine. Do not rename or symlink an
+extension to disguise a Python ABI mismatch. Keep these variables in the
+ChronoLog server's agent configuration, separate from other native servers.
 
 ## Step 8: Launch the Interactive Client Admin
 
@@ -119,28 +122,17 @@ Feel free to test and explore the chronolog operations.
 
 ### Reader Script
 
-Make sure to place the reader script folder from src/chronomcp/reader_script into your chronolog installation folder - 
-e.g $HOME/chronolog/Debug/reader_script
-
-Make sure to activate chronolog spack environment to load all the required libraries.
-```bash
-cd ChronoLog
-spack env activate -p .
-```
-
-Build the reader script.
-```bash
-cd chronolog/Debug/reader_script
-mkdir build && cd build
-cmake ..
-```
+Build the reader directly from this checkout against the same ChronoLog source
+and libraries used by the services. Follow the configurable CMake commands in
+[Native client and archive reader](../README.md#native-client-and-archive-reader).
+Set `HDF5_READER_BIN` to the installed executable and `CHRONO_CONF` to your
+service configuration. Test it with:
 
 ```bash
-make
+"$HDF5_READER_BIN" -c "$CHRONO_CONF" -C YOUR_CHRONICLE -S YOUR_STORY
 ```
 
-Test the hdf5 file reader by - 
-/$HOME/chronolog/Debug/reader_script/build/./hdf5_file_reader -c /$HOME/chronolog/Debug/conf/grapher_conf_1.json
-
-
-Please follow all the steps carefully, feel free to make an issue if there's any problem setting up the chronolog.
+After recording and stopping a session, allow the native archive flush interval
+before checking retrieval. Successful acceptance means recovering the exact
+recorded text, including quotes/newlines, rather than merely finding processes
+or connecting to the MCP server.

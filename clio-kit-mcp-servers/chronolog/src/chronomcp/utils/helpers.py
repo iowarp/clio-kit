@@ -1,6 +1,7 @@
 # helpers.py
 import subprocess
 from datetime import datetime, time, timedelta
+from fastmcp.exceptions import ToolError
 
 
 def to_nanosecond(dt: datetime) -> str:
@@ -32,6 +33,10 @@ def parse_time_arg(arg: str, is_end: bool) -> str:
 
 def run_reader(cmd_args):
     proc = subprocess.run(
-        cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        cmd_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60
     )
+    if proc.returncode:
+        raise ToolError(
+            f"ChronoLog archive reader failed ({proc.returncode}): {proc.stderr.strip()}"
+        )
     return proc.stdout, proc.stderr

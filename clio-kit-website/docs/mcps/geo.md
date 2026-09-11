@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🔧"
   category="Data Processing"
   description="MCP server for rendering GeoJSON vector layers into map images with basemaps"
-  version="2.3.0"
+  version="2.3.1"
   actions={["render_feature_map", "points_in_polygons", "bounding_box", "query_arcgis_features", "geocode", "filter_points_by_radius", "inspect_geojson", "validate_geojson", "summarize_geojson", "feature_bbox"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["MCP", "geospatial", "mapping", "geojson", "visualization", "matplotlib", "geopandas"]}

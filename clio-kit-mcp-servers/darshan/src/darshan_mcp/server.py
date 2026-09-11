@@ -28,7 +28,6 @@ mcp: FastMCP = FastMCP(
         "Analyzes I/O performance logs from Darshan profiler. "
         "Open log files, examine module data, analyze counters, and generate performance insights."
     ),
-    list_page_size=10,
 )
 
 

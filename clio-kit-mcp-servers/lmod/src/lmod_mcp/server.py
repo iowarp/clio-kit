@@ -33,7 +33,6 @@ mcp: FastMCP = FastMCP(
         "affect any later tool call or job; ask the system that owns the "
         "runtime environment to load modules instead."
     ),
-    list_page_size=10,
 )
 
 

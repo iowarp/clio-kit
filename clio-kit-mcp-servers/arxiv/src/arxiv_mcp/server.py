@@ -29,7 +29,6 @@ mcp: FastMCP = FastMCP(
         "Searches and retrieves academic papers from arXiv. "
         "Search by keyword, author, title, or subject. Fetch paper details and abstracts."
     ),
-    list_page_size=10,
 )
 
 _READONLY_ANNOTATIONS = {

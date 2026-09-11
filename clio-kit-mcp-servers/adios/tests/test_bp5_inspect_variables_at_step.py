@@ -126,7 +126,7 @@ class TestInspectVariablesAtStep:
 
     @patch("builtins.print")
     @patch("adios_mcp.implementation.bp5_inspect_variables_at_step.Stream")
-    def test_inspect_variable_prints_current_step(self, mock_stream_class, mock_print):
+    def test_inspect_variable_does_not_print_to_protocol_stdout(self, mock_stream_class, mock_print):
         mock_stream = Mock()
         mock_stream_class.return_value.__enter__.return_value = mock_stream
 
@@ -139,7 +139,7 @@ class TestInspectVariablesAtStep:
 
         inspect_variables_at_step("test.bp", "test_var", 0)
 
-        mock_print.assert_called_once_with("Current step is 0")
+        mock_print.assert_not_called()
 
     @patch("adios_mcp.implementation.bp5_inspect_variables_at_step.Stream")
     def test_inspect_variable_file_not_found(self, mock_stream_class):

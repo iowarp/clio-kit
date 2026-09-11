@@ -152,7 +152,7 @@ uv --directory=$env:CLONE_DIR\clio-kit\clio-kit-mcp-servers\pandas run pandas-mc
 **Tags**: data-analysis, statistics
 
 ### `hypothesis_testing`
-**Description**: Run statistical hypothesis tests (t-test, chi-square, ANOVA, normality, Mann-Whitney) with p-values and effect sizes.
+**Description**: Run statistical hypothesis tests (t-test, chi-square, ANOVA, normality, Mann-Whitney) with test statistics and p-values; effect sizes are not computed.
 **Hints**: read-only, idempotent
 **Tags**: data-analysis, statistics
 

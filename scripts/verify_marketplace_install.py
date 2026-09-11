@@ -21,16 +21,16 @@ import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
-from mcp import ClientSession, StdioServerParameters
+from mcp import Client, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from mcp.types import PaginatedRequestParams
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 class Acceptance:
-    def __init__(self, output: Path) -> None:
+    def __init__(self, output: Path, protocol_mode: str = "auto") -> None:
         self.output = output
+        self.protocol_mode = protocol_mode
         output.mkdir(parents=True, exist_ok=True)
         self.environment = dict(os.environ)
         self.environment.update(
@@ -67,47 +67,53 @@ class Acceptance:
     ) -> list[dict]:
         async def exchange() -> list[dict]:
             with (self.output / f"{name}.stderr").open("w") as errors:
-                async with stdio_client(
-                    StdioServerParameters(
-                        command=str(self.launcher), args=args, env=self.environment
+                async with Client(
+                    stdio_client(
+                        StdioServerParameters(
+                            command=str(self.launcher), args=args, env=self.environment
+                        ),
+                        errlog=errors,
                     ),
-                    errlog=errors,
-                ) as (read, write):
-                    async with ClientSession(read, write) as client:
-                        initialized = await client.initialize()
-                        tools = []
-                        cursor = None
-                        while True:
-                            page = await client.list_tools(
-                                params=PaginatedRequestParams(cursor=cursor)
-                                if cursor
-                                else None
-                            )
-                            tools.extend(tool.name for tool in page.tools)
-                            cursor = page.model_dump(by_alias=True).get("nextCursor")
-                            if not cursor:
-                                break
-                        assert tools, f"{name}: no tools"
-                        responses = []
-                        for tool, arguments in calls or []:
-                            result = await client.call_tool(tool, arguments)
-                            assert not result.isError, result
-                            dumped = result.model_dump(mode="json", by_alias=True)
-                            responses.append(dumped)
-                        record = {
-                            "name": name,
-                            "connected": True,
-                            "server": initialized.serverInfo.model_dump(),
-                            "tools": tools,
-                            "calls": responses,
-                        }
-                        self.records.append(record)
-                        self.save()
-                        print(
-                            f"PASS {name}: {len(tools)} tools, {len(responses)} calls",
-                            flush=True,
-                        )
-                        return responses
+                    # Runtime fixtures exercise language-neutral negotiation;
+                    # shipped Python servers must support the selected era.
+                    mode="auto" if args[0] == "server" else self.protocol_mode,
+                ) as client:
+                    tools = []
+                    cursor = None
+                    seen = set()
+                    while True:
+                        page = await client.list_tools(cursor=cursor)
+                        tools.extend(tool.name for tool in page.tools)
+                        cursor = page.next_cursor
+                        if not cursor:
+                            break
+                        assert cursor not in seen, f"{name}: repeated pagination cursor"
+                        seen.add(cursor)
+                    assert tools, f"{name}: no tools"
+                    responses = []
+                    for tool, arguments in calls or []:
+                        result = await client.call_tool(tool, arguments)
+                        assert not result.is_error, result
+                        dumped = result.model_dump(mode="json", by_alias=True)
+                        responses.append(dumped)
+                    record = {
+                        "name": name,
+                        "connected": True,
+                        "server": client.server_info.model_dump()
+                        if client.server_info is not None
+                        else {},
+                        "protocol_version": client.protocol_version,
+                        "tools": tools,
+                        "calls": responses,
+                    }
+                    self.records.append(record)
+                    self.save()
+                    print(
+                        f"PASS {name}: {len(tools)} tools, {len(responses)} calls "
+                        f"({client.protocol_version})",
+                        flush=True,
+                    )
+                    return responses
 
         return await asyncio.wait_for(exchange(), timeout=300)
 
@@ -541,6 +547,12 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--all-servers", action="store_true")
     parser.add_argument(
+        "--protocol-mode",
+        choices=["auto", "legacy", "2026-07-28"],
+        default="auto",
+        help="Require a protocol era for shipped servers; runtime fixtures negotiate automatically",
+    )
+    parser.add_argument(
         "--codex", action="store_true", help="Verify real Codex skill discovery"
     )
     parser.add_argument(
@@ -552,7 +564,7 @@ def main() -> None:
     output = (
         args.output or Path(tempfile.mkdtemp(prefix="clio-acceptance-"))
     ).resolve()
-    suite = Acceptance(output)
+    suite = Acceptance(output, args.protocol_mode)
     suite.install()
     project = suite.portable_skills()
     if args.codex:

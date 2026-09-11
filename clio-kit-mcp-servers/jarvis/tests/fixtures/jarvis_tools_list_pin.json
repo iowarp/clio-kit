@@ -4312,19 +4312,7 @@
         "type": "object"
       },
       "name": "jm_add_repo",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Add Repo"
     },
     "jm_bootstrap_from": {
@@ -4359,19 +4347,7 @@
         "type": "object"
       },
       "name": "jm_bootstrap_from",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Bootstrap Machine"
     },
     "jm_bootstrap_list": {
@@ -4399,19 +4375,7 @@
         "type": "object"
       },
       "name": "jm_bootstrap_list",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "List Templates"
     },
     "jm_cd": {
@@ -4446,19 +4410,7 @@
         "type": "object"
       },
       "name": "jm_cd",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Switch Pipeline"
     },
     "jm_construct_pkg": {
@@ -4493,19 +4445,7 @@
         "type": "object"
       },
       "name": "jm_construct_pkg",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Construct Package"
     },
     "jm_create_config": {
@@ -4555,19 +4495,7 @@
         "type": "object"
       },
       "name": "jm_create_config",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Initialize Config"
     },
     "jm_get_repo": {
@@ -4640,19 +4568,7 @@
         "type": "object"
       },
       "name": "jm_graph_build",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Build Graph"
     },
     "jm_graph_modify": {
@@ -4687,19 +4603,7 @@
         "type": "object"
       },
       "name": "jm_graph_modify",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Modify Graph"
     },
     "jm_graph_show": {
@@ -4727,19 +4631,7 @@
         "type": "object"
       },
       "name": "jm_graph_show",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Show Graph"
     },
     "jm_list_pipelines": {
@@ -4829,19 +4721,7 @@
         "type": "object"
       },
       "name": "jm_load_config",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Load Config"
     },
     "jm_promote_repo": {
@@ -4876,19 +4756,7 @@
         "type": "object"
       },
       "name": "jm_promote_repo",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Promote Repo"
     },
     "jm_remove_repo": {
@@ -4923,19 +4791,7 @@
         "type": "object"
       },
       "name": "jm_remove_repo",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Remove Repo"
     },
     "jm_reset": {
@@ -4963,19 +4819,7 @@
         "type": "object"
       },
       "name": "jm_reset",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Reset Manager"
     },
     "jm_save_config": {
@@ -5003,19 +4847,7 @@
         "type": "object"
       },
       "name": "jm_save_config",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Save Config"
     },
     "jm_set_hostfile": {
@@ -5050,19 +4882,7 @@
         "type": "object"
       },
       "name": "jm_set_hostfile",
-      "outputSchema": {
-        "properties": {
-          "result": {
-            "items": {},
-            "type": "array"
-          }
-        },
-        "required": [
-          "result"
-        ],
-        "type": "object",
-        "x-fastmcp-wrap-result": true
-      },
+      "outputSchema": null,
       "title": "Set Hostfile"
     },
     "load_pipeline": {

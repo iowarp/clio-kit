@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="⏰"
   category="Data Processing"
   description="ChronoLog MCP server implementation using Model Context Protocol"
-  version="2.0.2"
+  version="2.0.3"
   actions={["start_chronolog", "record_interaction", "stop_chronolog", "retrieve_interaction"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["distributed logging", "chronolog", "event logging", "session management", "context sharing", "real-time", "model context protocol", "scientific data", "conversational ai", "high-performance", "shared log", "multi-client", "historical retrieval", "enterprise logging"]}
@@ -66,6 +66,10 @@ This prompt will:
 - Capture all conversation elements using `record_interaction`
 - Maintain detailed architectural documentation
 - Provide clean session termination using `stop_chronolog`
+
+### Native backend configuration
+
+Build the archive reader against your native ChronoLog checkout and set `HDF5_READER_BIN`, `CHRONO_CONF`, `PYTHONPATH`, and `LD_LIBRARY_PATH`. Select `UV_PYTHON` matching the native client ABI. Retrieval preserves quotes/newlines; allow the configured archive flush interval after recording. See the [native reader build instructions](https://github.com/iowarp/clio-kit/blob/feat/360-meta-marketplace/clio-kit-mcp-servers/chronolog/README.md#native-client-and-archive-reader).
 
 {/* clio-kit:usage:end */}
 

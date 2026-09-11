@@ -5,6 +5,7 @@ Tests for ArXiv paper details and analysis capabilities.
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
+import httpx
 
 from arxiv_mcp.capabilities.paper_details import get_paper_details, find_similar_papers
 
@@ -40,6 +41,22 @@ def _mock_arxiv_client(payload: str):
         "arxiv_mcp.capabilities.paper_details.httpx.AsyncClient",
         return_value=context,
     )
+
+
+@pytest.fixture(autouse=True)
+def paper_api():
+    """Exercise parsing and similarity filtering with deterministic HTTP replies."""
+    async def reply(url, **kwargs):
+        paper_id = str(kwargs.get("params", {}).get("id_list", ""))
+        payload = (
+            '<feed xmlns="http://www.w3.org/2005/Atom"/>'
+            if "invalid" in paper_id
+            else ATTENTION_ENTRY
+        )
+        return httpx.Response(200, text=payload, request=httpx.Request("GET", url))
+
+    with patch("httpx.AsyncClient.get", side_effect=reply):
+        yield
 
 
 class TestPaperDetails:
@@ -104,7 +121,7 @@ class TestPaperDetails:
                 assert paper["title"].strip() != ""
         except Exception:
             # Skip test if paper not accessible
-            pytest.skip("Paper not accessible for testing")
+            pytest.fail("Paper details did not match the fixture")
 
     @pytest.mark.asyncio
     async def test_find_similar_papers_valid_id(self):
@@ -129,7 +146,7 @@ class TestPaperDetails:
 
         except Exception:
             # Skip test if ArXiv is not accessible
-            pytest.skip("ArXiv not accessible for testing")
+            pytest.fail("Similarity search did not match the fixture")
 
     @pytest.mark.asyncio
     async def test_find_similar_papers_invalid_id(self):
@@ -168,7 +185,7 @@ class TestPaperDetails:
                     assert "categories" in similar_paper
 
         except Exception:
-            pytest.skip("Similar papers test skipped due to network issues")
+            pytest.fail("Similarity result has an invalid structure")
 
     @pytest.mark.asyncio
     async def test_paper_details_message_format(self):
@@ -183,4 +200,4 @@ class TestPaperDetails:
                 assert paper_id in result["message"]
                 assert "successfully" in result["message"].lower()
         except Exception:
-            pytest.skip("Paper details message test skipped")
+            pytest.fail("Paper details message is invalid")

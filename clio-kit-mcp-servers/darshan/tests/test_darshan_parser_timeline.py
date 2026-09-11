@@ -348,11 +348,9 @@ async def test_get_timeline_analysis_with_null_timestamps():
 
         result = await darshan_parser.get_timeline_analysis("/test/file.darshan")
 
-        # When timestamps are None, calling .replace() raises AttributeError
-        # which is caught by the outer exception handler
-        assert result["success"] is False
-        assert "error" in result
-        assert "Error generating timeline analysis" in result["error"]
+        # Missing timing data is represented consistently with absent fields.
+        assert result["success"] is True
+        assert result["analysis"]["total_duration"] is None
 
 
 @pytest.mark.asyncio

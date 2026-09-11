@@ -23,8 +23,19 @@ def open_submission(name: str, entry: str, *, target: str = "iowarp/clio-kit") -
         return result.stdout.strip()
 
     login = run("gh", "api", "user", "--jq", ".login")
-    fork = f"{login}/{target.split('/')[1]}"
-    run("gh", "repo", "fork", target, "--clone=false")
+    # GitHub may return an existing fork whose repository name differs from
+    # upstream. Use its actual identity, and do not try to fork our own repo.
+    fork = target
+    if target.split("/")[0].casefold() != login.casefold():
+        fork = run(
+            "gh",
+            "api",
+            "--method",
+            "POST",
+            f"repos/{target}/forks",
+            "--jq",
+            ".full_name",
+        )
     base = json.loads(run("gh", "repo", "view", target, "--json", "defaultBranchRef"))[
         "defaultBranchRef"
     ]["name"]

@@ -72,7 +72,6 @@ mcp: FastMCP = FastMCP(
         "Manages HPC jobs via the Slurm workload manager. "
         "Submit jobs, monitor queue status, cancel jobs, and manage node allocations."
     ),
-    list_page_size=10,
 )
 MCP_METADATA_PROFILE = "user"
 

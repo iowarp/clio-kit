@@ -4,6 +4,7 @@ Handles SSH-based remote node information retrieval.
 """
 
 import subprocess
+import shlex
 import json
 import os
 from typing import Callable, Dict, Optional, List
@@ -382,7 +383,7 @@ def get_basic_info():
 
 # Main execution
 try:
-    filters = {filters_json}
+    filters = json.loads({filters_json!r})
     node_info = get_basic_info()
     
     # Apply filters if specified
@@ -409,7 +410,7 @@ except Exception as e:
     }}))
 '''
 
-    return f"python3 -c '{script}'"
+    return "python3 -c " + shlex.quote(script)
 
 
 def test_ssh_connection(

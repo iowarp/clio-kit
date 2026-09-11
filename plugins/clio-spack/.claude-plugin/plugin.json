@@ -1,7 +1,7 @@
 {
   "name": "clio-spack",
   "description": "Structured Spack discovery and installation tools for scientific agents",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

@@ -1,6 +1,6 @@
 [project]
 name = "jarvis-mcp"
-version = "3.7.3"
+version = "3.7.4"
 description = "JARVIS-CD MCP with a compact user pipeline contract and explicit admin compatibility profiles"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -12,7 +12,7 @@ authors = [
 keywords = ["jarvis", "pipeline-management", "high-performance-computing", "hpc", "workflow", "data-pipelines", "scientific-computing", "mcp", "package-management"]
 
 dependencies = [
-  "fastmcp>=4.0.0b1",
+  "fastmcp>=4.0.3,<5",
   "fastapi",
   "python-dotenv>=1.2.2",
   "jarvis-cd @ https://github.com/grc-iit/jarvis-cd/releases/download/v1.8.1/jarvis_cd-1.8.1-py3-none-any.whl#sha256=ed891233e4b3767e949c6b5217bb03d4175b7d39334969c17ec83beb3c0c02d0",

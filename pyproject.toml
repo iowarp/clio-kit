@@ -38,7 +38,7 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-verification = ["mcp>=1.20,<2", "jsonschema>=4"]
+verification = ["mcp>=2.2,<3", "jsonschema>=4"]
 
 [project.urls]
 Homepage = "https://github.com/iowarp/clio-kit"
@@ -52,7 +52,7 @@ clio-kit = "clio_kit:cli"
 [dependency-groups]
 dev = [
   "mypy>=1.17.0",
-  "mcp>=1.20,<2",
+  "mcp>=2.2,<3",
   "types-PyYAML>=6",
   "pytest>=8.3",
   "ruff>=0.12.5",

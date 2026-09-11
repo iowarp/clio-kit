@@ -28,7 +28,6 @@ mcp: FastMCP = FastMCP(
         "Sorts large files using parallel algorithms. "
         "Configure sort parameters, execute sorts with progress tracking, and verify results."
     ),
-    list_page_size=10,
 )
 
 

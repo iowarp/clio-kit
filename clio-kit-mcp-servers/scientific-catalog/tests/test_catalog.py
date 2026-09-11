@@ -181,8 +181,8 @@ async def test_mcp_surface_has_two_agent_oriented_tools(tmp_path: Path) -> None:
             "scientific_dataset_describe",
         }
         search_tool = next(tool for tool in tools if tool.name == "scientific_dataset_search")
-        assert "file_path" not in search_tool.inputSchema.get("properties", {})
-        assert "camera" not in search_tool.inputSchema.get("properties", {})
+        assert "file_path" not in search_tool.input_schema.get("properties", {})
+        assert "camera" not in search_tool.input_schema.get("properties", {})
         result = await client.call_tool(
             "scientific_dataset_search",
             {"query": "red sea", "page_size": 10},

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate that an MCP server meets FastMCP 3.0 compliance requirements.
+"""Validate the repository metadata requirements for a FastMCP server.
 
 Run from within a server directory:
     cd clio-kit-mcp-servers/compression && uv run python ../../scripts/validate_fastmcp.py
@@ -81,11 +81,11 @@ async def validate(module_path: str) -> list[str]:
             if not tool.annotations:
                 errors.append(f"Tool '{tool.name}': missing annotations")
             else:
-                # by_alias=True: fastmcp>=4.0.0b1's ToolAnnotations exposes these
+                # by_alias=True: FastMCP 4's ToolAnnotations exposes these
                 # as snake_case Python fields (read_only_hint, ...) with the
                 # camelCase spellings checked below carried only as wire
                 # aliases. model_dump()'s snake_case default silently failed
-                # every one of these lookups once servers floored to 4.0.0b1,
+                # every one of these lookups after the FastMCP 4 upgrade,
                 # even though the hints were genuinely set.
                 ann = tool.annotations.model_dump(by_alias=True)
                 for hint in ("readOnlyHint", "destructiveHint", "idempotentHint"):
@@ -122,7 +122,7 @@ def main() -> None:
             print(f"  - {error}")
         sys.exit(1)
     else:
-        print(f"PASS: {server_name} (FastMCP 3.0 compliant)")
+        print(f"PASS: {server_name} (FastMCP metadata checks passed)")
 
 
 if __name__ == "__main__":

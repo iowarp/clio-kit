@@ -394,3 +394,11 @@ class TestHypothesisTesting:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_pattern_validation_checks_pandas_string_columns(tmp_path):
+    path = tmp_path / "names.csv"
+    path.write_text("name\ngood\nbad\n")
+    result = validate_data(str(path), {"name": {"pattern": "^good$"}})
+    assert result["validation_summary"]["overall_valid"] is False
+    assert result["validation_results"]["name"]["violations"][0]["violation_count"] == 1

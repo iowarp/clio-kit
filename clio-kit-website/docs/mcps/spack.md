@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🔧"
   category="Utilities"
   description="Structured Spack discovery and installation tools for scientific agents"
-  version="2.3.0"
+  version="2.3.1"
   actions={["spack_find", "spack_locate", "spack_search", "spack_info", "spack_install"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={[]}

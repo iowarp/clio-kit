@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="📄"
   category="Data Processing"
   description="ArXiv MCP server implementation using Model Context Protocol"
-  version="2.2.4"
+  version="2.2.5"
   actions={["search_arxiv", "get_recent_papers", "search_papers_by_author", "search_by_title", "search_by_abstract", "search_by_subject", "search_date_range", "get_paper_details", "export_to_bibtex", "find_similar_papers", "download_paper_pdf", "get_pdf_url", "download_multiple_pdfs"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["data processing", "arxiv", "publications", "scientific data", "research", "papers", "iowarp", "grc"]}

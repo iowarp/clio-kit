@@ -16,7 +16,7 @@
       "meta": {
         "io.modelcontextprotocol/serverInfo": {
           "name": "jarvis",
-          "version": "4.0.0b1"
+          "version": "4.0.3"
         }
       },
       "structured_content": {
@@ -46,7 +46,7 @@
         },
         "io.modelcontextprotocol/serverInfo": {
           "name": "jarvis",
-          "version": "4.0.0b1"
+          "version": "4.0.3"
         }
       },
       "structured_content": {
@@ -81,7 +81,7 @@
       "meta": {
         "io.modelcontextprotocol/serverInfo": {
           "name": "jarvis",
-          "version": "4.0.0b1"
+          "version": "4.0.3"
         }
       },
       "structured_content": {
@@ -150,7 +150,7 @@
       "meta": {
         "io.modelcontextprotocol/serverInfo": {
           "name": "jarvis",
-          "version": "4.0.0b1"
+          "version": "4.0.3"
         }
       },
       "structured_content": {

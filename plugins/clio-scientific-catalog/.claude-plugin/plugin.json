@@ -1,7 +1,7 @@
 {
   "name": "clio-scientific-catalog",
   "description": "Operator-owned scientific dataset discovery for remote agents",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

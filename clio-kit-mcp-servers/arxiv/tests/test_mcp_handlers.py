@@ -4,10 +4,23 @@ Tests all handler functions and error handling scenarios.
 """
 
 import pytest
+import httpx
 import asyncio
 from unittest.mock import patch, AsyncMock, Mock
 
 from arxiv_mcp import mcp_handlers
+
+
+@pytest.fixture
+def empty_arxiv_api():
+    """Keep handler boundary tests independent of the public API rate limit."""
+    response = httpx.Response(
+        200,
+        text='<feed xmlns="http://www.w3.org/2005/Atom"/>',
+        request=httpx.Request("GET", "https://export.arxiv.org/api/query"),
+    )
+    with patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=response) as request:
+        yield request
 
 
 class TestMCPHandlers:
@@ -470,7 +483,7 @@ class TestMCPHandlers:
                     assert result["_meta"]["error"] == "RuntimeError"
 
     @pytest.mark.asyncio
-    async def test_handlers_with_none_parameters(self):
+    async def test_handlers_with_none_parameters(self, empty_arxiv_api):
         """Test handlers with None parameters."""
 
         handlers_to_test = [
@@ -555,7 +568,7 @@ class TestMCPHandlers:
             assert long_result is not None
 
     @pytest.mark.asyncio
-    async def test_concurrent_handler_execution(self):
+    async def test_concurrent_handler_execution(self, empty_arxiv_api):
         """Test concurrent execution of multiple handlers."""
 
         # Create tasks for concurrent execution

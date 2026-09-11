@@ -6,14 +6,32 @@ from unittest.mock import Mock, patch
 import pytest
 from fastmcp.exceptions import ToolError
 
-from chronomcp import server
 from chronomcp.utils import config
+
+
+@pytest.fixture(autouse=True)
+def preserve_native_client():
+    # Keep the live C++ client alive while these unit tests replace the singleton.
+    previous = config.client
+    yield
+    config.client = previous
 
 
 def test_server_metadata_import_does_not_require_native_client() -> None:
     """FastMCP metadata remains available without the site native extension."""
-    assert server.mcp.name == "chronolog"
-    assert config.client is None
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from chronomcp import server; from chronomcp.utils import config; assert server.mcp.name == 'chronolog'; assert config.client is None",
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_get_client_reports_missing_native_dependency() -> None:

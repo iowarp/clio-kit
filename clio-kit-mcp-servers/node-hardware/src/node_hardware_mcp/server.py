@@ -5,8 +5,8 @@ Node Hardware MCP Server - System hardware monitoring via the Model Context Prot
 
 import os
 import sys
-import json
 import logging
+from datetime import datetime, timezone
 from typing import Annotated, Optional
 
 from fastmcp import FastMCP
@@ -39,7 +39,6 @@ mcp: FastMCP = FastMCP(
         "Monitors system hardware including CPU, memory, disk, network, and GPU. "
         "Use individual tools for specific metrics or get a full system overview."
     ),
-    list_page_size=10,
 )
 
 
@@ -258,7 +257,7 @@ async def get_remote_node_info_tool(
             f"Collecting remote hardware information from {hostname}: "
             f"components={components}, exclude={exclude_components}"
         )
-        return mcp_handlers.get_remote_node_info_handler(
+        result = mcp_handlers.get_remote_node_info_handler(
             hostname=hostname,
             username=username,
             port=port,
@@ -267,6 +266,12 @@ async def get_remote_node_info_tool(
             include_filters=components,
             exclude_filters=exclude_components,
         )
+        if result.get("isError"):
+            message = " ".join(
+                block.get("text", "") for block in result.get("content", [])
+            )
+            raise ToolError(message or "Remote hardware collection failed")
+        return result
     except Exception as e:
         logger.error(f"Remote hardware information collection error: {e}")
         raise ToolError(f"Remote hardware collection failed for {hostname}: {e}") from e
@@ -291,7 +296,7 @@ async def health_check_tool() -> dict:
 
         health_status = {
             "server_status": "healthy",
-            "timestamp": json.dumps({"timestamp": "2024-01-01T00:00:00Z"}),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "capabilities": {
                 "get_node_info": "available",
                 "get_remote_node_info": "available",
@@ -311,17 +316,18 @@ async def health_check_tool() -> dict:
                 "ssh_support": "available",
                 "hardware_monitoring": "available",
             },
+            "scope": "MCP process availability; hardware, SSH and security are not assessed by this endpoint",
             "performance_metrics": {
-                "response_time": "optimal",
-                "resource_usage": "efficient",
-                "collection_speed": "high",
-                "network_efficiency": "optimized",
+                "response_time": "not_measured",
+                "resource_usage": "not_measured",
+                "collection_speed": "not_measured",
+                "network_efficiency": "not_measured",
             },
             "health_indicators": {
-                "overall_health": "excellent",
-                "system_stability": "stable",
-                "performance_status": "optimal",
-                "security_posture": "secure",
+                "overall_health": "not_measured",
+                "system_stability": "not_measured",
+                "performance_status": "not_measured",
+                "security_posture": "not_measured",
             },
         }
 

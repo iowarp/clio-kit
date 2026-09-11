@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="📈"
   category="Data Processing"
   description="MCP server for advanced data visualization and plotting operations"
-  version="2.2.4"
+  version="2.2.5"
   actions={["line_plot", "bar_plot", "scatter_plot", "histogram_plot", "heatmap_plot", "plot_timeseries", "data_info"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["MCP", "plotting", "visualization", "analytics", "matplotlib", "seaborn", "data-science"]}

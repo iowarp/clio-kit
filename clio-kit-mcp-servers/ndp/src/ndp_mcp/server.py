@@ -26,7 +26,6 @@ mcp: FastMCP = FastMCP(
         "stage_resource to download an HTTP(S) or OSDF/Pelican dataset resource to a "
         "local file."
     ),
-    list_page_size=10,
 )
 
 # ---------------------------------------------------------------------------

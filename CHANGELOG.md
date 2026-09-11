@@ -26,7 +26,13 @@ This candidate incorporates main's JARVIS 1.8.1 dependency and Web task-based
 fetch support, with ordinary-call compatibility for agents without the tasks
 extension. All 22 server locks update vulnerable HTTP dependencies, and
 fresh registry versions point to the 2.11.0 wheel. The compatible JARVIS user
-schema remains v3.7.2; its component release is 3.7.3.
+schema remains v3.7.2; its component release is 3.7.4.
+
+All 22 servers now use stable FastMCP 4.0.3 with MCP Python SDK 2.2.0.
+The verification client negotiates the 2026-07-28 protocol and supports legacy
+connections. HDF5 exports accept an explicit `export_format` so clients can
+select CSV, JSON or NumPy without a mid-call prompt; modern connections default
+to JSON. Legacy elicitation remains available when the argument is omitted.
 
 Website builds now use a committed npm lock, updated Docusaurus dependencies
 and a format check for the remaining unpatched image-size advisory. That

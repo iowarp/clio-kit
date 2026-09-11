@@ -7,7 +7,6 @@ import random
 try:
     from chronomcp.capabilities import (
         record_handler,
-        retrieve_handler,
         start_handler,
         stop_handler,
     )
@@ -16,7 +15,7 @@ try:
 except ImportError:
     HAS_DEPENDENCIES = False
 
-from .test_utils import are_chronolog_processes_running
+from .test_utils import are_chronolog_processes_running, wait_for_archived_record
 
 pytestmark = pytest.mark.skipif(
     not HAS_DEPENDENCIES,
@@ -43,19 +42,14 @@ class TestIntegration:
         assert isinstance(start_result, str)
         assert "ChronoLog session started" in start_result
 
-        # Record interaction
-        record_result = await record_handler.record_interaction("Hello", "Hi there!")
-        assert isinstance(record_result, str)
-        assert record_result == "Interaction recorded to ChronoLog"
-
-        # Retrieve interactions
-        retrieve_result = await retrieve_handler.retrieve_interaction(
-            chronicle_name, story_name
+        try:
+            record_result = await record_handler.record_interaction(
+                "Hello", "Hi there!"
+            )
+            assert record_result == "Interaction recorded to ChronoLog"
+        finally:
+            stop_result = await stop_handler.stop_chronolog()
+            assert "ChronoLog session stopped" in stop_result
+        await wait_for_archived_record(
+            chronicle_name, story_name, "user: Hello, assistant: Hi there!"
         )
-        assert isinstance(retrieve_result, str)
-        assert "Not records found." not in retrieve_result
-
-        # Stop session
-        stop_result = await stop_handler.stop_chronolog()
-        assert isinstance(stop_result, str)
-        assert "ChronoLog session stopped" in stop_result

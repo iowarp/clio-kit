@@ -40,7 +40,6 @@ def _new_mcp() -> FastMCP:
             "PDF, and structured-document targets. Fetch supports durable tasks; query them for "
             "progress and cancel it when continued work is no longer useful."
         ),
-        list_page_size=10,
     )
 
 

@@ -74,7 +74,7 @@ RATCHET_BASELINE: dict[str, int] = {
     # #376 (v3.7.2 mint): jarvis_add_step_tool and append_pkg_tool both gain
     # the `target` parameter (interceptor target-binding) plus its Field
     # description; 1582 -> 1605 (real count via `wc -l`).
-    "clio-kit-mcp-servers/jarvis/src/jarvis_mcp/server.py": 1605,
+    "clio-kit-mcp-servers/jarvis/src/jarvis_mcp/server.py": 1604,
     # #362 wave 1: NOT split this wave (deferred -- see the wave-1 PR
     # description). Still the 6-class monolith measured at campaign kickoff.
     # Next wave: split into owner modules by concern (pipeline lifecycle,
@@ -88,12 +88,12 @@ RATCHET_BASELINE: dict[str, int] = {
     "clio-kit-mcp-servers/jarvis/src/jarvis_mcp/capabilities/jarvis_handler.py": 3659,
     # #362: NOT split this wave -- out of wave-1 scope (jarvis-only). Flat
     # FastMCP function surface, no god-class; still needs an owner-module cut.
-    "clio-kit-mcp-servers/hdf5/src/hdf5_mcp/server.py": 2324,
+    "clio-kit-mcp-servers/hdf5/src/hdf5_mcp/server.py": 2308,
     # #362: NOT split this wave -- out of wave-1 scope. Single
     # VisualizationEngine god-class.
     "clio-kit-mcp-servers/paraview/src/paraview_mcp/implementation/paraview_capabilities.py": 2202,
-    "clio-kit-mcp-servers/pandas/src/pandas_mcp/server.py": 1274,
-    "clio-kit-mcp-servers/paraview/src/paraview_mcp/server.py": 1091,
+    "clio-kit-mcp-servers/pandas/src/pandas_mcp/server.py": 1273,
+    "clio-kit-mcp-servers/paraview/src/paraview_mcp/server.py": 1016,
     # clio-kit#370: SpackInstallResult + install_spec moved to a new owner
     # module (provisioning.py, real installs with a full on-disk build log
     # and typed recipe_not_found/build_failure/timed_out errors), shedding
@@ -117,7 +117,7 @@ RATCHET_BASELINE: dict[str, int] = {
     # entry (jarvis-user-v3.6.json) recorded, 931 -> 932.
     "src/clio_kit/mcp_contracts.py": 917,
     "src/clio_kit/env_cache.py": 712,
-    "clio-kit-mcp-servers/darshan/src/darshan_mcp/capabilities/darshan_parser.py": 857,
+    "clio-kit-mcp-servers/darshan/src/darshan_mcp/capabilities/darshan_parser.py": 840,
     "clio-kit-mcp-servers/parquet/src/parquet_mcp/capabilities/parquet_handler.py": 839,
     "clio-kit-mcp-servers/node-hardware/src/node_hardware_mcp/mcp_handlers.py": 819,
 }

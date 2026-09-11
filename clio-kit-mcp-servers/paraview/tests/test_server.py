@@ -173,3 +173,65 @@ def test_transport_stdio_default():
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+@pytest.mark.asyncio
+async def test_shape_and_screenshot_share_the_event_loop_thread(monkeypatch, tmp_path):
+    """VTK's graphics context cannot move between worker and event-loop threads."""
+    import threading
+    from fastmcp import Client
+    from paraview_mcp import server
+
+    threads = []
+
+    class Engine:
+        def create_source(self, name):
+            threads.append(threading.get_ident())
+            return True, "created", None, "Sphere1"
+
+        def get_screenshot(self):
+            threads.append(threading.get_ident())
+            return True, "saved", str(tmp_path / "view.png")
+
+    monkeypatch.setattr(server, "pv_manager", Engine())
+    async with Client(server.mcp) as client:
+        await client.call_tool("create_geometric_shape", {"source_type": "Sphere"})
+        await client.call_tool("take_viewport_screenshot", {})
+    assert threads == [threading.get_ident(), threading.get_ident()]
+
+
+@pytest.mark.asyncio
+async def test_preview_returns_png_over_mcp(tmp_path, monkeypatch):
+    import base64
+    from fastmcp import Client
+    from paraview_mcp import server
+
+    png = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l1sAAAAASUVORK5CYII="
+    )
+    path = tmp_path / "viewport.png"
+    path.write_bytes(png)
+    manager = Mock()
+    manager.get_screenshot.return_value = (True, "Saved", str(path))
+    monkeypatch.setattr(server, "get_pv_manager", lambda: manager)
+    async with Client(server.mcp) as client:
+        result = await client.call_tool("show_screenshot_preview", {})
+    images = [block for block in result.content if block.type == "image"]
+    assert len(images) == 1
+    assert base64.b64decode(images[0].data) == png
+
+
+@pytest.mark.asyncio
+async def test_histogram_preview_keeps_six_to_ten_bins(monkeypatch):
+    from paraview_mcp import server
+
+    manager = Mock()
+    manager.get_histogram.return_value = (
+        True,
+        "Histogram",
+        [(i, i + 1) for i in range(8)],
+    )
+    monkeypatch.setattr(server, "get_pv_manager", lambda: manager)
+    result = await server.get_histogram("density", 8)
+    assert "Bin 8: value=7.00, count=8" in result
+    assert result.count("  Bin ") == 8

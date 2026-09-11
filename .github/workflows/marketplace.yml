@@ -13,6 +13,10 @@ jobs:
   installed-marketplace:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        protocol: ["2026-07-28", "legacy"]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
@@ -45,14 +49,14 @@ jobs:
       - name: Scientific calculation regressions
         run: |
           uv run --frozen --directory clio-kit-mcp-servers/pandas pytest -q tests/test_data_cleaning.py
-          uv run --frozen --directory clio-kit-mcp-servers/hdf5 pytest -q tests/test_statistics.py
+          uv run --frozen --directory clio-kit-mcp-servers/hdf5 pytest -q tests/test_statistics.py tests/test_export_protocol.py
           uv run --frozen --directory clio-kit-mcp-servers/parallel-sort pytest -q tests/test_bracketed_levels.py
           uv run --frozen --directory clio-kit-mcp-servers/slurm pytest -q tests/test_protocol_stdout.py
           uv run --frozen --directory clio-kit-mcp-servers/web pytest -q tests/test_tasks.py
       - name: Root regressions
         run: uv run --frozen pytest -q tests
       - name: Install built wheel and exercise real client and tools
-        run: uv run --frozen python scripts/verify_marketplace_install.py --output /tmp/clio-acceptance --codex
+        run: uv run --frozen python scripts/verify_marketplace_install.py --output /tmp/clio-acceptance --codex --all-servers --protocol-mode ${{ matrix.protocol }}
       - name: Python 3.10 installed compatibility
         run: |
           uv venv --python 3.10 /tmp/clio-python310
@@ -63,7 +67,7 @@ jobs:
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
         with:
-          name: marketplace-acceptance
+          name: marketplace-acceptance-${{ matrix.protocol }}
           path: |
             /tmp/clio-acceptance/*.log
             /tmp/clio-acceptance/*.stderr

@@ -12,7 +12,7 @@ authors = [
 keywords = ["parallel-sorting", "log-processing", "log-analysis", "high-performance", "timestamp-sorting", "pattern-detection", "log-filtering", "data-export"]
 
 dependencies = [
-  "fastmcp>=4.0.0b1",
+  "fastmcp>=4.0.3,<5",
   "python-dotenv>=1.2.2",
   "pandas>=1.5.0",
   "aiofiles>=23.0.0",

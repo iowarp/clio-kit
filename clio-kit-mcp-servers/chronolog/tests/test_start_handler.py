@@ -6,6 +6,7 @@ import random
 
 try:
     from chronomcp.capabilities.start_handler import start_chronolog
+    from chronomcp.capabilities.stop_handler import stop_chronolog
 
     HAS_DEPENDENCIES = True
 except ImportError:
@@ -33,7 +34,10 @@ class TestStartHandler:
         )
         story_name = f"test_story_{int(time.time())}_{random.randint(1000, 9999)}"
         result = await start_chronolog(chronicle_name, story_name)
-        assert isinstance(result, str)
-        assert "ChronoLog session started" in result, (
-            f"Expected session to start, got: {result}"
-        )
+        try:
+            assert isinstance(result, str)
+            assert "ChronoLog session started" in result, (
+                f"Expected session to start, got: {result}"
+            )
+        finally:
+            await stop_chronolog()

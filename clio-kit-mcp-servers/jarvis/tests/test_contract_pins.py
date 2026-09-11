@@ -41,6 +41,10 @@ the post-split tree -- see the PR #364 wave-1 description for the
 verification method (a throwaway git worktree at the pre-split commit,
 diffed against the same capture run post-split).
 
+The MCP SDK v2 / FastMCP 4.0.3 migration updates the framework identity
+metadata and removes inferred output schemas for untyped admin-tool lists.
+The six user-tool input/output schemas remain unchanged.
+
 Regenerate a pin only when the wire contract is DELIBERATELY changing (never
 to make a refactor "pass"). To regenerate: reproduce the capture harness
 described in the clio-kit campaign #362 wave-1 PR description, or hand-edit

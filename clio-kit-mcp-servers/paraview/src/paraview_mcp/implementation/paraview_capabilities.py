@@ -177,7 +177,7 @@ class VisualizationEngine:
         """
         try:
             import os
-            from paraview.simple import OpenDataFile, Show, GetActiveView
+            from paraview.simple import OpenDataFile, Show, GetActiveViewOrCreate
 
             # Validate input parameters
             if not file_path:
@@ -323,7 +323,7 @@ class VisualizationEngine:
 
             # Configure display properties and show in active view
             try:
-                view = GetActiveView()
+                view = GetActiveViewOrCreate("RenderView")
                 if not view:
                     return False, "Error: No active ParaView view available", None, ""
 
@@ -1018,7 +1018,6 @@ class VisualizationEngine:
                 GetActiveSource,
                 GetActiveView,
                 GetDisplayProperties,
-                ApplyPreset,
             )
 
             source = GetActiveSource()
@@ -1033,7 +1032,8 @@ class VisualizationEngine:
                 return False, "Error: No active color transfer function"
 
             # Apply the requested preset to the color transfer function.
-            ApplyPreset(color_tf, preset_name, True)
+            if not color_tf.ApplyPreset(preset_name, True):
+                return False, f"Unknown color map preset: {preset_name}"
 
             available_presets = "Blue-Red, Cool to Warm, Viridis, Plasma, Magma, Inferno, Rainbow, Grayscale"
             return (
@@ -1123,9 +1123,9 @@ class VisualizationEngine:
                     None,
                 )
             nbins_prop.SetElement(0, num_bins)
-
-            # Update the pipeline to compute the histogram.
-            UpdatePipeline()
+            hist_filter.UpdateVTKObjects()
+            # Update this filter, regardless of which pipeline source is active.
+            UpdatePipeline(proxy=hist_filter)
 
             # Fetch the computed histogram (returned as a vtkTable).
             hist_table = servermanager.Fetch(hist_filter)

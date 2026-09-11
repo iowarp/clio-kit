@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import json
 import subprocess
+
+import pytest
 from pathlib import Path
 
 from clio_kit.submissions import open_submission
 
 
-def test_submission_pushes_only_the_entry_and_preserves_pr_body(tmp_path, monkeypatch):
+@pytest.mark.parametrize("target", ["iowarp/clio-kit", "contributor/renamed-fork"])
+def test_submission_pushes_only_the_entry_and_preserves_pr_body(
+    tmp_path, monkeypatch, target
+):
     monkeypatch.setenv("GIT_AUTHOR_NAME", "Test")
     monkeypatch.setenv("GIT_AUTHOR_EMAIL", "test@example.invalid")
     monkeypatch.setenv("GIT_COMMITTER_NAME", "Test")
@@ -47,17 +52,18 @@ def test_submission_pushes_only_the_entry_and_preserves_pr_body(tmp_path, monkey
     def run(args, **kwargs):
         if args[0] != "gh":
             args = tuple(
-                str(upstream)
-                if arg == "https://github.com/iowarp/clio-kit.git"
-                else arg
+                str(upstream) if arg == f"https://github.com/{target}.git" else arg
                 for arg in args
             )
             return original_run(args, **kwargs)
         if args[1:3] == ("api", "user"):
             output = "contributor"
-        elif args[1:3] == ("repo", "fork"):
-            output = ""
+        elif args[1:4] == ("api", "--method", "POST"):
+            assert target == "iowarp/clio-kit"
+            assert args[4] == f"repos/{target}/forks"
+            output = "contributor/renamed-fork"
         elif args[1:3] == ("repo", "clone"):
+            assert args[3] == "contributor/renamed-fork"
             return original_run(["git", "clone", str(fork), args[4]], **kwargs)
         elif args[1:3] == ("repo", "view"):
             output = json.dumps({"defaultBranchRef": {"name": "main"}})
@@ -71,7 +77,10 @@ def test_submission_pushes_only_the_entry_and_preserves_pr_body(tmp_path, monkey
 
     monkeypatch.setattr("clio_kit.submissions.subprocess.run", run)
     entry = 'name = "crystal"\ndescription = "A quoted \\"value\\""\n'
-    assert open_submission("crystal", entry) == "https://example.invalid/pull/1"
+    assert (
+        open_submission("crystal", entry, target=target)
+        == "https://example.invalid/pull/1"
+    )
     args = captured["args"]
     branch = args[args.index("--head") + 1].split(":", 1)[1]
     changed = subprocess.check_output(

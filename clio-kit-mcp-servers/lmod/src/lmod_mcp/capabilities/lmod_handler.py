@@ -7,6 +7,8 @@ import os
 import re
 from typing import List, Dict, Optional, Any
 
+from .module_runtime import lmod_command, run_lmod
+
 
 async def _run_module_command(
     args: List[str], capture_stderr: bool = False
@@ -21,7 +23,14 @@ async def _run_module_command(
     Returns:
         tuple: (stdout, stderr, return_code)
     """
-    # Construct the full command
+    backend = lmod_command()
+    if backend:
+        try:
+            return await run_lmod(backend, args, capture_stderr)
+        except (OSError, ValueError) as exc:
+            return "", f"Unable to invoke Lmod: {exc}", 1
+
+    # Compatibility for sites that provide an executable module wrapper.
     cmd = ["module"] + args
 
     # Set up environment with LMOD_QUIET to reduce noise
@@ -64,7 +73,7 @@ async def list_loaded_modules() -> Dict[str, Any]:
 
     # Parse module list (skip header lines)
     modules = []
-    lines = stdout.strip().split("\n")
+    lines = (stdout or stderr).strip().split("\n")
 
     for line in lines:
         line = line.strip()
@@ -91,7 +100,7 @@ async def search_available_modules(pattern: Optional[str] = None) -> Dict[str, A
     # For module avail, output is in stderr
     output = stderr if stderr else stdout
 
-    if returncode != 0 and not output:
+    if returncode != 0:
         return {"success": False, "error": "Failed to search modules", "modules": []}
 
     # Parse available modules
@@ -143,9 +152,13 @@ async def show_module_details(module_name: str) -> Dict[str, Any]:
     conflicts_list: List[str] = info["conflicts"]
     env_list: List[str] = info["environment"]
 
-    lines = stdout.strip().split("\n")
+    lines = (stdout or stderr).strip().split("\n")
 
     for line in lines:
+        # Lmod prints the modulefile path as a header ending with a colon.
+        if ".lua" in line or ".tcl" in line:
+            info["path"] = line.strip().removesuffix(":")
+            continue
         # Detect section headers
         if line.strip().endswith(":"):
             line.strip().rstrip(":").lower()
@@ -153,11 +166,6 @@ async def show_module_details(module_name: str) -> Dict[str, Any]:
 
         # Skip separator lines
         if line.strip().startswith("---") or not line.strip():
-            continue
-
-        # Extract module path
-        if ".lua" in line or ".tcl" in line:
-            info["path"] = line.strip()
             continue
 
         # Parse content based on current section
@@ -209,7 +217,7 @@ async def spider_search(pattern: Optional[str] = None) -> Dict[str, Any]:
     # Spider output is typically in stderr
     output = stderr if stderr else stdout
 
-    if returncode != 0 and not output:
+    if returncode != 0:
         return {"success": False, "error": "Failed to run spider search", "modules": []}
 
     # Parse spider output
@@ -292,7 +300,7 @@ async def list_saved_collections() -> Dict[str, Any]:
 
     # Parse collection names
     collections = []
-    lines = stdout.strip().split("\n")
+    lines = (stdout or stderr).strip().split("\n")
 
     for line in lines:
         line = line.strip()

@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🔧"
   category="Utilities"
   description="Provider-fixed web search plus transparent URL, DOI, and document fetching"
-  version="2.1.2"
+  version="2.1.3"
   actions={["fetch", "fetch_events", "search"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["web", "fetch", "search", "mcp", "llm-integration", "agentic-web"]}

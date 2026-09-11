@@ -1,6 +1,26 @@
 """Utility functions for ChronoLog tests."""
 
 import subprocess
+import asyncio
+from pathlib import Path
+
+
+async def wait_for_archived_record(chronicle, story, expected, timeout=30):
+    """Wait for the native keeper/grapher's asynchronous archive flush."""
+    from chronomcp.capabilities.retrieve_handler import retrieve_interaction
+
+    deadline = asyncio.get_running_loop().time() + timeout
+    while True:
+        result = await retrieve_interaction(chronicle, story)
+        if result != "No records found.":
+            path = Path(result)
+            try:
+                assert path.read_text() == expected
+            finally:
+                path.unlink(missing_ok=True)
+            return
+        assert asyncio.get_running_loop().time() < deadline, "Record was not archived"
+        await asyncio.sleep(1)
 
 
 def are_chronolog_processes_running():
