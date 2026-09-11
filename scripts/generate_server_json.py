@@ -859,6 +859,12 @@ def generate_all(mcps_dir: str) -> None:
     _write_json(repo_root / "claude_desktop_config.json", claude_config)
     print(f"Wrote claude_desktop_config.json ({len(generated)} servers)")
 
+    # Keep the existing Gemini MCP integration on the same launcher inventory.
+    _write_json(
+        repo_root / "gemini-extension.json",
+        {"name": "clio-kit", "version": pypi_version, **claude_config},
+    )
+
     # The registry manifest intentionally carries only abbreviated tool metadata.
     # Bind the full locked JARVIS, SLURM, and Spack user schemas from actual stdio
     # tools/list responses in separately shipped canonical artifacts.

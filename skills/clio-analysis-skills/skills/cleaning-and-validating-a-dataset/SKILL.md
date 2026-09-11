@@ -38,7 +38,12 @@ linearly by row position: `[1, missing, 3, missing, 5]` becomes
 non-numeric gaps remain missing; inspect the reported `imputed_count` and the
 output. Select the intended `columns`. This is not time-weighted interpolation:
 for irregular timestamps, use a verified time-aware calculation instead.
-Preserve the input and assert expected values before accepting any transformation.
+`forward_fill` propagates the previous observed value; `backward_fill` uses
+the next observed value. Both follow row order, so sort and separate independent
+series first. `mode` fills numeric or categorical gaps from observed values.
+Mean/median operate only on numeric columns. Entirely missing columns stay
+missing, and `imputed_count` counts actual fills. Preserve the input and assert
+expected values before accepting any transformation.
 
 - **Scattered gaps** — inspect the measurement process; apparent randomness
   does not establish a missingness mechanism. Mean/median imputation changes

@@ -19,11 +19,11 @@ QUALITY_WORKFLOW = (
     REPOSITORY_ROOT / ".github" / "workflows" / "quality_control.yml"
 ).read_text(encoding="utf-8")
 EXPECTED_JARVIS_RELEASE_URL = (
-    "https://github.com/grc-iit/jarvis-cd/releases/download/v1.8.0/"
-    "jarvis_cd-1.8.0-py3-none-any.whl"
+    "https://github.com/grc-iit/jarvis-cd/releases/download/v1.8.1/"
+    "jarvis_cd-1.8.1-py3-none-any.whl"
 )
 EXPECTED_JARVIS_RELEASE_SHA256 = (
-    "2c2e2042d0256bd3d9c117d75aaf00d26d9e814fcbcca9a904abf06399fc1067"
+    "ed891233e4b3767e949c6b5217bb03d4175b7d39334969c17ec83beb3c0c02d0"
 )
 
 
@@ -304,7 +304,7 @@ def test_ares_probe_exercises_persistent_uv_tool_installation() -> None:
     assert '"paraview_description": paraview_description' in probe
     assert 'assert "%" not in log_path.name' in probe
     assert "assert log_path.is_file()" in probe
-    assert probe_module["EXPECTED_JARVIS_VERSION"] == "1.8.0"
+    assert probe_module["EXPECTED_JARVIS_VERSION"] == "1.8.1"
     assert probe_module["EXPECTED_JARVIS_URL"] == EXPECTED_JARVIS_RELEASE_URL
     assert probe_module["EXPECTED_JARVIS_SHA256"] == EXPECTED_JARVIS_RELEASE_SHA256
     assert "uvx" not in probe
@@ -345,8 +345,8 @@ def test_wheel_smoke_binds_jarvis_artifacts_to_exact_release_wheel() -> None:
     )
     match = re.fullmatch(
         r"jarvis-cd @ "
-        r"(https://github\.com/grc-iit/jarvis-cd/releases/download/v1\.8\.0/"
-        r"jarvis_cd-1\.8\.0-py3-none-any\.whl)"
+        r"(https://github\.com/grc-iit/jarvis-cd/releases/download/v1\.8\.1/"
+        r"jarvis_cd-1\.8\.1-py3-none-any\.whl)"
         r"#sha256=([0-9a-f]{64})",
         dependency,
     )
@@ -360,7 +360,7 @@ def test_wheel_smoke_binds_jarvis_artifacts_to_exact_release_wheel() -> None:
     jarvis_package = next(
         package for package in jarvis_lock["package"] if package["name"] == "jarvis-cd"
     )
-    assert jarvis_package["version"] == "1.8.0"
+    assert jarvis_package["version"] == "1.8.1"
     assert jarvis_package["source"] == {"url": expected_url}
     assert jarvis_package["wheels"] == [
         {"url": expected_url, "hash": f"sha256:{expected_digest}"}
@@ -375,6 +375,8 @@ def test_wheel_smoke_binds_jarvis_artifacts_to_exact_release_wheel() -> None:
     start = WORKFLOW.index("    - name: Smoke installed root wheel")
     end = WORKFLOW.index("    - name: Attest release distributions", start)
     smoke_block = WORKFLOW[start:end]
+    assert "mcp-contract clio-kit-jarvis-user-v3.7.2" in smoke_block
+    assert "mcp-contract clio-kit-jarvis-user-v3.7.1" in smoke_block
     assert "mcp-contract clio-kit-jarvis-user-v3.6" in smoke_block
     assert "mcp-contract clio-kit-jarvis-user-v3.5" in smoke_block
     assert "mcp-contract clio-kit-jarvis-user-v3.4" in smoke_block
@@ -383,12 +385,12 @@ def test_wheel_smoke_binds_jarvis_artifacts_to_exact_release_wheel() -> None:
     assert '"jarvis_get_execution_artifacts"' not in smoke_block
     assert 'get_servers_path() / "jarvis"' in smoke_block
     assert 'distribution("jarvis-cd")' in smoke_block
-    assert 'installed.version == "1.8.0"' in smoke_block
+    assert 'installed.version == "1.8.1"' in smoke_block
     assert expected_url in smoke_block
     assert expected_digest in smoke_block
     assert "expected_requirement in project" in smoke_block
     assert 'package["name"] == "jarvis-cd"' in smoke_block
-    assert 'jarvis_package["version"] == "1.8.0"' in smoke_block
+    assert 'jarvis_package["version"] == "1.8.1"' in smoke_block
     assert 'jarvis_package["source"] == {"url": expected_url}' in smoke_block
     assert '"hash": f"sha256:{expected_digest}"' in smoke_block
     assert 'package["name"] == "jarvis-mcp"' in smoke_block
@@ -440,6 +442,9 @@ def test_release_regenerates_and_smokes_shipped_user_contracts() -> None:
     )
     smoke_block = WORKFLOW[smoke_start:smoke_end]
     assert '"$clio_kit" mcp-contracts' in smoke_block
+    assert "mcp-contract clio-kit-jarvis-user-v3.7.2" in smoke_block
+    assert "mcp-contract clio-kit-jarvis-user-v3.7.1" in smoke_block
+    assert "mcp-contract clio-kit-jarvis-user-v3.7" in smoke_block
     assert "mcp-contract clio-kit-jarvis-user-v3.6" in smoke_block
     assert "mcp-contract clio-kit-jarvis-user-v3.5" in smoke_block
     assert "mcp-contract clio-kit-jarvis-user-v3.4" in smoke_block
@@ -453,6 +458,9 @@ def test_release_regenerates_and_smokes_shipped_user_contracts() -> None:
     assert "mcp-contract clio-kit-spack-user-v2.2" in smoke_block
     assert "mcp-contract clio-kit-spack-user-v2.1" in smoke_block
     assert "mcp-contract clio-kit-spack-user-v2" in smoke_block
+    assert "clio-kit-jarvis-user-v3.7.2" in smoke_block
+    assert "clio-kit-jarvis-user-v3.7.1" in smoke_block
+    assert "clio-kit-jarvis-user-v3.7" in smoke_block
     assert "clio-kit-jarvis-user-v3.6" in smoke_block
     assert "clio-kit-jarvis-user-v3.5" in smoke_block
     assert "clio-kit-jarvis-user-v3.4" in smoke_block
@@ -469,8 +477,10 @@ def test_quality_matrix_is_required_and_lock_sensitive() -> None:
     assert "uv\\.lock$" in infrastructure_check
     assert "mcp-server-versions\\.toml$" in infrastructure_check
     assert "clio-agentic-search/uv\\.lock$" in infrastructure_check
-    assert 'python-version: ["3.10", "3.11", "3.12"]' in QUALITY_WORKFLOW
-    assert 'python-version: ["3.11", "3.12"]' in QUALITY_WORKFLOW
+    # 3.13 added to both matrices to guard the numpy<2-ceiling defect class
+    # (clio-kit-mcp-servers/pandas, /plot) on any Python-3.13-only host.
+    assert 'python-version: ["3.10", "3.11", "3.12", "3.13"]' in QUALITY_WORKFLOW
+    assert 'python-version: ["3.11", "3.12", "3.13"]' in QUALITY_WORKFLOW
     assert "uv lock --check" in QUALITY_WORKFLOW
     assert QUALITY_WORKFLOW.count("uv sync --locked --dev") == 3
 

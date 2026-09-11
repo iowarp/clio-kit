@@ -148,11 +148,20 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
         "hdf5",
         "lmod",
         "pandas",
+        "parallel-sort",
         "seismology",
+        "slurm",
         "spack",
-        "web",
     )
     assert marketplace["metadata"]["version"] == expected_version
+    gemini = json.loads((repository_root / "gemini-extension.json").read_text())
+    assert gemini["version"] == expected_version
+    assert (
+        gemini["mcpServers"]
+        == GENERATOR.build_claude_desktop_config(sorted(expected_server_versions))[
+            "mcpServers"
+        ]
+    )
     assert set(marketplace_plugins) == set(expected_server_versions)
     assert set(bundle_plugins) == set(expected_bundles)
     assert set(skill_plugins) == expected_skill_plugins
@@ -238,10 +247,10 @@ def test_jarvis_current_contract_matches_registry_package_and_capability() -> No
         if contract["server_name"] == "jarvis"
     )
     contract_match = re.fullmatch(
-        r"clio-kit-jarvis-user-v(?P<major>\d+)\.(?P<minor>\d+)",
+        r"clio-kit-jarvis-user-v(?P<major>\d+)\.(?P<minor>\d+)(?:\.(?P<patch>\d+))?",
         current_contract["contract_id"],
     )
-    assert current_contract["contract_id"] == "clio-kit-jarvis-user-v3.7"
+    assert current_contract["contract_id"] == "clio-kit-jarvis-user-v3.7.2"
     assert contract_match is not None
     contract_major_minor = (
         int(contract_match.group("major")),

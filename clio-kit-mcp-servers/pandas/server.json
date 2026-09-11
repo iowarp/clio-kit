@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/pandas-mcp",
   "title": "CLIO Pandas",
   "description": "Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.8.0",
+      "version": "2.11.0",
       "transport": {
         "type": "stdio"
       },

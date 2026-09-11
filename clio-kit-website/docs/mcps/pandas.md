@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🐼"
   category="Data Processing"
   description="Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations"
-  version="2.2.4"
+  version="2.2.5"
   actions={["load_data", "save_data", "statistical_summary", "correlation_analysis", "hypothesis_testing", "handle_missing_data", "clean_data", "groupby_operations", "merge_datasets", "pivot_table", "time_series_operations", "validate_data", "filter_data", "optimize_memory", "profile_data", "profile_csv"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["pandas", "data-analysis", "statistical-analysis", "data-science", "data-manipulation", "time-series", "data-cleaning", "data-transformation", "mcp", "llm-integration"]}

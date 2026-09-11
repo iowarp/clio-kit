@@ -1,6 +1,6 @@
 ---
 title: Web MCP
-description: "Web MCP server providing curated fetch + search tools for agentic web access"
+description: "Provider-fixed web search plus transparent URL, DOI, and document fetching"
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -9,13 +9,13 @@ import MCPDetail from '@site/src/components/MCPDetail';
   name="Web"
   icon="🔧"
   category="Utilities"
-  description="Web MCP server providing curated fetch + search tools for agentic web access"
-  version="1.1.0"
-  actions={["fetch", "search"]}
+  description="Provider-fixed web search plus transparent URL, DOI, and document fetching"
+  version="2.1.0"
+  actions={["fetch", "fetch_events", "search"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["web", "fetch", "search", "mcp", "llm-integration", "agentic-web"]}
   license="BSD-3-Clause"
-  tools={[{"name": "fetch", "description": "Fetch an HTTP(S) URL with a streamed size cap and timeout, convert HTML to Markdown, and return the content inline or (to_file=True) write it to a local file and return its path.", "function_name": "fetch"}, {"name": "search", "description": "Search the web via a configurable provider (keyless DuckDuckGo by default; self-hosted SearXNG; optional BYO-key Brave or Tavily) and return ranked results. SearXNG supports category, engine, language, time-range, page, and safe-search selectors.", "function_name": "search"}]}
+  tools={[{"name": "fetch", "description": "Fetch an HTTP(S) URL or DOI as a durable task. HTML and text are read locally; supported documents use CLIO Web Search conversion when configured.", "function_name": "fetch"}, {"name": "fetch_events", "description": "Query the full ordered backend event log for a document fetch conversion.", "function_name": "fetch_events"}, {"name": "search", "description": "Search the web using this installation's fixed ddg provider.", "function_name": "search"}]}
 >
 
 {/* clio-kit:usage:start */}
@@ -24,7 +24,11 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 Use `search` to find candidate pages, then `fetch` the specific page before
 making claims about its contents. Record the source URL and retrieval context.
-The fetch result is bounded; request file output when more content is needed.
+`fetch(target=...)` runs as an MCP task. Use a task-capable client, follow
+progress to completion and read the terminal result before citing content.
+Task IDs and progress messages are not source content. Request `to_file=True`
+for file output. PDF and structured-document conversion requires a configured
+CLIO Web Search service; inspect `web://capabilities` for the active setup.
 
 ### Verify a research claim
 

@@ -8,7 +8,8 @@ title: Marketplace and Contributions
 Use the checkout installation in the root README while this work remains on
 `feat/360-meta-marketplace`. The public PyPI package and default GitHub branch
 are not a coordinated release of this feature branch. A maintainer must review
-and release that transition separately.
+and release that transition separately. The coordinated candidate version is
+`2.11.0`; source installation is required until that version is published.
 
 ## Installable components
 
@@ -36,6 +37,19 @@ supports contributed Node/TypeScript and Go projects. Real MCP SDK fixtures
 under `tests/fixtures/mcp-servers/` verify those adapters in CI; they are not
 installed marketplace products or bundled wheel components. Hosting an
 additional server requires its own reviewed source, locks and CI coverage.
+
+## Supported and deployment-dependent paths
+
+| Capability | Release scope |
+|---|---|
+| Python server packaging and stdio launcher | 22 shipped servers; individual backend prerequisites still apply |
+| Portable skills | 20 standard skill folders; Codex discovery and Claude plugin loading are tested |
+| Native bundles and agent definitions | Claude Code; other clients use portable skills and explicit MCP configuration |
+| Node/TypeScript and Go | Locked local-project adapters tested with real SDK fixtures; no shipped non-Python scientific server |
+| External plugins and marketplaces | Entry validation, snapshot compilation and client installation; third-party code remains externally maintained |
+| GitHub contribution submission | Local entry/commit construction and API contract tests; acceptance does not open a public test PR |
+| Web fetch | Requires an MCP task-capable client; document conversion needs its backend service |
+| Scientific workflows and model behavior | Validate against the target data, site software, client and model; discovery is not a quality guarantee |
 
 ## Contributing and updating
 
@@ -121,16 +135,16 @@ The catalogue service needs `SCIENTIFIC_CATALOG_FILE` pointing to real metadata.
 Pandas interpolation now fills interior numeric gaps linearly by row position;
 endpoint and non-numeric gaps remain missing. HDF5 now labels sampled statistics
 with actual coverage and omits cross-dataset totals when sampling is involved.
-The audit's bracketed-log-level parsing limitation in parallel-sort remains;
-skills explicitly avoid claiming that operation succeeded. Slurm may emit a plain
-stdout message during submission even when its actual job succeeds. These
-implementation defects require separate MCP-owner changes; packaging does not
-repair scientific calculations. Never label all scientific workflows verified
-based only on installation, pytest, or connection results.
+Forward/backward fill now follows row order for numeric and categorical data,
+and mode fills use observed values with accurate fill counts. Parallel-sort
+accepts bare and bracketed log levels consistently across filtering, statistics
+and pattern detection. Slurm submission and allocation diagnostics use stderr
+to preserve the MCP protocol stream. These fixes have targeted regressions;
+installation and connection results alone still do not verify a scientific
+workflow.
 
 Model-driven skill trigger and quality evaluation must be recorded per agent
-and model. The audit's quota failure affected Claude evaluations only; it says
-nothing about Codex or other accounts. Deterministic installation, discovery
+and model. A quota failure in one client says nothing about another client or account. Deterministic installation, discovery
 and MCP checks do not require model quota. Record fresh behavioral evidence
 separately for each tested client instead of treating historical results or
 another client's results as proof of the current revision.

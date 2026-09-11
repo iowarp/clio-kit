@@ -173,7 +173,7 @@ clio-kit search query --namespace local_fs --q "pressure > 200 kPa"
 
 `uv tool install` keeps CLIO Kit in a persistent, isolated tool environment.
 Use `uvx --from clio-kit clio-kit ...` only for a temporary, one-shot
-invocation. Pin a version (`clio-kit==2.8.0`) only when you need one; unpinned
+invocation. Pin a version (`clio-kit==2.11.0`) only when you need one; unpinned
 installs track the current release.
 
 Released `clio-kit` wheels execute each embedded MCP server from that server's
@@ -405,21 +405,21 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`darshan`** | 2.2.3 | Performance | I/O performance trace analysis | `clio-kit mcp-server darshan` |
 | **`geo`** | 2.3.0 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
 | **`hdf5`** | 2.2.4 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
-| **`jarvis`** | 3.7.0 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |
+| **`jarvis`** | 3.7.2 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |
 | **`lmod`** | 3.0.0 | Environment | Environment module management | `clio-kit mcp-server lmod` |
 | **`ndp`** | 2.2.3 | Data Protocol | Search and discover datasets across CKAN instances | `clio-kit mcp-server ndp` |
 | **`node-hardware`** | 2.2.3 | System | System hardware information | `clio-kit mcp-server node-hardware` |
-| **`pandas`** | 2.2.4 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
-| **`parallel-sort`** | 2.2.3 | Computing | Large file sorting | `clio-kit mcp-server parallel-sort` |
+| **`pandas`** | 2.2.5 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
+| **`parallel-sort`** | 2.2.4 | Computing | Large file sorting | `clio-kit mcp-server parallel-sort` |
 | **`paraview`** | 2.2.3 | Visualization | Scientific 3D visualization and analysis | `clio-kit mcp-server paraview` |
 | **`parquet`** | 2.2.3 | Data I/O | Read Parquet file columns | `clio-kit mcp-server parquet` |
 | **`plot`** | 2.2.3 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |
 | **`seismology`** | 2.3.0 | Seismology | Analyze SAC waveforms and archives | `clio-kit mcp-server seismology` |
 | **`scientific-catalog`** | 1.1.2 | Discovery | Operator-owned scientific dataset discovery | `clio-kit mcp-server scientific-catalog` |
-| **`slurm`** | 3.0.0 | HPC | Job submission and management | `clio-kit mcp-server slurm` |
+| **`slurm`** | 3.0.1 | HPC | Job submission and management | `clio-kit mcp-server slurm` |
 | **`spack`** | 2.3.0 | Package Management | Structured package discovery, installation, and location | `clio-kit mcp-server spack` |
 | **`terrain`** | 2.2.3 | Geospatial | Analyze DEMs and terrain point clouds | `clio-kit mcp-server terrain` |
-| **`web`** | 1.1.0 | Web | Fetch a URL to Markdown and search the web | `clio-kit mcp-server web` |
+| **`web`** | 2.1.0 | Web | Synchronous search plus durable, queryable, cancellable URL, DOI, and document fetch tasks | `clio-kit mcp-server web` |
 
 </div>
 

@@ -76,11 +76,11 @@ profiler and the explanation comes from the log. Get the spike from
 
 ## Verify the log format before trusting an empty result
 
-The current level filter recognizes unbracketed `ERROR` in the supported
-format. A controlled log using `[ERROR]` returned no matches despite containing
-errors. Inspect a short sample and compare a known matching line before
-interpreting zero matches. Preserve the original file if a normalized working
-copy is needed, and record the normalization.
+The level filter accepts bare `ERROR` and bracketed `[ERROR]` tokens after
+a supported timestamp, including tab-separated and lowercase levels. Inspect
+a short sample and verify a known matching line before interpreting zero
+matches: other log layouts still need validation. Preserve the original file
+if a normalized working copy is needed, and record the normalization.
 
 ## Tool discovery across agents
 

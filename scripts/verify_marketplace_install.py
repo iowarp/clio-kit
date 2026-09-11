@@ -281,6 +281,7 @@ class Acceptance:
         print(f"PASS Codex discovers and enables {len(records)} skills", flush=True)
 
     async def scientific_regressions(self, data: Path) -> None:
+        await self.imputation_and_log_regressions(data)
         source = data / "interpolation.csv"
         original = "row,value\n0,1\n1,\n2,3\n3,\n4,5\n"
         source.write_text(original)
@@ -356,6 +357,60 @@ class Acceptance:
         )
         assert "FULL DATA: 2 of 2 elements" in full and "SAMPLED:" not in full
         assert "sum: 6.000000" in full and "mean: 3.000000" in full
+
+    async def imputation_and_log_regressions(self, data: Path) -> None:
+        source = data / "gaps.CSV"
+        original = "value,label,empty\n1,a,\n,,\n9,a,\n"
+        source.write_text(original)
+        for method, expected in (
+            ("forward_fill", [1, 1, 9]),
+            ("backward_fill", [1, 9, 9]),
+            ("mode", [1, 1, 9]),
+        ):
+            replies = await self.session(
+                "pandas-" + method,
+                ["mcp-server", "pandas"],
+                [
+                    (
+                        "handle_missing_data",
+                        {
+                            "file_path": str(source),
+                            "strategy": "impute",
+                            "method": method,
+                        },
+                    )
+                ],
+            )
+            result = replies[0].get("structuredContent") or json.loads(
+                replies[0]["content"][0]["text"]
+            )
+            assert result["success"], result
+            with Path(result["output_file"]).open() as handle:
+                rows = list(csv.DictReader(handle))
+            assert [float(row["value"]) for row in rows] == expected, rows
+            assert [row["label"] for row in rows] == ["a", "a", "a"], rows
+            assert all(row["empty"] == "" for row in rows), rows
+            assert result["imputation_info"]["empty"]["imputed_count"] == 0
+            assert result["imputation_info"]["label"]["imputed_count"] == 1
+            assert source.read_text() == original
+
+        log = data / "application.log"
+        lines = [
+            "2026-09-10 10:00:00 [INFO] Started",
+            "2026-09-10 10:00:01 [ERROR] Failed",
+            "2026-09-10 10:00:02 ERROR Failed again",
+        ]
+        log.write_text("\n".join(lines) + "\n")
+        replies = await self.session(
+            "bracketed-log-filter",
+            ["mcp-server", "parallel-sort"],
+            [("filter_by_log_level", {"log_file": str(log), "log_levels": ["ERROR"]})],
+        )
+        result = replies[0].get("structuredContent") or json.loads(
+            replies[0]["content"][0]["text"]
+        )
+        assert result["matched_lines"] == 2, result
+        assert result["filtered_lines"] == lines[1:], result
 
     async def workflows(self, all_servers: bool) -> None:
         for runtime in ("typescript", "go"):

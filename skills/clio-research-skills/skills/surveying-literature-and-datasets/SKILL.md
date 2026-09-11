@@ -84,9 +84,17 @@ and `scientific_dataset_describe` cover a separate curated catalog — see
 page, a software release, a dataset landing page. Use them to confirm a claim
 about current state, since a preprint describes the world at submission time.
 
-`fetch` converts HTML to Markdown with a size cap and timeout; `to_file=True`
-writes it out rather than returning it inline, which is what you want for
-anything long.
+`fetch(target=...)` requires MCP task support. Submit it as a task, follow
+`tasks/get` until a terminal status, and read the completed result using
+`tasks/result`; cancel work no longer needed. If your client cannot invoke MCP
+tasks, report that limitation and use its own browsing capability. Do not treat
+a task ID or progress update as fetched content.
+
+HTML becomes Markdown with a size cap and timeout; `to_file=True` writes the
+result to a local file. PDF and other structured-document conversion requires
+a configured CLIO Web Search deployment. Check `web://capabilities` before
+promising those formats. Use `fetch_events` with the reported conversion ID
+when detailed backend progress is needed.
 
 ## What not to do
 

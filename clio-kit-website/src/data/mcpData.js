@@ -41,7 +41,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.2.3",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -72,7 +72,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.2.3",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -94,7 +94,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.0.1",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -114,7 +114,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.2.3",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -142,7 +142,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.2.3",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -170,7 +170,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.3.0",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -214,8 +214,8 @@ export const mcpData = {
       "export_dataset"
     ],
     "stats": {
-      "version": "2.2.3",
-      "updated": "2026-08-11"
+      "version": "2.2.4",
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -238,8 +238,8 @@ export const mcpData = {
       "jarvis_get_execution"
     ],
     "stats": {
-      "version": "3.7.0",
-      "updated": "2026-08-11"
+      "version": "3.7.2",
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -264,7 +264,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "3.0.0",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -286,7 +286,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.2.3",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -315,7 +315,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.2.3",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -348,8 +348,8 @@ export const mcpData = {
       "profile_csv"
     ],
     "stats": {
-      "version": "2.2.3",
-      "updated": "2026-08-11"
+      "version": "2.2.5",
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -379,8 +379,8 @@ export const mcpData = {
       "generate_summary_report"
     ],
     "stats": {
-      "version": "2.2.3",
-      "updated": "2026-08-11"
+      "version": "2.2.4",
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -424,7 +424,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.2.3",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -446,7 +446,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.2.3",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -471,7 +471,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.2.3",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -491,7 +491,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "1.1.2",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -514,7 +514,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.3.0",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -536,8 +536,8 @@ export const mcpData = {
       "slurm_cancel"
     ],
     "stats": {
-      "version": "3.0.0",
-      "updated": "2026-08-11"
+      "version": "3.0.1",
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -560,7 +560,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.3.0",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -580,7 +580,7 @@ export const mcpData = {
     ],
     "stats": {
       "version": "2.2.3",
-      "updated": "2026-08-11"
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",
@@ -592,15 +592,16 @@ export const mcpData = {
   "web": {
     "name": "Web",
     "category": "Utilities",
-    "description": "Web MCP server providing curated fetch + search tools for agentic web access",
+    "description": "Provider-fixed web search plus transparent URL, DOI, and document fetching",
     "icon": "\ud83d\udd27",
     "actions": [
       "fetch",
+      "fetch_events",
       "search"
     ],
     "stats": {
-      "version": "1.1.0",
-      "updated": "2026-08-11"
+      "version": "2.1.0",
+      "updated": "2026-09-10"
     },
     "platforms": [
       "claude",

@@ -46,6 +46,8 @@ jobs:
         run: |
           uv run --frozen --directory clio-kit-mcp-servers/pandas pytest -q tests/test_data_cleaning.py
           uv run --frozen --directory clio-kit-mcp-servers/hdf5 pytest -q tests/test_statistics.py
+          uv run --frozen --directory clio-kit-mcp-servers/parallel-sort pytest -q tests/test_bracketed_levels.py
+          uv run --frozen --directory clio-kit-mcp-servers/slurm pytest -q tests/test_protocol_stdout.py
       - name: Root regressions
         run: uv run --frozen pytest -q tests
       - name: Install built wheel and exercise real client and tools

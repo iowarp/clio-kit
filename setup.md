@@ -3,7 +3,8 @@
 Use this guide with any agent that supports Agent Skills and/or stdio MCP.
 Follow it from the repository root. Install the launcher and marketplace
 from the same checkout: the published PyPI package and GitHub default branch do
-not yet represent `feat/360-meta-marketplace`.
+not yet represent `feat/360-meta-marketplace`. This checkout prepares `2.11.0`;
+use the source installation below until that release is published.
 
 ## 1. Check prerequisites and the checkout
 

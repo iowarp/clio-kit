@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "CLIO Kit - MCP Servers for Scientific Computing and HPC",
-    "version": "2.8.0",
+    "version": "2.11.0",
     "pluginRoot": "./plugins"
   },
   "plugins": [
@@ -120,7 +120,7 @@
       "name": "clio-jarvis",
       "source": "./plugins/clio-jarvis",
       "description": "JARVIS-CD MCP with a compact user pipeline contract and explicit admin compatibility profiles",
-      "version": "3.7.0",
+      "version": "3.7.2",
       "category": "scientific",
       "keywords": [
         "pipeline-management",
@@ -178,7 +178,7 @@
       "name": "clio-pandas",
       "source": "./plugins/clio-pandas",
       "description": "Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations",
-      "version": "2.2.4",
+      "version": "2.2.5",
       "category": "scientific",
       "keywords": [
         "data-analysis",
@@ -193,7 +193,7 @@
       "name": "clio-parallel-sort",
       "source": "./plugins/clio-parallel-sort",
       "description": "Parallel Sort MCP - High-Performance Log File Processing for LLMs with advanced sorting and analysis",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "scientific",
       "keywords": [
         "log-processing",
@@ -283,7 +283,7 @@
       "name": "clio-slurm",
       "source": "./plugins/clio-slurm",
       "description": "MCP server for Slurm workload management and HPC job scheduling",
-      "version": "3.0.0",
+      "version": "3.0.1",
       "category": "scientific",
       "keywords": [
         "hpc",
@@ -326,8 +326,8 @@
     {
       "name": "clio-web",
       "source": "./plugins/clio-web",
-      "description": "Web MCP server providing curated fetch + search tools for agentic web access",
-      "version": "1.1.0",
+      "description": "Provider-fixed web search plus transparent URL, DOI, and document fetching",
+      "version": "2.1.0",
       "category": "general",
       "keywords": [
         "web",
@@ -337,37 +337,6 @@
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
-    },
-    {
-      "name": "iowarp-dev-setup",
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/iowarp/clio-core.git",
-        "path": ".claude-plugin/plugins/iowarp-dev-setup",
-        "sha": "97fca746e75b3144b025d9920bad54b26c2c06da"
-      },
-      "description": "Complete development environment setup for IOWarp Core \u2014 Docker devcontainers, builds, debugging, and IDE configuration. Gets any team member from zero to a running dev environment.",
-      "version": "1.0.0",
-      "author": {
-        "name": "Gnosis Research Center"
-      },
-      "category": "development",
-      "keywords": [
-        "build",
-        "clio-core",
-        "cmake",
-        "debugging",
-        "devcontainer",
-        "development-environment",
-        "docker",
-        "ide",
-        "iowarp",
-        "setup"
-      ],
-      "metadata": {
-        "indexed": true,
-        "clioFederation": "iowarp-clio"
-      }
     },
     {
       "name": "clio-hpc-skills",
@@ -412,7 +381,7 @@
       "name": "clio-performance-skills",
       "source": "./skills/clio-performance-skills",
       "description": "Skills for the clio-performance workflow: work out why a finished job was slower than it should have been.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "category": "skills",
       "keywords": [
         "diagnosing-a-slow-job",
@@ -427,7 +396,7 @@
       "name": "clio-performance",
       "source": "./plugins/clio-performance",
       "description": "Work out why a finished job was slower than it should have been.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "category": "workflow",
       "keywords": [
         "darshan",
@@ -488,7 +457,7 @@
       "name": "clio-analysis-skills",
       "source": "./skills/clio-analysis-skills",
       "description": "Skills for the clio-analysis workflow: turn a dataset into summary statistics and a figure.",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "category": "skills",
       "keywords": [
         "choosing-the-right-chart",
@@ -503,7 +472,7 @@
       "name": "clio-analysis",
       "source": "./plugins/clio-analysis",
       "description": "Turn a dataset into summary statistics and a figure.",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "category": "workflow",
       "keywords": [
         "3d-rendering",
@@ -563,7 +532,7 @@
       "name": "clio-research-skills",
       "source": "./skills/clio-research-skills",
       "description": "Skills for the clio-research workflow: find papers on a topic and the datasets behind them.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "category": "skills",
       "keywords": [
         "building-a-bibliography",
@@ -577,7 +546,7 @@
       "name": "clio-research",
       "source": "./plugins/clio-research",
       "description": "Find papers on a topic and the datasets behind them.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "category": "workflow",
       "keywords": [
         "agentic-web",
@@ -632,6 +601,37 @@
       "metadata": {
         "maintainer": "Gnosis Research Center",
         "indexed": true
+      }
+    },
+    {
+      "name": "iowarp-dev-setup",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-core.git",
+        "path": ".claude-plugin/plugins/iowarp-dev-setup",
+        "sha": "97fca746e75b3144b025d9920bad54b26c2c06da"
+      },
+      "description": "Complete development environment setup for IOWarp Core \u2014 Docker devcontainers, builds, debugging, and IDE configuration. Gets any team member from zero to a running dev environment.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Gnosis Research Center"
+      },
+      "category": "development",
+      "keywords": [
+        "build",
+        "clio-core",
+        "cmake",
+        "debugging",
+        "devcontainer",
+        "development-environment",
+        "docker",
+        "ide",
+        "iowarp",
+        "setup"
+      ],
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio"
       }
     }
   ]

@@ -60,6 +60,7 @@ DEFAULT_MAX_LINES = 800
 # either direction (see the module docstring). Paths are relative to the
 # repository root and use forward slashes.
 RATCHET_BASELINE: dict[str, int] = {
+    "clio-kit-mcp-servers/jarvis/src/jarvis_mcp/artifacts.py": 846,
     # #362 wave 1: server.py's 44 model classes + package-discovery/search
     # helpers moved to owner modules (jarvis_mcp/models/*, package_discovery.py),
     # 3109 -> 1323, then +259 (PR #364 review findings 1/3: the contract pins'
@@ -70,7 +71,10 @@ RATCHET_BASELINE: dict[str, int] = {
     # entry points, and that compatibility re-export block; ratchets down
     # with a further per-concern tool-registration split if one is ever
     # justified (the re-export block would move with it).
-    "clio-kit-mcp-servers/jarvis/src/jarvis_mcp/server.py": 1582,
+    # #376 (v3.7.2 mint): jarvis_add_step_tool and append_pkg_tool both gain
+    # the `target` parameter (interceptor target-binding) plus its Field
+    # description; 1582 -> 1605 (real count via `wc -l`).
+    "clio-kit-mcp-servers/jarvis/src/jarvis_mcp/server.py": 1605,
     # #362 wave 1: NOT split this wave (deferred -- see the wave-1 PR
     # description). Still the 6-class monolith measured at campaign kickoff.
     # Next wave: split into owner modules by concern (pipeline lifecycle,
@@ -81,7 +85,7 @@ RATCHET_BASELINE: dict[str, int] = {
     # NEW owner module (artifact_content.py), not here; this file only grew
     # by the trivial call-site wiring inside get_execution() that has to live
     # where get_execution() itself lives, 3521 -> 3529.
-    "clio-kit-mcp-servers/jarvis/src/jarvis_mcp/capabilities/jarvis_handler.py": 3529,
+    "clio-kit-mcp-servers/jarvis/src/jarvis_mcp/capabilities/jarvis_handler.py": 3659,
     # #362: NOT split this wave -- out of wave-1 scope (jarvis-only). Flat
     # FastMCP function surface, no god-class; still needs an owner-module cut.
     "clio-kit-mcp-servers/hdf5/src/hdf5_mcp/server.py": 2324,
@@ -111,7 +115,7 @@ RATCHET_BASELINE: dict[str, int] = {
     # (jarvis_get_execution's artifacts filter gained content_max_bytes, a
     # deliberate wire-visible additive change); one more historical-artifact
     # entry (jarvis-user-v3.6.json) recorded, 931 -> 932.
-    "src/clio_kit/mcp_contracts.py": 932,
+    "src/clio_kit/mcp_contracts.py": 917,
     "src/clio_kit/env_cache.py": 712,
     "clio-kit-mcp-servers/darshan/src/darshan_mcp/capabilities/darshan_parser.py": 857,
     "clio-kit-mcp-servers/parquet/src/parquet_mcp/capabilities/parquet_handler.py": 839,

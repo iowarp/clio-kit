@@ -8,12 +8,12 @@ schema-version = 1
 # change, add it here WITH a real version bump under [servers] in the same
 # PR, then remove it again once published.
 [mcp-registry-release]
-publish = ["geo", "hdf5", "lmod", "pandas", "seismology", "spack", "web"]
+publish = ["geo", "hdf5", "lmod", "pandas", "parallel-sort", "seismology", "slurm", "spack"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
 [documentation]
-updated = "2026-08-11"
+updated = "2026-09-10"
 
 # Workflow bundles. Each one generates a plugin whose entire content is a
 # dependency list naming its member server plugins -- no server code and no
@@ -36,7 +36,7 @@ description = "Install a code, wrap it in a pipeline, submit it, and follow it o
 servers = ["jarvis", "lmod", "node-hardware", "slurm", "spack"]
 
 [bundles.clio-performance]
-version = "1.0.2"
+version = "1.0.3"
 description = "Work out why a finished job was slower than it should have been."
 servers = ["chronolog", "darshan", "parallel-sort"]
 
@@ -46,7 +46,7 @@ description = "Open a scientific data file, see its structure, and read part of 
 servers = ["adios", "compression", "hdf5", "parquet"]
 
 [bundles.clio-analysis]
-version = "1.0.3"
+version = "1.0.4"
 description = "Turn a dataset into summary statistics and a figure."
 servers = ["pandas", "paraview", "plot"]
 
@@ -56,7 +56,7 @@ description = "Inspect and map geospatial features, terrain models, and waveform
 servers = ["geo", "seismology", "terrain"]
 
 [bundles.clio-research]
-version = "1.0.2"
+version = "1.0.3"
 description = "Find papers on a topic and the datasets behind them."
 servers = ["arxiv", "ndp", "scientific-catalog", "web"]
 
@@ -79,18 +79,18 @@ compression = "2.2.3"
 darshan = "2.2.3"
 geo = "2.3.0"
 hdf5 = "2.2.4"
-jarvis = "3.7.0"
+jarvis = "3.7.2"
 lmod = "3.0.0"
 ndp = "2.2.3"
 node-hardware = "2.2.3"
-pandas = "2.2.4"
-parallel-sort = "2.2.3"
+pandas = "2.2.5"
+parallel-sort = "2.2.4"
 paraview = "2.2.3"
 parquet = "2.2.3"
 plot = "2.2.3"
 scientific-catalog = "1.1.2"
 seismology = "2.3.0"
-slurm = "3.0.0"
+slurm = "3.0.1"
 spack = "2.3.0"
 terrain = "2.2.3"
-web = "1.1.0"
+web = "2.1.0"
