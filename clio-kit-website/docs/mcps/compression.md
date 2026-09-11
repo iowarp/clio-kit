@@ -18,6 +18,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "compress_file_tool", "description": "Compress a file using gzip. Returns original/compressed sizes and compression ratio.", "function_name": "compress_file_tool"}, {"name": "decompress_file_tool", "description": "Decompress a gzip-compressed (.gz) file back to its original form.", "function_name": "decompress_file_tool"}]}
 >
 
+{/* clio-kit:usage:start */}
+
 ### 1. Log File Compression and Storage Optimization
 ```
 I have large log files in my application directory at /var/log/application.log that are taking up significant storage space. Can you compress them to save storage?
@@ -95,5 +97,7 @@ This prompt will:
 - Apply gzip compression to system logs using `compress_file`
 - Generate detailed compression reports for system administration monitoring
 - Create compressed log files that maintain data accessibility while reducing storage footprint
+
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

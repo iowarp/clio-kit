@@ -1,0 +1,5 @@
+name = "example-typescript"
+runtime = "node"
+entry = "bundle/server.js"
+version = "1.0.0"
+description = "Example TypeScript multiplication tool."

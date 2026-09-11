@@ -1,14 +1,14 @@
 ---
 name: running-a-simulation-on-a-cluster
-description: Use when running a simulation or code on a cluster, installing software with Spack before a run, building a JARVIS pipeline, or submitting work to a scheduler. Triggers on "run this on the cluster", "spack install", "jarvis pipeline", "submit a job". Not for writing a batch script by hand; use writing-slurm-job-scripts.
+description: Use when resolving Spack software, configuring a JARVIS pipeline and following its execution. Triggers on "run this on the cluster", "JARVIS pipeline", "install and run". Not for handwritten batch scripts; use writing-slurm-job-scripts.
 clio-kit:
   bundle: clio-hpc
   servers: clio-spack, clio-lmod, clio-jarvis, clio-slurm, clio-node-hardware
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Run a simulation on a cluster
+# Execute and Monitor a Cluster Simulation
 
 Use this when a workload needs software from Spack and has to run somewhere
 other than the current shell. It spans two servers, and the handoff between them
@@ -36,9 +36,10 @@ intent to `clio-jarvis:jarvis_run` and let it own the scheduler.
 
 **1. Size the request against the machine.**
 
-Call `clio-node-hardware:get_cpu_info` and, for anything GPU-backed,
-`clio-node-hardware:get_gpu_info`. Asking for more ranks than the node has is a
-job that pends indefinitely rather than one that fails fast.
+Use `clio-slurm:slurm_cluster` to inspect target partitions and bounded node
+records. `clio-node-hardware:get_cpu_info` and `get_gpu_info` describe the MCP
+host, which may be a login node rather than a compute node. Verify scheduler
+limits and the workload's rank/thread requirements before setting resources.
 
 **2. Find out whether the package is already installed.**
 
@@ -84,7 +85,7 @@ config built from the keys step 6 returned.
 **8. Run it, passing the Spack spec.**
 
 Call `clio-jarvis:jarvis_run` with the `pipeline_id`, putting the `load_spec`
-string from step 4 into one element of `input.spack_specs`. JARVIS persists that
+string from step 4 into one element of the top-level `spack_specs` argument. JARVIS persists that
 runtime environment for the execution.
 
 `clio-jarvis:jarvis_run` returns a durable execution handle and does **not** wait
@@ -105,5 +106,9 @@ Poll it. The run is finished when the lifecycle record says so, not when
 - Do not report the workload as finished because `clio-jarvis:jarvis_run`
   succeeded — it returns a handle, not a result.
 - Do not look for a tool that loads a module to prepare the run. The lmod
-  server is read-only, for the same reason spack refuses to load: a load inside
+  server does not expose module loading, for the same reason spack refuses to load: a load inside
   a tool call dies with the call. See `managing-software-environments`.
+
+## Completion check
+
+Record pipeline ID, package/configuration, exact Spack load specs, execution handle and final lifecycle state. Poll with a bounded interval and deadline; if still running, report the handle and latest state. Confirm exit status and expected artifacts before claiming scientific success.

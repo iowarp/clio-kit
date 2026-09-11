@@ -1,5 +1,11 @@
 # Evals - running-a-simulation-on-a-cluster
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: Record pipeline ID, package/configuration, exact Spack load specs, execution handle and final lifecycle state. Poll with a bounded interval and deadline; if still running, report the handle and latest state. Confirm exit status and expected artifacts before claiming scientific success.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 

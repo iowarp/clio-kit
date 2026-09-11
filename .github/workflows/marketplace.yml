@@ -1,0 +1,63 @@
+name: Marketplace acceptance
+
+on:
+  pull_request:
+  push:
+    branches: [main, feat/360-meta-marketplace]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installed-marketplace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
+        with:
+          version: '0.11.28'
+          python-version: '3.13'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.25.0'
+          cache-dependency-path: tests/fixtures/mcp-servers/go/go.sum
+      - name: Install test tools
+        run: |
+          uv sync --frozen --dev --extra verification
+          npm install --global @anthropic-ai/claude-code@2.1.266
+      - name: Check TypeScript fixture source matches compiled JavaScript
+        working-directory: tests/fixtures/mcp-servers/typescript
+        run: |
+          npm ci
+          npm run build
+          git diff --exit-code -- bundle/
+      - name: Check Go module and compile
+        working-directory: tests/fixtures/mcp-servers/go
+        run: |
+          go mod verify
+          go vet ./...
+          go test ./...
+      - name: Root regressions
+        run: uv run --frozen pytest -q tests
+      - name: Install built wheel and exercise real client and tools
+        run: uv run --frozen python scripts/verify_marketplace_install.py --output /tmp/clio-acceptance
+      - name: Python 3.10 installed compatibility
+        run: |
+          uv venv --python 3.10 /tmp/clio-python310
+          uv pip install --python /tmp/clio-python310/bin/python /tmp/clio-acceptance/dist/*.whl
+          /tmp/clio-python310/bin/clio-kit mcp-servers
+          /tmp/clio-python310/bin/clio-kit plugin --help
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: marketplace-acceptance
+          path: |
+            /tmp/clio-acceptance/*.log
+            /tmp/clio-acceptance/*.stderr
+            /tmp/clio-acceptance/results.json
+            /tmp/clio-acceptance/data/

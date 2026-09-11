@@ -61,6 +61,7 @@ def test_descriptor_states_what_discovery_used_to_infer(tmp_path: Path) -> None:
         # server in another language has nowhere else to put them.
         "description": "",
         "version": "",
+        "registry": None,
     }
 
 

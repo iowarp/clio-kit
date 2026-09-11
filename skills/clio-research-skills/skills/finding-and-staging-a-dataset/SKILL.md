@@ -1,14 +1,14 @@
 ---
 name: finding-and-staging-a-dataset
-description: Use when analysis would be attempted on a dataset that exists only as a search result and has no path on disk yet, so every later read fails on a file that was never staged. Triggers on "find a dataset", "download the data", "stage this". Not for the papers behind the data; use surveying-literature-and-datasets.
+description: Use when finding dataset metadata and downloading a supported resource to a verified local path. Triggers on "find a dataset", "download this data", "stage this resource". Not for literature surveys; use surveying-literature-and-datasets.
 clio-kit:
   bundle: clio-research
   servers: clio-ndp, clio-scientific-catalog, clio-web
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Find data, then get it onto disk
+# Discover and Stage Research Datasets
 
 Two catalogs answer "where is data about X", and they hold different things. The
 step everyone forgets is the last one: a dataset that has only been *found* is
@@ -56,9 +56,11 @@ This is the same shape as the Spack handoff in
 `running-a-simulation-on-a-cluster`: an opaque token that must survive the trip
 intact. Reconstructing it is the failure both times.
 
-So there are two routes for operator-registered data: stage it and read it
-directly, or hand the descriptor to a pipeline and let the pipeline resolve it.
-Use the second when the data feeds a run rather than an inspection.
+A catalogue descriptor is not itself a downloadable URL. Stage directly only
+when a supported resource URL is available. The JARVIS route requires the HPC
+bundle (or its server) and a package whose described configuration explicitly
+accepts `dataset_descriptor`; preserve that object unchanged. Do not add this
+field to arbitrary packages or assume the research bundle installs JARVIS.
 
 ## Check size before staging
 
@@ -74,3 +76,7 @@ shared filesystem it is someone else's cost too.
   until then.
 - Do not rebuild or extract from a `dataset_descriptor`; pass it through.
 - Do not ignore the returned content type when choosing a reader.
+
+## Completion check
+
+Use a resource URL, an explicit output directory and max_bytes. Check local_path exists, actual size and format, and a published checksum when supplied. Report source identifier/version, access conditions and staging result; metadata alone is not a local dataset.

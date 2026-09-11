@@ -1,14 +1,14 @@
 ---
 name: analyzing-seismic-waveforms
-description: Use when a b-value, magnitude completeness or trace statistic would be computed without first inspecting the archive, which silently fits an incomplete catalog and returns a confident wrong number. Covers SAC files, seismic traces, station data and earthquake catalogs. Triggers on "SAC", "waveform", "b-value", "Mc", "aftershock". Not for mapping features; use mapping-geospatial-and-terrain-data.
+description: Use when inspecting SAC waveforms or evaluating a saved earthquake event catalogue. Triggers on "SAC", "waveform statistics", "b-value", "magnitude completeness". Not for geospatial mapping; use mapping-geospatial-and-terrain-data.
 clio-kit:
   bundle: clio-geoscience
   servers: clio-seismology
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Waveforms and catalogs are different data
+# Analyze Seismic Waveforms and Event Catalogs
 
 One server answers questions about earthquakes, but its tools split across two
 completely different kinds of input. Handing a tool the other kind fails in
@@ -58,9 +58,9 @@ Two things to carry into any interpretation:
   including events below Mc is biased low, and the drop-off beneath Mc is a
   detection artefact, not physics.
 - **The b-value's uncertainty is reported for a reason.** It narrows with event
-  count. Comparing two b-values whose intervals overlap is not a difference, and
-  a b-value from a short catalog carries an interval wide enough to make most
-  comparisons meaningless.
+  count. Overlapping confidence intervals alone do not establish whether the
+  estimates differ. Use a justified comparison accounting for uncertainty,
+  completeness, magnitude scale, sample size and event dependence.
 
 **`clio-seismology:plot_sequence`** renders the three-panel figure: epicenter map
 sized by magnitude and coloured by time, the Gutenberg-Richter distribution, and
@@ -78,3 +78,7 @@ mainshock-aftershock pattern or a swarm.
 - Do not compare traces with different `delta_s` without resampling.
 - Do not interpret a b-value without Mc and the uncertainty.
 - Do not read the roll-off below Mc as a physical result.
+
+## Completion check
+
+Report input type, station/channel, time coverage, sampling interval and amplitude units or missing calibration. For catalogs, report event count, magnitude range, Mc, estimator and uncertainty; describe synthetic fixtures as synthetic.

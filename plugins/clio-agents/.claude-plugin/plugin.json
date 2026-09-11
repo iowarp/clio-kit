@@ -1,0 +1,8 @@
+{
+  "name": "clio-agents",
+  "version": "1.0.0",
+  "author": {
+    "name": "IoWarp Team"
+  },
+  "description": "Scientific workflow planning and independent evidence review agents."
+}

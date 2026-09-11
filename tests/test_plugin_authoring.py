@@ -45,7 +45,7 @@ def test_scaffold_is_valid_the_moment_it_is_created(tmp_path: Path) -> None:
     # somewhere that does not survive installation.
     assert not {"skills", "agents", "commands", "hooks"} & set(manifest)
     assert (plugin_dir / "skills" / "example-workflow" / "SKILL.md").is_file()
-    assert (plugin_dir / ".mcp.json").is_file()
+    assert not (plugin_dir / ".mcp.json").exists()  # no fictitious executable
 
 
 def test_scaffolding_refuses_a_name_that_would_shadow_ours(tmp_path: Path) -> None:
@@ -198,7 +198,7 @@ def test_submit_rejects_a_repository_that_is_not_owner_slash_name(
 def test_entry_falls_back_to_community_when_no_category_is_declared() -> None:
     entry = build_community_entry({"name": "x", "description": "d"}, "owner/repo")
 
-    assert 'category    = "community"' in entry
+    assert 'category = "community"' in entry
     assert 'repo = "owner/repo"' in entry
 
 
@@ -317,4 +317,4 @@ def test_only_a_referral_carries_a_kind(tmp_path: Path) -> None:
     referral = build_community_entry(
         {"name": "x", "description": "d"}, "o/r", kind="marketplace"
     )
-    assert 'kind        = "marketplace"' in referral
+    assert 'kind = "marketplace"' in referral

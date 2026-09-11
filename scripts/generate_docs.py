@@ -307,6 +307,17 @@ class DocusaurusGenerator:
         keywords_jsx = json.dumps(mcp_data.get("keywords", []))
         tools_jsx = json.dumps(mcp_data.get("tools", []))
 
+        usage = self._extract_examples_from_readme(mcp_data)
+        start_marker = "{/* clio-kit:usage:start */}"
+        end_marker = "{/* clio-kit:usage:end */}"
+        if output_file.exists():
+            previous = output_file.read_text(encoding="utf-8")
+            if start_marker in previous and end_marker in previous:
+                usage = (
+                    previous.split(start_marker, 1)[1].split(end_marker, 1)[0].strip()
+                )
+        usage = f"{start_marker}\n\n{usage.strip()}\n\n{end_marker}"
+
         content = f"""---
 title: {mcp_data["name"]} MCP
 description: "{description}"
@@ -327,7 +338,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={{{tools_jsx}}}
 >
 
-{self._extract_examples_from_readme(mcp_data)}
+{usage}
 
 </MCPDetail>
 """
@@ -511,63 +522,15 @@ Refer to your MCP client documentation for specific setup instructions.
         return self._generate_basic_examples(mcp_data)
 
     def _generate_basic_examples(self, mcp_data: Dict) -> str:
-        """Generate basic examples based on category."""
-        name = mcp_data["name"]
-        category = mcp_data["category"]
-
-        if "Data Processing" in category:
-            return f"""
-### Basic Usage
-```python
-# Load and process data with {name}
-data = load_data("input_file")
-processed_data = process_data(data)
-save_data(processed_data, "output_file")
-```
-
-### Integration Example
-```python
-# Use {name} in a data pipeline
-for file in data_files:
-    data = load_data(file)
-    result = analyze_data(data)
-    export_results(result, f"analysis_{{file}}")
-```
-"""
-        elif "System Management" in category:
-            return f"""
-### System Monitoring
-```python
-# Monitor system status with {name}
-status = get_system_status()
-if status.needs_attention:
-    send_alert("System requires attention")
-```
-
-### Resource Management
-```python
-# Manage system resources
-resources = get_available_resources()
-allocate_resources(resources, job_requirements)
-```
-"""
-        else:
-            return f"""
-### Basic Usage
-```python
-# Use {name} MCP
-result = perform_operation("input_data")
-print(f"Result: {{result}}")
-```
-
-### Advanced Usage
-```python
-# Chain multiple operations
-data = load_input("source")
-processed = process_data(data)
-final_result = finalize_output(processed)
-```
-"""
+        """Describe the known tool surface without inventing executable examples."""
+        actions = ", ".join(f"`{name}`" for name in mcp_data.get("actions", []))
+        return (
+            "### Usage\n\n"
+            f"Available tools: {actions or 'No tool metadata was extracted'}.\n\n"
+            "Inspect the tool input schema in your MCP client before calling it. "
+            "Use a small known input, check the result and any reported errors, "
+            "then expand to the intended workload.\n"
+        )
 
     def _generate_mcp_data_js(self, mcps_data: Dict):
         """Generate the mcpData.js file for the frontend."""

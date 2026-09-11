@@ -113,3 +113,35 @@ def test_documentation_date_must_be_explicit_and_canonical(value: object) -> Non
 
     with pytest.raises(ValueError, match="documentation.updated"):
         GENERATOR.read_documentation_updated(inventory)
+
+
+def test_regeneration_preserves_reviewed_usage_but_updates_contract(tmp_path):
+    server = tmp_path / "server"
+    server.mkdir()
+    output = tmp_path / "site"
+    page = output / "docs" / "mcps" / "crystal.md"
+    page.parent.mkdir(parents=True)
+    page.write_text(
+        "{/* clio-kit:usage:start */}\n\nReviewed usage and limits.\n\n"
+        "{/* clio-kit:usage:end */}\n"
+    )
+    data = dict(
+        name="Crystal",
+        slug="crystal",
+        category="Scientific",
+        description="Updated",
+        icon="",
+        version="2.0.0",
+        actions=["inspect"],
+        platforms=["claude"],
+        path=str(server),
+    )
+    generator = DocusaurusGenerator(output)
+    generator._generate_mcp_markdown(data)
+    first = page.read_text()
+    assert 'version="2.0.0"' in first
+    assert 'actions={["inspect"]}' in first
+    assert "Reviewed usage and limits." in first
+    assert "perform_operation" not in first
+    generator._generate_mcp_markdown(data)
+    assert page.read_text() == first

@@ -1,14 +1,14 @@
 ---
 name: exploring-an-unfamiliar-dataset
-description: Use when an unfamiliar data file would be opened by reading it whole or guessing its layout, which exhausts context or misreports units and shapes. Covers HDF5, ADIOS BP5, Parquet and compressed files. Triggers on "what is in this file", "open this dataset", ".h5", ".bp", ".parquet". Not for data too large to hold; use reading-large-datasets-safely. Not for log files; use searching-large-log-files.
+description: Use when inspecting structure, shapes, types and units in HDF5, BP5, Parquet or compressed files. Triggers on "what is in this file", "open this dataset", "inspect this HDF5". Not for large-data reductions; use reading-large-datasets-safely.
 clio-kit:
   bundle: clio-scientific-io
   servers: clio-hdf5, clio-adios, clio-parquet, clio-compression
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Find out what is in a data file
+# Inspect Scientific Dataset Structure
 
 Every format here separates *structure* from *data*. Read the structure first.
 It is small, and it tells you whether the data is something you can afford to
@@ -17,8 +17,10 @@ read at all.
 ## Decompress first if you have to
 
 A `.gz` file is not readable by any of the format tools. Run
-`clio-compression:decompress_file_tool` and work with what it produces. Check the
-reported original size before decompressing something large.
+`clio-compression:decompress_file_tool` and work with what it produces. Check available disk space and any trusted uncompressed-size metadata first.
+A gzip footer is not a reliable size bound for large or concatenated archives;
+this decompressor has no output-size limit. Do not expand an untrusted or
+unbounded archive merely to inspect its contents.
 
 ## Pick the reader by format, not by preference
 
@@ -33,15 +35,15 @@ reported original size before decompressing something large.
 The HDF5 server is stateful. `clio-hdf5:open_file` opens **the current file**, and
 every tool after it operates on that file without taking a path.
 
-- Opening a second file without `clio-hdf5:close_file` first leaves you reading
-  the wrong one, with no error to tell you.
+- Opening another file changes the current file. Close the previous one and
+  confirm the new identity before attributing subsequent results.
 - `clio-hdf5:get_filename` says which file is actually open. When results look
   wrong, check this before anything else.
 - Close when finished.
 
-The exceptions are the multi-file tools — `hdf5_parallel_scan`, `hdf5_batch_read`,
-`hdf5_aggregate_stats` — which take their own targets and do not use the open
-file.
+`hdf5_batch_read` and `hdf5_aggregate_stats` also require the current file;
+their `paths` refer to datasets inside it. `hdf5_parallel_scan` instead accepts
+a directory and filename pattern for a multi-file structure scan.
 
 ### The argument names are not guessable
 
@@ -109,3 +111,7 @@ next step is not a read — see `reading-large-datasets-safely`.
 - Do not skip the attributes — an array without its units is not a result.
 - Do not read "No file currently open" as an empty file. It means the open
   failed, usually on the argument name.
+
+## Completion check
+
+Report file identity, format, dataset paths/shapes/dtypes, units and attributes, and any bounded sample taken. Confirm the open HDF5 filename, check errors before subsequent calls, and close the file when finished.

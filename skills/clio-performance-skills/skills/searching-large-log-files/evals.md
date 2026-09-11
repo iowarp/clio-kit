@@ -1,5 +1,11 @@
 # Evals - searching-large-log-files
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: Report original and derived paths, timestamp format/timezone, filters, match count and truncation. Verify the filter against a known matching line before accepting an empty result; preserve the original log.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 
@@ -55,3 +61,13 @@ kit fired nothing.
 Selection is checked. Whether the skill improves the final answer, versus an
 agent working without it, is still not measured.
 
+
+## S4 - bracketed levels must not hide known errors
+
+Setup: A log containing a known `[ERROR]` line.
+
+Expected:
+
+- The agent checks a sample before interpreting an empty filter result.
+- Any normalized copy preserves the original and records the format change.
+- A zero count is not reported as proof that the log contains no errors.

@@ -18,6 +18,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "line_plot", "description": "Create a line plot from CSV or Excel data with customizable styling.", "function_name": "line_plot"}, {"name": "bar_plot", "description": "Create a bar chart from CSV or Excel data with categorical grouping.", "function_name": "bar_plot"}, {"name": "scatter_plot", "description": "Create a scatter plot from CSV or Excel data for correlation analysis.", "function_name": "scatter_plot"}, {"name": "histogram_plot", "description": "Create a histogram from CSV or Excel data showing value distribution.", "function_name": "histogram_plot"}, {"name": "heatmap_plot", "description": "Create a correlation heatmap from numeric columns in CSV or Excel data.", "function_name": "heatmap_plot"}, {"name": "plot_timeseries", "description": "Create a multi-series line chart PNG from one or more y columns of a CSV or Excel file, auto-detecting a time, numeric, or categorical x axis.", "function_name": "plot_timeseries"}, {"name": "data_info", "description": "Get schema, column types, and summary statistics for a CSV or Excel file.", "function_name": "data_info"}]}
 >
 
+{/* clio-kit:usage:start */}
+
 ### 1. Data Exploration and Analysis
 ```
 I have a CSV file at /data/sales_data.csv with sales information. Can you first analyze the data structure and then create appropriate visualizations to show sales trends over time?
@@ -146,5 +148,7 @@ This prompt will:
 <!-- Add your output images here -->
 <!-- ![Data Quality Assessment](images/example6_data_quality.png) -->
 <!-- ![Data Completeness Report](images/example6_completeness_report.png) -->
+
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

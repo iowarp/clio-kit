@@ -3,7 +3,7 @@
 Entries here are *indexed*, not vendored: each names a repository or package
 this project does not own, so the contributor keeps their code and their
 release cadence and this repository holds one pointer. Their updates reach
-users on the next ``/plugin marketplace update`` without a release here, which
+users through catalogue refresh and installed plugin updates, which
 is both the whole benefit and the whole risk -- so the shape of an entry is
 checked hard even though its content is not ours to check.
 
@@ -58,23 +58,9 @@ COMMUNITY_SOURCE_FIELDS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "url": (("url",), ("ref", "sha")),
 }
 
-# What an entry points at. A `plugin` is installable and rides in
-# marketplace.json beside our own. A `marketplace` is somebody else's whole
-# catalogue.
-#
-# The two cannot be published the same way, and the reason is a client
-# constraint rather than a preference: Claude Code has no nested-marketplace
-# concept. A marketplace is added with `claude plugin marketplace add`, one at
-# a time, and an entry carrying an unrecognised field is reported as
-# "Unknown field 'kind'. Claude Code ignores it at load time" -- so writing a
-# marketplace into `plugins` would publish something that either fails to
-# install or silently resolves to the wrong thing.
-#
-# A federated marketplace is therefore carried as a *referral*: recorded here,
-# listed by `clio-kit marketplaces`, and added by the user with one command
-# that we print. Their catalogue stays under their control, which is the
-# property the entry existed to provide; what it does not do is appear inline
-# inside ours, because no client we ship to can render that.
+# Plugins can be indexed directly. Whole catalogues are compiled by federation.py
+# into ordinary plugin entries; the original catalogue records remain available
+# for provenance and optional direct client registration.
 COMMUNITY_KINDS: tuple[str, ...] = ("plugin", "marketplace")
 
 # A marketplace is fetched by the client as a whole repository, so only the
@@ -86,15 +72,13 @@ MARKETPLACE_SOURCE_TYPES: frozenset[str] = frozenset({"github", "url"})
 def read_community_entries(repo_root: Path) -> list[dict[str, Any]]:
     """Read the installable outside contributions, name-sorted.
 
-    These are indexed, not vendored. Their updates reach users on the next
-    ``/plugin marketplace update`` without a release here, which is the whole
+    These are indexed, not vendored. Their updates reach users through catalogue refresh and installed plugin updates, which is the whole
     benefit and the whole risk -- so the shape is checked hard even though the
     content is not ours.
 
     Only ``kind = "plugin"`` entries come back, already shaped for
     ``marketplace.json``. Federated marketplaces are returned by
-    :func:`read_federated_marketplaces` instead, because the client cannot
-    render one inline.
+    :func:`read_federated_marketplaces` instead, for compilation into native plugin entries.
     """
     return [entry for kind, entry in _read_entries(repo_root) if kind == "plugin"]
 
@@ -102,8 +86,8 @@ def read_community_entries(repo_root: Path) -> list[dict[str, Any]]:
 def read_federated_marketplaces(repo_root: Path) -> list[dict[str, Any]]:
     """Read the entries that point at somebody else's whole catalogue.
 
-    Each carries the exact command a user runs to add it, because that is the
-    only way a client we ship to can consume another marketplace.
+    Each retains its direct registration command alongside the compiled entries
+    for provenance and optional separate installation.
     """
     federated: list[dict[str, Any]] = []
     for kind, entry in _read_entries(repo_root):
@@ -158,35 +142,37 @@ def _claude_config_dir() -> Path:
     return Path.home() / ".claude"
 
 
-def read_live_marketplaces() -> list[dict[str, Any]]:
-    """Return the federated catalogue from an added marketplace, if there is one.
-
-    Reads the client's own record of where each marketplace was checked out, so
-    the answer reflects the last ``marketplace update`` rather than the version
-    of clio-kit that happens to be installed. Every step is best-effort: this
-    reads a client-internal file, and an unreadable or unexpected one means the
-    caller falls back to the baked snapshot.
-    """
+def live_marketplace_file() -> Path | None:
+    """Locate a readable live catalogue, including an explicitly empty one."""
     known = _claude_config_dir().joinpath(*KNOWN_MARKETPLACES)
     try:
         entries = json.loads(known.read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return []
+        return None
     if not isinstance(entries, dict):
-        return []
-
+        return None
     for record in entries.values():
         if not isinstance(record, dict):
             continue
         location = record.get("installLocation")
         if not isinstance(location, str) or not location:
             continue
-        found = _read_federated_file(
-            Path(location) / ".claude-plugin" / LIVE_FEDERATED_FILE
-        )
-        if found:
-            return found
-    return []
+        path = Path(location) / ".claude-plugin" / LIVE_FEDERATED_FILE
+        try:
+            payload = json.loads(path.read_text())
+            if isinstance(payload, dict) and isinstance(
+                payload.get("marketplaces"), list
+            ):
+                return path
+        except (OSError, ValueError):
+            continue
+    return None
+
+
+def read_live_marketplaces() -> list[dict[str, Any]]:
+    """Read the last updated client catalogue; empty is a valid removal."""
+    path = live_marketplace_file()
+    return _read_federated_file(path) if path else []
 
 
 def write_live_marketplaces(repo_root: Path, federated: list[dict[str, Any]]) -> None:
@@ -254,6 +240,15 @@ def _read_entries(repo_root: Path) -> list[tuple[str, dict[str, Any]]]:
         missing = sorted(field for field in required if not source.get(field))
         if missing:
             raise ValueError(f"{path} source of type {source_type!r} needs {missing}")
+        for field in (*required, *optional):
+            if field in source and (
+                not isinstance(source[field], str) or not source[field].strip()
+            ):
+                raise ValueError(f"{path} source {field} must be a nonempty string")
+        for field in ("ref", "sha"):
+            value = source.get(field)
+            if value and (value.startswith("-") or any(c.isspace() for c in value)):
+                raise ValueError(f"{path} has an invalid {field}")
 
         marketplace_source: dict[str, Any] = {"source": source_type}
         for field in (*required, *optional):

@@ -1,5 +1,11 @@
 # Evals - managing-software-environments
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: Report whether each result describes the MCP process, a module catalogue or an installed Spack package. Preserve exact versions/specs and identify which environment the eventual workload will use.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 

@@ -1,5 +1,11 @@
 # Evals - summarizing-and-plotting-results
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: Report the transformed data path, grouping and missing-value rules, one checked aggregate, and the figure path. Confirm the saved image exists and uses the transformed columns. A row-limited preview is not a full-data statistic.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 
@@ -10,8 +16,9 @@ machine."
 
 Expected:
 
-- `save_data` is called after the filter and aggregation, and the plot tool is
-  pointed at THAT file.
+- The plot tool reads the transform's returned `output_file`, or a CSV saved
+  from the returned records using `data={"data": result["results"]}`.
+- The saved group means match independently calculated values.
 - The chart is not drawn from the original CSV path.
 - A reader could tell from the answer which file the figure came from.
 

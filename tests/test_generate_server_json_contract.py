@@ -120,7 +120,7 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     marketplace_plugins = {
         plugin["name"].removeprefix("clio-"): plugin
         for plugin in plugin_sourced
-        if plugin["name"] not in expected_bundles
+        if plugin["name"].removeprefix("clio-") in expected_server_versions
     }
     bundle_plugins = {
         plugin["name"]: plugin
@@ -157,8 +157,12 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
         for plugin in marketplace["plugins"]
         if not isinstance(plugin["source"], str)
     }
+    from clio_kit.federation import read_snapshot
+
     assert set(community_plugins) == {
-        entry["name"] for entry in read_community_entries(repository_root)
+        entry["name"]
+        for entry in read_community_entries(repository_root)
+        + read_snapshot(repository_root)
     }
     assert all(
         plugin["metadata"]["indexed"] is True
@@ -170,7 +174,7 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     # be an entry nothing in this repository accounts for.
     assert len(marketplace_plugins) + len(bundle_plugins) + len(skill_plugins) + len(
         community_plugins
-    ) == len(marketplace["plugins"])
+    ) + 2 == len(marketplace["plugins"])
     for path in manifests:
         server_name = path.parent.name
         manifest = json.loads(path.read_text(encoding="utf-8"))
@@ -663,13 +667,13 @@ def test_published_marketplace_categories_carry_real_scope() -> None:
     # a scope classifies a SERVER. Split on source so this still checks what it
     # was written to check: that a server's category is its real scope rather
     # than one fixed literal for everything.
-    bundles = GENERATOR.read_bundles(Path(__file__).resolve().parents[1])
     server_entries = [
         plugin
         for plugin in marketplace["plugins"]
         if isinstance(plugin["source"], str)
         and plugin["source"].startswith("./plugins/")
-        and plugin["name"] not in bundles
+        and plugin["name"].removeprefix("clio-")
+        in GENERATOR.read_server_versions(repo_root)
     ]
     categories = {plugin["category"] for plugin in server_entries}
 
@@ -865,13 +869,15 @@ def test_marketplace_only_generation_passes_the_ci_log_gate(
 
 
 @pytest.mark.parametrize("runtime", ["node", "go"])
-def test_registry_selection_refuses_unsupported_runtime_before_writing(
+def test_registry_selection_refuses_failed_live_metadata_before_writing(
     tmp_path: Path,
     runtime: str,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     server = _publishing_repository(tmp_path, runtime, publish=True)
+    monkeypatch.setattr(GENERATOR, "extract_metadata", lambda server: None)
 
-    with pytest.raises(ValueError, match="mcp-registry-release.publish"):
+    with pytest.raises(ValueError, match="live MCP metadata extraction failed"):
         GENERATOR.generate_all(str(server.parent))
 
     assert not (tmp_path / "plugins").exists()

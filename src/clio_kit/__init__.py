@@ -34,6 +34,7 @@ from clio_kit.env_cache import (
     maintain_after_build,
 )
 from clio_kit.plugins import PLUGIN_COMMANDS
+from clio_kit.runtime_build import cached_build
 from clio_kit.retired_servers import unknown_server_lines
 from clio_kit.server_scope import SERVER_SCOPE_ORDER, format_server_listing
 from clio_kit.mcp_contracts import (
@@ -536,8 +537,12 @@ def _run_locked_local_server(
     except OSError:
         pass
     with EnvironmentInUseMarker(cache_root, environment_path.name):
-        if _build_locked_environment(
-            runtime, runtime_project, entry_command, child_environment
+        if cached_build(
+            runtime,
+            runtime_project,
+            lambda: _build_locked_environment(
+                runtime, runtime_project, entry_command, child_environment
+            ),
         ):
             try:
                 maintain_after_build(
@@ -561,6 +566,9 @@ def _run_locked_local_server(
                     "server": server_path.name,
                     "reason": "environment_build_failed",
                 }
+            )
+            raise click.ClickException(
+                f"Failed to build locked {runtime} server {server_path.name}"
             )
         cmd = locked_server_command(runtime_project, entry_command, runtime)
         cmd.extend(args)

@@ -1,14 +1,14 @@
 ---
 name: writing-slurm-job-scripts
-description: Use when an sbatch script would be written without first checking the machine's real limits, which is what leaves a job pending forever or killed at the wall clock. Covers partitions, --mem, job arrays and dependencies. Triggers on "sbatch", "why is my job pending", "job array", "--mem". Not for running a Spack package through JARVIS; use running-a-simulation-on-a-cluster.
+description: Use when preparing Slurm resource requests, arrays and dependencies or diagnosing pending jobs. Triggers on "sbatch", "job array", "why is my job pending". Not for JARVIS execution; use running-a-simulation-on-a-cluster.
 clio-kit:
   bundle: clio-hpc
   servers: clio-slurm, clio-node-hardware
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Write a Slurm job script that actually starts
+# Prepare and Diagnose Slurm Job Scripts
 
 This is about what goes *in* the request and how to read what comes back. For
 running a Spack package through JARVIS instead of a hand-written script, see
@@ -20,8 +20,10 @@ Look before guessing. `clio-node-hardware:get_cpu_info` gives core counts,
 `get_memory_info` gives RAM, `get_gpu_info` gives GPUs. Then
 `clio-slurm:slurm_cluster` gives the partitions and their limits.
 
-A request larger than any node in the partition never starts. It does not fail —
-it pends forever, which is much harder to notice.
+Hardware tools describe the MCP host, not necessarily the allocated compute
+nodes. Use the target partition/node records as the scheduling authority.
+Invalid requests may be rejected at submission or remain pending; inspect the
+actual scheduler reason instead of assuming one outcome.
 
 ## The shape of a batch script
 
@@ -52,8 +54,8 @@ Points that matter more than they look:
 - **`--mem` is per node; `--mem-per-cpu` is per allocated CPU.** Setting both is
   an error. Getting `--mem` wrong is the most common cause of a job killed
   partway through with no obvious message.
-- **`%j` in output paths** expands to the job ID. Without it, an array or a
-  resubmission overwrites its own logs and the evidence is gone.
+- **`%j` in output paths** expands to the job ID. For arrays use `%A_%a`
+  (array job ID and task index), for example `run1-%A_%a.out`.
 - **`srun` inside the script**, not a bare call. It inherits the allocation;
   running the binary directly gets you one rank on one node regardless of what
   was requested.
@@ -61,8 +63,8 @@ Points that matter more than they look:
 ## Arrays
 
 An array submits many similar jobs under one ID. Use it instead of a submit
-loop — the scheduler handles it as one object, and it stays inside job-count
-limits that a loop would blow through.
+loop — the scheduler can manage the collection efficiently. Array tasks still count
+against applicable job limits; check site policy and throttle concurrency.
 
 ```bash
 #SBATCH --array=0-99%10        # 100 tasks, at most 10 running at once
@@ -98,7 +100,8 @@ and optional bounded stdout/stderr tails. The pending reason is the useful field
 - `PartitionNodeLimit`, `PartitionTimeLimit` — the request exceeds what the
   partition allows. This will never start. Fix the request and resubmit.
 - `QOSMaxJobsPerUserLimit` — you are at your own limit; earlier jobs must finish.
-- `DependencyNeverSatisfied` — the chain is broken. Cancel and resubmit.
+- `DependencyNeverSatisfied` — the dependency cannot be satisfied. Inspect
+  the failed predecessor and report recovery options; cancel only when requested.
 
 `clio-slurm:slurm_list` filters by user, state and partition, and reports
 explicit truncation — a truncated list is not the whole queue, so do not draw
@@ -119,3 +122,7 @@ stops a wrong ID from ending someone else's run.
 - Do not read a pending job as "working" without checking the reason — several
   reasons mean it will never start.
 - Do not treat a truncated `slurm_list` as a complete picture of the queue.
+
+## Completion check
+
+Check target partition limits, working directory, executable, task/thread layout and output paths. For submitted work, report native job ID, state/reason, exit status and expected output. Resolve cancellation targets explicitly; only cancel when requested.

@@ -16,13 +16,26 @@ from __future__ import annotations
 
 import importlib.metadata
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
 import click
+import tomli_w
+
+from clio_kit.plugin_components import (
+    component_problems,
+    mcp_problems,
+    write_agent,
+    write_mcp_wrapper,
+)
+from clio_kit.marketplace_cli import marketplace_group
+from clio_kit.server_cli import server_group
+from clio_kit.doctor import doctor_command
 
 from clio_kit.community import (
     COMMUNITY_KINDS,
+    live_marketplace_file,
     read_live_marketplaces,
     read_shipped_marketplaces,
 )
@@ -97,6 +110,11 @@ def _check_component_paths(manifest: dict[str, Any], problems: list[str]) -> Non
         value = manifest.get(field)
         if value is None or isinstance(value, dict):
             continue
+        if not isinstance(value, (str, list)):
+            problems.append(
+                f"{field} must be a path, an array of paths, or a configuration object"
+            )
+            continue
         for entry in [value] if isinstance(value, str) else value:
             if not isinstance(entry, str):
                 continue
@@ -119,15 +137,7 @@ def _check_mcp_servers(plugin_dir: Path, problems: list[str]) -> None:
     except json.JSONDecodeError as exc:
         problems.append(f".mcp.json is not valid JSON: {exc}")
         return
-    servers = config.get("mcpServers", config)
-    if not isinstance(servers, dict) or not servers:
-        problems.append(".mcp.json declares no servers")
-        return
-    for name, entry in servers.items():
-        if not isinstance(entry, dict):
-            problems.append(f".mcp.json server {name!r} must be an object")
-        elif not entry.get("command") and not entry.get("url"):
-            problems.append(f".mcp.json server {name!r} needs a command or a url")
+    problems.extend(mcp_problems(config, ".mcp.json"))
 
 
 def validate_plugin(plugin_dir: Path) -> tuple[dict[str, Any], list[str]]:
@@ -154,6 +164,7 @@ def validate_plugin(plugin_dir: Path) -> tuple[dict[str, Any], list[str]]:
         )
     _check_component_paths(manifest, problems)
     _check_mcp_servers(plugin_dir, problems)
+    problems.extend(component_problems(plugin_dir, manifest))
 
     # Every skill is checked against the published rules, not merely parsed:
     # a skill's description is carried in every session whether or not it
@@ -169,6 +180,7 @@ def validate_plugin(plugin_dir: Path) -> tuple[dict[str, Any], list[str]]:
             for directory in ("skills", "commands", "agents", "hooks")
         )
         or (plugin_dir / ".mcp.json").is_file()
+        or bool(manifest.get("mcpServers"))
     )
     if not has_components and not manifest.get("dependencies"):
         problems.append(
@@ -236,28 +248,20 @@ def build_community_entry(
     manifest: dict[str, Any], repo: str, *, kind: str = "plugin"
 ) -> str:
     """Render the marketplace entry that indexes a plugin we do not own."""
-    name = manifest.get("name", "")
-    description = manifest.get("description", "")
-    keywords = manifest.get("keywords") or []
     author = manifest.get("author") or {}
     maintainer = author.get("name") if isinstance(author, dict) else author
-    lines = [
-        f'name        = "{name}"',
-        f'description = "{description}"',
-        f'category    = "{manifest.get("category", "community")}"',
-    ]
-    # `plugin` is the default the reader assumes, so only the other kind needs
-    # saying. A marketplace entry that omitted this would be published as an
-    # installable plugin and resolve to nothing.
+    entry = {
+        "name": manifest["name"],
+        "description": manifest["description"],
+        "category": manifest.get("category", "community"),
+        "keywords": manifest.get("keywords") or [],
+        "source": {"type": "github", "repo": repo},
+    }
     if kind != "plugin":
-        lines.insert(1, f'kind        = "{kind}"')
+        entry["kind"] = kind
     if maintainer:
-        lines.append(f'maintainer  = "{maintainer}"')
-    if keywords:
-        rendered = ", ".join(f'"{keyword}"' for keyword in keywords)
-        lines.append(f"keywords    = [{rendered}]")
-    lines += ["", "[source]", 'type = "github"', f'repo = "{repo}"']
-    return "\n".join(lines) + "\n"
+        entry["maintainer"] = maintainer
+    return tomli_w.dumps(entry)
 
 
 @click.group("plugin")
@@ -268,8 +272,19 @@ def plugin_group() -> None:
 @plugin_group.command("init")
 @click.argument("directory", type=click.Path(path_type=Path))
 @click.option("--name", default=None, help="Plugin name (defaults to the directory).")
-def plugin_init(directory: Path, name: str | None) -> None:
-    """Scaffold a plugin with a skill, an MCP config, and a manifest."""
+@click.option(
+    "--agent", is_flag=True, help="Include a read-only workflow reviewer agent."
+)
+@click.option("--mcp-command", help="Executable of an actual MCP server to wrap.")
+@click.option("--mcp-arg", multiple=True, help="Server argument; repeat as needed.")
+def plugin_init(
+    directory: Path,
+    name: str | None,
+    agent: bool,
+    mcp_command: str | None,
+    mcp_arg: tuple[str, ...],
+) -> None:
+    """Scaffold a skill plugin, optionally including an agent and real MCP wrapper."""
     plugin_name = name or directory.name
     problems: list[str] = []
     _check_name(plugin_name, problems)
@@ -295,14 +310,10 @@ def plugin_init(directory: Path, name: str | None) -> None:
     (directory / ".claude-plugin" / "plugin.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )
-    (directory / ".mcp.json").write_text(
-        json.dumps(
-            {"example-server": {"command": "npx", "args": ["-y", "@you/your-mcp"]}},
-            indent=2,
-        )
-        + "\n",
-        encoding="utf-8",
-    )
+    if mcp_command:
+        write_mcp_wrapper(directory, mcp_command, mcp_arg)
+    if agent:
+        write_agent(directory)
     # The scaffold satisfies the skill rules the moment it is written. A
     # starting point that fails validation teaches a contributor that the
     # checks are noise to be silenced rather than the bar to be met, so the
@@ -362,11 +373,11 @@ def plugin_validate(directory: Path) -> None:
             click.echo(f"  ? {advisory}")
         raise click.ClickException(f"{len(problems)} problem(s) in {directory}")
 
-    click.echo(f"OK: {manifest['name']} would publish correctly")
+    click.echo(f"OK: {manifest['name']} passes structural validation")
     if reports:
         click.echo(
-            f"{len(reports)} skill(s), ~{always_on_cost(reports)} characters carried "
-            "in every session whether or not they fire."
+            f"{len(reports)} skill(s), {always_on_cost(reports)} description characters. "
+            "Full instructions load when invoked; client token estimates vary."
         )
     for advisory in advisories:
         click.echo(f"  ? {advisory}")
@@ -391,7 +402,14 @@ def plugin_validate(directory: Path) -> None:
     default=None,
     help="Write the entry here instead of printing it.",
 )
-def plugin_submit(directory: Path, repo: str, kind: str, output: Path | None) -> None:
+@click.option(
+    "--open-pr",
+    is_flag=True,
+    help="Create a GitHub fork branch and open the contribution PR (requires gh login).",
+)
+def plugin_submit(
+    directory: Path, repo: str, kind: str, output: Path | None, open_pr: bool
+) -> None:
     """Render the marketplace entry that would index this plugin."""
     try:
         if kind == "marketplace":
@@ -410,6 +428,16 @@ def plugin_submit(directory: Path, repo: str, kind: str, output: Path | None) ->
         raise click.ClickException(f"--repo {repo!r} must be in owner/name form")
 
     entry = build_community_entry(manifest, repo, kind=kind)
+    if open_pr:
+        from clio_kit.submissions import open_submission
+
+        try:
+            click.echo(open_submission(manifest["name"], entry))
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            raise click.ClickException(
+                f"Could not open contribution PR: {exc}"
+            ) from exc
+        return
     if output is not None:
         output.write_text(entry, encoding="utf-8")
         click.echo(f"Wrote {output}")
@@ -422,21 +450,15 @@ def plugin_submit(directory: Path, repo: str, kind: str, output: Path | None) ->
     )
     if kind == "marketplace":
         click.echo(
-            "\nA marketplace is a referral, not an inline listing: Claude Code "
-            "adds one catalogue at a time, so yours is published by "
-            "`clio-kit marketplaces` with the command that adds it, rather "
-            "than appearing among our own plugins."
+            "Run `clio-kit marketplace refresh` in the catalogue checkout to merge the external collection."
         )
 
 
 @click.command("marketplaces")
 def marketplaces_command() -> None:
-    """List federated marketplaces and the command that adds each one.
+    """List original external collections and optional direct-add commands.
 
-    Claude Code has no nested-marketplace concept: catalogues are added one at
-    a time. So a contributor's whole marketplace is carried here as a referral
-    rather than merged into ours -- their collection stays under their control,
-    and the user runs one command to reach it.
+    Use `marketplace refresh` to compile their plugins into the CLIO catalogue.
     """
     # Prefer the copy inside the added marketplace: it refreshes on
     # `claude plugin marketplace update`, so a newly indexed catalogue reaches
@@ -445,7 +467,7 @@ def marketplaces_command() -> None:
     # and it is only as current as the installed version.
     federated = read_live_marketplaces()
     source = "the marketplace, as of its last update"
-    if not federated:
+    if not federated and live_marketplace_file() is None:
         federated = read_shipped_marketplaces()
         source = f"clio-kit {_installed_version()}, which may be behind the marketplace"
 
@@ -455,7 +477,9 @@ def marketplaces_command() -> None:
     for entry in federated:
         maintainer = (entry.get("metadata") or {}).get("maintainer", "unknown")
         click.echo(f"{entry['name']} -- {entry['description']}")
-        click.echo(f"  maintained by {maintainer}, indexed here but not reviewed here")
+        click.echo(
+            f"  maintained by {maintainer}, indexed here; implementation maintained by its publisher"
+        )
         click.echo(f"  {entry['add_command']}")
     click.echo(f"\nRead from {source}.")
 
@@ -468,4 +492,10 @@ def _installed_version() -> str:
         return "unknown"
 
 
-PLUGIN_COMMANDS = (plugin_group, marketplaces_command)
+PLUGIN_COMMANDS = (
+    plugin_group,
+    marketplaces_command,
+    marketplace_group,
+    server_group,
+    doctor_command,
+)

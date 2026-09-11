@@ -1,14 +1,14 @@
 ---
 name: visualizing-3d-simulation-output
-description: Use when visualizing simulation output, making an isosurface, slice or streamlines, or producing an image from VTK, EXODUS or BP5 data. Triggers on "paraview", "isosurface", "render the field", "screenshot". Not for tabular data; use summarizing-and-plotting-results.
+description: Use when inspecting and rendering simulation fields with ParaView. Triggers on "isosurface", "slice this volume", "render the field". Not for tabular charts; use summarizing-and-plotting-results.
 clio-kit:
   bundle: clio-analysis
   servers: clio-paraview
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Visualise a simulation field
+# Visualize Three-Dimensional Simulation Output
 
 ParaView is a pipeline with an **active source**. Almost every tool acts on
 whichever object is active, not on one you name. Losing track of that is how you
@@ -93,3 +93,7 @@ Excel directly and needs none of this. See `summarizing-and-plotting-results`.
 - Do not use a rainbow colour map for continuous scalar data.
 - Do not screenshot before resetting the camera.
 - Do not compute surface area on a volume.
+
+## Completion check
+
+First verify that a compatible ParaView Python backend is available; an MCP connection alone is insufficient. Report source, timestep, active filter, field association (point/cell), units, color range and output image. Inspect the image before declaring rendering complete.

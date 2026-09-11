@@ -1,5 +1,11 @@
 # Evals - choosing-the-right-chart
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: State the question, chart type, axis units, treatment of missing/nonpositive values, and why the encoding supports the comparison. Do not imply a p-value proves causality; report sample size and uncertainty when available.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 

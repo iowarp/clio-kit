@@ -18,6 +18,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "start_chronolog", "description": "Connect to ChronoLog, create a chronicle, and acquire a story handle.", "function_name": "start_chronolog"}, {"name": "record_interaction", "description": "Log a user message and LLM response to the active ChronoLog story.", "function_name": "record_interaction"}, {"name": "stop_chronolog", "description": "Release the story handle and disconnect from ChronoLog.", "function_name": "stop_chronolog"}, {"name": "retrieve_interaction", "description": "Retrieve logged records from a chronicle and story, with optional time filtering.", "function_name": "retrieve_interaction"}]}
 >
 
+{/* clio-kit:usage:start */}
+
 ### 1. Session Logging and Analysis
 ```
 Start logging our conversation, then after we discuss machine learning concepts, retrieve the interaction history for analysis.
@@ -64,5 +66,7 @@ This prompt will:
 - Capture all conversation elements using `record_interaction`
 - Maintain detailed architectural documentation
 - Provide clean session termination using `stop_chronolog`
+
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

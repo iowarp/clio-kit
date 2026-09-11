@@ -96,9 +96,8 @@ skills/clio-<bundle>-skills/skills/<your-skill>/
 `SKILL.md` frontmatter needs a `name` matching the folder and a `description`.
 Write the description as triggers only, in the words a user actually types, and
 add a `Not for X; use Y` clause wherever another skill could plausibly claim the
-same request. The description is carried in every conversation whether the skill
-fires or not, so anything in it that the body already says costs tokens forever
-and buys nothing.
+same request. Descriptions support discovery; full bodies load when invoked. Keep
+descriptions concise and put procedural detail in the body.
 
 `evals.md` is required. Generation fails without it. Record the scenarios that
 separate the skill's behaviour from the baseline: the exact prompt, checkable
@@ -110,7 +109,7 @@ reviewer to notice. It refuses a skill whose frontmatter does not parse, whose
 does not open with `Use when`, or that carries no `Triggers on` clause. A
 missing `Not for X; use Y` boundary and an over-long description are reported
 as advisories, because a first skill with nothing to collide against is
-legitimately unbounded. The command also prints the always-on cost of what you
+legitimately unbounded. The command also prints the description character count for what you
 are adding.
 
 ## Contributing a Server in Another Language
@@ -118,7 +117,8 @@ are adding.
 TypeScript and Go servers are supported two ways. Which to pick is a question
 about ownership, not capability.
 
-**Index it** — the server stays yours. Publish to npm and add one entry under
+**Index it** — the server stays yours. Publish a plugin containing its manifest
+and MCP configuration to npm, then add one entry under
 [`community/`](community/README.md) with `type = "npm"`. Your code, your
 dependencies and your release schedule stay in your repository, and it installs
 through our marketplace exactly like ours do.
@@ -165,7 +165,7 @@ a fixture server from its lock and reading back a JSON-RPC `initialize` reply.
 The go fixture is deliberately a two-package module: while only node had such a
 test, go shipped a build command that could not compile one. `go build -o
 <file> ./...` fails with `cannot write multiple packages to non-directory`, so
-it worked for a single-package module and no real server is one. The build
+it worked for a single-package module for multi-package projects. The build
 compiles the package `entry` names instead.
 
 `entry` means the same thing in all three: the thing that runs. Python names
@@ -202,11 +202,20 @@ and description that a Python server states in `pyproject.toml`, so a hosted
 server reaches the marketplace like any other. A server it cannot describe is
 refused by name rather than skipped in silence.
 
-Hosted Node and Go servers currently publish marketplace entries only. Keep
-them out of `mcp-registry-release.publish` in `mcp-server-versions.toml`: live
-`server.json` metadata extraction currently supports Python only, and selecting
-a non-Python server for MCP Registry publication fails generation. Python
-metadata extraction failures still fail publishing CI.
+Selected Node and Go servers use a real stdio MCP session for registry metadata
+extraction. Install `.[verification]` for this operation. Without a `[registry]`
+table, a hosted server uses the shared `clio-kit` wheel coordinate. A descriptor
+can instead declare `registryType`, `identifier`, `version`, and transport in a
+`[registry]` table for npm, OCI, PyPI, NuGet, or MCPB distribution. Registry
+coordinates must refer to artifacts you separately publish; generation does
+not upload a package. Failed live extraction prevents publication.
+
+The marketplace acceptance workflow exercises real SDK-based Node/TypeScript
+and Go projects under `tests/fixtures/mcp-servers/`, using a freshly installed
+wheel. These fixtures are not marketplace entries or wheel runtime components.
+For your own project, use `clio-kit server run /path/to/project` and
+`clio-kit server inspect /path/to/project`. Inspection requires the verification
+extra and checks the actual stdio protocol.
 
 ## Contributing an MCP Server or Plugin You Maintain
 
@@ -216,7 +225,7 @@ Your code stays in your repository on your own release schedule.
 ```bash
 clio-kit plugin init my-plugin
 clio-kit plugin validate my-plugin
-clio-kit plugin submit my-plugin --repo owner/name
+clio-kit plugin submit my-plugin --repo owner/name --open-pr
 ```
 
 `validate` catches problems that a manifest check cannot, most importantly a
@@ -465,10 +474,10 @@ uv run mypy src/
 
 ```bash
 # From root directory
-uvx clio-kit
+uv run clio-kit mcp-servers
 
 # Your server should appear in the list
-uvx clio-kit my-server
+uv run clio-kit mcp-server my-server
 ```
 
 ## Issue Reporting

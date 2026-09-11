@@ -9,7 +9,7 @@ export default function Home() {
   return (
     <Layout
       title={`${siteConfig.title}`}
-      description="CLIO Kit - Part of the IoWarp platform. Tools, skills, plugins, and extensions for AI agents. 15+ MCP servers for scientific computing. Connect AI to HDF5, ADIOS, Slurm, Pandas.">
+      description="CLIO Kit - Part of the IoWarp platform. Tools, skills, plugins, and extensions for AI agents. 22 MCP servers for scientific computing. Connect AI to HDF5, ADIOS, Slurm, Pandas.">
       <main className="landingPage">
 
         {/* Hero */}
@@ -46,9 +46,9 @@ export default function Home() {
               <Link className="button button--primary hero__cta" to="/docs/intro">
                 Install in Seconds
               </Link>
-              <Link className="button button--outline hero__cta" to="#browse">
+              <a className="button button--outline hero__cta" href="#browse">
                 Explore Servers
-              </Link>
+              </a>
               <Link className="button button--ghost hero__cta" href="https://github.com/iowarp/clio-kit" rel="noopener noreferrer">
                 Star on GitHub
               </Link>
@@ -57,7 +57,7 @@ export default function Home() {
             {/* Subtitle - 2 lines */}
             <p className="hero__subtitle">
               CLIO Kit provides comprehensive science capabilities for AI agents.<br/>
-              150+ tools across 15+ MCP servers for scientific computing.<br/>
+              150+ tools across 22 MCP servers for scientific computing.<br/>
               Works with <a href="https://www.claude.com/product/claude-code" target="_blank" rel="noopener">Claude Code</a>,{' '}
               <a href="https://cursor.com/home" target="_blank" rel="noopener">Cursor</a>,{' '}
               <a href="https://code.visualstudio.com/" target="_blank" rel="noopener">VS Code</a>,{' '}

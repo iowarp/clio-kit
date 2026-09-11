@@ -4,8 +4,9 @@ Plugins, skills and MCP servers that live in **someone else's repository** and
 appear in the CLIO Kit marketplace. One file here per contribution.
 
 Your code stays yours. You release on your own schedule, and your updates reach
-users on their next `/plugin marketplace update` without a release from us. What
-this repository holds is a pointer.
+users through catalogue refresh and plugin updates without a CLIO package release.
+Publishers must bump plugin versions for content changes; refreshing the catalogue
+alone does not necessarily replace an installed plugin.
 
 ## What belongs where
 
@@ -33,8 +34,10 @@ type = "github"
 repo = "some-lab/materials-agent-skills"
 ```
 
-Then open a pull request. We review the entry, not your code — see
-`../rework/packaging-design.md` for why that line is drawn where it is.
+Then open a pull request. We review ownership, entry shape, native plugin validation, and a minimal install
+and component check. Indexing does not certify all external implementation code.
+Maintained CLIO contributions additionally require implementation review and
+acceptance tests. External code and update ownership remain with the publisher.
 
 ## Source types
 
@@ -59,12 +62,12 @@ path = "tools/claude-plugin"
 ref  = "v2.0.0"                              # optional
 ```
 
-**`npm`** — published as a package. **This is how a TypeScript or Go MCP server
-stays yours**: it lives in your repository, ships to npm on your schedule, and
-installs through our marketplace without any of its code living here. (A
-non-Python server can also be hosted in the kit instead — see
-[CONTRIBUTING.md](../CONTRIBUTING.md#contributing-a-server-in-another-language)
-for the trade-off.) Not valid for `kind = "marketplace"`.
+**`npm`** — a published **Claude plugin package** containing its manifest and
+components. A raw npm MCP server is not a plugin: wrap its executable in
+`.mcp.json` using `clio-kit plugin init my-plugin --mcp-command npx
+--mcp-arg=-y --mcp-arg=@lab/server`. Go and other servers can likewise be
+wrapped using their actual executable or `clio-kit server run` descriptor.
+Not valid for `kind = "marketplace"`.
 
 ```toml
 [source]
@@ -79,32 +82,10 @@ does not work: the client appends a version to whatever you write, so
 `./my-plugin.tgz` is looked up as `./my-plugin.tgz@latest`. Test against a real
 publish, even a prerelease tag, rather than a file on disk.
 
-**Omitting `version` means `@latest`.** Every publish then reaches users on
-their next marketplace update, which is the same tracking behaviour as an
-unpinned git `ref` — often what you want, but pin it if your users need
-stability.
-
-Your npm package needs `.claude-plugin/plugin.json`, an `.mcp.json`, and
-whatever the server runs from, all listed in the package's `files` field.
-Point the MCP command at the installed location:
-
-```json
-{
-  "crystal-ts": {
-    "command": "node",
-    "args": ["${CLAUDE_PLUGIN_ROOT}/dist/server.js"]
-  }
-}
-```
-
-**`url`** — a git repository somewhere other than GitHub.
-
-```toml
-[source]
-type = "url"
-url  = "https://gitlab.example.com/team/plugin.git"
-ref  = "main"                                # optional
-```
+**Omitting `version` selects the package's latest published version.** Installed
+plugin updates still follow the client's version/update rules. Bump the plugin
+manifest version on each content release, refresh the marketplace, update the
+plugin, and reload it. Third-party auto-updates are not enabled by default.
 
 ## Federated marketplaces
 
@@ -132,27 +113,27 @@ type = "github"
 repo = "some-lab/materials-marketplace"
 ```
 
-**What this does.** Your catalogue is listed by `clio-kit marketplaces`, with
-the one command a user runs to add it. Everything in it stays under your
-control, on your release schedule, and we never see its contents.
-
-**What it does not do.** Your plugins do not appear inline inside our
-catalogue. Claude Code has no nested-marketplace concept: catalogues are added
-one at a time with `claude plugin marketplace add`, and an entry carrying a
-field it does not recognise is reported as *"Unknown field 'kind'. Claude Code
-ignores it at load time"*. Publishing a marketplace into our `plugins` list
-would therefore ship something that either fails to install or quietly resolves
-to the wrong thing. So a federated marketplace is carried as a **referral**
-rather than a merge, and a user reaches it with:
+`clio-kit marketplace refresh --root /path/to/clio-kit` fetches each indexed
+catalogue and merges its plugins into our native `marketplace.json`. Relative
+plugin sources become Git subdirectory sources pinned to the fetched commit;
+plugin implementations remain in their owners' repositories. The adjacent
+`federation.lock.json` records provenance and supports reproducible generation.
+Name conflicts fail the entire refresh; identical direct/indexed sources are
+deduplicated. Removing an external entry removes its imported listings on the
+next refresh. It does not silently uninstall an existing user's plugin.
 
 ```bash
-clio-kit marketplaces
-claude plugin marketplace add some-lab/materials-marketplace
+clio-kit marketplace refresh --root .
+claude plugin marketplace update clio-kit
+claude plugin update iowarp-dev-setup@clio-kit
 ```
 
-Only `github` and `url` sources may be marketplaces. `npm` names a package and
-`git-subdir` names a directory; neither is something `marketplace add` accepts,
-and generation fails rather than publishing a referral nobody can follow.
+For a GitHub-hosted catalogue, maintainers can run the federation refresh
+workflow and commit the resulting catalogue without publishing a new launcher.
+Users must update installed plugins and reload them after refreshing. External
+marketplaces must be Git repositories with `.claude-plugin/marketplace.json`;
+unsupported source forms or escaping relative paths fail with a diagnostic.
+`clio-kit marketplaces` also lists the original collections for direct access.
 
 ## What a skill has to clear
 
@@ -182,7 +163,7 @@ the starting point passes and you edit from there.
 
 ## Trying something before you index it
 
-An entry here publishes to every user on their next marketplace update, so try
+An entry becomes discoverable after a marketplace update, so try
 a contribution locally first. Nothing below touches this repository or your own
 Claude Code config.
 
@@ -201,25 +182,25 @@ claude plugin validate /tmp/trial --strict
 **Then install it into a throwaway config**, so your real one is untouched:
 
 ```bash
-export HOME=/tmp/trial-home && mkdir -p "$HOME"
+export CLAUDE_CONFIG_DIR="$(mktemp -d /tmp/clio-trial.XXXXXX)"
 claude plugin marketplace add /tmp/trial-marketplace
 claude plugin install <name>@<marketplace> --scope user
 claude plugin details <name>@<marketplace>   # skills found, and what they cost
 ```
 
-`plugin details` is the number that decides whether something earns its place:
-it reports the always-on cost a skill adds to *every* session, whether or not it
-fires.
+`plugin details` shows installed components and a context estimate. Skill
+names/descriptions support selection; full bodies load when used. Judge quality
+with recorded scenarios and observed results, not a token estimate alone.
 
 **What to look at before indexing:**
 
 - Does every skill carry recorded scenarios (`evals.md`)? A skill with none is
   untested by definition. Ours are required to have them.
 - Is the description triggers-only? A description restating what the body says
-  is context paid forever for nothing.
+  adds discovery text without helping selection.
 - Does it declare boundaries against skills we already ship? Twenty skills with
   overlapping domains will hijack each other without "Not for X; use Y".
-- What is the always-on total once it is added to what we already publish?
+- Is its description concise and distinct from the existing skills?
 
 ## Rules the generator enforces
 
@@ -235,9 +216,10 @@ Generation fails, rather than publishing something broken, when:
 
 ## Pin your source if your users need stability
 
-Without `ref` or `sha`, an entry tracks your default branch, so every push
-reaches users on their next marketplace update. That is often what you want. If
-it is not, pin it.
+Without `ref` or `sha`, an entry tracks your default branch. Publish version
+bumps so users can update installed plugins after refreshing the marketplace.
+Pin a source when consumers need a reviewed revision rather than that moving
+branch. Imported relative sources are pinned by the federation snapshot.
 
 ## What we ask of you
 
@@ -248,3 +230,13 @@ is worse for a user than no listing.
 Nothing here is reviewed line by line on every update, and users can see that:
 each entry carries `metadata.indexed`, so the catalogue distinguishes what we
 maintain from what we point at.
+
+## Contributor commands
+
+`plugin init` creates a skills-only starter by default. Add `--agent` for a
+read-only agent and `--mcp-command` / repeated `--mcp-arg` for a real MCP wrapper.
+`plugin validate` checks structure; native `claude plugin validate --strict`
+checks client compatibility. `plugin submit ... --output entry.toml` prepares
+a reviewable entry; `plugin submit ... --open-pr` uses authenticated `gh` to
+fork, create a branch, push the one-file contribution, and open its PR. No
+GitHub write occurs without `--open-pr`.

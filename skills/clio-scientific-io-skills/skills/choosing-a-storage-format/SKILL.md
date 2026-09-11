@@ -1,14 +1,14 @@
 ---
 name: choosing-a-storage-format
-description: Use when deciding how to write results out, converting between HDF5, BP5, Parquet or CSV, choosing chunking or compression, or explaining why reading an existing file is slow. Triggers on "which format", "chunk size", "should I compress". Calls no tools. Not for judging whether a measured number is bad; use interpreting-io-performance-numbers.
+description: Use when selecting scientific file formats, chunk layouts or compression for an access pattern. Triggers on "HDF5 versus Parquet", "chunk size", "should I compress". Calls no tools. Not for interpreting profiler counters; use interpreting-io-performance-numbers.
 clio-kit:
   bundle: clio-scientific-io
   servers: none
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Choose a format, and chunk it for how it will be read
+# Choose a Scientific Storage Format
 
 The format decides what is cheap later. Almost every slow read is a write-time
 decision showing up months afterwards.
@@ -36,14 +36,15 @@ produced by a running parallel job → BP5.**
 
 ## Chunking is the decision that matters
 
-An HDF5 dataset is stored in fixed blocks. Any read fetches whole chunks, even
+A chunked HDF5 dataset is stored in fixed blocks. Any read of compressed data
+fetches and decompresses intersecting chunks, even
 for one element, so the chunk shape decides which reads are fast and which are
 disastrous.
 
 Chunk along the axis that will be read. A `(time, lat, lon)` field chunked as
 `(1, lat, lon)` gives cheap whole-maps-per-timestep and expensive time series at
-one point. Chunked `(time, 1, 1)`, exactly the reverse. There is no shape that is
-good at both — pick the one matching the real question, or store two layouts.
+one point. Chunked `(time, 1, 1)`, exactly the reverse. Intermediate chunk shapes can balance both access patterns. Benchmark the
+actual workload before choosing one compromise or maintaining two layouts.
 
 Size the chunk in the region of 100 KB to a few MB. Too small and per-chunk
 overhead and metadata dominate; too large and every small read drags a large
@@ -85,3 +86,7 @@ and provenance that made the array interpretable.
 - Do not chunk so small that metadata outweighs the data.
 - Do not compress data that does not compress, and measure before assuming.
 - Do not convert formats without checking the attributes survived.
+
+## Completion check
+
+State data shape, read/write access patterns, parallelism, required metadata and consumer support. Recommend a candidate layout and a representative read/write benchmark; retain a fidelity check when converting.

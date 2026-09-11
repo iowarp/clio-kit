@@ -1,5 +1,11 @@
 # Evals - working-with-coordinate-systems
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: State source and target CRS, axis order, horizontal units and vertical datum. If any is unknown, identify the missing metadata rather than guessing a transformation. Check a known control point and antimeridian behavior where relevant.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 

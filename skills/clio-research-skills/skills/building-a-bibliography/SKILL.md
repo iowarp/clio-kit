@@ -1,22 +1,23 @@
 ---
 name: building-a-bibliography
-description: Use when citations would be assembled by hand or from memory, which invents plausible arXiv ids and author lists that do not exist. Covers BibTeX export, reading lists and related-work sections. Triggers on "bibtex", "cite these", "reference list". Not for exploring a topic; use surveying-literature-and-datasets.
+description: Use when assembling verified citations, BibTeX records or a research reading list. Triggers on "BibTeX", "cite these papers", "reference list". Not for broad topic discovery; use surveying-literature-and-datasets.
 clio-kit:
   bundle: clio-research
-  servers: clio-arxiv, clio-ndp
+  servers: clio-arxiv, clio-ndp, clio-web
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Build a bibliography from records, not from memory
+# Build a Verified Research Bibliography
 
 A fabricated citation is the worst failure available here. It is fluent,
 correctly formatted, and points at a paper that does not exist. Every entry has
 to come from a tool that returned it.
 
-**Never compose a BibTeX entry by hand.** `clio-arxiv:export_to_bibtex` produces
-entries from actual search results. Anything else is a plausible-looking
-invention, including a "correction" to a real entry.
+Prefer `clio-arxiv:export_to_bibtex` for arXiv records. For other sources,
+use publisher/repository citation metadata. Manual formatting or correction is
+acceptable only when every field is checked against a retrieved record; never
+fill gaps from memory.
 
 ## Steps
 
@@ -47,8 +48,7 @@ journal fields for papers since published all need checking.
 **4. Get the PDFs if they will be read.**
 
 `clio-arxiv:get_pdf_url` for a link, `download_paper_pdf` for one file, or
-`download_multiple_pdfs` for several — it rate-limits, and a download loop will
-get throttled instead.
+`download_multiple_pdfs` for several with bounded concurrency. Respect service limits and report download failures.
 
 ## Preprints and published versions
 
@@ -75,3 +75,7 @@ be checked by anyone.
 - Do not cite a preprint as published without checking.
 - Do not loop single downloads where the concurrent tool exists.
 - Do not leave the datasets uncited.
+
+## Completion check
+
+Deduplicate by stable identifier and version. Check each BibTeX key, title, authors, date, identifier and publication status against retrieved records; retain source links and flag unresolved fields instead of inventing them.

@@ -18,6 +18,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "list_bp5", "description": "Lists all BP5 files in a given directory. The 'directory' parameter must be an absolute path.", "function_name": "list_bp5"}, {"name": "inspect_variables", "description": "Inspects variables in a BP5 file, returning type, shape, and steps. Optionally filters by variable name.", "function_name": "inspect_variables"}, {"name": "inspect_variables_at_step", "description": "Inspects a specific variable at a given step in a BP5 file. All parameters are required.", "function_name": "inspect_variables_at_step"}, {"name": "inspect_attributes", "description": "Reads global or variable-specific attributes from a BP5 file. The 'variable_name' is optional.", "function_name": "inspect_attributes"}, {"name": "read_variable_at_step", "description": "Reads a named variable at a specific step from a BP5 file. All parameters are required.", "function_name": "read_variable_at_step"}]}
 >
 
+{/* clio-kit:usage:start */}
+
 ### 1. Scientific Data Structure Analysis
 ```
 I have a BP5 simulation file at /data/simulation_results.bp. Can you first analyze the data structure and then show me the temperature variable evolution over time?
@@ -111,5 +113,7 @@ This prompt will:
 - Use `inspect_variables` to provide structural overview of discovered files
 - Generate comprehensive overview of available simulation datasets
 - Suggest optimal data access strategies based on file contents
+
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

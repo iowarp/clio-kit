@@ -1,14 +1,14 @@
 ---
 name: mapping-geospatial-and-terrain-data
-description: Use when GeoJSON, a bounding box, an elevation grid or a point cloud would be trusted without validating it first, which produces a map that renders cleanly and is geometrically wrong. Triggers on "geojson", "render a map", "coordinates for", "DEM". Not for projections; use working-with-coordinate-systems. Not for waveforms or earthquake catalogs; use analyzing-seismic-waveforms.
+description: Use when validating GeoJSON, querying spatial relationships, mapping features or analyzing terrain grids. Triggers on "GeoJSON", "render a map", "DEM", "point cloud". Not for CRS interpretation alone; use working-with-coordinate-systems.
 clio-kit:
   bundle: clio-geoscience
   servers: clio-geo, clio-terrain
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Work with geospatial data without silently getting it wrong
+# Validate and Map Geospatial Data
 
 Spatial mistakes do not raise errors. A bounding box computed over malformed
 features, or a place name the model invented coordinates for, produces a map that
@@ -16,9 +16,9 @@ renders perfectly and is wrong.
 
 ## Validate before anything spatial
 
-`clio-geo:validate_geojson` checks that the top-level type is recognised and
-every geometry's type and coordinates are well formed. Run it first, always. Every
-tool downstream assumes what it verifies.
+`clio-geo:validate_geojson` checks the supported GeoJSON structure. Run it before spatial
+operations, then inspect coordinate ranges, CRS and geometric validity. A
+successful structural check does not establish valid topology or correct CRS.
 
 Then `clio-geo:inspect_geojson` for geometry types and counts, feature count,
 property keys and bounding box in one call — the fastest way to find out what a
@@ -57,8 +57,9 @@ using the returned metadata, and say which one was used.
 ## Spatial relationships
 
 - `clio-geo:points_in_polygons` — which points fall inside which polygons, with
-  optional buffering. The buffer is in the tool for a reason: a point exactly on
-  a boundary is not reliably "inside" in floating point.
+  optional buffering. boundary handling depends on the predicate as well as precision.
+  Buffering changes the scientific region; state that choice rather than
+  adding an arbitrary margin to force a match.
 - `clio-geo:filter_points_by_radius` — rank or filter a table of points by
   great-circle distance from a centre. Reads CSV or GeoJSON points.
 - `clio-geo:query_arcgis_features` — pull features from an ArcGIS FeatureServer
@@ -95,3 +96,7 @@ looks like a map either way.
 - Do not query an ArcGIS layer without a bbox or where clause.
 - Do not grid a point cloud without choosing the cell size deliberately.
 - Do not treat a rendered map as evidence the data is sound.
+
+## Completion check
+
+Report source, CRS and axis order, validation results, spatial predicate/buffer, terrain cell size and units, and output path. Structural GeoJSON validation does not prove topology or scientific correctness.

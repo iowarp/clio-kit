@@ -73,7 +73,7 @@ CLIO Kit is part of the IoWarp platform's comprehensive tooling ecosystem for AI
 
 > **Part of IoWarp Platform**: CLIO Kit is the tooling layer of the IoWarp platform, providing skills, plugins, and extensions for AI agents working in scientific computing environments.
 
-> **One simple command.** Production-ready, fully typed, BSD-3-Clause licensed, and live-tested in real HPC environments.
+> Scientific MCP servers, workflow skills, agents, and external collections in one marketplace.
 
 ## 🚀 Quick Installation
 
@@ -83,14 +83,21 @@ CLIO Kit is part of the IoWarp platform's comprehensive tooling ecosystem for AI
 Read setup.md and set up CLIO Kit for me.
 ```
 
-The agent will check prerequisites, add the marketplace, ask what you work on,
+The agent will check prerequisites, add the marketplace, use your stated work (or ask if it is unknown),
 install the matching workflow, and verify the tools respond.
 
-**Claude Code users** - three lines, no config file:
+**Claude Code users — install this feature branch from a matching checkout.**
+The default GitHub branch and published PyPI package do not yet contain this
+marketplace. Install the launcher and catalogue from the same checkout:
 
 ```bash
-uv tool install clio-kit                     # the launcher every plugin invokes
-claude plugin marketplace add iowarp/clio-kit
+git clone --branch feat/360-meta-marketplace https://github.com/iowarp/clio-kit.git
+cd clio-kit
+```
+
+```bash
+uv tool install --force --reinstall ".[verification]"
+claude plugin marketplace add "$PWD"
 claude plugin install clio-hpc@clio-kit      # see the table below for other workflows
 ```
 
@@ -99,7 +106,22 @@ does not contain the server. Install plugins without the launcher and every one
 of them reports `enabled` while every server fails with `ENOENT: Executable not
 found in $PATH: "clio-kit"`.
 
-Restart Claude Code, then confirm the servers actually connected:
+Optional installations and checks:
+
+```bash
+claude plugin install clio-skills@clio-kit       # all 20 skills, no MCP servers
+claude plugin install clio-agents@clio-kit       # planning and evidence review
+clio-kit doctor --server hdf5 --connect
+```
+
+First builds download locked dependencies; vendored source alone does not
+enable a cold offline installation. Contributed Node and Go projects also
+require their corresponding toolchains.
+Spack, Lmod, Slurm, ParaView, Chronolog, and site catalogue workflows have additional
+system prerequisites; `doctor` reports basic prerequisites separately from MCP
+connections. See [the feature and acceptance guide](clio-kit-website/docs/marketplace.md).
+
+Reload plugins or restart Claude Code, then confirm the servers actually connected:
 
 ```bash
 claude mcp list      # every plugin:clio-* line must say ✔ Connected
@@ -114,8 +136,8 @@ for plugins whose servers are completely broken.
 ### One Command for Any Server
 
 ```bash
-# Install the released CLI into its own persistent tool environment
-uv tool install clio-kit
+# From this checkout, install its CLI into a persistent tool environment
+uv tool install --force --reinstall .
 # If uv reports that its executable directory is not on PATH:
 uv tool update-shell
 
@@ -190,12 +212,12 @@ procedures without the servers — useful when the servers are already present:
 claude plugin install clio-hpc-skills@clio-kit
 ```
 
-Skills are the one component with an unconditional cost: they are carried in
-every session whether or not they fire. Check what you are paying before and
-after:
+Skill names and descriptions are available for selection; full instructions
+load when a skill is used. Inspect installed components and the client's context
+estimate:
 
 ```bash
-claude plugin details clio-hpc-skills@clio-kit    # reports always-on tokens
+claude plugin details clio-hpc-skills@clio-kit    # lists installed skills and context estimates
 ```
 
 ### Contributing Your Own Servers or Skills
@@ -217,7 +239,8 @@ request. Four source types are accepted — `github`, `git-subdir`, `npm` and
 a monorepo, is listable without moving into this repository.
 
 **A server in another language can be indexed or hosted.** To keep it yours,
-publish it to npm and add an `npm` entry: it installs through this marketplace
+publish a plugin package containing its manifest and MCP configuration, then
+add an `npm` entry: the plugin installs through this marketplace
 while its code, dependencies and releases stay in your repository. To have it
 ship as part of the kit, contribute it here with a `clio-server.toml` naming
 its runtime — the launcher builds and starts node and go servers from their own
@@ -338,8 +361,8 @@ See [Claude Desktop MCP docs](https://modelcontextprotocol.io/quickstart/user) f
 ## Available Packages
 
 The version below is each MCP server's agent-facing contract version, not the
-containing `clio-kit` wheel version. JARVIS 3.4 and SLURM 3.0 have contracts
-redesigned for agent use. Spack is at 2.1, while the other
+containing `clio-kit` wheel version. JARVIS 3.7 and SLURM 3.0 have contracts
+redesigned for agent use. Spack is at 2.3, while the other
 contracts retain their existing 2.x identities until a focused upgrade.
 
 The Spack install contract makes concretization explicit: `reuse=true` passes
@@ -501,7 +524,7 @@ pip install uv
 Then install CLIO Kit persistently and expose uv's tool directory:
 
 ```bash
-uv tool install clio-kit
+uv tool install --force --reinstall .
 uv tool update-shell
 ```
 

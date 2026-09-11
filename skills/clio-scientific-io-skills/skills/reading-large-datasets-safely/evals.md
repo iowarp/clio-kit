@@ -1,5 +1,11 @@
 # Evals - reading-large-datasets-safely
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: Report full dataset shape/bytes, exact selected region, sampled or processed count, and whether a statistic is exact or approximate. Verify coverage before claiming full-data results; a small response does not guarantee bounded server memory.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 

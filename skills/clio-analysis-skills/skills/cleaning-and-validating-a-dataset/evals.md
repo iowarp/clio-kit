@@ -1,5 +1,11 @@
 # Evals - cleaning-and-validating-a-dataset
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: Keep the source file. Report the output path, before/after row counts, missing counts, transformations, and validation failures. Use each returned output file for the next step; these tools do not share an in-memory dataframe.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 
@@ -68,3 +74,13 @@ kit fired nothing.
 Selection is checked. Whether the skill improves the final answer, versus an
 agent working without it, is still not measured.
 
+
+## S4 - advertised interpolation is not verified interpolation
+
+Setup: A value column `[1, missing, 3, missing, 5]`; ask for linear interpolation.
+
+Expected:
+
+- The agent does not certify the current MCP's mean-filled result as interpolation.
+- It uses a separately verified calculation and asserts `[1, 2, 3, 4, 5]`, or
+  reports the operation unavailable without changing the input.

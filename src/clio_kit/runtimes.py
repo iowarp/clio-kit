@@ -8,13 +8,12 @@ and which commands realise it, which is what this table holds.
 
 ``npm ci`` against ``package-lock.json`` is a genuine equivalent of
 ``uv sync --frozen``: it installs exactly the locked tree and fails rather than
-resolving when the lock disagrees with the manifest. Go's ``go.sum`` carries
-content hashes outright, so a build against it is pinned by construction.
+resolving when the lock disagrees with the manifest. Go uses ``go.mod`` versions and ``go.sum`` checksums with read-only module
+resolution; the toolchain remains an explicit system prerequisite.
 
-One asymmetry is deliberate and visible here rather than hidden: Python server
-sources are vendored into the clio-kit wheel and install offline, while a node
-server's dependency tree is fetched on first build. A go server is compiled on
-first build and then runs as a binary.
+Server sources are vendored into the wheel. All runtimes may download
+dependencies on first build; offline execution requires a prewarmed cache.
+Go servers are compiled on first build and then run as binaries.
 """
 
 from __future__ import annotations
@@ -145,7 +144,7 @@ def build_command(
     # than one package to a non-directory -- `cannot write multiple packages to
     # non-directory bin/server` -- so `./...` builds only for a module with
     # exactly one package, which no real server is.
-    return [executable, "build", "-o", str(go_binary(project)), entry]
+    return [executable, "build", "-mod=readonly", "-o", str(go_binary(project)), entry]
 
 
 def start_command(

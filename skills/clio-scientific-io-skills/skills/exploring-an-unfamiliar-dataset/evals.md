@@ -1,5 +1,11 @@
 # Evals - exploring-an-unfamiliar-dataset
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: Report file identity, format, dataset paths/shapes/dtypes, units and attributes, and any bounded sample taken. Confirm the open HDF5 filename, check errors before subsequent calls, and close the file when finished.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 

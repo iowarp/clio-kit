@@ -1,5 +1,11 @@
 # Evals - mapping-geospatial-and-terrain-data
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: Report source, CRS and axis order, validation results, spatial predicate/buffer, terrain cell size and units, and output path. Structural GeoJSON validation does not prove topology or scientific correctness.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 

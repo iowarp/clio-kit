@@ -1,5 +1,11 @@
 # Evals - analyzing-seismic-waveforms
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: Report input type, station/channel, time coverage, sampling interval and amplitude units or missing calibration. For catalogs, report event count, magnitude range, Mc, estimator and uncertainty; describe synthetic fixtures as synthetic.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 

@@ -18,6 +18,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "list_organizations", "description": "List organizations available in the National Data Platform.", "function_name": "list_organizations"}, {"name": "search_datasets", "description": "Search for datasets in the NDP using term-based or field-specific criteria.", "function_name": "search_datasets"}, {"name": "get_dataset_details", "description": "Retrieve detailed metadata for a specific dataset by ID or name.", "function_name": "get_dataset_details"}, {"name": "stage_resource", "description": "Download/stage an HTTP(S) or OSDF/Pelican dataset resource to a local file and return its local_path, size, and content-type.", "function_name": "stage_resource"}]}
 >
 
+{/* clio-kit:usage:start */}
+
 ### 1. Discover Available Organizations
 ```
 List all organizations in the National Data Platform to see what data is available
@@ -103,5 +105,7 @@ This prompt will:
 - Use advanced field-specific search parameters
 - Filter by resource format and temporal constraints
 - Return highly targeted results matching specific research criteria
+
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

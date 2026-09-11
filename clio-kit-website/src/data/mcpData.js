@@ -238,7 +238,7 @@ export const mcpData = {
       "jarvis_get_execution"
     ],
     "stats": {
-      "version": "3.6.2",
+      "version": "3.7.0",
       "updated": "2026-08-11"
     },
     "platforms": [
@@ -554,10 +554,12 @@ export const mcpData = {
     "actions": [
       "spack_find",
       "spack_locate",
+      "spack_search",
+      "spack_info",
       "spack_install"
     ],
     "stats": {
-      "version": "2.1.0",
+      "version": "2.3.0",
       "updated": "2026-08-11"
     },
     "platforms": [

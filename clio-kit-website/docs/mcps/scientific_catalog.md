@@ -18,6 +18,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "scientific_dataset_search", "description": "Search operator-registered scientific datasets and return bounded intrinsic summaries.", "function_name": "scientific_dataset_search"}, {"name": "scientific_dataset_describe", "description": "Return one exact operator catalog record plus a top-level dataset_descriptor. Pass dataset_descriptor unchanged as jarvis_add_step config.dataset_descriptor; do not pass the surrounding dataset record.", "function_name": "scientific_dataset_describe"}]}
 >
 
+{/* clio-kit:usage:start */}
 
 ### Basic Usage
 ```python
@@ -36,5 +37,6 @@ for file in data_files:
     export_results(result, f"analysis_{file}")
 ```
 
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

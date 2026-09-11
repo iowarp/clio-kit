@@ -18,6 +18,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "summarize_tool", "description": "Return Parquet schema, row count, and file size.", "function_name": "summarize_tool"}, {"name": "read_slice_tool", "description": "Read a row slice from a Parquet file with optional column projection and filtering.", "function_name": "read_slice_tool"}, {"name": "get_column_preview_tool", "description": "Preview values from a specific column with pagination.", "function_name": "get_column_preview_tool"}, {"name": "aggregate_column_tool", "description": "Compute aggregate statistics (min, max, mean, etc.) on a Parquet column.", "function_name": "aggregate_column_tool"}]}
 >
 
+{/* clio-kit:usage:start */}
 
 ### Basic Usage
 ```python
@@ -36,5 +37,6 @@ for file in data_files:
     export_results(result, f"analysis_{file}")
 ```
 
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

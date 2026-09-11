@@ -94,6 +94,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 package-lock.json
+!tests/fixtures/mcp-servers/*/package-lock.json
+!clio-kit-mcp-servers/*/package-lock.json
 yarn.lock
 
 # =============================================================================
@@ -238,3 +240,5 @@ evals/fixtures/*
 
 # Internal planning notes. Not part of the released repository.
 rework/
+
+/tests/fixtures/mcp-servers/go/bin/

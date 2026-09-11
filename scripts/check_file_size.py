@@ -112,7 +112,7 @@ RATCHET_BASELINE: dict[str, int] = {
     # deliberate wire-visible additive change); one more historical-artifact
     # entry (jarvis-user-v3.6.json) recorded, 931 -> 932.
     "src/clio_kit/mcp_contracts.py": 932,
-    "src/clio_kit/env_cache.py": 843,
+    "src/clio_kit/env_cache.py": 712,
     "clio-kit-mcp-servers/darshan/src/darshan_mcp/capabilities/darshan_parser.py": 857,
     "clio-kit-mcp-servers/parquet/src/parquet_mcp/capabilities/parquet_handler.py": 839,
     "clio-kit-mcp-servers/node-hardware/src/node_hardware_mcp/mcp_handlers.py": 819,

@@ -1,0 +1,50 @@
+{
+  "schema": "clio-kit.federation.v1",
+  "imported_names": [
+    "iowarp-dev-setup"
+  ],
+  "marketplaces": [
+    {
+      "name": "iowarp-clio",
+      "url": "https://github.com/iowarp/clio-core.git",
+      "revision": "97fca746e75b3144b025d9920bad54b26c2c06da",
+      "plugins": [
+        "iowarp-dev-setup",
+        "iowarp-contributing"
+      ]
+    }
+  ],
+  "plugins": [
+    {
+      "name": "iowarp-dev-setup",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-core.git",
+        "path": ".claude-plugin/plugins/iowarp-dev-setup",
+        "sha": "97fca746e75b3144b025d9920bad54b26c2c06da"
+      },
+      "description": "Complete development environment setup for IOWarp Core \u2014 Docker devcontainers, builds, debugging, and IDE configuration. Gets any team member from zero to a running dev environment.",
+      "version": "1.0.0",
+      "author": {
+        "name": "Gnosis Research Center"
+      },
+      "category": "development",
+      "keywords": [
+        "build",
+        "clio-core",
+        "cmake",
+        "debugging",
+        "devcontainer",
+        "development-environment",
+        "docker",
+        "ide",
+        "iowarp",
+        "setup"
+      ],
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio"
+      }
+    }
+  ]
+}

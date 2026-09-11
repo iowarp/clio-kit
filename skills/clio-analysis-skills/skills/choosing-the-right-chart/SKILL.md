@@ -1,14 +1,14 @@
 ---
 name: choosing-the-right-chart
-description: Use when deciding how to present data, when a figure is unclear or misleading, or when choosing axes, bins, log scales or colour maps. Triggers on "which chart", "log scale", "colour map", "is this figure ok". Calls no tools. Not for producing the figure; use summarizing-and-plotting-results.
+description: Use when choosing a chart, axes, bins or color scale for scientific data. Triggers on "which chart", "log scale", "color map". Calls no tools. Not for rendering a chart; use summarizing-and-plotting-results.
 clio-kit:
   bundle: clio-analysis
   servers: none
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Pick the chart the question asks for
+# Choose an Effective Scientific Chart
 
 The chart type follows from the question. Working the other way — picking a
 familiar chart and fitting the data to it — is how a figure ends up answering
@@ -104,3 +104,7 @@ to be interpretable will be misread the moment it is shown on its own.
 - Do not use a rainbow colour map for continuous data.
 - Do not report a correlation coefficient without its significance.
 - Do not ship a figure without units on the axes.
+
+## Completion check
+
+State the question, chart type, axis units, treatment of missing/nonpositive values, and why the encoding supports the comparison. Do not imply a p-value proves causality; report sample size and uncertainty when available.

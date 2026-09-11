@@ -1,84 +1,58 @@
 # CLIO Kit Documentation Website
 
-This directory contains the Docusaurus-based documentation website for CLIO Kit, the tooling layer of the **[IoWarp Platform](https://iowarp.ai)**.
+This Docusaurus site documents the scientific servers, workflow skills, plugins,
+agents and community marketplace in this branch. The live site is deployed from
+`main`; it may differ from this checkout until the feature is merged.
 
-**v1.0.0** (Beta Public Release - November 11, 2025) focuses on MCP servers for scientific computing. Future releases will expand to include additional skills, plugins, and extensions for AI agents.
+## Structure
 
-**Developed by:** [Gnosis Research Center (GRC)](https://grc.iit.edu/) at [Illinois Institute of Technology](https://www.iit.edu/)  
-**Contact:** [grc@illinoistech.edu](mailto:grc@illinoistech.edu)  
-**Platform:** [IoWarp.ai](https://iowarp.ai) | **GitHub:** [github.com/iowarp/clio-kit](https://github.com/iowarp/clio-kit)
-
-## 🌐 Live Website
-
-Visit the live website at: **https://docs.iowarp.ai**  
-Full platform overview: **[IoWarp.ai](https://iowarp.ai)**
-
-## 📁 Structure
-
-```
-docs/
-├── docs/                    # Documentation pages
-│   ├── intro.md            # Getting started page
-│   └── mcps/               # Auto-generated MCP documentation
-├── src/                    # React components and assets
-│   ├── components/         # Custom React components
-│   ├── css/               # Global styles
-│   ├── data/              # MCP data for showcase
-│   └── pages/             # Custom pages
-├── static/                # Static assets
-├── docusaurus.config.js   # Docusaurus configuration
-└── package.json           # Node.js dependencies
+```text
+clio-kit-website/
+├── docs/
+│   ├── intro.md             # Installation and overview
+│   ├── marketplace.md       # Components, contribution and acceptance
+│   ├── agentic-search.md    # Standalone retrieval service
+│   └── mcps/                # Server reference pages
+├── src/components/          # Documentation and catalogue UI
+├── src/data/                # Generated server catalogue
+├── src/pages/               # Landing page
+├── static/
+├── docusaurus.config.js
+└── package.json
 ```
 
-## 🔧 Local Development
+## Develop and build
 
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
+From this directory, with Node and npm installed:
 
-2. Start development server:
-   ```bash
-   npm start
-   ```
+```bash
+npm ci
+npm start
+```
 
-3. Visit `http://localhost:3000/clio-kit`
+Open `http://localhost:5100/`. For the production build and local preview:
 
-## 🚀 Deployment
+```bash
+npm run build
+npm run serve
+```
 
-The website is automatically deployed via GitHub Actions (`docs-and-website.yml`) when changes are pushed to the main branch. The workflow:
+The build checks links and reports missing anchors. Current verification uses
+Node 24.15.0 and the dependencies pinned in `package-lock.json`.
 
-1. Generates documentation from MCP source files
-2. Builds the Docusaurus site
-3. Deploys to GitHub Pages
+## Maintain server reference pages
 
-## 📝 Adding New MCPs
+`scripts/generate_docs.py` regenerates contract metadata and the showcase from
+`clio-kit-mcp-servers/` and `mcp-server-versions.toml`. Reviewed workflow text
+between the `clio-kit:usage:start` and `clio-kit:usage:end` MDX comments is
+preserved; edit it here when correcting usage. The generator does not substitute
+invented Python calls when an example is absent. New servers need a real
+workflow description plus their hosted-server CI coverage.
 
-1. Add your MCP to the `mcps/` directory in the repository root
-2. Ensure it has proper `pyproject.toml` and `README.md` files
-3. The documentation will be automatically generated and deployed
+The `docs-and-website.yml` workflow generates and builds the site for matching
+pull requests and publishes GitHub Pages after a push to `main`. No deployment
+is performed by running the local build.
 
-## 🎨 Features
-
-- **Modern React-based UI** with Docusaurus
-- **Interactive MCP showcase** with search and filtering
-- **Tabbed documentation pages** (Installation, Actions, Examples)
-- **Real content extraction** from project files
-- **Responsive design** optimized for all devices
-- **Dark mode by default** with IoWarp brand colors
-- **GitHub integration** for live repository links
-
-## 📊 MCP Categories
-
-- **Data Processing**: Adios, ArXiv, HDF5, Pandas, Parquet, Chronolog
-- **Analysis & Visualization**: Plot, Darshan
-- **System Management**: Slurm, Lmod, Node Hardware
-- **Utilities**: Compression, Parallel Sort, Jarvis
-
-## 🛠️ Technical Details
-
-- **Framework**: Docusaurus 3.x
-- **Build Tool**: Node.js + npm
-- **Styling**: CSS Modules with custom IoWarp theme
-- **Documentation Generation**: Python script (`scripts/generate_docs.py`)
-- **Deployment**: GitHub Pages via GitHub Actions
+Developed by the [Gnosis Research Center](https://grc.iit.edu/) at
+[Illinois Institute of Technology](https://www.iit.edu/), part of
+[IoWarp](https://iowarp.ai).

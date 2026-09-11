@@ -18,6 +18,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "get_cpu_info", "description": "Get CPU specifications, core counts, frequencies, and per-core usage.", "function_name": "get_cpu_info"}, {"name": "get_memory_info", "description": "Get RAM and swap capacity, usage percentages, and availability.", "function_name": "get_memory_info"}, {"name": "get_system_info", "description": "Get OS details, hostname, uptime, and active users.", "function_name": "get_system_info"}, {"name": "get_disk_info", "description": "Get disk partitions, usage statistics, and I/O counters.", "function_name": "get_disk_info"}, {"name": "get_network_info", "description": "Get network interfaces, IP addresses, and I/O statistics.", "function_name": "get_network_info"}, {"name": "get_gpu_info", "description": "Get GPU model, memory, temperature, and utilization via nvidia-smi/rocm-smi.", "function_name": "get_gpu_info"}, {"name": "get_sensor_info", "description": "Get temperature, fan speed, and battery sensor readings.", "function_name": "get_sensor_info"}, {"name": "get_process_info", "description": "Get running processes with CPU, memory, and status details.", "function_name": "get_process_info"}, {"name": "get_performance_info", "description": "Get real-time CPU, memory, disk, and network performance metrics.", "function_name": "get_performance_info"}, {"name": "get_remote_node_info", "description": "Collect hardware info from a remote node via SSH. Supports component filtering.", "function_name": "get_remote_node_info"}, {"name": "health_check", "description": "Verify server health and hardware monitoring capability status.", "function_name": "health_check"}]}
 >
 
+{/* clio-kit:usage:start */}
+
 ### 1. Local Hardware Overview
 ```
 I need a comprehensive overview of my local system's hardware including CPU, memory, disk, and network components.
@@ -73,5 +75,7 @@ Analyze storage health and network interface performance on multiple systems for
 - `get_node_info` - Local storage and network analysis
 - `get_remote_node_info` - Remote storage and network monitoring  
 - Components collected: disk, network, system, summary
+
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

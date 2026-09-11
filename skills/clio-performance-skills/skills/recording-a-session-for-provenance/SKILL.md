@@ -1,14 +1,14 @@
 ---
 name: recording-a-session-for-provenance
-description: Use when a decision trail would be kept only in the conversation, which is lost the moment the session ends and cannot be retrieved later. Covers recording and reading back a working session. Triggers on "record this", "chronolog", "what did we decide last time". Not for job performance; ChronoLog records conversation, not execution.
+description: Use when explicitly recording or retrieving a research decision trail with ChronoLog. Triggers on "record this session", "ChronoLog", "retrieve our decisions". Not for job execution profiling; use diagnosing-a-slow-job.
 clio-kit:
   bundle: clio-performance
   servers: clio-chronolog
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Record a session so it can be read back later
+# Record and Retrieve Research Session Provenance
 
 ChronoLog stores **the conversation** — user messages and the responses to them —
 in a named chronicle and story. It is a provenance trail, not a profiler.
@@ -59,3 +59,7 @@ feeds a paper and has to be reconstructable.
 - Do not leave the handle open at the end of a session.
 - Do not assume anything was captured — recording is explicit, per interaction.
 - Do not name a chronicle something you could not search for later.
+
+## Completion check
+
+Record only the requested decision trail and relevant artifacts, excluding credentials and unrelated private content. Verify a known record can be retrieved, report chronicle/story and retrieval path, and stop the acquired session even if recording fails.

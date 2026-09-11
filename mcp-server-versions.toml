@@ -31,32 +31,32 @@ updated = "2026-08-11"
 # the per-server contract versions: re-cutting a bundle's membership is a
 # bundle change, not a server change.
 [bundles.clio-hpc]
-version = "1.0.0"
+version = "1.0.1"
 description = "Install a code, wrap it in a pipeline, submit it, and follow it on a cluster."
 servers = ["jarvis", "lmod", "node-hardware", "slurm", "spack"]
 
 [bundles.clio-performance]
-version = "1.0.0"
+version = "1.0.1"
 description = "Work out why a finished job was slower than it should have been."
 servers = ["chronolog", "darshan", "parallel-sort"]
 
 [bundles.clio-scientific-io]
-version = "1.0.0"
+version = "1.0.1"
 description = "Open a scientific data file, see its structure, and read part of it."
 servers = ["adios", "compression", "hdf5", "parquet"]
 
 [bundles.clio-analysis]
-version = "1.0.0"
+version = "1.0.1"
 description = "Turn a dataset into summary statistics and a figure."
 servers = ["pandas", "paraview", "plot"]
 
 [bundles.clio-geoscience]
-version = "1.0.0"
+version = "1.0.1"
 description = "Inspect and map geospatial features, terrain models, and waveform archives."
 servers = ["geo", "seismology", "terrain"]
 
 [bundles.clio-research]
-version = "1.0.0"
+version = "1.0.1"
 description = "Find papers on a topic and the datasets behind them."
 servers = ["arxiv", "ndp", "scientific-catalog", "web"]
 

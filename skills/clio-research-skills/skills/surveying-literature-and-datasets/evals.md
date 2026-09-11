@@ -1,5 +1,11 @@
 # Evals - surveying-literature-and-datasets
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: Report search terms, date range, sources and stable paper/dataset links. Separate abstract-level summaries from claims checked in full text. A dataset is associated with a paper only when the paper or repository establishes that link.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 

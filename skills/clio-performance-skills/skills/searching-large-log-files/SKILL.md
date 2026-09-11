@@ -1,14 +1,14 @@
 ---
 name: searching-large-log-files
-description: Use when a log too large to read would be searched by opening it or stopping at the first error, which reports a symptom rather than the cluster of failures that actually explains it. Triggers on "find the error", "grep the log", "what happened at". Not for I/O profiling; use diagnosing-a-slow-job. Not for scientific data files; use exploring-an-unfamiliar-dataset.
+description: Use when narrowing large application logs by timestamp, level, keyword or error pattern. Triggers on "find the error", "search this log", "what happened at". Not for Darshan profiles; use diagnosing-a-slow-job.
 clio-kit:
   bundle: clio-performance
   servers: clio-parallel-sort
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Search a log that is too big to read
+# Investigate Large Application Logs
 
 Most tools on this server take the file as `log_file`, not `file_path`. The
 four export tools are the exception: `export_to_csv`, `export_to_json`,
@@ -73,3 +73,15 @@ profiler and the explanation comes from the log. Get the spike from
 - Do not stop at the first error — check `detect_log_patterns` for the cluster.
 - Do not filter by keyword when a level filter is what you mean; `"error"` matches
   prose that is not an error line.
+
+## Verify the log format before trusting an empty result
+
+The current level filter recognizes unbracketed `ERROR` in the supported
+format. A controlled log using `[ERROR]` returned no matches despite containing
+errors. Inspect a short sample and compare a known matching line before
+interpreting zero matches. Preserve the original file if a normalized working
+copy is needed, and record the normalization.
+
+## Completion check
+
+Report original and derived paths, timestamp format/timezone, filters, match count and truncation. Verify the filter against a known matching line before accepting an empty result; preserve the original log.

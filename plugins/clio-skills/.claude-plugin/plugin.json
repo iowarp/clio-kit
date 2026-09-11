@@ -1,0 +1,16 @@
+{
+  "name": "clio-skills",
+  "version": "1.0.0",
+  "author": {
+    "name": "IoWarp Team"
+  },
+  "description": "All CLIO scientific workflow skills, without MCP servers.",
+  "dependencies": [
+    "clio-analysis-skills",
+    "clio-geoscience-skills",
+    "clio-hpc-skills",
+    "clio-performance-skills",
+    "clio-research-skills",
+    "clio-scientific-io-skills"
+  ]
+}

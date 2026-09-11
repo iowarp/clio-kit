@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from '@docusaurus/Link';
 import CodeBlock from '@theme/CodeBlock';
 import styles from './styles.module.css';
@@ -20,15 +20,28 @@ const MCPDetail = ({
   const [activeInstallTab, setActiveInstallTab] = useState('cursor');
   const [expandedAction, setExpandedAction] = useState(null);
 
+  const serverName = name.toLowerCase().replace(/ /g, '-');
+  useEffect(() => {
+    const showLinkedSection = () => {
+      const anchor = decodeURIComponent(window.location.hash.slice(1));
+      if (anchor && !['installation', 'actions'].includes(anchor)) {
+        setActiveTab('examples');
+      }
+    };
+    showLinkedSection();
+    window.addEventListener('hashchange', showLinkedSection);
+    return () => window.removeEventListener('hashchange', showLinkedSection);
+  }, []);
+
   const installationConfigs = {
     cursor: {
       title: 'Cursor',
       language: 'json',
       code: `{
   "mcpServers": {
-    "${name.toLowerCase()}-mcp": {
+    "${serverName}-mcp": {
       "command": "clio-kit",
-      "args": ["mcp-server", "${name.toLowerCase()}"]
+      "args": ["mcp-server", "${serverName}"]
     }
   }
 }`
@@ -38,10 +51,10 @@ const MCPDetail = ({
       language: 'json',
       code: `"mcp": {
   "servers": {
-    "${name.toLowerCase()}-mcp": {
+    "${serverName}-mcp": {
       "type": "stdio",
       "command": "clio-kit",
-      "args": ["mcp-server", "${name.toLowerCase()}"]
+      "args": ["mcp-server", "${serverName}"]
     }
   }
 }`
@@ -49,16 +62,16 @@ const MCPDetail = ({
     claude_code: {
       title: 'Claude Code',
       language: 'bash',
-      code: `claude mcp add ${name.toLowerCase()}-mcp -- clio-kit mcp-server ${name.toLowerCase()}`
+      code: `claude mcp add ${serverName}-mcp -- clio-kit mcp-server ${serverName}`
     },
     claude_desktop: {
       title: 'Claude Desktop',
       language: 'json',
       code: `{
   "mcpServers": {
-    "${name.toLowerCase()}-mcp": {
+    "${serverName}-mcp": {
       "command": "clio-kit",
-      "args": ["mcp-server", "${name.toLowerCase()}"]
+      "args": ["mcp-server", "${serverName}"]
     }
   }
 }`
@@ -66,139 +79,13 @@ const MCPDetail = ({
     manual: {
       title: 'Manual Setup',
       language: 'bash',
-      code: `# Linux/macOS
-CLONE_DIR=$(pwd)
-git clone https://github.com/iowarp/clio-kit.git
-uv --directory=$CLONE_DIR/clio-kit/clio-kit-mcp-servers/${name.toLowerCase().replace(/ /g, '-')} run ${name.toLowerCase().replace(/ /g, '-')}-mcp --help
-
-# Windows CMD
-set CLONE_DIR=%cd%
-git clone https://github.com/iowarp/clio-kit.git
-uv --directory=%CLONE_DIR%\\clio-kit\\clio-kit-mcp-servers\\${name.toLowerCase().replace(/ /g, '-')} run ${name.toLowerCase().replace(/ /g, '-')}-mcp --help
-
-# Windows PowerShell
-$env:CLONE_DIR=$PWD
-git clone https://github.com/iowarp/clio-kit.git
-uv --directory=$env:CLONE_DIR\\clio-kit\\clio-kit-mcp-servers\\${name.toLowerCase().replace(/ /g, '-')} run ${name.toLowerCase().replace(/ /g, '-')}-mcp --help`
+      code: `git clone --branch feat/360-meta-marketplace https://github.com/iowarp/clio-kit.git
+cd clio-kit
+uv tool install --force --reinstall ".[verification]"
+clio-kit mcp-server ${serverName}`
     }
   };
 
-
-  // Parse examples from children content and structure them like actions
-  const parseExamples = (children) => {
-    if (!children || typeof children !== 'object') return [];
-    
-    // Convert React elements to text for parsing
-    let content = '';
-    if (React.isValidElement(children)) {
-      // Try to extract text content from React elements
-      const extractText = (element) => {
-        if (typeof element === 'string') return element;
-        if (typeof element === 'number') return String(element);
-        if (React.isValidElement(element) && element.props.children) {
-          if (Array.isArray(element.props.children)) {
-            return element.props.children.map(extractText).join('');
-          }
-          return extractText(element.props.children);
-        }
-        return '';
-      };
-      content = extractText(children);
-    } else if (Array.isArray(children)) {
-      content = children.map(child => {
-        if (typeof child === 'string') return child;
-        if (React.isValidElement(child)) {
-          const extractText = (element) => {
-            if (typeof element === 'string') return element;
-            if (typeof element === 'number') return String(element);
-            if (React.isValidElement(element) && element.props.children) {
-              if (Array.isArray(element.props.children)) {
-                return element.props.children.map(extractText).join('');
-              }
-              return extractText(element.props.children);
-            }
-            return '';
-          };
-          return extractText(child);
-        }
-        return String(child);
-      }).join('');
-    } else if (typeof children === 'string') {
-      content = children;
-    }
-    
-    // Parse examples from the content
-    const examples = [];
-    const sections = content.split(/###\s+\d+\.\s+/);
-    
-    sections.forEach((section, index) => {
-      if (index === 0 || !section.trim()) return; // Skip empty first section
-      
-      const lines = section.trim().split('\n');
-      const title = lines[0] || `Example ${index}`;
-      
-      // Extract code block
-      let codeBlock = '';
-      let description = '';
-      let inCodeBlock = false;
-      let afterCodeBlock = false;
-      
-      for (let i = 1; i < lines.length; i++) {
-        const line = lines[i];
-        if (line.startsWith('```') && !inCodeBlock) {
-          inCodeBlock = true;
-          continue;
-        }
-        if (line.startsWith('```') && inCodeBlock) {
-          inCodeBlock = false;
-          afterCodeBlock = true;
-          continue;
-        }
-        if (inCodeBlock) {
-          codeBlock += line + '\n';
-        } else if (afterCodeBlock && line.trim()) {
-          description += line + '\n';
-        }
-      }
-      
-      examples.push({
-        id: `example-${index}`,
-        title: title.trim(),
-        code: codeBlock.trim(),
-        description: description.trim()
-      });
-    });
-    
-    return examples;
-  };
-
-  // For now, we'll render all children content in the examples tab
-  // The markdown is now structured to only contain examples
-  const renderContent = (children) => {
-    // Check if children is a React element/component already processed by MDX
-    if (React.isValidElement(children)) {
-      return children;
-    }
-    
-    // If it's an array of elements, render each one
-    if (Array.isArray(children)) {
-      return children.map((child, index) => (
-        React.isValidElement(child) ? (
-          <div key={index}>{child}</div>
-        ) : (
-          <div key={index}>{String(child)}</div>
-        )
-      ));
-    }
-    
-    // If it's a string, wrap it in a div
-    if (typeof children === 'string') {
-      return <div>{children}</div>;
-    }
-    
-    // Default case
-    return children;
-  };
 
   // Simple markdown-like renderer for tool descriptions
   const renderMarkdownDescription = (text) => {
@@ -303,7 +190,7 @@ uv --directory=$env:CLONE_DIR\\clio-kit\\clio-kit-mcp-servers\\${name.toLowerCas
               <div className={styles.installHeader}>
                 <h2 id="installation">Installation Playbooks</h2>
                 <p>
-                  Select a preferred environment to provision the MCP server. Commands rely on `uv` for isolated dependency management.
+                  Select a preferred environment to provision the MCP server. Install this checkout with uv tool install before adding the client configuration.
                 </p>
               </div>
               <div className={styles.installTabs}>
@@ -374,55 +261,10 @@ uv --directory=$env:CLONE_DIR\\clio-kit\\clio-kit-mcp-servers\\${name.toLowerCas
           </div>
         )}
 
-        {activeTab === 'examples' && (
-          <div className={styles.examplesTab}>
-            <div className={styles.sectionHeader}>
-              <h2 id="examples">Applied Workflows</h2>
-              <p>
-                Prompts and usage scenarios contributed by research teams to accelerate lab onboarding.
-              </p>
-            </div>
-            {(() => {
-              const examples = parseExamples(children);
-              return examples.length > 0 ? (
-                <div className={styles.examplesGrid}>
-                  {examples.map((example, index) => (
-                    <div key={index} className={`${styles.exampleCard} ${expandedAction === example.id ? styles.expanded : ''}`} onClick={() => toggleAction(example.id)}>
-                      <div className={styles.actionHeader}>
-                        <h4 className={styles.exampleTitle}>{example.title}</h4>
-                        <span className={styles.actionToggle}>
-                          {expandedAction === example.id ? '▼' : '▶'}
-                        </span>
-                      </div>
-                      {expandedAction === example.id && (
-                        <div className={styles.exampleExpansion}>
-                          {example.code && (
-                            <div className={styles.exampleCode}>
-                              <h5>Prompt:</h5>
-                              <CodeBlock language="text">
-                                {example.code}
-                              </CodeBlock>
-                            </div>
-                          )}
-                          {example.description && (
-                            <div className={styles.exampleDescription}>
-                              <h5>Description:</h5>
-                              {renderMarkdownDescription(example.description)}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className={styles.markdownContent}>
-                  {renderContent(children)}
-                </div>
-              );
-            })()}
-          </div>
-        )}
+        <div className={styles.examplesTab} hidden={activeTab !== 'examples'}>
+          <h2 id="examples">Workflows and Usage Notes</h2>
+          <div className={styles.markdownContent}>{children}</div>
+        </div>
       </div>
 
       {/* Footer */}

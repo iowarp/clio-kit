@@ -1,17 +1,17 @@
 ---
 name: diagnosing-a-slow-job
-description: Use when a slow run would be explained by guessing instead of reading its profile, which blames the wrong layer and optimises code that was never the bottleneck. Covers darshan logs, bandwidth and access patterns. Triggers on "why was this slow", "darshan log", "I/O bottleneck". Not for judging whether a number is bad; use interpreting-io-performance-numbers.
+description: Use when investigating I/O bottlenecks using a genuine Darshan profile and application logs. Triggers on "Darshan log", "why was this job slow", "I/O bottleneck". Not for metric interpretation alone; use interpreting-io-performance-numbers.
 clio-kit:
   bundle: clio-performance
   servers: clio-darshan, clio-parallel-sort
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Work out why a job was slow
+# Diagnose Scientific I/O Performance
 
-A Darshan log records what a finished job did to the filesystem. This skill turns
-that into a cause. It spans the profiler and the log tools, and the order is not
+A Darshan log records what a finished job did to the filesystem. This skill uses
+that evidence to develop and test a bottleneck hypothesis. It spans the profiler and the log tools, and the order is not
 optional.
 
 ## Load before anything else
@@ -28,9 +28,10 @@ replaced. `clio-darshan:compare_darshan_logs` is the tool that holds two at once
 **1. Load the log.** `clio-darshan:load_darshan_log`.
 
 **2. Get the shape of the run.** `clio-darshan:get_job_summary` — runtime, process
-count, total I/O volume. Compute the crude number yourself: volume ÷ runtime. If
-that is already close to what the filesystem can do, the job is not I/O bound and
-the rest of this is the wrong investigation.
+count, total I/O volume. Compute the crude number yourself: volume ÷ runtime. This is
+average application throughput, not the fraction of time blocked on I/O.
+Compare I/O time on the critical path and an equivalent filesystem baseline;
+high throughput can coexist with an I/O-bound job.
 
 **3. Get the real metrics.** `clio-darshan:get_io_performance_metrics` — bandwidth,
 IOPS, request sizes. Request size is the field that usually explains everything;
@@ -43,8 +44,9 @@ see `interpreting-io-performance-numbers` for what counts as bad.
 - `clio-darshan:analyze_posix_operations` for raw read/write syscall counts.
 - `clio-darshan:analyze_mpiio_operations` for collective vs independent MPI-IO.
 
-For an MPI code, the MPI-IO layer is where the fix lives; POSIX counts underneath
-it will look alarming and are often just the consequence.
+For an MPI code, inspect MPI-IO when that module is present. MPI programs can
+also issue POSIX I/O directly; missing MPI-IO counters do not establish that no
+I/O occurred. Avoid double-counting bytes observed at both layers.
 
 **6. Ask for the summary.** `clio-darshan:identify_io_bottlenecks` produces the
 ranked findings.
@@ -85,3 +87,7 @@ remembering the numbers. It is the only tool that sees both at once.
   checking the MPI-IO layer first.
 - Do not reach for `clio-chronolog` here. It records LLM interactions, not job
   execution; it has nothing to say about a Slurm job's runtime.
+
+## Completion check
+
+Separate observed counters from hypotheses. Report volume, timing denominator, access pattern, relevant log window and missing evidence. Propose one controlled comparison; do not present a profiler heuristic as an established cause.

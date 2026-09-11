@@ -1,5 +1,11 @@
 # Evals - interpreting-io-performance-numbers
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: State units (MB versus MiB), timing denominator, scope (rank/node/job), workload and reference measurement. Explain what additional timing or baseline would distinguish latency, bandwidth, metadata and compute limits.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 
@@ -19,8 +25,8 @@ Setup: Profile shows high IOPS, low aggregate bandwidth, mean request size 8 KB.
 
 Expected:
 
-- Request size is identified as the explanation, not disk speed.
-- The fix named is buffering or aggregation, not faster storage.
+- Small requests are identified as a hypothesis, with a matched baseline or timing check.
+- Buffering or aggregation is proposed as a controlled experiment, not a guaranteed fix.
 
 ## S3 - collective versus independent
 

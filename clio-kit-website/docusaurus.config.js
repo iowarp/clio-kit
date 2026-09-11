@@ -53,7 +53,7 @@ const config = {
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/iowarp/clio-kit/tree/main/docs/',
+            'https://github.com/iowarp/clio-kit/tree/main/clio-kit-website/docs/',
         },
         theme: {
           customCss: './src/css/custom.css',
@@ -67,10 +67,10 @@ const config = {
     ({
       // Enhanced metadata for social sharing
       metadata: [
-        {name: 'description', content: 'CLIO Kit - Tools, skills, plugins, and extensions for AI agents. Part of the IoWarp platform. Features 15+ MCP servers for scientific computing: HDF5, Slurm, Pandas, ArXiv, and more. Built with FastMCP, 150+ tools for HPC workflows. Developed by Gnosis Research Center at Illinois Institute of Technology, supported by NSF.'},
+        {name: 'description', content: 'CLIO Kit - Tools, skills, plugins, and extensions for AI agents. Part of the IoWarp platform. Features 22 MCP servers for scientific computing: HDF5, Slurm, Pandas, ArXiv, and more. Built with FastMCP, 150+ tools for HPC workflows. Developed by Gnosis Research Center at Illinois Institute of Technology, supported by NSF.'},
         {name: 'keywords', content: 'CLIO Kit, AI agents, tools, skills, plugins, extensions, MCP, Model Context Protocol, scientific computing, HPC, HDF5, Slurm, Pandas, ADIOS, Parquet, FastMCP, research computing, IoWarp platform, Gnosis Research Center, Illinois Tech, NSF'},
         {property: 'og:title', content: 'CLIO Kit - Tools for AI Agents | IoWarp Platform | Gnosis Research Center'},
-        {property: 'og:description', content: 'CLIO Kit: 15+ MCP servers for scientific computing. Part of the IoWarp platform providing tools, skills, plugins, and extensions for AI agents. HDF5, Slurm, Pandas, ArXiv. Built with FastMCP at Illinois Institute of Technology.'},
+        {property: 'og:description', content: 'CLIO Kit: 22 MCP servers for scientific computing. Part of the IoWarp platform providing tools, skills, plugins, and extensions for AI agents. HDF5, Slurm, Pandas, ArXiv. Built with FastMCP at Illinois Institute of Technology.'},
         {name: 'twitter:card', content: 'summary_large_image'},
         {name: 'twitter:title', content: 'CLIO Kit - Tools for AI Agents | IoWarp Platform'},
         {name: 'twitter:description', content: 'CLIO Kit: MCP servers for scientific computing. Part of the IoWarp platform providing comprehensive agent tooling.'},

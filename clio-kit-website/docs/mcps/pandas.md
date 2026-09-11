@@ -18,6 +18,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "load_data", "description": "Load and parse data from CSV, Excel, JSON, Parquet, or HDF5 files with optional column selection and row limiting.", "function_name": "load_data"}, {"name": "save_data", "description": "Save data to CSV, Excel, JSON, Parquet, or HDF5 with auto-detected format and optional index inclusion.", "function_name": "save_data"}, {"name": "statistical_summary", "description": "Compute descriptive statistics, distribution analysis, and outlier detection for numerical and categorical columns.", "function_name": "statistical_summary"}, {"name": "correlation_analysis", "description": "Compute correlation matrices (Pearson, Spearman, or Kendall) with significance testing and strong-correlation detection.", "function_name": "correlation_analysis"}, {"name": "hypothesis_testing", "description": "Run statistical hypothesis tests (t-test, chi-square, ANOVA, normality, Mann-Whitney) with p-values and effect sizes.", "function_name": "hypothesis_testing"}, {"name": "handle_missing_data", "description": "Detect, impute, or remove missing values using strategies like mean/median/mode fill, forward/backward fill, or interpolation.", "function_name": "handle_missing_data"}, {"name": "clean_data", "description": "Remove duplicates, detect outliers via IQR/Z-score, and optimize data types in a single pass.", "function_name": "clean_data"}, {"name": "groupby_operations", "description": "Group data by columns and apply aggregations (sum, mean, count, min, max, std, median) with optional pre-filter.", "function_name": "groupby_operations"}, {"name": "merge_datasets", "description": "Join two datasets using inner, outer, left, or right joins on specified key columns.", "function_name": "merge_datasets"}, {"name": "pivot_table", "description": "Create pivot tables with configurable row index, column headers, value columns, and aggregation function.", "function_name": "pivot_table"}, {"name": "time_series_operations", "description": "Resample, compute rolling statistics, create lag features, or difference a time series.", "function_name": "time_series_operations"}, {"name": "validate_data", "description": "Validate columns against rules for min/max range, data type, nullability, uniqueness, and regex patterns.", "function_name": "validate_data"}, {"name": "filter_data", "description": "Filter rows using comparison, membership, pattern-matching, and null-check operators across multiple columns.", "function_name": "filter_data"}, {"name": "optimize_memory", "description": "Analyze and reduce DataFrame memory usage through automatic dtype optimization and chunked-processing recommendations.", "function_name": "optimize_memory"}, {"name": "profile_data", "description": "Generate a full dataset profile: shape, types, missing values, distributions, quality checks, and optional correlations.", "function_name": "profile_data"}, {"name": "profile_csv", "description": "Quickly profile a CSV file: row/column counts, per-column dtype, null counts, and min/max/mean for numeric columns.", "function_name": "profile_csv"}]}
 >
 
+{/* clio-kit:usage:start */}
+
 ### 1. Data Loading and Profiling
 ```
 I have a large CSV file with sales data that I need to load and get a comprehensive profile including data types, missing values, and basic statistics.
@@ -77,5 +79,15 @@ Optimize memory usage of my large dataset and export the cleaned data to multipl
 - `optimize_memory` - Reduce memory usage with dtype optimization
 - `save_data` - Export to CSV, Excel, Parquet, and JSON formats
 - `profile_data` - Verify optimization results and final data quality
+
+### Current calculation limits
+
+`profile_csv` uses a bounded retained sample, not necessarily all rows. Each
+file-based transformation reads its named input; use the returned output file
+for the next step. The advertised `interpolate` option currently mean-fills a
+controlled test case, so do not use it as verified interpolation. Preserve the
+input and independently check transformations before reporting results.
+
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

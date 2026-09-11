@@ -1,14 +1,14 @@
 ---
 name: summarizing-and-plotting-results
-description: Use when a table would be summarised or plotted by reading it into context and eyeballing it, which misstates aggregates and silently drops rows on larger files. Covers CSV and Excel statistics and figures. Triggers on "plot this", "summarize the data", "make a chart". Not for mesh or volume data; use visualizing-3d-simulation-output. Not for choosing a chart type; use choosing-the-right-chart.
+description: Use when calculating tabular summaries and plotting transformed CSV or Excel data. Triggers on "summarize this table", "plot these results", "grouped mean". Not for mesh or volume rendering; use visualizing-3d-simulation-output.
 clio-kit:
   bundle: clio-analysis
   servers: clio-pandas, clio-plot
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# From a table to numbers and a figure
+# Summarize and Plot Scientific Results
 
 Two servers, and the handoff between them is where this goes wrong.
 
@@ -17,15 +17,9 @@ Two servers, and the handoff between them is where this goes wrong.
 Every `clio-plot` tool takes a **path to a CSV or Excel file**. There is no way to
 hand it the result of a pandas operation in memory.
 
-So the chain is:
-
-```
-load_data → transform → save_data (CSV) → plot tool (reads that CSV)
-```
-
-Skipping `clio-pandas:save_data` means the plot is drawn from the original file,
-silently ignoring every filter and aggregation applied. The chart renders. It is
-just answering a different question.
+Use the transform's returned `output_file` when it exists. Otherwise save the
+returned records to an absolute CSV path, then plot that file. Never point the
+plot at the original input after a transformation.
 
 ## Two tools spell the file argument differently
 
@@ -47,8 +41,9 @@ is missing rather than the key being wrong.
 **1. Look before loading.**
 
 `clio-pandas:profile_csv` gives row and column counts, per-column dtype, null
-counts and numeric ranges **without loading the file**. On a large CSV this is
-the difference between a cheap look and an expensive one.
+counts and numeric ranges from a bounded retained sample (default 5,000 rows;
+scan cap 250,000). It reads CSV rows and is not a full-data profile. State
+these limits; later file-based operations read their inputs independently.
 
 `clio-plot:data_info` answers a similar question and is the cheaper choice when
 plotting is all that is wanted.
@@ -74,15 +69,17 @@ computed from it. If it needs fixing, see `cleaning-and-validating-a-dataset`.
 A million-point scatter is unreadable and slow. Aggregate to the resolution the
 figure can actually show.
 
-**5. Write the intermediate file.**
+**5. Hand off the transformed file or records explicitly.**
 
-`clio-pandas:save_data` takes **`data` and `file_path`**, not a source file. The
-server is stateless per call: every tool reads the file, computes, and returns a
-result, and nothing carries a dataframe between calls. So the transform's
-returned payload is what you pass forward as `data`.
+`groupby_operations` returns an `output_file` and a `results` array. Pass the
+returned `output_file` to the plotting tool. If a different destination is
+needed, call `save_data(data={"data": result["results"]},
+file_path="/absolute/path/means.csv", index=False)`. Do not pass the entire
+response envelope: metadata and nested results are not a dataframe.
 
-This is the step that is easy to forget and that makes everything after it
-wrong: skip it and the plot is drawn from the original file.
+Verify the saved column names and at least one independently calculated
+aggregate before plotting. A successful image render alone proves no numerical
+correctness.
 
 **6. Plot from that file.**
 
@@ -106,10 +103,14 @@ simulation field goes to ParaView instead — see
 
 ## What not to do
 
-- Do not plot before saving the transformed data; the plot reads the file.
+- Do not plot the original input after a transformation; use its output file.
 - Do not load every column to use two.
 - Do not compute a mean before checking the null count.
 - Do not plot a million raw points instead of an aggregate.
 - Do not reach for a chart type before deciding what the figure has to show.
 - Do not assume `file_path` on `profile_csv` or `plot_timeseries`; both take
   `data_path`.
+
+## Completion check
+
+Report the transformed data path, grouping and missing-value rules, one checked aggregate, and the figure path. Confirm the saved image exists and uses the transformed columns. A row-limited preview is not a full-data statistic.

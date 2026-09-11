@@ -1,9 +1,8 @@
 """The rules a skill must satisfy to earn its place in the marketplace.
 
-A skill is not like an MCP server. A server costs nothing until a tool is
-called, but a skill's description is carried in *every* session whether or not
-it ever fires, so a vague description is a permanent tax paid by every user for
-nothing. That asymmetry is why these rules exist and why they are checked
+A skill is not like an MCP server. Tool definitions and skill descriptions consume client context according
+to the client's loading policy. Skill bodies load on invocation, so concise,
+distinct descriptions help discovery without loading every procedure. That asymmetry is why these rules exist and why they are checked
 mechanically rather than left to a reviewer's attention.
 
 The checks split by whether a machine can settle them:
@@ -15,7 +14,7 @@ The checks split by whether a machine can settle them:
 
 ``advisories``
     Real but a judgement call. Whether a skill declares boundaries against the
-    skills it could be confused with, and what its always-on cost comes to.
+    skills it could be confused with, and how long its discovery description is.
     Reported so a reviewer sees them, never used to reject a contribution,
     because a first skill with nothing to collide against is legitimately
     boundary-free.
@@ -27,13 +26,12 @@ checking their own directory before opening anything.
 
 from __future__ import annotations
 
+import yaml
+
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# A description is paid for in every session. Ours run to 393 characters at the
-# longest, so this leaves real headroom while still catching a description that
-# has quietly become documentation. Raising it should be a decision, not a
-# side effect of one skill growing.
+# Keep discovery descriptions concise; put procedural detail in the body.
 DESCRIPTION_BUDGET = 500
 
 # What a description has to establish before it can be trusted to fire at the
@@ -88,9 +86,9 @@ class SkillReport:
 def read_skill_frontmatter(skill_dir: Path) -> dict[str, str]:
     """Return one SKILL.md's frontmatter fields, or raise if it is unloadable.
 
-    Only top-level keys are collected: an indented line continues the value
-    above it, and a description long enough to wrap is the normal case rather
-    than the exception.
+    Parse YAML scalar fields and the supported CLIO metadata fields.
+    Folded/literal descriptions retain YAML semantics; nested metadata cannot
+    override the skill name or description.
     """
     skill_md = skill_dir / "SKILL.md"
     if not skill_md.is_file():
@@ -103,23 +101,27 @@ def read_skill_frontmatter(skill_dir: Path) -> dict[str, str]:
     if not separator:
         raise SkillProblem(f"{skill_md} has unterminated frontmatter")
 
-    fields: dict[str, str] = {}
-    in_clio_block = False
-    for line in frontmatter.splitlines():
-        if not line:
-            continue
-        indented = line.startswith((" ", "\t"))
-        # The kit's own metadata (bundle, servers, eval-status) is nested under
-        # a clio-kit: key. Skipping every indented line hid it entirely, so
-        # nothing could check it.
-        if indented and not in_clio_block:
-            continue
-        if not indented:
-            in_clio_block = line.startswith("clio-kit:")
-        key, colon, value = line.partition(":")
-        if colon and value.strip():
-            fields[key.strip()] = value.strip()
-
+    try:
+        loaded = yaml.safe_load(frontmatter)
+    except yaml.YAMLError as exc:
+        raise SkillProblem(f"{skill_md} has invalid YAML frontmatter: {exc}") from exc
+    if not isinstance(loaded, dict):
+        raise SkillProblem(f"{skill_md} frontmatter must be a mapping")
+    fields = {
+        key: str(value)
+        for key, value in loaded.items()
+        if isinstance(key, str) and isinstance(value, (str, int, float, bool))
+    }
+    metadata = loaded.get("clio-kit", {})
+    if isinstance(metadata, dict):
+        fields.update(
+            {
+                key: str(value)
+                for key, value in metadata.items()
+                if key in {"bundle", "servers", "provenance", "eval-status"}
+                and isinstance(value, (str, int, float, bool))
+            }
+        )
     for required in ("name", "description"):
         if not fields.get(required):
             raise SkillProblem(f"{skill_md} frontmatter needs a {required}")
@@ -189,8 +191,7 @@ def check_skill(skill_dir: Path) -> SkillReport:
     if len(description) > DESCRIPTION_BUDGET:
         report.advisories.append(
             f"{skill_dir.name} description is {len(description)} characters against a "
-            f"{DESCRIPTION_BUDGET} budget, and every one of them is carried in every "
-            "session whether or not this skill fires."
+            f"{DESCRIPTION_BUDGET} budget. Move procedural detail into the body."
         )
 
     return report
@@ -210,10 +211,9 @@ def check_skill_collection(skills_root: Path) -> list[SkillReport]:
 
 
 def always_on_cost(reports: list[SkillReport]) -> int:
-    """Approximate the characters every session carries for these skills.
+    """Count discovery-description characters, not billed tokens.
 
-    Deliberately reported in characters, not tokens: the client's own
-    ``plugin details`` gives the authoritative token count, and inventing a
-    second estimate here would only disagree with it.
+    Kept under the existing API name for compatibility. Client loading policies
+    and token estimates vary; skill bodies load when invoked.
     """
     return sum(report.description_chars for report in reports)

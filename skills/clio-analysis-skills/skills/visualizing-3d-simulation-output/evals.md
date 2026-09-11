@@ -1,5 +1,11 @@
 # Evals - visualizing-3d-simulation-output
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: First verify that a compatible ParaView Python backend is available; an MCP connection alone is insufficient. Report source, timestep, active filter, field association (point/cell), units, color range and output image. Inspect the image before declaring rendering complete.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 

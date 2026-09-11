@@ -16,6 +16,9 @@ authors = [
 # Only dependencies needed for the launcher
 dependencies = [
   "click>=8.3.3",
+  "tomli>=2; python_version < '3.11'",
+  "tomli-w>=1.2",
+  "PyYAML>=6.0.2",
 ]
 
 keywords = ["mcp", "model-context-protocol", "ai-agents", "llm-tools", "scientific-computing", "hpc", "hdf5", "slurm", "parquet", "research-tools"]
@@ -34,6 +37,9 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 
+[project.optional-dependencies]
+verification = ["mcp>=1.20,<2", "jsonschema>=4"]
+
 [project.urls]
 Homepage = "https://github.com/iowarp/clio-kit"
 Repository = "https://github.com/iowarp/clio-kit"
@@ -46,6 +52,8 @@ clio-kit = "clio_kit:cli"
 [dependency-groups]
 dev = [
   "mypy>=1.17.0",
+  "mcp>=1.20,<2",
+  "types-PyYAML>=6",
   "pytest>=8.3",
   "ruff>=0.12.5",
 ]
@@ -59,6 +67,7 @@ dev = [
 # Shared-data copies from filesystem, not git — exclude non-runtime artifacts
 exclude = [
     "**/.venv",
+    "**/node_modules",
     "**/.virtualenv-app-data",
     "**/.uv-cache",
     "**/.mypy_cache",

@@ -183,6 +183,7 @@ def test_every_build_command_refuses_to_resolve() -> None:
     assert build_command("go", project, "./cmd/server", executable="go") == [
         "go",
         "build",
+        "-mod=readonly",
         "-o",
         str(project / "bin" / "server"),
         "./cmd/server",

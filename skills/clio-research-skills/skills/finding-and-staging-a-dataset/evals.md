@@ -1,5 +1,11 @@
 # Evals - finding-and-staging-a-dataset
 
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: Use a resource URL, an explicit output directory and max_bytes. Check local_path exists, actual size and format, and a published checksum when supplied. Report source identifier/version, access conditions and staging result; metadata alone is not a local dataset.
+
 Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
 to confirm the gap closes. Rubric is pass/fail per bullet.
 

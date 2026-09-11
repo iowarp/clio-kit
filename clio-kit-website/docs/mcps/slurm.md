@@ -18,6 +18,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "slurm_submit", "description": "Submit one Slurm job or array and return its scheduler-native job ID. Set array only for an array submission.", "function_name": "slurm_submit"}, {"name": "slurm_list", "description": "List a bounded number of Slurm jobs with optional user, state, and partition filters. Returns native IDs and explicit truncation state.", "function_name": "slurm_list"}, {"name": "slurm_describe", "description": "Describe one scheduler-native Slurm job: lifecycle state, terminality, scheduler properties, and optional bounded stdout/stderr tails.", "function_name": "slurm_describe"}, {"name": "slurm_cluster", "description": "Inspect bounded Slurm partition and queue records in one snapshot. Node details are excluded by default and bounded when requested.", "function_name": "slurm_cluster"}, {"name": "slurm_cancel", "description": "Request destructive cancellation of one Slurm job. confirm_job_id must exactly repeat job_id; omission or mismatch is rejected without calling scancel.", "function_name": "slurm_cancel"}]}
 >
 
+{/* clio-kit:usage:start */}
+
 ### 1. Job Submission and Monitoring
 ```
 I need to submit a Python simulation script to Slurm with 16 cores and 32GB memory, then monitor its progress until completion.
@@ -37,17 +39,7 @@ Submit an array job for parameter sweep analysis with 100 tasks, each requiring 
 - `slurm_list` - Find its scheduler-native job ID
 - `slurm_describe` - Query array state and details
 
-### 3. Interactive Session Management
-```
-Allocate 2 compute nodes with 8 cores each for an interactive analysis session, then deallocate when finished.
-```
-
-**Admin/legacy tools called:**
-- `allocate_slurm_nodes` - Allocate interactive nodes
-- `get_node_info` - Check node status and resources
-- `deallocate_slurm_nodes` - Clean up allocated resources
-
-### 4. Job Management and Cleanup
+### 3. Job Management and Cleanup
 ```
 I have a long-running job that needs to be cancelled, and I want to retrieve the output from a completed job before cleaning up.
 ```
@@ -56,17 +48,7 @@ I have a long-running job that needs to be cancelled, and I want to retrieve the
 - `slurm_describe` with bounded output - Review job state and logs
 - `slurm_cancel` with exact ID confirmation - Request cancellation
 
-### 5. Allocation Status and Monitoring
-```
-Check the status of my current interactive allocation and monitor its resource usage efficiency.
-```
-
-**Admin/legacy tools called:**
-- `get_allocation_status` - Monitor allocation efficiency
-- `get_node_info` - Check node resource usage
-- `deallocate_slurm_nodes` - Clean up when finished
-
-### 6. Comprehensive Cluster Analysis
+### 4. Comprehensive Cluster Analysis
 ```
 Analyze the current cluster queue status, identify bottlenecks, and suggest optimal resource allocation for my pending jobs.
 ```
@@ -74,5 +56,16 @@ Analyze the current cluster queue status, identify bottlenecks, and suggest opti
 **Tools called:**
 - `slurm_cluster` - Inspect partitions, queue state, and capacity
 - `slurm_list` - Review the user's pending jobs and scheduler-native IDs
+
+The default user contract exposes the five tools listed above. Interactive
+allocation helpers are not part of that contract. Check scheduler access and
+target partition limits before submitting; local hardware can describe a login
+node rather than a compute node.
+
+The current submission implementation may emit a plain stdout status message.
+Check the returned job ID and scheduler result; a successful submit is not a
+completed workload.
+
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

@@ -18,6 +18,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "load_darshan_log", "description": "Load and parse a Darshan log file to extract I/O performance metrics and metadata.", "function_name": "load_darshan_log"}, {"name": "get_job_summary", "description": "Get job-level summary from a Darshan log including runtime, process count, and I/O volume.", "function_name": "get_job_summary"}, {"name": "analyze_file_access_patterns", "description": "Analyze file access patterns including read/write types and sequential vs random access.", "function_name": "analyze_file_access_patterns"}, {"name": "get_io_performance_metrics", "description": "Extract I/O performance metrics including bandwidth, IOPS, and request sizes.", "function_name": "get_io_performance_metrics"}, {"name": "analyze_posix_operations", "description": "Analyze POSIX I/O operations including read/write system calls and their frequency.", "function_name": "analyze_posix_operations"}, {"name": "analyze_mpiio_operations", "description": "Analyze MPI-IO operations including collective vs independent operations.", "function_name": "analyze_mpiio_operations"}, {"name": "identify_io_bottlenecks", "description": "Identify I/O performance bottlenecks by analyzing access patterns and operations.", "function_name": "identify_io_bottlenecks"}, {"name": "get_timeline_analysis", "description": "Generate timeline analysis showing I/O activity over time and temporal patterns.", "function_name": "get_timeline_analysis"}, {"name": "compare_darshan_logs", "description": "Compare two Darshan log files to identify performance differences between runs.", "function_name": "compare_darshan_logs"}, {"name": "generate_io_summary_report", "description": "Generate a comprehensive I/O summary report with findings and recommendations.", "function_name": "generate_io_summary_report"}]}
 >
 
+{/* clio-kit:usage:start */}
+
 ### 1. HPC Application Performance Analysis
 ```
 Analyze the I/O performance of my application using the Darshan log at /data/app_trace.darshan. Identify bottlenecks and provide optimization recommendations.
@@ -98,5 +100,7 @@ This prompt will:
 - Generate complete report using `generate_io_summary_report`
 - Add timeline analysis using `get_timeline_analysis`
 - Provide production-ready performance assessment with actionable insights
+
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

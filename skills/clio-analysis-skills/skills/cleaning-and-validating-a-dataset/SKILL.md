@@ -1,14 +1,14 @@
 ---
 name: cleaning-and-validating-a-dataset
-description: Use when statistics would be computed before the data is profiled, so missing values and duplicate rows are silently averaged into the result and nobody learns what changed. Triggers on "clean this data", "missing values", "outliers", "validate". Not for producing a figure; use summarizing-and-plotting-results.
+description: Use when profiling missing values, duplicates, outliers and validation rules before analysis. Triggers on "clean this data", "missing values", "validate this CSV". Not for plotting; use summarizing-and-plotting-results.
 clio-kit:
   bundle: clio-analysis
   servers: clio-pandas
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Clean a table without inventing data
+# Clean and Validate Tabular Data
 
 Every repair here changes the numbers that come out. Look before repairing, and
 say what was done.
@@ -17,7 +17,7 @@ say what was done.
 
 `clio-pandas:profile_data` — shape, types, missing values, distributions, quality
 checks. On a raw CSV, `clio-pandas:profile_csv` answers the same first questions
-without loading it.
+using a bounded sample; its counts/statistics need not cover the whole file.
 
 Read three things before touching anything: **how much is missing and where**,
 **whether dtypes match what the columns mean**, and **whether ranges are
@@ -32,17 +32,25 @@ the imputation itself: `mean`, `median`, `mode`, `forward_fill`,
 `backward_fill`, `interpolate`. Passing `strategy="median"` fails with "Unknown
 strategy"; the call you want is `strategy="impute", method="median"`.
 
-The methods are not interchangeable.
+The methods are not interchangeable. The current server advertises
+`interpolate` but a verified input `[1, missing, 3, missing, 5]` returned
+`[1, 3, 3, 3, 5]`, not linear interpolation. Do not use this option as proof of
+interpolation. If interpolation is required, use a separately verified local
+analysis step with the user's available tools, retain both input and output,
+and assert expected values; otherwise report the unsupported operation.
 
-- **Scattered at random** — imputation is defensible. Median over mean when the
-  column is skewed, because a mean is dragged by the outliers you have not
-  removed yet.
-- **In runs** — a sensor dropout. Forward-fill or interpolate; a mean invents a
+
+- **Scattered gaps** — inspect the measurement process; apparent randomness
+  does not establish a missingness mechanism. Mean/median imputation changes
+  variance and relationships. Choose a method for the scientific purpose and
+  report sensitivity to that choice.
+- **In runs** — a sensor dropout. Choose the scientific method explicitly; a mean invents a
   plateau at a value that was never measured.
 - **Concentrated in one group** — imputing hides a systematic problem. Something
   about that group failed to record, and the fill will look like a real finding.
-- **Most of a column** — drop the column. A column that is 80% imputed is mostly
-  your fill value, and any correlation involving it is an artefact.
+- **Most of a column** — flag inadequate coverage. Excluding the column,
+  collecting more data or using a justified model requires an explicit decision;
+  do not silently drop a scientifically essential variable.
 
 Dropping rows is honest and biased: it silently removes exactly the cases with
 missing data, which are rarely a random sample.
@@ -54,8 +62,9 @@ and optimises dtypes in one pass.
 
 Outlier *detection* is not outlier *removal*. An extreme value can be a sensor
 fault or the event the whole run was about. Look at flagged rows before deleting
-them. Z-score assumes roughly normal data and finds nothing useful on a skewed
-distribution; IQR does not make that assumption and is the safer default.
+them. Z-score thresholds can be misleading on skewed
+distributions. IQR is a robust screening rule, not proof that flagged values
+are invalid; inspect the domain and distribution before changing any values.
 
 Duplicate rows are sometimes real — two identical measurements at different times
 where the timestamp was not kept. Check what makes a row unique before deduping.
@@ -98,3 +107,7 @@ with no record of the cleaning is not reproducible.
 - Do not delete outliers without looking at them.
 - Do not deduplicate before knowing what identifies a row.
 - Do not report results from cleaned data without saying what was cleaned.
+
+## Completion check
+
+Keep the source file. Report the output path, before/after row counts, missing counts, transformations, and validation failures. Use each returned output file for the next step; these tools do not share an in-memory dataframe.

@@ -1,14 +1,14 @@
 ---
 name: managing-software-environments
-description: Use when a compiler, library or MPI would be assumed present rather than checked, so the run fails at load time or silently picks a different version than intended. Triggers on "module avail", "is X installed", "what MPI do we have". Not for getting software into a run; use running-a-simulation-on-a-cluster. Not for sizing a scheduler request; use writing-slurm-job-scripts.
+description: Use when checking installed Spack packages and available or saved module environments. Triggers on "module avail", "which MPI", "is this installed". Not for executing a workload; use running-a-simulation-on-a-cluster.
 clio-kit:
   bundle: clio-hpc
   servers: clio-lmod, clio-spack
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Find out what software a machine has
+# Discover and Verify HPC Software Environments
 
 Two servers answer overlapping questions about available software, and they
 answer different ones. Reaching for the wrong one gives a confidently wrong
@@ -16,7 +16,7 @@ answer rather than an error.
 
 ## There is no module_load, on purpose
 
-The lmod server is read-only. It reports what a machine has; it cannot change
+The lmod server discovers environments and manages saved collections. It reports what a machine has; it cannot change
 what is loaded.
 
 That is deliberate rather than missing. A `module load` performed inside a tool
@@ -27,7 +27,7 @@ error anyone would see. The tools that used to do this were removed for exactly
 that reason.
 
 To get software into a run, resolve it with `clio-spack:spack_locate` and pass
-`output.load_spec` to `clio-jarvis:jarvis_run` in `input.spack_specs`, which does
+`output.load_spec` to `clio-jarvis:jarvis_run` in the top-level `spack_specs` argument, which does
 persist for the execution. See `running-a-simulation-on-a-cluster`.
 
 ## Which tool answers which question
@@ -76,3 +76,7 @@ intended environment rather than a way to establish one.
 - Do not mix the two systems in one answer without saying which is which. A
   module named `openmpi/4.1.5` and a Spack spec `openmpi@4.1.5` are different
   installations that happen to share a version number.
+
+## Completion check
+
+Report whether each result describes the MCP process, a module catalogue or an installed Spack package. Preserve exact versions/specs and identify which environment the eventual workload will use.

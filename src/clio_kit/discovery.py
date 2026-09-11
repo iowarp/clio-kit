@@ -84,6 +84,7 @@ def read_server_descriptor(server_dir: Path) -> dict[str, Any] | None:
         # descriptor is the only file this repository and a go module agree on.
         "description": data.get("description", ""),
         "version": data.get("version", ""),
+        "registry": data.get("registry"),
     }
 
 

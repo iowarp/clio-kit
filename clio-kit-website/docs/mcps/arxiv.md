@@ -18,6 +18,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "search_arxiv", "description": "Search ArXiv for papers by category or topic.", "function_name": "search_arxiv"}, {"name": "get_recent_papers", "description": "Get recent papers from a specific ArXiv category.", "function_name": "get_recent_papers"}, {"name": "search_papers_by_author", "description": "Search ArXiv papers by author name.", "function_name": "search_papers_by_author"}, {"name": "search_by_title", "description": "Search ArXiv papers by title keywords.", "function_name": "search_by_title"}, {"name": "search_by_abstract", "description": "Search ArXiv papers by abstract keywords.", "function_name": "search_by_abstract"}, {"name": "search_by_subject", "description": "Search ArXiv papers by subject classification.", "function_name": "search_by_subject"}, {"name": "search_date_range", "description": "Search ArXiv papers within a specific date range.", "function_name": "search_date_range"}, {"name": "get_paper_details", "description": "Get detailed information about a specific ArXiv paper by ID.", "function_name": "get_paper_details"}, {"name": "export_to_bibtex", "description": "Export search results to BibTeX format for citation management.", "function_name": "export_to_bibtex"}, {"name": "find_similar_papers", "description": "Find papers similar to a reference paper based on categories and keywords.", "function_name": "find_similar_papers"}, {"name": "download_paper_pdf", "description": "Download the PDF of a paper from ArXiv.", "function_name": "download_paper_pdf"}, {"name": "get_pdf_url", "description": "Get the direct PDF URL for a paper without downloading.", "function_name": "get_pdf_url"}, {"name": "download_multiple_pdfs", "description": "Download multiple PDFs concurrently with rate limiting.", "function_name": "download_multiple_pdfs"}]}
 >
 
+{/* clio-kit:usage:start */}
+
 ### 1. Academic Research Discovery
 ```
 I'm researching machine learning applications in computer vision. Can you search for recent papers in this area and provide detailed information about the most relevant ones?
@@ -115,5 +117,7 @@ This prompt will:
 - Extract detailed metadata using `get_paper_details`
 - Create complete research archive using `download_multiple_pdfs`
 - Generate professional bibliography using `export_to_bibtex`
+
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

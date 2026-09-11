@@ -18,6 +18,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={[{"name": "sort_log_by_timestamp", "description": "Sort log file lines by timestamps in YYYY-MM-DD HH:MM:SS format.", "function_name": "sort_log_by_timestamp"}, {"name": "parallel_sort_large_file", "description": "Sort large log files using parallel processing with chunked approach.", "function_name": "parallel_sort_large_file"}, {"name": "analyze_log_statistics", "description": "Generate statistics for log files including temporal patterns and log levels.", "function_name": "analyze_log_statistics"}, {"name": "detect_log_patterns", "description": "Detect patterns in log files including anomalies and error clusters.", "function_name": "detect_log_patterns"}, {"name": "filter_logs", "description": "Filter log entries based on multiple conditions with logical operations.", "function_name": "filter_logs"}, {"name": "filter_by_time_range", "description": "Filter log entries by time range using start and end timestamps.", "function_name": "filter_by_time_range"}, {"name": "filter_by_log_level", "description": "Filter log entries by log level (ERROR, WARN, INFO, DEBUG, etc.).", "function_name": "filter_by_log_level"}, {"name": "filter_by_keyword", "description": "Filter log entries by keywords with support for multiple keywords and logical operations.", "function_name": "filter_by_keyword"}, {"name": "apply_filter_preset", "description": "Apply predefined filter presets like 'errors_only' or 'connection_issues'.", "function_name": "apply_filter_preset"}, {"name": "export_to_json", "description": "Export log processing results to JSON format.", "function_name": "export_to_json"}, {"name": "export_to_csv", "description": "Export log entries to CSV format with structured columns.", "function_name": "export_to_csv"}, {"name": "export_to_text", "description": "Export log entries to plain text format.", "function_name": "export_to_text"}, {"name": "generate_summary_report", "description": "Generate a summary report of log processing results with statistics.", "function_name": "generate_summary_report"}]}
 >
 
+{/* clio-kit:usage:start */}
+
 ### 1. Large Log File Sorting and Analysis
 ```
 I have a large application log file at /var/logs/app.log with millions of entries. Sort this log chronologically and analyze the error patterns.
@@ -115,5 +117,7 @@ This prompt will:
 - Detect trends using `detect_log_patterns` with anomaly detection
 - Analyze temporal patterns using `analyze_log_statistics`
 - Export findings using `export_to_json` for dashboard integration
+
+{/* clio-kit:usage:end */}
 
 </MCPDetail>

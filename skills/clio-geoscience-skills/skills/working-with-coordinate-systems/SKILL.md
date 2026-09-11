@@ -1,14 +1,14 @@
 ---
 name: working-with-coordinate-systems
-description: Use when combining spatial datasets, computing distances or areas, interpreting coordinates, or when spatial results look subtly misplaced. Triggers on "lat lon", "projection", "CRS", "UTM", "why is this offset". Calls no tools. Not for producing a map or inspecting a file; use mapping-geospatial-and-terrain-data.
+description: Use when interpreting axis order, projections, distance units or vertical datums. Triggers on "lat lon", "CRS", "UTM", "map offset". Calls no tools. Not for executing map operations; use mapping-geospatial-and-terrain-data.
 clio-kit:
   bundle: clio-geoscience
   servers: none
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Coordinate systems fail quietly
+# Interpret Coordinate Reference Systems
 
 Nothing here raises an error. Data in the wrong reference system plots, computes
 distances, and returns bounding boxes — just in the wrong place. This is the
@@ -50,7 +50,8 @@ polygon.
 
 - **Geographic** (WGS84, EPSG:4326) — angles on the globe. What GPS and GeoJSON
   give you. Good for storing and sharing position, bad for measuring.
-- **Projected** (UTM, State Plane, and so on) — metres on a flat plane, accurate
+- **Projected** (UTM, State Plane, and so on) — linear coordinates (often metres,
+  sometimes feet) on a plane, with controlled distortion
   within a defined zone and degrading outside it. Good for measuring, bad for
   spanning large areas.
 
@@ -95,3 +96,7 @@ the check — validate and inspect the bounding box first. See
   units and range.
 - Do not combine elevation sources without knowing their vertical datum.
 - Do not treat a plausible-looking map as confirmation the projection is right.
+
+## Completion check
+
+State source and target CRS, axis order, horizontal units and vertical datum. If any is unknown, identify the missing metadata rather than guessing a transformation. Check a known control point and antimeridian behavior where relevant.

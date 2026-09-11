@@ -13,6 +13,7 @@ Usage:
     python scripts/generate_server_json.py [clio-kit-mcp-servers]
 """
 
+import asyncio
 import json
 import re
 import subprocess
@@ -28,6 +29,10 @@ from clio_kit.community import (
 )
 from clio_kit.discovery import DESCRIPTOR_NAME, read_server_descriptor
 from clio_kit.plugins import read_skill_frontmatter
+from clio_kit.marketplace_assets import write_extra_plugins
+from clio_kit.federation import read_snapshot
+from clio_kit.protocol_probe import inspect_stdio
+from clio_kit.registry import registry_package
 from clio_kit.runtimes import required_project_files, supported_runtimes
 from clio_kit.mcp_contracts import generate_user_contract_artifacts
 
@@ -417,6 +422,7 @@ def read_project_metadata(server_dir: Path, runtime: str) -> dict[str, Any]:
         "description": descriptor["description"],
         "version": descriptor.get("version", ""),
         "scripts": {descriptor["entry"]: ""},
+        "registry": descriptor.get("registry"),
     }
 
 
@@ -430,6 +436,23 @@ def read_pyproject(server_dir: Path) -> dict[str, Any]:
 
 def extract_metadata(server_dir: Path) -> dict[str, Any] | None:
     """Run extract_mcp_metadata.py in the server's environment."""
+    if server_runtime(server_dir) != "python":
+        try:
+            return asyncio.run(
+                inspect_stdio(
+                    sys.executable,
+                    [
+                        "-c",
+                        "from clio_kit import cli; cli()",
+                        "server",
+                        "run",
+                        str(server_dir.resolve()),
+                    ],
+                )
+            )
+        except Exception as exc:
+            print(f"  Warning: protocol metadata extraction failed: {exc}")
+            return None
     script_path = Path(__file__).parent / "extract_mcp_metadata.py"
     try:
         result = subprocess.run(
@@ -519,6 +542,9 @@ def build_server_json(
         ],
         "tools": tools,
     }
+
+    if project.get("registry"):
+        server_json["packages"] = [registry_package(project["registry"])]
 
     if resources:
         server_json["resources"] = resources
@@ -692,15 +718,6 @@ def generate_all(mcps_dir: str) -> None:
             f"{sorted(unknown_publish_servers)}"
         )
     runtimes = {server.name: server_runtime(server) for server in server_dirs}
-    unsupported_registry_servers = sorted(
-        name for name in registry_publish_servers if runtimes[name] != "python"
-    )
-    if unsupported_registry_servers:
-        raise ValueError(
-            "MCP Registry metadata extraction is not implemented for non-Python "
-            f"servers: {unsupported_registry_servers}. Remove them from "
-            "mcp-registry-release.publish to publish marketplace entries only."
-        )
     bundles = read_bundles(repo_root)
     assert_bundles_partition_servers(bundles, discovered_servers)
 
@@ -711,13 +728,16 @@ def generate_all(mcps_dir: str) -> None:
 
         project = read_project_metadata(server_dir, runtime)
 
-        # server.json describes this server to the MCP Registry, and building
-        # it means running the server to list its tools -- which the extractor
-        # does through `uv run`, so it can only do it for Python. Non-Python
-        # servers may ship marketplace entries, but cannot be selected for
-        # registry publication until an extractor exists (checked above).
-        metadata = None if runtime != "python" else extract_metadata(server_dir)
-        if runtime != "python":
+        # Publication requires successful live protocol extraction in any runtime.
+        selected = server_name in registry_publish_servers
+        metadata = (
+            extract_metadata(server_dir) if runtime == "python" or selected else None
+        )
+        if selected and metadata is None:
+            raise ValueError(
+                f"Cannot publish {server_name}: live MCP metadata extraction failed"
+            )
+        if runtime != "python" and not selected:
             print(f"  Marketplace only ({runtime}; not selected for MCP Registry)")
         elif metadata is not None:
             server_json = build_server_json(
@@ -786,6 +806,13 @@ def generate_all(mcps_dir: str) -> None:
         suffix = " + skills" if skills_entry is not None else ""
         print(f"Wrote plugins/{bundle_name} ({member_count} servers{suffix})")
 
+    marketplace_plugins.extend(
+        write_extra_plugins(
+            repo_root,
+            [e["name"] for e in marketplace_plugins if e["name"].endswith("-skills")],
+        )
+    )
+
     # Outside contributions, indexed rather than vendored. They land in the
     # same catalogue as ours so both are found the same way.
     community_entries = read_community_entries(repo_root)
@@ -798,6 +825,7 @@ def generate_all(mcps_dir: str) -> None:
             f"community entries collide with generated plugins: {colliding}"
         )
     marketplace_plugins.extend(community_entries)
+    marketplace_plugins.extend(read_snapshot(repo_root))
     if community_entries:
         print(f"Merged {len(community_entries)} community entries")
 

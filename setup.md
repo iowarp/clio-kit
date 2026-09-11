@@ -1,198 +1,173 @@
 # Set up CLIO Kit
 
-Instructions for an AI agent. Follow them in order. Each step says how to check
-it worked before moving on.
+Follow this guide from the repository root. Install the launcher and marketplace
+from the same checkout: the published PyPI package and GitHub default branch do
+not yet represent `feat/360-meta-marketplace`.
 
-If you are reading this from a clone, the marketplace can also be added from
-that clone directly: `claude plugin marketplace add ./` from the repository root,
-which is useful before this lands on the default branch. Read the note in Step 2
-before you do — a clone install copies more than you expect.
-
-CLIO Kit publishes MCP servers for scientific computing, grouped into workflow
-bundles. Installing a bundle brings in its servers plus written procedures for
-using them together.
-
-**Two things get installed, and both are required.** A plugin is a manifest that
-runs `clio-kit`; it does not contain the server. If you install plugins without
-the `clio-kit` launcher, every plugin reports `enabled` and every server fails to
-connect. Step 1 installs the launcher for exactly this reason.
-
-## Step 1. Install the prerequisites
+## 1. Check prerequisites and the checkout
 
 ```bash
-claude --version    # any recent version
-uv --version        # required
+claude --version
+uv --version
+git branch --show-current
+test -f pyproject.toml && test -f .claude-plugin/marketplace.json
 ```
 
-If `uv` is missing:
+This guide is tested with Claude Code 2.1.266. Use a client that supports plugin
+dependencies; older clients may not install a bundle's members. If `uv` is
+missing, install it using [the official instructions](https://docs.astral.sh/uv/getting-started/installation/).
+
+If you do not have this checkout yet:
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
+git clone --branch feat/360-meta-marketplace https://github.com/iowarp/clio-kit.git
+cd clio-kit
 ```
 
-Do not use system `pip`. On current macOS and most Linux distributions it fails
-with `externally-managed-environment` (PEP 668). `uv` manages its own Python and
-avoids that.
-
-## Step 2. Install the CLIO Kit launcher
-
-Every plugin invokes `clio-kit` by name, resolved from `$PATH`. Install it
-before any plugin:
+## 2. Install the launcher
 
 ```bash
-uv tool install clio-kit
-uv tool update-shell     # only if uv says its bin directory is not on PATH
-```
-
-Check it, and start a new shell first if `update-shell` changed anything:
-
-```bash
+uv tool install --force --reinstall ".[verification]"
 clio-kit mcp-servers
 ```
 
-Expect a grouped list of 22 servers. If you get `command not found`, `$PATH` has
-not picked up `~/.local/bin` yet — open a new shell and try again. **Do not
-continue until this command prints servers.** Everything after this point
-depends on it.
+Expect 22 servers. If `clio-kit` is not on PATH, run `uv tool update-shell`, open
+a new shell, and repeat the inventory command. Do not proceed until it works.
+The verification extra provides the MCP client used by `doctor --connect` and
+`server inspect`. Server dependencies remain isolated and install on first use;
+allow network access and time for that first start.
 
-Installing from a clone instead of PyPI:
-
-```bash
-uv tool install .        # from the repository root
-```
-
-## Step 3. Add the marketplace
+## 3. Register this marketplace
 
 ```bash
-claude plugin marketplace add iowarp/clio-kit
+claude plugin marketplace add "$PWD"
+claude plugin marketplace list
 ```
 
-Expect: `Successfully added marketplace: clio-kit`.
+Expect `clio-kit` registered with this checkout as its source. If that name is
+already registered from another source, inspect it before replacing it. Keep
+the checkout available for later marketplace updates.
 
-CLIO Kit is a monorepo, so a full clone is large. To fetch only what the
-marketplace needs:
+## 4. Install the relevant workflow
 
-```bash
-claude plugin marketplace add iowarp/clio-kit \
-  --sparse .claude-plugin plugins skills community
-```
+Use the user's stated work to select a bundle. Ask only if the work is unknown.
 
-The server tree is deliberately absent from that list. Every plugin is a
-manifest that invokes the `clio-kit` launcher you installed in Step 2; none of
-them contains server code, so none of it needs fetching.
-
-## Step 4. Decide what to install
-
-Ask the user what they work on, then match it to one bundle. Do not install
-everything. Each installed server adds tools to every conversation, and each
-skill adds text carried in every session whether it fires or not.
-
-| If the user works on | Install |
+| Work | Bundle |
 |---|---|
-| Running codes on a cluster, Spack, Slurm, JARVIS pipelines | `clio-hpc` |
-| Why a finished job was slow, I/O profiling, large logs | `clio-performance` |
-| HDF5, ADIOS BP5, Parquet, compressed data files | `clio-scientific-io` |
-| Statistics, plotting, ParaView, simulation visualisation | `clio-analysis` |
-| GeoJSON, terrain, seismic waveforms, earthquake catalogs | `clio-geoscience` |
-| Literature search, arXiv, finding datasets | `clio-research` |
+| Spack software, JARVIS pipelines, Slurm jobs | `clio-hpc` |
+| I/O profiling, application logs, session provenance | `clio-performance` |
+| HDF5, ADIOS BP5, Parquet, compressed files | `clio-scientific-io` |
+| Tabular statistics, plots, ParaView | `clio-analysis` |
+| Geospatial, terrain, seismic data | `clio-geoscience` |
+| Papers and dataset discovery | `clio-research` |
 
-If the user names one server rather than a workflow, install that server alone:
-`clio-hdf5`, `clio-slurm`, and so on. Run `claude plugin marketplace list` to
-see every entry.
-
-If they already have the servers and want only the written procedures, install
-`clio-<bundle>-skills`.
-
-The marketplace also indexes contributions from outside this repository. Those
-entries carry `metadata.indexed`, which marks them as pointed at rather than
-maintained here. Install them the same way.
-
-## Step 5. Install
+For example, install the scientific file workflow:
 
 ```bash
-claude plugin install clio-hpc@clio-kit
+claude plugin install clio-scientific-io@clio-kit
+claude plugin details clio-scientific-io@clio-kit
 ```
 
-Expect a line naming the dependencies it pulled in, for example
-`(+ 6 dependencies: clio-jarvis, clio-lmod, clio-node-hardware, ...)`.
+This installs four servers and the associated skills as dependencies. A single
+server is also installable, for example `clio-hdf5@clio-kit`. For procedures
+without servers, use `clio-scientific-io-skills@clio-kit` or `clio-skills@clio-kit`
+for all 20 skills. `clio-agents@clio-kit` adds planning and evidence-review agents.
 
-A bundle is a manifest listing its members, so installing it installs them. You
-do not install the servers separately.
+`claude plugin marketplace list` lists marketplaces, not their entries. Refer
+to the [README catalogue](README.md#workflow-bundles) for bundle names.
 
-## Step 6. Verify that the servers actually connect
-
-`claude plugin list` only proves the manifests were read. It reports `enabled`
-for plugins whose servers are completely broken, so it cannot be the check.
-
-Restart the Claude Code session first — MCP servers connect at session start —
-then run:
+## 5. Verify connections and a real tool result
 
 ```bash
 claude mcp list
+clio-kit doctor --server hdf5 --connect
+claude plugin details clio-scientific-io-skills@clio-kit
 ```
 
-Every `plugin:clio-*` line must end in `✔ Connected`. A server's first start
-builds its dependencies from a pinned lock, so allow it time and a network.
+Every installed CLIO server should connect. `plugin list` showing `enabled`
+proves registration only. In an existing interactive Claude session, use
+`/reload-plugins` or restart before using the new tools.
 
-If you see `✘ Failed to connect — ENOENT: Executable not found in $PATH:
-"clio-kit"`, Step 2 did not take effect in this shell. Fix that before anything
-else; no amount of reinstalling plugins will help.
-
-Then report the ongoing context cost to the user:
+For the scientific I/O bundle, run this bounded compression check. It creates
+only temporary files, calls the real installed server over MCP, and verifies
+that decompression restores the exact bytes:
 
 ```bash
-claude plugin details clio-hpc-skills@clio-kit
+uv run --no-project --with 'mcp>=1.20,<2' python - <<'PY'
+import asyncio
+import gzip
+import tempfile
+from pathlib import Path
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+async def check():
+    with tempfile.TemporaryDirectory(prefix="clio-setup-") as directory:
+        source = Path(directory) / "check.txt.gz"
+        expected = b"CLIO setup verification\n" * 10
+        source.write_bytes(gzip.compress(expected))
+        parameters = StdioServerParameters(
+            command="clio-kit", args=["mcp-server", "compression"]
+        )
+        async with stdio_client(parameters) as (read, write):
+            async with ClientSession(read, write) as session:
+                await session.initialize()
+                result = await session.call_tool(
+                    "decompress_file_tool", {"file_path": str(source)}
+                )
+                assert not result.isError, result
+                assert source.with_suffix("").read_bytes() == expected
+    print("PASS: installed MCP server restored the exact input bytes")
+
+asyncio.run(asyncio.wait_for(check(), timeout=300))
+PY
 ```
 
-This prints the skills that loaded and the tokens they add to every session.
-That number is what you installed, paid on every conversation.
+For another bundle, additionally exercise a small representative tool on known
+input and check its output. HPC and native visualization workflows need their
+site software/services; a connection is not evidence that those backends work.
+Report which checks passed and which prerequisites remain unavailable.
 
-## If something fails
+Skill names and descriptions help the client select procedures; full bodies
+load when used. `plugin details` is useful for inspecting installed components,
+but its token estimate is not an exact per-conversation bill.
 
-**`Unknown plugin`** -- the marketplace was not added, or the name is wrong. Run
-`claude plugin marketplace list` and use a name exactly as it appears.
+## Update and troubleshoot
 
-**`ENOENT: Executable not found in $PATH: "clio-kit"`** -- the launcher is not
-installed or not on `$PATH`. Go back to Step 2. This is the most common failure
-and it makes every server fail at once.
-
-**Servers install but their tools never appear** -- the session was not
-restarted. MCP servers connect at session start.
-
-**A server fails to start** -- it builds its dependencies from a pinned lock on
-first run, which takes time and needs network. Run
-`clio-kit mcp-server <name>` directly to see the real error.
-
-**Disabling a server is refused** -- a bundle still depends on it. Disable the
-bundle first, or leave it.
-
-## Removing
+After updating this checkout, reinstall the launcher with step 2, then:
 
 ```bash
-claude plugin uninstall clio-hpc@clio-kit
-claude plugin prune -y
+claude plugin marketplace update clio-kit
+claude plugin update clio-scientific-io@clio-kit
+```
+
+Upstream plugin content changes need version bumps. Maintainers can refresh
+external catalogue snapshots with `clio-kit marketplace refresh --root .`.
+See the [marketplace guide](clio-kit-website/docs/marketplace.md) for contribution
+and multi-language runtime instructions.
+
+- **Unknown plugin:** verify the marketplace source and the README name. A
+  catalogue from `main` differs from this feature branch.
+- **Executable not found:** check `command -v clio-kit` in the client's environment.
+- **Connection failure:** run `clio-kit doctor --server NAME --connect` for the
+  specific server; check network access and backend prerequisites. A directly
+  launched stdio server may wait for protocol input rather than print a result.
+- **Missing tools in an existing session:** reload plugins or restart the client.
+
+## Remove this installation when requested
+
+Do not run this section during setup. Substitute the bundle you installed.
+
+```bash
+claude plugin uninstall clio-scientific-io@clio-kit
+claude plugin prune --dry-run
+claude plugin prune --yes
 claude plugin marketplace remove clio-kit
 ```
 
-Uninstalling does not reclaim the copied plugin sources. Remove them explicitly:
-
-```bash
-rm -rf ~/.claude/plugins/cache/clio-kit
-```
-
-To remove the launcher and the server runtimes it built:
-
-```bash
-clio-kit cache gc --all     # or: rm -rf ~/.cache/clio-kit
-uv tool uninstall clio-kit
-```
-
-## Do not
-
-- Install plugins before the launcher. Every server will fail with `ENOENT`.
-- Report success on `claude plugin list`. It says `enabled` for broken servers.
-  Use `claude mcp list`.
-- Install every bundle to be safe. Tools and skills cost context in every
-  conversation. Install what the user asked for.
-- Report success before restarting the session and confirming tools respond.
-- Use `pip install` for anything here.
+Inspect the prune preview first: it covers orphaned dependencies at the selected
+scope. To reclaim old runtime environments, stop active servers, preview with
+`clio-kit cache gc --keep 1 --dry-run`, then run `clio-kit cache gc --keep 1`.
+This retains the newest environment per server. `--all` is not a supported flag.
+Remove the launcher separately with `uv tool uninstall clio-kit` if it is no
+longer needed by any client.

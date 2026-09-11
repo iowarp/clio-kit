@@ -1,0 +1,38 @@
+name: Refresh external marketplace collections
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 7 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: marketplace-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    if: github.repository == 'iowarp/clio-kit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
+        with:
+          version: '0.11.28'
+          python-version: '3.13'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: uv sync --frozen
+      - run: uv run --frozen clio-kit marketplace refresh --root .
+      - run: npm install --global @anthropic-ai/claude-code@2.1.266
+      - run: claude plugin validate . --strict
+      - name: Commit only the refreshed catalogue and provenance
+        run: |
+          git add .claude-plugin/marketplace.json .claude-plugin/federation.lock.json .claude-plugin/federated-marketplaces.json
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'chore(marketplace): refresh external collections'
+          git push

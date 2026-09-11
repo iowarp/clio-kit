@@ -1,7 +1,7 @@
 {
   "name": "clio-analysis",
   "description": "Turn a dataset into summary statistics and a figure.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

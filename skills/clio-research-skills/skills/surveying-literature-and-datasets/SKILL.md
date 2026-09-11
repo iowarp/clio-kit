@@ -1,14 +1,14 @@
 ---
 name: surveying-literature-and-datasets
-description: Use when a literature answer would be given from memory, which confidently cites papers that do not exist and misses everything published recently. Covers finding prior work and the data behind published results. Triggers on "find papers on", "what is the literature", "prior work". Not for assembling citations; use building-a-bibliography. Not for staging a known dataset; use finding-and-staging-a-dataset.
+description: Use when searching prior work and identifying datasets associated with research claims. Triggers on "find papers on", "literature survey", "prior work". Not for formatting a known citation list; use building-a-bibliography.
 clio-kit:
   bundle: clio-research
-  servers: clio-arxiv, clio-ndp, clio-web
+  servers: clio-arxiv, clio-ndp, clio-scientific-catalog, clio-web
   provenance: designed
-  eval-status: eval-run
+  eval-status: scenarios-recorded
 ---
 
-# Survey a topic, then find the data behind it
+# Survey Research Literature and Associated Data
 
 ArXiv exposes seven search tools. They are not variations on one another, and
 defaulting to `search_arxiv` for every question is the main way this goes wrong.
@@ -52,8 +52,7 @@ A thin result set is a signal about the query, not the field. In order:
 Do not characterise a paper's findings from its title. If the claim matters, get
 the PDF URL with `clio-arxiv:get_pdf_url`, or download it with
 `clio-arxiv:download_paper_pdf`. `download_multiple_pdfs` handles several
-concurrently with rate limiting — use it rather than a download loop, which will
-get throttled.
+with bounded concurrency; check each result and respect service limits.
 
 Note that ArXiv is preprints. Many are peer reviewed later, some never are, and
 versions change. Check the version and date before treating something as settled.
@@ -98,3 +97,7 @@ anything long.
 - Do not loop `download_paper_pdf` where `download_multiple_pdfs` exists.
 - Do not treat a preprint as peer reviewed.
 - Do not try to analyse a dataset that has not been staged.
+
+## Completion check
+
+Report search terms, date range, sources and stable paper/dataset links. Separate abstract-level summaries from claims checked in full text. A dataset is associated with a paper only when the paper or repository establishes that link.
