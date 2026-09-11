@@ -143,7 +143,15 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     assert manifests == [project / "server.json" for project in projects]
     assert list(expected_server_versions) == sorted(expected_server_versions)
     assert set(expected_server_versions) == {project.name for project in all_projects}
-    assert publish_servers == ("geo", "lmod", "seismology", "spack", "web")
+    assert publish_servers == (
+        "geo",
+        "hdf5",
+        "lmod",
+        "pandas",
+        "seismology",
+        "spack",
+        "web",
+    )
     assert marketplace["metadata"]["version"] == expected_version
     assert set(marketplace_plugins) == set(expected_server_versions)
     assert set(bundle_plugins) == set(expected_bundles)

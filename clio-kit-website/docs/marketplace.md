@@ -118,9 +118,11 @@ scheduler. Chronolog needs its native client/service; ParaView needs a compatibl
 ParaView Python environment. Darshan diagnosis needs a genuine profile log.
 The catalogue service needs `SCIENTIFIC_CATALOG_FILE` pointing to real metadata.
 
-Current server limitations recorded by the audit include incorrect interpolation
-behavior in Pandas and bracketed log levels missed by parallel-sort. Skills
-explicitly avoid claiming these operations succeeded. Slurm may emit a plain
+Pandas interpolation now fills interior numeric gaps linearly by row position;
+endpoint and non-numeric gaps remain missing. HDF5 now labels sampled statistics
+with actual coverage and omits cross-dataset totals when sampling is involved.
+The audit's bracketed-log-level parsing limitation in parallel-sort remains;
+skills explicitly avoid claiming that operation succeeded. Slurm may emit a plain
 stdout message during submission even when its actual job succeeds. These
 implementation defects require separate MCP-owner changes; packaging does not
 repair scientific calculations. Never label all scientific workflows verified
@@ -146,8 +148,8 @@ size limits, provenance and interpretation. Evaluation metadata is deliberately
 `scenarios-recorded` until new model runs validate this revision. Historical
 results remain labeled in the scenario files.
 
-Specific limits matter: HDF5 aggregate statistics sample data above 500 MiB;
-a live 70-million-element array of ones returned sum/count 700,000 without
-a sample label. Stream summaries can cover only part of a dataset; CSV profiles retain a bounded
+Specific limits matter: HDF5 aggregate statistics may sample data above 500 MiB.
+A live 70-million-element array of ones returns sample sum/count 700,000, now
+explicitly labeled as 1% coverage rather than full-dataset totals. Stream summaries can cover only part of a dataset; CSV profiles retain a bounded
 sample. None should be presented as exact full-data calculations without checking
 coverage. Skill instructions describe these limits instead of changing MCP code.

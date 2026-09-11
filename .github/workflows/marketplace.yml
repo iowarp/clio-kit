@@ -42,6 +42,10 @@ jobs:
           go mod verify
           go vet ./...
           go test ./...
+      - name: Scientific calculation regressions
+        run: |
+          uv run --frozen --directory clio-kit-mcp-servers/pandas pytest -q tests/test_data_cleaning.py
+          uv run --frozen --directory clio-kit-mcp-servers/hdf5 pytest -q tests/test_statistics.py
       - name: Root regressions
         run: uv run --frozen pytest -q tests
       - name: Install built wheel and exercise real client and tools

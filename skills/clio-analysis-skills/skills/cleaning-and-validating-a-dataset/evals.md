@@ -75,12 +75,15 @@ Selection is checked. Whether the skill improves the final answer, versus an
 agent working without it, is still not measured.
 
 
-## S4 - advertised interpolation is not verified interpolation
+## S4 - verify interpolation values and unchanged input
 
 Setup: A value column `[1, missing, 3, missing, 5]`; ask for linear interpolation.
 
 Expected:
 
-- The agent does not certify the current MCP's mean-filled result as interpolation.
-- It uses a separately verified calculation and asserts `[1, 2, 3, 4, 5]`, or
-  reports the operation unavailable without changing the input.
+- The agent calls `handle_missing_data` with `strategy="impute"`,
+  `method="interpolate"` and the intended value column.
+- It reads the returned output file, asserts `[1, 2, 3, 4, 5]` and confirms the
+  input is unchanged. A mean-filled `[1, 3, 3, 3, 5]` fails this criterion.
+- It reports that endpoint and non-numeric gaps remain missing and does not
+  claim row-position interpolation accounts for irregular time intervals.

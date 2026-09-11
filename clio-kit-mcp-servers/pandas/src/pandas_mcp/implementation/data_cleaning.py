@@ -21,7 +21,7 @@ def handle_missing_data(
     Args:
         file_path: Path to the data file
         strategy: Strategy to handle missing data (detect, remove, impute)
-        method: Method for imputation (mean, median, mode, forward_fill, backward_fill)
+        method: Imputation method; interpolate fills interior numeric gaps linearly by row.
         columns: Specific columns to process
 
     Returns:
@@ -87,10 +87,28 @@ def handle_missing_data(
                 method = "mean"
 
             df_imputed = df.copy()
-            imputation_info = {}
+            imputation_info: dict[str, dict[str, str | float | int]] = {}
 
-            for col in df_imputed.columns:
+            for col in columns if columns is not None else df_imputed.columns:
                 if df_imputed[col].isnull().sum() > 0:
+                    if method == "interpolate":
+                        # Row position is the interpolation coordinate. Do not
+                        # extrapolate endpoints or invent categorical values.
+                        numeric = pd.api.types.is_numeric_dtype(df_imputed[col])
+                        if numeric:
+                            df_imputed[col] = df_imputed[col].interpolate(
+                                method="linear", limit_area="inside"
+                            )
+                        imputation_info[col] = {
+                            "method": method,
+                            "fill_value": "linear interpolation (interior gaps only)"
+                            if numeric
+                            else "not applied (non-numeric column)",
+                            "imputed_count": int(
+                                df[col].isnull().sum() - df_imputed[col].isnull().sum()
+                            ),
+                        }
+                        continue
                     if df_imputed[col].dtype in ["int64", "float64"]:
                         # Numeric columns
                         if method == "mean":

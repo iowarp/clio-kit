@@ -280,6 +280,83 @@ class Acceptance:
         self.save()
         print(f"PASS Codex discovers and enables {len(records)} skills", flush=True)
 
+    async def scientific_regressions(self, data: Path) -> None:
+        source = data / "interpolation.csv"
+        original = "row,value\n0,1\n1,\n2,3\n3,\n4,5\n"
+        source.write_text(original)
+        replies = await self.session(
+            "pandas-interpolation",
+            ["mcp-server", "pandas"],
+            [
+                (
+                    "handle_missing_data",
+                    {
+                        "file_path": str(source),
+                        "strategy": "impute",
+                        "method": "interpolate",
+                        "columns": ["value"],
+                    },
+                )
+            ],
+        )
+        result = replies[0].get("structuredContent") or json.loads(
+            replies[0]["content"][0]["text"]
+        )
+        assert result["success"], result
+        with Path(result["output_file"]).open() as handle:
+            values = [float(row["value"]) for row in csv.DictReader(handle)]
+        assert values == [1, 2, 3, 4, 5], values
+        assert result["imputation_info"]["value"]["imputed_count"] == 2
+        assert source.read_text() == original
+        hdf5 = data / "coverage.h5"
+        # Use h5py only to create known input. The tool calls below run the
+        # installed wheel in its own locked server environment.
+        self.command(
+            "create-hdf5-input",
+            [
+                "uv",
+                "run",
+                "--frozen",
+                "--directory",
+                str(ROOT / "clio-kit-mcp-servers/hdf5"),
+                "python",
+                "-c",
+                "import sys\nimport h5py\n"
+                "with h5py.File(sys.argv[1], 'w') as file:\n"
+                "    file.create_dataset('large', shape=(70_000_000,), dtype='f8', fillvalue=1)\n"
+                "    file.create_dataset('small', data=[2.0, 4.0])\n",
+                str(hdf5),
+            ],
+        )
+        replies = await self.session(
+            "hdf5-sampling-coverage",
+            ["mcp-server", "hdf5"],
+            [
+                ("open_file", {"path": str(hdf5)}),
+                (
+                    "hdf5_aggregate_stats",
+                    {"paths": "large,small", "stats": "mean,sum,count"},
+                ),
+                ("hdf5_aggregate_stats", {"paths": "small", "stats": "mean,sum,count"}),
+                ("close_file", {}),
+            ],
+        )
+        sampled = "\n".join(
+            item["text"] for item in replies[1]["content"] if item["type"] == "text"
+        )
+        full = "\n".join(
+            item["text"] for item in replies[2]["content"] if item["type"] == "text"
+        )
+        assert "SAMPLED: 700,000 of 70,000,000 elements (1.00% coverage)" in sampled
+        assert "sum/count are not full-dataset totals" in sampled
+        assert "sum: 700000.000000" in sampled and "count: 700000.000000" in sampled
+        assert (
+            "Cross-dataset aggregation omitted" in sampled
+            and "Total sum:" not in sampled
+        )
+        assert "FULL DATA: 2 of 2 elements" in full and "SAMPLED:" not in full
+        assert "sum: 6.000000" in full and "mean: 3.000000" in full
+
     async def workflows(self, all_servers: bool) -> None:
         for runtime in ("typescript", "go"):
             for state in ("cold", "warm"):
@@ -352,6 +429,7 @@ class Acceptance:
             image.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
             and image.stat().st_size > 1000
         )
+        await self.scientific_regressions(data)
         if all_servers:
             inventory = self.command(
                 "all-server-inventory", [str(self.launcher), "mcp-servers"]

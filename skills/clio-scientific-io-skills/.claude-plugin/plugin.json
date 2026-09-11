@@ -1,7 +1,7 @@
 {
   "name": "clio-scientific-io-skills",
   "description": "Skills for the clio-scientific-io workflow: open a scientific data file, see its structure, and read part of it.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

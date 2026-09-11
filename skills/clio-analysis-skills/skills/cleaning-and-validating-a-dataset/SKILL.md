@@ -32,13 +32,13 @@ the imputation itself: `mean`, `median`, `mode`, `forward_fill`,
 `backward_fill`, `interpolate`. Passing `strategy="median"` fails with "Unknown
 strategy"; the call you want is `strategy="impute", method="median"`.
 
-The methods are not interchangeable. The current server advertises
-`interpolate` but a verified input `[1, missing, 3, missing, 5]` returned
-`[1, 3, 3, 3, 5]`, not linear interpolation. Do not use this option as proof of
-interpolation. If interpolation is required, use a separately verified local
-analysis step with the user's available tools, retain both input and output,
-and assert expected values; otherwise report the unsupported operation.
-
+The methods are not interchangeable. `interpolate` fills interior numeric gaps
+linearly by row position: `[1, missing, 3, missing, 5]` becomes
+`[1, 2, 3, 4, 5]`. Leading/trailing gaps, entirely missing columns and
+non-numeric gaps remain missing; inspect the reported `imputed_count` and the
+output. Select the intended `columns`. This is not time-weighted interpolation:
+for irregular timestamps, use a verified time-aware calculation instead.
+Preserve the input and assert expected values before accepting any transformation.
 
 - **Scattered gaps** — inspect the measurement process; apparent randomness
   does not establish a missingness mechanism. Mean/median imputation changes

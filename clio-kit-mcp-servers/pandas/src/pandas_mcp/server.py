@@ -807,7 +807,7 @@ async def handle_missing_data_tool(
     method: Annotated[
         Optional[str],
         Field(
-            description="Imputation method: mean, median, mode, forward_fill, backward_fill, interpolate"
+            description="Imputation method: mean, median, mode, forward_fill, backward_fill, interpolate. Interpolate fills interior numeric gaps linearly by row position; endpoints and non-numeric gaps remain missing."
         ),
     ] = None,
     columns: Annotated[

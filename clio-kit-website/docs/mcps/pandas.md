@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🐼"
   category="Data Processing"
   description="Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations"
-  version="2.2.3"
+  version="2.2.4"
   actions={["load_data", "save_data", "statistical_summary", "correlation_analysis", "hypothesis_testing", "handle_missing_data", "clean_data", "groupby_operations", "merge_datasets", "pivot_table", "time_series_operations", "validate_data", "filter_data", "optimize_memory", "profile_data", "profile_csv"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["pandas", "data-analysis", "statistical-analysis", "data-science", "data-manipulation", "time-series", "data-cleaning", "data-transformation", "mcp", "llm-integration"]}
@@ -84,9 +84,11 @@ Optimize memory usage of my large dataset and export the cleaned data to multipl
 
 `profile_csv` uses a bounded retained sample, not necessarily all rows. Each
 file-based transformation reads its named input; use the returned output file
-for the next step. The advertised `interpolate` option currently mean-fills a
-controlled test case, so do not use it as verified interpolation. Preserve the
-input and independently check transformations before reporting results.
+for the next step. `interpolate` fills interior numeric gaps linearly by row
+position; `[1, missing, 3, missing, 5]` produces `[1, 2, 3, 4, 5]`. Endpoint,
+entirely missing and non-numeric gaps remain missing. Select the intended columns,
+check `imputed_count`, preserve the input and inspect the saved output. Irregular
+timestamps require a separately verified time-aware interpolation.
 
 {/* clio-kit:usage:end */}
 

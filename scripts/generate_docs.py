@@ -118,6 +118,11 @@ class MCPDataExtractor:
         if descriptor_file.is_file():
             with descriptor_file.open("rb") as stream:
                 project_info = tomllib.load(stream)
+            # Python descriptors contain launch metadata only. The project's
+            # description, license and keywords remain in pyproject.toml.
+            if project_info.get("runtime") == "python" and pyproject_file.is_file():
+                with pyproject_file.open("rb") as stream:
+                    project_info = tomllib.load(stream).get("project", {})
         elif pyproject_file.is_file():
             with pyproject_file.open("rb") as stream:
                 project_info = tomllib.load(stream).get("project", {})

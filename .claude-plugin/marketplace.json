@@ -105,7 +105,7 @@
       "name": "clio-hdf5",
       "source": "./plugins/clio-hdf5",
       "description": "HDF5 FastMCP - Scientific Data Access for AI Agents | CLIO Kit MCP Server",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "scientific",
       "keywords": [
         "scientific-computing",
@@ -178,7 +178,7 @@
       "name": "clio-pandas",
       "source": "./plugins/clio-pandas",
       "description": "Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations",
-      "version": "2.2.3",
+      "version": "2.2.4",
       "category": "scientific",
       "keywords": [
         "data-analysis",
@@ -448,7 +448,7 @@
       "name": "clio-scientific-io-skills",
       "source": "./skills/clio-scientific-io-skills",
       "description": "Skills for the clio-scientific-io workflow: open a scientific data file, see its structure, and read part of it.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "category": "skills",
       "keywords": [
         "choosing-a-storage-format",
@@ -462,7 +462,7 @@
       "name": "clio-scientific-io",
       "source": "./plugins/clio-scientific-io",
       "description": "Open a scientific data file, see its structure, and read part of it.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "category": "workflow",
       "keywords": [
         "adios2",
@@ -488,7 +488,7 @@
       "name": "clio-analysis-skills",
       "source": "./skills/clio-analysis-skills",
       "description": "Skills for the clio-analysis workflow: turn a dataset into summary statistics and a figure.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "category": "skills",
       "keywords": [
         "choosing-the-right-chart",
@@ -503,7 +503,7 @@
       "name": "clio-analysis",
       "source": "./plugins/clio-analysis",
       "description": "Turn a dataset into summary statistics and a figure.",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "category": "workflow",
       "keywords": [
         "3d-rendering",

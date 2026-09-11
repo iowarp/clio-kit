@@ -8,7 +8,7 @@ schema-version = 1
 # change, add it here WITH a real version bump under [servers] in the same
 # PR, then remove it again once published.
 [mcp-registry-release]
-publish = ["geo", "lmod", "seismology", "spack", "web"]
+publish = ["geo", "hdf5", "lmod", "pandas", "seismology", "spack", "web"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
@@ -41,12 +41,12 @@ description = "Work out why a finished job was slower than it should have been."
 servers = ["chronolog", "darshan", "parallel-sort"]
 
 [bundles.clio-scientific-io]
-version = "1.0.2"
+version = "1.0.3"
 description = "Open a scientific data file, see its structure, and read part of it."
 servers = ["adios", "compression", "hdf5", "parquet"]
 
 [bundles.clio-analysis]
-version = "1.0.2"
+version = "1.0.3"
 description = "Turn a dataset into summary statistics and a figure."
 servers = ["pandas", "paraview", "plot"]
 
@@ -78,12 +78,12 @@ chronolog = "2.0.1"
 compression = "2.2.3"
 darshan = "2.2.3"
 geo = "2.3.0"
-hdf5 = "2.2.3"
+hdf5 = "2.2.4"
 jarvis = "3.7.0"
 lmod = "3.0.0"
 ndp = "2.2.3"
 node-hardware = "2.2.3"
-pandas = "2.2.3"
+pandas = "2.2.4"
 parallel-sort = "2.2.3"
 paraview = "2.2.3"
 parquet = "2.2.3"

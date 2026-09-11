@@ -30,12 +30,15 @@ overhead. Shape and dtype require separate tool calls.
 | Aggregate over a Parquet column | `clio-parquet:aggregate_column_tool` |
 | Discover structure across many HDF5 files | `clio-hdf5:hdf5_parallel_scan` |
 
-Open the HDF5 file before requesting aggregate statistics. The current
-`hdf5_aggregate_stats` implementation samples datasets larger than 500 MiB;
-its sum/count/min/max can describe the sample, not the entire dataset. A live
-70-million-element array of ones returned sum/count 700,000 without a sample
-label. Infer this limit from size; the response alone may not disclose it. The
-multidimensional sampling stride also does not guarantee a small allocation.
+Open the HDF5 file before requesting aggregate statistics. For datasets larger
+than 500 MiB, `hdf5_aggregate_stats` may use a strided sample. Read the response's
+`SAMPLED` or `FULL DATA` label, processed/total element counts and coverage.
+Sample sum/count/min/max describe selected values only, not whole-dataset
+totals or bounds. Cross-dataset aggregation is omitted when any result is sampled.
+For example, a 70-million-element array of ones reports 700,000 sampled values
+and 1% coverage. Striding can miss patterns; it is not a random representative
+sample. Older server versions may omit these labels, so verify coverage against
+the full shape. Multidimensional sampling also does not guarantee a small allocation.
 For exact results, use a separately verified chunked calculation with complete
 coverage or report that the available tool cannot establish the exact answer.
 

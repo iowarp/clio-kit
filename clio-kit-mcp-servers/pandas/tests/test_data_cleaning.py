@@ -130,6 +130,46 @@ class TestHandleMissingData:
         assert result["success"]
         assert result["imputation_method"] == "backward_fill"
 
+    def test_interpolation_uses_row_position_and_preserves_other_columns(
+        self, tmp_path
+    ):
+        source = tmp_path / "gaps.csv"
+        original = pd.DataFrame(
+            {
+                "value": [1.0, np.nan, 3.0, np.nan, 5.0],
+                "other": [10.0, np.nan, 30.0, np.nan, 50.0],
+            }
+        )
+        original.to_csv(source, index=False)
+        result = handle_missing_data(str(source), "impute", "interpolate", ["value"])
+        assert result["success"], result
+        output = pd.read_csv(result["output_file"])
+        assert output["value"].tolist() == [1, 2, 3, 4, 5]
+        pd.testing.assert_series_equal(output["other"], original["other"])
+        pd.testing.assert_frame_equal(pd.read_csv(source), original)
+        assert result["imputation_info"]["value"]["imputed_count"] == 2
+        assert "other" not in result["imputation_info"]
+
+    def test_interpolation_does_not_invent_endpoints_or_categories(self, tmp_path):
+        source = tmp_path / "edges.csv"
+        pd.DataFrame(
+            {
+                "value": [np.nan, 1.0, np.nan, 3.0, np.nan],
+                "empty": [np.nan] * 5,
+                "category": ["a", None, "b", None, "c"],
+            }
+        ).to_csv(source, index=False)
+        result = handle_missing_data(str(source), "impute", "interpolate")
+        assert result["success"], result
+        output = pd.read_csv(result["output_file"])
+        assert output["value"][1:4].tolist() == [1, 2, 3]
+        assert output["value"].iloc[[0, 4]].isna().all()
+        assert output["empty"].isna().all()
+        assert output["category"].isna().sum() == 2
+        assert result["imputation_info"]["value"]["imputed_count"] == 1
+        assert result["imputation_info"]["empty"]["imputed_count"] == 0
+        assert result["imputation_info"]["category"]["imputed_count"] == 0
+
     def test_handle_missing_data_impute_default_method(self, temp_csv_with_missing):
         """Test imputing with default method (None should default to mean)"""
         result = handle_missing_data(

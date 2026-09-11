@@ -165,3 +165,21 @@ def test_docs_discover_descriptor_project_without_python_metadata(
     assert data["description"] == "Crystal analysis"
     assert data["version"] == "2.0.0"
     assert data["actions"] == ["inspect"]
+
+
+def test_python_descriptor_preserves_project_documentation_metadata(
+    tmp_path, monkeypatch
+):
+    server = tmp_path / "pandas"
+    server.mkdir()
+    (server / "clio-server.toml").write_text('name = "pandas"\nruntime = "python"\n')
+    (server / "pyproject.toml").write_text(
+        '[project]\nname = "pandas-mcp"\ndescription = "Scientific analysis"\n'
+        'license = "BSD-3-Clause"\nkeywords = ["data-analysis"]\n'
+    )
+    extractor = GENERATOR.MCPDataExtractor({"pandas": "2.2.4"}, "2026-09-10")
+    monkeypatch.setattr(extractor, "_extract_tools_from_server", lambda _: [])
+    data = extractor._extract_single_mcp_data(server)
+    assert data["description"] == "Scientific analysis"
+    assert data["license"] == "BSD-3-Clause"
+    assert data["keywords"] == ["data-analysis"]

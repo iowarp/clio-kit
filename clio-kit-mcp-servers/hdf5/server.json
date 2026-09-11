@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/hdf5-mcp",
   "title": "CLIO Hdf5",
   "description": "HDF5 FastMCP - Scientific Data Access for AI Agents | CLIO Kit MCP Server",
-  "version": "2.2.3",
+  "version": "2.2.4",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -103,7 +103,7 @@
     },
     {
       "name": "hdf5_aggregate_stats",
-      "description": "Parallel statistics computation across multiple datasets."
+      "description": "Parallel statistics, with explicit sampling coverage above 500 MiB.\n\nSample statistics describe only the selected values, not full-dataset totals."
     },
     {
       "name": "analyze_dataset_structure",
