@@ -128,6 +128,50 @@ Replace `codex` with `claude-code` or `antigravity`. This installs all 20 skills
 
 Choose either the Python or npm installer for each skill. See the [skills CLI guide](clio-kit-website/docs/marketplace.md#optional-skills-cli) for selecting skills, updates and removal.
 
+<details>
+<summary><b>One Command for Any Server</b></summary>
+
+```bash
+# From the CLIO Kit checkout, install the CLI in a persistent tool environment
+uv tool install --force --reinstall .
+# If uv's executable directory is not on PATH:
+uv tool update-shell
+
+# List all 22 available MCP servers
+clio-kit mcp-servers
+
+# Run an individual server
+clio-kit mcp-server hdf5
+clio-kit mcp-server pandas
+clio-kit mcp-server slurm
+
+# Agentic search for scientific corpora
+clio-kit search serve
+clio-kit search query --namespace local_fs --q "pressure > 200 kPa"
+```
+
+To install the published release instead, use `uv tool install clio-kit`.
+`uv tool install` creates a persistent, isolated environment; use
+`uvx --from clio-kit clio-kit ...` for a temporary, one-shot invocation.
+
+Released wheels run each embedded Python MCP server using its shipped `uv.lock`.
+The launcher caches environments by source and lock contents, installs production
+dependencies, and refuses to resolve an embedded server whose lock is missing.
+The `--branch` option is for development, not an immutable release installation.
+
+The wheel also includes machine-readable tool contracts for JARVIS, Slurm, Spack
+and Scientific Catalog, with SHA-256 digests for downstream verification:
+
+```bash
+clio-kit mcp-contracts
+clio-kit mcp-contract clio-kit-jarvis-user-v3.7.2
+clio-kit mcp-contract clio-kit-slurm-user-v3
+clio-kit mcp-contract clio-kit-spack-user-v2.3
+clio-kit mcp-contract clio-kit-scientific-catalog-user-v1.1
+```
+
+</details>
+
 ### Workflow Bundles
 
 | Bundle | Purpose | MCP servers |
