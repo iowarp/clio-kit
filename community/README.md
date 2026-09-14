@@ -230,8 +230,9 @@ with recorded scenarios and observed results, not a token estimate alone.
 Generation fails, rather than publishing something broken, when:
 
 - the filename and the `name` field disagree
-- `name` starts with `clio-`, which is reserved for plugins generated from this
-  repository's own servers, bundles and skills
+- a directly submitted entry's `name` starts with `clio-`, which is reserved for
+  generated components. Federated catalogues retain their publisher's names,
+  including other Clio products; they cannot replace an existing owned entry.
 - `name` collides with a generated plugin or another community entry
 - `description` is missing — it is what a user reads before installing
 - `[source]` names an unknown type, omits a field that type requires, or carries

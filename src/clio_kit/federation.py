@@ -99,7 +99,38 @@ def compile_catalogue(
                 if content.get("name") != entry["name"]:
                     raise ValueError(f"Plugin name differs from its manifest: {source}")
             elif entry.get("strict", True):
-                raise ValueError(f"External plugin manifest missing: {source}")
+                # Claude also loads skill-only packages whose identity comes
+                # from the marketplace entry (e.g. Clio Coder's library).
+                from clio_kit.skills import read_skill_frontmatter
+
+                skill_paths = (
+                    [plugin / "SKILL.md"]
+                    if (plugin / "SKILL.md").is_file()
+                    else sorted(plugin.glob("skills/*/SKILL.md"))
+                )
+                if not skill_paths or not entry.get("description"):
+                    raise ValueError(f"External plugin manifest missing: {source}")
+                for skill in skill_paths:
+                    if not skill.resolve().is_relative_to(checkout.resolve()):
+                        raise ValueError(
+                            f"Linked skill escapes external repository: {skill}"
+                        )
+                    read_skill_frontmatter(skill.parent)
+                # Do not accidentally promote a foreign host's native recipes
+                # when accepting a manifest-free, skill-only package.
+                if any(
+                    (plugin / name).exists()
+                    for name in (
+                        "agents",
+                        "commands",
+                        "hooks",
+                        "output-styles",
+                        ".mcp.json",
+                    )
+                ):
+                    raise ValueError(
+                        f"Native components require a plugin manifest: {source}"
+                    )
             entry["source"] = {
                 "source": "git-subdir",
                 "url": url,
@@ -187,8 +218,9 @@ def refresh_marketplace(root: Path) -> dict[str, Any]:
                         f"Federated plugin name collision: {name!r} from {url}"
                     )
                 continue
-            if name.startswith("clio-"):
-                raise ValueError(f"External plugin claims reserved prefix: {name}")
+            # Federated publishers keep their native names (including other
+            # Clio products). The collision check above protects owned entries;
+            # provenance distinguishes indexed components from maintained ones.
             entry.setdefault("metadata", {}).update(
                 indexed=True, clioFederation=referral["name"]
             )

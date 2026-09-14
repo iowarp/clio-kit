@@ -821,6 +821,9 @@ def generate_all(mcps_dir: str) -> None:
         raise ValueError(
             f"community entries collide with generated plugins: {colliding}"
         )
+    from clio_kit.marketplace_assets import imported_skill_entries
+
+    marketplace_plugins.extend(imported_skill_entries(repo_root))
     marketplace_plugins.extend(community_entries)
     marketplace_plugins.extend(read_snapshot(repo_root))
     if community_entries:

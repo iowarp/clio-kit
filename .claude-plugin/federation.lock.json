@@ -1,9 +1,84 @@
 {
   "schema": "clio-kit.federation.v1",
   "imported_names": [
+    "archify",
+    "architecture",
+    "arxiv-literature",
+    "ast-grep",
+    "backlog",
+    "branch-closeout",
+    "clio-coder-dev",
+    "clio-coder-test",
+    "coding-standards",
+    "context-handoff",
+    "context-prime",
+    "credentials",
+    "cut-it",
+    "design-council",
+    "experiment-protocol",
+    "file-ticket",
+    "find-skills",
+    "fix-issue",
+    "grill-me",
+    "herdr",
+    "materio",
+    "prd",
+    "product-intent",
+    "prototype",
+    "resolve-merge-conflicts",
+    "scientific-debugging",
+    "scientific-modernization",
+    "ship",
+    "skill-craft",
+    "tdd",
+    "tech-spec",
+    "workflow-distiller",
+    "worktree-create",
+    "worktree-merge",
     "iowarp-dev-setup"
   ],
   "marketplaces": [
+    {
+      "name": "iowarp-clio-coder",
+      "url": "https://github.com/iowarp/clio-coder.git",
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "plugins": [
+        "archify",
+        "architecture",
+        "arxiv-literature",
+        "ast-grep",
+        "backlog",
+        "branch-closeout",
+        "clio-coder-dev",
+        "clio-coder-test",
+        "coding-standards",
+        "context-handoff",
+        "context-prime",
+        "credentials",
+        "cut-it",
+        "design-council",
+        "experiment-protocol",
+        "file-ticket",
+        "find-skills",
+        "fix-issue",
+        "grill-me",
+        "herdr",
+        "materio",
+        "prd",
+        "product-intent",
+        "prototype",
+        "resolve-merge-conflicts",
+        "scientific-debugging",
+        "scientific-modernization",
+        "ship",
+        "skill-craft",
+        "tdd",
+        "tech-spec",
+        "workflow-distiller",
+        "worktree-create",
+        "worktree-merge"
+      ]
+    },
     {
       "name": "iowarp-clio",
       "url": "https://github.com/iowarp/clio-core.git",
@@ -15,6 +90,585 @@
     }
   ],
   "plugins": [
+    {
+      "name": "archify",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/planning/archify",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Validated interactive system maps and diagrams as standalone HTML from a typed JSON spec, for one of five diagram types (architecture, workflow, sequence, dataflow, lifecycle). Use when the user asks to visualize architecture, a workflow, a call sequence, a data pipeline, or a state machine, or to map this repository. Not for ad hoc drawings or slide art, and not for Mermaid output; use the artifact tool for plain Markdown.",
+      "version": "0.1.0",
+      "category": "planning",
+      "license": "MIT",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "architecture",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/planning/architecture",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Decides the engineering approach for an intent in an interactive session: investigates, proposes two or three genuinely different approaches with trade-offs, recommends, lets the user decide, and writes the decision doc. Not a task-by-task plan; use cut-it. Not a multi-perspective debate; use design-council. Not product intent; use product-intent. Not a typed implementation handoff; use tech-spec.",
+      "version": "0.4.1",
+      "category": "planning",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "arxiv-literature",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/research/arxiv-literature",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Searches arXiv, summarizes or compares papers, and builds a compact literature survey as citation-ready, source-linked paper cards. Prefer the Researcher shadow agent for noisy multi-paper retrieval.",
+      "version": "0.5.1",
+      "category": "research",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "ast-grep",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/coding/ast-grep",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Structural code search with ast-grep rules: finds code by shape when grep on text is too noisy, and never rewrites it. Not for plain string or filename lookups; use grep or find.",
+      "version": "0.3.0",
+      "category": "coding",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "backlog",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/planning/backlog",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Turns a finished PRD or architecture doc into a ticket backlog of small stories with verifiable acceptance criteria, confirmed, then created as GitHub issues or in another configured tracker. Not for local sprint slicing into a SPRINT.md; use cut-it.",
+      "version": "0.4.1",
+      "category": "planning",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "branch-closeout",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/git/branch-closeout",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Proves merged work on the canonical base, inspects and removes associated worktrees through Git, deletes local branches safely, and audits surviving repository refs. Not for creating worktrees; use worktree-create. Not for integrating branches; use worktree-merge.",
+      "version": "0.1.0",
+      "category": "git",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "clio-coder-dev",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/meta/clio-coder-dev",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Governs changes to Clio Coder's own source and harness (TUI, skills, agents, tools, prompts, domains): what may change freely, what needs explicit user intent, and how to change it without breaking the architecture. Not for verifying a change against the harness; use clio-coder-test.",
+      "version": "0.4.0",
+      "category": "meta",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "clio-coder-test",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/meta/clio-coder-test",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Verifies a Clio Coder source change against the current contract, smoke, boundary, and application test lanes, including temporary-state and local-provider harnesses. Not for deciding what may change; use clio-coder-dev.",
+      "version": "0.3.1",
+      "category": "meta",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "coding-standards",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/coding/coding-standards",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Correct-by-construction TypeScript rules (errors as values, parse don't validate, illegal states unrepresentable, deep modules) for writing or refactoring TypeScript when the project has not pinned its own standards.",
+      "version": "0.4.0",
+      "category": "coding",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "context-handoff",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/context/context-handoff",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Writes a durable, redacted, reference-not-copy handoff document when a session winds down or context is about to be compacted or lost, so the next session or agent can continue. Not for orienting at the start of a session; use context-prime.",
+      "version": "0.5.1",
+      "category": "context",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "context-prime",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/context/context-prime",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Orients a fresh session in a repository by loading the last handoff, git state, the project constitution, and active-work signals before acting. Not for writing the handoff; use context-handoff.",
+      "version": "0.4.1",
+      "category": "context",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "credentials",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/meta/credentials",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Handles API keys, tokens, and facility credentials (kerberos tickets, globus and scheduler tokens, ssh agents, netrc) before a tool needs one, after an auth error, when a new secret is supplied, or when one may have leaked. Not for provider target configuration; use clio-coder auth and target settings.",
+      "version": "0.2.0",
+      "category": "meta",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "cut-it",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/workflow/cut-it",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Slices an existing plan, PRD, or milestone into an executable sprint of dependency-ordered vertical slices sized for one agent run each, with done-when verification per slice; never fabricates a plan. Not for deciding the approach; use architecture.",
+      "version": "0.4.1",
+      "category": "workflow",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "design-council",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/workflow/design-council",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Convenes several expert perspectives that challenge each other on a design decision with real trade-offs before code is written; quick mode runs a single round. Not for a one-question-at-a-time interrogation of a plan; use grill-me. Not for splitting implementation across workers; use dispatch directly.",
+      "version": "0.6.0",
+      "category": "workflow",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "experiment-protocol",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/research/experiment-protocol",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Pre-registers a performance study, numerical comparison, parameter sweep, or benchmark: thresholds, tolerances, environment pins, and verdict conditions locked into the validation contract before any measurement. Not for diagnosing a stalled bug; use scientific-debugging.",
+      "version": "0.3.1",
+      "category": "research",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "file-ticket",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/git/file-ticket",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Turns something noticed mid-session into a tracker issue: captures evidence, dedups against existing issues, composes a labeled issue with acceptance criteria, confirms, and creates it via gh. Not for batch ticket creation from a PRD; use backlog. Not for diagnosing an existing issue; use fix-issue.",
+      "version": "0.3.0",
+      "category": "git",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "find-skills",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/meta/find-skills",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Finds published skills and prepares their Library installation for the operator when the user asks whether a capability exists as a skill. Not for authoring a new skill; use skill-craft.",
+      "version": "0.2.1",
+      "category": "meta",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "fix-issue",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/git/fix-issue",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Resolves a tracker issue end to end: fetches it, diagnoses only when the issue does not name the code, fixes test-first, and self-reviews against the acceptance criteria, leaving a verified uncommitted change. Not for filing; use file-ticket. Not for committing or PRs; use ship.",
+      "version": "0.3.0",
+      "category": "git",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "grill-me",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/workflow/grill-me",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Stress-tests a plan, design, or idea through a phased one-question-at-a-time interview before code is written, ending in a compact decision log. Not for a multi-perspective debate; use design-council.",
+      "version": "0.5.1",
+      "category": "workflow",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "herdr",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/meta/herdr",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Launches, drives, or inspects another agent or command in a Herdr pane, tab, or workspace, including a second Clio Coder instance; requires HERDR_ENV=1. Not for background work a plain shell or dispatch already covers.",
+      "version": "0.2.0",
+      "category": "meta",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "materio",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/plugins/materio",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Materio: materials research interviews, supplied-corpus synthesis, lab feasibility, task execution and verified paper handoff.",
+      "version": "0.1.0",
+      "author": {
+        "name": "IOWarp; domain workflow adapted from Daisy Quach"
+      },
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "prd",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/planning/prd",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Turns an idea into a product requirements document through a phase-gated interview, ending in PRD.md plus per-milestone prompt files ready to drive a coding agent. Not for the problem-first product thesis; use product-intent.",
+      "version": "0.4.1",
+      "category": "planning",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "product-intent",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/planning/product-intent",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Writes a problem-first product document for a greenfield effort: interviews for the problem, evidence, and a falsifiable hypothesis, with zero engineering decisions. Not for engineering decisions; use architecture. Not for turning a locked idea into milestone build prompts; use prd.",
+      "version": "0.4.1",
+      "category": "planning",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "prototype",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/coding/prototype",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Answers a design question with throwaway code: a clearly marked, runnable, no-persistence prototype whose verdict is kept and whose code is discarded. Not for pre-registered performance experiments; use experiment-protocol. Not for production implementation.",
+      "version": "0.4.0",
+      "category": "coding",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "resolve-merge-conflicts",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/git/resolve-merge-conflicts",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Resolves a merge, rebase, or cherry-pick stopped on conflicts by reconstructing both sides' intent, validating with the project's own checks, and completing the operation. Not for integrating many branches; use worktree-merge.",
+      "version": "0.4.0",
+      "category": "git",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "scientific-debugging",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/research/scientific-debugging",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Diagnoses stalled or cross-system failures and wrong, NaN, nondeterministic, or unexpectedly slow scientific results through falsifiable hypotheses across distinct fault classes, with evidence-cited verdicts before any fix. Not for designing benchmarks or pre-registered experiments; use experiment-protocol.",
+      "version": "0.3.1",
+      "category": "research",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "scientific-modernization",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/research/scientific-modernization",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Modernizes, ports, rewrites, packages, or replaces established scientific software in independently validated stages against an external scientific oracle, settling compatibility and upstream stewardship before calling it complete. Not for an isolated benchmark; use experiment-protocol. Not for diagnosing wrong results; use scientific-debugging.",
+      "version": "0.4.1",
+      "category": "research",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "ship",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/git/ship",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Ships finished work: writes one reviewed atomic commit, keeps maintainer branches local, or pushes a contributor branch to their fork and opens a PR only on explicit intent. Not for producing the change; use fix-issue.",
+      "version": "0.5.0",
+      "category": "git",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "skill-craft",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/meta/skill-craft",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Writes, reviews, or prunes a SKILL.md, judging whether its description, body, and length earn their cost. Not for packaging a workflow that just happened; use workflow-distiller.",
+      "version": "0.3.1",
+      "category": "meta",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "tdd",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/coding/tdd",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Builds a feature or fix test-first, red to green at pre-agreed public seams, one vertical slice at a time. Not for designing benchmark criteria; use experiment-protocol.",
+      "version": "0.4.0",
+      "category": "coding",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "tech-spec",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/planning/tech-spec",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Writes a typed call-stack architecture handoff: code-shaped contracts plus execution flows, implementation-ready for another engineer. User-invoked only. Not for weighing approaches or deciding the design; use architecture first.",
+      "version": "0.3.1",
+      "category": "planning",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "workflow-distiller",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/workflow/workflow-distiller",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Packages a workflow that just happened into a reusable SKILL.md: reconstructs it from the session record, checks overlap with installed skills, gates on approval, then writes it following skill-craft. Not for authoring a skill with no prior workflow; use skill-craft.",
+      "version": "0.4.2",
+      "category": "workflow",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "worktree-create",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/git/worktree-create",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Stands up one or more git worktrees for parallel work, each on its own branch with gitignored config copied in, dependencies installed, and a verified health check. Not for merging finished worktrees; use worktree-merge. Not for closeout; use branch-closeout.",
+      "version": "0.6.0",
+      "category": "git",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
+    {
+      "name": "worktree-merge",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/iowarp/clio-coder.git",
+        "path": "library/skills/git/worktree-merge",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Integrates finished worktree branches through one throwaway integration branch, testing after each merge and running the full suite before the main line moves, with exact rollback on failure. Not for creating worktrees; use worktree-create. Not for closeout; use branch-closeout.",
+      "version": "0.6.0",
+      "category": "git",
+      "license": "Apache-2.0",
+      "metadata": {
+        "indexed": true,
+        "clioFederation": "iowarp-clio-coder"
+      }
+    },
     {
       "name": "iowarp-dev-setup",
       "source": {

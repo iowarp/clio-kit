@@ -1,0 +1,1732 @@
+{
+  "schema": 1,
+  "repository": "https://github.com/iowarp/clio-coder",
+  "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+  "adaptations": [
+    "Normalized Agent Skills frontmatter; upstream metadata retained here",
+    "Added host compatibility note; no foreign tool allowlist enforced",
+    "Made Materio assets self-contained for individual skill installation",
+    "Omitted the whole-package exporter from individual Materio skills",
+    "Qualified Archify's separately installed renderer reference",
+    "Corrected scientific-debugging's contradictory worked-example verdicts and tolerance guidance",
+    "Recorded CLIO Kit evaluation status independently of upstream status"
+  ],
+  "skills": [
+    {
+      "name": "ast-grep",
+      "path": "library/skills/coding/ast-grep",
+      "upstream_sha256": "521f8fd514358796372a4fd0694b1361bc006c1c848b27ac8939eaa7089f18ef",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "ast-grep",
+        "description": "Structural code search with ast-grep rules: finds code by shape when grep on text is too noisy, and never rewrites it. Not for plain string or filename lookups; use grep or find.",
+        "triggers": [
+          "structural code search",
+          "ast-grep rule",
+          "find calls with this argument shape",
+          "find code inside a function",
+          "grep returns too much noise"
+        ],
+        "version": "0.3.0",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "bash",
+          "read",
+          "write",
+          "edit",
+          "grep",
+          "ls"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/coding/ast-grep",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/coleam00/skills/tree/main/.claude/skills/ast-grep",
+          "eval-status": "scenarios-recorded",
+          "model-size": "any",
+          "agents": [
+            "main"
+          ]
+        }
+      }
+    },
+    {
+      "name": "coding-standards",
+      "path": "library/skills/coding/coding-standards",
+      "upstream_sha256": "c1776f12737c5b325b76748233752362369d419e54c9d10e9254f69cd4706ca5",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "coding-standards",
+        "description": "Correct-by-construction TypeScript rules (errors as values, parse don't validate, illegal states unrepresentable, deep modules) for writing or refactoring TypeScript when the project has not pinned its own standards.",
+        "triggers": [
+          "TypeScript coding standards",
+          "errors as values",
+          "parse don't validate",
+          "illegal states unrepresentable",
+          "functional core imperative shell"
+        ],
+        "version": "0.4.0",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "code_nav",
+          "bash",
+          "write",
+          "edit"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/coding/coding-standards",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/dmmulroy/skills/tree/main/coding-standards",
+          "eval-status": "scenarios-recorded",
+          "model-size": "any",
+          "provisional": true,
+          "agents": [
+            "main",
+            "coder"
+          ]
+        }
+      }
+    },
+    {
+      "name": "prototype",
+      "path": "library/skills/coding/prototype",
+      "upstream_sha256": "82fa437db8209ea0481aebe4820f6af52e7ec6707a722d76d74ca624f1ff8a8e",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "prototype",
+        "description": "Answers a design question with throwaway code: a clearly marked, runnable, no-persistence prototype whose verdict is kept and whose code is discarded. Not for pre-registered performance experiments; use experiment-protocol. Not for production implementation.",
+        "triggers": [
+          "throwaway prototype",
+          "mock up this UI",
+          "prototype this state model",
+          "sanity-check this logic",
+          "what should this UI look like"
+        ],
+        "version": "0.4.0",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "git",
+          "bash",
+          "write",
+          "edit"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/coding/prototype",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/mattpocock/skills/tree/main/skills/engineering/prototype",
+          "eval-status": "scenarios-recorded",
+          "model-size": "any",
+          "agents": [
+            "main"
+          ]
+        }
+      }
+    },
+    {
+      "name": "tdd",
+      "path": "library/skills/coding/tdd",
+      "upstream_sha256": "43714b7262ddd69dd617e2ea92cd74ccc968cf483cd204aca9fdc7cd69167f9e",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "tdd",
+        "description": "Builds a feature or fix test-first, red to green at pre-agreed public seams, one vertical slice at a time. Not for designing benchmark criteria; use experiment-protocol.",
+        "triggers": [
+          "test-driven development",
+          "write the test first",
+          "red green",
+          "build this test-first",
+          "reproduce the bug with a test"
+        ],
+        "version": "0.4.0",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "ls",
+          "bash",
+          "write",
+          "edit"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/coding/tdd",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/mattpocock/skills/tree/main/skills/engineering/tdd",
+          "eval-status": "smoke-checked",
+          "model-size": "any",
+          "agents": [
+            "main",
+            "coder"
+          ]
+        }
+      }
+    },
+    {
+      "name": "context-handoff",
+      "path": "library/skills/context/context-handoff",
+      "upstream_sha256": "6f2a81d499dce012adb1221245e1f69dd9ae33976db95bc42c1392f3529f2923",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "context-handoff",
+        "description": "Writes a durable, redacted, reference-not-copy handoff document when a session winds down or context is about to be compacted or lost, so the next session or agent can continue. Not for orienting at the start of a session; use context-prime.",
+        "triggers": [
+          "session handoff",
+          "notes for the next session",
+          "handoff to another agent",
+          "context is about to be lost",
+          "write a continuation brief"
+        ],
+        "version": "0.5.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "git",
+          "context",
+          "write",
+          "bash",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/context/context-handoff",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "smoke-checked",
+          "model-size": "any"
+        }
+      }
+    },
+    {
+      "name": "context-prime",
+      "path": "library/skills/context/context-prime",
+      "upstream_sha256": "6be58108ab03cb6a66f1acc34185be712cb484479325f36452230aca3c790fae",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "context-prime",
+        "description": "Orients a fresh session in a repository by loading the last handoff, git state, the project constitution, and active-work signals before acting. Not for writing the handoff; use context-handoff.",
+        "triggers": [
+          "prime this repository",
+          "catch me up",
+          "where were we",
+          "get up to speed",
+          "resume repository work after a break"
+        ],
+        "version": "0.4.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "ls",
+          "find",
+          "git",
+          "context",
+          "code_nav",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/context/context-prime",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "smoke-checked",
+          "model-size": "any"
+        }
+      }
+    },
+    {
+      "name": "branch-closeout",
+      "path": "library/skills/git/branch-closeout",
+      "upstream_sha256": "0f2a9ff412c68ff9efbd87fc00f7b0c0d103681322b14b60a3e0cf438a2f7d0e",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "branch-closeout",
+        "description": "Proves merged work on the canonical base, inspects and removes associated worktrees through Git, deletes local branches safely, and audits surviving repository refs. Not for creating worktrees; use worktree-create. Not for integrating branches; use worktree-merge.",
+        "triggers": [
+          "close out this branch",
+          "clean up merged branch",
+          "remove merged worktree",
+          "closeout branch",
+          "branch-closeout"
+        ],
+        "version": "0.1.0",
+        "license": "Apache-2.0",
+        "compatibility": "git >=2.30.0, gh CLI >=2.0.0 (optional for remote PR verification), POSIX-compatible shell",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "ls",
+          "git",
+          "bash",
+          "tasks",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/git/branch-closeout",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "scenarios-recorded",
+          "model-size": "any",
+          "agents": [
+            "main",
+            "git-master"
+          ]
+        }
+      }
+    },
+    {
+      "name": "file-ticket",
+      "path": "library/skills/git/file-ticket",
+      "upstream_sha256": "e44da4b8467a8bfa5316ea017d2a640f9dcaad48890be4c06136a346cd1645b8",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "file-ticket",
+        "description": "Turns something noticed mid-session into a tracker issue: captures evidence, dedups against existing issues, composes a labeled issue with acceptance criteria, confirms, and creates it via gh. Not for batch ticket creation from a PRD; use backlog. Not for diagnosing an existing issue; use fix-issue.",
+        "triggers": [
+          "file a ticket",
+          "open an issue for this",
+          "log this bug",
+          "ticket this behavior",
+          "create a tracker issue"
+        ],
+        "version": "0.3.0",
+        "license": "Apache-2.0",
+        "compatibility": "git >=2.30.0, gh CLI >=2.0.0 (authenticated for issue operations), POSIX-compatible shell",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "ls",
+          "git",
+          "bash",
+          "tasks",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/git/file-ticket",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "scenarios-recorded",
+          "model-size": "any",
+          "agents": [
+            "main"
+          ]
+        }
+      }
+    },
+    {
+      "name": "fix-issue",
+      "path": "library/skills/git/fix-issue",
+      "upstream_sha256": "c2a21ccc39cb294d8d05ecb8092aa41d9da4c8398eb126bd56d8e942a5a5fee8",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "fix-issue",
+        "description": "Resolves a tracker issue end to end: fetches it, diagnoses only when the issue does not name the code, fixes test-first, and self-reviews against the acceptance criteria, leaving a verified uncommitted change. Not for filing; use file-ticket. Not for committing or PRs; use ship.",
+        "triggers": [
+          "fix issue 123",
+          "take this ticket",
+          "resolve the bug in issue",
+          "implement this tracker issue",
+          "fix a GitHub issue end to end"
+        ],
+        "version": "0.3.0",
+        "license": "Apache-2.0",
+        "compatibility": "git >=2.30.0, gh CLI >=2.0.0 (authenticated for issue viewing), POSIX-compatible shell",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "git",
+          "bash",
+          "context",
+          "code_nav",
+          "dispatch",
+          "tasks",
+          "write",
+          "edit"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/git/fix-issue",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "smoke-checked",
+          "model-size": "any",
+          "agents": [
+            "main",
+            "coder"
+          ]
+        }
+      }
+    },
+    {
+      "name": "resolve-merge-conflicts",
+      "path": "library/skills/git/resolve-merge-conflicts",
+      "upstream_sha256": "d3046a3aa0b1a31ffd5a3b111c89776f30bdee8eda4a7ab3aa6ad55e271261d5",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "resolve-merge-conflicts",
+        "description": "Resolves a merge, rebase, or cherry-pick stopped on conflicts by reconstructing both sides' intent, validating with the project's own checks, and completing the operation. Not for integrating many branches; use worktree-merge.",
+        "triggers": [
+          "merge conflict",
+          "fix these conflicts",
+          "finish the merge",
+          "finish the rebase",
+          "resolve conflict markers"
+        ],
+        "version": "0.4.0",
+        "license": "Apache-2.0",
+        "compatibility": "git >=2.30.0, POSIX-compatible shell",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "ls",
+          "git",
+          "bash",
+          "edit",
+          "write",
+          "verify",
+          "tasks",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/git/resolve-merge-conflicts",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/mattpocock/skills/tree/main/skills/engineering/resolve-merge-conflicts",
+          "eval-status": "smoke-checked",
+          "model-size": "any",
+          "agents": [
+            "main",
+            "coder",
+            "git-master"
+          ]
+        }
+      }
+    },
+    {
+      "name": "ship",
+      "path": "library/skills/git/ship",
+      "upstream_sha256": "0a49b72ea6abe5b741e9227098da900c2edc9c89c4cddd894c6b3451307eb92e",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "ship",
+        "description": "Ships finished work: writes one reviewed atomic commit, keeps maintainer branches local, or pushes a contributor branch to their fork and opens a PR only on explicit intent. Not for producing the change; use fix-issue.",
+        "triggers": [
+          "ship this",
+          "commit this",
+          "commit and open the PR",
+          "push and open a pull request",
+          "get this up for review"
+        ],
+        "version": "0.5.0",
+        "license": "Apache-2.0",
+        "compatibility": "git >=2.30.0, gh CLI >=2.0.0 (required for pr mode), POSIX-compatible shell",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "ls",
+          "git",
+          "bash",
+          "tasks",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/git/ship",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "smoke-checked",
+          "model-size": "any",
+          "agents": [
+            "main",
+            "coder",
+            "git-master"
+          ]
+        }
+      }
+    },
+    {
+      "name": "worktree-create",
+      "path": "library/skills/git/worktree-create",
+      "upstream_sha256": "2da94b7f7529bb26ba1609e077e85531efb834b3574b6d945e05072fcef15662",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "worktree-create",
+        "description": "Stands up one or more git worktrees for parallel work, each on its own branch with gitignored config copied in, dependencies installed, and a verified health check. Not for merging finished worktrees; use worktree-merge. Not for closeout; use branch-closeout.",
+        "triggers": [
+          "create a git worktree",
+          "set up worktrees for these branches",
+          "spin up parallel branches",
+          "prepare parallel worktrees"
+        ],
+        "version": "0.6.0",
+        "license": "Apache-2.0",
+        "compatibility": "git >=2.30.0, POSIX-compatible shell",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "git",
+          "bash",
+          "write",
+          "tasks",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/git/worktree-create",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/coleam00/skills/tree/main/.claude/skills/worktree-create",
+          "eval-status": "smoke-checked",
+          "model-size": "any",
+          "agents": [
+            "main",
+            "git-master"
+          ]
+        }
+      }
+    },
+    {
+      "name": "worktree-merge",
+      "path": "library/skills/git/worktree-merge",
+      "upstream_sha256": "b09be613e5ebdfb5656c22e944427ddf02752b738e49754dfbe970400accbe05",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "worktree-merge",
+        "description": "Integrates finished worktree branches through one throwaway integration branch, testing after each merge and running the full suite before the main line moves, with exact rollback on failure. Not for creating worktrees; use worktree-create. Not for closeout; use branch-closeout.",
+        "triggers": [
+          "merge my worktrees",
+          "integrate these worktree branches",
+          "combine parallel branches",
+          "land finished worktrees"
+        ],
+        "version": "0.6.0",
+        "license": "Apache-2.0",
+        "compatibility": "git >=2.30.0, POSIX-compatible shell",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "ls",
+          "git",
+          "bash",
+          "tasks",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/git/worktree-merge",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/coleam00/skills/tree/main/.claude/skills/worktree-merge",
+          "eval-status": "smoke-checked",
+          "model-size": "any",
+          "agents": [
+            "main",
+            "git-master"
+          ]
+        }
+      }
+    },
+    {
+      "name": "clio-coder-dev",
+      "path": "library/skills/meta/clio-coder-dev",
+      "upstream_sha256": "e24f7db3586e46a850af16683d1a5746d0643e46acc38928cd667a67676db547",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "clio-coder-dev",
+        "description": "Governs changes to Clio Coder's own source and harness (TUI, skills, agents, tools, prompts, domains): what may change freely, what needs explicit user intent, and how to change it without breaking the architecture. Not for verifying a change against the harness; use clio-coder-test.",
+        "triggers": [
+          "modify Clio Coder",
+          "change the Clio harness",
+          "edit Clio skills or agents",
+          "evolve Clio tools or prompts",
+          "Clio contribution boundary"
+        ],
+        "version": "0.4.0",
+        "license": "Apache-2.0",
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/meta/clio-coder-dev",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "scenarios-recorded",
+          "model-size": "any"
+        }
+      }
+    },
+    {
+      "name": "clio-coder-test",
+      "path": "library/skills/meta/clio-coder-test",
+      "upstream_sha256": "a32d7fd5ad92e67c27ec6b16325ce9ab8b4c0a27ba07f7cd5fef8b2903f16dc2",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "clio-coder-test",
+        "description": "Verifies a Clio Coder source change against the current contract, smoke, boundary, and application test lanes, including temporary-state and local-provider harnesses. Not for deciding what may change; use clio-coder-dev.",
+        "triggers": [
+          "test Clio Coder",
+          "verify a Clio source change",
+          "run Clio contract tests",
+          "test ACP over stdio",
+          "Clio mock provider harness"
+        ],
+        "version": "0.3.1",
+        "license": "Apache-2.0",
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/meta/clio-coder-test",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "scenarios-recorded",
+          "model-size": "any"
+        }
+      }
+    },
+    {
+      "name": "credentials",
+      "path": "library/skills/meta/credentials",
+      "upstream_sha256": "93b97e0235cb8a5bce8db0354c53c08eca8e642a26e42f1d865112a92fd79217",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "credentials",
+        "description": "Handles API keys, tokens, and facility credentials (kerberos tickets, globus and scheduler tokens, ssh agents, netrc) before a tool needs one, after an auth error, when a new secret is supplied, or when one may have leaked. Not for provider target configuration; use clio-coder auth and target settings.",
+        "triggers": [
+          "API key",
+          "credential missing",
+          "authentication error",
+          "permission denied",
+          "add a secret",
+          "secret leaked"
+        ],
+        "version": "0.2.0",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "bash",
+          "ask_user",
+          "credential_present"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/meta/credentials",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "smoke-checked",
+          "model-size": "any"
+        }
+      }
+    },
+    {
+      "name": "find-skills",
+      "path": "library/skills/meta/find-skills",
+      "upstream_sha256": "006667370e17b567f5cfa4bb8c7c707ab8909d4350c618e2d4bd1f50e6f6d5de",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "find-skills",
+        "description": "Finds published skills and prepares their Library installation for the operator when the user asks whether a capability exists as a skill. Not for authoring a new skill; use skill-craft.",
+        "triggers": [
+          "find a skill",
+          "is there a skill for this",
+          "install a skill",
+          "add an agent skill",
+          "search the skills marketplace"
+        ],
+        "version": "0.2.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "bash",
+          "web_fetch",
+          "read",
+          "ls",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/meta/find-skills",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "scenarios-recorded",
+          "model-size": "any"
+        }
+      }
+    },
+    {
+      "name": "herdr",
+      "path": "library/skills/meta/herdr",
+      "upstream_sha256": "81b1368409d2a05d74866370c24be8832e65abf6f1c0380b7283bde56d30aa8e",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "herdr",
+        "description": "Launches, drives, or inspects another agent or command in a Herdr pane, tab, or workspace, including a second Clio Coder instance; requires HERDR_ENV=1. Not for background work a plain shell or dispatch already covers.",
+        "triggers": [
+          "use Herdr",
+          "launch an agent in a Herdr pane",
+          "inspect a Herdr agent",
+          "start a second Clio Coder instance",
+          "drive a command in a Herdr workspace"
+        ],
+        "version": "0.2.0",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "bash",
+          "read",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/meta/herdr",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/herdrdev/herdr/tree/master/skills/herdr",
+          "eval-status": "scenarios-recorded",
+          "model-size": "any",
+          "agents": [
+            "main"
+          ]
+        }
+      }
+    },
+    {
+      "name": "skill-craft",
+      "path": "library/skills/meta/skill-craft",
+      "upstream_sha256": "c3392154942cbcbec9759b1c885aace96915f7c6c45df65869a7086b21d45d32",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "skill-craft",
+        "description": "Writes, reviews, or prunes a SKILL.md, judging whether its description, body, and length earn their cost. Not for packaging a workflow that just happened; use workflow-distiller.",
+        "triggers": [
+          "write a SKILL.md",
+          "create a new skill",
+          "improve this skill",
+          "why isn't this skill firing",
+          "prune a skill body"
+        ],
+        "version": "0.3.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "write",
+          "edit",
+          "bash"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/meta/skill-craft",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "scenarios-recorded",
+          "model-size": "large"
+        }
+      }
+    },
+    {
+      "name": "archify",
+      "path": "library/skills/planning/archify",
+      "upstream_sha256": "49841c990d1cb6f68ef35f56559201800be774972dd579dbd36a12867171d19b",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "archify",
+        "description": "Validated interactive system maps and diagrams as standalone HTML from a typed JSON spec, for one of five diagram types (architecture, workflow, sequence, dataflow, lifecycle). Use when the user asks to visualize architecture, a workflow, a call sequence, a data pipeline, or a state machine, or to map this repository. Not for ad hoc drawings or slide art, and not for Mermaid output; use the artifact tool for plain Markdown.",
+        "triggers": [
+          "architecture diagram",
+          "system map",
+          "map this repository",
+          "sequence diagram",
+          "data flow diagram",
+          "state machine diagram",
+          "visualize the architecture"
+        ],
+        "version": "0.1.0",
+        "license": "MIT",
+        "allowed-tools": [
+          "bash",
+          "read",
+          "write",
+          "edit",
+          "ls",
+          "grep",
+          "find",
+          "code_nav",
+          "verify",
+          "context"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/planning/archify",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/tt-a1i/archify/tree/v2.16.0/archify",
+          "eval-status": "scenarios-recorded",
+          "model-size": "any",
+          "agents": [
+            "main",
+            "architect",
+            "documenter",
+            "wiki-writer"
+          ]
+        }
+      }
+    },
+    {
+      "name": "architecture",
+      "path": "library/skills/planning/architecture",
+      "upstream_sha256": "b269dde3dc9f33b4974e3d1c570d4f0aaa112640c764f382d4fcb5cd7c5f77c6",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "architecture",
+        "description": "Decides the engineering approach for an intent in an interactive session: investigates, proposes two or three genuinely different approaches with trade-offs, recommends, lets the user decide, and writes the decision doc. Not a task-by-task plan; use cut-it. Not a multi-perspective debate; use design-council. Not product intent; use product-intent. Not a typed implementation handoff; use tech-spec.",
+        "triggers": [
+          "how should we build this",
+          "pick the stack",
+          "architecture for this feature",
+          "decide the engineering approach",
+          "compare architecture options"
+        ],
+        "version": "0.4.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "git",
+          "context",
+          "code_nav",
+          "web_fetch",
+          "write",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/planning/architecture",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/coleam00/skills/tree/main/.claude/skills/architecture",
+          "eval-status": "smoke-checked",
+          "model-size": "large",
+          "agents": [
+            "main"
+          ]
+        }
+      }
+    },
+    {
+      "name": "backlog",
+      "path": "library/skills/planning/backlog",
+      "upstream_sha256": "30423c02abc1a68af9726c4789c05e23b815089ae08fb43823606306c5e00f13",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "backlog",
+        "description": "Turns a finished PRD or architecture doc into a ticket backlog of small stories with verifiable acceptance criteria, confirmed, then created as GitHub issues or in another configured tracker. Not for local sprint slicing into a SPRINT.md; use cut-it.",
+        "triggers": [
+          "create the stories",
+          "turn this PRD into issues",
+          "build the backlog",
+          "decompose this plan into tickets",
+          "create GitHub issues from this architecture"
+        ],
+        "version": "0.4.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "ls",
+          "git",
+          "bash",
+          "tasks",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/planning/backlog",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/coleam00/skills/tree/main/.claude/skills/backlog",
+          "eval-status": "smoke-checked",
+          "model-size": "any",
+          "agents": [
+            "main"
+          ]
+        }
+      }
+    },
+    {
+      "name": "prd",
+      "path": "library/skills/planning/prd",
+      "upstream_sha256": "e24f5f43ea00e5d5ea3cfec9cbf530fc8334f6258165b506e1766928614511e2",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "prd",
+        "description": "Turns an idea into a product requirements document through a phase-gated interview, ending in PRD.md plus per-milestone prompt files ready to drive a coding agent. Not for the problem-first product thesis; use product-intent.",
+        "triggers": [
+          "write a PRD",
+          "spec this product out",
+          "define this feature",
+          "structure this product brain dump",
+          "create milestone prompts"
+        ],
+        "version": "0.4.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "ls",
+          "find",
+          "git",
+          "context",
+          "code_nav",
+          "write",
+          "edit",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/planning/prd",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "buildermethods/bm-prd-creator",
+          "eval-status": "smoke-checked",
+          "model-size": "large"
+        }
+      }
+    },
+    {
+      "name": "product-intent",
+      "path": "library/skills/planning/product-intent",
+      "upstream_sha256": "eda066301d1fbc42f6e155295dade854121382f9105584a6833f3c0e0268f866",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "product-intent",
+        "description": "Writes a problem-first product document for a greenfield effort: interviews for the problem, evidence, and a falsifiable hypothesis, with zero engineering decisions. Not for engineering decisions; use architecture. Not for turning a locked idea into milestone build prompts; use prd.",
+        "triggers": [
+          "why are we building this",
+          "write the product thesis",
+          "problem-first PRD",
+          "define a falsifiable product hypothesis",
+          "greenfield product intent"
+        ],
+        "version": "0.4.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "git",
+          "context",
+          "write",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/planning/product-intent",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/coleam00/skills/tree/main/.claude/skills/product-intent",
+          "eval-status": "smoke-checked",
+          "model-size": "large",
+          "agents": [
+            "main"
+          ]
+        }
+      }
+    },
+    {
+      "name": "tech-spec",
+      "path": "library/skills/planning/tech-spec",
+      "upstream_sha256": "09bdb9a731e3765261e01dceed4c463c1b79aee1f91559a6541816bc1f851401",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "tech-spec",
+        "description": "Writes a typed call-stack architecture handoff: code-shaped contracts plus execution flows, implementation-ready for another engineer. User-invoked only. Not for weighing approaches or deciding the design; use architecture first.",
+        "triggers": [
+          "write a tech spec",
+          "typed call-stack handoff",
+          "code-shaped contracts",
+          "implementation-ready technical specification",
+          "specify execution flows"
+        ],
+        "version": "0.3.1",
+        "license": "Apache-2.0",
+        "disable-model-invocation": true,
+        "allowed-tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "git",
+          "context",
+          "code_nav",
+          "write",
+          "ask_user"
+        ],
+        "requires": [
+          "skill:tdd"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/planning/tech-spec",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/dmmulroy/skills/tree/main/tech-spec",
+          "eval-status": "smoke-checked",
+          "model-size": "large",
+          "provisional": true,
+          "agents": [
+            "main"
+          ]
+        }
+      }
+    },
+    {
+      "name": "arxiv-literature",
+      "path": "library/skills/research/arxiv-literature",
+      "upstream_sha256": "a910d76b3add7fc964a0d6613f76831472c40b0534bec82b7e7adebc26d37766",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "arxiv-literature",
+        "description": "Searches arXiv, summarizes or compares papers, and builds a compact literature survey as citation-ready, source-linked paper cards. Prefer the Researcher shadow agent for noisy multi-paper retrieval.",
+        "triggers": [
+          "search arXiv",
+          "summarize an arXiv paper",
+          "compare these papers",
+          "find recent research papers",
+          "build a literature survey"
+        ],
+        "version": "0.5.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "web_fetch",
+          "dispatch",
+          "read",
+          "grep",
+          "find",
+          "ls"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/research/arxiv-literature",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "smoke-checked",
+          "model-size": "any",
+          "agents": [
+            "researcher"
+          ]
+        }
+      }
+    },
+    {
+      "name": "experiment-protocol",
+      "path": "library/skills/research/experiment-protocol",
+      "upstream_sha256": "54fd258dac4e12bc360687af67d9fa9a7e2c54600ed99904d743834ddbb02062",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "experiment-protocol",
+        "description": "Pre-registers a performance study, numerical comparison, parameter sweep, or benchmark: thresholds, tolerances, environment pins, and verdict conditions locked into the validation contract before any measurement. Not for diagnosing a stalled bug; use scientific-debugging.",
+        "triggers": [
+          "benchmark these implementations",
+          "pre-register a performance experiment",
+          "run a parameter sweep",
+          "define numerical tolerances",
+          "reproduce these results",
+          "compare solver accuracy"
+        ],
+        "version": "0.3.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "write",
+          "grep",
+          "ls",
+          "find",
+          "git",
+          "context",
+          "code_nav",
+          "bash"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/research/experiment-protocol",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "smoke-checked",
+          "model-size": "any"
+        }
+      }
+    },
+    {
+      "name": "scientific-debugging",
+      "path": "library/skills/research/scientific-debugging",
+      "upstream_sha256": "93892a6875eb3f9f1c2a312a6905dd57e031ca0bafbfe2244bd26e79aa668099",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "scientific-debugging",
+        "description": "Diagnoses stalled or cross-system failures and wrong, NaN, nondeterministic, or unexpectedly slow scientific results through falsifiable hypotheses across distinct fault classes, with evidence-cited verdicts before any fix. Not for designing benchmarks or pre-registered experiments; use experiment-protocol.",
+        "triggers": [
+          "wrong scientific results",
+          "nondeterministic HPC code",
+          "unexplained performance regression",
+          "diagnose NaNs",
+          "debug with falsifiable hypotheses",
+          "scientific root cause"
+        ],
+        "version": "0.3.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "ls",
+          "find",
+          "git",
+          "context",
+          "code_nav",
+          "bash"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/research/scientific-debugging",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "smoke-checked",
+          "model-size": "any"
+        }
+      }
+    },
+    {
+      "name": "scientific-modernization",
+      "path": "library/skills/research/scientific-modernization",
+      "upstream_sha256": "80b849f5faf10231d113b2d0ff4f8a4233e9a6aec6970ed25e618f5db5c97be6",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "scientific-modernization",
+        "description": "Modernizes, ports, rewrites, packages, or replaces established scientific software in independently validated stages against an external scientific oracle, settling compatibility and upstream stewardship before calling it complete. Not for an isolated benchmark; use experiment-protocol. Not for diagnosing wrong results; use scientific-debugging.",
+        "triggers": [
+          "modernize this scientific code",
+          "rewrite this scientific software in Rust",
+          "port this solver to GPU",
+          "migrate the scientific build system",
+          "create a maintained fork",
+          "preserve scientific parity"
+        ],
+        "version": "0.4.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "write",
+          "grep",
+          "ls",
+          "find",
+          "git",
+          "context",
+          "code_nav",
+          "bash"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/research/scientific-modernization",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "scenarios-recorded",
+          "model-size": "large"
+        }
+      }
+    },
+    {
+      "name": "cut-it",
+      "path": "library/skills/workflow/cut-it",
+      "upstream_sha256": "b1d82205dc457b89f54f144f5d7f16df0011eb9414cd8c543a6aa7969597fc9e",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "cut-it",
+        "description": "Slices an existing plan, PRD, or milestone into an executable sprint of dependency-ordered vertical slices sized for one agent run each, with done-when verification per slice; never fabricates a plan. Not for deciding the approach; use architecture.",
+        "triggers": [
+          "cut it",
+          "slice this plan",
+          "make this plan executable",
+          "turn this milestone into a sprint",
+          "write dependency-ordered vertical slices"
+        ],
+        "version": "0.4.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "ls",
+          "find",
+          "git",
+          "context",
+          "code_nav",
+          "write",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/workflow/cut-it",
+          "audit": "pass",
+          "provenance": "adapted",
+          "origin": "https://github.com/TheOrcDev/skills",
+          "eval-status": "smoke-checked",
+          "model-size": "any",
+          "agents": [
+            "architect"
+          ]
+        }
+      }
+    },
+    {
+      "name": "design-council",
+      "path": "library/skills/workflow/design-council",
+      "upstream_sha256": "e6afaf8a117c8e54b53a27fb9c8d76b439ab3bede59c7a79b170b82033894c34",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "design-council",
+        "description": "Convenes several expert perspectives that challenge each other on a design decision with real trade-offs before code is written; quick mode runs a single round. Not for a one-question-at-a-time interrogation of a plan; use grill-me. Not for splitting implementation across workers; use dispatch directly.",
+        "triggers": [
+          "convene a design council",
+          "debate this design",
+          "get multiple expert perspectives",
+          "weigh the architecture options",
+          "what would experts say"
+        ],
+        "version": "0.6.0",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "dispatch",
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "context",
+          "code_nav",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/workflow/design-council",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "smoke-checked",
+          "model-size": "large",
+          "agents": [
+            "scout",
+            "researcher",
+            "provenance"
+          ]
+        }
+      }
+    },
+    {
+      "name": "grill-me",
+      "path": "library/skills/workflow/grill-me",
+      "upstream_sha256": "3840d4c413ddcb37d376c6e412b8472b7422498bc0d2c904dc7a96f91fd059a1",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "grill-me",
+        "description": "Stress-tests a plan, design, or idea through a phased one-question-at-a-time interview before code is written, ending in a compact decision log. Not for a multi-perspective debate; use design-council.",
+        "triggers": [
+          "grill me",
+          "interview me about this plan",
+          "stress-test this design",
+          "poke holes in this idea",
+          "clarify this plan one question at a time"
+        ],
+        "version": "0.5.1",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "ls",
+          "find",
+          "git",
+          "context",
+          "code_nav",
+          "ask_user"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/workflow/grill-me",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "smoke-checked",
+          "model-size": "large"
+        }
+      }
+    },
+    {
+      "name": "workflow-distiller",
+      "path": "library/skills/workflow/workflow-distiller",
+      "upstream_sha256": "e6217288ce5cc7314e165f9adf747e46603fed8109378523cca9db8949d02b06",
+      "packed": false,
+      "original_frontmatter": {
+        "name": "workflow-distiller",
+        "description": "Packages a workflow that just happened into a reusable SKILL.md: reconstructs it from the session record, checks overlap with installed skills, gates on approval, then writes it following skill-craft. Not for authoring a skill with no prior workflow; use skill-craft.",
+        "triggers": [
+          "make this workflow a skill",
+          "package what we just did",
+          "turn this into a reusable workflow",
+          "distill this repeated process",
+          "create a skill from this session"
+        ],
+        "version": "0.4.2",
+        "license": "Apache-2.0",
+        "allowed-tools": [
+          "read",
+          "grep",
+          "find",
+          "ls",
+          "context",
+          "write",
+          "ask_user"
+        ],
+        "requires": [
+          "skill:skill-craft"
+        ],
+        "clio-coder": {
+          "registry-id": "iowarp/clio-coder",
+          "source-url": "https://github.com/iowarp/clio-coder/tree/main/library/skills/workflow/workflow-distiller",
+          "audit": "pass",
+          "provenance": "designed",
+          "eval-status": "scenarios-recorded",
+          "model-size": "large"
+        }
+      }
+    },
+    {
+      "name": "materio-lab-definer",
+      "path": "library/plugins/materio/skills/materio-lab-definer",
+      "upstream_sha256": "16dc8f178e208ae5c234e7a68dcf2347499faebd4ede717474fe2d6746a967ff",
+      "packed": true,
+      "original_frontmatter": {
+        "name": "materio-lab-definer",
+        "description": "Structure resource interviews into a feasibility map with gaps and alternatives."
+      }
+    },
+    {
+      "name": "materio-literature-reviewer",
+      "path": "library/plugins/materio/skills/materio-literature-reviewer",
+      "upstream_sha256": "0093e512cb1186bff66cbea6915ff557166b9f967f163da571746e16bb781b9a",
+      "packed": true,
+      "original_frontmatter": {
+        "name": "materio-literature-reviewer",
+        "description": "Review supplied materials and provided URLs with citation provenance and explicit gaps."
+      }
+    },
+    {
+      "name": "materio-research-explorer",
+      "path": "library/plugins/materio/skills/materio-research-explorer",
+      "upstream_sha256": "f36f802556005a1874750708f162725e7e7896462013f0bfb45dee5ae02cef6a",
+      "packed": true,
+      "original_frontmatter": {
+        "name": "materio-research-explorer",
+        "description": "Synthesize candidate materials-science questions and write researcher-confirmed identity."
+      }
+    },
+    {
+      "name": "materio-task-executor",
+      "path": "library/plugins/materio/skills/materio-task-executor",
+      "upstream_sha256": "60104d670d0ea9323f762b03d7882c3080b8b20a288a32510fac842b2e521efe",
+      "packed": true,
+      "original_frontmatter": {
+        "name": "materio-task-executor",
+        "description": "Produce type-specific artifacts for one approved materials-science task and verify the files."
+      }
+    },
+    {
+      "name": "materio-task-verifier",
+      "path": "library/plugins/materio/skills/materio-task-verifier",
+      "upstream_sha256": "ed94ff27a9a92f5bda745cea1f09875074f026e20c1161e0ba3c331c69585622",
+      "packed": true,
+      "original_frontmatter": {
+        "name": "materio-task-verifier",
+        "description": "Independently inspect research task outputs against their approved assumptions, artifacts, and evidence."
+      }
+    },
+    {
+      "name": "materio-workflow-planner",
+      "path": "library/plugins/materio/skills/materio-workflow-planner",
+      "upstream_sha256": "2cc013c63e4e7e74ee6eea0b3eebe4d9b620ff4771d27e6c8b2bb6f85de71b60",
+      "packed": true,
+      "original_frontmatter": {
+        "name": "materio-workflow-planner",
+        "description": "Build a resource-aware dependency plan with researcher assumptions and tagged defaults."
+      }
+    }
+  ],
+  "files": {
+    ".claude-plugin/plugin.json": "6bd5bf3fd4d192e7099d86b51d7ed4b581cbbf34e5d0edfcac0fafdd99a145ef",
+    "plugin.json": "98aedfc80af4c21baf5ddefc5c9046040c0dbe42617dc236e25446dfb40ae81c",
+    "skills/archify/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/archify/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/archify/SKILL.md": "a930173a2414634519c316e21d5478a6dfc0defd7cee9547c69e74f838ea5004",
+    "skills/archify/evals.md": "0e45e25725c2063ad1676002d70e1d667f4dd3cce2d3d124ea27b5f198fc1597",
+    "skills/architecture/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/architecture/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/architecture/SKILL.md": "445c75acebdc53d3cd08c02defa1d2ec76cbf3deb896afddb4030c622cf5af40",
+    "skills/architecture/evals.md": "1aac244280e37d63b3b2bf427c2bcd9f4a3d66b6c87f137ac13c48a2583f7efa",
+    "skills/arxiv-literature/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/arxiv-literature/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/arxiv-literature/SKILL.md": "94d15185add8fb4a2dc0148c3235ba5b5c15ba9ef77914fcc55e937a9c9fd6b3",
+    "skills/arxiv-literature/evals.md": "0b7e869f657980e6886a3047176c22b2b8f4a2462890e228f3d370acbdce2699",
+    "skills/ast-grep/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/ast-grep/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/ast-grep/SKILL.md": "46aff57324a89fb81c4bff5448f2168d9d82eaae4899396496efc7d6618f6d07",
+    "skills/ast-grep/evals.md": "4ad8fbd5b5c2bd1c8f899f68bce5f3bcebc5169bbd1c91993783bade780800eb",
+    "skills/ast-grep/references/rule_reference.md": "9f6d2ba2f2dbde059f61f426c262abe943f548984496962c43c7cc6e44813ad6",
+    "skills/backlog/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/backlog/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/backlog/SKILL.md": "44844e1e071d245c7ebb704aff8ae53514a14f28e7b9351af7089f3197adc320",
+    "skills/backlog/evals.md": "8517d55035def2f6421f134d0cf6611b89c741631f4d33d28397c8d68d12c23d",
+    "skills/branch-closeout/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/branch-closeout/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/branch-closeout/SKILL.md": "50008f44edb06a18b4a7fa911e4f02e10140e66b81d40fbb40bc5ed41faf3516",
+    "skills/branch-closeout/evals.md": "babdcbf6d91617dff534c1c550a3c30c7eff5ef43b2b20cd9e704f5e6c9ce8ad",
+    "skills/branch-closeout/references/closeout-checklist.md": "daef96772b0189ca93eacf5d6bfea6da51637084762846b531cd49761c2784e9",
+    "skills/clio-coder-dev/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/clio-coder-dev/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/clio-coder-dev/SKILL.md": "6aaac33ffb980554ed7252d0791f753a882ef82de5a2926f3bdc56508c1688d8",
+    "skills/clio-coder-dev/evals.md": "418305a9c07c856d88c15005e70c768ab577c94ed4b470359e2459436168a9ce",
+    "skills/clio-coder-test/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/clio-coder-test/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/clio-coder-test/SKILL.md": "f32b08b8deaa6ba23d3d5ec7b8ce89a8a1c33cffa6ad966367765976a03407fd",
+    "skills/clio-coder-test/evals.md": "b389ac94f9c1c3a68ce08a02e5c85257f3885d54ff98fb7efb4aa93619396128",
+    "skills/clio-coder-test/references/harness.md": "4b7fdd9f8d9b3c558f5351db559b5584b1e246c676fc10e1e4400cd54dbe6b24",
+    "skills/clio-coder-test/references/test-map.md": "7b999c33886878d031974c411d270402d01e0919ea52c3a305a9ecf058675145",
+    "skills/coding-standards/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/coding-standards/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/coding-standards/SKILL.md": "fe97db1f6e1498170d5b4f1d7ec5ef68dea59823877ebb8b25442f9d9b269e84",
+    "skills/coding-standards/evals.md": "f84c51375961cee928f73b85e29c4942344f0c51a6e88eaf3d1e2d12e811a26f",
+    "skills/context-handoff/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/context-handoff/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/context-handoff/SKILL.md": "f5373940c6c255b206e2dcfd9ed8ff1c2ed27ebc29bfe82bd8a408bcc0aa52a6",
+    "skills/context-handoff/evals.md": "2fdc346381217914260fbce6edbee96fb10eaf1f5d17e454b9edf86b4f8400a8",
+    "skills/context-handoff/scripts/new-handoff.sh": "5085a9d4c53c2d22d5b9b9100cb56193f9c0e28eb50123c7c52f7cf842d311e0",
+    "skills/context-prime/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/context-prime/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/context-prime/SKILL.md": "3f030c6783ec89e813b3094846e16a0d2e29352f567c0cd7593a8fcbba867c79",
+    "skills/context-prime/evals.md": "4f9fda65dda58c1865ed2cae5e849380ec55158a32acfb2f06011c493998e32b",
+    "skills/credentials/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/credentials/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/credentials/SKILL.md": "26dbe249861c108d518f92825cc3fa78abd34ee3fdaa94db6460ed4d609b219f",
+    "skills/credentials/evals.md": "6a098cf40562cb19563993999d9cfed6a324bebe3bf63cfbd646b9c2b0bc4330",
+    "skills/cut-it/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/cut-it/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/cut-it/SKILL.md": "22fd375097b3e268e73686685c489b8a08a96ca1aa8f9a45c7b01bbdcdd9c49c",
+    "skills/cut-it/evals.md": "49c165c639e1bc87eb27e53bce64bee87270c40284c016adf22fad01727e72ac",
+    "skills/design-council/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/design-council/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/design-council/SKILL.md": "54fc975d2c761a0ea3b422d1155bcbb97e8ad9aad208533857ba1dc024fccfa4",
+    "skills/design-council/evals.md": "0d721df16dfd844136845b7f50e6ac1989332b4372cc158f814c704eda50d90b",
+    "skills/experiment-protocol/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/experiment-protocol/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/experiment-protocol/SKILL.md": "0839c471e4ab9be04b5ce463d1dd8ae7866ac7da760827dc9e2e3254cb6684ab",
+    "skills/experiment-protocol/evals.md": "6d85a540438244e00995f8c12706f9fd42dbacfc8ae17c1649a6caf9a25ef9c5",
+    "skills/file-ticket/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/file-ticket/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/file-ticket/SKILL.md": "814e2d02e6a9bd51494a0eaa9c6b1d0872daaa801b115030ca9d32059657b56f",
+    "skills/file-ticket/assets/issue-template.md": "fd2ad98ee36b53893d0b77b72f640d7a8138f4d1d5d32ef0dd37ad6ba65b8951",
+    "skills/file-ticket/evals.md": "6df8c9698d22023d8f388e6afd94cbf7bd065f9c2d345a742f7b85d49b8ae88d",
+    "skills/file-ticket/references/issue-discovery.md": "cbdaff0b4d751e02db7a5fe534a91e1bfa6cc8613b80fad9280b79324cb29733",
+    "skills/find-skills/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/find-skills/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/find-skills/SKILL.md": "f9bc5ce97f264e5a21fb10b0ae580c33ee10a2ca4053e43871d1b310b4a53769",
+    "skills/find-skills/evals.md": "000ea2b5eec2e73ba25cef95703355431d56d27fb37ec518dea87823f5f38d11",
+    "skills/fix-issue/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/fix-issue/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/fix-issue/SKILL.md": "31978867265f4998e74dc71ea810e17def459da5401470589557fdb523f82d3a",
+    "skills/fix-issue/evals.md": "0dd46862410d1426aa5c316ec401d788edb86cd91b3384ed647525d8be14ebd7",
+    "skills/fix-issue/references/diagnosis-and-rca.md": "45b14ba7d5950465459f861d7816c5f6f2450033eb35376ce3e8efcb78ae603d",
+    "skills/grill-me/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/grill-me/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/grill-me/SKILL.md": "32513fdf59bd1c9a95f6c0552305fe3eacea265201ceb5f286c0370f7f7c1e21",
+    "skills/grill-me/evals.md": "ec7f3220c87fea23255ef3b6c2a28e544d4bd4ac886781ec6855ba72e16d6d20",
+    "skills/herdr/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/herdr/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/herdr/SKILL.md": "fab7aa2967eb9128ea4757c201e801ebafa9b24caaa858dd5de6e9ff78e5848e",
+    "skills/herdr/evals.md": "886c4819acb735bf19b700e772a965ab0b58f5a84db2efd5a08f4b6b0a177f66",
+    "skills/materio-lab-definer/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/materio-lab-definer/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/materio-lab-definer/SKILL.md": "b56a8f776ea48c068f62c2402bcfee7a10bae54e3aca0d80c04eb61fd9d25677",
+    "skills/materio-lab-definer/assets/actions/add-task.md": "84a5615b72223e3546cd7bf9e862d048b320c3352baad4fc07c4aa58df5513c4",
+    "skills/materio-lab-definer/assets/actions/archive-task.md": "e507254ca24822ed7fb3925e821db2f78c6278d7f74cdea10728a93705303f01",
+    "skills/materio-lab-definer/assets/actions/checkpoint.md": "c2f5371ba83dd8f6c0013d5fccd22affa2f856d1d41104ac80dc5901ed29eae5",
+    "skills/materio-lab-definer/assets/actions/define-research-tasks.md": "8f9897e0132421e57ea09c368754d68ecc1bd2013fc26dcc792d9968c7f504b7",
+    "skills/materio-lab-definer/assets/actions/define-virtual-lab.md": "b59815188d57997a0e3eb4bbf6cf4cb0688b2b5fd4417520f99d13fa777ae28d",
+    "skills/materio-lab-definer/assets/actions/execute-task.md": "6a022a7d1e69a5d278a3b25e6de28a393e1b0e011b1d6b9227dacb9128050b26",
+    "skills/materio-lab-definer/assets/actions/help.md": "82f23151c2a8d6cf75c713f55e260aa09d810a75a75d417acea9c5c8a2e3b1bd",
+    "skills/materio-lab-definer/assets/actions/identify-research.md": "b1661ea15846b17243ac8a811b67d5730b86b4d3b64566fafdb553d4a3224a45",
+    "skills/materio-lab-definer/assets/actions/literature-review.md": "0f8c93d8c7a9e0cc83653d93113c75b923c0a21da6338caf7f17e42e84505db4",
+    "skills/materio-lab-definer/assets/actions/pause-research.md": "f4c9c3d6b760b5342bc10190bdcb05639af8d74f082cccdb1a9a4cd2b7081b6d",
+    "skills/materio-lab-definer/assets/actions/progress.md": "276216f542e9af221717cfc7b0d5587071ac77133d330ddae31a6c4aec0160b1",
+    "skills/materio-lab-definer/assets/actions/remove-task.md": "df98be8f550e326c1437d5519df078b6bd1faa970544cdad40b69e6ad9592366",
+    "skills/materio-lab-definer/assets/actions/resume-research.md": "75118fe63d5a488b759edeeec6ee6f3f00e219bd855a0e003b5b25c7e4dd7f2f",
+    "skills/materio-lab-definer/assets/actions/settings.md": "22dadf9b316d21a1f6e8197bc93cd9e9b84823f6e6685aa5388233009fb2cfb2",
+    "skills/materio-lab-definer/assets/actions/status.md": "479bc0a76b762284b0014c0a870c8dffe573459e6ffed13272f4b8335fb1a062",
+    "skills/materio-lab-definer/assets/actions/upload-data.md": "c0931a8781dbc3897896b1e618abf6f0050ac3e34957c92e4bc033afcacca91d",
+    "skills/materio-lab-definer/assets/actions/wtfp.md": "77a3787b643b1d94d76cc27931ebb56dee2bdbde522d947a395ac69fa9754a08",
+    "skills/materio-lab-definer/assets/references/research-domains.md": "0f6b7548ade7e97ffc25c057dcb43a5ad4ecc0810ac2c8c04badc9c1b5231e9e",
+    "skills/materio-lab-definer/assets/references/research-policy.md": "edae32bf11989c59b15befdc74f404ce9bfc78bf79d162d8aae49bffdefa02bd",
+    "skills/materio-lab-definer/assets/references/traditional-workflows.md": "33afdd62e6a15237749715c1c6090a8de239d568b3ef81669efc8ceaa9a8f5fb",
+    "skills/materio-lab-definer/assets/scripts/check_physics.py": "54083478c9c2225ccef84954eaac0ccbf0406146d2f29d9777fe7a3cb42a9e1f",
+    "skills/materio-lab-definer/assets/scripts/check_scripts.py": "70490d54e8d49983838d0f4878fe1f9f936af7676c667993c7d00539ee965b14",
+    "skills/materio-lab-definer/assets/scripts/research_state.py": "38f7c5a412fcd763d646a7957d9d1ae540dadc678f7b1bb2503397cc3fa38574",
+    "skills/materio-lab-definer/assets/scripts/verify_citations.py": "3c1228ac142634ef9ec9b73c172013d951a2ea8eb31f22dc7f42a2feea7fc5b7",
+    "skills/materio-lab-definer/assets/templates/RESEARCH.md": "fac26997f5b5373fbc55a6bd4183c627648a654de57d900f7fb20b4247b1cd10",
+    "skills/materio-lab-definer/assets/templates/VIRTUAL-LAB.md": "f27362a289464710b09590b685f4d205d517a9bf855726d114f53712d000aac7",
+    "skills/materio-lab-definer/assets/templates/WORKFLOW.md": "a9635a2d6172f57cedbccf28511664aab94d54e03b60bbfafc4b5e5649925ec2",
+    "skills/materio-lab-definer/assets/templates/config.json": "616e520c47876dfb6df10c8af6f58a4f6486ea4c7b1805de151448d1796a6714",
+    "skills/materio-lab-definer/evals.md": "2d506509220430d09da75d3411b9f0fbef3e9ac6a1984be227e2fe9264a013ad",
+    "skills/materio-lab-definer/upstream-provenance.json": "91937a93e4d3b31c5c1f5d94e632273f21aafe88cb15fc61487a905e120afee5",
+    "skills/materio-literature-reviewer/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/materio-literature-reviewer/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/materio-literature-reviewer/SKILL.md": "cd61e733b4a9fc856794ba91cbc81c172f90ee1f336fb2de66d786e7561e0427",
+    "skills/materio-literature-reviewer/assets/actions/add-task.md": "84a5615b72223e3546cd7bf9e862d048b320c3352baad4fc07c4aa58df5513c4",
+    "skills/materio-literature-reviewer/assets/actions/archive-task.md": "e507254ca24822ed7fb3925e821db2f78c6278d7f74cdea10728a93705303f01",
+    "skills/materio-literature-reviewer/assets/actions/checkpoint.md": "c2f5371ba83dd8f6c0013d5fccd22affa2f856d1d41104ac80dc5901ed29eae5",
+    "skills/materio-literature-reviewer/assets/actions/define-research-tasks.md": "8f9897e0132421e57ea09c368754d68ecc1bd2013fc26dcc792d9968c7f504b7",
+    "skills/materio-literature-reviewer/assets/actions/define-virtual-lab.md": "b59815188d57997a0e3eb4bbf6cf4cb0688b2b5fd4417520f99d13fa777ae28d",
+    "skills/materio-literature-reviewer/assets/actions/execute-task.md": "6a022a7d1e69a5d278a3b25e6de28a393e1b0e011b1d6b9227dacb9128050b26",
+    "skills/materio-literature-reviewer/assets/actions/help.md": "82f23151c2a8d6cf75c713f55e260aa09d810a75a75d417acea9c5c8a2e3b1bd",
+    "skills/materio-literature-reviewer/assets/actions/identify-research.md": "b1661ea15846b17243ac8a811b67d5730b86b4d3b64566fafdb553d4a3224a45",
+    "skills/materio-literature-reviewer/assets/actions/literature-review.md": "0f8c93d8c7a9e0cc83653d93113c75b923c0a21da6338caf7f17e42e84505db4",
+    "skills/materio-literature-reviewer/assets/actions/pause-research.md": "f4c9c3d6b760b5342bc10190bdcb05639af8d74f082cccdb1a9a4cd2b7081b6d",
+    "skills/materio-literature-reviewer/assets/actions/progress.md": "276216f542e9af221717cfc7b0d5587071ac77133d330ddae31a6c4aec0160b1",
+    "skills/materio-literature-reviewer/assets/actions/remove-task.md": "df98be8f550e326c1437d5519df078b6bd1faa970544cdad40b69e6ad9592366",
+    "skills/materio-literature-reviewer/assets/actions/resume-research.md": "75118fe63d5a488b759edeeec6ee6f3f00e219bd855a0e003b5b25c7e4dd7f2f",
+    "skills/materio-literature-reviewer/assets/actions/settings.md": "22dadf9b316d21a1f6e8197bc93cd9e9b84823f6e6685aa5388233009fb2cfb2",
+    "skills/materio-literature-reviewer/assets/actions/status.md": "479bc0a76b762284b0014c0a870c8dffe573459e6ffed13272f4b8335fb1a062",
+    "skills/materio-literature-reviewer/assets/actions/upload-data.md": "c0931a8781dbc3897896b1e618abf6f0050ac3e34957c92e4bc033afcacca91d",
+    "skills/materio-literature-reviewer/assets/actions/wtfp.md": "77a3787b643b1d94d76cc27931ebb56dee2bdbde522d947a395ac69fa9754a08",
+    "skills/materio-literature-reviewer/assets/references/research-domains.md": "0f6b7548ade7e97ffc25c057dcb43a5ad4ecc0810ac2c8c04badc9c1b5231e9e",
+    "skills/materio-literature-reviewer/assets/references/research-policy.md": "edae32bf11989c59b15befdc74f404ce9bfc78bf79d162d8aae49bffdefa02bd",
+    "skills/materio-literature-reviewer/assets/references/traditional-workflows.md": "33afdd62e6a15237749715c1c6090a8de239d568b3ef81669efc8ceaa9a8f5fb",
+    "skills/materio-literature-reviewer/assets/scripts/check_physics.py": "54083478c9c2225ccef84954eaac0ccbf0406146d2f29d9777fe7a3cb42a9e1f",
+    "skills/materio-literature-reviewer/assets/scripts/check_scripts.py": "70490d54e8d49983838d0f4878fe1f9f936af7676c667993c7d00539ee965b14",
+    "skills/materio-literature-reviewer/assets/scripts/research_state.py": "38f7c5a412fcd763d646a7957d9d1ae540dadc678f7b1bb2503397cc3fa38574",
+    "skills/materio-literature-reviewer/assets/scripts/verify_citations.py": "3c1228ac142634ef9ec9b73c172013d951a2ea8eb31f22dc7f42a2feea7fc5b7",
+    "skills/materio-literature-reviewer/assets/templates/RESEARCH.md": "fac26997f5b5373fbc55a6bd4183c627648a654de57d900f7fb20b4247b1cd10",
+    "skills/materio-literature-reviewer/assets/templates/VIRTUAL-LAB.md": "f27362a289464710b09590b685f4d205d517a9bf855726d114f53712d000aac7",
+    "skills/materio-literature-reviewer/assets/templates/WORKFLOW.md": "a9635a2d6172f57cedbccf28511664aab94d54e03b60bbfafc4b5e5649925ec2",
+    "skills/materio-literature-reviewer/assets/templates/config.json": "616e520c47876dfb6df10c8af6f58a4f6486ea4c7b1805de151448d1796a6714",
+    "skills/materio-literature-reviewer/evals.md": "cb471a3bb27ea47197b9c83094ca30c41424b198e77285dfd6e6f455d80a6e43",
+    "skills/materio-literature-reviewer/upstream-provenance.json": "91937a93e4d3b31c5c1f5d94e632273f21aafe88cb15fc61487a905e120afee5",
+    "skills/materio-research-explorer/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/materio-research-explorer/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/materio-research-explorer/SKILL.md": "5ceebafa3b29685f3968c2060efd877c13be5e995370f23b677aa21fa44e7ba0",
+    "skills/materio-research-explorer/assets/actions/add-task.md": "84a5615b72223e3546cd7bf9e862d048b320c3352baad4fc07c4aa58df5513c4",
+    "skills/materio-research-explorer/assets/actions/archive-task.md": "e507254ca24822ed7fb3925e821db2f78c6278d7f74cdea10728a93705303f01",
+    "skills/materio-research-explorer/assets/actions/checkpoint.md": "c2f5371ba83dd8f6c0013d5fccd22affa2f856d1d41104ac80dc5901ed29eae5",
+    "skills/materio-research-explorer/assets/actions/define-research-tasks.md": "8f9897e0132421e57ea09c368754d68ecc1bd2013fc26dcc792d9968c7f504b7",
+    "skills/materio-research-explorer/assets/actions/define-virtual-lab.md": "b59815188d57997a0e3eb4bbf6cf4cb0688b2b5fd4417520f99d13fa777ae28d",
+    "skills/materio-research-explorer/assets/actions/execute-task.md": "6a022a7d1e69a5d278a3b25e6de28a393e1b0e011b1d6b9227dacb9128050b26",
+    "skills/materio-research-explorer/assets/actions/help.md": "82f23151c2a8d6cf75c713f55e260aa09d810a75a75d417acea9c5c8a2e3b1bd",
+    "skills/materio-research-explorer/assets/actions/identify-research.md": "b1661ea15846b17243ac8a811b67d5730b86b4d3b64566fafdb553d4a3224a45",
+    "skills/materio-research-explorer/assets/actions/literature-review.md": "0f8c93d8c7a9e0cc83653d93113c75b923c0a21da6338caf7f17e42e84505db4",
+    "skills/materio-research-explorer/assets/actions/pause-research.md": "f4c9c3d6b760b5342bc10190bdcb05639af8d74f082cccdb1a9a4cd2b7081b6d",
+    "skills/materio-research-explorer/assets/actions/progress.md": "276216f542e9af221717cfc7b0d5587071ac77133d330ddae31a6c4aec0160b1",
+    "skills/materio-research-explorer/assets/actions/remove-task.md": "df98be8f550e326c1437d5519df078b6bd1faa970544cdad40b69e6ad9592366",
+    "skills/materio-research-explorer/assets/actions/resume-research.md": "75118fe63d5a488b759edeeec6ee6f3f00e219bd855a0e003b5b25c7e4dd7f2f",
+    "skills/materio-research-explorer/assets/actions/settings.md": "22dadf9b316d21a1f6e8197bc93cd9e9b84823f6e6685aa5388233009fb2cfb2",
+    "skills/materio-research-explorer/assets/actions/status.md": "479bc0a76b762284b0014c0a870c8dffe573459e6ffed13272f4b8335fb1a062",
+    "skills/materio-research-explorer/assets/actions/upload-data.md": "c0931a8781dbc3897896b1e618abf6f0050ac3e34957c92e4bc033afcacca91d",
+    "skills/materio-research-explorer/assets/actions/wtfp.md": "77a3787b643b1d94d76cc27931ebb56dee2bdbde522d947a395ac69fa9754a08",
+    "skills/materio-research-explorer/assets/references/research-domains.md": "0f6b7548ade7e97ffc25c057dcb43a5ad4ecc0810ac2c8c04badc9c1b5231e9e",
+    "skills/materio-research-explorer/assets/references/research-policy.md": "edae32bf11989c59b15befdc74f404ce9bfc78bf79d162d8aae49bffdefa02bd",
+    "skills/materio-research-explorer/assets/references/traditional-workflows.md": "33afdd62e6a15237749715c1c6090a8de239d568b3ef81669efc8ceaa9a8f5fb",
+    "skills/materio-research-explorer/assets/scripts/check_physics.py": "54083478c9c2225ccef84954eaac0ccbf0406146d2f29d9777fe7a3cb42a9e1f",
+    "skills/materio-research-explorer/assets/scripts/check_scripts.py": "70490d54e8d49983838d0f4878fe1f9f936af7676c667993c7d00539ee965b14",
+    "skills/materio-research-explorer/assets/scripts/research_state.py": "38f7c5a412fcd763d646a7957d9d1ae540dadc678f7b1bb2503397cc3fa38574",
+    "skills/materio-research-explorer/assets/scripts/verify_citations.py": "3c1228ac142634ef9ec9b73c172013d951a2ea8eb31f22dc7f42a2feea7fc5b7",
+    "skills/materio-research-explorer/assets/templates/RESEARCH.md": "fac26997f5b5373fbc55a6bd4183c627648a654de57d900f7fb20b4247b1cd10",
+    "skills/materio-research-explorer/assets/templates/VIRTUAL-LAB.md": "f27362a289464710b09590b685f4d205d517a9bf855726d114f53712d000aac7",
+    "skills/materio-research-explorer/assets/templates/WORKFLOW.md": "a9635a2d6172f57cedbccf28511664aab94d54e03b60bbfafc4b5e5649925ec2",
+    "skills/materio-research-explorer/assets/templates/config.json": "616e520c47876dfb6df10c8af6f58a4f6486ea4c7b1805de151448d1796a6714",
+    "skills/materio-research-explorer/evals.md": "a113427014024018acc441183bde958c65820dbb476cfd536582d4d64b9e82a3",
+    "skills/materio-research-explorer/upstream-provenance.json": "91937a93e4d3b31c5c1f5d94e632273f21aafe88cb15fc61487a905e120afee5",
+    "skills/materio-task-executor/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/materio-task-executor/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/materio-task-executor/SKILL.md": "1429cf18865206146f9f97340c18c3d849a0ca39f1d98f91445bcdbef5080370",
+    "skills/materio-task-executor/assets/actions/add-task.md": "84a5615b72223e3546cd7bf9e862d048b320c3352baad4fc07c4aa58df5513c4",
+    "skills/materio-task-executor/assets/actions/archive-task.md": "e507254ca24822ed7fb3925e821db2f78c6278d7f74cdea10728a93705303f01",
+    "skills/materio-task-executor/assets/actions/checkpoint.md": "c2f5371ba83dd8f6c0013d5fccd22affa2f856d1d41104ac80dc5901ed29eae5",
+    "skills/materio-task-executor/assets/actions/define-research-tasks.md": "8f9897e0132421e57ea09c368754d68ecc1bd2013fc26dcc792d9968c7f504b7",
+    "skills/materio-task-executor/assets/actions/define-virtual-lab.md": "b59815188d57997a0e3eb4bbf6cf4cb0688b2b5fd4417520f99d13fa777ae28d",
+    "skills/materio-task-executor/assets/actions/execute-task.md": "6a022a7d1e69a5d278a3b25e6de28a393e1b0e011b1d6b9227dacb9128050b26",
+    "skills/materio-task-executor/assets/actions/help.md": "82f23151c2a8d6cf75c713f55e260aa09d810a75a75d417acea9c5c8a2e3b1bd",
+    "skills/materio-task-executor/assets/actions/identify-research.md": "b1661ea15846b17243ac8a811b67d5730b86b4d3b64566fafdb553d4a3224a45",
+    "skills/materio-task-executor/assets/actions/literature-review.md": "0f8c93d8c7a9e0cc83653d93113c75b923c0a21da6338caf7f17e42e84505db4",
+    "skills/materio-task-executor/assets/actions/pause-research.md": "f4c9c3d6b760b5342bc10190bdcb05639af8d74f082cccdb1a9a4cd2b7081b6d",
+    "skills/materio-task-executor/assets/actions/progress.md": "276216f542e9af221717cfc7b0d5587071ac77133d330ddae31a6c4aec0160b1",
+    "skills/materio-task-executor/assets/actions/remove-task.md": "df98be8f550e326c1437d5519df078b6bd1faa970544cdad40b69e6ad9592366",
+    "skills/materio-task-executor/assets/actions/resume-research.md": "75118fe63d5a488b759edeeec6ee6f3f00e219bd855a0e003b5b25c7e4dd7f2f",
+    "skills/materio-task-executor/assets/actions/settings.md": "22dadf9b316d21a1f6e8197bc93cd9e9b84823f6e6685aa5388233009fb2cfb2",
+    "skills/materio-task-executor/assets/actions/status.md": "479bc0a76b762284b0014c0a870c8dffe573459e6ffed13272f4b8335fb1a062",
+    "skills/materio-task-executor/assets/actions/upload-data.md": "c0931a8781dbc3897896b1e618abf6f0050ac3e34957c92e4bc033afcacca91d",
+    "skills/materio-task-executor/assets/actions/wtfp.md": "77a3787b643b1d94d76cc27931ebb56dee2bdbde522d947a395ac69fa9754a08",
+    "skills/materio-task-executor/assets/references/research-domains.md": "0f6b7548ade7e97ffc25c057dcb43a5ad4ecc0810ac2c8c04badc9c1b5231e9e",
+    "skills/materio-task-executor/assets/references/research-policy.md": "edae32bf11989c59b15befdc74f404ce9bfc78bf79d162d8aae49bffdefa02bd",
+    "skills/materio-task-executor/assets/references/traditional-workflows.md": "33afdd62e6a15237749715c1c6090a8de239d568b3ef81669efc8ceaa9a8f5fb",
+    "skills/materio-task-executor/assets/scripts/check_physics.py": "54083478c9c2225ccef84954eaac0ccbf0406146d2f29d9777fe7a3cb42a9e1f",
+    "skills/materio-task-executor/assets/scripts/check_scripts.py": "70490d54e8d49983838d0f4878fe1f9f936af7676c667993c7d00539ee965b14",
+    "skills/materio-task-executor/assets/scripts/research_state.py": "38f7c5a412fcd763d646a7957d9d1ae540dadc678f7b1bb2503397cc3fa38574",
+    "skills/materio-task-executor/assets/scripts/verify_citations.py": "3c1228ac142634ef9ec9b73c172013d951a2ea8eb31f22dc7f42a2feea7fc5b7",
+    "skills/materio-task-executor/assets/templates/RESEARCH.md": "fac26997f5b5373fbc55a6bd4183c627648a654de57d900f7fb20b4247b1cd10",
+    "skills/materio-task-executor/assets/templates/VIRTUAL-LAB.md": "f27362a289464710b09590b685f4d205d517a9bf855726d114f53712d000aac7",
+    "skills/materio-task-executor/assets/templates/WORKFLOW.md": "a9635a2d6172f57cedbccf28511664aab94d54e03b60bbfafc4b5e5649925ec2",
+    "skills/materio-task-executor/assets/templates/config.json": "616e520c47876dfb6df10c8af6f58a4f6486ea4c7b1805de151448d1796a6714",
+    "skills/materio-task-executor/evals.md": "229da590e5b2a49088a98e36d6d05afb5616717ffe9b4ef48c04f56967d84600",
+    "skills/materio-task-executor/upstream-provenance.json": "91937a93e4d3b31c5c1f5d94e632273f21aafe88cb15fc61487a905e120afee5",
+    "skills/materio-task-verifier/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/materio-task-verifier/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/materio-task-verifier/SKILL.md": "bdbd192333a848a1ee88e0825302e07d2dc4c2d36c977521351ccd6dda10c285",
+    "skills/materio-task-verifier/assets/actions/add-task.md": "84a5615b72223e3546cd7bf9e862d048b320c3352baad4fc07c4aa58df5513c4",
+    "skills/materio-task-verifier/assets/actions/archive-task.md": "e507254ca24822ed7fb3925e821db2f78c6278d7f74cdea10728a93705303f01",
+    "skills/materio-task-verifier/assets/actions/checkpoint.md": "c2f5371ba83dd8f6c0013d5fccd22affa2f856d1d41104ac80dc5901ed29eae5",
+    "skills/materio-task-verifier/assets/actions/define-research-tasks.md": "8f9897e0132421e57ea09c368754d68ecc1bd2013fc26dcc792d9968c7f504b7",
+    "skills/materio-task-verifier/assets/actions/define-virtual-lab.md": "b59815188d57997a0e3eb4bbf6cf4cb0688b2b5fd4417520f99d13fa777ae28d",
+    "skills/materio-task-verifier/assets/actions/execute-task.md": "6a022a7d1e69a5d278a3b25e6de28a393e1b0e011b1d6b9227dacb9128050b26",
+    "skills/materio-task-verifier/assets/actions/help.md": "82f23151c2a8d6cf75c713f55e260aa09d810a75a75d417acea9c5c8a2e3b1bd",
+    "skills/materio-task-verifier/assets/actions/identify-research.md": "b1661ea15846b17243ac8a811b67d5730b86b4d3b64566fafdb553d4a3224a45",
+    "skills/materio-task-verifier/assets/actions/literature-review.md": "0f8c93d8c7a9e0cc83653d93113c75b923c0a21da6338caf7f17e42e84505db4",
+    "skills/materio-task-verifier/assets/actions/pause-research.md": "f4c9c3d6b760b5342bc10190bdcb05639af8d74f082cccdb1a9a4cd2b7081b6d",
+    "skills/materio-task-verifier/assets/actions/progress.md": "276216f542e9af221717cfc7b0d5587071ac77133d330ddae31a6c4aec0160b1",
+    "skills/materio-task-verifier/assets/actions/remove-task.md": "df98be8f550e326c1437d5519df078b6bd1faa970544cdad40b69e6ad9592366",
+    "skills/materio-task-verifier/assets/actions/resume-research.md": "75118fe63d5a488b759edeeec6ee6f3f00e219bd855a0e003b5b25c7e4dd7f2f",
+    "skills/materio-task-verifier/assets/actions/settings.md": "22dadf9b316d21a1f6e8197bc93cd9e9b84823f6e6685aa5388233009fb2cfb2",
+    "skills/materio-task-verifier/assets/actions/status.md": "479bc0a76b762284b0014c0a870c8dffe573459e6ffed13272f4b8335fb1a062",
+    "skills/materio-task-verifier/assets/actions/upload-data.md": "c0931a8781dbc3897896b1e618abf6f0050ac3e34957c92e4bc033afcacca91d",
+    "skills/materio-task-verifier/assets/actions/wtfp.md": "77a3787b643b1d94d76cc27931ebb56dee2bdbde522d947a395ac69fa9754a08",
+    "skills/materio-task-verifier/assets/references/research-domains.md": "0f6b7548ade7e97ffc25c057dcb43a5ad4ecc0810ac2c8c04badc9c1b5231e9e",
+    "skills/materio-task-verifier/assets/references/research-policy.md": "edae32bf11989c59b15befdc74f404ce9bfc78bf79d162d8aae49bffdefa02bd",
+    "skills/materio-task-verifier/assets/references/traditional-workflows.md": "33afdd62e6a15237749715c1c6090a8de239d568b3ef81669efc8ceaa9a8f5fb",
+    "skills/materio-task-verifier/assets/scripts/check_physics.py": "54083478c9c2225ccef84954eaac0ccbf0406146d2f29d9777fe7a3cb42a9e1f",
+    "skills/materio-task-verifier/assets/scripts/check_scripts.py": "70490d54e8d49983838d0f4878fe1f9f936af7676c667993c7d00539ee965b14",
+    "skills/materio-task-verifier/assets/scripts/research_state.py": "38f7c5a412fcd763d646a7957d9d1ae540dadc678f7b1bb2503397cc3fa38574",
+    "skills/materio-task-verifier/assets/scripts/verify_citations.py": "3c1228ac142634ef9ec9b73c172013d951a2ea8eb31f22dc7f42a2feea7fc5b7",
+    "skills/materio-task-verifier/assets/templates/RESEARCH.md": "fac26997f5b5373fbc55a6bd4183c627648a654de57d900f7fb20b4247b1cd10",
+    "skills/materio-task-verifier/assets/templates/VIRTUAL-LAB.md": "f27362a289464710b09590b685f4d205d517a9bf855726d114f53712d000aac7",
+    "skills/materio-task-verifier/assets/templates/WORKFLOW.md": "a9635a2d6172f57cedbccf28511664aab94d54e03b60bbfafc4b5e5649925ec2",
+    "skills/materio-task-verifier/assets/templates/config.json": "616e520c47876dfb6df10c8af6f58a4f6486ea4c7b1805de151448d1796a6714",
+    "skills/materio-task-verifier/evals.md": "2b056f5e5a23c68fae82101658b1fdd4ee2106ff0dec115c55e73767e3bb6d36",
+    "skills/materio-task-verifier/upstream-provenance.json": "91937a93e4d3b31c5c1f5d94e632273f21aafe88cb15fc61487a905e120afee5",
+    "skills/materio-workflow-planner/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/materio-workflow-planner/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/materio-workflow-planner/SKILL.md": "8010a2dfa5dd9a45ce22957952817b59376ba6aeeb3670083db1994c594e1d84",
+    "skills/materio-workflow-planner/assets/actions/add-task.md": "84a5615b72223e3546cd7bf9e862d048b320c3352baad4fc07c4aa58df5513c4",
+    "skills/materio-workflow-planner/assets/actions/archive-task.md": "e507254ca24822ed7fb3925e821db2f78c6278d7f74cdea10728a93705303f01",
+    "skills/materio-workflow-planner/assets/actions/checkpoint.md": "c2f5371ba83dd8f6c0013d5fccd22affa2f856d1d41104ac80dc5901ed29eae5",
+    "skills/materio-workflow-planner/assets/actions/define-research-tasks.md": "8f9897e0132421e57ea09c368754d68ecc1bd2013fc26dcc792d9968c7f504b7",
+    "skills/materio-workflow-planner/assets/actions/define-virtual-lab.md": "b59815188d57997a0e3eb4bbf6cf4cb0688b2b5fd4417520f99d13fa777ae28d",
+    "skills/materio-workflow-planner/assets/actions/execute-task.md": "6a022a7d1e69a5d278a3b25e6de28a393e1b0e011b1d6b9227dacb9128050b26",
+    "skills/materio-workflow-planner/assets/actions/help.md": "82f23151c2a8d6cf75c713f55e260aa09d810a75a75d417acea9c5c8a2e3b1bd",
+    "skills/materio-workflow-planner/assets/actions/identify-research.md": "b1661ea15846b17243ac8a811b67d5730b86b4d3b64566fafdb553d4a3224a45",
+    "skills/materio-workflow-planner/assets/actions/literature-review.md": "0f8c93d8c7a9e0cc83653d93113c75b923c0a21da6338caf7f17e42e84505db4",
+    "skills/materio-workflow-planner/assets/actions/pause-research.md": "f4c9c3d6b760b5342bc10190bdcb05639af8d74f082cccdb1a9a4cd2b7081b6d",
+    "skills/materio-workflow-planner/assets/actions/progress.md": "276216f542e9af221717cfc7b0d5587071ac77133d330ddae31a6c4aec0160b1",
+    "skills/materio-workflow-planner/assets/actions/remove-task.md": "df98be8f550e326c1437d5519df078b6bd1faa970544cdad40b69e6ad9592366",
+    "skills/materio-workflow-planner/assets/actions/resume-research.md": "75118fe63d5a488b759edeeec6ee6f3f00e219bd855a0e003b5b25c7e4dd7f2f",
+    "skills/materio-workflow-planner/assets/actions/settings.md": "22dadf9b316d21a1f6e8197bc93cd9e9b84823f6e6685aa5388233009fb2cfb2",
+    "skills/materio-workflow-planner/assets/actions/status.md": "479bc0a76b762284b0014c0a870c8dffe573459e6ffed13272f4b8335fb1a062",
+    "skills/materio-workflow-planner/assets/actions/upload-data.md": "c0931a8781dbc3897896b1e618abf6f0050ac3e34957c92e4bc033afcacca91d",
+    "skills/materio-workflow-planner/assets/actions/wtfp.md": "77a3787b643b1d94d76cc27931ebb56dee2bdbde522d947a395ac69fa9754a08",
+    "skills/materio-workflow-planner/assets/references/research-domains.md": "0f6b7548ade7e97ffc25c057dcb43a5ad4ecc0810ac2c8c04badc9c1b5231e9e",
+    "skills/materio-workflow-planner/assets/references/research-policy.md": "edae32bf11989c59b15befdc74f404ce9bfc78bf79d162d8aae49bffdefa02bd",
+    "skills/materio-workflow-planner/assets/references/traditional-workflows.md": "33afdd62e6a15237749715c1c6090a8de239d568b3ef81669efc8ceaa9a8f5fb",
+    "skills/materio-workflow-planner/assets/scripts/check_physics.py": "54083478c9c2225ccef84954eaac0ccbf0406146d2f29d9777fe7a3cb42a9e1f",
+    "skills/materio-workflow-planner/assets/scripts/check_scripts.py": "70490d54e8d49983838d0f4878fe1f9f936af7676c667993c7d00539ee965b14",
+    "skills/materio-workflow-planner/assets/scripts/research_state.py": "38f7c5a412fcd763d646a7957d9d1ae540dadc678f7b1bb2503397cc3fa38574",
+    "skills/materio-workflow-planner/assets/scripts/verify_citations.py": "3c1228ac142634ef9ec9b73c172013d951a2ea8eb31f22dc7f42a2feea7fc5b7",
+    "skills/materio-workflow-planner/assets/templates/RESEARCH.md": "fac26997f5b5373fbc55a6bd4183c627648a654de57d900f7fb20b4247b1cd10",
+    "skills/materio-workflow-planner/assets/templates/VIRTUAL-LAB.md": "f27362a289464710b09590b685f4d205d517a9bf855726d114f53712d000aac7",
+    "skills/materio-workflow-planner/assets/templates/WORKFLOW.md": "a9635a2d6172f57cedbccf28511664aab94d54e03b60bbfafc4b5e5649925ec2",
+    "skills/materio-workflow-planner/assets/templates/config.json": "616e520c47876dfb6df10c8af6f58a4f6486ea4c7b1805de151448d1796a6714",
+    "skills/materio-workflow-planner/evals.md": "230eebfff841a866ec1eec45afd8b1c4ce821ed1cd02e4756d62686231218f95",
+    "skills/materio-workflow-planner/upstream-provenance.json": "91937a93e4d3b31c5c1f5d94e632273f21aafe88cb15fc61487a905e120afee5",
+    "skills/prd/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/prd/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/prd/SKILL.md": "f45816f9b0ec606f99c63c53f093f4188efd8d050db7918f3db6be0cc980734f",
+    "skills/prd/evals.md": "a22db526bffd418f28e3a62383d014fb81ffced6ce02d2a24ff09e128f65b53c",
+    "skills/product-intent/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/product-intent/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/product-intent/SKILL.md": "8b3743bcdd5b4f9fec988018a538b4cad1e7df56094e16d00f44cee0feebbd4f",
+    "skills/product-intent/evals.md": "4cb4c1e62f0f96a8c07905321a0eb4adcd43e72b7c55df36fb22faa2a2683364",
+    "skills/prototype/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/prototype/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/prototype/SKILL.md": "b870ad2baf8061b695ee93f7d0735631bd273ab90773f27792d48b0eced5e859",
+    "skills/prototype/evals.md": "1223cba477e1ab874bc05cde018b556c74c2cc30671e8763f4a0cb3ee621778b",
+    "skills/prototype/references/LOGIC.md": "9502709ebcddc8816585a257324fed0d96ddfad2140b882a611ae28041b30668",
+    "skills/prototype/references/UI.md": "6ccc3366f9fad146a544f9c7473abede4af29438e138c2cf531bac810f6121a7",
+    "skills/resolve-merge-conflicts/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/resolve-merge-conflicts/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/resolve-merge-conflicts/SKILL.md": "6630fef3acfaf44755a1c92f50acc45f3c1ae8bac2ac9ef4d12deb502a8ecf05",
+    "skills/resolve-merge-conflicts/evals.md": "f845667980d4eda7c64b526e3506105f553bf3d22ae29e88ae2fe66f83a86976",
+    "skills/resolve-merge-conflicts/references/conflict-matrix.md": "39c05445fc495969d23b7b28f28e4efe43f0b08a9dea7e38e2af4d4b856d8c94",
+    "skills/scientific-debugging/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/scientific-debugging/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/scientific-debugging/SKILL.md": "7fdc45f30522a381100dc76aa876be2194218876e5af9841218ef8bf240aae92",
+    "skills/scientific-debugging/evals.md": "a420402fcf3f0db28a357e230319952a1fa4457ff90d86059566724afd6a3cc4",
+    "skills/scientific-modernization/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/scientific-modernization/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/scientific-modernization/SKILL.md": "3912ca4bf475fff051c1396b490551dfc460c19f4a6bd11fe6bc0253c208c67f",
+    "skills/scientific-modernization/evals.md": "b459b5c662cf5e3deb65503fd16cf7ad5cffff2b6ab6ad3196bb51839568041d",
+    "skills/ship/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/ship/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/ship/SKILL.md": "f913e0f79b90c20ae6513ebebda0c5e789bd092e84702f5e9911e44463733ec1",
+    "skills/ship/assets/pr-template.md": "91ac9f363148c706af2b723029734293de2849c3ada97ba7b15e217c0ec00d7d",
+    "skills/ship/evals.md": "1052b9ee3a96a891c4af3f413d290b5295d5ae8bc7befc24a50c5d29d2eb7986",
+    "skills/ship/references/remote-and-branch-policy.md": "61f8f748956b6f63c2ad4fd8d1daf1b076b97feff634d09eb9f03bbf24e694f5",
+    "skills/skill-craft/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/skill-craft/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/skill-craft/SKILL.md": "54363490dde93956b390827bb4ddd41f68cec9ea45a89717c345a354394910c5",
+    "skills/skill-craft/evals.md": "254d9b5b9e7523f2e93a64d34fa3913158a1ff433c0dce219ac86257b6e5c816",
+    "skills/tdd/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/tdd/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/tdd/SKILL.md": "c08e767a93ad671941549e05cfd8f16a0ec80a2893d757d6e1e1f7f622f3deab",
+    "skills/tdd/evals.md": "8ee3075472928c31094ac85b4c5765229c33a1e644df012332d64f8468c16f13",
+    "skills/tdd/references/mocking.md": "c0f9a8dc85cb877a6532a332d706223bb9779cb7cd3a5104bfb521c73c152f9d",
+    "skills/tdd/references/tests.md": "859f9e592c188fda4fc7277dd180e4ce9c7a2e13f6efe1f6f29eccc9d28c106a",
+    "skills/tech-spec/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/tech-spec/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/tech-spec/SKILL.md": "fd4ee60422cd1d8a3029bacb3263feae64da69f7b7899cffc6cc5d6e04a364aa",
+    "skills/tech-spec/evals.md": "4cbb17fa5abd45b43a0a9531a36e4ba3b5cb6f94e18f3d018647f92556e921ce",
+    "skills/workflow-distiller/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/workflow-distiller/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/workflow-distiller/SKILL.md": "b8bab8608084a6fe4159b549e145f2646f73f8a7ba9249dd56eb3bdc3c679345",
+    "skills/workflow-distiller/evals.md": "e18ba63fcc9591c08e110d36be7c6da9c5db4af79c97fa6c5fef03968e3b81b8",
+    "skills/worktree-create/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/worktree-create/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/worktree-create/SKILL.md": "b1ee53d0d9c193c2c4d6e95a25d3fa97065c8dd01f364099dc9fcb4f8c9d4631",
+    "skills/worktree-create/evals.md": "1b303c877a1622c7317740d382b064231ea64893a60cc8a29c94d1cb943e0674",
+    "skills/worktree-create/references/worktree-setup.md": "d235c2b9796b85c254c99911f04f2c8fc6cbc4fa0b57ebab0986ac3135e72a15",
+    "skills/worktree-merge/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "skills/worktree-merge/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
+    "skills/worktree-merge/SKILL.md": "f057413d6b1a4b31fafe08499e6ecc5894a0073512e0c6ca750e0ecd2fcb49a6",
+    "skills/worktree-merge/evals.md": "2fd1e9a10b4e4ba68e2eb3213b7d983c340be0751611887870c1984be08128f9",
+    "skills/worktree-merge/references/merge-strategies.md": "0cebd491e10c53ce5f16b209e8f365669cb1593edc48587ec5374db35c11b516"
+  }
+}

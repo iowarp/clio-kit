@@ -160,17 +160,23 @@ def test_federation_fetch_update_removal_and_atomic_failure(tmp_path: Path) -> N
     _publish(upstream, ["wave"])
     refresh_marketplace(root)
     assert [p["name"] for p in json.loads(index.read_text())["plugins"]] == ["wave"]
+    # Federation may preserve another Clio product's names, but cannot
+    # replace a maintained plugin with an external source.
+    current = json.loads(index.read_text())
+    owned = {"name": "clio-hpc", "source": "./plugins/clio-hpc"}
+    current["plugins"].append(owned)
+    index.write_text(json.dumps(current))
     before = index.read_bytes()
     lock_path = index.with_name("federation.lock.json")
     before_lock = lock_path.read_bytes()
     _publish(upstream, ["clio-hpc"])
-    with pytest.raises(ValueError, match="reserved"):
+    with pytest.raises(ValueError, match="collision"):
         refresh_marketplace(root)
     assert index.read_bytes() == before
     assert lock_path.read_bytes() == before_lock
     (entries / "lab.toml").unlink()
     refresh_marketplace(root)
-    assert json.loads(index.read_text())["plugins"] == []
+    assert json.loads(index.read_text())["plugins"] == [owned]
 
 
 @pytest.mark.parametrize("kind", ["npm", "oci", "pypi", "nuget", "mcpb"])

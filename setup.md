@@ -101,10 +101,15 @@ clio-kit skill list --bundle clio-scientific-io
 clio-kit skill install --bundle clio-scientific-io --target .agents/skills
 ```
 
-Omit `--bundle` to install all 20 skills, or give individual skill names before
+Omit `--bundle` to install all available skills, including the optional Clio Coder collection, or give individual skill names before
 `--target`. Other agents can use the same command with their own skill directory.
 Skills are included in the installed CLIO Kit package; the checkout is not
 needed for subsequent skill installation.
+
+For Clio Coder's imported coding and research procedures, select
+`--bundle clio-coder`. These skills contain host compatibility notes; installing
+them does not install Clio Coder's native agents, fleets, MCPs or execution gates.
+See the [integration guide](clio-kit-website/docs/marketplace.md#clio-coder-integration).
 
 Alternatively, with Node.js 22.20.0 or newer, run this from your working project,
 using the absolute path to this CLIO checkout as the source:

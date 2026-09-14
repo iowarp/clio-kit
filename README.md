@@ -208,6 +208,17 @@ claude plugin install clio-agents@clio-kit
 
 Native plugins and agent definitions currently target Claude Code. Portable skills work with compatible agents.
 
+Add the optional Clio Coder coding and research skills, including Materio procedures:
+
+```bash
+clio-kit skill install --bundle clio-coder --target .agents/skills
+# Or through Claude Code:
+claude plugin install clio-coder-skills@clio-kit
+```
+
+Individual skills also work: `clio-kit skill install scientific-debugging --target .agents/skills`.
+See [Clio Coder integration](clio-kit-website/docs/marketplace.md#clio-coder-integration) for upstream packages and native plugin support.
+
 ### Contribute Servers, Skills or Plugins
 
 Add skills here, or list a plugin maintained in your own repository:
@@ -265,7 +276,7 @@ claude mcp list
 Skills-only and agent plugins:
 
 ```bash
-claude plugin install clio-skills@clio-kit    # all 20 skills, no MCP servers
+claude plugin install clio-skills@clio-kit    # scientific workflow skills, no MCP servers
 claude plugin install clio-agents@clio-kit    # workflow planner and evidence reviewer
 ```
 

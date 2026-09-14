@@ -7,6 +7,26 @@ from pathlib import Path
 from typing import Any
 
 
+def imported_skill_entries(root: Path) -> list[dict[str, Any]]:
+    """Publish optional imported collections independently of default bundles."""
+    entries = []
+    for lock in sorted((root / "skills").glob("*/import-lock.json")):
+        directory = lock.parent
+        manifest = json.loads(
+            (directory / ".claude-plugin" / "plugin.json").read_text()
+        )
+        entries.append(
+            {
+                "name": manifest["name"],
+                "source": f"./skills/{directory.name}",
+                "description": manifest["description"],
+                "version": manifest["version"],
+                "category": "skills",
+            }
+        )
+    return entries
+
+
 def write_extra_plugins(root: Path, skill_packages: list[str]) -> list[dict[str, Any]]:
     specs: dict[str, dict[str, Any]] = {
         "clio-skills": {

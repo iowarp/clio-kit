@@ -17,7 +17,8 @@ from clio_kit.skills import SkillProblem
 
 def test_shipped_skills_use_standard_metadata():
     inventory = skill_inventory()
-    assert len(inventory) == 20
+    assert len(selected_skills((), "clio-coder")) == 39
+    assert len(inventory) == 59
     for name, source in inventory.items():
         fields = yaml.safe_load((source / "SKILL.md").read_text().split("---", 2)[1])
         assert set(fields) <= {

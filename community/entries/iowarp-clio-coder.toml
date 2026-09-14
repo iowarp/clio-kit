@@ -1,0 +1,10 @@
+name = "iowarp-clio-coder"
+kind = "marketplace"
+description = "Upstream Clio Coder skills and Materio portable research procedures. Native agents, prompts and fleets run in Clio Coder."
+category = "development"
+maintainer = "IOWarp"
+
+[source]
+type = "github"
+repo = "iowarp/clio-coder"
+sha = "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"

@@ -7,9 +7,13 @@ import argparse
 import json
 from pathlib import Path
 
-from clio_kit.community import read_community_entries
+from clio_kit.community import (
+    read_community_entries,
+    read_federated_marketplaces,
+    write_shipped_marketplaces,
+)
 from clio_kit.federation import LOCK_NAME, refresh_marketplace
-from clio_kit.marketplace_assets import write_extra_plugins
+from clio_kit.marketplace_assets import imported_skill_entries, write_extra_plugins
 from generate_server_json import read_bundles, write_bundle_plugin, write_skills_plugin
 
 
@@ -23,7 +27,10 @@ def generate(root: Path, *, refresh: bool = False) -> None:
         "clio-agents",
     }
     community = read_community_entries(root)
-    replacement_names = owned | extra_names | {entry["name"] for entry in community}
+    imported = imported_skill_entries(root)
+    replacement_names = (
+        owned | extra_names | {entry["name"] for entry in community + imported}
+    )
     entries = [
         entry
         for entry in marketplace["plugins"]
@@ -37,6 +44,7 @@ def generate(root: Path, *, refresh: bool = False) -> None:
             skills.append(skill["name"])
         entries.append(write_bundle_plugin(root, name, spec))
     entries.extend(write_extra_plugins(root, skills))
+    entries.extend(imported)
     entries.extend(community)
     marketplace["plugins"] = entries
     path.write_text(json.dumps(marketplace, indent=2) + "\n")
@@ -46,6 +54,9 @@ def generate(root: Path, *, refresh: bool = False) -> None:
         print(
             "Kept the last federation snapshot; use --refresh to fetch external updates."
         )
+    write_shipped_marketplaces(
+        root / "src" / "clio_kit", read_federated_marketplaces(root)
+    )
     print(f"Generated {len(entries)} entries without modifying MCP server files.")
 
 

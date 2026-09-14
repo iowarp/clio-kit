@@ -1,0 +1,9 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "clio-coder-skills",
+  "version": "1.0.0",
+  "description": "Optional Clio Coder coding and research skills, including Materio procedures. Native Clio agents and fleets require Clio Coder.",
+  "author": {
+    "name": "IOWarp"
+  }
+}

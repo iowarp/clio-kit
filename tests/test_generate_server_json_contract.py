@@ -137,6 +137,11 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
         for bundle_name in expected_bundles
         if (repository_root / "skills" / f"{bundle_name}-skills").is_dir()
     }
+    from clio_kit.marketplace_assets import imported_skill_entries
+
+    expected_skill_plugins.update(
+        entry["name"] for entry in imported_skill_entries(repository_root)
+    )
     readme = (repository_root / "README.md").read_text(encoding="utf-8")
 
     assert projects
@@ -488,6 +493,17 @@ def test_shipped_skills_load_and_are_reachable_from_a_bundle() -> None:
 
     for plugin_dir in sorted(skills_root.iterdir()):
         if not plugin_dir.is_dir():
+            continue
+        if (plugin_dir / "import-lock.json").exists():
+            catalogue = json.loads(
+                (repo_root / ".claude-plugin" / "marketplace.json").read_text()
+            )
+            assert any(
+                entry["source"] == f"./skills/{plugin_dir.name}"
+                for entry in catalogue["plugins"]
+            )
+            for skill in (plugin_dir / "skills").iterdir():
+                assert read_skill_frontmatter(skill)["name"] == skill.name
             continue
         bundle_name = plugin_dir.name.removesuffix("-skills")
         bundle_manifest = json.loads(
