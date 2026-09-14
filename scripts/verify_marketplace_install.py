@@ -162,6 +162,7 @@ class Acceptance:
             "clio-research",
             "clio-skills",
             "clio-agents",
+            "clio-coder-skills",
             "iowarp-dev-setup",
             "iowarp-contributing",
         ]
@@ -203,7 +204,10 @@ class Acceptance:
                 cwd=self.output,
             )
         )
-        assert len(inventory) == 20, inventory
+        expected = {
+            path.parent.name for path in ROOT.glob("skills/*/skills/*/SKILL.md")
+        }
+        assert {skill["name"] for skill in inventory} == expected, inventory
         assert {path.parent.name for path in target.glob("*/SKILL.md")} == {
             skill["name"] for skill in inventory
         }
@@ -280,7 +284,7 @@ class Acceptance:
                         process.kill()
                         await process.wait()
         expected = {path.parent.name for path in target.glob("*/SKILL.md")}
-        assert len(records) == len(expected) == 20, records
+        assert len(records) == len(expected), records
         assert {skill["name"] for skill in records} == expected, records
         assert all(skill["enabled"] for skill in records), records
         (self.output / "codex-skills.json").write_text(json.dumps(records, indent=2))

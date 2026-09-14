@@ -58,7 +58,10 @@ jobs:
           uv run --frozen --directory clio-kit-mcp-servers/slurm pytest -q tests/test_protocol_stdout.py
           uv run --frozen --directory clio-kit-mcp-servers/web pytest -q tests/test_tasks.py
       - name: Root regressions
-        run: uv run --frozen pytest -q tests
+        run: uv run --frozen pytest -q tests --junitxml=/tmp/clio-root-tests.xml
+      - name: External plugin transports and actual MCP use
+        if: matrix.protocol == '2026-07-28'
+        run: uv run --frozen python scripts/verify_external_contributions.py --output /tmp/clio-external-acceptance
       - name: Install built wheel and exercise real client and tools
         run: uv run --frozen python scripts/verify_marketplace_install.py --output /tmp/clio-acceptance --codex --all-servers --protocol-mode ${{ matrix.protocol }}
       - name: Python 3.10 installed compatibility
@@ -73,6 +76,9 @@ jobs:
         with:
           name: marketplace-acceptance-${{ matrix.protocol }}
           path: |
+            /tmp/clio-root-tests.xml
+            /tmp/clio-external-acceptance/*.log
+            /tmp/clio-external-acceptance/results.json
             /tmp/clio-acceptance/*.log
             /tmp/clio-acceptance/*.stderr
             /tmp/clio-acceptance/results.json
