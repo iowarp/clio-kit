@@ -690,6 +690,41 @@ def test_published_marketplace_categories_carry_real_scope() -> None:
     assert all(plugin["keywords"] for plugin in server_entries)
 
 
+def _documented_bundle_servers(lines: list[str], name: str) -> list[str]:
+    """Read membership by table heading, independent of presentation order."""
+    headers: list[str] = []
+    for line in lines:
+        if not line.startswith("|"):
+            headers = []
+            continue
+        cells = [cell.strip().strip("`") for cell in line.strip("|").split("|")]
+        if "Bundle" in cells and "MCP servers" in cells:
+            headers = cells
+        elif headers and cells[headers.index("Bundle")] == name:
+            return sorted(
+                cell.strip() for cell in cells[headers.index("MCP servers")].split(",")
+            )
+    raise AssertionError(f"README has no bundle table row for {name}")
+
+
+@pytest.mark.parametrize(
+    "columns",
+    [
+        ("Bundle | Purpose | MCP servers", "`clio-analysis` | Analyze | pandas, plot"),
+        ("MCP servers | Bundle | Purpose", "pandas, plot | `clio-analysis` | Analyze"),
+    ],
+)
+def test_bundle_table_reader_follows_headings(columns: tuple[str, str]) -> None:
+    header, row = columns
+    assert _documented_bundle_servers(
+        [f"| {header} |", f"| {row} |"], "clio-analysis"
+    ) == ["pandas", "plot"]
+    # A changed membership must remain visible, even after a column reorder.
+    assert _documented_bundle_servers(
+        [f"| {header} |", f"| {row.replace('plot', 'hdf5')} |"], "clio-analysis"
+    ) != ["pandas", "plot"]
+
+
 def test_readme_bundle_table_matches_the_generated_manifests() -> None:
     """Documented bundle membership must be the membership that ships.
 
@@ -716,9 +751,7 @@ def test_readme_bundle_table_matches_the_generated_manifests() -> None:
             for dependency in manifest["dependencies"]
             if not dependency.endswith("-skills")
         )
-        rows = [line for line in readme if line.startswith(f"| `{name}`")]
-        assert rows, f"README has no row for {name}"
-        documented = sorted(cell.strip() for cell in rows[0].split("|")[2].split(","))
+        documented = _documented_bundle_servers(readme, name)
         assert documented == shipped, (
             f"{name}: README says {documented}, ships {shipped}"
         )
