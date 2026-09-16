@@ -42,6 +42,24 @@ npm run serve
 The build checks links and reports missing anchors. Current verification uses
 Node 24.15.0 and the dependencies pinned in `package-lock.json`.
 
+## Marketplace preview
+
+The homepage browses workflows, skills, MCP servers, plugins, agents, hooks and
+the standalone search service. Component details live at `/component?id=…`;
+publisher profiles live at `/publishers`. Filters are encoded in the URL so a
+filtered view can be shared or reopened.
+
+`scripts/generate_website_catalogue.py` reads the marketplace index, bundle
+inventory, local skill/agent definitions and community entries. `npm start` and
+`npm run build` regenerate `src/data/catalogue.json` automatically using `uv` and
+the root Python environment. No upstream network fetch or hook execution occurs.
+Display-only workflow titles live in the generator; membership and versions
+come from repository metadata. Metadata labels are not verification badges.
+
+This preview uses React and scoped CSS, inspired by portfolio-style catalogues.
+It does not install ReUI or change documentation page components. Test both
+themes and mobile filters when changing the catalogue UI.
+
 ## Maintain server reference pages
 
 Documentation lives in root [`docs/`](../docs/README.md). Docusaurus reads

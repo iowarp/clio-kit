@@ -89,7 +89,12 @@ const config = {
           {
             to: '/',
             position: 'left',
-            label: 'Browse MCPs',
+            label: 'Explore',
+          },
+          {
+            to: '/publishers',
+            position: 'left',
+            label: 'Publishers',
           },
           {
             to: '/docs/intro',
@@ -125,7 +130,7 @@ const config = {
                 to: '/docs/intro',
               },
               {
-                label: 'Browse Servers',
+                label: 'Explore Catalogue',
                 to: '/',
               },
               {
