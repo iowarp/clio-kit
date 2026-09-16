@@ -296,6 +296,13 @@
   color: var(--market-accent);
   flex-shrink: 0;
 }
+.serverIcon {
+  font-size: 24px;
+  line-height: 1;
+}
+.largeGlyph .serverIcon {
+  font-size: 34px;
+}
 .skill {
   background: #eef1fc;
   color: #687abb;

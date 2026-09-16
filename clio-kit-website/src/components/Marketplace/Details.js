@@ -64,7 +64,7 @@ function DetailContent({item}) {
         ← Back to catalogue
       </Link>
       <header className={styles.detailHeader}>
-        <Glyph kind={item.kind} large />
+        <Glyph kind={item.kind} name={item.name} large />
         <div>
           <div className={styles.detailBadges}>
             <span>{kindLabel(item.kind)}</span>
@@ -122,7 +122,7 @@ function DetailContent({item}) {
               <div className={styles.memberList}>
                 {members.map((member) => (
                   <Link key={member.id} to={itemUrl(member)}>
-                    <Glyph kind={member.kind} />
+                    <Glyph kind={member.kind} name={member.name} />
                     <div>
                       <strong>{member.title}</strong>
                       <span>{kindLabel(member.kind)}</span>
@@ -139,7 +139,7 @@ function DetailContent({item}) {
               <div className={styles.memberList}>
                 {servers.map((server) => (
                   <Link key={server.id} to={itemUrl(server)}>
-                    <Glyph kind="mcp" />
+                    <Glyph kind="mcp" name={server.name} />
                     <strong>{server.title}</strong>
                     <Icon name="arrow" size={17} />
                   </Link>

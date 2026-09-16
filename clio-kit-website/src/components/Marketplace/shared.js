@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
+import {mcpData} from '@site/src/data/mcpData';
 import {itemUrl, publisherFor, kindLabel, summary} from './data';
 import styles from './styles.module.css';
 
@@ -113,12 +114,20 @@ export function Frame({title, children}) {
   );
 }
 
-export function Glyph({kind, large = false}) {
+export function Glyph({kind, name, large = false}) {
+  const serverIcon =
+    kind === 'mcp' ? mcpData[name?.replaceAll('-', '_')]?.icon : null;
   return (
     <span
       className={`${styles.glyph} ${styles[kind] || ''} ${large ? styles.largeGlyph : ''}`}
     >
-      <Icon name={kind} size={large ? 30 : 21} />
+      {serverIcon ? (
+        <span className={styles.serverIcon} aria-hidden="true">
+          {serverIcon}
+        </span>
+      ) : (
+        <Icon name={kind} size={large ? 30 : 21} />
+      )}
     </span>
   );
 }
@@ -131,7 +140,7 @@ export function Card({item, featured = false}) {
       data-kind={item.kind}
     >
       <div className={styles.cardTop}>
-        <Glyph kind={item.kind} />
+        <Glyph kind={item.kind} name={item.name} />
         <span className={styles.typeLabel}>{kindLabel(item.kind)}</span>
         <Icon name="arrow" size={17} />
       </div>
