@@ -151,7 +151,7 @@ def test_a_servers_root_may_hold_only_descriptors(tmp_path: Path) -> None:
 
 def test_every_shipped_server_describes_itself() -> None:
     """A shipped server with no descriptor falls back; one with a wrong one lies."""
-    servers_root = REPOSITORY_ROOT / "clio-kit-mcp-servers"
+    servers_root = REPOSITORY_ROOT / "mcp-servers"
     shipped = sorted(path.parent for path in servers_root.glob("*/pyproject.toml"))
     assert shipped
 

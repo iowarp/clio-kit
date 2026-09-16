@@ -2,7 +2,7 @@
 """Extract MCP server metadata via FastMCP 3.0 async API.
 
 Run from within a server directory:
-    cd clio-kit-mcp-servers/compression && uv run python ../../scripts/extract_mcp_metadata.py
+    cd mcp-servers/compression && uv run python ../../scripts/extract_mcp_metadata.py
 
 Outputs JSON to stdout with tools, resources, prompts, annotations, and tags.
 """

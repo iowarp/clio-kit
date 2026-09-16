@@ -81,7 +81,7 @@ def test_pypi_manifest_uses_standard_fixed_package_arguments() -> None:
 def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> None:
     """Every registry record selects its exact server from the shared wheel."""
     repository_root = Path(__file__).resolve().parents[1]
-    servers_root = repository_root / "clio-kit-mcp-servers"
+    servers_root = repository_root / "mcp-servers"
     projects = sorted(path.parent for path in servers_root.glob("*/pyproject.toml"))
     all_projects = sorted(
         path for path in servers_root.iterdir() if GENERATOR.is_server_dir(path)
@@ -232,7 +232,7 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
 def test_jarvis_current_contract_matches_registry_package_and_capability() -> None:
     """JARVIS contract revisions advance every independently versioned surface."""
     repository_root = Path(__file__).resolve().parents[1]
-    jarvis_root = repository_root / "clio-kit-mcp-servers" / "jarvis"
+    jarvis_root = repository_root / "mcp-servers" / "jarvis"
     contract_index = json.loads(
         (
             repository_root / "src" / "clio_kit" / "_mcp_contracts" / "index.json"
@@ -404,7 +404,7 @@ def test_shipped_bundle_catalogue_partitions_the_shipped_servers() -> None:
     bundles = GENERATOR.read_bundles(repo_root)
     shipped = {
         server_dir.name
-        for server_dir in (repo_root / "clio-kit-mcp-servers").iterdir()
+        for server_dir in (repo_root / "mcp-servers").iterdir()
         if (server_dir / "pyproject.toml").exists()
     }
 
@@ -777,7 +777,7 @@ def test_readme_server_count_matches_the_shipped_inventory() -> None:
     """A count in prose is the first thing to go stale after a server merge."""
     repo_root = Path(__file__).resolve().parents[1]
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
-    shipped = len(list((repo_root / "clio-kit-mcp-servers").glob("*/pyproject.toml")))
+    shipped = len(list((repo_root / "mcp-servers").glob("*/pyproject.toml")))
 
     for claim in re.findall(r"(\d+) (?:available )?MCP servers", readme):
         assert int(claim) == shipped, f"README claims {claim} servers, {shipped} ship"
@@ -877,7 +877,7 @@ def test_a_non_python_descriptor_is_never_overwritten(tmp_path: Path) -> None:
 
 
 def _publishing_repository(root: Path, runtime: str, *, publish: bool) -> Path:
-    server = root / "clio-kit-mcp-servers" / "crystal"
+    server = root / "mcp-servers" / "crystal"
     server.mkdir(parents=True)
     (root / "src" / "clio_kit").mkdir(parents=True)
     (root / "pyproject.toml").write_text('[project]\nversion = "1.0.0"\n')

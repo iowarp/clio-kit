@@ -51,12 +51,12 @@ jobs:
           go test ./...
       - name: Scientific calculation regressions
         run: |
-          uv run --frozen --directory clio-kit-mcp-servers/pandas pytest -q tests/test_data_cleaning.py
-          uv run --frozen --directory clio-kit-mcp-servers/hdf5 pytest -q tests/test_statistics.py tests/test_export_protocol.py
-          uv run --frozen --directory clio-kit-mcp-servers/parallel-sort pytest -q tests/test_bracketed_levels.py tests/test_chunk_integrity.py
-          uv run --frozen --directory clio-kit-mcp-servers/parquet pytest -q tests/test_filter_operations.py tests/test_filter_protocol.py
-          uv run --frozen --directory clio-kit-mcp-servers/slurm pytest -q tests/test_protocol_stdout.py
-          uv run --frozen --directory clio-kit-mcp-servers/web pytest -q tests/test_tasks.py
+          uv run --frozen --directory mcp-servers/pandas pytest -q tests/test_data_cleaning.py
+          uv run --frozen --directory mcp-servers/hdf5 pytest -q tests/test_statistics.py tests/test_export_protocol.py
+          uv run --frozen --directory mcp-servers/parallel-sort pytest -q tests/test_bracketed_levels.py tests/test_chunk_integrity.py
+          uv run --frozen --directory mcp-servers/parquet pytest -q tests/test_filter_operations.py tests/test_filter_protocol.py
+          uv run --frozen --directory mcp-servers/slurm pytest -q tests/test_protocol_stdout.py
+          uv run --frozen --directory mcp-servers/web pytest -q tests/test_tasks.py
       - name: Root regressions
         run: uv run --frozen pytest -q tests --junitxml=/tmp/clio-root-tests.xml
       - name: External plugin transports and actual MCP use

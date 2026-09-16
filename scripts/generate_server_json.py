@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """Generate publishing manifests for MCP registries and client integrations.
 
-Iterates each server in clio-kit-mcp-servers/, extracts live FastMCP metadata via
+Iterates each server in mcp-servers/, extracts live FastMCP metadata via
 extract_mcp_metadata.py, reads pyproject.toml for version/description, and writes:
-  - clio-kit-mcp-servers/{name}/server.json              (MCP registry manifest)
-  - clio-kit-mcp-servers/{name}/.claude-plugin/plugin.json (Claude Code plugin)
-  - clio-kit-mcp-servers/{name}/.mcp.json                (Claude Code MCP config)
+  - mcp-servers/{name}/server.json              (MCP registry manifest)
+  - mcp-servers/{name}/.claude-plugin/plugin.json (Claude Code plugin)
+  - mcp-servers/{name}/.mcp.json                (Claude Code MCP config)
   - .claude-plugin/marketplace.json                      (Claude Code marketplace)
   - claude_desktop_config.json                           (Claude Desktop config)
 
 Usage:
-    python scripts/generate_server_json.py [clio-kit-mcp-servers]
+    python scripts/generate_server_json.py [mcp-servers]
 """
 
 import asyncio
@@ -882,7 +882,7 @@ def generate_all(mcps_dir: str) -> None:
 
 
 def main() -> None:
-    mcps_dir = sys.argv[1] if len(sys.argv) > 1 else "clio-kit-mcp-servers"
+    mcps_dir = sys.argv[1] if len(sys.argv) > 1 else "mcp-servers"
     generate_all(mcps_dir)
 
 

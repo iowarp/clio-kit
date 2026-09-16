@@ -19,7 +19,7 @@ from pathlib import Path
 from clio_kit.discovery import read_server_descriptor
 
 REPO = Path(__file__).resolve().parents[1]
-SERVERS = REPO / "clio-kit-mcp-servers"
+SERVERS = REPO / "mcp-servers"
 QUALITY_CONTROL = REPO / ".github" / "workflows" / "quality_control.yml"
 
 # Servers excluded from the shared matrix that a dedicated workflow covers

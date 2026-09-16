@@ -51,7 +51,7 @@ acceptance tests. External code and update ownership remain with the publisher.
 When adapting an external skill, give the changed copy a distinct name and retain
 its source revision and license. CLIO Kit's Clio Coder collection uses
 `clio-kit-` names to avoid collisions with upstream audited skills. See the
-[integration and validation guide](../clio-kit-website/docs/marketplace.md#clio-coder-integration)
+[integration and validation guide](../docs/marketplace.md#clio-coder-integration)
 for installation routes, prerequisites and tested coverage.
 
 ## Source types
@@ -273,7 +273,9 @@ GitHub write occurs without `--open-pr`.
 
 ## Hooks
 
-Claude Code plugins can include optional event hooks:
+Maintained and community Claude Code plugins can both include optional event hooks.
+Use the same validation for each; test enabled hooks together for duplicate or
+conflicting actions. See the [authoring guide](../docs/authoring.md#add-a-hook).
 
 ```bash
 clio-kit plugin init my-plugin --hook

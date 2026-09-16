@@ -268,9 +268,9 @@ def probe_user_contract(
     timeout_seconds: float = 180.0,
 ) -> JSON:
     """Capture one locked server's actual user ``tools/list`` stdio response."""
-    server_directory = (
-        repository_root / "clio-kit-mcp-servers" / spec.server_name
-    ).resolve(strict=True)
+    server_directory = (repository_root / "mcp-servers" / spec.server_name).resolve(
+        strict=True
+    )
     uv = shutil.which("uv")
     if uv is None:
         raise ContractGenerationError("uv is required to probe MCP user contracts")

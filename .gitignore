@@ -95,7 +95,7 @@ yarn-debug.log*
 yarn-error.log*
 package-lock.json
 !tests/fixtures/mcp-servers/*/package-lock.json
-!clio-kit-mcp-servers/*/package-lock.json
+!mcp-servers/*/package-lock.json
 yarn.lock
 
 # =============================================================================

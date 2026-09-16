@@ -284,9 +284,9 @@ class DocusaurusGenerator:
     """Generate Docusaurus markdown files from MCP data."""
 
     def __init__(self, output_dir: Path):
-        self.output_dir = output_dir
-        self.mcps_output_dir = output_dir / "docs" / "mcps"
-        self.data_output_dir = output_dir / "src" / "data"
+        self.output_dir = output_dir.resolve()
+        self.mcps_output_dir = self.output_dir.parent / "docs" / "mcps"
+        self.data_output_dir = self.output_dir / "src" / "data"
 
     def generate_all_docs(self, mcps_data: Dict):
         """Generate all documentation files."""
@@ -661,7 +661,7 @@ export const mcpEndorsement = {json.dumps(mcp_endorsement, indent=2)};
 def main():
     """Main entry point."""
     if len(sys.argv) != 3:
-        print("Usage: python generate_docs.py <mcps_directory> <docs_output_directory>")
+        print("Usage: python generate_docs.py <mcps_directory> <website_directory>")
         sys.exit(1)
 
     mcps_dir = Path(sys.argv[1])

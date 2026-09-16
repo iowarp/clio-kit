@@ -35,55 +35,55 @@ coverage:
 flags:
   adios:
     paths:
-      - clio-kit-mcp-servers/adios/
+      - mcp-servers/adios/
   arxiv:
     paths:
-      - clio-kit-mcp-servers/arxiv/
+      - mcp-servers/arxiv/
   chronolog:
     paths:
-      - clio-kit-mcp-servers/chronolog/
+      - mcp-servers/chronolog/
   compression:
     paths:
-      - clio-kit-mcp-servers/compression/
+      - mcp-servers/compression/
   darshan:
     paths:
-      - clio-kit-mcp-servers/darshan/
+      - mcp-servers/darshan/
   hdf5:
     paths:
-      - clio-kit-mcp-servers/hdf5/
+      - mcp-servers/hdf5/
   jarvis:
     paths:
-      - clio-kit-mcp-servers/jarvis/
+      - mcp-servers/jarvis/
   lmod:
     paths:
-      - clio-kit-mcp-servers/lmod/
+      - mcp-servers/lmod/
   ndp:
     paths:
-      - clio-kit-mcp-servers/ndp/
+      - mcp-servers/ndp/
   node-hardware:
     paths:
-      - clio-kit-mcp-servers/node-hardware/
+      - mcp-servers/node-hardware/
   pandas:
     paths:
-      - clio-kit-mcp-servers/pandas/
+      - mcp-servers/pandas/
   parallel-sort:
     paths:
-      - clio-kit-mcp-servers/parallel-sort/
+      - mcp-servers/parallel-sort/
   paraview:
     paths:
-      - clio-kit-mcp-servers/paraview/
+      - mcp-servers/paraview/
   parquet:
     paths:
-      - clio-kit-mcp-servers/parquet/
+      - mcp-servers/parquet/
   plot:
     paths:
-      - clio-kit-mcp-servers/plot/
+      - mcp-servers/plot/
   slurm:
     paths:
-      - clio-kit-mcp-servers/slurm/
+      - mcp-servers/slurm/
   spack:
     paths:
-      - clio-kit-mcp-servers/spack/
+      - mcp-servers/spack/
 
 # Comment configuration
 comment:

@@ -63,11 +63,11 @@ def test_release_security_audits_unmatrixed_shipped_environments() -> None:
         "          --with 'pip-audit==2.10.1' pip-audit" in quality_block
     )
     assert (
-        "uv run --directory clio-kit-mcp-servers/chronolog \\\n"
+        "uv run --directory mcp-servers/chronolog \\\n"
         "          --with 'pip-audit==2.10.1' pip-audit" in quality_block
     )
     assert (
-        'uv run --directory "clio-kit-mcp-servers/$server" \\\n'
+        'uv run --directory "mcp-servers/$server" \\\n'
         "            --with 'pip-audit==2.10.1' pip-audit" in quality_block
     )
 
@@ -229,7 +229,7 @@ def test_registry_publishes_only_contracts_versioned_for_this_release() -> None:
     assert 'Path("mcp-server-versions.toml")' in registry_block
     assert 'data["mcp-registry-release"]["publish"]' in registry_block
     assert 'for server_name in "${release_servers[@]}"' in registry_block
-    assert "clio-kit-mcp-servers/*/" not in registry_block
+    assert "mcp-servers/*/" not in registry_block
 
 
 def test_wheel_smoke_exercises_persistent_uv_tool_installation() -> None:
@@ -263,7 +263,7 @@ def test_ares_probe_exercises_persistent_uv_tool_installation() -> None:
     """Live Ares acceptance must use the same supported persistent tool path."""
     probe = (
         REPOSITORY_ROOT
-        / "clio-kit-mcp-servers"
+        / "mcp-servers"
         / "jarvis"
         / "scripts"
         / "live_ares_semantic_mcp_probe.py"
@@ -271,7 +271,7 @@ def test_ares_probe_exercises_persistent_uv_tool_installation() -> None:
     probe_module = runpy.run_path(
         str(
             REPOSITORY_ROOT
-            / "clio-kit-mcp-servers"
+            / "mcp-servers"
             / "jarvis"
             / "scripts"
             / "live_ares_semantic_mcp_probe.py"
@@ -315,7 +315,7 @@ def test_ares_probe_validates_explicit_spack_command(tmp_path: Path) -> None:
     probe_module = runpy.run_path(
         str(
             REPOSITORY_ROOT
-            / "clio-kit-mcp-servers"
+            / "mcp-servers"
             / "jarvis"
             / "scripts"
             / "live_ares_semantic_mcp_probe.py"
@@ -334,9 +334,9 @@ def test_ares_probe_validates_explicit_spack_command(tmp_path: Path) -> None:
 def test_wheel_smoke_binds_jarvis_artifacts_to_exact_release_wheel() -> None:
     """The installed JARVIS child must expose artifacts from the locked release."""
     jarvis_project = tomllib.loads(
-        (
-            REPOSITORY_ROOT / "clio-kit-mcp-servers" / "jarvis" / "pyproject.toml"
-        ).read_text(encoding="utf-8")
+        (REPOSITORY_ROOT / "mcp-servers" / "jarvis" / "pyproject.toml").read_text(
+            encoding="utf-8"
+        )
     )
     dependency = next(
         value
@@ -353,7 +353,7 @@ def test_wheel_smoke_binds_jarvis_artifacts_to_exact_release_wheel() -> None:
     assert match is not None
     expected_url, expected_digest = match.groups()
     jarvis_lock = tomllib.loads(
-        (REPOSITORY_ROOT / "clio-kit-mcp-servers" / "jarvis" / "uv.lock").read_text(
+        (REPOSITORY_ROOT / "mcp-servers" / "jarvis" / "uv.lock").read_text(
             encoding="utf-8"
         )
     )
@@ -478,7 +478,7 @@ def test_quality_matrix_is_required_and_lock_sensitive() -> None:
     assert "mcp-server-versions\\.toml$" in infrastructure_check
     assert "clio-agentic-search/uv\\.lock$" in infrastructure_check
     # 3.13 added to both matrices to guard the numpy<2-ceiling defect class
-    # (clio-kit-mcp-servers/pandas, /plot) on any Python-3.13-only host.
+    # (mcp-servers/pandas, /plot) on any Python-3.13-only host.
     assert 'python-version: ["3.10", "3.11", "3.12", "3.13"]' in QUALITY_WORKFLOW
     assert 'python-version: ["3.11", "3.12", "3.13"]' in QUALITY_WORKFLOW
     assert "uv lock --check" in QUALITY_WORKFLOW

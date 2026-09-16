@@ -112,7 +112,7 @@ const FeaturedMCPCard = ({ mcpId, mcp, onCopy }) => {
             <span className={styles.featuredVersion}>v{mcp.stats.version}</span>
             <span className={styles.metaSeparator}>·</span>
             <a
-              href={`https://github.com/iowarp/clio-kit/tree/main/clio-kit-mcp-servers/${mcpId}`}
+              href={`https://github.com/iowarp/clio-kit/tree/main/mcp-servers/${mcpId}`}
               className={styles.githubLinkInline}
               target="_blank"
               rel="noopener noreferrer"

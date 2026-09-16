@@ -14,7 +14,7 @@ on:
       - 'mcp-server-versions.toml'
       - 'pyproject.toml'
       - 'uv.lock'
-      - 'clio-kit-mcp-servers/**'
+      - 'mcp-servers/**'
       - 'clio-agentic-search/src/**'
       - 'clio-agentic-search/pyproject.toml'
       - 'clio-agentic-search/uv.lock'
@@ -37,7 +37,7 @@ on:
       - 'mcp-server-versions.toml'
       - 'pyproject.toml'
       - 'uv.lock'
-      - 'clio-kit-mcp-servers/**'
+      - 'mcp-servers/**'
       - 'clio-agentic-search/src/**'
       - 'clio-agentic-search/pyproject.toml'
       - 'clio-agentic-search/uv.lock'
@@ -99,34 +99,34 @@ jobs:
         uv run --directory clio-agentic-search \
           --with 'pip-audit==2.10.1' pip-audit
         for server in jarvis scientific-catalog slurm spack; do
-          uv lock --check --directory "clio-kit-mcp-servers/$server"
-          uv run --directory "clio-kit-mcp-servers/$server" ruff check .
-          uv run --directory "clio-kit-mcp-servers/$server" ruff format --check .
-          uv run --directory "clio-kit-mcp-servers/$server" mypy src
-          uv run --directory "clio-kit-mcp-servers/$server" pytest -q \
+          uv lock --check --directory "mcp-servers/$server"
+          uv run --directory "mcp-servers/$server" ruff check .
+          uv run --directory "mcp-servers/$server" ruff format --check .
+          uv run --directory "mcp-servers/$server" mypy src
+          uv run --directory "mcp-servers/$server" pytest -q \
             --junitxml="$RUNNER_TEMP/$server-junit.xml"
           python scripts/assert_no_skipped_tests.py \
             "$RUNNER_TEMP/$server-junit.xml"
-          uv run --directory "clio-kit-mcp-servers/$server" \
+          uv run --directory "mcp-servers/$server" \
             --with 'pip-audit==2.10.1' pip-audit
         done
-        uv run --directory clio-kit-mcp-servers/chronolog \
+        uv run --directory mcp-servers/chronolog \
           ruff check src tests/test_lazy_client.py
-        uv run --directory clio-kit-mcp-servers/chronolog \
+        uv run --directory mcp-servers/chronolog \
           ruff format --check src tests/test_lazy_client.py
-        uv run --directory clio-kit-mcp-servers/chronolog \
+        uv run --directory mcp-servers/chronolog \
           pytest -q tests/test_lazy_client.py \
           --junitxml="$RUNNER_TEMP/chronolog-junit.xml"
         python scripts/assert_no_skipped_tests.py \
           "$RUNNER_TEMP/chronolog-junit.xml"
-        uv run --directory clio-kit-mcp-servers/chronolog \
+        uv run --directory mcp-servers/chronolog \
           --with 'pip-audit==2.10.1' pip-audit
-        uv lock --check --directory clio-kit-mcp-servers/adios
-        uv run --directory clio-kit-mcp-servers/adios \
+        uv lock --check --directory mcp-servers/adios
+        uv run --directory mcp-servers/adios \
           ruff check src tests/test_lazy_import.py
-        uv run --directory clio-kit-mcp-servers/adios \
+        uv run --directory mcp-servers/adios \
           ruff format --check src tests/test_lazy_import.py
-        uv run --directory clio-kit-mcp-servers/adios \
+        uv run --directory mcp-servers/adios \
           pytest -q tests/test_lazy_import.py tests/test_mcp_handlers.py tests/test_server.py \
           --junitxml="$RUNNER_TEMP/adios-junit.xml"
         python scripts/assert_no_skipped_tests.py \
@@ -137,7 +137,7 @@ jobs:
       run: |
         generation_log="$(mktemp)"
         trap 'rm -f "$generation_log"' EXIT
-        uv run python scripts/generate_server_json.py clio-kit-mcp-servers | tee "$generation_log"
+        uv run python scripts/generate_server_json.py mcp-servers | tee "$generation_log"
         if grep -Eq 'Warning:|Skipped server\.json|^Failed:' "$generation_log"; then
           echo "::error::Every published MCP server must support live metadata extraction"
           exit 1
@@ -146,7 +146,7 @@ jobs:
           .claude-plugin/marketplace.json \
           claude_desktop_config.json \
           gemini-extension.json \
-          clio-kit-mcp-servers \
+          mcp-servers \
           src/clio_kit/_mcp_contracts
 
     - name: Build every root-wheel server package
@@ -157,7 +157,7 @@ jobs:
         server_dist="$(mktemp -d)"
         trap 'rm -rf "$server_dist"' EXIT
         server_count=0
-        for server_dir in clio-kit-mcp-servers/*/; do
+        for server_dir in mcp-servers/*/; do
           if [ ! -f "$server_dir/pyproject.toml" ]; then
             continue
           fi
@@ -355,7 +355,7 @@ jobs:
         python -c 'import json,sys; value=json.load(sys.stdin); assert value["contract_id"] == "clio-kit-spack-user-v2"' \
           <<< "$historical_spack_contract_v2"
         server_count=0
-        for server_dir in clio-kit-mcp-servers/*/; do
+        for server_dir in mcp-servers/*/; do
           if [ ! -f "$server_dir/pyproject.toml" ]; then
             continue
           fi
@@ -968,7 +968,7 @@ jobs:
           exit 0
         fi
         for server_name in "${release_servers[@]}"; do
-          server_dir="clio-kit-mcp-servers/$server_name"
+          server_dir="mcp-servers/$server_name"
           test -f "$server_dir/server.json"
           echo "Publishing $server_name to MCP registry..."
           if OUTPUT=$(cd "$server_dir" && ../../mcp-publisher publish 2>&1); then

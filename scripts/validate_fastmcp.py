@@ -2,7 +2,7 @@
 """Validate the repository metadata requirements for a FastMCP server.
 
 Run from within a server directory:
-    cd clio-kit-mcp-servers/compression && uv run python ../../scripts/validate_fastmcp.py
+    cd mcp-servers/compression && uv run python ../../scripts/validate_fastmcp.py
 
 Checks:
 - instructions set on FastMCP constructor
@@ -39,7 +39,7 @@ def find_server_module() -> str:
     # hunting for a bug that is not there.
     if not any(d.startswith("fastmcp") for d in project.get("dependencies", [])):
         print(f"SKIP: {project.get('name', 'this project')} is not an MCP server")
-        print("Run this from a directory under clio-kit-mcp-servers/.")
+        print("Run this from a directory under mcp-servers/.")
         sys.exit(0)
 
     scripts = project.get("scripts", {})

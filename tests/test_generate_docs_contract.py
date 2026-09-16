@@ -23,13 +23,25 @@ GENERATOR = _load_generator()
 DocusaurusGenerator = GENERATOR.DocusaurusGenerator
 
 
+def test_generation_from_website_directory_keeps_docs_at_repository_root(
+    tmp_path, monkeypatch
+):
+    site = tmp_path / "website"
+    site.mkdir()
+    monkeypatch.chdir(site)
+    DocusaurusGenerator(Path(".")).generate_all_docs({})
+    assert (tmp_path / "docs/mcps").is_dir()
+    assert (site / "src/data/mcpData.js").is_file()
+    assert not (site / "docs").exists()
+
+
 def test_generated_page_replaces_stale_description(tmp_path: Path) -> None:
     """A contract upgrade must not preserve an old generated description."""
     server = tmp_path / "server"
     server.mkdir()
     (server / "README.md").write_text("# Slurm\n", encoding="utf-8")
     output = tmp_path / "site"
-    page = output / "docs" / "mcps" / "slurm.md"
+    page = output.parent / "docs" / "mcps" / "slurm.md"
     page.parent.mkdir(parents=True)
     page.write_text(
         '<MCPDetail description="stale v1 description" />\n', encoding="utf-8"
@@ -81,14 +93,14 @@ def test_showcase_generation_is_deterministic_and_keeps_non_mcp_tile(
             "path": str(server),
         }
     }
-    incremental = tmp_path / "incremental"
+    incremental = tmp_path / "incremental" / "site"
     stale_data = incremental / "src" / "data"
     stale_data.mkdir(parents=True)
     (stale_data / "mcpData.js").write_text(
         'export const mcpData = {"spack":{"description":"stale"}};\n',
         encoding="utf-8",
     )
-    clean = tmp_path / "clean"
+    clean = tmp_path / "clean" / "site"
 
     DocusaurusGenerator(incremental).generate_all_docs(source_data)
     DocusaurusGenerator(clean).generate_all_docs(source_data)
@@ -104,6 +116,10 @@ def test_showcase_generation_is_deterministic_and_keeps_non_mcp_tile(
     assert showcase["agentic_search"]["docPath"] == "/docs/agentic-search"
     assert showcase["spack"]["description"] == "Authoritative Spack description"
     assert showcase["spack"]["stats"]["updated"] == "2026-07-13"
+    assert (incremental.parent / "docs/mcps/spack.md").read_text() == (
+        clean.parent / "docs/mcps/spack.md"
+    ).read_text()
+    assert not (clean / "docs").exists()
 
 
 @pytest.mark.parametrize("value", [None, "2026-7-13", "not-a-date"])
@@ -119,7 +135,7 @@ def test_regeneration_preserves_reviewed_usage_but_updates_contract(tmp_path):
     server = tmp_path / "server"
     server.mkdir()
     output = tmp_path / "site"
-    page = output / "docs" / "mcps" / "crystal.md"
+    page = output.parent / "docs" / "mcps" / "crystal.md"
     page.parent.mkdir(parents=True)
     page.write_text(
         "{/* clio-kit:usage:start */}\n\nReviewed usage and limits.\n\n"

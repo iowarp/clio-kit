@@ -49,12 +49,13 @@ const config = {
       /** @type {import('@docusaurus/preset-classic').Options} */
       ({
         docs: {
+          path: '../docs',
           sidebarPath: false,
           routeBasePath: 'docs',
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
           editUrl:
-            'https://github.com/iowarp/clio-kit/tree/main/clio-kit-website/docs/',
+            'https://github.com/iowarp/clio-kit/tree/main/docs/',
         },
         theme: {
           customCss: './src/css/custom.css',

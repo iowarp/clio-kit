@@ -26,8 +26,8 @@ def test_source_checkout_precedes_stale_installed_shared_data(
     """Editable development must launch repository server bytes, not stale data."""
     repository_root = tmp_path / "checkout"
     module_dir = repository_root / "src" / "clio_kit"
-    source_servers = repository_root / "clio-kit-mcp-servers"
-    installed_servers = tmp_path / "environment" / "clio-kit-mcp-servers"
+    source_servers = repository_root / "mcp-servers"
+    installed_servers = tmp_path / "environment" / "mcp-servers"
     module_dir.mkdir(parents=True)
     for root, name in (
         (source_servers, "current-mcp"),
@@ -86,7 +86,7 @@ def test_locked_server_command_rejects_missing_lock(tmp_path: Path) -> None:
 
 def test_every_embedded_server_ships_a_lock() -> None:
     """A clean source checkout must contain every lock required by the launcher."""
-    servers_root = REPOSITORY_ROOT / "clio-kit-mcp-servers"
+    servers_root = REPOSITORY_ROOT / "mcp-servers"
     projects = sorted(
         path.parent for path in servers_root.glob("*/pyproject.toml") if path.is_file()
     )

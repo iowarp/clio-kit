@@ -5,14 +5,16 @@ on:
     branches: [main, feat/360-meta-marketplace]
     paths:
       - 'clio-kit-website/**'
-      - 'clio-kit-mcp-servers/**'
+      - 'docs/**'
+      - 'mcp-servers/**'
       - 'scripts/**'
       - '.github/workflows/docs-and-website.yml'
   pull_request:
     branches: [main, dev]
     paths:
       - 'clio-kit-website/**'
-      - 'clio-kit-mcp-servers/**'
+      - 'docs/**'
+      - 'mcp-servers/**'
       - 'scripts/**'
       - '.github/workflows/docs-and-website.yml'
 
@@ -51,7 +53,7 @@ jobs:
 
     - name: Pre-sync MCP server environments
       run: |
-        for dir in clio-kit-mcp-servers/*/; do
+        for dir in mcp-servers/*/; do
           if [ -f "$dir/pyproject.toml" ]; then
             echo "Syncing $(basename $dir)..."
             (cd "$dir" && uv sync --all-extras --dev) || echo "Warning: sync failed for $(basename $dir)"
@@ -61,7 +63,7 @@ jobs:
     # Generate and build documentation
     - name: Generate Docusaurus documentation
       run: |
-        python3 scripts/generate_docs.py clio-kit-mcp-servers clio-kit-website
+        python3 scripts/generate_docs.py mcp-servers clio-kit-website
 
     - name: Setup Node.js
       uses: actions/setup-node@v4

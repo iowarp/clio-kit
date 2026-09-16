@@ -5,7 +5,7 @@ Imports each server via extract_mcp_metadata.py and updates the Capabilities,
 Claude Code and Claude Desktop sections in each server's README.md.
 
 Usage:
-    python scripts/readme_filler.py clio-kit-mcp-servers
+    python scripts/readme_filler.py mcp-servers
 """
 
 import json

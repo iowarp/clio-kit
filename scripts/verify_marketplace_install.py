@@ -329,7 +329,7 @@ class Acceptance:
                 "run",
                 "--frozen",
                 "--directory",
-                str(ROOT / "clio-kit-mcp-servers/hdf5"),
+                str(ROOT / "mcp-servers/hdf5"),
                 "python",
                 "-c",
                 "import sys\nimport h5py\n"

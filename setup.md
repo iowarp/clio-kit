@@ -111,7 +111,7 @@ For Clio Coder's imported coding and research procedures, select
 `clio-kit-scientific-debugging`. Adapted names use the `clio-kit-` prefix to avoid
 collisions with Clio Coder's audited originals. These skills contain host compatibility notes; installing
 them does not install Clio Coder's native agents, fleets, MCPs or execution gates.
-See the [integration guide](clio-kit-website/docs/marketplace.md#clio-coder-integration).
+See the [integration guide](docs/marketplace.md#clio-coder-integration).
 
 Alternatively, with Node.js 22.20.0 or newer, run this from your working project,
 using the absolute path to this CLIO checkout as the source:
@@ -123,7 +123,7 @@ npx skills@1.5.25 add /path/to/clio-kit --skill exploring-an-unfamiliar-dataset 
 Replace `codex` with `claude-code` or `antigravity` for those clients. This is
 an alternative to `clio-kit skill install`; choose one installer for each skill.
 Continue with MCP configuration below. See the
-[skills CLI guide](clio-kit-website/docs/marketplace.md#optional-skills-cli)
+[skills CLI guide](docs/marketplace.md#optional-skills-cli)
 for updates and removal. Node.js is not required for the Python installer.
 
 Skill folders contain instructions. Configure their required MCP servers
@@ -248,7 +248,7 @@ and services still need a site installation.
 | ChronoLog | Run its visor/keeper/grapher/player services. Set `UV_PYTHON` to match `py_chronolog_client`, `PYTHONPATH`, `LD_LIBRARY_PATH`, `CHRONO_PORT`, `CHRONO_CONF`, and `HDF5_READER_BIN`. | Start, record, stop, then retrieve and compare the exact archived text. Archiving is asynchronous; allow the configured flush interval. |
 
 For ChronoLog reader compilation, see the
-[server instructions](clio-kit-mcp-servers/chronolog/README.md#native-client-and-archive-reader).
+[server instructions](mcp-servers/chronolog/README.md#native-client-and-archive-reader).
 Keep native Python environments separate: for example, a Python 3.11 ChronoLog
 extension cannot load in a Python 3.13 ParaView process. Give them distinct
 `CLIO_KIT_CACHE_DIR` paths when both interpreters are needed on one machine.
@@ -277,7 +277,7 @@ claude plugin update clio-scientific-io@clio-kit
 
 Upstream plugin content changes need version bumps. Maintainers can refresh
 external catalogue snapshots with `clio-kit marketplace refresh --root .`.
-See the [marketplace guide](clio-kit-website/docs/marketplace.md) for contribution
+See the [marketplace guide](docs/marketplace.md) for contribution
 and multi-language runtime instructions.
 
 - **Unknown plugin:** verify the marketplace source and the README name, then

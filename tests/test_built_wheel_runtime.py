@@ -45,9 +45,7 @@ def test_installed_wheel_ignores_fake_home_legacy_server_shadow(
     uvx = shutil.which("uvx")
     assert uvx is not None, "uvx is required for built-wheel tests"
     fake_home = tmp_path / "home"
-    shadow = (
-        fake_home / ".local" / "share" / "clio-kit" / "clio-kit-mcp-servers" / "shadow"
-    )
+    shadow = fake_home / ".local" / "share" / "clio-kit" / "mcp-servers" / "shadow"
     shadow.mkdir(parents=True)
     (shadow / "pyproject.toml").write_text(
         "[project]\nname='shadow-mcp'\nversion='1.0.0'\n"

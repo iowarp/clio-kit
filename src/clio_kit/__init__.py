@@ -75,7 +75,7 @@ _MAX_RUNTIME_PROJECT_BYTES = 512 * 1024 * 1024
 
 def get_servers_path() -> Path:
     """Return server data owned by the active clio-kit installation."""
-    shared_name = "clio-kit-mcp-servers"
+    shared_name = "mcp-servers"
     dev_path = MODULE_DIR.parent.parent / shared_name
     candidates = [
         # In an editable source checkout, the repository copy is authoritative.
@@ -167,7 +167,7 @@ def get_search_path():
 
 
 def auto_discover_mcps():
-    """Auto-discover MCP servers from the clio-kit-mcp-servers directory."""
+    """Auto-discover MCP servers from the mcp-servers directory."""
     return discover_servers_in(get_servers_path())
 
 
@@ -472,7 +472,7 @@ def mcp_server(server, branch, args):
         cmd = [
             uvx_command(),
             "--from",
-            f"git+https://github.com/iowarp/clio-kit.git@{branch}#subdirectory=clio-kit-mcp-servers/{actual_dir}",
+            f"git+https://github.com/iowarp/clio-kit.git@{branch}#subdirectory=mcp-servers/{actual_dir}",
             entry_command,
         ]
         cmd.extend(args)

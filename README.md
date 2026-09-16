@@ -30,7 +30,7 @@
 [![CI](https://github.com/iowarp/clio-kit/actions/workflows/quality_control.yml/badge.svg)](https://github.com/iowarp/clio-kit/actions/workflows/quality_control.yml)
 [![Coverage](https://codecov.io/gh/iowarp/clio-kit/branch/main/graph/badge.svg)](https://codecov.io/gh/iowarp/clio-kit)
 
-[![MCP Servers](https://img.shields.io/badge/MCP%20Servers-22-green)](https://github.com/iowarp/clio-kit/tree/main/clio-kit-mcp-servers)
+[![MCP Servers](https://img.shields.io/badge/MCP%20Servers-22-green)](https://github.com/iowarp/clio-kit/tree/main/mcp-servers)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Type Checked](https://img.shields.io/badge/mypy-type%20checked-blue)](http://mypy-lang.org/)
 [![Package Manager](https://img.shields.io/badge/uv-package%20manager-orange)](https://github.com/astral-sh/uv)
@@ -39,6 +39,8 @@
 **CLIO Kit** is the IoWarp meta-marketplace for scientific computing. It brings together MCP servers, workflow skills, plugins, agent definitions, and community contributions—including plugins from external marketplaces—and enables AI agents to interact with HPC resources, scientific data formats, and research datasets.
 
 [**Website**](https://toolkit.iowarp.ai/) | [**IOWarp**](https://iowarp.ai)
+
+[**Documentation**](docs/README.md) · **For agents:** [read here](AGENTS.md).
 
 Chat with us on [**Zulip**](https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit) or [**join us**](https://iowarp.zulipchat.com/join/e4wh24du356e4y2iw6x6jeay/)
 
@@ -75,7 +77,7 @@ CLIO Kit is part of the IoWarp platform's tooling ecosystem for AI agents. Its m
 
 > **Part of IoWarp Platform:** CLIO Kit is the platform's meta-marketplace and tooling layer, bringing together MCP servers, skills, workflow plugins, agent definitions, and community marketplace collections.
 
-> **One launcher for MCP servers. Individual components or workflow bundles.** BSD-3-Clause licensed, with automated checks and real installation, MCP, and HPC workflow tests. See the [validation guide](clio-kit-website/docs/marketplace.md#scientific-acceptance-boundaries) for tested coverage and environment requirements.
+> **One launcher for MCP servers. Individual components or workflow bundles.** BSD-3-Clause licensed, with automated checks and real installation, MCP, and HPC workflow tests. See the [validation guide](docs/marketplace.md#scientific-acceptance-boundaries) for tested coverage and environment requirements.
 
 ## 🚀 Quick Installation
 
@@ -141,7 +143,7 @@ npx skills@1.5.25 add /path/to/clio-kit --skill exploring-an-unfamiliar-dataset 
 
 Replace `codex` with `claude-code` or `antigravity`. MCP servers require separate configuration.
 
-Choose either the Python or npm installer for each skill. See the [skills CLI guide](clio-kit-website/docs/marketplace.md#optional-skills-cli) for selecting skills, updates and removal.
+Choose either the Python or npm installer for each skill. See the [skills CLI guide](docs/marketplace.md#optional-skills-cli) for selecting skills, updates and removal.
 
 ### One Command for Any Server
 
@@ -218,7 +220,7 @@ claude plugin install clio-coder-skills@clio-kit
 
 Individual skills also work: `clio-kit skill install clio-kit-scientific-debugging --target .agents/skills`.
 Adapted Clio Coder skills use the `clio-kit-` prefix to distinguish them from upstream originals.
-See [Clio Coder integration](clio-kit-website/docs/marketplace.md#clio-coder-integration) for upstream packages and native plugin support.
+See [Clio Coder integration](docs/marketplace.md#clio-coder-integration) for upstream packages and native plugin support.
 
 ### Contribute Servers, Skills or Plugins
 
@@ -534,7 +536,7 @@ clio-kit mcp-servers
 For development or local testing:
 
 ```bash
-cd clio-kit-mcp-servers/hdf5
+cd mcp-servers/hdf5
 uv sync --all-extras --dev
 uv run hdf5-mcp
 ```

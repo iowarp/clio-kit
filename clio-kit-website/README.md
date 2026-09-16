@@ -7,15 +7,17 @@ agents and community marketplace. The live site at
 ## Structure
 
 ```text
+../docs/                    # Shared documentation source (GitHub and website)
+├── README.md               # Documentation index
+├── intro.md                # Installation and overview
+├── authoring.md            # Plugins, MCPs, skills and hooks
+├── marketplace.md          # Components, contribution and acceptance
+├── agentic-search.md       # Standalone retrieval service
+└── mcps/                   # Server reference pages
 clio-kit-website/
-├── docs/
-│   ├── intro.md             # Installation and overview
-│   ├── marketplace.md       # Components, contribution and acceptance
-│   ├── agentic-search.md    # Standalone retrieval service
-│   └── mcps/                # Server reference pages
-├── src/components/          # Documentation and catalogue UI
-├── src/data/                # Generated server catalogue
-├── src/pages/               # Landing page
+├── src/components/         # Documentation and catalogue UI
+├── src/data/               # Generated server catalogue
+├── src/pages/              # Landing page
 ├── static/
 ├── docusaurus.config.js
 └── package.json
@@ -42,10 +44,18 @@ Node 24.15.0 and the dependencies pinned in `package-lock.json`.
 
 ## Maintain server reference pages
 
+Documentation lives in root [`docs/`](../docs/README.md). Docusaurus reads
+that directory directly; public `/docs/...` URLs stay the same. From the
+repository root, regenerate server pages with:
+
+```bash
+uv run python scripts/generate_docs.py mcp-servers clio-kit-website
+```
+
 `scripts/generate_docs.py` regenerates contract metadata and the showcase from
-`clio-kit-mcp-servers/` and `mcp-server-versions.toml`. Reviewed workflow text
+`mcp-servers/` and `mcp-server-versions.toml`. Reviewed workflow text
 between the `clio-kit:usage:start` and `clio-kit:usage:end` MDX comments is
-preserved; edit it here when correcting usage. The generator does not substitute
+preserved; edit it in `../docs/mcps/` when correcting usage. The generator does not substitute
 invented Python calls when an example is absent. New servers need a real
 workflow description plus their hosted-server CI coverage.
 

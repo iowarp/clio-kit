@@ -2,6 +2,9 @@
 
 Contribute to the CLIO Kit meta-marketplace: add skills, MCP servers, plugins or agent definitions, or index an external marketplace. This guide covers development, validation and pull requests.
 
+For a short authoring walkthrough, see [plugins, MCPs, skills and hooks](docs/authoring.md).
+Agents should start with [AGENTS.md](AGENTS.md).
+
 ## Table of Contents
 
 - [Development Setup](#development-setup)
@@ -44,7 +47,7 @@ actually exercised; a valid portable skill does not prove native plugin support.
 
 ```bash
 # Navigate to the server directory
-cd clio-kit-mcp-servers/hdf5
+cd mcp-servers/hdf5
 
 # Install dependencies
 uv sync --all-extras --dev
@@ -57,7 +60,7 @@ CLIO Kit uses a **monorepo architecture** with a unified launcher:
 ```
 clio-kit/
 ├── src/clio_kit/              # Unified launcher CLI
-├── clio-kit-mcp-servers/      # Independent MCP servers
+├── mcp-servers/              # Independent MCP servers
 │   ├── hdf5/                  # Each server has:
 │   │   ├── src/               # - Source code
 │   │   ├── tests/             # - Test suite
@@ -72,6 +75,9 @@ clio-kit/
 ├── plugins/                   # Server plugins, bundles and agent definitions
 ├── community/                 # External plugin and marketplace entries
 ├── .claude-plugin/            # Generated marketplace index
+├── docs/                     # Shared human documentation
+├── clio-kit-website/          # Website configuration and UI
+├── AGENTS.md                 # Agent contribution entry point
 ├── .github/workflows/         # CI/CD automation
 └── pyproject.toml             # Root configuration
 ```
@@ -147,7 +153,7 @@ version = "^1.0.0"
 ```
 
 **Host it** — the server ships as part of the kit, and we maintain it with the
-rest. Contribute it into `clio-kit-mcp-servers/` like any other server, with a
+rest. Contribute it into `mcp-servers/` like any other server, with a
 `clio-server.toml` declaring its runtime. Read the rest of this section first:
 hosting is a real commitment on both sides.
 
@@ -256,7 +262,7 @@ validation. See the [hook guide](community/README.md#hooks) for runtime tests an
 ### Test a Single Server
 
 ```bash
-cd clio-kit-mcp-servers/hdf5
+cd mcp-servers/hdf5
 
 # Run all tests
 uv run pytest -v
@@ -275,7 +281,7 @@ uv run pytest --cov=src/ --cov-report=html --cov-report=term
 
 ```bash
 # From root directory
-for server in clio-kit-mcp-servers/*/; do
+for server in mcp-servers/*/; do
     echo "Testing $server"
     cd "$server" && uv run pytest -v && cd - || exit 1
 done
@@ -288,7 +294,7 @@ We enforce strict code quality standards through automated CI checks. **All chec
 ### Ruff (Linting + Formatting)
 
 ```bash
-cd clio-kit-mcp-servers/hdf5
+cd mcp-servers/hdf5
 
 # Check linting
 uv run ruff check .
@@ -306,7 +312,7 @@ uv run ruff format .
 ### MyPy (Type Checking)
 
 ```bash
-cd clio-kit-mcp-servers/hdf5
+cd mcp-servers/hdf5
 
 # Run type checking
 uv run mypy src/ --ignore-missing-imports
@@ -315,7 +321,7 @@ uv run mypy src/ --ignore-missing-imports
 ### pip-audit (Security)
 
 ```bash
-cd clio-kit-mcp-servers/hdf5
+cd mcp-servers/hdf5
 
 # Scan for vulnerabilities
 uv run pip-audit
@@ -324,7 +330,7 @@ uv run pip-audit
 ### Run All Quality Checks (Mimic CI)
 
 ```bash
-cd clio-kit-mcp-servers/hdf5
+cd mcp-servers/hdf5
 
 uv run ruff check .
 uv run ruff format . --check
@@ -344,7 +350,7 @@ uv run pip-audit
 
 2. **Ensure all tests pass**:
    ```bash
-   cd clio-kit-mcp-servers/your-server
+   cd mcp-servers/your-server
    uv run pytest -v
    ```
 
@@ -398,8 +404,8 @@ Follow these steps to add a new MCP server to the monorepo:
 
 ```bash
 # Use kebab-case for directory name
-mkdir -p clio-kit-mcp-servers/my-server/src/my_server_mcp
-mkdir -p clio-kit-mcp-servers/my-server/tests
+mkdir -p mcp-servers/my-server/src/my_server_mcp
+mkdir -p mcp-servers/my-server/tests
 ```
 
 ### 2. Create `pyproject.toml`
@@ -486,12 +492,12 @@ async def test_my_tool():
 
 ### 5. Create README.md
 
-Use the standard template from existing servers (see `clio-kit-mcp-servers/hdf5/README.md` as reference).
+Use the standard template from existing servers (see `mcp-servers/hdf5/README.md` as reference).
 
 ### 6. Test Your Server
 
 ```bash
-cd clio-kit-mcp-servers/my-server
+cd mcp-servers/my-server
 uv sync --all-extras --dev
 uv run pytest -v
 uv run ruff check .
@@ -514,7 +520,7 @@ Add the server's version, description and category to
 `mcp-server-versions.toml`, following an existing entry. From the repository
 root, generate manifests with `uv run python scripts/generate_server_json.py`
 and website references with
-`uv run python scripts/generate_docs.py clio-kit-mcp-servers clio-kit-website`.
+`uv run python scripts/generate_docs.py mcp-servers clio-kit-website`.
 Review the generated plugin and registry metadata, and add an installed-server
 check to CI. For Node and Go, follow [Contributing a Server in Another Language](#contributing-a-server-in-another-language).
 
