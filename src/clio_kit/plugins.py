@@ -32,6 +32,7 @@ from clio_kit.plugin_components import (
 from clio_kit.marketplace_cli import marketplace_group
 from clio_kit.server_cli import server_group
 from clio_kit.doctor import doctor_command
+from clio_kit.hooks import hook_components, write_hook
 from clio_kit.skill_cli import skill_group
 
 from clio_kit.community import (
@@ -166,6 +167,8 @@ def validate_plugin(plugin_dir: Path) -> tuple[dict[str, Any], list[str]]:
     _check_component_paths(manifest, problems)
     _check_mcp_servers(plugin_dir, problems)
     problems.extend(component_problems(plugin_dir, manifest))
+    has_hooks, hook_problems = hook_components(plugin_dir, manifest)
+    problems.extend(hook_problems)
 
     # Every skill is checked against the published rules, not merely parsed:
     # a skill's description is carried in every session whether or not it
@@ -178,10 +181,11 @@ def validate_plugin(plugin_dir: Path) -> tuple[dict[str, Any], list[str]]:
     has_components = (
         any(
             (plugin_dir / directory).is_dir()
-            for directory in ("skills", "commands", "agents", "hooks")
+            for directory in ("skills", "commands", "agents")
         )
         or (plugin_dir / ".mcp.json").is_file()
         or bool(manifest.get("mcpServers"))
+        or has_hooks
     )
     if not has_components and not manifest.get("dependencies"):
         problems.append(
@@ -277,6 +281,11 @@ def plugin_group() -> None:
     "--agent", is_flag=True, help="Include a read-only workflow reviewer agent."
 )
 @click.option("--mcp-command", help="Executable of an actual MCP server to wrap.")
+@click.option(
+    "--hook",
+    is_flag=True,
+    help="Include a read-only Claude SessionStart hook (requires python3).",
+)
 @click.option("--mcp-arg", multiple=True, help="Server argument; repeat as needed.")
 def plugin_init(
     directory: Path,
@@ -284,8 +293,9 @@ def plugin_init(
     agent: bool,
     mcp_command: str | None,
     mcp_arg: tuple[str, ...],
+    hook: bool,
 ) -> None:
-    """Scaffold a skill plugin, optionally including an agent and real MCP wrapper."""
+    """Scaffold skills with optional agents, hooks and a real MCP wrapper."""
     plugin_name = name or directory.name
     problems: list[str] = []
     _check_name(plugin_name, problems)
@@ -296,6 +306,8 @@ def plugin_init(
 
     skill_dir = directory / "skills" / "example-workflow"
     skill_dir.mkdir(parents=True, exist_ok=True)
+    if hook:
+        write_hook(directory)
     (directory / ".claude-plugin").mkdir(parents=True, exist_ok=True)
 
     # No component path fields: the conventional layout is picked up on its own,

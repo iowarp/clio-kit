@@ -270,3 +270,43 @@ checks client compatibility. `plugin submit ... --output entry.toml` prepares
 a reviewable entry; `plugin submit ... --open-pr` uses authenticated `gh` to
 fork, create a branch, push the one-file contribution, and open its PR. No
 GitHub write occurs without `--open-pr`.
+
+## Hooks
+
+Claude Code plugins can include optional event hooks:
+
+```bash
+clio-kit plugin init my-plugin --hook
+clio-kit plugin validate my-plugin
+claude plugin validate my-plugin --strict
+```
+
+The starter uses `python3` to supply context on `SessionStart`; it does not modify
+project files. Hooks are executable behavior, so review their commands before
+installing an external plugin. They are not installed by copying a `SKILL.md` folder.
+
+CLIO checks `hooks/hooks.json` by default and paths or inline event maps declared
+in the manifest's `hooks` field. Files wrap their event map in a top-level `hooks`
+object; inline manifest values contain that event map directly. Missing files,
+escaping paths, invalid JSON, unknown events and malformed handlers are rejected.
+An empty hooks directory does not count as a working plugin component.
+
+Required fields are checked for command, HTTP, prompt, agent and MCP-tool handlers.
+Optional fields, event/type combinations and client-version compatibility remain
+subject to [Claude's native hook rules](https://code.claude.com/docs/en/hooks).
+Validation never executes submitted hooks. Claude's hooks are host-specific;
+no automatic conversion to Codex, Antigravity or Clio Coder hooks is provided.
+
+Reproduce installation, session-start, allowed-write, denied-write, refresh and
+uninstall checks from this checkout:
+
+```bash
+uv run --frozen python scripts/verify_plugin_hooks.py --output /tmp/clio-hook-check
+# Optional: exercise the same scenario with authenticated Claude model access
+uv run --frozen python scripts/verify_plugin_hooks.py --output /tmp/clio-hook-live --live
+```
+
+Use fresh output directories. The default test uses Claude's actual installed
+hook runtime with a local scripted model endpoint, so CI needs no model account.
+`--live` uses model access and may consume account quota. Neither test publishes
+anything to GitHub or installs into your normal client profile.

@@ -232,6 +232,8 @@ clio-kit plugin submit my-plugin --repo owner/name
 
 `submit` generates a community entry for a pull request. External servers can use any language; servers hosted inside CLIO currently support Python, Node.js and Go.
 
+Add an optional Claude Code hook with `clio-kit plugin init my-plugin --hook`. See the [hook guide](community/README.md#hooks).
+
 See the [contribution guide](CONTRIBUTING.md) and [community guide](community/README.md) for requirements and submission details.
 
 <a id="agent-integrations"></a>

@@ -161,7 +161,8 @@ universal compatibility or scientific correctness for arbitrary inputs.
 | Check | Verified behavior |
 |---|---|
 | Package and installers | A fresh wheel installed all 39 adapted skills with matching resource bytes. The npm skills CLI discovered and copied all 59 skills, refreshed resources and removed them for Codex, Claude Code and Antigravity targets. |
-| External contributions | All six isolated transport routes installed, queried an actual MCP, refreshed and uninstalled successfully. Live GitHub PR publication was excluded at the user's request. |
+| External contributions | All six isolated transport routes installed, queried an actual MCP, refreshed and uninstalled successfully. A real one-file contribution [PR on the contributor's fork](https://github.com/SIslamMun/scientific-mcps/pull/2) was opened, inspected and closed without merging. |
+| Claude plugin hooks | Default, custom-file and inline hook validation is covered. Installed hooks ran at session start, observed an allowed write and denied a protected write. Both the CI-pinned client's scripted-model run and an authenticated model run passed. |
 | Codex 0.154.0 | Loaded the renamed debugging and experiment-protocol skills, queried a numerical MCP and wrote evidence/protocol artifacts while preserving source files. |
 | Claude Code 2.1.269 | Loaded the imported literature skill through its plugin, fetched an actual arXiv abstract and full PDF, and wrote a source-linked review with retrieval records. |
 | Antigravity CLI 1.2.4 | Loaded the renamed debugging skill and reproduced/diagnosed the numerical failure while preserving source files. |
@@ -169,7 +170,7 @@ universal compatibility or scientific correctness for arbitrary inputs.
 | Clio Coder 0.4.8 | Discovered and activated the adapted debugging skill without an upstream audit-hash collision. Generated diagnostics still require evidence review; a causal explanation needed correction. |
 | Native Materio on Clio Coder 0.4.8 | Its executor and read-only verifier completed a protocol-preparation task within their write boundaries. No physical measurements were performed. |
 
-The root suite passed 314 tests. Materio's earlier offline helper suite passed
+The root suite passed 348 tests. Materio's earlier offline helper suite passed
 92 tests and its generated Claude export passed strict validation. One native
 Clio model run exceeded the test timeout; resuming that interrupted session
 returned an upstream tool-history error. A fresh bounded run completed. Drafting and
@@ -262,9 +263,15 @@ pointing an npm plugin entry at a raw MCP package: it must contain an actual
 plugin manifest and `.mcp.json`. To launch a locked project packaged inside the
 plugin, use `clio-kit server run ${CLAUDE_PLUGIN_ROOT}/server` in its config.
 
+Add `--hook` for an optional read-only Claude `SessionStart` hook requiring
+`python3`. Hook files and inline definitions are validated without execution;
+run the native client validator too. Hooks remain specific to their host and
+are not portable skill files. See the [hook guide](https://github.com/iowarp/clio-kit/blob/main/community/README.md#hooks).
+
 `--open-pr` requires the GitHub CLI, authentication, and Git commit identity.
 Without it, submission only renders the entry; `--output` writes a local file.
-No contribution PR is created during acceptance tests.
+Automated acceptance tests do not create public PRs. Explicit public-submission
+checks use a contributor's fork and close the test PR without merging it.
 
 `clio-kit marketplace refresh --root .` merges indexed external collections.
 It pins fetched relative sources to a commit and records provenance in

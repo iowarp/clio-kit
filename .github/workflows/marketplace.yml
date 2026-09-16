@@ -62,6 +62,9 @@ jobs:
       - name: External plugin transports and actual MCP use
         if: matrix.protocol == '2026-07-28'
         run: uv run --frozen python scripts/verify_external_contributions.py --output /tmp/clio-external-acceptance
+      - name: Installed plugin hook execution and blocking
+        if: matrix.protocol == '2026-07-28'
+        run: uv run --frozen python scripts/verify_plugin_hooks.py --output /tmp/clio-hook-acceptance
       - name: Install built wheel and exercise real client and tools
         run: uv run --frozen python scripts/verify_marketplace_install.py --output /tmp/clio-acceptance --codex --all-servers --protocol-mode ${{ matrix.protocol }}
       - name: Python 3.10 installed compatibility
@@ -79,6 +82,9 @@ jobs:
             /tmp/clio-root-tests.xml
             /tmp/clio-external-acceptance/*.log
             /tmp/clio-external-acceptance/results.json
+            /tmp/clio-hook-acceptance/*.log
+            /tmp/clio-hook-acceptance/results.json
+            /tmp/clio-hook-acceptance/project/hook-events.jsonl
             /tmp/clio-acceptance/*.log
             /tmp/clio-acceptance/*.stderr
             /tmp/clio-acceptance/results.json
