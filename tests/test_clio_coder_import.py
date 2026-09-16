@@ -25,6 +25,12 @@ def test_imported_files_match_reviewed_manifest_and_individual_install(tmp_path)
     assert files == lock["files"]
     skills = selected_skills((), "clio-coder")
     assert set(skills) == {record["name"] for record in lock["skills"]}
+    upstream_names = {record["upstream_name"] for record in lock["skills"]}
+    assert not set(skills) & upstream_names
+    assert all(
+        record["name"] == "clio-kit-" + record["upstream_name"]
+        for record in lock["skills"]
+    )
     install_skills(skills, tmp_path, False)
     for name, source in skills.items():
         for path in source.rglob("*"):
@@ -32,7 +38,7 @@ def test_imported_files_match_reviewed_manifest_and_individual_install(tmp_path)
                 assert (
                     tmp_path / name / path.relative_to(source)
                 ).read_bytes() == path.read_bytes()
-        if name.startswith("materio-"):
+        if name.startswith("clio-kit-materio-"):
             assert (tmp_path / name / "assets/references/research-policy.md").is_file()
             assert "../../assets/" not in (tmp_path / name / "SKILL.md").read_text()
 
@@ -119,8 +125,23 @@ def test_refresh_preserves_local_changes_and_checks_source_revision(tmp_path):
         importer.generate(source, target, "wrong-revision")
     first = importer.generate(source, target, revision)
     assert importer.generate(source, target, revision) == first
-    copied = target / "skills/example/references/input.md"
+    copied = target / "skills/clio-kit-example/references/input.md"
     copied.write_text("Local adaptation")
     with pytest.raises(ValueError, match="local changes"):
         importer.generate(source, target, revision)
     assert copied.read_text() == "Local adaptation"
+
+
+def test_adapted_invocations_preserve_program_and_native_agent_names():
+    spec = importlib.util.spec_from_file_location(
+        "skill_import", ROOT / "scripts/import_clio_coder_skills.py"
+    )
+    importer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(importer)
+    original = "/skill tdd; /skill:ship pr; requires skill:tdd; the `tdd` skill. Run `herdr`; dispatch materio-task-executor."
+    assert importer.adapt_references(
+        original, {"tdd", "ship", "herdr", "materio-task-executor"}
+    ) == (
+        "/skill clio-kit-tdd; /skill:clio-kit-ship pr; requires skill:clio-kit-tdd; "
+        "the `clio-kit-tdd` skill. Run `herdr`; dispatch materio-task-executor."
+    )

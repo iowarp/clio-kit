@@ -11,9 +11,11 @@ from clio_kit.protocol_probe import inspect_stdio
 
 
 @pytest.mark.parametrize("mode", ["auto", "legacy"])
-def test_probe_collects_paginated_tools_resources_and_prompts(tmp_path, monkeypatch, mode):
+def test_probe_collects_paginated_tools_resources_and_prompts(
+    tmp_path, monkeypatch, mode
+):
     server = tmp_path / "server.py"
-    server.write_text('''
+    server.write_text("""
 import asyncio
 from mcp import types
 from mcp.server.lowlevel import Server
@@ -37,10 +39,12 @@ async def main():
     async with stdio_server() as (read, write):
         await server.run(read, write, server.create_initialization_options())
 asyncio.run(main())
-''')
+""")
     monkeypatch.setattr(mcp, "Client", partial(mcp.Client, mode=mode))
     result = asyncio.run(inspect_stdio(sys.executable, [str(server)], timeout=20))
-    assert result["protocol_version"] == ("2025-11-25" if mode == "legacy" else "2026-07-28")
+    assert result["protocol_version"] == (
+        "2025-11-25" if mode == "legacy" else "2026-07-28"
+    )
     assert [tool["name"] for tool in result["tools"]] == ["first", "second"]
     assert result["tools"][0]["inputSchema"] == {"type": "object"}
     assert result["resources"][0]["uri"] == "test://data"

@@ -90,8 +90,8 @@ class Acceptance:
                 }
             )
         )
-        source = ROOT / "skills/clio-coder-skills/skills/scientific-debugging"
-        shutil.copytree(source, plugin / "skills/scientific-debugging")
+        source = ROOT / "skills/clio-coder-skills/skills/clio-kit-scientific-debugging"
+        shutil.copytree(source, plugin / "skills/clio-kit-scientific-debugging")
         (plugin / "server.py").write_text(SERVER)
         (plugin / ".mcp.json").write_text(
             json.dumps(
@@ -259,12 +259,14 @@ class Acceptance:
         installed = Path(
             registry["plugins"][NAME + "@external-check"][0]["installPath"]
         )
-        expected = ROOT / "skills/clio-coder-skills/skills/scientific-debugging"
+        expected = (
+            ROOT / "skills/clio-coder-skills/skills/clio-kit-scientific-debugging"
+        )
         for path in expected.rglob("*"):
             if path.is_file():
                 assert (
                     installed
-                    / "skills/scientific-debugging"
+                    / "skills/clio-kit-scientific-debugging"
                     / path.relative_to(expected)
                 ).read_bytes() == path.read_bytes()
         asyncio.run(asyncio.wait_for(self.query(installed, route), timeout=30))

@@ -216,7 +216,8 @@ clio-kit skill install --bundle clio-coder --target .agents/skills
 claude plugin install clio-coder-skills@clio-kit
 ```
 
-Individual skills also work: `clio-kit skill install scientific-debugging --target .agents/skills`.
+Individual skills also work: `clio-kit skill install clio-kit-scientific-debugging --target .agents/skills`.
+Adapted Clio Coder skills use the `clio-kit-` prefix to distinguish them from upstream originals.
 See [Clio Coder integration](clio-kit-website/docs/marketplace.md#clio-coder-integration) for upstream packages and native plugin support.
 
 ### Contribute Servers, Skills or Plugins

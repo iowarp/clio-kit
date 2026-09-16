@@ -163,8 +163,6 @@ class Acceptance:
             "clio-skills",
             "clio-agents",
             "clio-coder-skills",
-            "iowarp-dev-setup",
-            "iowarp-contributing",
         ]
         for name in names:
             self.command(

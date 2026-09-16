@@ -54,7 +54,7 @@ six Materio skills. The original scientific workflow bundles remain unchanged.
 ```bash
 clio-kit skill list --bundle clio-coder
 clio-kit skill install --bundle clio-coder --target .agents/skills
-clio-kit skill install scientific-debugging --target .agents/skills
+clio-kit skill install clio-kit-scientific-debugging --target .agents/skills
 ```
 
 Choose either the collection or individual skills. Through Claude Code:
@@ -71,13 +71,30 @@ clio-coder library install /path/to/clio-kit/skills/clio-coder-skills --project
 clio-coder library pin clio-coder-skills --project
 ```
 
+Collection version 1.1.0 gives adapted skills a `clio-kit-` prefix, such as
+`clio-kit-scientific-debugging`. Clio Coder compares skill names against its
+audited catalogue; using the original name for changed content caused a drift
+warning. Distinct names preserve that distinction without disabling integrity
+checks. Original names, revisions and file hashes remain in `import-lock.json`.
+
+If you installed the earlier unprefixed collection, review local edits and remove
+only those old imported copies before reinstalling. The portable installer does
+not delete renamed folders automatically. Native plugin users should update or
+reinstall `clio-coder-skills`, then restart their session. Upstream marketplace
+package names below remain unchanged.
+
 The imported instructions retain upstream attribution and license declarations.
 Each independently installed Materio skill includes its shared references,
 templates and scientific helper scripts. Native Clio agents, prompt commands,
 fleets and runtime gates are not provided by those skill folders. Host-specific
-instructions are identified by a compatibility note. Archify's renderer remains
-a separately installed prerequisite. Upstream evaluation labels are preserved
+instructions are identified by a compatibility note. Upstream evaluation labels are preserved
 as provenance; the kit does not reinterpret them as its own successful tests.
+
+Install a referenced companion skill too, or select the complete collection;
+for example, `clio-kit-tech-spec` uses `clio-kit-tdd`. Herdr requires its executable
+and an actual Herdr pane (`HERDR_ENV=1`); installing the skill does not start a
+session. Its instructions distinguish JSON responses from actions that succeed
+with empty output. Archify likewise requires its separate renderer.
 
 ### Upstream marketplace and packed plugin
 
@@ -136,21 +153,30 @@ repository. The second test needs authenticated Codex model access and checks
 skill loading, an actual MCP query, preserved source files, and written artifacts.
 Read its diagnosis and protocol before accepting scientific claims.
 
-Installation and discovery cover all imported skills. Behavioral evaluation of
-two composed skills does not establish every procedure, external service or
-native fleet. Materio's offline helper suite is separate from model-driven
-execution. See the acceptance boundaries below for the existing scientific
-server coverage.
+Installation and discovery cover all imported skills. The 2026-09-16 follow-up
+exercised each of the 39 imported procedures in a bounded task, then tested
+previously missing live paths. These checks establish the listed behavior, not
+universal compatibility or scientific correctness for arbitrary inputs.
 
-On 2026-09-14, the root suite passed 313 tests, all six external transport tests
-passed, and a fresh wheel exposed all 59 skills to Codex. A live Codex evaluation
-loaded `scientific-debugging` and `experiment-protocol`, queried a numerical MCP,
-diagnosed cancellation error, and produced a protocol with unchanged source
-files. Materio's upstream offline suite passed 92 tests and its generated Claude
-export passed strict validation. Clio Coder 0.4.8 installed both the imported
-collection and native Materio package; its model run hit an account rate limit.
-These results do not claim model evaluation of the remaining imported skills or
-successful native fleet execution.
+| Check | Verified behavior |
+|---|---|
+| Package and installers | A fresh wheel installed all 39 adapted skills with matching resource bytes. The npm skills CLI discovered and copied all 59 skills, refreshed resources and removed them for Codex, Claude Code and Antigravity targets. |
+| External contributions | All six isolated transport routes installed, queried an actual MCP, refreshed and uninstalled successfully. Live GitHub PR publication was excluded at the user's request. |
+| Codex 0.154.0 | Loaded the renamed debugging and experiment-protocol skills, queried a numerical MCP and wrote evidence/protocol artifacts while preserving source files. |
+| Claude Code 2.1.269 | Loaded the imported literature skill through its plugin, fetched an actual arXiv abstract and full PDF, and wrote a source-linked review with retrieval records. |
+| Antigravity CLI 1.2.4 | Loaded the renamed debugging skill and reproduced/diagnosed the numerical failure while preserving source files. |
+| Herdr 0.8.0 | From a real pane in an isolated session, created a sibling pane, ran a command, waited for and read its output, preserved focus and cleaned up. |
+| Clio Coder 0.4.8 | Discovered and activated the adapted debugging skill without an upstream audit-hash collision. Generated diagnostics still require evidence review; a causal explanation needed correction. |
+| Native Materio on Clio Coder 0.4.8 | Its executor and read-only verifier completed a protocol-preparation task within their write boundaries. No physical measurements were performed. |
+
+The root suite passed 314 tests. Materio's earlier offline helper suite passed
+92 tests and its generated Claude export passed strict validation. One native
+Clio model run exceeded the test timeout; resuming that interrupted session
+returned an upstream tool-history error. A fresh bounded run completed. Drafting and
+interview skills remain bounded evaluations; real publication, independent review
+councils and experiments require their own inputs and authorization. The exact
+`wtf-p` receiving workflow and desktop/IDE GUI flows are not verified by these
+CLI checks. Cursor remains outside this follow-up's scope.
 
 ## Optional skills CLI
 

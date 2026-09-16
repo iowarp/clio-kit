@@ -107,7 +107,9 @@ Skills are included in the installed CLIO Kit package; the checkout is not
 needed for subsequent skill installation.
 
 For Clio Coder's imported coding and research procedures, select
-`--bundle clio-coder`. These skills contain host compatibility notes; installing
+`--bundle clio-coder`, or install an individual skill such as
+`clio-kit-scientific-debugging`. Adapted names use the `clio-kit-` prefix to avoid
+collisions with Clio Coder's audited originals. These skills contain host compatibility notes; installing
 them does not install Clio Coder's native agents, fleets, MCPs or execution gates.
 See the [integration guide](clio-kit-website/docs/marketplace.md#clio-coder-integration).
 

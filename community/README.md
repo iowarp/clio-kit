@@ -48,6 +48,12 @@ and component check. Indexing does not certify all external implementation code.
 Maintained CLIO contributions additionally require implementation review and
 acceptance tests. External code and update ownership remain with the publisher.
 
+When adapting an external skill, give the changed copy a distinct name and retain
+its source revision and license. CLIO Kit's Clio Coder collection uses
+`clio-kit-` names to avoid collisions with upstream audited skills. See the
+[integration and validation guide](../clio-kit-website/docs/marketplace.md#clio-coder-integration)
+for installation routes, prerequisites and tested coverage.
+
 ## Source types
 
 **`github`** — the whole repository is the plugin.
@@ -134,7 +140,7 @@ next refresh. It does not silently uninstall an existing user's plugin.
 ```bash
 clio-kit marketplace refresh --root .
 claude plugin marketplace update clio-kit
-claude plugin update iowarp-dev-setup@clio-kit
+claude plugin update scientific-debugging@clio-kit
 ```
 
 For a GitHub-hosted catalogue, maintainers can run the federation refresh

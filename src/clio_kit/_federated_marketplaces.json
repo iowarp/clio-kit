@@ -16,26 +16,6 @@
         "indexed": true
       },
       "add_command": "claude plugin marketplace add iowarp/clio-coder"
-    },
-    {
-      "name": "iowarp-clio",
-      "source": {
-        "source": "github",
-        "repo": "iowarp/clio-core"
-      },
-      "description": "Official IOWarp marketplace for the Clio ecosystem: dev environment setup, contributing guidelines, and team workflow consistency.",
-      "category": "development",
-      "keywords": [
-        "iowarp",
-        "clio-core",
-        "devcontainer",
-        "workflow"
-      ],
-      "metadata": {
-        "maintainer": "Gnosis Research Center",
-        "indexed": true
-      },
-      "add_command": "claude plugin marketplace add iowarp/clio-core"
     }
   ]
 }

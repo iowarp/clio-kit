@@ -11,6 +11,7 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tempfile
@@ -21,6 +22,24 @@ ROOT = Path(__file__).resolve().parents[1]
 REVISION = "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
 COLLECTION = "clio-coder-skills"
 REPOSITORY = "https://github.com/iowarp/clio-coder"
+SKILL_PREFIX = "clio-kit-"
+
+
+def adapt_references(text: str, names: set[str]) -> str:
+    """Rename skill invocations, not similarly named programs or native agents."""
+    alternatives = "|".join(
+        re.escape(name) for name in sorted(names, key=len, reverse=True)
+    )
+    text = re.sub(
+        rf"(/skill[ :]|skill:)({alternatives})(?![\w-])",
+        lambda match: match[1] + SKILL_PREFIX + match[2],
+        text,
+    )
+    return re.sub(
+        rf"`({alternatives})`(?= skill\b)",
+        lambda match: "`" + SKILL_PREFIX + match[1] + "`",
+        text,
+    )
 
 
 def hashes(root: Path) -> dict[str, str]:
@@ -82,13 +101,18 @@ def generate(
         paths = sorted(source.glob("library/skills/*/*/SKILL.md")) + sorted(
             source.glob("library/plugins/*/skills/*/SKILL.md")
         )
+        upstream_names = {
+            yaml.safe_load(path.read_text()[4:].split("\n---\n", 1)[0])["name"]
+            for path in paths
+        }
         for path in paths:
             hashes(path.parent)  # Reject linked resources before copying them.
             original = path.read_text()
             header, body = original[4:].split("\n---\n", 1)
             fields = yaml.safe_load(header)
-            name = fields["name"]
-            if name == "scientific-debugging":
+            upstream_name = fields["name"]
+            name = SKILL_PREFIX + upstream_name
+            if upstream_name == "scientific-debugging":
                 start, end = body.index("## Worked Example"), body.index("## Red Flags")
                 body = (
                     body[:start]
@@ -120,12 +144,17 @@ def generate(
                 ),
             )
             packed = "plugins" in path.relative_to(source / "library").parts
-            if name == "archify":
+            if upstream_name == "archify":
                 # The upstream instruction overlay intentionally does not ship
                 # its separately installed renderer's reference directory.
                 body = body.replace(
                     "`references/authoring-contract.md`",
                     "`<renderer>/references/authoring-contract.md`",
+                )
+            if upstream_name == "herdr":
+                body = body.replace(
+                    "Control commands return JSON. Read every identifier from the response;",
+                    "Commands such as `pane split` and `pane list` return JSON; `pane read` and help return plain text. Some successful actions, including `pane run`, return no output; check their exit status instead of parsing an empty response. Read every identifier from creation responses;",
                 )
             if packed:
                 package = path.parents[2]
@@ -176,6 +205,7 @@ def generate(
                     "provenance": "adapted",
                     "eval-status": "scenarios-recorded",
                     "source": f"{REPOSITORY}/tree/{revision}/{path.parent.relative_to(source).as_posix()}",
+                    "upstream-name": upstream_name,
                     "upstream-eval-status": str(
                         upstream_meta.get("eval-status", "unspecified")
                     ),
@@ -190,17 +220,21 @@ def generate(
                 "they are not installed or enforced by this skill in another host. Use the host's actual skill invocation and equivalent tools. "
                 "If no equivalent exists, report the missing capability. Do not assume a tool is unavailable merely because the original headless workflow says so. "
                 "A referenced agent or skill must be installed before relying on it. Scientific MCPs must be configured separately.\n\n"
+                "Adapted skills use the `clio-kit-` prefix to distinguish them from upstream audited skills. "
+                "For a companion skill named below, select its `clio-kit-` copy from this collection; "
+                "native agents, fleets and external programs retain their original names.\n\n"
             )
             (target / "SKILL.md").write_text(
                 "---\n"
                 + yaml.safe_dump(normalized, sort_keys=False, allow_unicode=True)
                 + "---\n\n"
                 + note
-                + body.lstrip()
+                + adapt_references(body.lstrip(), upstream_names)
             )
             records.append(
                 {
                     "name": name,
+                    "upstream_name": upstream_name,
                     "path": path.parent.relative_to(source).as_posix(),
                     "upstream_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                     "packed": packed,
@@ -234,10 +268,12 @@ def generate(
             "revision": revision,
             "adaptations": [
                 "Normalized Agent Skills frontmatter; upstream metadata retained here",
+                "Namespaced adapted skills and invocations with clio-kit- to avoid upstream audit identity collisions",
                 "Added host compatibility note; no foreign tool allowlist enforced",
                 "Made Materio assets self-contained for individual skill installation",
                 "Omitted the whole-package exporter from individual Materio skills",
                 "Qualified Archify's separately installed renderer reference",
+                "Corrected Herdr guidance for successful actions with empty stdout",
                 "Corrected scientific-debugging's contradictory worked-example verdicts and tolerance guidance",
                 "Recorded CLIO Kit evaluation status independently of upstream status",
             ],

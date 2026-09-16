@@ -18,12 +18,12 @@ import sys
 from clio_kit.skill_cli import install_skills, selected_skills
 from verify_external_contributions import SERVER
 
-REQUEST = """Use scientific-debugging to diagnose the failing weighted mean reference test in this directory.
+REQUEST = """Use clio-kit-scientific-debugging to diagnose the failing weighted mean reference test in this directory.
 Do not edit calculation.py or test_calculation.py. Inspect the installed skill.
 Run python3 -m unittest -q, investigate at least two fault classes, and compare
 the cancellation input with the configured numerics MCP weighted_mean tool.
 Write diagnosis.md with commands, observations, and the cause. Then use
-experiment-protocol to write a validation protocol in VALIDATION.md for comparing
+clio-kit-experiment-protocol to write a validation protocol in VALIDATION.md for comparing
 this implementation to a corrected one; record numerical tolerance and input
 identity before performing any new timing measurement. Inspect both skills.
 Do not push, contact external services other than the configured MCP, or change
@@ -35,7 +35,9 @@ def main(output: Path, sandbox: str) -> bool:
     output.mkdir(parents=True, exist_ok=False)
     project = output / "project"
     project.mkdir()
-    skills = selected_skills(("scientific-debugging", "experiment-protocol"), None)
+    skills = selected_skills(
+        ("clio-kit-scientific-debugging", "clio-kit-experiment-protocol"), None
+    )
     install_skills(skills, project / ".agents/skills", False)
     (project / "calculation.py").write_text(
         "def weighted_mean(values, weights):\n"
