@@ -122,6 +122,9 @@ class Acceptance:
             "build-sdist-and-wheel",
             ["uv", "build", "--out-dir", str(self.output / "dist")],
         )
+        self.environment["CLIO_KIT_COMPONENT_BASE_URL"] = (
+            (self.output / "dist/components").resolve().as_uri()
+        )
         wheel = next((self.output / "dist").glob("*.whl"))
         self.command(
             "create-environment",

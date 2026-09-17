@@ -19,7 +19,7 @@ the six primary bundles keep their separate coverage rule.
 Install the launcher from the checkout before using the commands below:
 
 ```bash
-uv tool install --force --reinstall ".[verification]"
+uv tool install --force --reinstall --editable ".[verification]"
 ```
 
 ## Create a plugin
@@ -96,8 +96,9 @@ components; missing names, cycles and external dependencies are rejected.
 Linked files are not supported. `clio-` names remain reserved for maintained
 packages; validate those explicitly with `--maintained`.
 
-Skills and their resources join the wheel automatically. Agents, hooks and MCP
-configuration travel through native plugin installation; they do not become
+Release builds automatically package skills and their resources into individual
+artifacts, and packages into separate native payloads. The launcher carries their
+catalogue and hashes. Agents, hooks and MCP configuration travel through native plugin installation; they do not become
 portable merely by being indexed. Bundled MCP configuration runs its declared
 command or connects to its URL. Hosting a server in `mcp-servers/` still uses the
 runtime descriptor, lock, registration and tests described below.

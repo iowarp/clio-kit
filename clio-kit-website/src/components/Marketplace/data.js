@@ -105,7 +105,7 @@ export function installation(item, client) {
       (type) => !['skill', 'mcp'].includes(type),
     );
     return {
-      label: 'From your CLIO Kit checkout',
+      label: 'Install selected components',
       code: `clio-kit plugin install ${plugin} --client ${client} --project /path/to/project${partial ? ' --components-only' : ''}`,
       note: partial
         ? 'Installs only the skills and MCP configuration. Native agents, hooks and commands are not adapted; this is a partial workflow installation.'
@@ -115,13 +115,15 @@ export function installation(item, client) {
   return {
     label: item.plugin
       ? `Install containing package: ${plugin}`
-      : 'From your CLIO Kit checkout',
-    code: `claude plugin marketplace add "$PWD"\nclaude plugin install ${plugin}@clio-kit`,
+      : 'Download this native package',
+    code: item.origin === 'Indexed'
+      ? `claude plugin marketplace add iowarp/clio-kit\nclaude plugin install ${plugin}@clio-kit`
+      : `clio-kit plugin fetch ${plugin} --target /path/to/clio-selected\nclaude plugin marketplace add /path/to/clio-selected\nclaude plugin install ${plugin}@clio-kit`,
     note:
       item.origin === 'Indexed'
         ? 'Installs the upstream package from the pinned marketplace source. Upstream code and prerequisites remain with its maintainer.'
         : item.plugin
           ? `This installs ${plugin} and its included components. It does not install only this ${item.kind}. Native agents and hooks require Claude Code.`
-          : 'Claude Code calls each installation package a plugin. CLIO Kit distinguishes workflow plugins from individual components and collections. Other agents can install portable skills and configure MCPs separately.',
+          : 'Requires a release with component artifacts published. Downloads this package and its dependencies; MCP implementations download on first launch. For unreleased checkout testing, register the checkout instead.',
   };
 }

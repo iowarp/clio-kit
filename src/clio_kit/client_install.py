@@ -151,7 +151,7 @@ def safe_destination(project: Path, relative: str) -> Path:
 
 
 def install_for_client(
-    root: Path,
+    root: Path | None,
     name: str,
     client: str,
     project: Path,
@@ -160,8 +160,13 @@ def install_for_client(
     replace: bool = False,
     dry_run: bool = False,
 ) -> dict:
-    root, project = root.resolve(), project.resolve()
-    components = collect_components(root, name)
+    project = project.resolve()
+    if root is None:
+        from clio_kit.release_components import release_components
+
+        components = release_components(name)
+    else:
+        components = collect_components(root.resolve(), name)
     if components["unsupported"] and not components_only:
         raise ValueError(
             "This package also needs native client adapters for "
@@ -209,6 +214,11 @@ def install_for_client(
     }
     if dry_run:
         return result
+    if root is None:
+        from clio_kit.component_store import fetch
+
+        for key in components["artifacts"]:
+            fetch(key)
     # Preflight skill conflicts before writing configuration. The skill installer
     # stages complete folders and refuses local changes unless --replace is set.
     if components["skills"]:

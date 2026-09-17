@@ -96,7 +96,7 @@ block writes, run on shell/MCP writes or certify report prose; the skill require
 an explicit final check. Review HDF5-to-CSV fidelity, figure meaning and
 scientific interpretation separately.
 
-The skill and helper also ship in the wheel:
+The skill and helper can also be downloaded independently:
 
 ```bash
 clio-kit skill install creating-dataset-report --target .agents/skills

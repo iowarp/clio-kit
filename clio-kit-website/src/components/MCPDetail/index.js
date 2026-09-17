@@ -106,7 +106,7 @@ codex mcp list`
       language: 'bash',
       code: `git clone https://github.com/iowarp/clio-kit.git
 cd clio-kit
-uv tool install --force --reinstall ".[verification]"
+uv tool install --force --reinstall --editable ".[verification]"
 clio-kit mcp-server ${serverName}`
     }
   };

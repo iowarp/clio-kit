@@ -61,6 +61,9 @@ jobs:
           uv run --frozen --directory mcp-servers/web pytest -q tests/test_tasks.py
       - name: Root regressions
         run: uv run --frozen pytest -q tests --junitxml=/tmp/clio-root-tests.xml
+      - name: Selective downloads from an empty component cache
+        if: matrix.protocol == '2026-07-28'
+        run: uv run --frozen python scripts/verify_partial_install.py --output /tmp/clio-partial-install
       - name: Folder-based component contributions
         if: matrix.protocol == '2026-07-28'
         run: uv run --frozen python scripts/verify_local_components.py --output /tmp/clio-local-components
@@ -90,6 +93,8 @@ jobs:
           name: marketplace-acceptance-${{ matrix.protocol }}
           path: |
             /tmp/clio-root-tests.xml
+            /tmp/clio-partial-install/*.log
+            /tmp/clio-partial-install/*.json
             /tmp/clio-local-components/*.log
             /tmp/clio-local-components/results.json
             /tmp/clio-local-components/mcp-result.json

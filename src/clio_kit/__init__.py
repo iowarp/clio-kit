@@ -140,35 +140,22 @@ def get_search_path():
     if dev_path.exists():
         return dev_path
 
-    possible_paths = [
-        MODULE_DIR.parent / "clio-agentic-search",
-        MODULE_DIR / "clio-agentic-search",
-        Path(sys.prefix) / "share" / "clio-kit" / "clio-agentic-search",
-        Path.home() / ".local" / "share" / "clio-kit" / "clio-agentic-search",
-    ]
+    from clio_kit.component_store import catalogue, fetch
 
-    for path in possible_paths:
-        if path.exists() and path.is_dir():
-            return path
-
-    python_path = Path(sys.executable)
-    isolated_paths = [
-        python_path.parent.parent / "clio-agentic-search",
-        python_path.parent.parent / "share" / "clio-agentic-search",
-        python_path.parent.parent / "purelib" / "clio-agentic-search",
-        python_path.parent.parent / "data" / "clio-agentic-search",
-    ]
-
-    for path in isolated_paths:
-        if path.exists() and path.is_dir():
-            return path
-
-    return dev_path
+    return fetch(catalogue()["search"])
 
 
 def auto_discover_mcps():
     """Auto-discover MCP servers from the mcp-servers directory."""
-    return discover_servers_in(get_servers_path())
+    from clio_kit.component_store import INDEX_FILE, catalogue
+
+    if not INDEX_FILE.is_file():
+        return discover_servers_in(get_servers_path())
+    servers = catalogue()["servers"]
+    return (
+        {name: record["entry"] for name, record in servers.items()},
+        {name: record["directory"] for name, record in servers.items()},
+    )
 
 
 def list_available_servers():
@@ -479,13 +466,13 @@ def mcp_server(server, branch, args):
         _run_child_command(cmd, entry_command, child_environment)
         return
 
-    server_path = get_servers_path() / actual_dir
-    if server_path.exists():
-        _run_locked_local_server(server_path, entry_command, args, child_environment)
-        return
+    from clio_kit.component_store import server_project
 
-    # Not in development: try to run the installed console script directly.
-    _run_child_command([entry_command, *args], entry_command, child_environment)
+    try:
+        server_path = server_project(actual_dir, get_servers_path())
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    _run_locked_local_server(server_path, entry_command, args, child_environment)
 
 
 def _run_locked_local_server(
@@ -693,7 +680,10 @@ def search(args):
         click.echo("  clio-kit search serve --port 8080")
         return
 
-    search_path = get_search_path()
+    try:
+        search_path = get_search_path()
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
     if not search_path.exists():
         click.echo(f"Error: clio-agentic-search not found at {search_path}")
         click.echo("Install from: https://github.com/iowarp/clio-kit")

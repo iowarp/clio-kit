@@ -1,32 +1,34 @@
-"""Include skill resources from every local component package in built wheels."""
+"""Build a metadata-only launcher and separate immutable component artifacts."""
 
+import json
 from pathlib import Path
+import runpy
 
 from hatchling.builders.hooks.plugin.interface import BuildHookInterface
 
 
 class CustomBuildHook(BuildHookInterface):
     def initialize(self, version, build_data):
-        if self.target_name != "wheel":
+        # Editable development keeps direct checkout access and builds no artifacts.
+        if version == "editable":
             return
         root = Path(self.root)
-        destinations = {
-            f"clio-kit-skills/{folder.name}/skills"
-            for folder in (root / "skills").iterdir()
-            if folder.is_dir()
-        }
-        for kind in ("plugins", "agents", "hooks"):
-            for folder in sorted((root / kind).glob("*/skills")):
-                if not any(folder.glob("*/SKILL.md")):
-                    continue
-                target = f"clio-kit-skills/{folder.parent.name}/skills"
-                if target in destinations:
-                    raise ValueError(f"Duplicate skill package destination: {target}")
-                if folder.is_symlink() or any(
-                    path.is_symlink() for path in folder.rglob("*")
-                ):
-                    raise ValueError(
-                        f"Linked skill content cannot be packaged: {folder}"
-                    )
-                destinations.add(target)
-                build_data.setdefault("shared_data", {})[str(folder)] = target
+        index = root / "src/clio_kit/_components.json"
+        if (root / "mcp-servers").exists():
+            output = Path(self.directory) / "components"
+            builder = runpy.run_path(str(root / "scripts/package_components.py"))
+            catalogue = builder["build_components"](root, output)
+            # Generated metadata lives under the build directory, never in source.
+            index = output / "index.json"
+            assert catalogue["schema"] == 1
+        elif not index.is_file():
+            raise ValueError("Source distribution is missing its component catalogue")
+        data = json.loads(index.read_text())
+        if data["version"] != self.metadata.version:
+            raise ValueError("Component catalogue version differs from the launcher")
+        destination = (
+            "clio_kit/_components.json"
+            if self.target_name == "wheel"
+            else "src/clio_kit/_components.json"
+        )
+        build_data.setdefault("force_include", {})[str(index)] = destination

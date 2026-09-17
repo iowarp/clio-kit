@@ -286,7 +286,9 @@ def plugin_group() -> None:
     "--project", required=True, type=click.Path(file_okay=False, path_type=Path)
 )
 @click.option(
-    "--root", default=".", type=click.Path(exists=True, file_okay=False, path_type=Path)
+    "--root",
+    default=None,
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
 )
 @click.option(
     "--components-only",
@@ -302,13 +304,11 @@ def plugin_group() -> None:
     "--dry-run", is_flag=True, help="Show the component plan without writing files."
 )
 def install_plugin(name, client, project, root, components_only, replace, dry_run):
-    """Install a local package's skills and stdio MCPs for a selected client.
-
-    Source is a CLIO Kit checkout. This does not fetch external indexed packages
-    or convert client-specific agents/hooks. Keep local source scripts available.
-    """
+    """Install selected release skills and MCP settings, or use --root CHECKOUT."""
     from clio_kit.skills import SkillProblem
 
+    if root is None and (Path.cwd() / ".claude-plugin/marketplace.json").is_file():
+        root = Path.cwd()
     try:
         result = install_for_client(
             root,
@@ -416,6 +416,23 @@ def plugin_init(
     )
     click.echo(f"Scaffolded {plugin_name} in {directory}")
     click.echo("Next: edit the manifest and the skill, then `clio-kit plugin validate`")
+
+
+@plugin_group.command("fetch")
+@click.argument("names", nargs=-1, required=True)
+@click.option("--target", required=True, type=click.Path(path_type=Path))
+def plugin_fetch(names: tuple[str, ...], target: Path) -> None:
+    """Download a selected native plugin and dependencies into a local marketplace."""
+    from clio_kit.release_components import fetch_native_package
+
+    try:
+        result = fetch_native_package(names, target)
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(json.dumps(result, indent=2))
+    click.echo(
+        "Register this directory with claude plugin marketplace add, then install the named plugin."
+    )
 
 
 @plugin_group.command("validate")

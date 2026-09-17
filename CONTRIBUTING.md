@@ -161,8 +161,9 @@ rest. Contribute it into `mcp-servers/` like any other server, with a
 `clio-server.toml` declaring its runtime. Read the rest of this section first:
 hosting is a real commitment on both sides.
 
-All runtimes need their dependencies available on first build. Python source is
-vendored in the wheel, but `uv sync --frozen` still downloads missing packages.
+All runtimes need their dependencies available on first build. Server source and
+locks are separate release artifacts, fetched only when selected. The Python
+runtime then uses `uv sync --frozen` to obtain missing dependencies.
 Node uses `npm ci`; Go may download modules before compilation. Prepare and test
 the runtime cache on the target platform before using a host without outbound
 network access. Indexing an external server does not make its installation offline.
@@ -201,10 +202,9 @@ environment identity for node servers precisely because it is the artifact that
 runs — unlike Python, where build output is throwaway and excluded.
 
 **Name that output directory `bundle/`, not `dist/`, `lib/` or `build/`.** All
-three of those are ignored repo-wide by `.gitignore`, and the wheel is built
-from what git tracks, so compiled output placed in any of them is silently
+three of those are ignored repo-wide by `.gitignore`, and release component artifacts respect the repository's tracked and non-ignored files, so compiled output placed in any of them is silently
 dropped and the server ships unable to start. `bundle/` is matched by nothing
-and rides into the wheel correctly. (`node_modules` is already ignored, so it
+and is included in the component artifact. (`node_modules` is already ignored, so it
 never ships — which is what you want, since `npm ci` recreates it from the
 lock.)
 

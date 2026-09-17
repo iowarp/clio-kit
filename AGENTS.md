@@ -69,6 +69,7 @@ Run a changed server's own suite from `mcp-servers/<name>/` using its own locked
 environment. Root pytest targets `tests/`; recursive collection mixes independent
 server dependencies. For launcher or packaging changes, also run
 `uv run --frozen python scripts/verify_marketplace_install.py --all-servers`.
+For distribution changes, also run `uv run --frozen python scripts/verify_partial_install.py --output /tmp/clio-partial-install` with a new output directory.
 For hooks, run `uv run --frozen python scripts/verify_plugin_hooks.py`.
 These acceptance scripts create temporary client configurations and evidence.
 Check [acceptance boundaries](docs/marketplace.md#scientific-acceptance-boundaries)

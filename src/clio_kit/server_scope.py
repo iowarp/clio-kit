@@ -1,10 +1,4 @@
-"""Published scope of each embedded MCP server, read from its own manifest.
-
-The scope is resolved from the server's shipped ``server.json`` rather than the
-repository's ``mcp-server-versions.toml``, because the wheel's shared data
-carries the server projects but not that map. Keeping the lookup here also keeps
-the launcher module from growing past its size baseline.
-"""
+"""Published MCP scope from source manifests or the release's metadata catalogue."""
 
 import json
 from pathlib import Path
@@ -50,12 +44,20 @@ def format_server_listing(
     """Render the grouped `clio-kit mcp-servers` listing as output lines."""
     if not dir_name_map:
         return ["No MCP servers found."]
-    grouped = group_by_scope(
+    from clio_kit.component_store import INDEX_FILE, catalogue
+
+    scopes = (
         {
+            name: record.get("scope", DEFAULT_SERVER_SCOPE)
+            for name, record in catalogue()["servers"].items()
+        }
+        if INDEX_FILE.is_file()
+        else {
             name: read_server_scope(servers_root / directory)
             for name, directory in dir_name_map.items()
         }
     )
+    grouped = group_by_scope(scopes)
     if only_scope is not None:
         grouped = {only_scope: grouped.get(only_scope, [])}
         if not grouped[only_scope]:

@@ -100,6 +100,9 @@ def verify(
     if installed:
         suite.launcher = installed / "bin/clio-kit"
         suite.environment["CLIO_KIT_CACHE_DIR"] = str(installed.parent / "cache")
+        suite.environment["CLIO_KIT_COMPONENT_BASE_URL"] = (
+            installed.parent / "dist/components"
+        ).as_uri()
         suite.environment["PATH"] = (
             str(installed / "bin") + os.pathsep + os.environ["PATH"]
         )

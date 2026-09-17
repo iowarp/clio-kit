@@ -94,10 +94,11 @@ cd clio-kit
 Read setup.md and set up CLIO Kit for me.
 ```
 
-**Manual setup:** Install the launcher, then choose an option below.
+**Manual setup:** Install this checkout's launcher, then choose an option below.
+For the upcoming no-clone release route, see [selective installation](docs/installation.md).
 
 ```bash
-uv tool install --force --reinstall ".[verification]"
+uv tool install --force --reinstall --editable ".[verification]"
 ```
 
 ### Claude Code
@@ -164,7 +165,7 @@ Choose either the Python or npm installer for each skill. See the [skills CLI gu
 
 ```bash
 # From the CLIO Kit checkout, install the CLI in a persistent tool environment
-uv tool install --force --reinstall .
+uv tool install --force --reinstall --editable .
 # If uv's executable directory is not on PATH:
 uv tool update-shell
 
@@ -185,9 +186,10 @@ To install the published release instead, use `uv tool install clio-kit`.
 `uv tool install` creates a persistent, isolated environment; use
 `uvx --from clio-kit clio-kit ...` for a temporary, one-shot invocation.
 
-Released wheels run each embedded Python MCP server using its shipped `uv.lock`.
-The launcher caches environments by source and lock contents, installs production
-dependencies, and refuses to resolve an embedded server whose lock is missing.
+The next release separates the small launcher from component downloads: one MCP
+fetches only that server, one skill fetches only its files, and a workflow selects
+its components. Server dependencies stay isolated and locked. See
+[selective installation](docs/installation.md) for release, checkout and native plugin routes.
 The `--branch` option is for development, not an immutable release installation.
 
 The wheel also includes machine-readable tool contracts for JARVIS, Slurm, Spack
@@ -592,7 +594,7 @@ pip install uv
 Then install CLIO Kit persistently and expose uv's tool directory:
 
 ```bash
-uv tool install --force --reinstall .
+uv tool install --force --reinstall --editable .
 uv tool update-shell
 ```
 

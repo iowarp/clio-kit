@@ -62,7 +62,15 @@ def auto_discover_prompts():
     """Auto-discover prompts from the prompts directory (recursively)"""
     prompts_path = get_prompts_path()
     if not prompts_path.exists():
-        return {}
+        from clio_kit.component_store import artifact_path, catalogue
+
+        data = catalogue()
+        result = {}
+        for name, key in data["prompts"].items():
+            filename = next(iter(data["artifacts"][key]["files"]))
+            path = artifact_path(key, data) / filename
+            result[name] = result[name.replace("-", "_")] = path
+        return result
 
     prompt_map = {}
 
@@ -125,6 +133,16 @@ def prompt(prompt_name):
     # Read and print the prompt file
     prompt_file = prompt_map[prompt_lower]
     try:
+        if not prompt_file.exists():
+            from clio_kit.component_store import catalogue, fetch
+
+            data = catalogue()
+            canonical = next(
+                name
+                for name in data["prompts"]
+                if prompt_lower in {name, name.replace("-", "_")}
+            )
+            fetch(data["prompts"][canonical], data)
         with open(prompt_file, "r") as f:
             content = f.read()
         click.echo(content)

@@ -53,6 +53,9 @@ def test_installed_wheel_ignores_fake_home_legacy_server_shadow(
         encoding="utf-8",
     )
     environment = _wheel_environment(tmp_path, fake_home=fake_home)
+    environment["CLIO_KIT_COMPONENT_BASE_URL"] = (
+        built_root_wheel.parent / "components"
+    ).as_uri()
 
     completed = subprocess.run(
         [
@@ -97,7 +100,12 @@ def test_built_wheel_default_spack_entry_exposes_exact_admin_profile(
             "--profile",
             "admin",
         ],
-        environment=_wheel_environment(tmp_path),
+        environment={
+            **_wheel_environment(tmp_path),
+            "CLIO_KIT_COMPONENT_BASE_URL": (
+                built_root_wheel.parent / "components"
+            ).as_uri(),
+        },
         contract_id="built-wheel-spack-admin",
         timeout_seconds=180,
     )
@@ -119,3 +127,38 @@ def _wheel_environment(
         environment["HOME"] = str(fake_home)
         environment["USERPROFILE"] = str(fake_home)
     return environment
+
+
+def test_launcher_distributions_contain_metadata_not_component_payloads(
+    built_root_wheel,
+):
+    import json
+    import runpy
+    import tarfile
+    import zipfile
+
+    verify = runpy.run_path(
+        str(REPOSITORY_ROOT / "scripts/verify_component_release.py")
+    )["verify"]
+    result = verify(built_root_wheel.parent)
+    assert result["assets"] > 22
+    with zipfile.ZipFile(built_root_wheel) as wheel:
+        catalogue = json.loads(wheel.read("clio_kit/_components.json"))
+        assert "hdf5" in catalogue["servers"]
+        assert catalogue["servers"]["web"]["scope"] == "general"
+        assert "creating-dataset-report" in catalogue["skills"]
+        assert not any(
+            "/hdf5_mcp/" in name or name.endswith("/SKILL.md")
+            for name in wheel.namelist()
+        )
+    with tarfile.open(
+        next(built_root_wheel.parent.glob("clio_kit-*.tar.gz"))
+    ) as source:
+        assert not any(
+            "/mcp-servers/" in name
+            or "/skills/" in name
+            or "/clio-agentic-search/" in name
+            for name in source.getnames()
+        )
+    # Guard the central requirement against accidentally re-embedding components.
+    assert built_root_wheel.stat().st_size < 1024 * 1024

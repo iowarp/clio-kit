@@ -12,6 +12,9 @@ Follow [Getting Started](./intro.md) to install the launcher, register the
 marketplace and configure your agent. Source installation uses one checkout
 for the launcher and catalogue; publishing a package is a separate release step.
 
+The next release downloads selected components separately from its small launcher;
+see [selective installation](installation.md) for the no-clone routes and checks.
+
 ## Installable components
 
 See [Choosing and composing plugins](plugins.md) for the six primary bundles
@@ -198,7 +201,7 @@ CLI checks. Cursor remains outside this follow-up's scope.
 The [open-source `skills` CLI](https://github.com/vercel-labs/skills) is an
 alternative way to install CLIO's existing skill folders. Version `1.5.25`
 requires Node.js 22.20.0 or newer. The Python installer above remains available
-without Node.js and uses the skills shipped in the wheel.
+without Node.js and downloads only the selected skills from the release catalogue.
 
 From your working project, use the absolute path to your CLIO checkout:
 
@@ -326,7 +329,7 @@ uv run --frozen python scripts/verify_marketplace_install.py --all-servers --cod
 ```
 
 Install Codex and Claude Code to run both client checks. The script builds a
-source distribution and wheel, installs all portable skills from that wheel,
+source distribution and wheel, uses its release catalogue to download and install all portable skills,
 and uses Codex's actual `skills/list` discovery API to verify they are enabled.
 It also registers an isolated marketplace, installs bundles,
 skills, agents and real external plugins, then exercises actual MCP

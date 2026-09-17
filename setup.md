@@ -2,9 +2,10 @@
 
 Set up the CLIO Kit meta-marketplace with an agent that supports Agent Skills
 and/or stdio MCP. Choose individual skills and servers or a workflow bundle.
-Install the launcher and marketplace from the same checkout, following the
-commands below from the repository root. This source installation uses the
-checked-out code independently of the most recent package release.
+The commands below test the current checkout using an editable launcher; keep
+that checkout available. Released launchers use a separate, selective download
+route described in [installation](docs/installation.md). Do not assume an older
+PyPI version includes unreleased changes.
 
 ## 1. Check prerequisites and the checkout
 
@@ -29,7 +30,7 @@ skills or MCP servers. If `uv` is missing, install it using [the official instru
 ## 2. Install the launcher
 
 ```bash
-uv tool install --force --reinstall ".[verification]"
+uv tool install --force --reinstall --editable ".[verification]"
 clio-kit mcp-servers
 ```
 
@@ -91,7 +92,8 @@ not imply every client UI has been exercised in this release's acceptance tests.
 
 ### Codex and other agents that support Agent Skills
 
-For a local workflow package, install skills and stdio MCP configuration together:
+Install skills and stdio MCP configuration together (from this checkout, or from
+the installed release catalogue when no checkout is selected):
 
 ```bash
 clio-kit plugin install clio-scientific-io --client codex --project /path/to/project
@@ -116,8 +118,8 @@ clio-kit skill install --bundle clio-scientific-io --target .agents/skills
 
 Omit `--bundle` to install all available skills, including the optional Clio Coder collection, or give individual skill names before
 `--target`. Other agents can use the same command with their own skill directory.
-Skills are included in the installed CLIO Kit package; the checkout is not
-needed for subsequent skill installation.
+Release installations download only selected skills and their resources.
+Editable installations read them from the checkout.
 
 For Clio Coder's imported coding and research procedures, select
 `--bundle clio-coder`, or install an individual skill such as

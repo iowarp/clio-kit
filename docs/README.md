@@ -9,6 +9,7 @@ CLIO Kit brings scientific MCP servers, portable skills, workflow plugins,
 agent definitions and community contributions into one meta-marketplace.
 
 - [Getting started](intro.md): install the launcher and connect an agent.
+- [Selective installation](installation.md): component downloads, native plugin selection, offline use and release validation.
 - [Authoring components](authoring.md): define a plugin, MCP server, skill or hook.
 - [Choosing and composing plugins](plugins.md): primary bundles and task plugins
   that reuse components across bundles.

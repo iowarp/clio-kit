@@ -13,10 +13,13 @@ import click
 from clio_kit.skills import SkillProblem, check_skill, read_skill_frontmatter
 
 
-def skill_inventory() -> dict[str, Path]:
+def _local_skill_inventory() -> dict[str, Path]:
     """Find canonical skills in a checkout or the installed wheel's shared data."""
     from clio_kit import MODULE_DIR
+    from clio_kit.component_store import INDEX_FILE
 
+    if INDEX_FILE.is_file():
+        return {}
     roots = [MODULE_DIR.parent.parent / "skills"]
     try:
         distribution = metadata.distribution("clio-kit")
@@ -47,23 +50,49 @@ def skill_inventory() -> dict[str, Path]:
                 raise SkillProblem(f"Duplicate skill name: {fields['name']}")
             inventory[fields["name"]] = skill.parent
         return inventory
-    raise SkillProblem("No bundled skills found; reinstall CLIO Kit with skill assets")
+    return {}
+
+
+def skill_inventory() -> dict[str, Path]:
+    """Materialize all skills when explicitly requested by a Python caller."""
+    return selected_skills((), None)
+
+
+def skill_records() -> dict[str, dict]:
+    local = _local_skill_inventory()
+    if local:
+        return {
+            name: {
+                "bundle": path.parents[1].name,
+                "servers": "unspecified",
+                **read_skill_frontmatter(path),
+            }
+            for name, path in local.items()
+        }
+    from clio_kit.component_store import catalogue
+
+    return catalogue()["skills"]
 
 
 def selected_skills(names: tuple[str, ...], bundle: str | None) -> dict[str, Path]:
-    inventory = skill_inventory()
-    unknown = set(names) - inventory.keys()
+    records = skill_records()
+    selected = _select_records(records, names, bundle)
+    local = _local_skill_inventory()
+    if local:
+        return {name: local[name] for name in selected}
+    from clio_kit.component_store import fetch
+
+    return {name: fetch(records[name]["artifact"]) for name in selected}
+
+
+def _select_records(records: dict, names: tuple[str, ...], bundle: str | None) -> dict:
+    unknown = set(names) - records.keys()
     if unknown:
         raise SkillProblem(f"Unknown skills: {', '.join(sorted(unknown))}")
     selected = {
-        name: path
-        for name, path in inventory.items()
-        if (not names or name in names)
-        and (
-            not bundle
-            or read_skill_frontmatter(path).get("bundle", path.parents[1].name)
-            == bundle
-        )
+        name: record
+        for name, record in records.items()
+        if (not names or name in names) and (not bundle or record["bundle"] == bundle)
     }
     if not selected:
         raise SkillProblem(f"No skills match bundle {bundle!r}")
@@ -141,15 +170,8 @@ def skill_group() -> None:
 def list_skills(bundle: str | None, as_json: bool) -> None:
     """List available skills and their required MCP servers."""
     try:
-        records = [
-            {
-                "bundle": path.parents[1].name,
-                "servers": "unspecified",
-                **read_skill_frontmatter(path),
-            }
-            for path in selected_skills((), bundle).values()
-        ]
-    except (SkillProblem, OSError) as exc:
+        records = list(_select_records(skill_records(), (), bundle).values())
+    except (SkillProblem, OSError, ValueError) as exc:
         raise click.ClickException(str(exc)) from exc
     if as_json:
         click.echo(json.dumps(records, indent=2))
@@ -170,7 +192,7 @@ def validate_skill(directory: Path) -> None:
         report = check_skill(directory)
         if report.problems:
             raise SkillProblem("; ".join(report.problems))
-    except (SkillProblem, OSError) as exc:
+    except (SkillProblem, OSError, ValueError) as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo(f"OK: {report.name}")
     for advisory in report.advisories:
@@ -199,7 +221,7 @@ def install(
         installed = install_skills(
             selected_skills(names, bundle), target.expanduser().absolute(), replace
         )
-    except (SkillProblem, OSError) as exc:
+    except (SkillProblem, OSError, ValueError) as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo(f"Installed {len(installed)} skill(s) in {target}")
     click.echo(

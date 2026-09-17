@@ -383,7 +383,7 @@ def test_wheel_smoke_binds_jarvis_artifacts_to_exact_release_wheel() -> None:
     assert '"jarvis_get_execution"' in smoke_block
     assert '"jarvis_get_execution_progress"' not in smoke_block
     assert '"jarvis_get_execution_artifacts"' not in smoke_block
-    assert 'get_servers_path() / "jarvis"' in smoke_block
+    assert 'server_project("jarvis", get_servers_path())' in smoke_block
     assert 'distribution("jarvis-cd")' in smoke_block
     assert 'installed.version == "1.8.1"' in smoke_block
     assert expected_url in smoke_block
@@ -491,3 +491,32 @@ def test_quality_junit_reports_reject_skipped_tests() -> None:
     assert QUALITY_WORKFLOW.count("scripts/assert_no_skipped_tests.py") == 3
     assert 'case "${{ matrix.mcp }}" in' in QUALITY_WORKFLOW
     assert "jarvis|slurm|spack)" in QUALITY_WORKFLOW
+
+
+def test_components_publish_before_launcher_and_never_enter_pypi_upload() -> None:
+    import yaml
+
+    jobs = yaml.safe_load(WORKFLOW)["jobs"]
+    assert "github-release" in jobs["publish-to-pypi"]["needs"]
+    assert jobs["github-release"]["needs"] == ["build"]
+    assert jobs["github-release"]["environment"]["name"] == "pypi"
+    build_steps = jobs["build"]["steps"]
+    assert any(
+        "verify_component_release.py" in step.get("run", "") for step in build_steps
+    )
+    attest = next(
+        step
+        for step in build_steps
+        if step.get("name") == "Attest release distributions"
+    )
+    assert "dist/components/clio-component-*.tar.gz" in attest["with"]["subject-path"]
+    steps = jobs["publish-to-pypi"]["steps"]
+    remove = next(
+        i for i, step in enumerate(steps) if step.get("run") == "rm -r dist/components"
+    )
+    publish = next(
+        i
+        for i, step in enumerate(steps)
+        if step.get("uses", "").startswith("pypa/gh-action-pypi-publish@")
+    )
+    assert remove < publish

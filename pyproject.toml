@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "PyYAML>=6.0.2", "tomli>=2; python_version < '3.11'"]
 build-backend = "hatchling.build"
 
 [project]
@@ -81,31 +81,18 @@ exclude = [
     "**/.gitignore",
 ]
 
-# Include every server project for persistent-tool and one-shot execution
+# Runtime payloads are separate release assets; only metadata ships in the launcher.
 [tool.hatch.build.targets.wheel]
 packages = ["src/clio_kit"]
-
-[tool.hatch.build.targets.wheel.shared-data]
-"mcp-servers" = "mcp-servers"
-"clio-agentic-search" = "clio-agentic-search"
-"prompts" = "prompts"
-"skills" = "clio-kit-skills"
 
 [tool.hatch.build.hooks.custom]
 path = "scripts/package_skill_assets.py"
 
 [tool.hatch.build.targets.sdist]
-include = [
-    "src/",
-    "mcp-servers/",
-    "clio-agentic-search/",
-    "prompts/",
-    "skills/",
-    "plugins/*/skills/",
-    "agents/*/skills/",
-    "hooks/*/skills/",
+only-include = [
+    "src/clio_kit",
     "scripts/package_skill_assets.py",
+    "scripts/package_components.py",
     "README.md",
-    "mcp-server-versions.toml",
     "pyproject.toml"
 ]

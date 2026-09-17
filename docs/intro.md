@@ -24,12 +24,14 @@ install the checked-out code; package releases are published separately.
 ```bash
 git clone https://github.com/iowarp/clio-kit.git
 cd clio-kit
-uv tool install --force --reinstall ".[verification]"
+uv tool install --force --reinstall --editable ".[verification]"
 clio-kit mcp-servers
 ```
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first.
 If the launcher is not on PATH, run `uv tool update-shell` and open a new shell.
+The editable launcher reads component sources from this checkout. For selective
+downloads without a checkout, see [release installation](installation.md).
 First server launches may download dependencies.
 
 ### Portable skills: Codex and other compatible agents
@@ -83,8 +85,9 @@ with `claude plugin install clio-hdf5@clio-kit`, a workflow's procedures with
 
 ### Install a workflow for your client
 
-From the CLIO Kit checkout, install a workflow's skills and MCP configuration
-together into a working project:
+Install a workflow's skills and MCP configuration together into a working
+project. A released launcher uses its component catalogue; inside a CLIO Kit
+checkout, the command uses local packages instead:
 
 ```bash
 clio-kit plugin install clio-scientific-io --client codex --project /path/to/project
@@ -93,17 +96,18 @@ clio-kit plugin install clio-scientific-io --client codex --project /path/to/pro
 Choose `codex`, `opencode`, `cursor`, `antigravity`, `vscode` or `claude-code`.
 Use `--root /path/to/clio-kit` when running elsewhere, and `--dry-run` to inspect
 the plan. New local package folders are discovered without a separate sync.
-The command resolves local dependencies, copies complete skill folders and
+The command resolves selected dependencies, obtains complete skill folders and
 merges stdio MCP entries into the client's project configuration. It does not
 change global settings or install a native client plugin. Install the launcher
-first and keep the checkout available when a contributed server uses local scripts.
+first. Keep source checkouts available when using `--root`; released package scripts
+use the component cache.
 Codex and Antigravity share `.agents/skills`; installing the same skill there
 once is enough, and replacing it affects both clients.
 
 Existing unrelated configuration is preserved. Conflicting names stop installation;
 review before using `--replace`. Changed configurations get a recovery backup;
 TOML comments remain in that backup. OpenCode JSONC and remote/host-specific MCP
-options require manual configuration. This installer supports maintained local
+options require manual configuration. This installer supports maintained local or released
 packages; indexed external packages retain their publisher's installation route.
 
 **Agents and hooks:** native CLIO packages currently use Claude's formats. Other
@@ -255,8 +259,8 @@ clio-kit/
 
 Server environments are isolated and identified by source and lock contents.
 Python projects use `uv.lock`, Node projects use `package-lock.json`, and Go
-projects use module versions and checksums. Source in the wheel does not imply
-a cold installation works offline.
+projects use module versions and checksums. Released component artifacts download separately from the launcher. A cold
+installation requires network access; see [offline preparation](installation.md#offline-use-and-updates).
 
 ## Contribute and get help
 

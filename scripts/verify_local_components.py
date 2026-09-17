@@ -47,6 +47,10 @@ def verify(output: Path) -> None:
         ROOT / "scripts/package_skill_assets.py",
         checkout / "scripts/package_skill_assets.py",
     )
+    shutil.copy2(
+        ROOT / "scripts/package_components.py",
+        checkout / "scripts/package_components.py",
+    )
     # Empty unrelated shared-data trees keep this fixture build focused on skills.
     for name in ("mcp-servers", "clio-agentic-search", "prompts"):
         (checkout / name).mkdir()
@@ -360,6 +364,8 @@ def verify(output: Path) -> None:
     (extra / "references").mkdir()
     (extra / "references/formula.txt").write_text("sum(v*w)/sum(w)\n")
     run("build", ["uv", "build", "--out-dir", str(output / "dist")], cwd=checkout)
+    env["CLIO_KIT_COMPONENT_BASE_URL"] = (output / "dist/components").resolve().as_uri()
+    env["CLIO_KIT_CACHE_DIR"] = str(output / "component-cache")
     run("venv", ["uv", "venv", str(output / "installed")])
     python = output / "installed/bin/python"
     run(
@@ -390,6 +396,47 @@ def verify(output: Path) -> None:
     assert (
         project / ".agents/skills/local-tool-guide/references/formula.txt"
     ).read_bytes() == (extra / "references/formula.txt").read_bytes()
+    # Exercise a contributed script after selective installation from the wheel.
+    released_project = output / "released-project"
+    run(
+        "released-workflow-install",
+        [
+            str(cli),
+            "plugin",
+            "install",
+            "dropin-workflow",
+            "--client",
+            "codex",
+            "--project",
+            str(released_project),
+            "--components-only",
+        ],
+    )
+    settings = tomllib.loads((released_project / ".codex/config.toml").read_text())[
+        "mcp_servers"
+    ]["lab"]
+    assert Path(settings["args"][0]).is_relative_to(output / "component-cache")
+
+    async def released_query():
+        async with Client(
+            stdio_client(
+                StdioServerParameters(
+                    command=settings["command"], args=settings["args"]
+                )
+            ),
+            mode="legacy",
+        ) as client:
+            reply = await client.call_tool(
+                "weighted_mean", {"values": [2, 4, 8], "weights": [1, 1, 2]}
+            )
+            assert not reply.is_error
+            assert json.loads(reply.content[0].text)["mean"] == 5.5
+            (output / "released-mcp-result.json").write_text(
+                reply.model_dump_json(by_alias=True)
+            )
+
+    asyncio.run(released_query())
+    print("PASS selective released workflow script: weighted_mean = 5.5", flush=True)
     shutil.rmtree(packed)
     generate(checkout)
     entries = json.loads((checkout / ".claude-plugin/marketplace.json").read_text())[
