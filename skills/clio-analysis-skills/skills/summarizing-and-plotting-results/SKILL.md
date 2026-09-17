@@ -77,6 +77,12 @@ needed, call `save_data(data={"data": result["results"]},
 file_path="/absolute/path/means.csv", index=False)`. Do not pass the entire
 response envelope: metadata and nested results are not a dataframe.
 
+For a numeric matrix from another server, map each column to its supplied name
+before calling `save_data`, for example `data={"time_s": [0, 1], "signal_mV": [2, 4]}`.
+Do not pass a `{"columns": [...], "data": [[...]]}` envelope: this tool uses
+`data` alone in that form and loses the column names. Read back the saved schema
+before calling statistics or plotting tools.
+
 Verify the saved column names and at least one independently calculated
 aggregate before plotting. A successful image render alone proves no numerical
 correctness.
@@ -98,6 +104,28 @@ Match the chart to the question, not to preference — see
 Use units supplied by the input metadata or the user in axis labels and
 reported aggregates. A column named `runtime` does not establish seconds.
 When units are absent, label them as unspecified; do not invent or convert them.
+
+## Interpret the evidence
+
+Separate a computed statistic, an observed pattern, a fitted model and a
+physical explanation. Skewness describes asymmetry; coefficient of variation
+describes relative spread. Neither establishes a growth law, temporal trend or
+cause: rearranging the same values in time preserves both statistics.
+The converse does not follow: matching summaries do not establish identical
+values or distributions. Check the actual data before calling two series
+permutations of each other.
+
+For a growth claim, inspect the ordered time/value pairs and interval spacing.
+If values double at each equal interval, report that observation over the
+measured interval. A fitted exponential model needs its fit and residuals
+checked; extrapolation or a physical mechanism needs additional evidence.
+If only summary statistics are available, leave the growth model undetermined.
+
+Keep counts and dimensionless statistics separate from quantities with units.
+Mean, median and standard deviation retain the input units; variance has squared
+units; skewness and coefficient of variation are dimensionless.
+Use a separate unit column in a mixed-statistic table; a shared measurement-unit
+heading would incorrectly assign units to its count and dimensionless rows.
 
 ## When the data is not a table
 

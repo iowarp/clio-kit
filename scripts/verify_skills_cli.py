@@ -50,7 +50,9 @@ def verify(cli: str) -> None:
 
         assert run("--version").strip() == SKILLS_VERSION
         sources = {
-            p.parent.name: p.parent for p in ROOT.glob("skills/*/skills/*/SKILL.md")
+            p.parent.name: p.parent
+            for folder in ("skills", "plugins", "agents", "hooks")
+            for p in (ROOT / folder).glob("*/skills/*/SKILL.md")
         }
         assert sources, "No canonical skills found"
         listing = run("add", str(ROOT), "--list")

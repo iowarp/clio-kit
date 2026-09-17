@@ -86,8 +86,8 @@ export function Home() {
               <span className={styles.eyebrow}>A GOOD PLACE TO START</span>
               <h2 id="workflow-heading">One workflow. The right tools.</h2>
             </div>
-            <Link to="/?type=workflow#catalogue" className={styles.textLink}>
-              Explore workflows <Icon name="arrow" size={16} />
+            <Link to="/?type=plugin#catalogue" className={styles.textLink}>
+              Explore plugins <Icon name="arrow" size={16} />
             </Link>
           </div>
           <div className={styles.featuredGrid}>
@@ -109,7 +109,8 @@ export function Home() {
             </span>
             <h2>Your expertise belongs here.</h2>
             <p>
-              Share a skill, publish a plugin, or bring your own marketplace.
+              Share an MCP, skill, agent or hook. Bundle them into a plugin,
+              or bring your own marketplace.
             </p>
           </div>
           <Link to="/docs/authoring" className={styles.secondary}>

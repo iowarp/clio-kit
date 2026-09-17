@@ -1,5 +1,5 @@
 {
-  "schema": 1,
+  "schema": 2,
   "version": "2.11.0",
   "publishers": [
     {
@@ -21,7 +21,7 @@
   ],
   "items": [
     {
-      "id": "agent/scientific-evidence-reviewer",
+      "id": "agent/clio-agents/scientific-evidence-reviewer",
       "kind": "agent",
       "name": "scientific-evidence-reviewer",
       "title": "Scientific Evidence Reviewer",
@@ -41,10 +41,14 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace",
       "evidence": "Agent definition",
-      "plugin": "clio-agents"
+      "plugin": "clio-agents",
+      "componentTypes": [
+        "agent"
+      ],
+      "installation": "native-package"
     },
     {
-      "id": "agent/scientific-workflow-planner",
+      "id": "agent/clio-agents/scientific-workflow-planner",
       "kind": "agent",
       "name": "scientific-workflow-planner",
       "title": "Scientific Workflow Planner",
@@ -64,7 +68,38 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace",
       "evidence": "Agent definition",
-      "plugin": "clio-agents"
+      "plugin": "clio-agents",
+      "componentTypes": [
+        "agent"
+      ],
+      "installation": "native-package"
+    },
+    {
+      "id": "hook/clio-dataset-report",
+      "kind": "hook",
+      "name": "clio-dataset-report",
+      "title": "Dataset Report",
+      "description": "Event hooks included with clio-dataset-report. Review the configuration before enabling this package.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "",
+      "category": "Automation",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "plugins/clio-dataset-report/.claude-plugin/plugin.json",
+      "members": [],
+      "servers": [],
+      "tags": [],
+      "clients": [
+        "claude-code"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace",
+      "evidence": "Configuration present",
+      "plugin": "clio-dataset-report",
+      "componentTypes": [
+        "hook"
+      ],
+      "installation": "native-package"
     },
     {
       "id": "mcp/adios",
@@ -88,14 +123,22 @@
         "hpc"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/adios",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-adios"
     },
     {
       "id": "mcp/arxiv",
@@ -118,14 +161,22 @@
         "literature-search"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/arxiv",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-arxiv"
     },
     {
       "id": "mcp/chronolog",
@@ -148,14 +199,22 @@
         "time-series"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/chronolog",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-chronolog"
     },
     {
       "id": "mcp/compression",
@@ -178,14 +237,22 @@
         "data-management"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/compression",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-compression"
     },
     {
       "id": "mcp/darshan",
@@ -208,14 +275,22 @@
         "darshan"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/darshan",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-darshan"
     },
     {
       "id": "mcp/geo",
@@ -238,14 +313,22 @@
         "visualization"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/geo",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-geo"
     },
     {
       "id": "mcp/hdf5",
@@ -255,7 +338,7 @@
       "description": "HDF5 FastMCP - Scientific Data Access for AI Agents | CLIO Kit MCP Server",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.2.5",
+      "version": "2.2.6",
       "category": "Scientific data",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/hdf5",
@@ -268,14 +351,22 @@
         "hierarchical-data"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/hdf5",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-hdf5"
     },
     {
       "id": "mcp/jarvis",
@@ -297,14 +388,22 @@
         "workflow-automation"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/jarvis",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-jarvis"
     },
     {
       "id": "mcp/lmod",
@@ -327,14 +426,22 @@
         "system-administration"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/lmod",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-lmod"
     },
     {
       "id": "mcp/ndp",
@@ -357,14 +464,22 @@
         "data-discovery"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/ndp",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-ndp"
     },
     {
       "id": "mcp/node-hardware",
@@ -386,14 +501,22 @@
         "performance"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/node_hardware",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-node-hardware"
     },
     {
       "id": "mcp/pandas",
@@ -416,14 +539,22 @@
         "statistics"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/pandas",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-pandas"
     },
     {
       "id": "mcp/parallel-sort",
@@ -446,14 +577,22 @@
         "hpc"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/parallel_sort",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-parallel-sort"
     },
     {
       "id": "mcp/paraview",
@@ -476,14 +615,22 @@
         "hpc"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/paraview",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-paraview"
     },
     {
       "id": "mcp/parquet",
@@ -506,14 +653,22 @@
         "data-analysis"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/parquet",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-parquet"
     },
     {
       "id": "mcp/plot",
@@ -536,14 +691,22 @@
         "charts"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/plot",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-plot"
     },
     {
       "id": "mcp/scientific-catalog",
@@ -565,14 +728,22 @@
         "discovery"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/scientific_catalog",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-scientific-catalog"
     },
     {
       "id": "mcp/seismology",
@@ -596,14 +767,22 @@
         "catalog"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/seismology",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-seismology"
     },
     {
       "id": "mcp/slurm",
@@ -626,14 +805,22 @@
         "cluster-management"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/slurm",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-slurm"
     },
     {
       "id": "mcp/spack",
@@ -655,14 +842,22 @@
         "scientific-computing"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/spack",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-spack"
     },
     {
       "id": "mcp/terrain",
@@ -685,14 +880,22 @@
         "geospatial"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/terrain",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-terrain"
     },
     {
       "id": "mcp/web",
@@ -715,18 +918,26 @@
         "agentic-web"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/web",
-      "evidence": "Locked runtime"
+      "evidence": "Locked runtime",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-web"
     },
     {
       "id": "plugin/archify",
-      "kind": "plugin",
+      "kind": "package",
       "name": "archify",
       "title": "Archify",
       "description": "Validated interactive system maps and diagrams as standalone HTML from a typed JSON spec, for one of five diagram types (architecture, workflow, sequence, dataflow, lifecycle). Use when the user asks to visualize architecture, a workflow, a call sequence, a data pipeline, or a state machine, or to map this repository. Not for ad hoc drawings or slide art, and not for Mermaid output; use the artifact tool for plain Markdown.",
@@ -745,11 +956,15 @@
       "license": "MIT",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "archify",
+      "role": "External package"
     },
     {
       "id": "plugin/architecture",
-      "kind": "plugin",
+      "kind": "package",
       "name": "architecture",
       "title": "Architecture",
       "description": "Decides the engineering approach for an intent in an interactive session: investigates, proposes two or three genuinely different approaches with trade-offs, recommends, lets the user decide, and writes the decision doc. Not a task-by-task plan; use cut-it. Not a multi-perspective debate; use design-council. Not product intent; use product-intent. Not a typed implementation handoff; use tech-spec.",
@@ -768,11 +983,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "architecture",
+      "role": "External package"
     },
     {
       "id": "plugin/arxiv-literature",
-      "kind": "plugin",
+      "kind": "package",
       "name": "arxiv-literature",
       "title": "arXiv Literature",
       "description": "Searches arXiv, summarizes or compares papers, and builds a compact literature survey as citation-ready, source-linked paper cards. Prefer the Researcher shadow agent for noisy multi-paper retrieval.",
@@ -791,11 +1010,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "arxiv-literature",
+      "role": "External package"
     },
     {
       "id": "plugin/ast-grep",
-      "kind": "plugin",
+      "kind": "package",
       "name": "ast-grep",
       "title": "Ast Grep",
       "description": "Structural code search with ast-grep rules: finds code by shape when grep on text is too noisy, and never rewrites it. Not for plain string or filename lookups; use grep or find.",
@@ -814,11 +1037,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "ast-grep",
+      "role": "External package"
     },
     {
       "id": "plugin/backlog",
-      "kind": "plugin",
+      "kind": "package",
       "name": "backlog",
       "title": "Backlog",
       "description": "Turns a finished PRD or architecture doc into a ticket backlog of small stories with verifiable acceptance criteria, confirmed, then created as GitHub issues or in another configured tracker. Not for local sprint slicing into a SPRINT.md; use cut-it.",
@@ -837,11 +1064,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "backlog",
+      "role": "External package"
     },
     {
       "id": "plugin/branch-closeout",
-      "kind": "plugin",
+      "kind": "package",
       "name": "branch-closeout",
       "title": "Branch Closeout",
       "description": "Proves merged work on the canonical base, inspects and removes associated worktrees through Git, deletes local branches safely, and audits surviving repository refs. Not for creating worktrees; use worktree-create. Not for integrating branches; use worktree-merge.",
@@ -860,55 +1091,85 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "branch-closeout",
+      "role": "External package"
     },
     {
       "id": "plugin/clio-agents",
-      "kind": "plugin",
+      "kind": "collection",
       "name": "clio-agents",
       "title": "Agents",
       "description": "Scientific workflow planning and independent evidence review agents.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "category": "Agents",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./plugins/clio-agents",
-      "members": [],
+      "members": [
+        "agent/clio-agents/scientific-evidence-reviewer",
+        "agent/clio-agents/scientific-workflow-planner"
+      ],
       "servers": [],
       "tags": [],
       "clients": [
         "claude-code"
       ],
       "license": "See source licence",
-      "docs": "/docs/marketplace",
-      "evidence": "See validation coverage"
+      "docs": "/docs/plugins",
+      "evidence": "See validation coverage",
+      "componentTypes": [
+        "agent"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-agents",
+      "role": "Component collection"
     },
     {
       "id": "plugin/clio-analysis-skills",
-      "kind": "plugin",
+      "kind": "collection",
       "name": "clio-analysis-skills",
       "title": "Analysis Skills",
       "description": "Skills for the clio-analysis workflow: turn a dataset into summary statistics and a figure.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "category": "Skills",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-analysis-skills",
-      "members": [],
+      "members": [
+        "skill/choosing-the-right-chart",
+        "skill/cleaning-and-validating-a-dataset",
+        "skill/summarizing-and-plotting-results",
+        "skill/visualizing-3d-simulation-output"
+      ],
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace",
-      "evidence": "See validation coverage"
+      "docs": "/docs/plugins",
+      "evidence": "See validation coverage",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-analysis-skills",
+      "role": "Component collection",
+      "projectInstall": true
     },
     {
       "id": "plugin/clio-coder-dev",
-      "kind": "plugin",
+      "kind": "package",
       "name": "clio-coder-dev",
       "title": "Coder Dev",
       "description": "Governs changes to Clio Coder's own source and harness (TUI, skills, agents, tools, prompts, domains): what may change freely, what needs explicit user intent, and how to change it without breaking the architecture. Not for verifying a change against the harness; use clio-coder-test.",
@@ -927,11 +1188,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "clio-coder-dev",
+      "role": "External package"
     },
     {
       "id": "plugin/clio-coder-skills",
-      "kind": "plugin",
+      "kind": "collection",
       "name": "clio-coder-skills",
       "title": "Clio Coder skills",
       "description": "Optional Clio Coder coding and research skills, including Materio procedures. Native Clio agents and fleets require Clio Coder.",
@@ -941,19 +1206,71 @@
       "category": "Skills",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-coder-skills",
-      "members": [],
+      "members": [
+        "skill/clio-kit-archify",
+        "skill/clio-kit-architecture",
+        "skill/clio-kit-arxiv-literature",
+        "skill/clio-kit-ast-grep",
+        "skill/clio-kit-backlog",
+        "skill/clio-kit-branch-closeout",
+        "skill/clio-kit-clio-coder-dev",
+        "skill/clio-kit-clio-coder-test",
+        "skill/clio-kit-coding-standards",
+        "skill/clio-kit-context-handoff",
+        "skill/clio-kit-context-prime",
+        "skill/clio-kit-credentials",
+        "skill/clio-kit-cut-it",
+        "skill/clio-kit-design-council",
+        "skill/clio-kit-experiment-protocol",
+        "skill/clio-kit-file-ticket",
+        "skill/clio-kit-find-skills",
+        "skill/clio-kit-fix-issue",
+        "skill/clio-kit-grill-me",
+        "skill/clio-kit-herdr",
+        "skill/clio-kit-materio-lab-definer",
+        "skill/clio-kit-materio-literature-reviewer",
+        "skill/clio-kit-materio-research-explorer",
+        "skill/clio-kit-materio-task-executor",
+        "skill/clio-kit-materio-task-verifier",
+        "skill/clio-kit-materio-workflow-planner",
+        "skill/clio-kit-prd",
+        "skill/clio-kit-product-intent",
+        "skill/clio-kit-prototype",
+        "skill/clio-kit-resolve-merge-conflicts",
+        "skill/clio-kit-scientific-debugging",
+        "skill/clio-kit-scientific-modernization",
+        "skill/clio-kit-ship",
+        "skill/clio-kit-skill-craft",
+        "skill/clio-kit-tdd",
+        "skill/clio-kit-tech-spec",
+        "skill/clio-kit-workflow-distiller",
+        "skill/clio-kit-worktree-create",
+        "skill/clio-kit-worktree-merge"
+      ],
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "See source licence",
-      "docs": "/docs/marketplace",
-      "evidence": "See validation coverage"
+      "docs": "/docs/plugins",
+      "evidence": "See validation coverage",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-coder-skills",
+      "role": "Component collection",
+      "projectInstall": true
     },
     {
       "id": "plugin/clio-coder-test",
-      "kind": "plugin",
+      "kind": "package",
       "name": "clio-coder-test",
       "title": "Coder Test",
       "description": "Verifies a Clio Coder source change against the current contract, smoke, boundary, and application test lanes, including temporary-state and local-provider harnesses. Not for deciding what may change; use clio-coder-dev.",
@@ -972,11 +1289,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "clio-coder-test",
+      "role": "External package"
     },
     {
       "id": "plugin/clio-geoscience-skills",
-      "kind": "plugin",
+      "kind": "collection",
       "name": "clio-geoscience-skills",
       "title": "Geoscience Skills",
       "description": "Skills for the clio-geoscience workflow: inspect and map geospatial features, terrain models, and waveform archives.",
@@ -986,19 +1307,35 @@
       "category": "Skills",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-geoscience-skills",
-      "members": [],
+      "members": [
+        "skill/analyzing-seismic-waveforms",
+        "skill/mapping-geospatial-and-terrain-data",
+        "skill/working-with-coordinate-systems"
+      ],
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace",
-      "evidence": "See validation coverage"
+      "docs": "/docs/plugins",
+      "evidence": "See validation coverage",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-geoscience-skills",
+      "role": "Component collection",
+      "projectInstall": true
     },
     {
       "id": "plugin/clio-hpc-skills",
-      "kind": "plugin",
+      "kind": "collection",
       "name": "clio-hpc-skills",
       "title": "HPC Skills",
       "description": "Skills for the clio-hpc workflow: install a code, wrap it in a pipeline, submit it, and follow it on a cluster.",
@@ -1008,19 +1345,35 @@
       "category": "Skills",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-hpc-skills",
-      "members": [],
+      "members": [
+        "skill/managing-software-environments",
+        "skill/running-a-simulation-on-a-cluster",
+        "skill/writing-slurm-job-scripts"
+      ],
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace",
-      "evidence": "See validation coverage"
+      "docs": "/docs/plugins",
+      "evidence": "See validation coverage",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-hpc-skills",
+      "role": "Component collection",
+      "projectInstall": true
     },
     {
       "id": "plugin/clio-performance-skills",
-      "kind": "plugin",
+      "kind": "collection",
       "name": "clio-performance-skills",
       "title": "Performance Skills",
       "description": "Skills for the clio-performance workflow: work out why a finished job was slower than it should have been.",
@@ -1030,19 +1383,36 @@
       "category": "Skills",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-performance-skills",
-      "members": [],
+      "members": [
+        "skill/diagnosing-a-slow-job",
+        "skill/interpreting-io-performance-numbers",
+        "skill/recording-a-session-for-provenance",
+        "skill/searching-large-log-files"
+      ],
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace",
-      "evidence": "See validation coverage"
+      "docs": "/docs/plugins",
+      "evidence": "See validation coverage",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-performance-skills",
+      "role": "Component collection",
+      "projectInstall": true
     },
     {
       "id": "plugin/clio-research-skills",
-      "kind": "plugin",
+      "kind": "collection",
       "name": "clio-research-skills",
       "title": "Research Skills",
       "description": "Skills for the clio-research workflow: find papers on a topic and the datasets behind them.",
@@ -1052,19 +1422,35 @@
       "category": "Skills",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-research-skills",
-      "members": [],
+      "members": [
+        "skill/building-a-bibliography",
+        "skill/finding-and-staging-a-dataset",
+        "skill/surveying-literature-and-datasets"
+      ],
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace",
-      "evidence": "See validation coverage"
+      "docs": "/docs/plugins",
+      "evidence": "See validation coverage",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-research-skills",
+      "role": "Component collection",
+      "projectInstall": true
     },
     {
       "id": "plugin/clio-scientific-io-skills",
-      "kind": "plugin",
+      "kind": "collection",
       "name": "clio-scientific-io-skills",
       "title": "Scientific I/O Skills",
       "description": "Skills for the clio-scientific-io workflow: open a scientific data file, see its structure, and read part of it.",
@@ -1074,41 +1460,76 @@
       "category": "Skills",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-scientific-io-skills",
-      "members": [],
+      "members": [
+        "skill/choosing-a-storage-format",
+        "skill/exploring-an-unfamiliar-dataset",
+        "skill/reading-large-datasets-safely"
+      ],
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace",
-      "evidence": "See validation coverage"
+      "docs": "/docs/plugins",
+      "evidence": "See validation coverage",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-scientific-io-skills",
+      "role": "Component collection",
+      "projectInstall": true
     },
     {
       "id": "plugin/clio-skills",
-      "kind": "plugin",
+      "kind": "collection",
       "name": "clio-skills",
       "title": "Skills",
-      "description": "All CLIO scientific workflow skills, without MCP servers.",
+      "description": "Skills for the six primary scientific workflows, without MCP servers.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.0",
       "category": "Skills",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./plugins/clio-skills",
-      "members": [],
+      "members": [
+        "plugin/clio-analysis-skills",
+        "plugin/clio-geoscience-skills",
+        "plugin/clio-hpc-skills",
+        "plugin/clio-performance-skills",
+        "plugin/clio-research-skills",
+        "plugin/clio-scientific-io-skills"
+      ],
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "See source licence",
-      "docs": "/docs/marketplace",
-      "evidence": "See validation coverage"
+      "docs": "/docs/plugins",
+      "evidence": "See validation coverage",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-skills",
+      "role": "Component collection",
+      "projectInstall": true
     },
     {
       "id": "plugin/coding-standards",
-      "kind": "plugin",
+      "kind": "package",
       "name": "coding-standards",
       "title": "Coding Standards",
       "description": "Correct-by-construction TypeScript rules (errors as values, parse don't validate, illegal states unrepresentable, deep modules) for writing or refactoring TypeScript when the project has not pinned its own standards.",
@@ -1127,11 +1548,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "coding-standards",
+      "role": "External package"
     },
     {
       "id": "plugin/context-handoff",
-      "kind": "plugin",
+      "kind": "package",
       "name": "context-handoff",
       "title": "Context Handoff",
       "description": "Writes a durable, redacted, reference-not-copy handoff document when a session winds down or context is about to be compacted or lost, so the next session or agent can continue. Not for orienting at the start of a session; use context-prime.",
@@ -1150,11 +1575,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "context-handoff",
+      "role": "External package"
     },
     {
       "id": "plugin/context-prime",
-      "kind": "plugin",
+      "kind": "package",
       "name": "context-prime",
       "title": "Context Prime",
       "description": "Orients a fresh session in a repository by loading the last handoff, git state, the project constitution, and active-work signals before acting. Not for writing the handoff; use context-handoff.",
@@ -1173,11 +1602,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "context-prime",
+      "role": "External package"
     },
     {
       "id": "plugin/credentials",
-      "kind": "plugin",
+      "kind": "package",
       "name": "credentials",
       "title": "Credentials",
       "description": "Handles API keys, tokens, and facility credentials (kerberos tickets, globus and scheduler tokens, ssh agents, netrc) before a tool needs one, after an auth error, when a new secret is supplied, or when one may have leaked. Not for provider target configuration; use clio-coder auth and target settings.",
@@ -1196,11 +1629,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "credentials",
+      "role": "External package"
     },
     {
       "id": "plugin/cut-it",
-      "kind": "plugin",
+      "kind": "package",
       "name": "cut-it",
       "title": "Cut It",
       "description": "Slices an existing plan, PRD, or milestone into an executable sprint of dependency-ordered vertical slices sized for one agent run each, with done-when verification per slice; never fabricates a plan. Not for deciding the approach; use architecture.",
@@ -1219,11 +1656,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "cut-it",
+      "role": "External package"
     },
     {
       "id": "plugin/design-council",
-      "kind": "plugin",
+      "kind": "package",
       "name": "design-council",
       "title": "Design Council",
       "description": "Convenes several expert perspectives that challenge each other on a design decision with real trade-offs before code is written; quick mode runs a single round. Not for a one-question-at-a-time interrogation of a plan; use grill-me. Not for splitting implementation across workers; use dispatch directly.",
@@ -1242,11 +1683,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "design-council",
+      "role": "External package"
     },
     {
       "id": "plugin/experiment-protocol",
-      "kind": "plugin",
+      "kind": "package",
       "name": "experiment-protocol",
       "title": "Experiment Protocol",
       "description": "Pre-registers a performance study, numerical comparison, parameter sweep, or benchmark: thresholds, tolerances, environment pins, and verdict conditions locked into the validation contract before any measurement. Not for diagnosing a stalled bug; use scientific-debugging.",
@@ -1265,11 +1710,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "experiment-protocol",
+      "role": "External package"
     },
     {
       "id": "plugin/file-ticket",
-      "kind": "plugin",
+      "kind": "package",
       "name": "file-ticket",
       "title": "File Ticket",
       "description": "Turns something noticed mid-session into a tracker issue: captures evidence, dedups against existing issues, composes a labeled issue with acceptance criteria, confirms, and creates it via gh. Not for batch ticket creation from a PRD; use backlog. Not for diagnosing an existing issue; use fix-issue.",
@@ -1288,11 +1737,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "file-ticket",
+      "role": "External package"
     },
     {
       "id": "plugin/find-skills",
-      "kind": "plugin",
+      "kind": "package",
       "name": "find-skills",
       "title": "Find Skills",
       "description": "Finds published skills and prepares their Library installation for the operator when the user asks whether a capability exists as a skill. Not for authoring a new skill; use skill-craft.",
@@ -1311,11 +1764,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "find-skills",
+      "role": "External package"
     },
     {
       "id": "plugin/fix-issue",
-      "kind": "plugin",
+      "kind": "package",
       "name": "fix-issue",
       "title": "Fix Issue",
       "description": "Resolves a tracker issue end to end: fetches it, diagnoses only when the issue does not name the code, fixes test-first, and self-reviews against the acceptance criteria, leaving a verified uncommitted change. Not for filing; use file-ticket. Not for committing or PRs; use ship.",
@@ -1334,11 +1791,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "fix-issue",
+      "role": "External package"
     },
     {
       "id": "plugin/grill-me",
-      "kind": "plugin",
+      "kind": "package",
       "name": "grill-me",
       "title": "Grill Me",
       "description": "Stress-tests a plan, design, or idea through a phased one-question-at-a-time interview before code is written, ending in a compact decision log. Not for a multi-perspective debate; use design-council.",
@@ -1357,11 +1818,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "grill-me",
+      "role": "External package"
     },
     {
       "id": "plugin/herdr",
-      "kind": "plugin",
+      "kind": "package",
       "name": "herdr",
       "title": "Herdr",
       "description": "Launches, drives, or inspects another agent or command in a Herdr pane, tab, or workspace, including a second Clio Coder instance; requires HERDR_ENV=1. Not for background work a plain shell or dispatch already covers.",
@@ -1380,11 +1845,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "herdr",
+      "role": "External package"
     },
     {
       "id": "plugin/materio",
-      "kind": "plugin",
+      "kind": "package",
       "name": "materio",
       "title": "Materio",
       "description": "Materio: materials research interviews, supplied-corpus synthesis, lab feasibility, task execution and verified paper handoff.",
@@ -1403,11 +1872,15 @@
       "license": "See source licence",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "materio",
+      "role": "External package"
     },
     {
       "id": "plugin/prd",
-      "kind": "plugin",
+      "kind": "package",
       "name": "prd",
       "title": "Prd",
       "description": "Turns an idea into a product requirements document through a phase-gated interview, ending in PRD.md plus per-milestone prompt files ready to drive a coding agent. Not for the problem-first product thesis; use product-intent.",
@@ -1426,11 +1899,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "prd",
+      "role": "External package"
     },
     {
       "id": "plugin/product-intent",
-      "kind": "plugin",
+      "kind": "package",
       "name": "product-intent",
       "title": "Product Intent",
       "description": "Writes a problem-first product document for a greenfield effort: interviews for the problem, evidence, and a falsifiable hypothesis, with zero engineering decisions. Not for engineering decisions; use architecture. Not for turning a locked idea into milestone build prompts; use prd.",
@@ -1449,11 +1926,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "product-intent",
+      "role": "External package"
     },
     {
       "id": "plugin/prototype",
-      "kind": "plugin",
+      "kind": "package",
       "name": "prototype",
       "title": "Prototype",
       "description": "Answers a design question with throwaway code: a clearly marked, runnable, no-persistence prototype whose verdict is kept and whose code is discarded. Not for pre-registered performance experiments; use experiment-protocol. Not for production implementation.",
@@ -1472,11 +1953,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "prototype",
+      "role": "External package"
     },
     {
       "id": "plugin/resolve-merge-conflicts",
-      "kind": "plugin",
+      "kind": "package",
       "name": "resolve-merge-conflicts",
       "title": "Resolve Merge Conflicts",
       "description": "Resolves a merge, rebase, or cherry-pick stopped on conflicts by reconstructing both sides' intent, validating with the project's own checks, and completing the operation. Not for integrating many branches; use worktree-merge.",
@@ -1495,11 +1980,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "resolve-merge-conflicts",
+      "role": "External package"
     },
     {
       "id": "plugin/scientific-debugging",
-      "kind": "plugin",
+      "kind": "package",
       "name": "scientific-debugging",
       "title": "Scientific Debugging",
       "description": "Diagnoses stalled or cross-system failures and wrong, NaN, nondeterministic, or unexpectedly slow scientific results through falsifiable hypotheses across distinct fault classes, with evidence-cited verdicts before any fix. Not for designing benchmarks or pre-registered experiments; use experiment-protocol.",
@@ -1518,11 +2007,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "scientific-debugging",
+      "role": "External package"
     },
     {
       "id": "plugin/scientific-modernization",
-      "kind": "plugin",
+      "kind": "package",
       "name": "scientific-modernization",
       "title": "Scientific Modernization",
       "description": "Modernizes, ports, rewrites, packages, or replaces established scientific software in independently validated stages against an external scientific oracle, settling compatibility and upstream stewardship before calling it complete. Not for an isolated benchmark; use experiment-protocol. Not for diagnosing wrong results; use scientific-debugging.",
@@ -1541,11 +2034,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "scientific-modernization",
+      "role": "External package"
     },
     {
       "id": "plugin/ship",
-      "kind": "plugin",
+      "kind": "package",
       "name": "ship",
       "title": "Ship",
       "description": "Ships finished work: writes one reviewed atomic commit, keeps maintainer branches local, or pushes a contributor branch to their fork and opens a PR only on explicit intent. Not for producing the change; use fix-issue.",
@@ -1564,11 +2061,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "ship",
+      "role": "External package"
     },
     {
       "id": "plugin/skill-craft",
-      "kind": "plugin",
+      "kind": "package",
       "name": "skill-craft",
       "title": "Skill Craft",
       "description": "Writes, reviews, or prunes a SKILL.md, judging whether its description, body, and length earn their cost. Not for packaging a workflow that just happened; use workflow-distiller.",
@@ -1587,11 +2088,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "skill-craft",
+      "role": "External package"
     },
     {
       "id": "plugin/tdd",
-      "kind": "plugin",
+      "kind": "package",
       "name": "tdd",
       "title": "TDD",
       "description": "Builds a feature or fix test-first, red to green at pre-agreed public seams, one vertical slice at a time. Not for designing benchmark criteria; use experiment-protocol.",
@@ -1610,11 +2115,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "tdd",
+      "role": "External package"
     },
     {
       "id": "plugin/tech-spec",
-      "kind": "plugin",
+      "kind": "package",
       "name": "tech-spec",
       "title": "Tech Spec",
       "description": "Writes a typed call-stack architecture handoff: code-shaped contracts plus execution flows, implementation-ready for another engineer. User-invoked only. Not for weighing approaches or deciding the design; use architecture first.",
@@ -1633,11 +2142,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "tech-spec",
+      "role": "External package"
     },
     {
       "id": "plugin/workflow-distiller",
-      "kind": "plugin",
+      "kind": "package",
       "name": "workflow-distiller",
       "title": "Workflow Distiller",
       "description": "Packages a workflow that just happened into a reusable SKILL.md: reconstructs it from the session record, checks overlap with installed skills, gates on approval, then writes it following skill-craft. Not for authoring a skill with no prior workflow; use skill-craft.",
@@ -1656,11 +2169,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "workflow-distiller",
+      "role": "External package"
     },
     {
       "id": "plugin/worktree-create",
-      "kind": "plugin",
+      "kind": "package",
       "name": "worktree-create",
       "title": "Worktree Create",
       "description": "Stands up one or more git worktrees for parallel work, each on its own branch with gitignored config copied in, dependencies installed, and a verified health check. Not for merging finished worktrees; use worktree-merge. Not for closeout; use branch-closeout.",
@@ -1679,11 +2196,15 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "worktree-create",
+      "role": "External package"
     },
     {
       "id": "plugin/worktree-merge",
-      "kind": "plugin",
+      "kind": "package",
       "name": "worktree-merge",
       "title": "Worktree Merge",
       "description": "Integrates finished worktree branches through one throwaway integration branch, testing after each merge and running the full suite before the main line moves, with exact rollback on failure. Not for creating worktrees; use worktree-create. Not for closeout; use branch-closeout.",
@@ -1702,7 +2223,11 @@
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
       "evidence": "Pinned upstream source",
-      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      "revision": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d",
+      "componentTypes": [],
+      "installation": "native-package",
+      "nativePackage": "worktree-merge",
+      "role": "External package"
     },
     {
       "id": "service/agentic-search",
@@ -1722,7 +2247,9 @@
       "clients": [],
       "license": "BSD-3-Clause",
       "docs": "/docs/agentic-search",
-      "evidence": "Standalone service"
+      "evidence": "Standalone service",
+      "componentTypes": [],
+      "installation": "service"
     },
     {
       "id": "skill/analyzing-seismic-waveforms",
@@ -1745,14 +2272,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/building-a-bibliography",
@@ -1777,14 +2311,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/choosing-a-storage-format",
@@ -1805,14 +2346,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/choosing-the-right-chart",
@@ -1822,7 +2370,7 @@
       "description": "Use when choosing a chart, axes, bins or color scale for scientific data. Triggers on \"which chart\", \"log scale\", \"color map\". Calls no tools. Not for rendering a chart; use summarizing-and-plotting-results.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-analysis-skills/skills/choosing-the-right-chart/SKILL.md",
@@ -1833,14 +2381,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/cleaning-and-validating-a-dataset",
@@ -1850,7 +2405,7 @@
       "description": "Use when profiling missing values, duplicates, outliers and validation rules before analysis. Triggers on \"clean this data\", \"missing values\", \"validate this CSV\". Not for plotting; use summarizing-and-plotting-results.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-analysis-skills/skills/cleaning-and-validating-a-dataset/SKILL.md",
@@ -1863,14 +2418,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-archify",
@@ -1891,14 +2453,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "MIT",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-architecture",
@@ -1919,14 +2488,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-arxiv-literature",
@@ -1947,14 +2523,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-ast-grep",
@@ -1975,14 +2558,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-backlog",
@@ -2003,14 +2593,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-branch-closeout",
@@ -2031,14 +2628,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-clio-coder-dev",
@@ -2059,14 +2663,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-clio-coder-test",
@@ -2087,14 +2698,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-coding-standards",
@@ -2115,14 +2733,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-context-handoff",
@@ -2143,14 +2768,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-context-prime",
@@ -2171,14 +2803,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-credentials",
@@ -2199,14 +2838,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-cut-it",
@@ -2227,14 +2873,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-design-council",
@@ -2255,14 +2908,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-experiment-protocol",
@@ -2283,14 +2943,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-file-ticket",
@@ -2311,14 +2978,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-find-skills",
@@ -2339,14 +3013,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-fix-issue",
@@ -2367,14 +3048,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-grill-me",
@@ -2395,14 +3083,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-herdr",
@@ -2423,14 +3118,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-materio-lab-definer",
@@ -2451,14 +3153,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-materio-literature-reviewer",
@@ -2479,14 +3188,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-materio-research-explorer",
@@ -2507,14 +3223,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-materio-task-executor",
@@ -2535,14 +3258,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-materio-task-verifier",
@@ -2563,14 +3293,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-materio-workflow-planner",
@@ -2591,14 +3328,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-prd",
@@ -2619,14 +3363,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-product-intent",
@@ -2647,14 +3398,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-prototype",
@@ -2675,14 +3433,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-resolve-merge-conflicts",
@@ -2703,14 +3468,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-scientific-debugging",
@@ -2731,14 +3503,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-scientific-modernization",
@@ -2759,14 +3538,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-ship",
@@ -2787,14 +3573,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-skill-craft",
@@ -2815,14 +3608,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-tdd",
@@ -2843,14 +3643,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-tech-spec",
@@ -2871,14 +3678,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-workflow-distiller",
@@ -2899,14 +3713,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-worktree-create",
@@ -2927,14 +3748,21 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/clio-kit-worktree-merge",
@@ -2955,14 +3783,60 @@
         "Clio Coder"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace#clio-coder-integration",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/creating-dataset-report",
+      "kind": "skill",
+      "name": "creating-dataset-report",
+      "title": "Create a verified dataset report",
+      "description": "Use when creating a report from a small numeric HDF5 dataset with a CSV, statistics and figure. Triggers on \"dataset report\", \"inspect summarize and plot\". Not for large-file streaming or model fitting.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding & research",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "plugins/clio-dataset-report/skills/creating-dataset-report/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-hdf5",
+        "clio-pandas",
+        "clio-plot"
+      ],
+      "tags": [
+        "clio-dataset-report",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/diagnosing-a-slow-job",
@@ -2986,14 +3860,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/exploring-an-unfamiliar-dataset",
@@ -3019,14 +3900,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/finding-and-staging-a-dataset",
@@ -3051,14 +3939,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/interpreting-io-performance-numbers",
@@ -3079,14 +3974,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/managing-software-environments",
@@ -3110,14 +4012,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/mapping-geospatial-and-terrain-data",
@@ -3141,14 +4050,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/reading-large-datasets-safely",
@@ -3173,14 +4089,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/recording-a-session-for-provenance",
@@ -3203,14 +4126,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/running-a-simulation-on-a-cluster",
@@ -3237,14 +4167,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/searching-large-log-files",
@@ -3267,14 +4204,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/summarizing-and-plotting-results",
@@ -3284,7 +4228,7 @@
       "description": "Use when calculating tabular summaries and plotting transformed CSV or Excel data. Triggers on \"summarize this table\", \"plot these results\", \"grouped mean\". Not for mesh or volume rendering; use visualizing-3d-simulation-output.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-analysis-skills/skills/summarizing-and-plotting-results/SKILL.md",
@@ -3298,14 +4242,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/surveying-literature-and-datasets",
@@ -3331,14 +4282,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/visualizing-3d-simulation-output",
@@ -3348,7 +4306,7 @@
       "description": "Use when inspecting and rendering simulation fields with ParaView. Triggers on \"isosurface\", \"slice this volume\", \"render the field\". Not for tabular charts; use summarizing-and-plotting-results.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-analysis-skills/skills/visualizing-3d-simulation-output/SKILL.md",
@@ -3361,14 +4319,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/working-with-coordinate-systems",
@@ -3389,14 +4354,21 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "skill/writing-slurm-job-scripts",
@@ -3420,24 +4392,31 @@
         "Scientific workflow"
       ],
       "clients": [
-        "claude-code",
         "codex",
+        "opencode",
+        "cursor",
         "antigravity",
+        "claude-code",
+        "vscode",
         "other"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded"
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
     },
     {
       "id": "workflow/clio-analysis",
-      "kind": "workflow",
+      "kind": "plugin",
       "name": "clio-analysis",
       "title": "From results to insight",
       "description": "Turn a dataset into summary statistics and a figure.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-analysis/.claude-plugin/plugin.json",
@@ -3457,16 +4436,77 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace",
       "evidence": "Membership from manifest",
-      "outcome": "Summary statistics, clear figures and guidance for interpreting them."
+      "outcome": "Summary statistics, clear figures and guidance for interpreting them.",
+      "componentTypes": [
+        "mcp",
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-analysis",
+      "role": "Workflow plugin",
+      "projectInstall": true
+    },
+    {
+      "id": "workflow/clio-dataset-report",
+      "kind": "plugin",
+      "name": "clio-dataset-report",
+      "title": "Dataset Report",
+      "description": "Turn a small HDF5 dataset into a report with a CSV, figure, checked statistics and evidence review.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Scientific computing",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "plugins/clio-dataset-report/.claude-plugin/plugin.json",
+      "members": [
+        "mcp/hdf5",
+        "mcp/pandas",
+        "mcp/plot",
+        "plugin/clio-agents",
+        "skill/creating-dataset-report",
+        "hook/clio-dataset-report"
+      ],
+      "servers": [
+        "clio-hdf5",
+        "clio-pandas",
+        "clio-plot"
+      ],
+      "tags": [],
+      "clients": [
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/plugins#task-plugins",
+      "evidence": "Membership from manifest",
+      "componentTypes": [
+        "agent",
+        "hook",
+        "mcp",
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-dataset-report",
+      "role": "Workflow plugin",
+      "projectInstall": true
     },
     {
       "id": "workflow/clio-geoscience",
-      "kind": "workflow",
+      "kind": "plugin",
       "name": "clio-geoscience",
       "title": "Explore the physical world",
       "description": "Inspect and map geospatial features, terrain models, and waveform archives.",
@@ -3491,16 +4531,29 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace",
       "evidence": "Membership from manifest",
-      "outcome": "Workflows for geographic features, terrain and seismic data."
+      "outcome": "Workflows for geographic features, terrain and seismic data.",
+      "componentTypes": [
+        "mcp",
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-geoscience",
+      "role": "Workflow plugin",
+      "projectInstall": true
     },
     {
       "id": "workflow/clio-hpc",
-      "kind": "workflow",
+      "kind": "plugin",
       "name": "clio-hpc",
       "title": "Run work on a cluster",
       "description": "Install a code, wrap it in a pipeline, submit it, and follow it on a cluster.",
@@ -3529,16 +4582,29 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace",
       "evidence": "Membership from manifest",
-      "outcome": "A resource-aware path from software setup to workload monitoring."
+      "outcome": "A resource-aware path from software setup to workload monitoring.",
+      "componentTypes": [
+        "mcp",
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-hpc",
+      "role": "Workflow plugin",
+      "projectInstall": true
     },
     {
       "id": "workflow/clio-performance",
-      "kind": "workflow",
+      "kind": "plugin",
       "name": "clio-performance",
       "title": "Understand a slow job",
       "description": "Work out why a finished job was slower than it should have been.",
@@ -3564,16 +4630,29 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace",
       "evidence": "Membership from manifest",
-      "outcome": "An investigation of I/O behavior, logs and potential bottlenecks."
+      "outcome": "An investigation of I/O behavior, logs and potential bottlenecks.",
+      "componentTypes": [
+        "mcp",
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-performance",
+      "role": "Workflow plugin",
+      "projectInstall": true
     },
     {
       "id": "workflow/clio-research",
-      "kind": "workflow",
+      "kind": "plugin",
       "name": "clio-research",
       "title": "Find the research behind it",
       "description": "Find papers on a topic and the datasets behind them.",
@@ -3600,16 +4679,29 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace",
       "evidence": "Membership from manifest",
-      "outcome": "Papers and datasets, with guidance for discovery and staging."
+      "outcome": "Papers and datasets, with guidance for discovery and staging.",
+      "componentTypes": [
+        "mcp",
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-research",
+      "role": "Workflow plugin",
+      "projectInstall": true
     },
     {
       "id": "workflow/clio-scientific-io",
-      "kind": "workflow",
+      "kind": "plugin",
       "name": "clio-scientific-io",
       "title": "Explore a scientific dataset",
       "description": "Open a scientific data file, see its structure, and read part of it.",
@@ -3636,12 +4728,25 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code"
+        "claude-code",
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "vscode"
       ],
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace",
       "evidence": "Membership from manifest",
-      "outcome": "A bounded view of your data, its structure and storage choices."
+      "outcome": "A bounded view of your data, its structure and storage choices.",
+      "componentTypes": [
+        "mcp",
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-scientific-io",
+      "role": "Workflow plugin",
+      "projectInstall": true
     }
   ]
 }

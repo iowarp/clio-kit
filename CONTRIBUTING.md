@@ -3,6 +3,10 @@
 Contribute to the CLIO Kit meta-marketplace: add skills, MCP servers, plugins or agent definitions, or index an external marketplace. This guide covers development, validation and pull requests.
 
 For a short authoring walkthrough, see [plugins, MCPs, skills and hooks](docs/authoring.md).
+MCPs, skills, agents and hooks are components; a workflow plugin bundles the
+components a task needs. Single-type collections and native installation wrappers
+are listed separately from workflow plugins; see [the component model](docs/plugins.md).
+For repository-owned packages, use the [folder contribution route](docs/authoring.md#add-a-component-folder-to-clio-kit): valid packages in `plugins/`, `skills/`, `agents/` and `hooks/` are discovered without central TOML registration.
 Agents should start with [AGENTS.md](AGENTS.md).
 
 ## Table of Contents

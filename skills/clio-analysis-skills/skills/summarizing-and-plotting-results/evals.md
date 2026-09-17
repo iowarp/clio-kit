@@ -90,3 +90,56 @@ Expected:
 
 - Summary and chart preserve unspecified units rather than assuming seconds.
 - No unit conversion occurs without a unit supplied by the user or metadata.
+
+## S5 - descriptive statistics do not establish a growth law
+
+Setup: Two tables use times `[0, 1, 2, 3, 4, 5]` seconds. Signal A is
+`[2, 4, 8, 16, 32, 64]` mV; signal B is `[64, 2, 32, 4, 16, 8]` mV.
+Both have the same signal mean, median, skewness and coefficient of variation.
+Prompt: "Summarize and plot these signals. What do the results establish about
+growth over time?"
+
+Expected:
+
+- Calls the statistical and plotting tools on both actual datasets.
+- Reports count 6, mean 21 mV and median 12 mV for each.
+- Uses the ordered observations to identify doubling in A over the measured
+  equally spaced times, without claiming an established physical mechanism.
+- Does not claim exponential growth for B from its identical summary statistics.
+- Establishes any permutation claim from the actual values, not merely from
+  matching summaries: different data can share the same CV and skewness.
+- Explains that distribution summaries alone cannot determine a time trend;
+  does not claim a fitted model or checked residuals without performing that work.
+- Counts are unitless; skewness and coefficient of variation are dimensionless.
+
+Observed failure (2026-09-17): a real Claude run calculated correct values for A
+but said skewness and coefficient of variation confirmed exponential growth.
+The skill and evidence-review agent now explicitly distinguish these claims.
+This guidance reduces that failure mode; it does not guarantee every model's
+interpretation. Fresh execution results are recorded separately from this rubric.
+
+## Follow-up execution record (2026-09-17)
+
+A fresh installed-wheel HDF5 → Pandas → Plot run invoked the native scientific
+I/O and analysis skills in Claude Sonnet 4.6. Count 6, mean 21 and median 12, CSV
+values, PNG output and input integrity were independently checked. The original
+skewness/CV growth overclaim did not recur. A matrix-save retry and mixed-unit
+heading motivated explicit named-column and per-row-unit guidance.
+
+A second real run called Pandas summaries and Plot on both S5 signals and
+rejected the identical-growth claim using their actual time/value pairs. It
+still made an unsupported converse claim that matching CV/skewness proves the
+same raw values. Guidance now requires checking raw values for that claim. An
+independent model review also proposed incorrect arithmetic; numerical review
+therefore requires reproducible calculation evidence, not mental corrections.
+These results establish the tested behaviors and failure modes, not a general
+model-accuracy guarantee or an unguided skill-selection evaluation.
+
+A final guided run using the revised packaged skill read both raw sequences,
+called both statistical summaries and produced both plots. It rejected the
+growth claim and based the permutation claim on actual values. It omitted the
+requested median from its report and used overly broad wording about the
+permuted series having no growth pattern, so S5 is not an unqualified pass.
+The reviewer supplied with independent calculations stopped proposing the
+incorrect arithmetic, but still missed reasoning and table-label weaknesses
+in the earlier reports. Human and deterministic checks remain necessary.

@@ -5,10 +5,11 @@ sidebar_position: 1
 # Getting Started
 
 CLIO Kit is a meta-marketplace for scientific MCP servers, workflow skills,
-plugins, agent definitions and external marketplace collections. The catalogue
-contains 22 server plugins, six workflow bundles, 20 skills and two planning/review
-agents. External plugin
-repositories and marketplace collections remain under their maintainers' control.
+plugins, agent definitions, hooks and external marketplace collections.
+Choose individual components or a plugin that bundles what your workflow needs.
+Skill and agent collections can also be installed separately. External packages
+and marketplaces remain under their maintainers' control. See
+[components and plugins](plugins.md) for the catalogue and installation model.
 
 The shipped scientific servers are Python projects. The launcher also supports
 Node/TypeScript and Go descriptors with runtime-specific dependency locks.
@@ -39,7 +40,8 @@ clio-kit skill install --bundle clio-scientific-io --target /path/to/project/.ag
 
 For Codex, `.agents/skills` is a project skill directory; `~/.agents/skills` is
 user-wide. Other agents use their own documented discovery path as `--target`.
-Omit `--bundle` for all 20 skills. Configure required MCP servers separately;
+Omit `--bundle` for all bundled skills, including adapted Clio Coder skills and
+the dataset-report procedure. Configure required MCP servers separately;
 for example `codex mcp add clio-hdf5 -- clio-kit mcp-server hdf5` registers HDF5.
 The scientific I/O workflow also requires ADIOS, Parquet and compression.
 
@@ -79,6 +81,51 @@ with `claude plugin install clio-hdf5@clio-kit`, a workflow's procedures with
 
 ## Agent integrations
 
+### Install a workflow for your client
+
+From the CLIO Kit checkout, install a workflow's skills and MCP configuration
+together into a working project:
+
+```bash
+clio-kit plugin install clio-scientific-io --client codex --project /path/to/project
+```
+
+Choose `codex`, `opencode`, `cursor`, `antigravity`, `vscode` or `claude-code`.
+Use `--root /path/to/clio-kit` when running elsewhere, and `--dry-run` to inspect
+the plan. New local package folders are discovered without a separate sync.
+The command resolves local dependencies, copies complete skill folders and
+merges stdio MCP entries into the client's project configuration. It does not
+change global settings or install a native client plugin. Install the launcher
+first and keep the checkout available when a contributed server uses local scripts.
+Codex and Antigravity share `.agents/skills`; installing the same skill there
+once is enough, and replacing it affects both clients.
+
+Existing unrelated configuration is preserved. Conflicting names stop installation;
+review before using `--replace`. Changed configurations get a recovery backup;
+TOML comments remain in that backup. OpenCode JSONC and remote/host-specific MCP
+options require manual configuration. This installer supports maintained local
+packages; indexed external packages retain their publisher's installation route.
+
+**Agents and hooks:** native CLIO packages currently use Claude's formats. Other
+clients also have extension mechanisms—this is an adapter gap, not a claim that
+they lack plugins or hooks. The installer stops if a package contains native
+agents, hooks or commands. Only use `--components-only` when you deliberately
+want just its skills and MCPs; Dataset Report then lacks its automatic hook and
+native reviewer. Skill instructions are copied unchanged, so any host-specific
+steps still need adaptation. Full native package adapters remain separate work.
+
+Reload your client and verify skills and MCP connections. Codex project settings
+require a trusted project. For Antigravity CLI, first open the project using
+`agy --new-project`. Installation alone does not prove a model used the workflow.
+
+### Individual component configuration
+
+Client format references: [Codex plugins](https://developers.openai.com/plugins/build/plugins),
+[OpenCode MCPs](https://opencode.ai/docs/mcp-servers/) and
+[skills](https://opencode.ai/docs/skills/),
+[Cursor MCPs](https://cursor.com/docs/mcp), and
+[Antigravity MCPs](https://antigravity.google/docs/mcp).
+
 MCP servers provide tools; skills provide procedures for using them. Configure
 both for a complete workflow. The scientific I/O workflow needs `hdf5`, `adios`,
 `parquet`, and `compression`, plus its three skills.
@@ -88,6 +135,7 @@ both for a complete workflow. The scientific I/O workflow needs `hdf5`, `adios`,
 | Codex CLI / IDE extension | `codex mcp add`; shared `~/.codex/config.toml` | `.agents/skills` |
 | Claude Code | Native marketplace above, or `claude mcp add --scope project` | Bundle-managed, or `.claude/skills` |
 | Cursor | `.cursor/mcp.json` with `mcpServers` | `.cursor/skills` |
+| OpenCode | `opencode.json` with `mcp` (`type: local`, command array) | `.opencode/skills` |
 | VS Code / GitHub Copilot | `.vscode/mcp.json` with `servers` | `.github/skills` |
 | Antigravity | MCP settings → raw config; workspace `.agents/mcp_config.json` | `.agents/skills` |
 | Claude Desktop | Developer settings → `claude_desktop_config.json` with `mcpServers` | Local MCP setup does not install skills |

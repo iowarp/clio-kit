@@ -10,6 +10,8 @@ agent definitions and community contributions into one meta-marketplace.
 
 - [Getting started](intro.md): install the launcher and connect an agent.
 - [Authoring components](authoring.md): define a plugin, MCP server, skill or hook.
+- [Choosing and composing plugins](plugins.md): primary bundles and task plugins
+  that reuse components across bundles.
 - [Marketplace guide](marketplace.md): installation options, external contributions,
   Clio Coder integration and tested coverage.
 - [Agentic Search](agentic-search.md): the standalone scientific retrieval service.

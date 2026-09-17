@@ -69,7 +69,7 @@ export function PublishersPage() {
                   <p>{p.description}</p>
                   <div className={styles.publisherStats}>
                     {catalogue.items.filter((i) => i.publisher === p.id).length}{' '}
-                    components <span>·</span> {p.origin}
+                    catalogue entries <span>·</span> {p.origin}
                   </div>
                   <Link className={styles.textLink} to={publisherUrl(p.id)}>
                     Explore collection <Icon name="arrow" size={17} />

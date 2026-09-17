@@ -31,10 +31,11 @@ from clio_kit.discovery import DESCRIPTOR_NAME, read_server_descriptor
 from clio_kit.plugins import read_skill_frontmatter
 from clio_kit.marketplace_assets import write_extra_plugins
 from clio_kit.federation import read_snapshot
-from clio_kit.protocol_probe import inspect_stdio
 from clio_kit.registry import registry_package
 from clio_kit.runtimes import required_project_files, supported_runtimes
 from clio_kit.mcp_contracts import generate_user_contract_artifacts
+from clio_kit.workflow_plugins import write_workflow_plugins
+from clio_kit.local_plugins import discover_local_plugins
 
 try:
     import tomllib
@@ -229,7 +230,10 @@ def assert_bundles_partition_servers(
     bundles: dict[str, dict[str, Any]],
     discovered_servers: set[str],
 ) -> None:
-    """Fail unless every shipped server sits in exactly one bundle.
+    """Fail unless every shipped server sits in exactly one primary bundle.
+
+    Optional [workflows.*] plugins compose existing components separately;
+    their overlapping dependencies do not participate in this partition.
 
     Both directions matter. A bundle naming a server that does not exist is a
     stale membership list; a shipped server named by no bundle is one that
@@ -434,6 +438,8 @@ def read_pyproject(server_dir: Path) -> dict[str, Any]:
 def extract_metadata(server_dir: Path) -> dict[str, Any] | None:
     """Run extract_mcp_metadata.py in the server's environment."""
     if server_runtime(server_dir) != "python":
+        from clio_kit.protocol_probe import inspect_stdio
+
         try:
             return asyncio.run(
                 inspect_stdio(
@@ -656,7 +662,6 @@ def build_marketplace_json(
         "metadata": {
             "description": "CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions",
             "version": pypi_version,
-            "pluginRoot": "./plugins",
         },
         "plugins": server_entries,
     }
@@ -826,6 +831,10 @@ def generate_all(mcps_dir: str) -> None:
     marketplace_plugins.extend(imported_skill_entries(repo_root))
     marketplace_plugins.extend(community_entries)
     marketplace_plugins.extend(read_snapshot(repo_root))
+    marketplace_plugins.extend(
+        write_workflow_plugins(repo_root, marketplace_plugins, author=PLUGIN_AUTHOR)
+    )
+    marketplace_plugins.extend(discover_local_plugins(repo_root, marketplace_plugins))
     if community_entries:
         print(f"Merged {len(community_entries)} community entries")
 

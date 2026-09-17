@@ -19,13 +19,13 @@ def test_every_installable_marketplace_entry_and_local_skill_is_browsable():
     result = catalogue.generate(ROOT)
     entries = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text())
     represented = {
-        f"clio-{item['name']}" if item["kind"] == "mcp" else item["name"]
-        for item in result["items"]
-        if item["kind"] in {"mcp", "workflow", "plugin"}
+        item["nativePackage"] for item in result["items"] if "nativePackage" in item
     }
     assert represented == {entry["name"] for entry in entries["plugins"]}
     expected_skills = {
-        path.parent.name for path in (ROOT / "skills").glob("*/skills/*/SKILL.md")
+        path.parent.name
+        for folder in ("skills", "plugins", "agents", "hooks")
+        for path in (ROOT / folder).glob("*/skills/*/SKILL.md")
     }
     assert {
         r["name"] for r in result["items"] if r["kind"] == "skill"
@@ -55,6 +55,49 @@ def test_workflow_members_resolve_and_service_is_not_an_mcp():
     assert all(member in items for member in workflow["members"])
     assert items["service/agentic-search"]["clients"] == []
     assert "mcp/agentic-search" not in items
+
+
+def test_product_types_do_not_count_installation_wrappers_as_workflow_plugins():
+    items = {item["id"]: item for item in catalogue.generate(ROOT)["items"]}
+    assert items["mcp/hdf5"]["kind"] == "mcp"
+    assert items["mcp/hdf5"]["installation"] == "launcher"
+    assert "plugin/clio-hdf5" not in items
+    assert items["workflow/clio-scientific-io"]["kind"] == "plugin"
+    assert items["workflow/clio-scientific-io"]["componentTypes"] == ["mcp", "skill"]
+    report = items["workflow/clio-dataset-report"]
+    assert report["kind"] == "plugin"
+    assert report["componentTypes"] == ["agent", "hook", "mcp", "skill"]
+    for name in ("clio-skills", "clio-coder-skills", "clio-agents"):
+        assert items[f"plugin/{name}"]["kind"] == "collection"
+    # Dependencies resolve transitively, not just from the package's own folder.
+    assert items["plugin/clio-skills"]["componentTypes"] == ["skill"]
+    assert items["plugin/clio-agents"]["componentTypes"] == ["agent"]
+    assert items["plugin/scientific-debugging"]["kind"] == "package"
+    assert items["plugin/scientific-debugging"]["componentTypes"] == []
+    assert (
+        items["skill/clio-kit-scientific-debugging"]["installation"] == "portable-skill"
+    )
+
+
+def test_local_mcp_package_never_gets_an_invented_launcher_command(tmp_path):
+    package = tmp_path / "plugins/lab-mcp"
+    (package / ".claude-plugin").mkdir(parents=True)
+    (package / ".claude-plugin/plugin.json").write_text('{"name": "lab-mcp"}')
+    (package / ".mcp.json").write_text('{"lab": {"command": "lab-server"}}')
+    entry = {"name": "lab-mcp", "source": "./plugins/lab-mcp"}
+    records = [
+        {
+            "id": "plugin/lab-mcp",
+            "name": "lab-mcp",
+            "kind": "plugin",
+            "origin": "Maintained",
+            "members": [],
+        }
+    ]
+    catalogue.classify_records(records, {"lab-mcp": entry}, tmp_path)
+    assert records[0]["kind"] == "mcp"
+    assert records[0]["installation"] == "native-package"
+    assert records[0]["nativePackage"] == "lab-mcp"
 
 
 @pytest.mark.parametrize("config", ["inline", "custom-file", "default-file"])

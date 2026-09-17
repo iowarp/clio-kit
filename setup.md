@@ -91,6 +91,19 @@ not imply every client UI has been exercised in this release's acceptance tests.
 
 ### Codex and other agents that support Agent Skills
 
+For a local workflow package, install skills and stdio MCP configuration together:
+
+```bash
+clio-kit plugin install clio-scientific-io --client codex --project /path/to/project
+```
+
+Replace `codex` with `opencode`, `cursor`, `antigravity`, `vscode` or `claude-code`.
+Use `--dry-run` to inspect an existing project. Native agents, hooks and commands
+need host adapters; the installer refuses to omit them unless you explicitly
+select `--components-only`. Read [installation limits](docs/intro.md#install-a-workflow-for-your-client)
+and continue with verification below. The individual commands that follow remain
+available for selecting components separately.
+
 Install standard skill folders into your agent's documented discovery directory.
 For Codex, use `.agents/skills` inside the project where you will work, or
 `~/.agents/skills` for user-wide discovery. See [Codex skill discovery](https://developers.openai.com/codex/skills).
@@ -149,6 +162,10 @@ Codex and other agents use the portable skill and MCP route above.
 
 ### Claude Code native marketplace
 
+CLIO Kit calls MCPs, skills, agents and hooks components; workflow bundles are
+plugins. Claude Code uses `plugin install` for both workflow plugins and component
+packages, so its installed-plugin count is not CLIO Kit's workflow-plugin count.
+
 Use a client that supports plugin dependencies; older clients may not install
 all bundle members. From the CLIO Kit checkout:
 
@@ -173,7 +190,11 @@ claude plugin details clio-scientific-io@clio-kit
 This installs four servers and the associated skills as dependencies. A single
 server is also installable, for example `clio-hdf5@clio-kit`. For procedures
 without servers, use `clio-scientific-io-skills@clio-kit` or `clio-skills@clio-kit`
-for all 20 skills. `clio-agents@clio-kit` adds planning and evidence-review agents.
+for the six primary bundles' skills. `clio-agents@clio-kit` adds planning and evidence-review agents.
+
+For a complete small HDF5 reporting task, install `clio-dataset-report@clio-kit`;
+it adds HDF5/Pandas/Plot, a report skill, evidence review and a verification hook.
+See [inputs and verification limits](docs/plugins.md#scientific-dataset-report).
 
 `claude plugin marketplace list` lists marketplaces, not their entries. Refer
 to the [README catalogue](README.md#workflow-bundles) for bundle names.

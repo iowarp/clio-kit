@@ -8,6 +8,12 @@ Cursor, VS Code / GitHub Copilot, Antigravity, and Claude Desktop.
 The plugin entries and marketplace federation described below currently use
 Claude Code's native `.claude-plugin` format; they are not universal manifests.
 
+MCPs, skills, agents and hooks are components; workflow plugins bundle them.
+A native wrapper makes an individual component installable without turning it
+into a workflow plugin. The website keeps indexed external packages separate
+when their component types have not been inspected; see
+[catalogue types](../docs/plugins.md#catalogue-types-and-installation-packages).
+
 
 List externally maintained plugins, MCP servers, skills and marketplace
 collections in the CLIO Kit meta-marketplace. One entry file per contribution.

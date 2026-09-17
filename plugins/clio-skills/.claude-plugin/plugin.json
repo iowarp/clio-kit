@@ -4,7 +4,7 @@
   "author": {
     "name": "IoWarp Team"
   },
-  "description": "All CLIO scientific workflow skills, without MCP servers.",
+  "description": "Skills for the six primary scientific workflows, without MCP servers.",
   "dependencies": [
     "clio-analysis-skills",
     "clio-geoscience-skills",

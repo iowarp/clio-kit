@@ -83,11 +83,32 @@ function DetailContent({item}) {
           <section className={styles.detailSection}>
             <span className={styles.eyebrow}>BUILT FOR YOUR WORK</span>
             <h2>
-              {item.kind === 'workflow'
-                ? 'What this workflow brings together'
+              {item.kind === 'plugin'
+                ? 'What this plugin brings together'
                 : 'About this component'}
             </h2>
             <p>{item.outcome || summary(item.description)}</p>
+            {item.kind === 'plugin' && (
+              <p>
+                A plugin bundles the components needed for a workflow. It can
+                include MCP servers, skills, agents and hooks; not every plugin
+                needs every type.
+              </p>
+            )}
+            {item.kind === 'collection' && (
+              <p>
+                This collection installs components of one type together.
+                It is listed separately from workflow plugins.
+              </p>
+            )}
+            {item.kind === 'package' && (
+              <p>
+                This external package is indexed from its publisher. Its
+                component types have not been classified from a local content
+                inspection; check the upstream source for included capabilities
+                and requirements.
+              </p>
+            )}
             {item.kind === 'skill' && (
               <p>
                 Skills are procedures your agent follows. They guide tool
@@ -199,7 +220,7 @@ function DetailContent({item}) {
             <div className={styles.clientBadge}>
               {item.kind === 'service'
                 ? 'Standalone service'
-                : 'Claude Code native plugin'}
+                : 'Claude Code package'}
             </div>
           )}
           <CopyCode code={install.code} label={install.label} />

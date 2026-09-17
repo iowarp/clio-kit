@@ -142,6 +142,33 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     expected_skill_plugins.update(
         entry["name"] for entry in imported_skill_entries(repository_root)
     )
+    from clio_kit.local_plugins import discover_local_plugins
+
+    workflow_names = set(
+        tomllib.loads((repository_root / "mcp-server-versions.toml").read_text()).get(
+            "workflows", {}
+        )
+    )
+    generated_names = (
+        {f"clio-{name}" for name in expected_server_versions}
+        | set(expected_bundles)
+        | expected_skill_plugins
+        | workflow_names
+        | {"clio-skills", "clio-agents"}
+    )
+    local_entries = discover_local_plugins(
+        repository_root,
+        [
+            entry
+            for entry in marketplace["plugins"]
+            if entry["name"] in generated_names or isinstance(entry["source"], dict)
+        ],
+    )
+    expected_skill_plugins.update(
+        entry["name"]
+        for entry in local_entries
+        if entry["source"].startswith("./skills/")
+    )
     readme = (repository_root / "README.md").read_text(encoding="utf-8")
 
     assert projects
@@ -184,11 +211,11 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
         if "metadata" in plugin
     )
 
-    # Every published entry is one of the four kinds. A fifth source shape would
-    # be an entry nothing in this repository accounts for.
-    assert len(marketplace_plugins) + len(bundle_plugins) + len(skill_plugins) + len(
-        community_plugins
-    ) + 2 == len(marketplace["plugins"])
+    expected_names = (
+        generated_names | set(community_plugins) | {e["name"] for e in local_entries}
+    )
+    assert expected_names == {e["name"] for e in marketplace["plugins"]}
+    assert len(expected_names) == len(marketplace["plugins"])
     for path in manifests:
         server_name = path.parent.name
         manifest = json.loads(path.read_text(encoding="utf-8"))
@@ -960,3 +987,59 @@ def test_python_metadata_failure_still_trips_the_ci_log_gate(
     gate = re.search(r"if grep -Eq '([^']+)'", workflow)
     assert gate is not None
     assert re.search(gate[1], log, re.M)
+
+
+def test_generation_includes_tasks_without_changing_primary_partition(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    server = _publishing_repository(tmp_path, "node", publish=False)
+    with (tmp_path / "mcp-server-versions.toml").open("a") as stream:
+        for name in ("clio-inspect", "clio-analyze"):
+            stream.write(
+                f'\n[workflows.{name}]\nversion = "1.0.0"\n'
+                'description = "A task using an existing server."\n'
+                'dependencies = ["clio-crystal"]\n'
+            )
+    monkeypatch.setattr(GENERATOR, "generate_user_contract_artifacts", lambda root: [])
+    GENERATOR.generate_all(str(server.parent))
+    marketplace = json.loads((tmp_path / ".claude-plugin/marketplace.json").read_text())
+    entries = {entry["name"]: entry for entry in marketplace["plugins"]}
+    for name in ("clio-inspect", "clio-analyze"):
+        assert entries[name]["category"] == "workflow"
+        manifest = json.loads(
+            (tmp_path / "plugins" / name / ".claude-plugin/plugin.json").read_text()
+        )
+        assert manifest["dependencies"] == ["clio-crystal"]
+    GENERATOR.assert_bundles_partition_servers(
+        GENERATOR.read_bundles(tmp_path), {"crystal"}
+    )
+
+
+def test_full_generator_discovers_standalone_hook_package(tmp_path, monkeypatch):
+    server = _publishing_repository(tmp_path, "node", publish=False)
+    folder = tmp_path / "hooks/lab-notice"
+    (folder / ".claude-plugin").mkdir(parents=True)
+    manifest = folder / ".claude-plugin/plugin.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "name": "lab-notice",
+                "version": "1.0.0",
+                "description": "Lab session context.",
+                "hooks": {
+                    "SessionStart": [
+                        {"hooks": [{"type": "command", "command": "echo lab"}]}
+                    ]
+                },
+            }
+        )
+    )
+    original = manifest.read_bytes()
+    monkeypatch.setattr(GENERATOR, "generate_user_contract_artifacts", lambda root: [])
+    GENERATOR.generate_all(str(server.parent))
+    marketplace = json.loads((tmp_path / ".claude-plugin/marketplace.json").read_text())
+    assert (
+        next(e for e in marketplace["plugins"] if e["name"] == "lab-notice")["source"]
+        == "./hooks/lab-notice"
+    )
+    assert manifest.read_bytes() == original

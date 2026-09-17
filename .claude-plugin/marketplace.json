@@ -6,8 +6,7 @@
   },
   "metadata": {
     "description": "CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions",
-    "version": "2.11.0",
-    "pluginRoot": "./plugins"
+    "version": "2.11.0"
   },
   "plugins": [
     {
@@ -105,7 +104,7 @@
       "name": "clio-hdf5",
       "source": "./plugins/clio-hdf5",
       "description": "HDF5 FastMCP - Scientific Data Access for AI Agents | CLIO Kit MCP Server",
-      "version": "2.2.5",
+      "version": "2.2.6",
       "category": "scientific",
       "keywords": [
         "scientific-computing",
@@ -457,7 +456,7 @@
       "name": "clio-analysis-skills",
       "source": "./skills/clio-analysis-skills",
       "description": "Skills for the clio-analysis workflow: turn a dataset into summary statistics and a figure.",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "category": "skills",
       "keywords": [
         "choosing-the-right-chart",
@@ -472,7 +471,7 @@
       "name": "clio-analysis",
       "source": "./plugins/clio-analysis",
       "description": "Turn a dataset into summary statistics and a figure.",
-      "version": "1.0.4",
+      "version": "1.0.5",
       "category": "workflow",
       "keywords": [
         "3d-rendering",
@@ -571,7 +570,7 @@
     {
       "name": "clio-skills",
       "source": "./plugins/clio-skills",
-      "description": "All CLIO scientific workflow skills, without MCP servers.",
+      "description": "Skills for the six primary scientific workflows, without MCP servers.",
       "version": "1.0.0",
       "category": "skills"
     },
@@ -579,7 +578,7 @@
       "name": "clio-agents",
       "source": "./plugins/clio-agents",
       "description": "Scientific workflow planning and independent evidence review agents.",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "category": "agents"
     },
     {
@@ -1167,6 +1166,14 @@
         "indexed": true,
         "clioFederation": "iowarp-clio-coder"
       }
+    },
+    {
+      "name": "clio-dataset-report",
+      "source": "./plugins/clio-dataset-report",
+      "description": "Turn a small HDF5 dataset into a report with a CSV, figure, checked statistics and evidence review.",
+      "version": "1.0.0",
+      "category": "workflow",
+      "license": "BSD-3-Clause"
     }
   ]
 }

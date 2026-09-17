@@ -224,7 +224,7 @@ def with_error_handling(func):
             return await func(*args, **kwargs)
         except Exception as e:
             logger.error(f"Error in {func.__name__}: {e}")
-            return f"Error: {str(e)}"
+            raise ToolError(str(e)) from e
 
     return wrapper
 
@@ -946,7 +946,7 @@ async def hdf5_batch_read(
         try:
             slice_obj = eval(f"np.s_[{slice_spec}]")
         except Exception:
-            return f"Error: Invalid slice specification: {slice_spec}"
+            raise ToolError(f"Invalid slice specification: {slice_spec}")
 
     # Parallel batch reading
     results = {}
@@ -1020,7 +1020,7 @@ async def hdf5_stream_data(
         Stream processing summary with statistics
     """
     if not current_file:
-        return "Error: No file currently open"
+        raise ToolError("No file currently open. Use open_file first.")
 
     dataset = current_file[path]
 
@@ -1199,7 +1199,7 @@ async def analyze_dataset_structure(
         Structure analysis with AI insights
     """
     if not current_file:
-        return "Error: No file currently open"
+        raise ToolError("No file currently open. Use open_file first.")
 
     if path == "/":
         obj = current_file.file
@@ -1557,7 +1557,7 @@ async def identify_io_bottlenecks(
         Bottleneck analysis report with AI recommendations
     """
     if not current_file:
-        return "Error: No file currently open"
+        raise ToolError("No file currently open. Use open_file first.")
 
     if not analysis_paths:
         analysis_paths = []

@@ -12,6 +12,7 @@ import argparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -37,7 +38,18 @@ if event == "PreToolUse" and Path(file).name == "blocked.txt":
 """
 
 
-def model_server(project: Path) -> ThreadingHTTPServer:
+def model_server(
+    project: Path, actions: list[dict] | None = None
+) -> ThreadingHTTPServer:
+    if actions is None:
+        actions = [
+            {
+                "name": "Write",
+                "input": {"file_path": str(project / name), "content": "HOOK_TEST"},
+            }
+            for name in ("allowed.txt", "blocked.txt")
+        ]
+
     class Endpoint(BaseHTTPRequestHandler):
         count = 0
 
@@ -45,31 +57,30 @@ def model_server(project: Path) -> ThreadingHTTPServer:
             pass
 
         def do_POST(self):
-            self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            payload = self.rfile.read(int(self.headers.get("Content-Length", 0)))
             if "count_tokens" in self.path:
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(b'{"input_tokens": 100}')
                 return
+            with (project / "scripted-model-requests.jsonl").open("ab") as evidence:
+                evidence.write(payload + b"\n")
             Endpoint.count += 1
-            number = Endpoint.count
-            if number > 8:
+            # Background client requests must not consume the main conversation's
+            # scripted actions. Advance from tools present in its own history.
+            previous = re.findall(rb"toolu_hook_(\d+)", payload)
+            number = max((int(value) for value in previous), default=0) + 1
+            if Endpoint.count > 32:
                 self.send_error(500, "Unexpected retry loop")
                 return
             content = (
                 {
                     "type": "tool_use",
                     "id": f"toolu_hook_{number}",
-                    "name": "Write",
-                    "input": {
-                        "file_path": str(
-                            project / ("allowed.txt" if number == 1 else "blocked.txt")
-                        ),
-                        "content": "HOOK_TEST",
-                    },
+                    **actions[number - 1],
                 }
-                if number < 3
+                if number <= len(actions)
                 else {"type": "text", "text": "Hook test completed."}
             )
             message = {
@@ -117,7 +128,9 @@ def model_server(project: Path) -> ThreadingHTTPServer:
                 {
                     "type": "message_delta",
                     "delta": {
-                        "stop_reason": "tool_use" if number < 3 else "end_turn",
+                        "stop_reason": "tool_use"
+                        if number <= len(actions)
+                        else "end_turn",
                         "stop_sequence": None,
                     },
                     "usage": {"output_tokens": 25},

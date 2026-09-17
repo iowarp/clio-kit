@@ -8,11 +8,14 @@ on:
       - 'docs/**'
       - 'skills/**'
       - 'plugins/**'
+      - 'agents/**'
+      - 'hooks/**'
       - '.claude-plugin/**'
       - 'community/**'
       - 'mcp-server-versions.toml'
       - 'mcp-servers/**'
       - 'scripts/**'
+      - 'src/clio_kit/**'
       - '.github/workflows/docs-and-website.yml'
   pull_request:
     branches: [main, dev]
@@ -21,11 +24,14 @@ on:
       - 'docs/**'
       - 'skills/**'
       - 'plugins/**'
+      - 'agents/**'
+      - 'hooks/**'
       - '.claude-plugin/**'
       - 'community/**'
       - 'mcp-server-versions.toml'
       - 'mcp-servers/**'
       - 'scripts/**'
+      - 'src/clio_kit/**'
       - '.github/workflows/docs-and-website.yml'
 
 permissions:

@@ -203,7 +203,9 @@ class Acceptance:
             )
         )
         expected = {
-            path.parent.name for path in ROOT.glob("skills/*/skills/*/SKILL.md")
+            path.parent.name
+            for folder in ("skills", "plugins", "agents", "hooks")
+            for path in (ROOT / folder).glob("*/skills/*/SKILL.md")
         }
         assert {skill["name"] for skill in inventory} == expected, inventory
         assert {path.parent.name for path in target.glob("*/SKILL.md")} == {

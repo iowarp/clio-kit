@@ -1,6 +1,7 @@
 """Portable installation preserves complete skills and existing user content."""
 
 import json
+from pathlib import Path
 
 import pytest
 import yaml
@@ -18,7 +19,13 @@ from clio_kit.skills import SkillProblem
 def test_shipped_skills_use_standard_metadata():
     inventory = skill_inventory()
     assert len(selected_skills((), "clio-coder")) == 39
-    assert len(inventory) == 59
+    root = Path(__file__).resolve().parents[1]
+    assert set(inventory) == {
+        path.parent.name
+        for kind in ("skills", "plugins", "agents", "hooks")
+        for path in (root / kind).glob("*/skills/*/SKILL.md")
+    }
+    assert (inventory["creating-dataset-report"] / "scripts/verify_report.py").is_file()
     for name, source in inventory.items():
         fields = yaml.safe_load((source / "SKILL.md").read_text().split("---", 2)[1])
         assert set(fields) <= {

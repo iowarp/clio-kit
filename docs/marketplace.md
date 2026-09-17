@@ -6,7 +6,7 @@ title: Marketplace and Contributions
 # Marketplace features and acceptance
 
 CLIO Kit is a meta-marketplace: it combines its own MCP servers, skills,
-plugins and agents with contributions from external repositories and marketplaces.
+workflow plugins, agents and hooks with contributions from external repositories and marketplaces.
 
 Follow [Getting Started](./intro.md) to install the launcher, register the
 marketplace and configure your agent. Source installation uses one checkout
@@ -14,10 +14,24 @@ for the launcher and catalogue; publishing a package is a separate release step.
 
 ## Installable components
 
-- 22 scientific/general MCP server plugins and six workflow bundles.
+See [Choosing and composing plugins](plugins.md) for the six primary bundles
+and optional task plugins that reuse components across them.
+Repository-owned packages in `plugins/`, `skills/`, `agents/` and `hooks/` are
+discovered during generation without a central TOML entry; see
+[folder contributions](authoring.md#add-a-component-folder-to-clio-kit).
+
+- Individual scientific/general MCP servers and six broad workflow plugins (bundles).
+- `clio-dataset-report`: a task plugin combining HDF5/Pandas/Plot, a report skill,
+  evidence review and a verification hook; see [inputs and limits](plugins.md#scientific-dataset-report).
 - Scientific workflow skills, available per workflow or together as `clio-skills`, plus the optional imported `clio-coder-skills` collection.
 - `clio-agents`: a scientific workflow planner and an evidence reviewer.
 - Direct external plugins and compiled external marketplace collections.
+
+MCPs, skills, agents and hooks are components; plugins bundle them for a workflow.
+Skill and agent collections remain separate from workflow plugins. Claude Code
+uses native plugin packages to distribute both. Catalogue filters reflect the
+[component model](plugins.md#catalogue-types-and-installation-packages), not the
+number of entries in Claude Code's `plugins` array.
 
 Skills use the [Agent Skills format](https://agentskills.io/specification),
 independently of the client. Install them from the packaged CLI:
@@ -127,7 +141,7 @@ checkout at the recorded revision:
 
 ```bash
 uv run --frozen python scripts/import_clio_coder_skills.py /path/to/clio-coder
-uv run --frozen python scripts/generate_marketplace.py
+clio-kit marketplace sync
 ```
 
 `skills/clio-coder-skills/import-lock.json` records original metadata, source
@@ -236,7 +250,7 @@ uv run --frozen python scripts/verify_skills_cli.py
 | Capability | Release scope |
 |---|---|
 | Python server packaging and stdio launcher | 22 shipped servers; individual backend prerequisites still apply |
-| Portable skills | 20 standard skill folders; Codex discovery and Claude plugin loading are tested |
+| Portable skills | Primary workflow, dataset-report and adapted Clio Coder skill folders; installation checks are separate from each skill's model evaluation |
 | Native bundles and agent definitions | Claude Code; other clients use portable skills and explicit MCP configuration |
 | Node/TypeScript and Go | Locked local-project adapters tested with real SDK fixtures; no shipped non-Python scientific server |
 | External plugins and marketplaces | Entry validation, snapshot compilation and client installation; third-party code remains externally maintained |
@@ -328,6 +342,28 @@ that a client can load skills, not that a model follows them correctly.
 
 ## Scientific acceptance boundaries
 
+### Project client installer
+
+The September 17 project-installer checks cover Codex, OpenCode, Cursor,
+Antigravity, Claude Code and VS Code configuration generation, preservation of
+existing settings, explicit partial-install limits, and real fixture MCP calls
+using each generated configuration. Native Codex loaded the scientific-I/O
+skills and four server tool inventories in a trusted project. OpenCode 1.2.6
+discovered the three skills and connected to all four servers; its generated
+timeout allows two minutes for startup, but cold dependency downloads may still
+need a prior `clio-kit doctor --server NAME --connect` run.
+
+Antigravity 1.2.0 discovered the skills and compression tools. Its headless
+operational attempt was first permission-denied, then returned an incomplete
+model/tool interaction; that is not a successful scientific workflow test.
+The installed older Cursor CLI did not discover the project configuration;
+Cursor and VS Code GUI behavior remain unverified in this follow-up. Native
+Claude hooks and agents are not translated by the project installer. These
+limits concern the tested integration routes, not whether those clients offer
+their own plugin systems.
+
+### Scientific workflows
+
 A handshake proves a server speaks MCP; it does not prove its scientific
 backends work. Full HPC workflows need Spack, Lmod, JARVIS packages and a working
 scheduler. Chronolog needs its native client/service; ParaView needs a compatible
@@ -369,6 +405,30 @@ model produced malformed tool calls, and one Claude plot required correction.
 The repeated Codex routing check matched 22 of 23 expected choices, with the
 same ambiguous slow-HDF5 request as before. Cursor testing was stopped at the
 operator's request; GUI client flows were not automated.
+
+The September 17 task-plugin check installed a fresh wheel and ran a guided
+HDF5 → Pandas → Plot workflow through two native Claude skills. It checked the
+CSV, numerical results, PNG and unchanged input, plus shared-dependency removal.
+HDF5's error wrapper had returned failures as successful text; it now raises
+MCP tool errors. Missing datasets, invalid slices and recovery were checked over
+both modern and legacy stdio connections.
+
+A model report also overclaimed what skewness and coefficient of variation
+establish. The analysis skill and evidence reviewer now distinguish summaries,
+ordered observations and model claims; the evaluation includes equal-summary
+signals with different time order. Independent numerical checks remain necessary:
+a model reviewer can itself suggest an incorrect correction. These bounded
+checks do not certify arbitrary scientific interpretations.
+
+The new `clio-dataset-report` plugin was also exercised as a separately hosted
+Git plugin through a community entry. Native installation resolved its three
+MCPs and agent dependency, loaded its skill and reviewer, and ran the verification
+hook against incorrect then corrected evidence. Actual HDF5/Pandas/Plot calls
+produced checked fixture outputs. Scripted model responses exercised the client
+integration; the fresh live composite-skill run was blocked by account quota.
+The pinned npm skills installer discovered/copied all 60 skill folders after
+removing a redundant marketplace path prefix. A public GitHub installation of
+Clio Coder's pinned scientific-debugging skill also exposed its skill correctly.
 
 ## Skill maintenance
 

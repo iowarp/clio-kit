@@ -1,11 +1,10 @@
 """Author, check and submit a plugin for the CLIO Kit marketplace.
 
-These commands are for contributors working in *their own* repository. The
-marketplace indexes outside plugins rather than vendoring them (see
-:mod:`clio_kit.community`), so the only thing that reaches this repository is a
-one-file entry -- which means a malformed plugin is not caught by our CI at all.
-``clio-kit plugin validate`` is where it gets caught instead, before a pull
-request exists.
+These commands support contributors working in their own repositories and
+packages maintained here. Outside plugins are indexed through one-file entries
+(see :mod:`clio_kit.community`). Repository-owned folders are discovered during
+generation (see :mod:`clio_kit.local_plugins`). Both use the same structural
+validator; native client and real usage checks remain separate.
 
 The skill rules themselves live in :mod:`clio_kit.skills`, so this validator,
 the manifest generator and a contributor checking their own directory all get
@@ -34,6 +33,7 @@ from clio_kit.server_cli import server_group
 from clio_kit.doctor import doctor_command
 from clio_kit.hooks import hook_components, write_hook
 from clio_kit.skill_cli import skill_group
+from clio_kit.client_install import CLIENTS, install_for_client
 
 from clio_kit.community import (
     COMMUNITY_KINDS,
@@ -73,12 +73,14 @@ def read_skill_frontmatter(skill_dir: Path) -> dict[str, str]:
         raise PluginProblem(str(exc)) from exc
 
 
-def _check_name(name: Any, problems: list[str]) -> None:
+def _check_name(
+    name: Any, problems: list[str], *, allow_reserved: bool = False
+) -> None:
     """Collect every reason a plugin name would not work as an identifier."""
     if not isinstance(name, str) or not name:
         problems.append("plugin.json needs a name")
         return
-    if name.startswith(RESERVED_PREFIX):
+    if name.startswith(RESERVED_PREFIX) and not allow_reserved:
         problems.append(
             f"name {name!r} claims the reserved {RESERVED_PREFIX!r} prefix, which is "
             "generated from CLIO Kit's own servers, bundles and skills"
@@ -142,7 +144,9 @@ def _check_mcp_servers(plugin_dir: Path, problems: list[str]) -> None:
     problems.extend(mcp_problems(config, ".mcp.json"))
 
 
-def validate_plugin(plugin_dir: Path) -> tuple[dict[str, Any], list[str]]:
+def validate_plugin(
+    plugin_dir: Path, *, allow_reserved: bool = False
+) -> tuple[dict[str, Any], list[str]]:
     """Return a plugin's manifest and every problem found in its directory."""
     problems: list[str] = []
     manifest_path = plugin_dir / ".claude-plugin" / "plugin.json"
@@ -158,7 +162,7 @@ def validate_plugin(plugin_dir: Path) -> tuple[dict[str, Any], list[str]]:
     if not isinstance(manifest, dict):
         raise PluginProblem(f"{manifest_path} must contain an object")
 
-    _check_name(manifest.get("name"), problems)
+    _check_name(manifest.get("name"), problems, allow_reserved=allow_reserved)
     if not manifest.get("description"):
         problems.append(
             "plugin.json has no description; it is what a user reads before "
@@ -180,9 +184,10 @@ def validate_plugin(plugin_dir: Path) -> tuple[dict[str, Any], list[str]]:
 
     has_components = (
         any(
-            (plugin_dir / directory).is_dir()
-            for directory in ("skills", "commands", "agents")
+            any(plugin_dir.glob(pattern))
+            for pattern in ("skills/*/SKILL.md", "commands/*.md", "agents/*.md")
         )
+        or any(manifest.get(field) for field in ("skills", "commands", "agents"))
         or (plugin_dir / ".mcp.json").is_file()
         or bool(manifest.get("mcpServers"))
         or has_hooks
@@ -271,7 +276,56 @@ def build_community_entry(
 
 @click.group("plugin")
 def plugin_group() -> None:
-    """Author, check and submit a plugin for the CLIO Kit marketplace."""
+    """Author, install, check and submit CLIO Kit component packages."""
+
+
+@plugin_group.command("install")
+@click.argument("name")
+@click.option("--client", required=True, type=click.Choice(sorted(CLIENTS)))
+@click.option(
+    "--project", required=True, type=click.Path(file_okay=False, path_type=Path)
+)
+@click.option(
+    "--root", default=".", type=click.Path(exists=True, file_okay=False, path_type=Path)
+)
+@click.option(
+    "--components-only",
+    is_flag=True,
+    help="Explicitly omit native agents, hooks and commands.",
+)
+@click.option(
+    "--replace",
+    is_flag=True,
+    help="Replace conflicting skills and named MCP settings after review.",
+)
+@click.option(
+    "--dry-run", is_flag=True, help="Show the component plan without writing files."
+)
+def install_plugin(name, client, project, root, components_only, replace, dry_run):
+    """Install a local package's skills and stdio MCPs for a selected client.
+
+    Source is a CLIO Kit checkout. This does not fetch external indexed packages
+    or convert client-specific agents/hooks. Keep local source scripts available.
+    """
+    from clio_kit.skills import SkillProblem
+
+    try:
+        result = install_for_client(
+            root,
+            name,
+            client,
+            project,
+            components_only=components_only,
+            replace=replace,
+            dry_run=dry_run,
+        )
+    except (ValueError, OSError, SkillProblem, PluginProblem) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(json.dumps(result, indent=2))
+    if not dry_run:
+        click.echo(
+            "Reload the client, trust the project when prompted, and verify MCP connections. This installs project components, not a native client plugin."
+        )
 
 
 @plugin_group.command("init")
@@ -366,10 +420,15 @@ def plugin_init(
 
 @plugin_group.command("validate")
 @click.argument("directory", type=click.Path(exists=True, path_type=Path))
-def plugin_validate(directory: Path) -> None:
+@click.option(
+    "--maintained",
+    is_flag=True,
+    help="Allow reserved names for packages maintained inside CLIO Kit.",
+)
+def plugin_validate(directory: Path, maintained: bool = False) -> None:
     """Check a plugin directory against the rules the marketplace enforces."""
     try:
-        manifest, problems = validate_plugin(directory)
+        manifest, problems = validate_plugin(directory, allow_reserved=maintained)
     except PluginProblem as exc:
         raise click.ClickException(str(exc)) from exc
 

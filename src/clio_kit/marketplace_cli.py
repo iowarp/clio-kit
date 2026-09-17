@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 from pathlib import Path
 
 import click
@@ -12,7 +13,29 @@ from clio_kit.federation import refresh_marketplace
 
 @click.group("marketplace")
 def marketplace_group() -> None:
-    """Refresh external collections in a CLIO marketplace checkout."""
+    """Sync local components or refresh external marketplace collections."""
+
+
+@marketplace_group.command("sync")
+@click.option("--root", default=".", type=click.Path(exists=True, path_type=Path))
+def sync(root: Path) -> None:
+    """Discover checkout components and update native and website catalogues.
+
+    Runs the trusted checkout's generator, without fetching upstream updates or
+    executing contributed MCPs/hooks. Website builds and CI run this automatically.
+    """
+    root = root.resolve()
+    script = root / "scripts/generate_marketplace.py"
+    if not script.is_file() or not (root / "mcp-server-versions.toml").is_file():
+        raise click.ClickException("--root must point to a CLIO Kit source checkout")
+    try:
+        subprocess.run(
+            [sys.executable, str(script), "--root", str(root), "--website"],
+            cwd=root,
+            check=True,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise click.ClickException(f"Catalogue sync failed: {exc}") from exc
 
 
 @marketplace_group.command("refresh")

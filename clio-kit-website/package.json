@@ -12,8 +12,8 @@
     "serve": "docusaurus serve --port 5100",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
-    "prebuild": "uv run --frozen python ../scripts/generate_website_catalogue.py && python3 ../scripts/check_website_images.py",
-    "prestart": "uv run --frozen python ../scripts/generate_website_catalogue.py && python3 ../scripts/check_website_images.py"
+    "prebuild": "uv run --frozen clio-kit marketplace sync --root .. && python3 ../scripts/check_website_images.py",
+    "prestart": "uv run --frozen clio-kit marketplace sync --root .. && python3 ../scripts/check_website_images.py"
   },
   "dependencies": {
     "@docusaurus/core": "3.10.2",

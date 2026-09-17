@@ -38,6 +38,8 @@
 
 **CLIO Kit** is the IoWarp meta-marketplace for scientific computing. It brings together MCP servers, workflow skills, plugins, agent definitions, and community contributions—including plugins from external marketplaces—and enables AI agents to interact with HPC resources, scientific data formats, and research datasets.
 
+**Choose individual MCPs, skills, agents and hooks—or a plugin that bundles what your workflow needs.** A plugin can include any of these components; it does not need all four.
+
 [**Website**](https://toolkit.iowarp.ai/) | [**IOWarp**](https://iowarp.ai)
 
 [**Documentation**](docs/README.md) · **For agents:** [read here](AGENTS.md).
@@ -71,7 +73,7 @@ Install workflow bundles, use skills to guide your agent, and discover community
 - ✅ **Workflow guidance** - Skills explain tool sequences; optional agents help plan and review results
 - ✅ **Community contributions** - Discover external plugins and marketplace collections
 
-**MCP servers · Skills · Workflow bundles · Agents · Community marketplaces · Hybrid search**
+**MCP servers · Skills · Plugins · Agents · Hooks · Community marketplaces · Hybrid search**
 
 CLIO Kit is part of the IoWarp platform's tooling ecosystem for AI agents. Its meta-marketplace brings tools and reusable workflows together for scientific computing—from exploring HDF5 datasets and managing Slurm jobs to analyzing results and finding research papers. Built by researchers, for researchers, at Illinois Institute of Technology with NSF support.
 
@@ -100,7 +102,7 @@ uv tool install --force --reinstall ".[verification]"
 
 ### Claude Code
 
-Install a workflow bundle with its MCP servers and skills:
+Install a workflow plugin (bundle) with its MCP servers and skills:
 
 ```bash
 claude plugin marketplace add "$PWD"
@@ -110,14 +112,27 @@ claude mcp list
 
 Restart Claude Code after installation and confirm the servers connect.
 
-Or install a single MCP plugin or a skills-only plugin:
+Or install an individual MCP or a skill collection:
 
 ```bash
 claude plugin install clio-hdf5@clio-kit                  # HDF5 server
 claude plugin install clio-scientific-io-skills@clio-kit  # Scientific I/O skills
 ```
 
+Claude Code uses `plugin install` for component packages too. CLIO Kit lists
+those separately from workflow plugins; see [components and plugins](docs/plugins.md).
+
 ### Codex and Other Agents
+
+Install a workflow's skills and MCP configuration together:
+
+```bash
+clio-kit plugin install clio-scientific-io --client codex --project /path/to/project
+```
+
+Also supports `opencode`, `cursor`, `antigravity`, `vscode` and `claude-code`.
+This sets up project components; native agents and hooks need client-specific
+adapters. See [client installation and limits](docs/intro.md#install-a-workflow-for-your-client).
 
 Install a bundle or one skill into your project:
 
@@ -188,6 +203,8 @@ clio-kit mcp-contract clio-kit-scientific-catalog-user-v1.1
 
 ### Workflow Bundles
 
+These are broad workflow plugins. Each combines its MCP servers and skills.
+
 | Bundle | Purpose | MCP servers |
 |---|---|---|
 | `clio-hpc` | Build software and run cluster jobs | spack, lmod, jarvis, slurm, node-hardware |
@@ -198,6 +215,15 @@ clio-kit mcp-contract clio-kit-scientific-catalog-user-v1.1
 | `clio-research` | Find papers and datasets | arxiv, ndp, scientific-catalog, web |
 
 Some servers require additional system software. See [setup and prerequisites](setup.md#native-backend-setup).
+See [plugin composition](docs/plugins.md) for primary bundles and task plugins that combine components across them.
+
+For a complete dataset-report workflow—HDF5, Pandas, Plot, a skill, evidence review and a verification hook:
+
+```bash
+claude plugin install clio-dataset-report@clio-kit
+```
+
+See [dataset reports](docs/plugins.md#scientific-dataset-report) for inputs and verification limits.
 
 ### Skills and Agents
 
@@ -223,6 +249,9 @@ Adapted Clio Coder skills use the `clio-kit-` prefix to distinguish them from up
 See [Clio Coder integration](docs/marketplace.md#clio-coder-integration) for upstream packages and native plugin support.
 
 ### Contribute Servers, Skills or Plugins
+
+Contribute a package folder under `plugins/`, `skills/`, `agents/` or `hooks/`;
+website builds and CI update the catalogues automatically. See the [folder contribution guide](docs/authoring.md#add-a-component-folder-to-clio-kit).
 
 Add skills here, or list a plugin maintained in your own repository:
 
@@ -421,7 +450,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`compression`** | 2.2.5 | Utilities | File compression with gzip | `clio-kit mcp-server compression` |
 | **`darshan`** | 2.2.5 | Performance | I/O performance trace analysis | `clio-kit mcp-server darshan` |
 | **`geo`** | 2.3.1 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
-| **`hdf5`** | 2.2.5 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
+| **`hdf5`** | 2.2.6 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
 | **`jarvis`** | 3.7.4 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |
 | **`lmod`** | 3.0.1 | Environment | Environment module management | `clio-kit mcp-server lmod` |
 | **`ndp`** | 2.2.5 | Data Protocol | Search and discover datasets across CKAN instances | `clio-kit mcp-server ndp` |

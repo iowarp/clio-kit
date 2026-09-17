@@ -40,6 +40,18 @@ export function Icon({name = 'all', size = 20, ...props}) {
         <path d="m12 3 9 5-9 5-9-5 9-5Zm-9 5v10l9 5 9-5V8M12 13v10M7 5.8l10 5.4" />
       </>
     ),
+    collection: (
+      <>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <path d="M3 15h18M3 20h18" />
+      </>
+    ),
+    package: (
+      <>
+        <path d="M12 3H3v18h18v-9M15 3h6v6m0-6-10 10" />
+      </>
+    ),
     agent: (
       <>
         <path d="m12 2 2.8 7.2L22 12l-7.2 2.8L12 22l-2.8-7.2L2 12l7.2-2.8L12 2Z" />

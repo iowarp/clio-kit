@@ -11,7 +11,9 @@ export function Catalog({fixedPublisher}) {
   const history = useHistory();
   const params = new URLSearchParams(location.search);
   const query = params.get('q') || '';
-  const type = params.get('type') || 'all';
+  // Preserve bookmarks from before workflows were grouped under Plugins.
+  const requestedType = params.get('type') || 'all';
+  const type = requestedType === 'workflow' ? 'plugin' : requestedType;
   const origin = params.get('origin') || 'all';
   const domain = params.get('domain') || 'all';
   const publisher = fixedPublisher || params.get('publisher') || 'all';
@@ -74,6 +76,10 @@ export function Catalog({fixedPublisher}) {
           <Heading as="h2" id="catalogue">
             Explore the catalogue
           </Heading>
+          <p>
+            Choose a plugin for a workflow, or individual MCPs, skills, agents
+            and hooks.
+          </p>
         </div>
         {!fixedPublisher && (
           <Link to="/publishers" className={styles.textLink}>
@@ -87,7 +93,7 @@ export function Catalog({fixedPublisher}) {
           className={`${styles.filters} ${moreFilters ? styles.filtersExpanded : ''}`}
           aria-label="Catalogue filters"
         >
-          <span className={styles.filterLabel}>COMPONENT TYPE</span>
+          <span className={styles.filterLabel}>BROWSE BY TYPE</span>
           <div className={styles.kindFilters}>
             {kinds.map(([key, label]) => (
               <button
@@ -166,8 +172,8 @@ export function Catalog({fixedPublisher}) {
             <Icon name="plugin" size={20} />
             <strong>New to CLIO Kit?</strong>
             <p>
-              Start with a workflow bundle, or choose just the components you
-              need.
+              A plugin bundles the components a workflow needs. You can also
+              choose components individually.
             </p>
             <Link to="/docs/intro">Installation guide ↗</Link>
           </div>
@@ -191,7 +197,7 @@ export function Catalog({fixedPublisher}) {
           <div className={styles.resultsMeta}>
             <span role="status" aria-live="polite">
               {results.length}{' '}
-              {results.length === 1 ? 'component' : 'components'}
+              {results.length === 1 ? 'entry' : 'entries'}
               {query && <> matching “{query}”</>}
             </span>
             {query ||
@@ -219,7 +225,7 @@ export function Catalog({fixedPublisher}) {
                     className={styles.secondary}
                     onClick={() => setLimit(limit + 12)}
                   >
-                    Show more components{' '}
+                    Show more entries{' '}
                     <span>({results.length - limit} remaining)</span>
                   </button>
                 </div>
@@ -231,7 +237,7 @@ export function Catalog({fixedPublisher}) {
               <h3>
                 {type === 'hook' && !query
                   ? 'Ready for your first hook'
-                  : 'No matching components'}
+                  : 'No matching entries'}
               </h3>
               <p>
                 {type === 'hook' && !query

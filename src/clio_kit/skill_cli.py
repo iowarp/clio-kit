@@ -35,6 +35,9 @@ def skill_inventory() -> dict[str, Path]:
                 break
     for root in roots:
         skills = sorted(root.glob("*/skills/*/SKILL.md"))
+        if root == MODULE_DIR.parent.parent / "skills":
+            for kind in ("plugins", "agents", "hooks"):
+                skills += sorted((root.parent / kind).glob("*/skills/*/SKILL.md"))
         if not skills:
             continue
         inventory = {}
@@ -56,7 +59,11 @@ def selected_skills(names: tuple[str, ...], bundle: str | None) -> dict[str, Pat
         name: path
         for name, path in inventory.items()
         if (not names or name in names)
-        and (not bundle or read_skill_frontmatter(path)["bundle"] == bundle)
+        and (
+            not bundle
+            or read_skill_frontmatter(path).get("bundle", path.parents[1].name)
+            == bundle
+        )
     }
     if not selected:
         raise SkillProblem(f"No skills match bundle {bundle!r}")
@@ -135,7 +142,11 @@ def list_skills(bundle: str | None, as_json: bool) -> None:
     """List available skills and their required MCP servers."""
     try:
         records = [
-            read_skill_frontmatter(path)
+            {
+                "bundle": path.parents[1].name,
+                "servers": "unspecified",
+                **read_skill_frontmatter(path),
+            }
             for path in selected_skills((), bundle).values()
         ]
     except (SkillProblem, OSError) as exc:

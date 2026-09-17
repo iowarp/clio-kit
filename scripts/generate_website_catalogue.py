@@ -11,6 +11,7 @@ from pathlib import Path
 import yaml
 
 from clio_kit.hooks import hook_components
+from clio_kit.client_install import CLIENTS
 
 try:
     import tomllib
@@ -90,6 +91,91 @@ def source_url(source: dict) -> str:
     return url
 
 
+def classify_records(records: list[dict], entries: dict, root: Path) -> None:
+    """Separate catalogue identity from the client's installation package.
+
+    IDs remain stable for existing links. Classification follows local contents
+    and dependencies; an external index alone cannot establish package contents.
+    """
+    by_id = {record["id"]: record for record in records}
+    resolved: dict[str, set[str]] = {}
+
+    def component_types(record: dict, visiting: frozenset = frozenset()) -> set[str]:
+        key = record["id"]
+        if key in visiting:
+            raise ValueError(f"Cyclic catalogue membership at {key}")
+        if key in resolved:
+            return resolved[key]
+        kind = record["kind"]
+        result = {kind} if kind in {"mcp", "skill", "agent", "hook"} else set()
+        if kind in {"plugin", "workflow"} and record["origin"] != "Indexed":
+            source = entries[record["name"]]["source"]
+            directory = root / source
+            manifest = json.loads(
+                (directory / ".claude-plugin/plugin.json").read_text()
+            )
+            if (directory / ".mcp.json").is_file() or manifest.get("mcpServers"):
+                result.add("mcp")
+            # Declared custom locations count too, even without a default folder.
+            for field, component in (
+                ("skills", "skill"),
+                ("agents", "agent"),
+                ("commands", "command"),
+            ):
+                if manifest.get(field) or (
+                    field == "commands" and any(directory.glob("commands/*.md"))
+                ):
+                    result.add(component)
+        for member in record["members"]:
+            result.update(component_types(by_id[member], visiting | {key}))
+        resolved[key] = result
+        return result
+
+    # Resolve before mutating kinds, so dependency order cannot affect results.
+    for record in records:
+        component_types(record)
+    for record in records:
+        previous = record["kind"]
+        record["componentTypes"] = sorted(resolved[record["id"]])
+        record["installation"] = (
+            "portable-skill"
+            if previous == "skill"
+            else "launcher"
+            if previous == "mcp"
+            else "service"
+            if previous == "service"
+            else "native-package"
+        )
+        if previous == "mcp":
+            record["nativePackage"] = f"clio-{record['name']}"
+        if previous in {"mcp", "skill"}:
+            record["clients"] = [*CLIENTS, "other"]
+        elif previous in {"plugin", "workflow"}:
+            record["nativePackage"] = record["name"]
+            if previous == "workflow":
+                record["kind"] = "plugin"
+                record["role"] = "Workflow plugin"
+            elif record["origin"] == "Indexed":
+                record["kind"] = "package"
+                record["role"] = "External package"
+            elif len(record["componentTypes"]) > 1:
+                record["role"] = "Workflow plugin"
+            elif record["componentTypes"] == ["mcp"]:
+                record["kind"] = "mcp"
+            else:
+                record["kind"] = "collection"
+                record["role"] = "Component collection"
+        if previous == "plugin" and record["origin"] != "Indexed":
+            record["docs"] = "/docs/plugins"
+        if previous in {"plugin", "workflow"} and record["origin"] != "Indexed":
+            if resolved[record["id"]] & {"mcp", "skill"}:
+                record["clients"] = [
+                    "claude-code",
+                    *[c for c in CLIENTS if c != "claude-code"],
+                ]
+                record["projectInstall"] = True
+
+
 def generate(root: Path) -> dict:
     marketplace = json.loads((root / ".claude-plugin/marketplace.json").read_text())
     inventory = tomllib.loads((root / "mcp-server-versions.toml").read_text())
@@ -142,7 +228,12 @@ def generate(root: Path) -> dict:
         records.append(record)
         return record
 
-    for path in sorted((root / "skills").glob("*/skills/*/SKILL.md")):
+    skill_paths = [
+        path
+        for folder in ("skills", "plugins", "agents", "hooks")
+        for path in (root / folder).glob("*/skills/*/SKILL.md")
+    ]
+    for path in sorted(skill_paths):
         meta, body = frontmatter(path)
         metadata = meta.get("metadata", {})
         bundle = metadata.get("bundle", "")
@@ -221,6 +312,7 @@ def generate(root: Path) -> dict:
     for name, entry in entries.items():
         if (
             name in inventory["bundles"]
+            or name in inventory.get("workflows", {})
             or name.removeprefix("clio-") in inventory["servers"]
         ):
             continue
@@ -252,6 +344,37 @@ def generate(root: Path) -> dict:
             )
         else:
             values["path"] = source
+            directory = root / source
+            manifest = json.loads(
+                (directory / ".claude-plugin/plugin.json").read_text()
+            )
+            values["members"] = [
+                f"skill/{frontmatter(path)[0]['name']}"
+                for path in sorted(directory.glob("skills/*/SKILL.md"))
+            ] + [
+                f"agent/{directory.name}/{frontmatter(path)[0]['name']}"
+                for path in sorted(directory.glob("agents/*.md"))
+            ]
+            if hook_components(directory, manifest)[0]:
+                values["members"].append(f"hook/{directory.name}")
+            for dependency in manifest.get("dependencies", []):
+                kind, component = "plugin", dependency
+                if dependency.removeprefix("clio-") in inventory["servers"]:
+                    kind, component = "mcp", dependency.removeprefix("clio-")
+                elif dependency in inventory["bundles"] or dependency in inventory.get(
+                    "workflows", {}
+                ):
+                    kind = "workflow"
+                values["members"].append(f"{kind}/{component}")
+            mcp_path = directory / ".mcp.json"
+            mcp_config = manifest.get("mcpServers", {})
+            if mcp_path.is_file():
+                mcp_config = json.loads(mcp_path.read_text())
+            if isinstance(mcp_config, dict):
+                values["servers"] = [
+                    f"plugin:{name}:{server}"
+                    for server in mcp_config.get("mcpServers", mcp_config)
+                ]
         add(
             "plugin",
             name,
@@ -262,11 +385,69 @@ def generate(root: Path) -> dict:
             **values,
         )
 
-    for path in sorted((root / "plugins").glob("*/agents/*.md")):
+    def installed_servers(
+        name: str, visiting: frozenset[str] = frozenset()
+    ) -> set[str]:
+        if name in visiting:
+            raise ValueError(f"Cyclic plugin dependencies at {name}")
+        if name.removeprefix("clio-") in inventory["servers"]:
+            return {name}
+        source = entries[name]["source"]
+        if not isinstance(source, str):
+            raise ValueError(f"Workflow dependency must be maintained: {name}")
+        manifest = json.loads(
+            (root / source / ".claude-plugin/plugin.json").read_text()
+        )
+        return {
+            server
+            for dependency in manifest.get("dependencies", [])
+            for server in installed_servers(dependency, visiting | {name})
+        }
+
+    for name, spec in inventory.get("workflows", {}).items():
+        entry = entries[name]
+        manifest = json.loads(
+            (root / entry["source"] / ".claude-plugin/plugin.json").read_text()
+        )
+        if any(manifest.get(key) != value for key, value in spec.items()):
+            raise ValueError(f"Stale workflow manifest: {name}")
+        members = []
+        for dependency in spec["dependencies"]:
+            kind = "workflow" if dependency in inventory["bundles"] else "plugin"
+            component = dependency
+            if dependency.removeprefix("clio-") in inventory["servers"]:
+                kind, component = "mcp", dependency.removeprefix("clio-")
+            members.append(f"{kind}/{component}")
+        component_root = root / entry["source"]
+        members.extend(
+            f"skill/{frontmatter(path)[0]['name']}"
+            for path in sorted(component_root.glob("skills/*/SKILL.md"))
+        )
+        if hook_components(component_root, manifest)[0]:
+            members.append(f"hook/{name}")
+        add(
+            "workflow",
+            name,
+            description=spec["description"],
+            version=spec["version"],
+            members=members,
+            servers=sorted(installed_servers(name)),
+            path=f"plugins/{name}/.claude-plugin/plugin.json",
+            docs="/docs/plugins#task-plugins",
+            evidence="Membership from manifest",
+        )
+
+    agent_paths = [
+        path
+        for folder in ("plugins", "skills", "agents", "hooks")
+        for path in (root / folder).glob("*/agents/*.md")
+    ]
+    for path in sorted(agent_paths):
         meta, _ = frontmatter(path)
         add(
             "agent",
             meta["name"],
+            id=f"agent/{path.parents[1].name}/{meta['name']}",
             description=meta["description"],
             path=str(path.relative_to(root)),
             plugin=path.parents[1].name,
@@ -274,7 +455,12 @@ def generate(root: Path) -> dict:
             evidence="Agent definition",
         )
 
-    for path in sorted((root / "plugins").glob("*/.claude-plugin/plugin.json")):
+    manifest_paths = [
+        path
+        for folder in ("plugins", "skills", "agents", "hooks")
+        for path in (root / folder).glob("*/.claude-plugin/plugin.json")
+    ]
+    for path in sorted(manifest_paths):
         manifest = json.loads(path.read_text())
         active, problems = hook_components(path.parents[1], manifest)
         if problems:
@@ -283,7 +469,7 @@ def generate(root: Path) -> dict:
             add(
                 "hook",
                 manifest["name"],
-                description=f"Event hooks included with {manifest['name']}. Review the configuration before enabling this plugin.",
+                description=f"Event hooks included with {manifest['name']}. Review the configuration before enabling this package.",
                 path=str(path.relative_to(root)),
                 plugin=manifest["name"],
                 category="Automation",
@@ -307,8 +493,9 @@ def generate(root: Path) -> dict:
     for record in records:
         if set(record["members"]) - ids:
             raise ValueError(f"Unresolved members in {record['id']}")
+    classify_records(records, entries, root)
     return {
-        "schema": 1,
+        "schema": 2,
         "version": marketplace["metadata"]["version"],
         "publishers": list(publishers.values()),
         "items": sorted(records, key=lambda r: r["id"]),

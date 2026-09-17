@@ -30,11 +30,12 @@ def imported_skill_entries(root: Path) -> list[dict[str, Any]]:
 def write_extra_plugins(root: Path, skill_packages: list[str]) -> list[dict[str, Any]]:
     specs: dict[str, dict[str, Any]] = {
         "clio-skills": {
-            "description": "All CLIO scientific workflow skills, without MCP servers.",
+            "description": "Skills for the six primary scientific workflows, without MCP servers.",
             "dependencies": sorted(skill_packages),
         },
         "clio-agents": {
-            "description": "Scientific workflow planning and independent evidence review agents."
+            "version": "1.0.1",
+            "description": "Scientific workflow planning and independent evidence review agents.",
         },
     }
     entries = []
@@ -59,7 +60,7 @@ def write_extra_plugins(root: Path, skill_packages: list[str]) -> list[dict[str,
                 "name": name,
                 "source": f"./plugins/{name}",
                 "description": spec["description"],
-                "version": "1.0.0",
+                "version": spec.get("version", "1.0.0"),
                 "category": "agents" if name == "clio-agents" else "skills",
             }
         )

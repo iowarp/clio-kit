@@ -91,6 +91,9 @@ packages = ["src/clio_kit"]
 "prompts" = "prompts"
 "skills" = "clio-kit-skills"
 
+[tool.hatch.build.hooks.custom]
+path = "scripts/package_skill_assets.py"
+
 [tool.hatch.build.targets.sdist]
 include = [
     "src/",
@@ -98,6 +101,10 @@ include = [
     "clio-agentic-search/",
     "prompts/",
     "skills/",
+    "plugins/*/skills/",
+    "agents/*/skills/",
+    "hooks/*/skills/",
+    "scripts/package_skill_assets.py",
     "README.md",
     "mcp-server-versions.toml",
     "pyproject.toml"

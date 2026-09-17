@@ -20,6 +20,20 @@ MCP server, skill or hook. Detailed contribution rules are in
 
 ## Choose the contribution route
 
+Use the product distinction consistently: MCPs, skills, agents and hooks are
+components; plugins bundle components for a workflow. Native Claude Code wrappers
+are installation packages and must not inflate workflow-plugin counts. The
+catalogue derives maintained types from contents and dependencies; do not guess
+external component types from package names.
+
+For repository-owned component packages, add a named folder under `plugins/`,
+`skills/`, `agents/` or `hooks/`, with `.claude-plugin/plugin.json` and the needed
+components. Website start/build and CI sync both catalogues automatically;
+discovery needs no central TOML entry or manual generator commands. For native
+client testing before a build, use `clio-kit marketplace sync --root .`.
+Validate the package, then run `scripts/verify_local_components.py --output`
+with a new temporary directory for native installation and usage checks.
+
 For external plugins, run `clio-kit plugin init my-plugin`, edit the generated
 components, then `clio-kit plugin validate my-plugin`. Add `--hook` to scaffold
 a read-only SessionStart command hook. Follow the authoring guide for MCP
