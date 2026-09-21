@@ -224,3 +224,39 @@ def test_release_script_paths_preserve_windows_separators(published, monkeypatch
     plan = release.release_components("lab")
     assert plan["servers"]["lab"]["args"] == ["C:\\Users\\lab\\cache/server.py"]
     assert "package/lab" in plan["artifacts"]
+
+
+@pytest.mark.parametrize("fault", ["duplicate", "unknown", "owner", "artifact"])
+def test_release_rejects_ambiguous_or_missing_skills_before_download(published, fault):
+    from clio_kit.release_components import release_components
+
+    index, output, _ = published
+    package = index["packages"]["lab"]
+    if fault == "duplicate":
+        package["skills"].append(package["skills"][0])
+    elif fault == "unknown":
+        package["skills"].append("missing")
+    elif fault == "owner":
+        index["skills"]["reading-lab-data"]["package"] = "other"
+    else:
+        index["skills"]["reading-lab-data"]["artifact"] = "missing"
+    (output / "index.json").write_text(json.dumps(index))
+    with pytest.raises(ValueError, match="skill"):
+        release_components("lab")
+    assert not store.artifact_path("server/hdf5", index).exists()
+
+
+def test_release_and_checkout_resolve_same_skill_and_server_selection(published):
+    from clio_kit.client_install import collect_components
+    from clio_kit.release_components import release_components
+
+    _, _, source = published
+    (source / ".claude-plugin").mkdir()
+    (source / ".claude-plugin/marketplace.json").write_text(
+        json.dumps({"plugins": [{"name": "lab", "source": "./plugins/lab"}]})
+    )
+    checkout = collect_components(source, "lab")
+    released = release_components("lab")
+    assert checkout["skills"].keys() == released["skills"].keys()
+    assert checkout["servers"] == released["servers"]
+    assert checkout["unsupported"] == released["unsupported"]

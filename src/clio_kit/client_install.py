@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import tempfile
+import uuid
 from typing import Any
 
 import tomli_w
 
+from clio_kit.component_cache import guarded, register_project
 from clio_kit.hooks import hook_components
-from clio_kit.skill_cli import install_skills
+from clio_kit.skill_cli import stage_skills
+from clio_kit.install_transaction import InstallTransaction
 from clio_kit.skills import read_skill_frontmatter
 
 try:
@@ -150,6 +152,7 @@ def safe_destination(project: Path, relative: str) -> Path:
     return path
 
 
+@guarded
 def install_for_client(
     root: Path | None,
     name: str,
@@ -217,30 +220,26 @@ def install_for_client(
     if root is None:
         from clio_kit.component_store import fetch
 
-        for key in components["artifacts"]:
-            fetch(key)
-    # Preflight skill conflicts before writing configuration. The skill installer
-    # stages complete folders and refuses local changes unless --replace is set.
-    if components["skills"]:
-        install_skills(components["skills"], target, replace)
-    if components["servers"]:
-        config.parent.mkdir(parents=True, exist_ok=True)
-        rendered = (
-            tomli_w.dumps(data)
-            if client == "codex"
-            else json.dumps(data, indent=2) + "\n"
-        ).encode()
-        if original != rendered:
-            # Keep a recovery copy, including TOML comments lost on serialization.
-            if original is not None:
-                with tempfile.NamedTemporaryFile(
-                    prefix=config.name + ".backup-", dir=config.parent, delete=False
-                ) as backup:
-                    backup.write(original)
-                    result["backup"] = backup.name
-            with tempfile.NamedTemporaryFile(
-                dir=config.parent, delete=False
-            ) as staging:
-                staging.write(rendered)
-            Path(staging.name).replace(config)
+        for artifact_key in components["artifacts"]:
+            fetch(artifact_key)
+    with InstallTransaction() as transaction:
+        if components["skills"]:
+            stage_skills(components["skills"], target, replace, transaction)
+        if components["servers"]:
+            rendered = (
+                tomli_w.dumps(data)
+                if client == "codex"
+                else json.dumps(data, indent=2) + "\n"
+            ).encode()
+            if original != rendered:
+                if original is not None:
+                    backup = config.with_name(
+                        config.name + ".backup-" + uuid.uuid4().hex
+                    )
+                    transaction.file(backup, original)
+                    result["backup"] = str(backup)
+                transaction.file(config, rendered)
+        if root is None and components["servers"]:
+            register_project(config, components["artifacts"])
+        transaction.commit()
     return result

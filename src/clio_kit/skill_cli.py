@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
-import shutil
-import tempfile
 from importlib import metadata
 from pathlib import Path
 
 import click
 
+from clio_kit.component_cache import guarded
+from clio_kit.install_transaction import InstallTransaction
 from clio_kit.skills import SkillProblem, check_skill, read_skill_frontmatter
 
 
@@ -111,8 +111,13 @@ def _contents(directory: Path) -> dict[str, bytes]:
     return result
 
 
-def install_skills(skills: dict[str, Path], target: Path, replace: bool) -> list[str]:
-    """Copy each complete skill folder; preflight conflicts before writing skills."""
+def stage_skills(
+    skills: dict[str, Path],
+    target: Path,
+    replace: bool,
+    transaction: InstallTransaction,
+) -> None:
+    """Validate all conflicts, then stage only changed complete skill folders."""
     for name, source in skills.items():
         if target.resolve().is_relative_to(source.resolve()):
             raise SkillProblem(f"Target cannot be inside a source skill: {source}")
@@ -136,26 +141,18 @@ def install_skills(skills: dict[str, Path], target: Path, replace: bool) -> list
             raise SkillProblem(
                 f"{destination} contains different files; review them before using --replace"
             )
-    target.mkdir(parents=True, exist_ok=True)
-    # Stage complete folders before replacing any existing installation.
-    with tempfile.TemporaryDirectory(prefix=".clio-skills-", dir=target) as temporary:
-        staging = Path(temporary)
-        for name, source in skills.items():
-            shutil.copytree(source, staging / name)
-        for name, source in skills.items():
-            destination = target / name
-            if destination.exists():
-                if _contents(destination) == _contents(source):
-                    continue
-                backup = staging / f"backup-{name}"
-                destination.rename(backup)
-                try:
-                    (staging / name).rename(destination)
-                except OSError:
-                    backup.rename(destination)
-                    raise
-            else:
-                (staging / name).rename(destination)
+    for name, source in skills.items():
+        destination = target / name
+        if destination.exists() and _contents(destination) == _contents(source):
+            continue
+        transaction.directory(destination, source)
+
+
+def install_skills(skills: dict[str, Path], target: Path, replace: bool) -> list[str]:
+    """Install complete skill folders, rolling back the whole set on failure."""
+    with InstallTransaction() as transaction:
+        stage_skills(skills, target, replace, transaction)
+        transaction.commit()
     return list(skills)
 
 
@@ -213,6 +210,7 @@ def validate_skill(directory: Path) -> None:
     is_flag=True,
     help="Replace conflicting skill folders after reviewing local changes.",
 )
+@guarded
 def install(
     names: tuple[str, ...], bundle: str | None, target: Path, replace: bool
 ) -> None:

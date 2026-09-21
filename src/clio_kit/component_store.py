@@ -16,6 +16,7 @@ from urllib.request import urlopen
 import click
 
 from clio_kit.environment_locks import _FileLock
+from clio_kit.component_cache import guarded, record_use
 
 INDEX_FILE = Path(__file__).with_name("_components.json")
 MAX_BYTES = 512 * 1024 * 1024
@@ -137,6 +138,7 @@ def _unpack(archive: Path, target: Path, record: dict) -> None:
         raise ValueError("Extracted component differs from catalogue")
 
 
+@guarded
 def fetch(key: str, index: dict | None = None) -> Path:
     data = index if index is not None else catalogue()
     record = data["artifacts"][key]
@@ -144,6 +146,13 @@ def fetch(key: str, index: dict | None = None) -> Path:
         raise ValueError("Invalid component artifact filename")
     target = artifact_path(key, data)
     if _verified(target, record):
+        record_use(
+            key,
+            data,
+            target,
+            INDEX_FILE,
+            legacy=not (target.parent / ".component.json").exists(),
+        )
         return target
     target.parent.mkdir(parents=True, exist_ok=True)
     lock = _FileLock(target.parent / ".download.lock")
@@ -176,6 +185,7 @@ def fetch(key: str, index: dict | None = None) -> Path:
                     f"Cannot download {key} for CLIO Kit {data['version']}: {exc}. Check that this release's component assets are published or configure a trusted mirror"
                 ) from exc
             (staging / target.name).rename(target)
+        record_use(key, data, target, INDEX_FILE, legacy=False)
         return target
     finally:
         lock.release()

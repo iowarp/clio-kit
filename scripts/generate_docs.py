@@ -12,6 +12,8 @@ from datetime import date
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from clio_kit.server_icons import server_icon
+
 try:
     import tomllib  # Python 3.11+
 except ImportError:
@@ -78,22 +80,6 @@ class MCPDataExtractor:
     def __init__(self, server_versions: Dict[str, str], updated_date: str):
         self.server_versions = server_versions
         self.updated_date = updated_date
-        self.icon_mapping = {
-            "adios": "📊",
-            "arxiv": "📄",
-            "hdf5": "🗂️",
-            "pandas": "🐼",
-            "parquet": "📋",
-            "plot": "📈",
-            "darshan": "⚡",
-            "slurm": "🖥️",
-            "lmod": "📦",
-            "node_hardware": "💻",
-            "compression": "🗜️",
-            "parallel_sort": "🔄",
-            "jarvis": "🤖",
-            "chronolog": "⏰",
-        }
 
     def extract_mcp_data(self, mcps_dir: Path) -> Dict:
         """Extract data for all MCPs in the directory."""
@@ -143,7 +129,7 @@ class MCPDataExtractor:
         # Determine slug and category
         slug = mcp_dir.name.lower().replace("_", "_").replace("-", "_")
         category = self._determine_category(name, description, keywords)
-        icon = self.icon_mapping.get(slug, "🔧")
+        icon = server_icon(slug)
 
         # Extract tools from server.py
         tools = self._extract_tools_from_server(mcp_dir)

@@ -79,11 +79,18 @@ def cache_gc(keep: int | None, dry_run: bool) -> None:
         )
     except CacheInUseError as exc:
         raise click.ClickException(str(exc)) from exc
+    from clio_kit.component_cache import collect_components
+
+    try:
+        components = collect_components(keep=policy.keep_per_server, dry_run=dry_run)
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
     budget = measure_cache_budget(cache_root, policy=policy)
     click.echo(
         json.dumps(
             {
                 "dry_run": dry_run,
+                "components": components,
                 "keep_per_server": policy.keep_per_server,
                 "evicted": [
                     {
@@ -140,6 +147,23 @@ def cache_status() -> None:
             sort_keys=True,
         )
     )
+
+
+@cache_group.command("components")
+@click.option("--keep", type=click.IntRange(min=1), default=2, show_default=True)
+@click.option(
+    "--dry-run", is_flag=True, help="Report eligible payloads without deleting them."
+)
+def component_gc(keep: int, dry_run: bool) -> None:
+    """Prune superseded, unreferenced component payloads conservatively."""
+    from clio_kit.component_cache import collect_components
+
+    try:
+        click.echo(
+            json.dumps(collect_components(keep=keep, dry_run=dry_run), sort_keys=True)
+        )
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
 
 
 CACHE_GROUP = cache_group

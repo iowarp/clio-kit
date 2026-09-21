@@ -36,18 +36,7 @@ export const summary = (text) =>
 
 export function installation(item, client) {
   if (item.installation === 'portable-skill') {
-    const target =
-      client === 'claude-code'
-        ? '.claude/skills'
-        : client === 'opencode'
-          ? '.opencode/skills'
-          : client === 'cursor'
-            ? '.cursor/skills'
-            : client === 'vscode'
-              ? '.github/skills'
-              : client === 'other'
-                ? '/path/to/agent/skills'
-                : '.agents/skills';
+    const target = (catalogue.clientProfiles[client] || catalogue.clientProfiles.other).skills;
     return {
       label: 'Install this skill',
       code: `clio-kit skill install ${item.name} --target ${target}`,
@@ -62,26 +51,11 @@ export function installation(item, client) {
         : client === 'claude-code'
           ? `claude mcp add --scope project clio-${item.name} -- ${command}`
           : JSON.stringify(
-              client === 'opencode'
-                ? {
-                    mcp: {
-                      [`clio-${item.name}`]: {
-                        type: 'local',
-                        command: ['clio-kit', 'mcp-server', item.name],
-                      enabled: true,
-                      timeout: 120000,
-                      },
-                    },
-                  }
-                : {
-                    [client === 'vscode' ? 'servers' : 'mcpServers']: {
-                      [`clio-${item.name}`]: {
-                        ...(client === 'vscode' ? {type: 'stdio'} : {}),
-                        command: 'clio-kit',
-                        args: ['mcp-server', item.name],
-                      },
-                    },
-                  },
+              {
+                [(catalogue.clientProfiles[client] || catalogue.clientProfiles.other).key]: {
+                  [`clio-${item.name}`]: item.mcpSettings[client] || item.mcpSettings.other,
+                },
+              },
               null,
               2,
             );
@@ -126,4 +100,9 @@ export function installation(item, client) {
           ? `This installs ${plugin} and its included components. It does not install only this ${item.kind}. Native agents and hooks require Claude Code.`
           : 'Requires a release with component artifacts published. Downloads this package and its dependencies; MCP implementations download on first launch. For unreleased checkout testing, register the checkout instead.',
   };
+}
+
+export function featuredItems(data = catalogue) {
+  const items = new Map(data.items.map((item) => [item.id, item]));
+  return (data.featured || []).map((id) => items.get(id)).filter(Boolean);
 }

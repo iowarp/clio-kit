@@ -121,3 +121,59 @@ def test_cli_exposes_plan_and_external_boundary(tmp_path):
     result = CliRunner().invoke(plugin_group, args)
     assert result.exit_code != 0
     assert "indexed externally" in result.output
+
+
+@pytest.mark.parametrize("existing", [False, True])
+def test_failed_config_commit_rolls_back_all_skills_and_cleans_staging(
+    tmp_path, monkeypatch, existing
+):
+    config = tmp_path / ".codex/config.toml"
+    original = b'model = "preserve-me"\n'
+    skill = tmp_path / ".agents/skills/choosing-a-storage-format/SKILL.md"
+    if existing:
+        config.parent.mkdir()
+        config.write_bytes(original)
+        skill.parent.mkdir(parents=True)
+        skill.write_text("local revision")
+    real_replace = Path.replace
+
+    def fail_configuration(source, destination):
+        if destination == config:
+            raise PermissionError("simulated config failure")
+        return real_replace(source, destination)
+
+    monkeypatch.setattr(Path, "replace", fail_configuration)
+    with pytest.raises(PermissionError, match="simulated"):
+        install_for_client(ROOT, "clio-scientific-io", "codex", tmp_path, replace=True)
+    if existing:
+        assert config.read_bytes() == original
+        assert skill.read_text() == "local revision"
+        assert len(list((tmp_path / ".agents/skills").iterdir())) == 1
+    else:
+        assert not list(tmp_path.iterdir())
+    assert not list(tmp_path.rglob(".clio-install-*"))
+    assert not list(tmp_path.rglob("*.backup-*"))
+
+
+def test_failure_mid_skill_set_restores_preexisting_content(tmp_path, monkeypatch):
+    from clio_kit.skill_cli import install_skills, selected_skills
+
+    skills = selected_skills((), "clio-scientific-io")
+    old = tmp_path / next(iter(skills))
+    old.mkdir()
+    (old / "SKILL.md").write_text("old content")
+    real_replace = Path.replace
+    calls = 0
+
+    def fail_second(source, destination):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise OSError("simulated disk failure")
+        return real_replace(source, destination)
+
+    monkeypatch.setattr(Path, "replace", fail_second)
+    with pytest.raises(OSError, match="disk failure"):
+        install_skills(skills, tmp_path, True)
+    assert list(tmp_path.iterdir()) == [old]
+    assert (old / "SKILL.md").read_text() == "old content"

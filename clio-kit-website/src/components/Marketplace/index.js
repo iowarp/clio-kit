@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from '@docusaurus/Link';
-import {catalogue} from './data';
+import {catalogue, featuredItems} from './data';
 import {Frame, Glyph, Icon, Card} from './shared';
 import {Catalog} from './Catalog';
 import styles from './styles.module.css';
@@ -91,10 +91,10 @@ export function Home() {
             </Link>
           </div>
           <div className={styles.featuredGrid}>
-            {['clio-scientific-io', 'clio-analysis', 'clio-hpc'].map((name) => (
+            {featuredItems().map((item) => (
               <Card
-                key={name}
-                item={catalogue.items.find((r) => r.id === `workflow/${name}`)}
+                key={item.id}
+                item={item}
                 featured
               />
             ))}

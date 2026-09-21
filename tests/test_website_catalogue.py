@@ -149,3 +149,68 @@ def test_generated_catalogue_is_current_and_deterministic():
 def test_indexed_source_cannot_be_a_script_url():
     with pytest.raises(ValueError, match="HTTPS"):
         catalogue.source_url({"url": "javascript:alert(1)"})
+
+
+def test_website_commands_match_client_installer_and_missing_feature_is_safe():
+    import shutil
+    import subprocess
+
+    from clio_kit.client_install import CLIENTS, server_settings
+    from clio_kit.server_icons import server_icon
+
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node.js is required to execute the website command renderer")
+    data = catalogue.generate(ROOT)
+    module = (ROOT / "clio-kit-website/src/components/Marketplace/data.js").read_text()
+    module = module.replace(
+        "import catalogue from '@site/src/data/catalogue.json';",
+        "const catalogue = " + json.dumps(data) + ";",
+    )
+    script = (
+        module
+        + """
+const skill = catalogue.items.find(item => item.kind === 'skill');
+const server = catalogue.items.find(item => item.id === 'mcp/hdf5');
+console.log(JSON.stringify({
+  installations: Object.keys(catalogue.clientProfiles).map(client => ({
+    client, skill: installation(skill, client), mcp: installation(server, client)
+  })),
+  featured: featuredItems().map(item => item.id),
+  missing: featuredItems({...catalogue, featured: ['missing/id']})
+}));
+"""
+    )
+    output = json.loads(
+        subprocess.check_output(
+            [node, "--input-type=module", "-"],
+            input=script,
+            text=True,
+        )
+    )
+    for result in output["installations"]:
+        client = result["client"]
+        if client == "other":
+            assert result["skill"]["code"].endswith("--target /path/to/agent/skills")
+            assert (
+                json.loads(result["mcp"]["code"])["mcpServers"]["clio-hdf5"]["command"]
+                == "clio-kit"
+            )
+            continue
+        assert result["skill"]["code"].endswith("--target " + CLIENTS[client][0])
+        if client not in {"codex", "claude-code"}:
+            settings = json.loads(result["mcp"]["code"])[CLIENTS[client][2]][
+                "clio-hdf5"
+            ]
+            assert settings == server_settings(
+                {"command": "clio-kit", "args": ["mcp-server", "hdf5"]}, client
+            )
+        else:
+            assert result["mcp"]["code"].endswith(
+                "clio-hdf5 -- clio-kit mcp-server hdf5"
+            )
+    assert output["featured"] == data["featured"]
+    assert output["missing"] == []
+    for item in data["items"]:
+        if item["installation"] == "launcher":
+            assert item["icon"] == server_icon(item["name"])

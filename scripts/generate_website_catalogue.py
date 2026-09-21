@@ -11,7 +11,8 @@ from pathlib import Path
 import yaml
 
 from clio_kit.hooks import hook_components
-from clio_kit.client_install import CLIENTS
+from clio_kit.client_install import CLIENTS, server_settings
+from clio_kit.server_icons import server_icon
 
 try:
     import tomllib
@@ -296,6 +297,7 @@ def generate(root: Path) -> dict:
         add(
             "mcp",
             name,
+            icon=server_icon(name),
             title={"hdf5": "HDF5", "adios": "ADIOS2", "ndp": "NDP"}.get(
                 name, title(name)
             ),
@@ -494,8 +496,25 @@ def generate(root: Path) -> dict:
         if set(record["members"]) - ids:
             raise ValueError(f"Unresolved members in {record['id']}")
     classify_records(records, entries, root)
+    for record in records:
+        if record["installation"] == "launcher":
+            settings = {"command": "clio-kit", "args": ["mcp-server", record["name"]]}
+            record["mcpSettings"] = {
+                client: server_settings(settings, client) for client in CLIENTS
+            }
+            record["mcpSettings"]["other"] = settings
+    # Feature only available collections; a rename cannot create an undefined card.
+    featured = [f"workflow/{name}" for name in WORKFLOWS if f"workflow/{name}" in ids][
+        :3
+    ]
     return {
         "schema": 2,
+        "featured": featured,
+        "clientProfiles": {
+            client: {"skills": paths[0], "config": paths[1], "key": paths[2]}
+            for client, paths in CLIENTS.items()
+        }
+        | {"other": {"skills": "/path/to/agent/skills", "key": "mcpServers"}},
         "version": marketplace["metadata"]["version"],
         "publishers": list(publishers.values()),
         "items": sorted(records, key=lambda r: r["id"]),

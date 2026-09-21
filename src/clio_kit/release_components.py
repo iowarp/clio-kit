@@ -7,10 +7,33 @@ from pathlib import Path
 import shutil
 import tempfile
 
+from clio_kit.component_cache import guarded
 from clio_kit.component_store import artifact_path, catalogue, fetch
 
 
+def validate_index(index: dict) -> None:
+    """Enforce canonical skill ownership and references before planning downloads."""
+    owners: dict[str, str] = {}
+    for package, record in index["packages"].items():
+        if record["artifact"] not in index["artifacts"]:
+            raise ValueError(f"Missing package artifact: {package}")
+        for name in record["skills"]:
+            if name in owners:
+                raise ValueError(f"Conflicting skill definitions: {name}")
+            owners[name] = package
+            skill = index["skills"].get(name)
+            if skill is None:
+                raise ValueError(f"Unknown skill: {name}")
+            if skill["package"] != package or skill["name"] != name:
+                raise ValueError(f"Conflicting skill definitions: {name}")
+            if skill["artifact"] not in index["artifacts"]:
+                raise ValueError(f"Missing skill artifact: {name}")
+    if set(owners) != set(index["skills"]):
+        raise ValueError("Release contains skills without an owning package")
+
+
 def package_closure(name: str, index: dict) -> list[str]:
+    validate_index(index)
     visited: set[str] = set()
     ordered = []
 
@@ -83,6 +106,7 @@ def release_components(name: str) -> dict:
     }
 
 
+@guarded
 def fetch_native_package(name: str | tuple[str, ...], target: Path) -> dict:
     """Create a selected local Claude marketplace, including native components.
 

@@ -145,3 +145,25 @@ def test_adapted_invocations_preserve_program_and_native_agent_names():
         "/skill clio-kit-tdd; /skill:clio-kit-ship pr; requires skill:clio-kit-tdd; "
         "the `clio-kit-tdd` skill. Run `herdr`; dispatch materio-task-executor."
     )
+
+
+def test_shared_packed_resources_cannot_drift_even_with_updated_import_hashes(tmp_path):
+    import runpy
+    import shutil
+
+    check = runpy.run_path(str(ROOT / "scripts/import_clio_coder_skills.py"))[
+        "validate_shared_assets"
+    ]
+    records = json.loads((COLLECTION / "import-lock.json").read_text())["skills"]
+    check(COLLECTION, records)
+    packed = [record for record in records if record["packed"]]
+    for record in packed:
+        shutil.copytree(
+            COLLECTION / "skills" / record["name"] / "assets",
+            tmp_path / "skills" / record["name"] / "assets",
+        )
+    check(tmp_path, packed)
+    resource = next((tmp_path / "skills" / packed[0]["name"] / "assets").rglob("*.py"))
+    resource.write_text(resource.read_text() + "\n# Uncoordinated edit\n")
+    with pytest.raises(ValueError, match="Shared assets differ"):
+        check(tmp_path, packed)

@@ -141,3 +141,27 @@ before uploading the launcher to PyPI. PyPI receives only the launcher wheel and
 sdist. Existing release authorization still gates publication. This ordering
 avoids publishing a launcher whose component URLs do not yet exist; the actual
 public release workflow must still succeed before public availability is claimed.
+
+## Installation failures and cache cleanup
+
+Project installation stages skill folders and configuration together. A failed
+write restores the previous files, including with `--replace`; successful changes
+retain the configuration backup reported by the command. Downloaded artifacts
+may remain in the shared cache after a failed installation. This rollback covers
+caught errors and interrupts, not power loss or forced process termination. If
+restoring files itself fails, the error reports the retained recovery paths.
+
+Preview component cleanup before applying it:
+
+```bash
+clio-kit cache components --keep 2 --dry-run
+clio-kit cache components --keep 2
+```
+
+Cleanup keeps the newest requested number of versions per component, artifacts
+referenced by installed launcher catalogues, and paths still used in registered
+project configurations. It waits for component downloads and project installs.
+Older cache entries without tracking metadata are retained conservatively; age
+alone cannot establish that no client uses them. Copied skills and native plugin
+folders live outside this cache and are unaffected. `clio-kit cache gc` also
+includes component cleanup alongside its existing runtime cleanup.

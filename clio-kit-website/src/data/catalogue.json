@@ -1,5 +1,46 @@
 {
   "schema": 2,
+  "featured": [
+    "workflow/clio-scientific-io",
+    "workflow/clio-analysis",
+    "workflow/clio-hpc"
+  ],
+  "clientProfiles": {
+    "codex": {
+      "skills": ".agents/skills",
+      "config": ".codex/config.toml",
+      "key": "mcp_servers"
+    },
+    "opencode": {
+      "skills": ".opencode/skills",
+      "config": "opencode.json",
+      "key": "mcp"
+    },
+    "cursor": {
+      "skills": ".cursor/skills",
+      "config": ".cursor/mcp.json",
+      "key": "mcpServers"
+    },
+    "antigravity": {
+      "skills": ".agents/skills",
+      "config": ".agents/mcp_config.json",
+      "key": "mcpServers"
+    },
+    "claude-code": {
+      "skills": ".claude/skills",
+      "config": ".mcp.json",
+      "key": "mcpServers"
+    },
+    "vscode": {
+      "skills": ".github/skills",
+      "config": ".vscode/mcp.json",
+      "key": "servers"
+    },
+    "other": {
+      "skills": "/path/to/agent/skills",
+      "key": "mcpServers"
+    }
+  },
   "version": "2.11.0",
   "publishers": [
     {
@@ -134,11 +175,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/adios",
       "evidence": "Locked runtime",
+      "icon": "📊",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-adios"
+      "nativePackage": "clio-adios",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "adios"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "adios"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "adios"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "adios"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "adios"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "adios"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "adios"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/arxiv",
@@ -172,11 +270,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/arxiv",
       "evidence": "Locked runtime",
+      "icon": "📄",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-arxiv"
+      "nativePackage": "clio-arxiv",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "arxiv"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "arxiv"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "arxiv"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "arxiv"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "arxiv"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "arxiv"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "arxiv"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/chronolog",
@@ -210,11 +365,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/chronolog",
       "evidence": "Locked runtime",
+      "icon": "⏰",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-chronolog"
+      "nativePackage": "clio-chronolog",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "chronolog"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "chronolog"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "chronolog"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "chronolog"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "chronolog"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "chronolog"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "chronolog"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/compression",
@@ -248,11 +460,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/compression",
       "evidence": "Locked runtime",
+      "icon": "🗜️",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-compression"
+      "nativePackage": "clio-compression",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "compression"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "compression"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "compression"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "compression"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "compression"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "compression"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "compression"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/darshan",
@@ -286,11 +555,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/darshan",
       "evidence": "Locked runtime",
+      "icon": "⚡",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-darshan"
+      "nativePackage": "clio-darshan",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "darshan"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "darshan"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "darshan"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "darshan"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "darshan"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "darshan"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "darshan"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/geo",
@@ -324,11 +650,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/geo",
       "evidence": "Locked runtime",
+      "icon": "🔧",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-geo"
+      "nativePackage": "clio-geo",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geo"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "geo"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geo"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geo"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geo"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geo"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geo"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/hdf5",
@@ -362,11 +745,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/hdf5",
       "evidence": "Locked runtime",
+      "icon": "🗂️",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-hdf5"
+      "nativePackage": "clio-hdf5",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "hdf5"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "hdf5"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "hdf5"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "hdf5"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "hdf5"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "hdf5"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "hdf5"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/jarvis",
@@ -399,11 +839,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/jarvis",
       "evidence": "Locked runtime",
+      "icon": "🤖",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-jarvis"
+      "nativePackage": "clio-jarvis",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "jarvis"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "jarvis"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "jarvis"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "jarvis"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "jarvis"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "jarvis"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "jarvis"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/lmod",
@@ -437,11 +934,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/lmod",
       "evidence": "Locked runtime",
+      "icon": "📦",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-lmod"
+      "nativePackage": "clio-lmod",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "lmod"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "lmod"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "lmod"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "lmod"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "lmod"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "lmod"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "lmod"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/ndp",
@@ -475,11 +1029,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/ndp",
       "evidence": "Locked runtime",
+      "icon": "🔧",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-ndp"
+      "nativePackage": "clio-ndp",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ndp"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "ndp"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ndp"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ndp"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ndp"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ndp"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ndp"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/node-hardware",
@@ -512,11 +1123,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/node_hardware",
       "evidence": "Locked runtime",
+      "icon": "💻",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-node-hardware"
+      "nativePackage": "clio-node-hardware",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "node-hardware"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "node-hardware"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "node-hardware"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "node-hardware"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "node-hardware"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "node-hardware"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "node-hardware"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/pandas",
@@ -550,11 +1218,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/pandas",
       "evidence": "Locked runtime",
+      "icon": "🐼",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-pandas"
+      "nativePackage": "clio-pandas",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pandas"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "pandas"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pandas"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pandas"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pandas"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pandas"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pandas"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/parallel-sort",
@@ -588,11 +1313,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/parallel_sort",
       "evidence": "Locked runtime",
+      "icon": "🔄",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-parallel-sort"
+      "nativePackage": "clio-parallel-sort",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "parallel-sort"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "parallel-sort"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "parallel-sort"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "parallel-sort"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "parallel-sort"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "parallel-sort"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "parallel-sort"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/paraview",
@@ -626,11 +1408,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/paraview",
       "evidence": "Locked runtime",
+      "icon": "🔧",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-paraview"
+      "nativePackage": "clio-paraview",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "paraview"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "paraview"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "paraview"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "paraview"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "paraview"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "paraview"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "paraview"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/parquet",
@@ -664,11 +1503,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/parquet",
       "evidence": "Locked runtime",
+      "icon": "📋",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-parquet"
+      "nativePackage": "clio-parquet",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "parquet"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "parquet"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "parquet"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "parquet"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "parquet"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "parquet"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "parquet"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/plot",
@@ -702,11 +1598,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/plot",
       "evidence": "Locked runtime",
+      "icon": "📈",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-plot"
+      "nativePackage": "clio-plot",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "plot"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "plot"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "plot"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "plot"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "plot"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "plot"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "plot"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/scientific-catalog",
@@ -739,11 +1692,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/scientific_catalog",
       "evidence": "Locked runtime",
+      "icon": "🔧",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-scientific-catalog"
+      "nativePackage": "clio-scientific-catalog",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "scientific-catalog"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "scientific-catalog"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "scientific-catalog"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "scientific-catalog"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "scientific-catalog"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "scientific-catalog"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "scientific-catalog"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/seismology",
@@ -778,11 +1788,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/seismology",
       "evidence": "Locked runtime",
+      "icon": "🔧",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-seismology"
+      "nativePackage": "clio-seismology",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "seismology"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "seismology"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "seismology"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "seismology"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "seismology"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "seismology"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "seismology"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/slurm",
@@ -816,11 +1883,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/slurm",
       "evidence": "Locked runtime",
+      "icon": "🖥️",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-slurm"
+      "nativePackage": "clio-slurm",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "slurm"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "slurm"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "slurm"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "slurm"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "slurm"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "slurm"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "slurm"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/spack",
@@ -853,11 +1977,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/spack",
       "evidence": "Locked runtime",
+      "icon": "🔧",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-spack"
+      "nativePackage": "clio-spack",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "spack"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "spack"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "spack"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "spack"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "spack"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "spack"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "spack"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/terrain",
@@ -891,11 +2072,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/terrain",
       "evidence": "Locked runtime",
+      "icon": "🔧",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-terrain"
+      "nativePackage": "clio-terrain",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "terrain"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "terrain"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "terrain"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "terrain"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "terrain"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "terrain"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "terrain"
+          ]
+        }
+      }
     },
     {
       "id": "mcp/web",
@@ -929,11 +2167,68 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/web",
       "evidence": "Locked runtime",
+      "icon": "🔧",
       "componentTypes": [
         "mcp"
       ],
       "installation": "launcher",
-      "nativePackage": "clio-web"
+      "nativePackage": "clio-web",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "web"
+          ]
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "web"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "web"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "web"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "web"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "web"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "web"
+          ]
+        }
+      }
     },
     {
       "id": "plugin/archify",

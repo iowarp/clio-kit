@@ -54,6 +54,22 @@ def hashes(root: Path) -> dict[str, str]:
     return result
 
 
+def validate_shared_assets(root: Path, records: list[dict]) -> None:
+    """Keep packed skills self-contained without allowing shared copies to drift."""
+    groups: dict[str, tuple[str, dict]] = {}
+    for record in records:
+        if not record["packed"]:
+            continue
+        package = str(Path(record["path"]).parents[1])
+        resources = hashes(root / "skills" / record["name"] / "assets")
+        if package in groups and groups[package][1] != resources:
+            raise ValueError(
+                f"Shared assets differ: {groups[package][0]} and {record['name']}; "
+                "refresh all copies through the importer"
+            )
+        groups[package] = (record["name"], resources)
+
+
 def generate(
     source: Path,
     destination: Path,
@@ -262,6 +278,7 @@ def generate(
             **json.loads(manifest.read_text()),
         }
         (staging / "plugin.json").write_text(json.dumps(portable, indent=2) + "\n")
+        validate_shared_assets(staging, records)
         result = {
             "schema": 1,
             "repository": REPOSITORY,
