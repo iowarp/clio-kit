@@ -16,6 +16,8 @@ import shutil
 import subprocess
 import sys
 
+import tomli_w
+
 from mcp import Client, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
@@ -54,6 +56,12 @@ def verify(output: Path) -> None:
     # Empty unrelated shared-data trees keep this fixture build focused on skills.
     for name in ("mcp-servers", "clio-agentic-search", "prompts"):
         (checkout / name).mkdir()
+    # This fixture deliberately omits maintained server payloads, so it must not
+    # ship their prerequisite records as if those servers were present.
+    inventory_path = checkout / "mcp-server-versions.toml"
+    inventory = tomllib.loads(inventory_path.read_text())
+    inventory.pop("prerequisites", None)
+    inventory_path.write_text(tomli_w.dumps(inventory))
     profile = output / "profile"
     profile.mkdir()
     project = output / "project"

@@ -77,7 +77,7 @@ directories. See [folder contributions](authoring.md#add-a-component-folder-to-c
 ### Scientific dataset report
 
 `clio-dataset-report` combines HDF5, Pandas and Plot with the
-`creating-dataset-report` skill, the `clio-agents` reviewer, and a read-only
+`dataset-report` skill, the `clio-agents` reviewer, and a read-only
 PostToolUse verification hook. It produces a CSV, PNG, Markdown report and
 evidence manifest from a small numeric HDF5 table.
 
@@ -85,7 +85,7 @@ evidence manifest from a small numeric HDF5 table.
 claude plugin install clio-dataset-report@clio-kit
 ```
 
-Invoke `/clio-dataset-report:creating-dataset-report` with the source file,
+Invoke `/clio-dataset-report:dataset-report` with the source file,
 dataset path, column meanings/units and a new output directory. Install the
 launcher first; the helper and native hook also require `python3`.
 
@@ -99,7 +99,7 @@ scientific interpretation separately.
 The skill and helper can also be downloaded independently:
 
 ```bash
-clio-kit skill install creating-dataset-report --target .agents/skills
+clio-kit skill install dataset-report --target .agents/skills
 ```
 
 Configure HDF5/Pandas/Plot MCPs separately outside the native Claude plugin

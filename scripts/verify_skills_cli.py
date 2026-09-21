@@ -87,7 +87,7 @@ def verify(cli: str) -> None:
 
         # Exercise an actual source update without changing repository files.
         update_source = workspace / "source.git"
-        name = "choosing-a-storage-format"
+        name = "storage-format"
         shutil.copytree(sources[name], update_source / "skills" / name)
 
         def git(*args: str) -> None:

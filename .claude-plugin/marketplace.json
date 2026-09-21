@@ -344,9 +344,9 @@
       "version": "1.0.2",
       "category": "skills",
       "keywords": [
-        "managing-software-environments",
-        "running-a-simulation-on-a-cluster",
-        "writing-slurm-job-scripts"
+        "cluster-run",
+        "slurm-script",
+        "software-environment"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -383,10 +383,10 @@
       "version": "1.0.3",
       "category": "skills",
       "keywords": [
-        "diagnosing-a-slow-job",
-        "interpreting-io-performance-numbers",
-        "recording-a-session-for-provenance",
-        "searching-large-log-files"
+        "io-performance",
+        "job-diagnose",
+        "log-search",
+        "session-record"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -419,9 +419,9 @@
       "version": "1.0.3",
       "category": "skills",
       "keywords": [
-        "choosing-a-storage-format",
-        "exploring-an-unfamiliar-dataset",
-        "reading-large-datasets-safely"
+        "dataset-explore",
+        "large-data-read",
+        "storage-format"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -459,10 +459,10 @@
       "version": "1.0.5",
       "category": "skills",
       "keywords": [
-        "choosing-the-right-chart",
-        "cleaning-and-validating-a-dataset",
-        "summarizing-and-plotting-results",
-        "visualizing-3d-simulation-output"
+        "chart-select",
+        "data-clean",
+        "results-summary",
+        "simulation-visualize"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -497,9 +497,9 @@
       "version": "1.0.2",
       "category": "skills",
       "keywords": [
-        "analyzing-seismic-waveforms",
-        "mapping-geospatial-and-terrain-data",
-        "working-with-coordinate-systems"
+        "coordinate-systems",
+        "geospatial-map",
+        "seismic-analysis"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -534,9 +534,9 @@
       "version": "1.0.4",
       "category": "skills",
       "keywords": [
-        "building-a-bibliography",
-        "finding-and-staging-a-dataset",
-        "surveying-literature-and-datasets"
+        "bibliography",
+        "dataset-stage",
+        "research-survey"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -570,7 +570,7 @@
     {
       "name": "clio-skills",
       "source": "./plugins/clio-skills",
-      "description": "Skills for the six primary scientific workflows, without MCP servers.",
+      "description": "Skills for primary scientific workflows, without MCP servers.",
       "version": "1.0.0",
       "category": "skills"
     },

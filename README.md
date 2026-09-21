@@ -141,7 +141,7 @@ Install a bundle or one skill into your project:
 # Bundle
 clio-kit skill install --bundle clio-scientific-io --target /path/to/project/.agents/skills
 # Individual skill
-clio-kit skill install exploring-an-unfamiliar-dataset --target /path/to/project/.agents/skills
+clio-kit skill install dataset-explore --target /path/to/project/.agents/skills
 ```
 
 Configure the required MCP servers using [setup.md](setup.md). Use your agent’s supported skill directory.
@@ -154,7 +154,7 @@ Requires Node.js 22.20.0+. From your working project:
 # All skills
 npx skills@1.5.25 add /path/to/clio-kit --skill '*' --agent codex --copy
 # Individual skill
-npx skills@1.5.25 add /path/to/clio-kit --skill exploring-an-unfamiliar-dataset --agent codex --copy
+npx skills@1.5.25 add /path/to/clio-kit --skill dataset-explore --agent codex --copy
 ```
 
 Replace `codex` with `claude-code` or `antigravity`. MCP servers require separate configuration.

@@ -8,22 +8,6 @@ import pathlib
 
 RESULTS = pathlib.Path(__file__).resolve().parent / "results"
 
-# Why a run could not exercise its servers on this machine. These are
-# environment facts, not defects in the skill or the server.
-BLOCKED = {
-    "running-a-simulation-on-a-cluster": "spack, jarvis, slurm and lmod are not installed",
-    "managing-software-environments": "lmod and spack are not installed",
-    "writing-slurm-job-scripts": "slurm is not installed",
-    "visualizing-3d-simulation-output": "ParaView is not installed",
-    "recording-a-session-for-provenance": "no ChronoLog deployment",
-    "diagnosing-a-slow-job": "darshan-parser is not installed and there is no real Darshan log",
-    "analyzing-seismic-waveforms": "no SAC archive or earthquake catalog fixture",
-    "finding-and-staging-a-dataset": (
-        "no SCIENTIFIC_CATALOG_FILE configured, and nationaldataplatform.org "
-        "returned 504 for the whole run"
-    ),
-}
-
 
 def main() -> None:
     records = [json.loads(f.read_text()) for f in sorted(RESULTS.glob("*.json"))]
@@ -58,8 +42,8 @@ def main() -> None:
         print(
             f"   tools    : {r['tools_ok']} ok, {r['tools_failed']} failed, {r['tools_total']} total"
         )
-        if r["skill"] in BLOCKED:
-            print(f"   blocked  : {BLOCKED[r['skill']]}")
+        if r.get("blocked_reason"):
+            print(f"   blocked  : {r['blocked_reason']}")
         print(
             f"   cost     : ${r.get('cost_usd') or 0:.3f} over {r.get('turns', '?')} turns, {r['seconds']}s"
         )

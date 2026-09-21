@@ -135,12 +135,12 @@ def verify(
     assert {e["id"].split("@")[0] for e in entries} == expected
     entry = next(e for e in entries if e["id"] == f"{name}@clio-kit")
     plugin = Path(entry["installPath"])
-    helper = plugin / "skills/creating-dataset-report/scripts/verify_report.py"
+    helper = plugin / "skills/dataset-report/scripts/verify_report.py"
     assert (
         helper.read_bytes()
         == (
             ROOT
-            / "plugins/clio-dataset-report/skills/creating-dataset-report/scripts/verify_report.py"
+            / "plugins/clio-dataset-report/skills/dataset-report/scripts/verify_report.py"
         ).read_bytes()
     )
     source = project / "input.h5"
@@ -259,7 +259,7 @@ def verify(
     bad = json.loads(good)
     bad["statistics"]["mean"] = 22
     actions = [
-        {"name": "Skill", "input": {"skill": f"{name}:creating-dataset-report"}},
+        {"name": "Skill", "input": {"skill": f"{name}:dataset-report"}},
         {"name": "Read", "input": {"file_path": str(manifest)}},
     ] + [
         {"name": "Write", "input": {"file_path": str(manifest), "content": content}}
@@ -353,7 +353,7 @@ def verify(
         )
         try:
             auth.symlink_to(original)
-            request = f"Use {name}:creating-dataset-report on {source}, /readings, columns time_s (s) and signal_mV (mV). Create outputs in {project / 'live-report'}. Use the installed MCP tools and verifier, and the installed evidence-reviewer agent. Do not modify input. Report the actual checks and limitations."
+            request = f"Use {name}:dataset-report on {source}, /readings, columns time_s (s) and signal_mV (mV). Create outputs in {project / 'live-report'}. Use the installed MCP tools and verifier, and the installed evidence-reviewer agent. Do not modify input. Report the actual checks and limitations."
             log = suite.command(
                 "live-workflow",
                 [

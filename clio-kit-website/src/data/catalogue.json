@@ -2436,10 +2436,10 @@
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-analysis-skills",
       "members": [
-        "skill/choosing-the-right-chart",
-        "skill/cleaning-and-validating-a-dataset",
-        "skill/summarizing-and-plotting-results",
-        "skill/visualizing-3d-simulation-output"
+        "skill/chart-select",
+        "skill/data-clean",
+        "skill/results-summary",
+        "skill/simulation-visualize"
       ],
       "servers": [],
       "tags": [],
@@ -2603,9 +2603,9 @@
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-geoscience-skills",
       "members": [
-        "skill/analyzing-seismic-waveforms",
-        "skill/mapping-geospatial-and-terrain-data",
-        "skill/working-with-coordinate-systems"
+        "skill/coordinate-systems",
+        "skill/geospatial-map",
+        "skill/seismic-analysis"
       ],
       "servers": [],
       "tags": [],
@@ -2641,9 +2641,9 @@
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-hpc-skills",
       "members": [
-        "skill/managing-software-environments",
-        "skill/running-a-simulation-on-a-cluster",
-        "skill/writing-slurm-job-scripts"
+        "skill/cluster-run",
+        "skill/slurm-script",
+        "skill/software-environment"
       ],
       "servers": [],
       "tags": [],
@@ -2679,10 +2679,10 @@
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-performance-skills",
       "members": [
-        "skill/diagnosing-a-slow-job",
-        "skill/interpreting-io-performance-numbers",
-        "skill/recording-a-session-for-provenance",
-        "skill/searching-large-log-files"
+        "skill/io-performance",
+        "skill/job-diagnose",
+        "skill/log-search",
+        "skill/session-record"
       ],
       "servers": [],
       "tags": [],
@@ -2718,9 +2718,9 @@
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-research-skills",
       "members": [
-        "skill/building-a-bibliography",
-        "skill/finding-and-staging-a-dataset",
-        "skill/surveying-literature-and-datasets"
+        "skill/bibliography",
+        "skill/dataset-stage",
+        "skill/research-survey"
       ],
       "servers": [],
       "tags": [],
@@ -2756,9 +2756,9 @@
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-scientific-io-skills",
       "members": [
-        "skill/choosing-a-storage-format",
-        "skill/exploring-an-unfamiliar-dataset",
-        "skill/reading-large-datasets-safely"
+        "skill/dataset-explore",
+        "skill/large-data-read",
+        "skill/storage-format"
       ],
       "servers": [],
       "tags": [],
@@ -2786,7 +2786,7 @@
       "kind": "collection",
       "name": "clio-skills",
       "title": "Skills",
-      "description": "Skills for the six primary scientific workflows, without MCP servers.",
+      "description": "Skills for primary scientific workflows, without MCP servers.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.0",
@@ -3547,54 +3547,17 @@
       "installation": "service"
     },
     {
-      "id": "skill/analyzing-seismic-waveforms",
+      "id": "skill/bibliography",
       "kind": "skill",
-      "name": "analyzing-seismic-waveforms",
-      "title": "Analyze Seismic Waveforms and Event Catalogs",
-      "description": "Use when inspecting SAC waveforms or evaluating a saved earthquake event catalogue. Triggers on \"SAC\", \"waveform statistics\", \"b-value\", \"magnitude completeness\". Not for geospatial mapping; use mapping-geospatial-and-terrain-data.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.2",
-      "category": "Geoscience",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-geoscience-skills/skills/analyzing-seismic-waveforms/SKILL.md",
-      "members": [],
-      "servers": [
-        "clio-seismology"
-      ],
-      "tags": [
-        "clio-geoscience",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/building-a-bibliography",
-      "kind": "skill",
-      "name": "building-a-bibliography",
+      "name": "bibliography",
       "title": "Build a Verified Research Bibliography",
-      "description": "Use when assembling verified citations, BibTeX records or a research reading list. Triggers on \"BibTeX\", \"cite these papers\", \"reference list\". Not for broad topic discovery; use surveying-literature-and-datasets.",
+      "description": "Use when assembling verified citations, BibTeX records or a research reading list. Triggers on \"BibTeX\", \"cite these papers\", \"reference list\". Not for broad topic discovery; use research-survey.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.4",
       "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-research-skills/skills/building-a-bibliography/SKILL.md",
+      "path": "skills/clio-research-skills/skills/bibliography/SKILL.md",
       "members": [],
       "servers": [
         "clio-arxiv",
@@ -3623,91 +3586,19 @@
       "installation": "portable-skill"
     },
     {
-      "id": "skill/choosing-a-storage-format",
+      "id": "skill/chart-select",
       "kind": "skill",
-      "name": "choosing-a-storage-format",
-      "title": "Choose a Scientific Storage Format",
-      "description": "Use when selecting scientific file formats, chunk layouts or compression for an access pattern. Triggers on \"HDF5 versus Parquet\", \"chunk size\", \"should I compress\". Calls no tools. Not for interpreting profiler counters; use interpreting-io-performance-numbers.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.3",
-      "category": "Scientific data",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-scientific-io-skills/skills/choosing-a-storage-format/SKILL.md",
-      "members": [],
-      "servers": [],
-      "tags": [
-        "clio-scientific-io",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/choosing-the-right-chart",
-      "kind": "skill",
-      "name": "choosing-the-right-chart",
+      "name": "chart-select",
       "title": "Choose an Effective Scientific Chart",
-      "description": "Use when choosing a chart, axes, bins or color scale for scientific data. Triggers on \"which chart\", \"log scale\", \"color map\". Calls no tools. Not for rendering a chart; use summarizing-and-plotting-results.",
+      "description": "Use when choosing a chart, axes, bins or color scale for scientific data. Triggers on \"which chart\", \"log scale\", \"color map\". Calls no tools. Not for rendering a chart; use results-summary.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.5",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-analysis-skills/skills/choosing-the-right-chart/SKILL.md",
+      "path": "skills/clio-analysis-skills/skills/chart-select/SKILL.md",
       "members": [],
       "servers": [],
-      "tags": [
-        "clio-analysis",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/cleaning-and-validating-a-dataset",
-      "kind": "skill",
-      "name": "cleaning-and-validating-a-dataset",
-      "title": "Clean and Validate Tabular Data",
-      "description": "Use when profiling missing values, duplicates, outliers and validation rules before analysis. Triggers on \"clean this data\", \"missing values\", \"validate this CSV\". Not for plotting; use summarizing-and-plotting-results.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.5",
-      "category": "Analysis & visualization",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-analysis-skills/skills/cleaning-and-validating-a-dataset/SKILL.md",
-      "members": [],
-      "servers": [
-        "clio-pandas"
-      ],
       "tags": [
         "clio-analysis",
         "Scientific workflow"
@@ -5095,360 +4986,17 @@
       "installation": "portable-skill"
     },
     {
-      "id": "skill/creating-dataset-report",
+      "id": "skill/cluster-run",
       "kind": "skill",
-      "name": "creating-dataset-report",
-      "title": "Create a verified dataset report",
-      "description": "Use when creating a report from a small numeric HDF5 dataset with a CSV, statistics and figure. Triggers on \"dataset report\", \"inspect summarize and plot\". Not for large-file streaming or model fitting.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.0",
-      "category": "Coding & research",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "plugins/clio-dataset-report/skills/creating-dataset-report/SKILL.md",
-      "members": [],
-      "servers": [
-        "clio-hdf5",
-        "clio-pandas",
-        "clio-plot"
-      ],
-      "tags": [
-        "clio-dataset-report",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/diagnosing-a-slow-job",
-      "kind": "skill",
-      "name": "diagnosing-a-slow-job",
-      "title": "Diagnose Scientific I/O Performance",
-      "description": "Use when investigating I/O bottlenecks using a genuine Darshan profile and application logs. Triggers on \"Darshan log\", \"why was this job slow\", \"I/O bottleneck\". Not for metric interpretation alone; use interpreting-io-performance-numbers.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.3",
-      "category": "Performance",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-performance-skills/skills/diagnosing-a-slow-job/SKILL.md",
-      "members": [],
-      "servers": [
-        "clio-darshan",
-        "clio-parallel-sort"
-      ],
-      "tags": [
-        "clio-performance",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/exploring-an-unfamiliar-dataset",
-      "kind": "skill",
-      "name": "exploring-an-unfamiliar-dataset",
-      "title": "Inspect Scientific Dataset Structure",
-      "description": "Use when inspecting structure, shapes, types and units in HDF5, BP5, Parquet or compressed files. Triggers on \"what is in this file\", \"open this dataset\", \"inspect this HDF5\". Not for large-data reductions; use reading-large-datasets-safely.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.3",
-      "category": "Scientific data",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-scientific-io-skills/skills/exploring-an-unfamiliar-dataset/SKILL.md",
-      "members": [],
-      "servers": [
-        "clio-hdf5",
-        "clio-adios",
-        "clio-parquet",
-        "clio-compression"
-      ],
-      "tags": [
-        "clio-scientific-io",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/finding-and-staging-a-dataset",
-      "kind": "skill",
-      "name": "finding-and-staging-a-dataset",
-      "title": "Discover and Stage Research Datasets",
-      "description": "Use when finding dataset metadata and downloading a supported resource to a verified local path. Triggers on \"find a dataset\", \"download this data\", \"stage this resource\". Not for literature surveys; use surveying-literature-and-datasets.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.4",
-      "category": "Research & discovery",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-research-skills/skills/finding-and-staging-a-dataset/SKILL.md",
-      "members": [],
-      "servers": [
-        "clio-ndp",
-        "clio-scientific-catalog",
-        "clio-web"
-      ],
-      "tags": [
-        "clio-research",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/interpreting-io-performance-numbers",
-      "kind": "skill",
-      "name": "interpreting-io-performance-numbers",
-      "title": "Interpret I/O Performance Metrics",
-      "description": "Use when interpreting bandwidth, IOPS, request sizes and MPI-IO counters already provided. Triggers on \"is 40 MB/s bad\", \"small writes\", \"collective versus independent\". Calls no tools. Not for loading a profile; use diagnosing-a-slow-job.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.3",
-      "category": "Performance",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-performance-skills/skills/interpreting-io-performance-numbers/SKILL.md",
-      "members": [],
-      "servers": [],
-      "tags": [
-        "clio-performance",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/managing-software-environments",
-      "kind": "skill",
-      "name": "managing-software-environments",
-      "title": "Discover and Verify HPC Software Environments",
-      "description": "Use when checking installed Spack packages and available or saved module environments. Triggers on \"module avail\", \"which MPI\", \"is this installed\". Not for executing a workload; use running-a-simulation-on-a-cluster.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.2",
-      "category": "HPC & infrastructure",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-hpc-skills/skills/managing-software-environments/SKILL.md",
-      "members": [],
-      "servers": [
-        "clio-lmod",
-        "clio-spack"
-      ],
-      "tags": [
-        "clio-hpc",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/mapping-geospatial-and-terrain-data",
-      "kind": "skill",
-      "name": "mapping-geospatial-and-terrain-data",
-      "title": "Validate and Map Geospatial Data",
-      "description": "Use when validating GeoJSON, querying spatial relationships, mapping features or analyzing terrain grids. Triggers on \"GeoJSON\", \"render a map\", \"DEM\", \"point cloud\". Not for CRS interpretation alone; use working-with-coordinate-systems.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.2",
-      "category": "Geoscience",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-geoscience-skills/skills/mapping-geospatial-and-terrain-data/SKILL.md",
-      "members": [],
-      "servers": [
-        "clio-geo",
-        "clio-terrain"
-      ],
-      "tags": [
-        "clio-geoscience",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/reading-large-datasets-safely",
-      "kind": "skill",
-      "name": "reading-large-datasets-safely",
-      "title": "Read and Summarize Large Scientific Datasets",
-      "description": "Use when choosing bounded reads and distinguishing sampled summaries from exact large-data statistics. Triggers on \"file is huge\", \"compute this mean\", \"out of memory\". Not for initial format discovery; use exploring-an-unfamiliar-dataset.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.3",
-      "category": "Scientific data",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-scientific-io-skills/skills/reading-large-datasets-safely/SKILL.md",
-      "members": [],
-      "servers": [
-        "clio-hdf5",
-        "clio-parquet",
-        "clio-adios"
-      ],
-      "tags": [
-        "clio-scientific-io",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/recording-a-session-for-provenance",
-      "kind": "skill",
-      "name": "recording-a-session-for-provenance",
-      "title": "Record and Retrieve Research Session Provenance",
-      "description": "Use when explicitly recording or retrieving a research decision trail with ChronoLog. Triggers on \"record this session\", \"ChronoLog\", \"retrieve our decisions\". Not for job execution profiling; use diagnosing-a-slow-job.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.3",
-      "category": "Performance",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-performance-skills/skills/recording-a-session-for-provenance/SKILL.md",
-      "members": [],
-      "servers": [
-        "clio-chronolog"
-      ],
-      "tags": [
-        "clio-performance",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/running-a-simulation-on-a-cluster",
-      "kind": "skill",
-      "name": "running-a-simulation-on-a-cluster",
+      "name": "cluster-run",
       "title": "Execute and Monitor a Cluster Simulation",
-      "description": "Use when resolving Spack software, configuring a JARVIS pipeline and following its execution. Triggers on \"run this on the cluster\", \"JARVIS pipeline\", \"install and run\". Not for handwritten batch scripts; use writing-slurm-job-scripts.",
+      "description": "Use when resolving Spack software, configuring a JARVIS pipeline and following its execution. Triggers on \"run this on the cluster\", \"JARVIS pipeline\", \"install and run\". Not for handwritten batch scripts; use slurm-script.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.2",
       "category": "HPC & infrastructure",
       "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-hpc-skills/skills/running-a-simulation-on-a-cluster/SKILL.md",
+      "path": "skills/clio-hpc-skills/skills/cluster-run/SKILL.md",
       "members": [],
       "servers": [
         "clio-spack",
@@ -5479,17 +5027,357 @@
       "installation": "portable-skill"
     },
     {
-      "id": "skill/searching-large-log-files",
+      "id": "skill/coordinate-systems",
       "kind": "skill",
-      "name": "searching-large-log-files",
-      "title": "Investigate Large Application Logs",
-      "description": "Use when narrowing large application logs by timestamp, level, keyword or error pattern. Triggers on \"find the error\", \"search this log\", \"what happened at\". Not for Darshan profiles; use diagnosing-a-slow-job.",
+      "name": "coordinate-systems",
+      "title": "Interpret Coordinate Reference Systems",
+      "description": "Use when interpreting axis order, projections, distance units or vertical datums. Triggers on \"lat lon\", \"CRS\", \"UTM\", \"map offset\". Calls no tools. Not for executing map operations; use geospatial-map.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.2",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-geoscience-skills/skills/coordinate-systems/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-geoscience",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/data-clean",
+      "kind": "skill",
+      "name": "data-clean",
+      "title": "Clean and Validate Tabular Data",
+      "description": "Use when profiling missing values, duplicates, outliers and validation rules before analysis. Triggers on \"clean this data\", \"missing values\", \"validate this CSV\". Not for plotting; use results-summary.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.5",
+      "category": "Analysis & visualization",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-analysis-skills/skills/data-clean/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-pandas"
+      ],
+      "tags": [
+        "clio-analysis",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/dataset-explore",
+      "kind": "skill",
+      "name": "dataset-explore",
+      "title": "Inspect Scientific Dataset Structure",
+      "description": "Use when inspecting structure, shapes, types and units in HDF5, BP5, Parquet or compressed files. Triggers on \"what is in this file\", \"open this dataset\", \"inspect this HDF5\". Not for large-data reductions; use large-data-read.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.3",
+      "category": "Scientific data",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-scientific-io-skills/skills/dataset-explore/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-hdf5",
+        "clio-adios",
+        "clio-parquet",
+        "clio-compression"
+      ],
+      "tags": [
+        "clio-scientific-io",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/dataset-report",
+      "kind": "skill",
+      "name": "dataset-report",
+      "title": "Create a verified dataset report",
+      "description": "Use when creating a report from a small numeric HDF5 dataset with a CSV, statistics and figure. Triggers on \"dataset report\", \"inspect summarize and plot\". Not for large-file streaming or model fitting.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding & research",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "plugins/clio-dataset-report/skills/dataset-report/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-hdf5",
+        "clio-pandas",
+        "clio-plot"
+      ],
+      "tags": [
+        "clio-dataset-report",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/dataset-stage",
+      "kind": "skill",
+      "name": "dataset-stage",
+      "title": "Discover and Stage Research Datasets",
+      "description": "Use when finding dataset metadata and downloading a supported resource to a verified local path. Triggers on \"find a dataset\", \"download this data\", \"stage this resource\". Not for literature surveys; use research-survey.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.4",
+      "category": "Research & discovery",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-research-skills/skills/dataset-stage/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-ndp",
+        "clio-scientific-catalog",
+        "clio-web"
+      ],
+      "tags": [
+        "clio-research",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/geospatial-map",
+      "kind": "skill",
+      "name": "geospatial-map",
+      "title": "Validate and Map Geospatial Data",
+      "description": "Use when validating GeoJSON, querying spatial relationships, mapping features or analyzing terrain grids. Triggers on \"GeoJSON\", \"render a map\", \"DEM\", \"point cloud\". Not for CRS interpretation alone; use coordinate-systems.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.2",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-geoscience-skills/skills/geospatial-map/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-geo",
+        "clio-terrain"
+      ],
+      "tags": [
+        "clio-geoscience",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/io-performance",
+      "kind": "skill",
+      "name": "io-performance",
+      "title": "Interpret I/O Performance Metrics",
+      "description": "Use when interpreting bandwidth, IOPS, request sizes and MPI-IO counters already provided. Triggers on \"is 40 MB/s bad\", \"small writes\", \"collective versus independent\". Calls no tools. Not for loading a profile; use job-diagnose.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.3",
       "category": "Performance",
       "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-performance-skills/skills/searching-large-log-files/SKILL.md",
+      "path": "skills/clio-performance-skills/skills/io-performance/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-performance",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/job-diagnose",
+      "kind": "skill",
+      "name": "job-diagnose",
+      "title": "Diagnose Scientific I/O Performance",
+      "description": "Use when investigating I/O bottlenecks using a genuine Darshan profile and application logs. Triggers on \"Darshan log\", \"why was this job slow\", \"I/O bottleneck\". Not for metric interpretation alone; use io-performance.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.3",
+      "category": "Performance",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-performance-skills/skills/job-diagnose/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-darshan",
+        "clio-parallel-sort"
+      ],
+      "tags": [
+        "clio-performance",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/large-data-read",
+      "kind": "skill",
+      "name": "large-data-read",
+      "title": "Read and Summarize Large Scientific Datasets",
+      "description": "Use when choosing bounded reads and distinguishing sampled summaries from exact large-data statistics. Triggers on \"file is huge\", \"compute this mean\", \"out of memory\". Not for initial format discovery; use dataset-explore.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.3",
+      "category": "Scientific data",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-scientific-io-skills/skills/large-data-read/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-hdf5",
+        "clio-parquet",
+        "clio-adios"
+      ],
+      "tags": [
+        "clio-scientific-io",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/log-search",
+      "kind": "skill",
+      "name": "log-search",
+      "title": "Investigate Large Application Logs",
+      "description": "Use when narrowing large application logs by timestamp, level, keyword or error pattern. Triggers on \"find the error\", \"search this log\", \"what happened at\". Not for Darshan profiles; use job-diagnose.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.3",
+      "category": "Performance",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-performance-skills/skills/log-search/SKILL.md",
       "members": [],
       "servers": [
         "clio-parallel-sort"
@@ -5516,55 +5404,17 @@
       "installation": "portable-skill"
     },
     {
-      "id": "skill/summarizing-and-plotting-results",
+      "id": "skill/research-survey",
       "kind": "skill",
-      "name": "summarizing-and-plotting-results",
-      "title": "Summarize and Plot Scientific Results",
-      "description": "Use when calculating tabular summaries and plotting transformed CSV or Excel data. Triggers on \"summarize this table\", \"plot these results\", \"grouped mean\". Not for mesh or volume rendering; use visualizing-3d-simulation-output.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.5",
-      "category": "Analysis & visualization",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-analysis-skills/skills/summarizing-and-plotting-results/SKILL.md",
-      "members": [],
-      "servers": [
-        "clio-pandas",
-        "clio-plot"
-      ],
-      "tags": [
-        "clio-analysis",
-        "Scientific workflow"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/marketplace#installable-components",
-      "evidence": "Scenarios recorded",
-      "componentTypes": [
-        "skill"
-      ],
-      "installation": "portable-skill"
-    },
-    {
-      "id": "skill/surveying-literature-and-datasets",
-      "kind": "skill",
-      "name": "surveying-literature-and-datasets",
+      "name": "research-survey",
       "title": "Survey Research Literature and Associated Data",
-      "description": "Use when searching prior work and identifying datasets associated with research claims. Triggers on \"find papers on\", \"literature survey\", \"prior work\". Not for formatting a known citation list; use building-a-bibliography.",
+      "description": "Use when searching prior work and identifying datasets associated with research claims. Triggers on \"find papers on\", \"literature survey\", \"prior work\". Not for formatting a known citation list; use bibliography.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.4",
       "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-research-skills/skills/surveying-literature-and-datasets/SKILL.md",
+      "path": "skills/clio-research-skills/skills/research-survey/SKILL.md",
       "members": [],
       "servers": [
         "clio-arxiv",
@@ -5594,17 +5444,129 @@
       "installation": "portable-skill"
     },
     {
-      "id": "skill/visualizing-3d-simulation-output",
+      "id": "skill/results-summary",
       "kind": "skill",
-      "name": "visualizing-3d-simulation-output",
-      "title": "Visualize Three-Dimensional Simulation Output",
-      "description": "Use when inspecting and rendering simulation fields with ParaView. Triggers on \"isosurface\", \"slice this volume\", \"render the field\". Not for tabular charts; use summarizing-and-plotting-results.",
+      "name": "results-summary",
+      "title": "Summarize and Plot Scientific Results",
+      "description": "Use when calculating tabular summaries and plotting transformed CSV or Excel data. Triggers on \"summarize this table\", \"plot these results\", \"grouped mean\". Not for mesh or volume rendering; use simulation-visualize.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.5",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-analysis-skills/skills/visualizing-3d-simulation-output/SKILL.md",
+      "path": "skills/clio-analysis-skills/skills/results-summary/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-pandas",
+        "clio-plot"
+      ],
+      "tags": [
+        "clio-analysis",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/seismic-analysis",
+      "kind": "skill",
+      "name": "seismic-analysis",
+      "title": "Analyze Seismic Waveforms and Event Catalogs",
+      "description": "Use when inspecting SAC waveforms or evaluating a saved earthquake event catalogue. Triggers on \"SAC\", \"waveform statistics\", \"b-value\", \"magnitude completeness\". Not for geospatial mapping; use geospatial-map.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.2",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-geoscience-skills/skills/seismic-analysis/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-seismology"
+      ],
+      "tags": [
+        "clio-geoscience",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/session-record",
+      "kind": "skill",
+      "name": "session-record",
+      "title": "Record and Retrieve Research Session Provenance",
+      "description": "Use when explicitly recording or retrieving a research decision trail with ChronoLog. Triggers on \"record this session\", \"ChronoLog\", \"retrieve our decisions\". Not for job execution profiling; use job-diagnose.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.3",
+      "category": "Performance",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-performance-skills/skills/session-record/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-chronolog"
+      ],
+      "tags": [
+        "clio-performance",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/simulation-visualize",
+      "kind": "skill",
+      "name": "simulation-visualize",
+      "title": "Visualize Three-Dimensional Simulation Output",
+      "description": "Use when inspecting and rendering simulation fields with ParaView. Triggers on \"isosurface\", \"slice this volume\", \"render the field\". Not for tabular charts; use results-summary.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.5",
+      "category": "Analysis & visualization",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-analysis-skills/skills/simulation-visualize/SKILL.md",
       "members": [],
       "servers": [
         "clio-paraview"
@@ -5631,21 +5593,24 @@
       "installation": "portable-skill"
     },
     {
-      "id": "skill/working-with-coordinate-systems",
+      "id": "skill/slurm-script",
       "kind": "skill",
-      "name": "working-with-coordinate-systems",
-      "title": "Interpret Coordinate Reference Systems",
-      "description": "Use when interpreting axis order, projections, distance units or vertical datums. Triggers on \"lat lon\", \"CRS\", \"UTM\", \"map offset\". Calls no tools. Not for executing map operations; use mapping-geospatial-and-terrain-data.",
+      "name": "slurm-script",
+      "title": "Prepare and Diagnose Slurm Job Scripts",
+      "description": "Use when preparing Slurm resource requests, arrays and dependencies or diagnosing pending jobs. Triggers on \"sbatch\", \"job array\", \"why is my job pending\". Not for JARVIS execution; use cluster-run.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.2",
-      "category": "Geoscience",
+      "category": "HPC & infrastructure",
       "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-geoscience-skills/skills/working-with-coordinate-systems/SKILL.md",
+      "path": "skills/clio-hpc-skills/skills/slurm-script/SKILL.md",
       "members": [],
-      "servers": [],
+      "servers": [
+        "clio-slurm",
+        "clio-node-hardware"
+      ],
       "tags": [
-        "clio-geoscience",
+        "clio-hpc",
         "Scientific workflow"
       ],
       "clients": [
@@ -5666,24 +5631,59 @@
       "installation": "portable-skill"
     },
     {
-      "id": "skill/writing-slurm-job-scripts",
+      "id": "skill/software-environment",
       "kind": "skill",
-      "name": "writing-slurm-job-scripts",
-      "title": "Prepare and Diagnose Slurm Job Scripts",
-      "description": "Use when preparing Slurm resource requests, arrays and dependencies or diagnosing pending jobs. Triggers on \"sbatch\", \"job array\", \"why is my job pending\". Not for JARVIS execution; use running-a-simulation-on-a-cluster.",
+      "name": "software-environment",
+      "title": "Discover and Verify HPC Software Environments",
+      "description": "Use when checking installed Spack packages and available or saved module environments. Triggers on \"module avail\", \"which MPI\", \"is this installed\". Not for executing a workload; use cluster-run.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.2",
       "category": "HPC & infrastructure",
       "source": "https://github.com/iowarp/clio-kit",
-      "path": "skills/clio-hpc-skills/skills/writing-slurm-job-scripts/SKILL.md",
+      "path": "skills/clio-hpc-skills/skills/software-environment/SKILL.md",
       "members": [],
       "servers": [
-        "clio-slurm",
-        "clio-node-hardware"
+        "clio-lmod",
+        "clio-spack"
       ],
       "tags": [
         "clio-hpc",
+        "Scientific workflow"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill"
+    },
+    {
+      "id": "skill/storage-format",
+      "kind": "skill",
+      "name": "storage-format",
+      "title": "Choose a Scientific Storage Format",
+      "description": "Use when selecting scientific file formats, chunk layouts or compression for an access pattern. Triggers on \"HDF5 versus Parquet\", \"chunk size\", \"should I compress\". Calls no tools. Not for interpreting profiler counters; use io-performance.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.3",
+      "category": "Scientific data",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-scientific-io-skills/skills/storage-format/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-scientific-io",
         "Scientific workflow"
       ],
       "clients": [
@@ -5719,10 +5719,10 @@
         "mcp/pandas",
         "mcp/paraview",
         "mcp/plot",
-        "skill/choosing-the-right-chart",
-        "skill/cleaning-and-validating-a-dataset",
-        "skill/summarizing-and-plotting-results",
-        "skill/visualizing-3d-simulation-output"
+        "skill/chart-select",
+        "skill/data-clean",
+        "skill/results-summary",
+        "skill/simulation-visualize"
       ],
       "servers": [
         "clio-pandas",
@@ -5768,7 +5768,7 @@
         "mcp/pandas",
         "mcp/plot",
         "plugin/clio-agents",
-        "skill/creating-dataset-report",
+        "skill/dataset-report",
         "hook/clio-dataset-report"
       ],
       "servers": [
@@ -5815,9 +5815,9 @@
         "mcp/geo",
         "mcp/seismology",
         "mcp/terrain",
-        "skill/analyzing-seismic-waveforms",
-        "skill/mapping-geospatial-and-terrain-data",
-        "skill/working-with-coordinate-systems"
+        "skill/coordinate-systems",
+        "skill/geospatial-map",
+        "skill/seismic-analysis"
       ],
       "servers": [
         "clio-geo",
@@ -5864,9 +5864,9 @@
         "mcp/node-hardware",
         "mcp/slurm",
         "mcp/spack",
-        "skill/managing-software-environments",
-        "skill/running-a-simulation-on-a-cluster",
-        "skill/writing-slurm-job-scripts"
+        "skill/cluster-run",
+        "skill/slurm-script",
+        "skill/software-environment"
       ],
       "servers": [
         "clio-jarvis",
@@ -5913,10 +5913,10 @@
         "mcp/chronolog",
         "mcp/darshan",
         "mcp/parallel-sort",
-        "skill/diagnosing-a-slow-job",
-        "skill/interpreting-io-performance-numbers",
-        "skill/recording-a-session-for-provenance",
-        "skill/searching-large-log-files"
+        "skill/io-performance",
+        "skill/job-diagnose",
+        "skill/log-search",
+        "skill/session-record"
       ],
       "servers": [
         "clio-chronolog",
@@ -5962,9 +5962,9 @@
         "mcp/ndp",
         "mcp/scientific-catalog",
         "mcp/web",
-        "skill/building-a-bibliography",
-        "skill/finding-and-staging-a-dataset",
-        "skill/surveying-literature-and-datasets"
+        "skill/bibliography",
+        "skill/dataset-stage",
+        "skill/research-survey"
       ],
       "servers": [
         "clio-arxiv",
@@ -6011,9 +6011,9 @@
         "mcp/compression",
         "mcp/hdf5",
         "mcp/parquet",
-        "skill/choosing-a-storage-format",
-        "skill/exploring-an-unfamiliar-dataset",
-        "skill/reading-large-datasets-safely"
+        "skill/dataset-explore",
+        "skill/large-data-read",
+        "skill/storage-format"
       ],
       "servers": [
         "clio-adios",

@@ -9,7 +9,7 @@ claude plugin install clio-scientific-io@clio-kit
 Install the launcher and register the marketplace first; see [setup](../../setup.md).
 
 - **MCPs:** `adios`, `compression`, `hdf5`, `parquet`.
-- **Skills:** `choosing-a-storage-format`, `exploring-an-unfamiliar-dataset`, `reading-large-datasets-safely`.
+- **Skills:** `storage-format`, `dataset-explore`, `large-data-read`.
 - **Expected output:** File structure, dataset metadata and bounded reads with their limits stated.
 - **Prerequisites:** Requires accessible data files and format dependencies. Bounded reads are samples, not whole-dataset statistics.
 

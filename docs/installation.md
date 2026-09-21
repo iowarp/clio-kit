@@ -30,7 +30,7 @@ After this distribution is released:
 uv tool install clio-kit
 clio-kit mcp-servers
 clio-kit mcp-server hdf5
-clio-kit skill install exploring-an-unfamiliar-dataset --target .agents/skills
+clio-kit skill install dataset-explore --target .agents/skills
 clio-kit plugin install clio-scientific-io --client codex --project /path/to/project
 ```
 

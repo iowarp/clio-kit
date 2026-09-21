@@ -9,7 +9,7 @@ claude plugin install clio-analysis@clio-kit
 Install the launcher and register the marketplace first; see [setup](../../setup.md).
 
 - **MCPs:** `pandas`, `paraview`, `plot`.
-- **Skills:** `choosing-the-right-chart`, `cleaning-and-validating-a-dataset`, `summarizing-and-plotting-results`, `visualizing-3d-simulation-output`.
+- **Skills:** `chart-select`, `data-clean`, `results-summary`, `simulation-visualize`.
 - **Expected output:** Checked summaries and figures, with input identity, transformations and assumptions recorded.
 - **Prerequisites:** Requires accessible datasets; ParaView workflows also need a working ParaView environment. Check units and assumptions before interpreting figures.
 

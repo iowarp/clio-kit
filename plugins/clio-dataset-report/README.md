@@ -8,8 +8,8 @@ claude plugin install clio-dataset-report@clio-kit
 
 Install the CLIO Kit launcher first; the hook/helper also needs `python3`.
 This plugin consumes HDF5, Pandas and Plot MCP plugins and `clio-agents` through
-dependencies. It adds `creating-dataset-report` and a read-only verification
-hook. Invoke `/clio-dataset-report:creating-dataset-report` with your file,
+dependencies. It adds `dataset-report` and a read-only verification
+hook. Invoke `/clio-dataset-report:dataset-report` with your file,
 dataset path, column meanings/units and a new output directory.
 
 The helper checks count, mean, median, min/max, unchanged source and output

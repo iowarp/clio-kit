@@ -51,7 +51,7 @@ def test_workflow_members_resolve_and_service_is_not_an_mcp():
     items = {item["id"]: item for item in catalogue.generate(ROOT)["items"]}
     workflow = items["workflow/clio-scientific-io"]
     assert "mcp/hdf5" in workflow["members"]
-    assert "skill/exploring-an-unfamiliar-dataset" in workflow["members"]
+    assert "skill/dataset-explore" in workflow["members"]
     assert all(member in items for member in workflow["members"])
     assert items["service/agentic-search"]["clients"] == []
     assert "mcp/agentic-search" not in items
@@ -156,7 +156,6 @@ def test_website_commands_match_client_installer_and_missing_feature_is_safe():
     import subprocess
 
     from clio_kit.client_install import CLIENTS, server_settings
-    from clio_kit.server_icons import server_icon
 
     node = shutil.which("node")
     if not node:
@@ -213,15 +212,18 @@ console.log(JSON.stringify({
     assert output["missing"] == []
     for item in data["items"]:
         if item["installation"] == "launcher":
-            assert item["icon"] == server_icon(item["name"])
+            inventory = catalogue.tomllib.loads(
+                (ROOT / "mcp-server-versions.toml").read_text()
+            )
+            assert item["icon"] == inventory["icons"][item["name"]]
 
 
-def test_maintained_icon_coverage_cannot_silently_fall_back(monkeypatch):
-    from clio_kit.server_icons import SERVER_ICONS
-
-    monkeypatch.delitem(SERVER_ICONS, "spack")
+def test_maintained_icon_coverage_cannot_silently_fall_back(tmp_path):
+    (tmp_path / ".claude-plugin").mkdir()
+    (tmp_path / ".claude-plugin/marketplace.json").write_text('{"plugins": []}')
+    (tmp_path / "mcp-server-versions.toml").write_text('[servers]\nspack="1.0.0"\n')
     with pytest.raises(ValueError, match="explicit icons.*spack"):
-        catalogue.generate(ROOT)
+        catalogue.generate(tmp_path)
 
 
 def test_retired_showcase_has_no_remaining_website_consumers():

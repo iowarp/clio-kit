@@ -359,3 +359,40 @@ def test_cached_prompt_content_is_verified_on_every_use(
     result = runner.invoke(prompts_cli.prompt, ["review"])
     assert result.exit_code != 0 and "damaged" in result.output
     assert "Unreviewed change" not in result.output
+
+
+def test_doctor_prerequisites_are_shipped_metadata_without_payload_download(
+    published, monkeypatch
+):
+    from clio_kit.doctor import server_prerequisites
+    import clio_kit
+
+    _, output, source = published
+    metadata = '[prerequisites.hdf5]\nexecutables=["lab-reader"]\nenvironment=["LAB_DATA"]\nnote="Validate the lab backend separately."\n'
+    (source / "mcp-server-versions.toml").write_text(metadata)
+    index = BUILD(source, output)
+    expected = {
+        "executables": ["lab-reader"],
+        "environment": ["LAB_DATA"],
+        "note": "Validate the lab backend separately.",
+    }
+    assert index["servers"]["hdf5"]["prerequisites"] == expected
+    assert server_prerequisites() == {"hdf5": expected}
+    assert not store.artifact_path("server/hdf5").exists()
+    monkeypatch.setattr(store, "INDEX_FILE", source / "absent.json")
+    monkeypatch.setattr(clio_kit, "get_servers_path", lambda: source / "mcp-servers")
+    assert server_prerequisites() == {"hdf5": expected}
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        '[prerequisites.hdf5]\nexecutables="not-a-list"',
+        '[prerequisites.missing]\nexecutables=["reader"]',
+    ],
+)
+def test_invalid_prerequisites_cannot_ship(published, metadata):
+    _, output, source = published
+    (source / "mcp-server-versions.toml").write_text(metadata)
+    with pytest.raises(ValueError, match="prerequisites|Prerequisites"):
+        BUILD(source, output)

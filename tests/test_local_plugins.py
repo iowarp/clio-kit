@@ -239,3 +239,43 @@ def test_fast_generator_add_update_delete_and_failed_index_is_unchanged(
     assert not any(
         e["name"] == "lab-tools" for e in json.loads(output.read_text())["plugins"]
     )
+
+
+def test_collections_preserve_authored_metadata_and_refresh_only_dependencies(tmp_path):
+    from clio_kit.marketplace_assets import write_extra_plugins
+
+    folder = package(tmp_path, name="lab-collection", component="agent")
+    manifest_path = folder / ".claude-plugin/plugin.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest.update(version="7.2.1", description="Reviewed lab instructions.")
+    manifest_path.write_text(json.dumps(manifest))
+    inventory = tmp_path / "mcp-server-versions.toml"
+    inventory.write_text('[collections.lab-collection]\ncategory="agents"\n')
+    before = manifest_path.read_bytes()
+    entries = write_extra_plugins(tmp_path, ["lab-skills"])
+    assert manifest_path.read_bytes() == before
+    assert entries[0]["version"] == "7.2.1"
+    assert entries[0]["description"] == "Reviewed lab instructions."
+    inventory.write_text(
+        '[collections.lab-collection]\ncategory="skills"\nprimary-skills=true\n'
+    )
+    write_extra_plugins(tmp_path, ["second-skills", "first-skills"])
+    assert json.loads(manifest_path.read_text()) == {
+        **manifest,
+        "dependencies": ["first-skills", "second-skills"],
+    }
+
+
+def test_invalid_collection_does_not_rewrite_earlier_manifests(tmp_path):
+    from clio_kit.marketplace_assets import write_extra_plugins
+
+    folder = package(tmp_path, name="lab-collection", component="agent")
+    path = folder / ".claude-plugin/plugin.json"
+    before = path.read_bytes()
+    (tmp_path / "mcp-server-versions.toml").write_text(
+        '[collections.lab-collection]\ncategory="skills"\nprimary-skills=true\n'
+        '[collections."../escape"]\ncategory="agents"\n'
+    )
+    with pytest.raises(ValueError, match="Invalid collection"):
+        write_extra_plugins(tmp_path, ["replacement-skills"])
+    assert path.read_bytes() == before

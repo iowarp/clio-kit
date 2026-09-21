@@ -90,7 +90,7 @@ async def verify(output: Path) -> None:
         )
         expect([])
         assert not (output / "project").exists()
-        skill = "choosing-a-storage-format"
+        skill = "storage-format"
         target = output / "single-skill"
         command("one-skill", "skill", "install", skill, "--target", str(target))
         expect([f"skill/{skill}"])

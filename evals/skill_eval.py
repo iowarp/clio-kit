@@ -159,7 +159,7 @@ async def evaluate(skill: str, meta: dict[str, object], task: dict[str, str]) ->
             }
 
     sequence = [calls[i] for i in order if i in calls]
-    # Recorded results are committed and published, so they must not carry the
+    # Local results may be shared for review, so they must not carry the
     # absolute path of whoever ran them -- that leaks a username, an
     # institution and a directory layout into the repository, and makes two
     # runs on different machines diff against each other for no reason.

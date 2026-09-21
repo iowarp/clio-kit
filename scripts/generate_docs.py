@@ -12,8 +12,6 @@ from datetime import date
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from clio_kit.server_icons import server_icon
-
 try:
     import tomllib  # Python 3.11+
 except ImportError:
@@ -46,9 +44,10 @@ def read_documentation_updated(inventory: dict[str, object]) -> str:
 class MCPDataExtractor:
     """Extract MCP data from project files."""
 
-    def __init__(self, server_versions: Dict[str, str], updated_date: str):
+    def __init__(self, server_versions: Dict[str, str], updated_date: str, icons=None):
         self.server_versions = server_versions
         self.updated_date = updated_date
+        self.icons = icons or {}
 
     def extract_mcp_data(self, mcps_dir: Path) -> Dict:
         """Extract data for all MCPs in the directory."""
@@ -98,7 +97,7 @@ class MCPDataExtractor:
         # Determine slug and category
         slug = mcp_dir.name.lower().replace("_", "_").replace("-", "_")
         category = self._determine_category(name, description, keywords)
-        icon = server_icon(slug)
+        icon = self.icons.get(mcp_dir.name, "🔧")
 
         # Extract tools from server.py
         tools = self._extract_tools_from_server(mcp_dir)
@@ -530,7 +529,9 @@ def main():
             )
 
         # Extract MCP data using each public agent-contract version.
-        extractor = MCPDataExtractor(server_versions, updated_date)
+        extractor = MCPDataExtractor(
+            server_versions, updated_date, inventory.get("icons")
+        )
         mcps_data = extractor.extract_mcp_data(mcps_dir)
 
         expected_slugs = {name.replace("-", "_") for name in server_versions}

@@ -4,7 +4,7 @@
       "matcher": "Write|Edit",
       "hooks": [{
         "type": "command",
-        "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/skills/creating-dataset-report/scripts/verify_report.py\" hook",
+        "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/skills/dataset-report/scripts/verify_report.py\" hook",
         "timeout": 30
       }]
     }]

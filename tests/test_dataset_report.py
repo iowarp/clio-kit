@@ -10,8 +10,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = (
-    ROOT
-    / "plugins/clio-dataset-report/skills/creating-dataset-report/scripts/verify_report.py"
+    ROOT / "plugins/clio-dataset-report/skills/dataset-report/scripts/verify_report.py"
 )
 checker = ModuleType("report_verification")
 exec(compile(SCRIPT.read_text(), str(SCRIPT), "exec"), checker.__dict__)

@@ -25,7 +25,7 @@ def test_shipped_skills_use_standard_metadata():
         for kind in ("skills", "plugins", "agents", "hooks")
         for path in (root / kind).glob("*/skills/*/SKILL.md")
     }
-    assert (inventory["creating-dataset-report"] / "scripts/verify_report.py").is_file()
+    assert (inventory["dataset-report"] / "scripts/verify_report.py").is_file()
     for name, source in inventory.items():
         fields = yaml.safe_load((source / "SKILL.md").read_text().split("---", 2)[1])
         assert set(fields) <= {
@@ -56,13 +56,11 @@ def test_selection_and_cli_errors(tmp_path):
     assert result.exit_code != 0 and "Unknown skills" in result.output
     assert not (tmp_path / "target").exists()
     with pytest.raises(SkillProblem, match="do not belong"):
-        selected_skills(
-            ("choosing-the-right-chart", "writing-slurm-job-scripts"), "clio-hpc"
-        )
+        selected_skills(("chart-select", "slurm-script"), "clio-hpc")
 
 
 def test_complete_copy_idempotence_and_explicit_replace(tmp_path):
-    skills = selected_skills(("choosing-the-right-chart",), None)
+    skills = selected_skills(("chart-select",), None)
     name, source = next(iter(skills.items()))
     target = tmp_path / "skills"
     target.mkdir()
@@ -100,7 +98,7 @@ def test_conflicts_preflight_before_any_skill_is_written(tmp_path):
 
 
 def test_rejects_linked_destination_and_nested_source(tmp_path):
-    skills = selected_skills(("choosing-the-right-chart",), None)
+    skills = selected_skills(("chart-select",), None)
     name, source = next(iter(skills.items()))
     (tmp_path / name).symlink_to(source, target_is_directory=True)
     with pytest.raises(SkillProblem, match="not a regular directory"):
@@ -110,7 +108,7 @@ def test_rejects_linked_destination_and_nested_source(tmp_path):
 
 
 def test_standalone_validation_requires_no_plugin_manifest():
-    source = next(iter(selected_skills(("choosing-the-right-chart",), None).values()))
+    source = next(iter(selected_skills(("chart-select",), None).values()))
     result = CliRunner().invoke(skill_group, ["validate", str(source)])
     assert result.exit_code == 0, result.output
 

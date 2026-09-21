@@ -238,6 +238,9 @@ CLAUDE.md
 # follows -- so adding a genuinely new fixture means `git add -f`.
 evals/fixtures/*
 
+# Generated evaluation traces and reports are local evidence, not release content.
+/evals/results/
+
 # Internal planning notes. Not part of the released repository.
 rework/
 
@@ -245,3 +248,6 @@ rework/
 
 # Commit the website lock used by npm ci and dependency audits.
 !clio-kit-website/package-lock.json
+
+# Local agent sessions are not release artifacts.
+.clio-coder/

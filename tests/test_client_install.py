@@ -129,7 +129,7 @@ def test_failed_config_commit_rolls_back_all_skills_and_cleans_staging(
 ):
     config = tmp_path / ".codex/config.toml"
     original = b'model = "preserve-me"\n'
-    skill = tmp_path / ".agents/skills/choosing-a-storage-format/SKILL.md"
+    skill = tmp_path / ".agents/skills/storage-format/SKILL.md"
     if existing:
         config.parent.mkdir()
         config.write_bytes(original)

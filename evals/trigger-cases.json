@@ -1,51 +1,51 @@
 [
   {
     "prompt": "Plot mean runtime by machine from this CSV.",
-    "expect": "summarizing-and-plotting-results"
+    "expect": "results-summary"
   },
   {
     "prompt": "Why is reading this HDF5 file so slow?",
-    "expect": "choosing-a-storage-format"
+    "expect": "storage-format"
   },
   {
     "prompt": "My collective MPI-IO shows 12 MB/s with 4KB writes. Good or bad?",
-    "expect": "interpreting-io-performance-numbers"
+    "expect": "io-performance"
   },
   {
     "prompt": "This file is huge, what is in it? It is app.log from last night.",
-    "expect": "searching-large-log-files"
+    "expect": "log-search"
   },
   {
     "prompt": "What MPI versions does this machine have?",
-    "expect": "managing-software-environments"
+    "expect": "software-environment"
   },
   {
     "prompt": "Why has my sbatch job been pending for an hour?",
-    "expect": "writing-slurm-job-scripts"
+    "expect": "slurm-script"
   },
   {
     "prompt": "Compute the mean of a 16GB dataset without loading it.",
-    "expect": "reading-large-datasets-safely"
+    "expect": "large-data-read"
   },
   {
     "prompt": "My points are landing in the ocean off Africa.",
-    "expect": "working-with-coordinate-systems"
+    "expect": "coordinate-systems"
   },
   {
     "prompt": "Validate this GeoJSON and render a map of the monitors.",
-    "expect": "mapping-geospatial-and-terrain-data"
+    "expect": "geospatial-map"
   },
   {
     "prompt": "Find recent papers on speculative decoding and the datasets behind them.",
-    "expect": "surveying-literature-and-datasets"
+    "expect": "research-survey"
   },
   {
     "prompt": "Give me BibTeX for these three arXiv IDs.",
-    "expect": "building-a-bibliography"
+    "expect": "bibliography"
   },
   {
     "prompt": "There are missing values and duplicates in this table.",
-    "expect": "cleaning-and-validating-a-dataset"
+    "expect": "data-clean"
   },
   {
     "prompt": "What is the capital of France?",
@@ -53,23 +53,23 @@
   },
   {
     "prompt": "Install ior with spack and run it on the cluster, tell me when it finishes.",
-    "expect": "running-a-simulation-on-a-cluster"
+    "expect": "cluster-run"
   },
   {
     "prompt": "Record this session so I can look back at what we decided.",
-    "expect": "recording-a-session-for-provenance"
+    "expect": "session-record"
   },
   {
     "prompt": "Make an isosurface of the density field in this VTK file and screenshot it.",
-    "expect": "visualizing-3d-simulation-output"
+    "expect": "simulation-visualize"
   },
   {
     "prompt": "What is the b-value for this earthquake catalog?",
-    "expect": "analyzing-seismic-waveforms"
+    "expect": "seismic-analysis"
   },
   {
     "prompt": "I need to download the air quality dataset before I can analyse it.",
-    "expect": "finding-and-staging-a-dataset"
+    "expect": "dataset-stage"
   },
   {
     "prompt": "Write me a haiku about the sea.",
@@ -81,14 +81,14 @@
   },
   {
     "prompt": "This job took 3 hours when it normally takes 40 minutes. What happened?",
-    "expect": "diagnosing-a-slow-job"
+    "expect": "job-diagnose"
   },
   {
     "prompt": "Someone handed me results.h5 and I have no idea what is in it.",
-    "expect": "exploring-an-unfamiliar-dataset"
+    "expect": "dataset-explore"
   },
   {
     "prompt": "Which chart should I use to compare four filesystems?",
-    "expect": "choosing-the-right-chart"
+    "expect": "chart-select"
   }
 ]

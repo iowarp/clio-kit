@@ -440,18 +440,16 @@ def test_shipped_bundle_catalogue_partitions_the_shipped_servers() -> None:
 
 def test_skill_name_must_match_its_directory(tmp_path: Path) -> None:
     """A skill is namespaced by its directory but referred to by its name."""
-    skill_dir = tmp_path / "running-a-simulation-on-a-cluster"
+    skill_dir = tmp_path / "cluster-run"
     skill_dir.mkdir()
     frontmatter = (
         "---\nname: {name}\ndescription: Does a thing. Use when asked.\n---\n\nBody.\n"
     )
 
     (skill_dir / "SKILL.md").write_text(
-        frontmatter.format(name="running-a-simulation-on-a-cluster"), encoding="utf-8"
+        frontmatter.format(name="cluster-run"), encoding="utf-8"
     )
-    assert (
-        read_skill_frontmatter(skill_dir)["name"] == "running-a-simulation-on-a-cluster"
-    )
+    assert read_skill_frontmatter(skill_dir)["name"] == "cluster-run"
 
     # Disagreeing is a reference that resolves nowhere, so it must not ship.
     (skill_dir / "SKILL.md").write_text(
@@ -463,7 +461,7 @@ def test_skill_name_must_match_its_directory(tmp_path: Path) -> None:
     # A description is what decides whether the skill fires at all; without
     # one the skill costs tokens in every session and never triggers.
     (skill_dir / "SKILL.md").write_text(
-        "---\nname: running-a-simulation-on-a-cluster\n---\n\nBody.\n", encoding="utf-8"
+        "---\nname: cluster-run\n---\n\nBody.\n", encoding="utf-8"
     )
     with pytest.raises(PluginProblem, match="needs a description"):
         read_skill_frontmatter(skill_dir)

@@ -9,7 +9,7 @@ claude plugin install clio-performance@clio-kit
 Install the launcher and register the marketplace first; see [setup](../../setup.md).
 
 - **MCPs:** `chronolog`, `darshan`, `parallel-sort`.
-- **Skills:** `diagnosing-a-slow-job`, `interpreting-io-performance-numbers`, `recording-a-session-for-provenance`, `searching-large-log-files`.
+- **Skills:** `job-diagnose`, `io-performance`, `session-record`, `log-search`.
 - **Expected output:** An evidence-backed account of observed I/O or log behavior, with likely bottlenecks and uncertainties.
 - **Prerequisites:** Requires supported logs and the relevant profiling/logging backends. Measurements depend on the workload and filesystem.
 

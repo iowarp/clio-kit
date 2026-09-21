@@ -13,8 +13,22 @@ import click
 
 from clio_kit.protocol_probe import inspect_stdio
 
-EXECUTABLES = {"spack": "spack", "slurm": "sbatch", "lmod": "modulecmd"}
-CONFIGURATION = {"scientific-catalog": "SCIENTIFIC_CATALOG_FILE"}
+
+def server_prerequisites() -> dict:
+    """Read checks from checkout metadata or the small released index; no fetch."""
+    from clio_kit import get_servers_path
+    from clio_kit.component_store import INDEX_FILE, catalogue
+    from clio_kit.discovery import tomllib
+
+    if INDEX_FILE.is_file():
+        return {
+            name: record.get("prerequisites", {})
+            for name, record in catalogue()["servers"].items()
+        }
+    inventory = get_servers_path().parent / "mcp-server-versions.toml"
+    if not inventory.is_file():
+        return {}
+    return tomllib.loads(inventory.read_text()).get("prerequisites", {})
 
 
 @click.command("doctor")
@@ -44,22 +58,20 @@ def doctor_command(servers: tuple[str, ...], connect: bool, as_json: bool) -> No
     if unknown:
         raise click.ClickException(f"Unknown servers: {sorted(unknown)}")
     checks = []
+    prerequisites = server_prerequisites()
     for server in selected:
         record: dict = {"server": server, "prerequisites": []}
-        executable = EXECUTABLES.get(server)
-        if executable:
+        declared = prerequisites.get(server, {})
+        for executable in declared.get("executables", []):
             record["prerequisites"].append(
                 {"name": executable, "available": bool(shutil.which(executable))}
             )
-        variable = CONFIGURATION.get(server)
-        if variable:
+        for variable in declared.get("environment", []):
             record["prerequisites"].append(
                 {"name": variable, "available": bool(os.getenv(variable))}
             )
-        if server in {"paraview", "chronolog", "darshan", "jarvis"}:
-            record["note"] = (
-                "Scientific backend requires a workflow check; a handshake alone is insufficient."
-            )
+        if declared.get("note"):
+            record["note"] = declared["note"]
         if connect:
             try:
                 metadata = asyncio.run(

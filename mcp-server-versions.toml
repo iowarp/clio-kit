@@ -104,3 +104,63 @@ web = "2.1.3"
 version = "1.0.0"
 description = "Turn a small HDF5 dataset into a report with a CSV, figure, checked statistics and evidence review."
 dependencies = ["clio-hdf5", "clio-pandas", "clio-plot", "clio-agents"]
+
+# Presentation metadata shared by both documentation generators.
+[icons]
+adios = "📊"
+arxiv = "📄"
+hdf5 = "🗂️"
+pandas = "🐼"
+parquet = "📋"
+plot = "📈"
+darshan = "⚡"
+slurm = "🖥️"
+lmod = "📦"
+node-hardware = "💻"
+compression = "🗜️"
+parallel-sort = "🔄"
+jarvis = "🤖"
+chronolog = "⏰"
+geo = "🌍"
+ndp = "🔎"
+paraview = "🧊"
+scientific-catalog = "🗃️"
+seismology = "〰️"
+spack = "🛠️"
+terrain = "⛰️"
+web = "🌐"
+
+# Declarative doctor checks; these do not execute server code.
+
+[prerequisites.spack]
+executables = ["spack"]
+
+[prerequisites.slurm]
+executables = ["sbatch"]
+
+[prerequisites.lmod]
+executables = ["modulecmd"]
+
+[prerequisites.scientific-catalog]
+environment = ["SCIENTIFIC_CATALOG_FILE"]
+
+[prerequisites.paraview]
+note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
+
+[prerequisites.chronolog]
+note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
+
+[prerequisites.darshan]
+note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
+
+[prerequisites.jarvis]
+note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
+
+# Special aggregate packages; their descriptions and versions live in their
+# manifests. Ordinary component folders are discovered without an entry here.
+[collections.clio-skills]
+category = "skills"
+primary-skills = true
+
+[collections.clio-agents]
+category = "agents"

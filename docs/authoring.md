@@ -121,7 +121,7 @@ Place each skill in `my-plugin/skills/<name>/SKILL.md`. A minimal example:
 ```markdown
 ---
 name: inspecting-simulation-output
-description: 'Use when inspecting an unfamiliar simulation dataset. Triggers on "inspect simulation output". Not for plotting; use summarizing-and-plotting-results.'
+description: 'Use when inspecting an unfamiliar simulation dataset. Triggers on "inspect simulation output". Not for plotting; use results-summary.'
 ---
 
 Discover the available scientific I/O tools. Inspect the file metadata and
@@ -138,8 +138,29 @@ clio-kit plugin validate my-plugin
 ```
 
 For skills maintained here, use `skills/clio-<bundle>-skills/skills/<name>/`.
+Use concise capability names such as `dataset-explore`, `data-clean` and
+`slurm-script`, matching the folder and frontmatter. Imported adaptations retain
+their upstream provenance and distinct names.
 Configure required MCP servers separately and test the procedure with actual
 tool results. Skill validation alone does not establish agent performance.
+
+For a live Codex comparison using an existing sign-in, run a selected case in a
+fresh output directory:
+
+```bash
+uv run --frozen python evals/codex_eval.py --skill data-clean --output /tmp/clio-skill-eval
+```
+
+The runner compares the same task and tools with and without the installed
+skill, recording model usage, tool calls and independent artifact checks. It
+uses subscription quota; `--model` selects the model and `--list` previews tasks
+without a model call. Omitting `--skill` requests all cases. Read the resulting
+artifacts before judging scientific quality: passing execution checks alone
+does not establish usefulness, and a single pair does not establish token savings.
+The default run stops scheduling at 250,000 observed uncached input plus output
+tokens (`--max-uncached-tokens`); already-running cases can exceed that limit.
+Authentication, quota and sandbox failures also stop further cases. Native Claude
+agents and hooks require their separate supported-client acceptance checks.
 
 ## Add an MCP server
 
@@ -161,8 +182,10 @@ a representative tool call in the target client.
 
 To ship a maintained server with CLIO Kit, add `mcp-servers/<name>/`, a
 `clio-server.toml`, the runtime's lock file and its tests. Register it in
-`mcp-server-versions.toml` and generate its manifests. Python, Node and Go are
-supported; see the
+`mcp-server-versions.toml` and generate its manifests. Include its icon in
+`[icons]` and any executable or environment checks in `[prerequisites.<name>]`;
+these feed the website and `clio-kit doctor`, including partial installations.
+Python, Node and Go are supported; see the
 [hosted-server requirements](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md#contributing-a-server-in-another-language).
 
 ## Add a hook

@@ -92,6 +92,29 @@ def files_in(root: Path, directory: Path, excluded: set[str]) -> list[Path]:
 
 def build_components(root: Path, output: Path) -> dict:
     version = tomllib.loads((root / "pyproject.toml").read_text())["project"]["version"]
+    inventory_path = root / "mcp-server-versions.toml"
+    prerequisites = (
+        tomllib.loads(inventory_path.read_text()).get("prerequisites", {})
+        if inventory_path.is_file()
+        else {}
+    )
+    if not isinstance(prerequisites, dict):
+        raise ValueError("prerequisites must be a table")
+    for name, checks in prerequisites.items():
+        if not isinstance(checks, dict) or set(checks) - {
+            "executables",
+            "environment",
+            "note",
+        }:
+            raise ValueError(f"Invalid prerequisites for {name}")
+        for field in ("executables", "environment"):
+            values = checks.get(field, [])
+            if not isinstance(values, list) or not all(
+                isinstance(v, str) and v.strip() for v in values
+            ):
+                raise ValueError(f"Invalid {field} prerequisites for {name}")
+        if "note" in checks and not isinstance(checks["note"], str):
+            raise ValueError(f"Invalid prerequisite note for {name}")
     index: dict = {
         "schema": 1,
         "version": version,
@@ -187,8 +210,12 @@ def build_components(root: Path, output: Path) -> dict:
             **data,
             "directory": directory.name,
             "scope": scope,
+            "prerequisites": prerequisites.get(name, {}),
             "artifact": key,
         }
+
+    if set(prerequisites) - index["servers"].keys():
+        raise ValueError("Prerequisites refer to unknown servers")
 
     # Discover folders directly so a new contribution never needs a manual index edit.
     for kind in ("plugins", "skills", "agents", "hooks"):

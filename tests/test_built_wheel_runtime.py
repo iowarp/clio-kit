@@ -146,7 +146,7 @@ def test_launcher_distributions_contain_metadata_not_component_payloads(
         catalogue = json.loads(wheel.read("clio_kit/_components.json"))
         assert "hdf5" in catalogue["servers"]
         assert catalogue["servers"]["web"]["scope"] == "general"
-        assert "creating-dataset-report" in catalogue["skills"]
+        assert "dataset-report" in catalogue["skills"]
         assert not any(
             "/hdf5_mcp/" in name or name.endswith("/SKILL.md")
             for name in wheel.namelist()

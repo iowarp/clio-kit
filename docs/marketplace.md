@@ -207,7 +207,7 @@ From your working project, use the absolute path to your CLIO checkout:
 
 ```bash
 npx skills@1.5.25 add /path/to/clio-kit --list
-npx skills@1.5.25 add /path/to/clio-kit --skill exploring-an-unfamiliar-dataset reading-large-datasets-safely choosing-a-storage-format --agent codex --copy
+npx skills@1.5.25 add /path/to/clio-kit --skill dataset-explore large-data-read storage-format --agent codex --copy
 ```
 
 Use `--agent claude-code` or `--agent antigravity` for those clients; multiple
@@ -232,7 +232,7 @@ Claude plugin's skills with a separate portable installation.
 To remove one skill from the project, including its shared copy:
 
 ```bash
-npx skills@1.5.25 remove exploring-an-unfamiliar-dataset --yes
+npx skills@1.5.25 remove dataset-explore --yes
 ```
 
 Omit agent filters for complete removal; this also affects other agents reading
@@ -386,65 +386,37 @@ to preserve the MCP protocol stream. These fixes have targeted regressions;
 installation and connection results alone still do not verify a scientific
 workflow.
 
-Model evaluation is specific to the client, model and task. The September 10
-follow-up ran all 20 skills through Codex with real attached MCP services and
-retained their traces and outputs. These are one-scenario behavioral checks,
-not comparative quality scores or coverage of every workflow. A separate
-23-case skill-selection test matched 22 expected choices; the ambiguous slow-HDF5
-request selected the large-dataset skill instead of storage-format advice.
-Claude model calls were quota-blocked in this follow-up; Cursor requested login,
-and Antigravity's GUI workflow was not automated. These results do not establish
-behavioral support in those clients. Native plugin installation and deterministic
-checks do not require a model quota.
+Model evaluation is specific to the client, model and task. Use fresh temporary
+projects and preserve the prompts, tool traces and output artifacts. Compare
+runs with and without skill instructions against the same scientific checks;
+installation success, skill discovery and token counts alone do not establish
+scientific correctness or a better workflow. Draft-only and unavailable-backend
+checks must be reported separately from operational tests. See the
+[authoring guide](authoring.md) for evaluation guidance.
 
-The September 11 follow-up tested Codex 0.154.0, Claude Code 2.1.266 after its
-quota reset, and Antigravity CLI 1.2.0. All three discovered the 20 skills;
-nine fixture or conceptual workflows were exercised per client, along with
-both read-only Claude agent definitions. The run found and fixed Pandas'
-advertised filter syntax being silently ignored, and added guidance against
-inventing units in plots. Antigravity CLI needs an explicitly selected project
-to load workspace configuration. Model behavior still varied: its GPT-OSS
-model produced malformed tool calls, and one Claude plot required correction.
-The repeated Codex routing check matched 22 of 23 expected choices, with the
-same ambiguous slow-HDF5 request as before. Cursor testing was stopped at the
-operator's request; GUI client flows were not automated.
+The dataset-report acceptance check installs a fresh wheel and exercises
+HDF5 → Pandas → Plot with checked CSV values, numerical summaries, a PNG and an
+unchanged input. Its native-client test also exercises the evidence reviewer,
+verification hook, failure recovery and shared-dependency removal. Scripted
+model responses make those integration checks repeatable; use separate live
+model runs to assess scientific interpretation and unnecessary tool calls.
 
-The September 17 task-plugin check installed a fresh wheel and ran a guided
-HDF5 → Pandas → Plot workflow through two native Claude skills. It checked the
-CSV, numerical results, PNG and unchanged input, plus shared-dependency removal.
-HDF5's error wrapper had returned failures as successful text; it now raises
-MCP tool errors. Missing datasets, invalid slices and recovery were checked over
-both modern and legacy stdio connections.
-
-A model report also overclaimed what skewness and coefficient of variation
-establish. The analysis skill and evidence reviewer now distinguish summaries,
-ordered observations and model claims; the evaluation includes equal-summary
-signals with different time order. Independent numerical checks remain necessary:
-a model reviewer can itself suggest an incorrect correction. These bounded
-checks do not certify arbitrary scientific interpretations.
-
-The new `clio-dataset-report` plugin was also exercised as a separately hosted
-Git plugin through a community entry. Native installation resolved its three
-MCPs and agent dependency, loaded its skill and reviewer, and ran the verification
-hook against incorrect then corrected evidence. Actual HDF5/Pandas/Plot calls
-produced checked fixture outputs. Scripted model responses exercised the client
-integration; the fresh live composite-skill run was blocked by account quota.
-The pinned npm skills installer discovered/copied all 60 skill folders after
-removing a redundant marketplace path prefix. A public GitHub installation of
-Clio Coder's pinned scientific-debugging skill also exposed its skill correctly.
+Independent numerical checks remain necessary: a model reviewer can itself
+suggest an incorrect correction. Summary statistics alone do not establish
+time order, a fitted relationship or a scientific cause.
 
 ## Skill maintenance
 
-The six workflow packages contain 20 skills. Public skill IDs remain stable;
-titles describe the professional task, while descriptions identify when to use
-it and distinguish adjacent workflows. Each skill has completion criteria and
+Owned skills use concise capability names matching their folders and
+frontmatter. Titles describe the professional task; descriptions identify when
+to use it and distinguish adjacent workflows. Each skill has completion criteria and
 an `evals.md` file. Names/descriptions are used for discovery; the full body loads
 on invocation, following the [Agent Skills specification](https://agentskills.io/specification).
 
 The current review checks tool names, argument shapes, state and file handoffs,
 size limits, provenance and interpretation. The `scenarios-recorded` metadata identifies scenario definitions, not a
-quality certification. The dated behavioral checks above provide separate,
-limited evidence; retain the client, revision and outcome when repeating them.
+quality certification. Retain the client, revision, inputs and observed outcome in local evaluation
+evidence when repeating a behavioral check.
 
 Specific limits matter: HDF5 aggregate statistics may sample data above 500 MiB.
 A live 70-million-element array of ones returns sample sum/count 700,000, now
@@ -452,19 +424,16 @@ explicitly labeled as 1% coverage rather than full-dataset totals. Stream summar
 sample. None should be presented as exact full-data calculations without checking
 coverage. Skill instructions require checking these coverage labels.
 
-## Recorded validation, 2026-09-10
+## Validation scope
 
-The tested checkout installed 22 MCP servers, six bundles and 20 portable skills.
-The installed-wheel acceptance script passed Claude plugin installation/update,
-Codex skill discovery, all 22 stdio handshakes, TypeScript/Go cold and warm calls,
-compression round-trip, grouped means and plotting, Pandas imputation,
-bracketed log filtering, plain-client Web fetch and sampled HDF5 coverage. A separate real Slurm job
-completed with exact expected output and valid JSON-RPC stdout. The setup guide's
-source installation, HDF5 connection and compression commands also passed.
+The installed-wheel acceptance suite checks plugin installation/update, server
+handshakes, Node/Go cold and warm launches, and bounded scientific fixtures.
+Partial-installation checks verify the component download list and cached reuse.
+Repeat these checks for the commit being reviewed; previous results do not
+certify a later release or a different scientific environment.
 
-All 22 server dependency environments, the launcher and agentic-search passed
-`pip-audit` after updating HTTP dependencies. Locally built packages and the
-Git-hosted JARVIS dependency are not covered by PyPI advisory matching.
+Dependency advisory scans are separate from installation tests. Locally built
+packages and Git-hosted dependencies may not be covered by PyPI matching.
 The website build has an unpatched upstream image-parser advisory with a
 pre-build format restriction; see the
 [website maintenance notes](https://github.com/iowarp/clio-kit/blob/main/clio-kit-website/README.md#image-parser-advisory).
@@ -475,7 +444,7 @@ publication and target-site backend acceptance remain separate steps; the
 checks above do not establish universal agent or scientific-workflow support.
 
 
-## MCP SDK v2 migration, 2026-09-10
+## MCP SDK v2 migration
 
 All 22 Python servers lock MCP SDK 2.2.0 and stable FastMCP 4.0.3. The shared
 verification client follows the [official SDK migration guide](https://py.sdk.modelcontextprotocol.io/migration/)

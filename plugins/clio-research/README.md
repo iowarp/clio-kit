@@ -9,7 +9,7 @@ claude plugin install clio-research@clio-kit
 Install the launcher and register the marketplace first; see [setup](../../setup.md).
 
 - **MCPs:** `arxiv`, `ndp`, `scientific-catalog`, `web`.
-- **Skills:** `building-a-bibliography`, `finding-and-staging-a-dataset`, `surveying-literature-and-datasets`.
+- **Skills:** `bibliography`, `dataset-stage`, `research-survey`.
 - **Expected output:** A sourced literature/dataset summary and staging status for any requested resources.
 - **Prerequisites:** Requires network access; catalogue and staging workflows may require configured endpoints, credentials and storage.
 

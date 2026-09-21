@@ -9,7 +9,7 @@ claude plugin install clio-geoscience@clio-kit
 Install the launcher and register the marketplace first; see [setup](../../setup.md).
 
 - **MCPs:** `geo`, `seismology`, `terrain`.
-- **Skills:** `analyzing-seismic-waveforms`, `mapping-geospatial-and-terrain-data`, `working-with-coordinate-systems`.
+- **Skills:** `seismic-analysis`, `geospatial-map`, `coordinate-systems`.
 - **Expected output:** Maps or waveform summaries with their coordinate, unit and sampling assumptions recorded.
 - **Prerequisites:** Requires supported vector, terrain or waveform files and the relevant backends. Confirm coordinate systems and units before combining results.
 

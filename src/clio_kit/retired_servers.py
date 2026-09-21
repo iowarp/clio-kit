@@ -36,7 +36,7 @@ def retirement_notice(server_name: str) -> str | None:
         return None
     successor, detail = entry
     return (
-        f"'{server_name}' is provided by '{successor}' as of clio-kit 2.8. "
+        f"'{server_name}' is now provided by '{successor}'. "
         f"{detail} Run `clio-kit mcp-server {successor}` and update any client "
         f"config that still names '{server_name}'."
     )

@@ -132,7 +132,7 @@ Alternatively, with Node.js 22.20.0 or newer, run this from your working project
 using the absolute path to this CLIO checkout as the source:
 
 ```bash
-npx skills@1.5.25 add /path/to/clio-kit --skill exploring-an-unfamiliar-dataset reading-large-datasets-safely choosing-a-storage-format --agent codex --copy
+npx skills@1.5.25 add /path/to/clio-kit --skill dataset-explore large-data-read storage-format --agent codex --copy
 ```
 
 Replace `codex` with `claude-code` or `antigravity` for those clients. This is
