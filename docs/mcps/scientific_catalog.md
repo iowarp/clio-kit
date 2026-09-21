@@ -7,7 +7,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 <MCPDetail
   name="Scientific-Catalog"
-  icon="🔧"
+  icon="🗃️"
   category="Data Processing"
   description="Operator-owned scientific dataset discovery for remote agents"
   version="1.1.4"

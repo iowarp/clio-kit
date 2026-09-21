@@ -467,6 +467,38 @@ class Acceptance:
             server.server_close()
             worker.join(timeout=5)
 
+    async def concurrent_python_launches(self, source: Path) -> None:
+        """Overlapping clients must not reinstall a live server's package."""
+        for state in ("cold", "warm"):
+            labels = [f"pandas-concurrent-{state}-{number}" for number in range(4)]
+            batches = await asyncio.gather(
+                *[
+                    self.session(
+                        label,
+                        ["mcp-server", "pandas"],
+                        [
+                            (
+                                "statistical_summary",
+                                {"file_path": str(source), "columns": ["runtime"]},
+                            )
+                        ]
+                        * 3,
+                    )
+                    for label in labels
+                ]
+            )
+            for label, replies in zip(labels, batches):
+                for reply in replies:
+                    payload = reply.get("structuredContent") or json.loads(
+                        reply["content"][0]["text"]
+                    )
+                    assert payload["basic_statistics"]["runtime"]["mean"] == 7.5, (
+                        payload
+                    )
+                assert (
+                    "Uninstalled " not in (self.output / f"{label}.stderr").read_text()
+                ), label
+
     async def workflows(self, all_servers: bool) -> None:
         for runtime in ("typescript", "go"):
             for state in ("cold", "warm"):
@@ -496,6 +528,7 @@ class Acceptance:
         assert archive.with_suffix("").read_bytes() == expected
         source = data / "runs.csv"
         source.write_text("machine,runtime\nalpha,2\nalpha,4\nbeta,10\nbeta,14\n")
+        await self.concurrent_python_launches(source)
         response = await self.session(
             "pandas-aggregate",
             ["mcp-server", "pandas"],

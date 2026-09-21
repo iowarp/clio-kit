@@ -48,6 +48,8 @@ def test_release_workflow_triggers_on_every_shipped_lock() -> None:
         assert "- 'uv.lock'" in paths
         assert "- 'clio-agentic-search/uv.lock'" in paths
         assert "- 'mcp-server-versions.toml'" in paths
+        for kind in ("plugins", "skills", "agents", "hooks"):
+            assert f"- '{kind}/**'" in paths
 
     quality_block = WORKFLOW[WORKFLOW.index("  quality:") : WORKFLOW.index("  build:")]
     assert "uv lock --check\n" in quality_block

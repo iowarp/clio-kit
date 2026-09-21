@@ -68,6 +68,7 @@ def test_locked_server_command_uses_immutable_frozen_project(
         "run",
         "--no-dev",
         "--no-editable",
+        "--no-sync",
         "--frozen",
         "--project",
         str(server_path),

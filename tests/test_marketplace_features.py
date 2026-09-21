@@ -227,3 +227,96 @@ def test_federation_rejects_malformed_remote_source(tmp_path, source):
             revision="a" * 40,
             checkout=tmp_path,
         )
+
+
+def test_federation_write_failure_restores_catalogue_lock_and_referrals(
+    tmp_path, monkeypatch
+):
+    root = tmp_path / "kit"
+    folder = root / ".claude-plugin"
+    folder.mkdir(parents=True)
+    paths = [
+        folder / name
+        for name in (
+            "marketplace.json",
+            "federation.lock.json",
+            "federated-marketplaces.json",
+        )
+    ]
+    payloads = [
+        {"name": "clio-kit", "plugins": []},
+        {"imported_names": [], "plugins": [], "marketplaces": []},
+        {"schema": "clio-kit.federated-marketplaces.v1", "marketplaces": []},
+    ]
+    for path, payload in zip(paths, payloads):
+        path.write_text(json.dumps(payload))
+    before = [path.read_bytes() for path in paths]
+    original = Path.replace
+
+    def fail_last(path, target):
+        if Path(target) == paths[-1]:
+            raise OSError("injected referral write failure")
+        return original(path, target)
+
+    monkeypatch.setattr(Path, "replace", fail_last)
+    with pytest.raises(OSError, match="injected"):
+        refresh_marketplace(root)
+    assert [path.read_bytes() for path in paths] == before
+    assert not list(folder.glob(".clio-install-*"))
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        {"source": "github", "repo": "owner/repo;touch-injected"},
+        {
+            "source": "git-subdir",
+            "url": "https://example.org/repo.git",
+            "path": "../outside",
+        },
+        {"source": "url", "url": "ext::sh -c injected"},
+        {"source": "npm", "package": "bad package"},
+    ],
+)
+def test_external_sources_reject_unsafe_coordinates(source):
+    from clio_kit.community import validate_source_location
+
+    with pytest.raises(ValueError):
+        validate_source_location(source)
+
+
+def test_external_marketplace_command_quotes_url_metacharacters():
+    import shlex
+    from clio_kit.community import marketplace_add_command
+
+    target = "https://example.org/repo.git?token=x&other=y"
+    assert shlex.split(marketplace_add_command({"source": "url", "url": target})) == [
+        "claude",
+        "plugin",
+        "marketplace",
+        "add",
+        target,
+    ]
+
+
+def test_submission_rejects_malformed_repository_before_writing_or_opening_pr(tmp_path):
+    plugin = tmp_path / "lab"
+    runner = CliRunner()
+    assert runner.invoke(plugin_group, ["init", str(plugin)]).exit_code == 0
+    target = tmp_path / "entry.toml"
+    result = runner.invoke(
+        plugin_group,
+        ["submit", str(plugin), "--repo", "owner/repo;bad", "--output", str(target)],
+    )
+    assert result.exit_code != 0
+    assert "owner/name" in result.output
+    assert not target.exists()
+
+
+def test_external_entry_is_marked_indexed_without_optional_maintainer(tmp_path):
+    entries = tmp_path / "community/entries"
+    entries.mkdir(parents=True)
+    (entries / "lab.toml").write_text(
+        'name="lab"\ndescription="Lab"\n[source]\ntype="github"\nrepo="owner/lab"\n'
+    )
+    assert read_community_entries(tmp_path)[0]["metadata"]["indexed"] is True

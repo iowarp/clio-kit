@@ -7,7 +7,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 <MCPDetail
   name="Web"
-  icon="🔧"
+  icon="🌐"
   category="Utilities"
   description="Provider-fixed web search plus transparent URL, DOI, and document fetching"
   version="2.1.3"

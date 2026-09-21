@@ -260,3 +260,102 @@ def test_release_and_checkout_resolve_same_skill_and_server_selection(published)
     assert checkout["skills"].keys() == released["skills"].keys()
     assert checkout["servers"] == released["servers"]
     assert checkout["unsupported"] == released["unsupported"]
+
+
+def test_failed_install_rolls_back_project_pins_with_client_files(
+    published, tmp_path, monkeypatch
+):
+    from clio_kit.component_cache import root_path
+
+    _, output, source = published
+    config = source / "plugins/lab/.mcp.json"
+    config.write_text(
+        json.dumps(
+            {"lab": {"command": "python", "args": ["${CLAUDE_PLUGIN_ROOT}/server.py"]}}
+        )
+    )
+    (config.parent / "server.py").write_text("# fixture\n")
+    BUILD(source, output)
+    project = tmp_path / "project"
+    original_replace = Path.replace
+
+    def fail_config(path, target):
+        if Path(target) == project / ".codex/config.toml":
+            raise OSError("injected config failure")
+        return original_replace(path, target)
+
+    monkeypatch.setattr(Path, "replace", fail_config)
+    with pytest.raises(OSError, match="injected"):
+        install_for_client(None, "lab", "codex", project)
+    assert not list((root_path() / ".references").glob("*.json"))
+    assert not list(project.rglob("SKILL.md"))
+    assert not (project / ".codex/config.toml").exists()
+
+
+@pytest.mark.parametrize("reference", ["absolute", "parent", "linked"])
+def test_release_build_rejects_mcp_configuration_outside_package(
+    published, tmp_path, reference
+):
+    _, _, source = published
+    package = source / "plugins/lab"
+    outside = tmp_path / "outside.json"
+    outside.write_text(json.dumps({"outside": {"command": "private-tool"}}))
+    manifest_path = package / ".claude-plugin/plugin.json"
+    manifest = json.loads(manifest_path.read_text())
+    if reference == "absolute":
+        manifest["mcpServers"] = str(outside)
+    elif reference == "parent":
+        manifest["mcpServers"] = "../../../outside.json"
+    else:
+        (package / "linked.json").symlink_to(outside)
+        manifest["mcpServers"] = "./linked.json"
+    manifest_path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match="inside|Linked|linked"):
+        BUILD(source, tmp_path / "invalid-build")
+
+
+def test_release_build_rejects_duplicate_server_identity(published, tmp_path):
+    import shutil
+
+    _, _, source = published
+    shutil.copytree(source / "mcp-servers/hdf5", source / "mcp-servers/duplicate")
+    with pytest.raises(ValueError, match="Duplicate server"):
+        BUILD(source, tmp_path / "invalid-build")
+
+
+def test_released_prompt_selects_markdown_instead_of_bundled_license(
+    published, tmp_path, monkeypatch
+):
+    from click.testing import CliRunner
+    from clio_kit import prompts_cli
+
+    _, output, source = published
+    (source / "LICENSE").write_text("License text, not the prompt")
+    prompt_dir = source / "prompts/testing"
+    prompt_dir.mkdir(parents=True)
+    (prompt_dir / "review.md").write_text("Review the observed test results.")
+    BUILD(source, output)
+    monkeypatch.setattr(prompts_cli, "get_prompts_path", lambda: tmp_path / "absent")
+    result = CliRunner().invoke(prompts_cli.prompt, ["testing/review"])
+    assert result.exit_code == 0, result.output
+    assert "Review the observed test results." in result.output
+    assert "License text" not in result.output
+
+
+def test_cached_prompt_content_is_verified_on_every_use(
+    published, tmp_path, monkeypatch
+):
+    from click.testing import CliRunner
+    from clio_kit import prompts_cli
+
+    _, output, source = published
+    (source / "prompts").mkdir()
+    (source / "prompts/review.md").write_text("Reviewed instructions")
+    BUILD(source, output)
+    monkeypatch.setattr(prompts_cli, "get_prompts_path", lambda: tmp_path / "absent")
+    runner = CliRunner()
+    assert runner.invoke(prompts_cli.prompt, ["review"]).exit_code == 0
+    (store.artifact_path("prompt/review") / "review.md").write_text("Unreviewed change")
+    result = runner.invoke(prompts_cli.prompt, ["review"])
+    assert result.exit_code != 0 and "damaged" in result.output
+    assert "Unreviewed change" not in result.output

@@ -25,6 +25,8 @@ on:
       - 'community/**'
       - 'skills/**'
       - 'plugins/**'
+      - 'agents/**'
+      - 'hooks/**'
   push:
     branches:
       - main  # Validate release artifacts on main commits
@@ -48,6 +50,8 @@ on:
       - 'community/**'
       - 'skills/**'
       - 'plugins/**'
+      - 'agents/**'
+      - 'hooks/**'
     tags:
       - 'v*.*.*'  # Publish releases to PyPI on version tags (paths don't apply to tags)
   workflow_dispatch:  # Allow manual triggering

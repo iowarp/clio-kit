@@ -650,7 +650,7 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/geo",
       "evidence": "Locked runtime",
-      "icon": "🔧",
+      "icon": "🌍",
       "componentTypes": [
         "mcp"
       ],
@@ -1029,7 +1029,7 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/ndp",
       "evidence": "Locked runtime",
-      "icon": "🔧",
+      "icon": "🔎",
       "componentTypes": [
         "mcp"
       ],
@@ -1408,7 +1408,7 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/paraview",
       "evidence": "Locked runtime",
-      "icon": "🔧",
+      "icon": "🧊",
       "componentTypes": [
         "mcp"
       ],
@@ -1692,7 +1692,7 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/scientific_catalog",
       "evidence": "Locked runtime",
-      "icon": "🔧",
+      "icon": "🗃️",
       "componentTypes": [
         "mcp"
       ],
@@ -1788,7 +1788,7 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/seismology",
       "evidence": "Locked runtime",
-      "icon": "🔧",
+      "icon": "〰️",
       "componentTypes": [
         "mcp"
       ],
@@ -1977,7 +1977,7 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/spack",
       "evidence": "Locked runtime",
-      "icon": "🔧",
+      "icon": "🛠️",
       "componentTypes": [
         "mcp"
       ],
@@ -2072,7 +2072,7 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/terrain",
       "evidence": "Locked runtime",
-      "icon": "🔧",
+      "icon": "⛰️",
       "componentTypes": [
         "mcp"
       ],
@@ -2167,7 +2167,7 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/mcps/web",
       "evidence": "Locked runtime",
-      "icon": "🔧",
+      "icon": "🌐",
       "componentTypes": [
         "mcp"
       ],

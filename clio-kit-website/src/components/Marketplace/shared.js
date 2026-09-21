@@ -1,7 +1,7 @@
 import React from 'react';
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
-import {catalogue, itemUrl, publisherFor, kindLabel, summary} from './data';
+import {itemsById, itemUrl, publisherFor, kindLabel, summary} from './data';
 import styles from './styles.module.css';
 
 export function Icon({name = 'all', size = 20, ...props}) {
@@ -127,7 +127,7 @@ export function Frame({title, children}) {
 
 export function Glyph({kind, name, large = false}) {
   const serverIcon =
-    kind === 'mcp' ? catalogue.items.find((item) => item.id === `mcp/${name}`)?.icon : null;
+    kind === 'mcp' ? itemsById.get(`mcp/${name}`)?.icon : null;
   return (
     <span
       className={`${styles.glyph} ${styles[kind] || ''} ${large ? styles.largeGlyph : ''}`}

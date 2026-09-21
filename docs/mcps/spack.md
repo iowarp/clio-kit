@@ -7,7 +7,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 <MCPDetail
   name="Spack"
-  icon="🔧"
+  icon="🛠️"
   category="Utilities"
   description="Structured Spack discovery and installation tools for scientific agents"
   version="2.3.1"

@@ -166,6 +166,7 @@ def test_every_build_command_refuses_to_resolve() -> None:
         "sync",
         "--frozen",
         "--no-dev",
+        "--no-editable",
         "--project",
         str(project),
     ]

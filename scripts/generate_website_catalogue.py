@@ -12,7 +12,7 @@ import yaml
 
 from clio_kit.hooks import hook_components
 from clio_kit.client_install import CLIENTS, server_settings
-from clio_kit.server_icons import server_icon
+from clio_kit.server_icons import SERVER_ICONS, server_icon
 
 try:
     import tomllib
@@ -180,6 +180,15 @@ def classify_records(records: list[dict], entries: dict, root: Path) -> None:
 def generate(root: Path) -> dict:
     marketplace = json.loads((root / ".claude-plugin/marketplace.json").read_text())
     inventory = tomllib.loads((root / "mcp-server-versions.toml").read_text())
+    missing_icons = {
+        name
+        for name in inventory["servers"]
+        if name.replace("-", "_") not in SERVER_ICONS
+    }
+    if missing_icons:
+        raise ValueError(
+            f"Maintained servers need explicit icons: {sorted(missing_icons)}"
+        )
     entries = {entry["name"]: entry for entry in marketplace["plugins"]}
     records: list[dict] = []
     publishers = {

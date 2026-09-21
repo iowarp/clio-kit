@@ -7,7 +7,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 <MCPDetail
   name="Seismology"
-  icon="🔧"
+  icon="〰️"
   category="Analysis & Visualization"
   description="MCP server for analyzing SAC seismic-waveform files and TAR archives: inspect members, compute per-trace statistics, and plot traces"
   version="2.3.1"

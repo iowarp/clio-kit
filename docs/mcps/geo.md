@@ -7,7 +7,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 <MCPDetail
   name="Geo"
-  icon="🔧"
+  icon="🌍"
   category="Data Processing"
   description="MCP server for rendering GeoJSON vector layers into map images with basemaps"
   version="2.3.1"

@@ -10,15 +10,18 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import subprocess
 import tempfile
 from pathlib import Path, PurePosixPath
+
+from clio_kit.install_transaction import InstallTransaction
 from typing import Any
 
 from clio_kit.community import (
     COMMUNITY_SOURCE_FIELDS,
     read_federated_marketplaces,
-    write_live_marketplaces,
+    validate_source_location,
 )
 
 LOCK_NAME = "federation.lock.json"
@@ -80,6 +83,8 @@ def compile_catalogue(
     for original in catalogue["plugins"]:
         if not isinstance(original, dict) or not isinstance(original.get("name"), str):
             raise ValueError("External marketplace contains an unnamed plugin")
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", original["name"]):
+            raise ValueError("External plugin needs a lower-case kebab-case name")
         if original["name"] in names:
             raise ValueError(f"Duplicate external plugin name: {original['name']}")
         names.add(original["name"])
@@ -158,6 +163,7 @@ def compile_catalogue(
                     raise ValueError(
                         f"External source {field} must be a nonempty string"
                     )
+            validate_source_location(source)
             if source["source"] == "git-subdir":
                 _relative_path(source["path"])
         entries.append(entry)
@@ -202,6 +208,8 @@ def refresh_marketplace(root: Path) -> dict[str, Any]:
                 git_output("-C", str(checkout), "checkout", "--detach", "FETCH_HEAD")
             revision = git_output("-C", str(checkout), "rev-parse", "HEAD")
             catalogue_path = checkout / ".claude-plugin" / "marketplace.json"
+            if not catalogue_path.resolve().is_relative_to(checkout.resolve()):
+                raise ValueError("External catalogue leaves its repository")
             if catalogue_path.stat().st_size > 1_048_576:
                 raise ValueError(f"External catalogue exceeds 1 MiB: {url}")
             catalogue = json.loads(catalogue_path.read_text())
@@ -241,13 +249,16 @@ def refresh_marketplace(root: Path) -> dict[str, Any]:
         "marketplaces": provenance,
         "plugins": [entries[name] for name in imports],
     }
-    # Validate all fetches, names and sources before replacing either file.
-    pending = []
-    for path, content in ((manifest_path, marketplace), (lock_path, lock)):
-        temporary_path = path.with_suffix(path.suffix + ".tmp")
-        temporary_path.write_text(json.dumps(content, indent=2) + "\n")
-        pending.append((temporary_path, path))
-    for temporary_path, path in pending:
-        temporary_path.replace(path)
-    write_live_marketplaces(root, referrals)
+    # A write failure must restore the catalogue, provenance and referrals as
+    # one unit, just as a fetch or validation failure leaves them unchanged.
+    live_path = manifest_path.with_name("federated-marketplaces.json")
+    live = {"schema": "clio-kit.federated-marketplaces.v1", "marketplaces": referrals}
+    with InstallTransaction() as transaction:
+        for path, content in (
+            (manifest_path, marketplace),
+            (lock_path, lock),
+            (live_path, live),
+        ):
+            transaction.file(path, (json.dumps(content, indent=2) + "\n").encode())
+        transaction.commit()
     return lock

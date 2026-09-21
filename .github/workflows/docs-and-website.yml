@@ -64,7 +64,7 @@ jobs:
     - name: Install root dependencies
       run: |
         if [ -f pyproject.toml ]; then
-          uv sync
+          uv sync --frozen
         fi
 
     - name: Pre-sync MCP server environments
@@ -72,14 +72,14 @@ jobs:
         for dir in mcp-servers/*/; do
           if [ -f "$dir/pyproject.toml" ]; then
             echo "Syncing $(basename $dir)..."
-            (cd "$dir" && uv sync --all-extras --dev) || echo "Warning: sync failed for $(basename $dir)"
+            (cd "$dir" && uv sync --frozen --all-extras --dev) || echo "Warning: sync failed for $(basename $dir)"
           fi
         done
 
     # Generate and build documentation
     - name: Generate Docusaurus documentation
       run: |
-        python3 scripts/generate_docs.py mcp-servers clio-kit-website
+        uv run --frozen python scripts/generate_docs.py mcp-servers clio-kit-website
 
     - name: Setup Node.js
       uses: actions/setup-node@v4

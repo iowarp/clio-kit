@@ -7,7 +7,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 <MCPDetail
   name="Paraview"
-  icon="🔧"
+  icon="🧊"
   category="Analysis & Visualization"
   description="MCP server for ParaView scientific visualization"
   version="2.2.5"

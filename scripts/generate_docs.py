@@ -26,37 +26,6 @@ except ImportError:
         sys.exit(1)
 
 
-# Agentic Search is a first-class CLIO showcase surface, but it is an HTTP/CLI
-# service rather than an embedded MCP server. Keep its tile in the same
-# generated data without pretending it belongs to the MCP Registry inventory.
-NON_MCP_SHOWCASE_ENTRIES = {
-    "agentic_search": {
-        "name": "Agentic Search",
-        "category": "Search & Retrieval",
-        "description": (
-            "Hybrid retrieval engine. Lexical, vector, graph, and scientific "
-            "search over namespaced document corpora. DuckDB storage. FastAPI "
-            "service with async job queue."
-        ),
-        "icon": "🔍",
-        "actions": [
-            "query",
-            "index",
-            "list_documents",
-            "submit_index_job",
-            "get_job_status",
-            "cancel_job",
-            "health",
-            "metrics",
-        ],
-        "stats": {"version": "1.0.0", "updated": "2026-02-23"},
-        "platforms": ["claude", "cursor", "vscode"],
-        "slug": "agentic_search",
-        "docPath": "/docs/agentic-search",
-    }
-}
-
-
 def read_documentation_updated(inventory: dict[str, object]) -> str:
     """Return the explicit deterministic date for generated website metadata."""
     raw_documentation = inventory.get("documentation")
@@ -272,21 +241,16 @@ class DocusaurusGenerator:
     def __init__(self, output_dir: Path):
         self.output_dir = output_dir.resolve()
         self.mcps_output_dir = self.output_dir.parent / "docs" / "mcps"
-        self.data_output_dir = self.output_dir / "src" / "data"
 
     def generate_all_docs(self, mcps_data: Dict):
         """Generate all documentation files."""
         # Ensure output directories exist
         self.mcps_output_dir.mkdir(parents=True, exist_ok=True)
-        self.data_output_dir.mkdir(parents=True, exist_ok=True)
 
         # Generate individual MCP markdown files
         for slug in sorted(mcps_data):
             mcp_data = mcps_data[slug]
             self._generate_mcp_markdown(mcp_data)
-
-        # Generate mcpData.js file
-        self._generate_mcp_data_js(mcps_data)
 
         print(f"Generated {len(mcps_data)} MCP documentation files")
 
@@ -534,115 +498,6 @@ Refer to your MCP client documentation for specific setup instructions.
             "then expand to the intended workload.\n"
         )
 
-    def _generate_mcp_data_js(self, mcps_data: Dict):
-        """Generate the mcpData.js file for the frontend."""
-        # Build only from committed source data. Reading a previous generated
-        # file made clean and incremental checkouts produce different output.
-        js_mcps = dict(NON_MCP_SHOWCASE_ENTRIES)
-        for slug in sorted(mcps_data):
-            mcp_data = mcps_data[slug]
-            js_mcps[slug] = {
-                "name": mcp_data["name"],
-                "category": mcp_data["category"],
-                "description": mcp_data["description"],
-                "icon": mcp_data["icon"],
-                "actions": mcp_data["actions"],
-                "stats": {
-                    "version": mcp_data["version"],
-                    "updated": mcp_data["updated"],
-                },
-                "platforms": mcp_data["platforms"],
-                "slug": mcp_data["slug"],
-            }
-
-        category_counts = {}
-        for showcase_data in js_mcps.values():
-            category = showcase_data["category"]
-            category_counts[category] = category_counts.get(category, 0) + 1
-
-        # Generate categories object
-        categories = {"All": {"count": len(js_mcps), "color": "#6b7280", "icon": "🔍"}}
-
-        category_colors = {
-            "Data Processing": "#3b82f6",
-            "Analysis & Visualization": "#10b981",
-            "System Management": "#f59e0b",
-            "Search & Retrieval": "#6366f1",
-            "Utilities": "#ef4444",
-        }
-
-        category_icons = {
-            "Data Processing": "📊",
-            "Analysis & Visualization": "📈",
-            "System Management": "🖥️",
-            "Search & Retrieval": "🔍",
-            "Utilities": "🔧",
-        }
-
-        for category in sorted(category_counts):
-            count = category_counts[category]
-            categories[category] = {
-                "count": count,
-                "color": category_colors.get(category, "#6b7280"),
-                "icon": category_icons.get(category, "🔧"),
-            }
-
-        # Popular MCPs (those with most actions)
-        popular_mcps = sorted(
-            js_mcps,
-            key=lambda slug: (-len(js_mcps[slug]["actions"]), slug),
-        )[:6]
-
-        # Category types for TypeScript/JSDoc
-        category_types = {
-            "Data Processing": "data",
-            "Analysis & Visualization": "analysis",
-            "Search & Retrieval": "search",
-            "System Management": "system",
-            "Utilities": "util",
-        }
-
-        # GitHub stats placeholder
-        github_stats = {
-            "stars": 0,
-            "forks": 0,
-            "watchers": 0,
-            "url": "https://github.com/iowarp/clio-kit",
-        }
-
-        # MCP endorsements/badges
-        mcp_endorsement = {
-            "hdf5": ["flagship", "v1.0"],
-            "slurm": ["hpc"],
-            "arxiv": ["research"],
-            "pandas": ["data"],
-        }
-
-        content = f"""// MCP data structure for tile-based showcase
-export const mcpData = {json.dumps(js_mcps, indent=2)};
-
-// Categories with counts and colors
-export const categories = {json.dumps(categories, indent=2)};
-
-// Popular MCPs for featured section
-export const popularMcps = {json.dumps(popular_mcps, indent=2)};
-
-// Category type mappings
-export const categoryTypes = {json.dumps(category_types, indent=2)};
-
-// GitHub repository statistics
-export const githubStats = {json.dumps(github_stats, indent=2)};
-
-// MCP endorsements and badges
-export const mcpEndorsement = {json.dumps(mcp_endorsement, indent=2)};
-"""
-
-        output_file = self.data_output_dir / "mcpData.js"
-        with open(output_file, "w", encoding="utf-8") as f:
-            f.write(content)
-
-        print(f"Generated {output_file}")
-
 
 def main():
     """Main entry point."""
@@ -678,9 +533,11 @@ def main():
         extractor = MCPDataExtractor(server_versions, updated_date)
         mcps_data = extractor.extract_mcp_data(mcps_dir)
 
-        if not mcps_data:
-            print("Error: No MCPs found or processed")
-            sys.exit(1)
+        expected_slugs = {name.replace("-", "_") for name in server_versions}
+        if set(mcps_data) != expected_slugs:
+            raise ValueError(
+                f"MCP documentation extraction is incomplete: {sorted(expected_slugs - set(mcps_data))}"
+            )
 
         # Generate documentation
         generator = DocusaurusGenerator(docs_output_dir)

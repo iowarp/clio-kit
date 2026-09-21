@@ -45,7 +45,7 @@ from clio_kit.mcp_contracts import (
 # Determine if we're running from development or installed package
 MODULE_DIR = Path(__file__).parent
 LOCKED_SERVER_LAUNCH_SCHEMA = "clio-kit.locked-server.v4"
-_LOCKED_SERVER_RUNTIME_POLICY = "uv-run:materialized:frozen:no-editable:no-dev:v3"
+_LOCKED_SERVER_RUNTIME_POLICY = "uv-run:materialized:frozen:no-editable:no-dev:v4"
 LOCKED_SERVER_SCHEMA_ENV = "CLIO_KIT_LOCKED_SERVER_SCHEMA"
 LOCKED_SERVER_PROJECT_SHA_ENV = "CLIO_KIT_LOCKED_SERVER_PROJECT_SHA256"
 LOCKED_SERVER_LOCK_SHA_ENV = "CLIO_KIT_LOCKED_SERVER_LOCK_SHA256"
@@ -483,7 +483,7 @@ def _run_locked_local_server(
 ) -> None:
     """Build, evict, and launch one embedded server from its source-locked cache.
 
-    The root wheel ships each server's project and ``uv.lock``. The child runs
+    Selected artifacts supply each server project and lock. The child runs
     from an immutable, source-and-lock-keyed environment so the outer wheel binds
     the child dependency closure exactly. After the environment for the current
     spec is confirmed built, older specs of this server are evicted and the

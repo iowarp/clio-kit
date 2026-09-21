@@ -53,7 +53,20 @@ def cache_group() -> None:
     is_flag=True,
     help="Report what would be evicted without deleting anything.",
 )
-def cache_gc(keep: int | None, dry_run: bool) -> None:
+@click.option(
+    "--component-keep",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Component versions to keep (overrides CLIO_KIT_COMPONENT_KEEP).",
+)
+@click.option(
+    "--include-legacy",
+    is_flag=True,
+    help="Also select untracked legacy payloads; unknown consumers cannot be protected.",
+)
+def cache_gc(
+    keep: int | None, dry_run: bool, component_keep: int | None, include_legacy: bool
+) -> None:
     """Collapse every server to its newest N specs and prune the uv cache.
 
     This is the manual reclaim path for a box already polluted by unbounded
@@ -64,6 +77,12 @@ def cache_gc(keep: int | None, dry_run: bool) -> None:
     # module to register the group, so a top-level import would cycle.
     from clio_kit import uv_command
 
+    from clio_kit.component_cache import component_retention
+
+    try:
+        component_keep = component_retention(component_keep)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
     cache_root = clio_cache_root()
     policy = load_cache_policy()
     if keep is not None:
@@ -79,10 +98,12 @@ def cache_gc(keep: int | None, dry_run: bool) -> None:
         )
     except CacheInUseError as exc:
         raise click.ClickException(str(exc)) from exc
-    from clio_kit.component_cache import collect_components
+    from clio_kit.component_cache import prune_component_cache
 
     try:
-        components = collect_components(keep=policy.keep_per_server, dry_run=dry_run)
+        components = prune_component_cache(
+            keep=component_keep, dry_run=dry_run, include_legacy=include_legacy
+        )
     except (ValueError, OSError) as exc:
         raise click.ClickException(str(exc)) from exc
     budget = measure_cache_budget(cache_root, policy=policy)
@@ -150,18 +171,66 @@ def cache_status() -> None:
 
 
 @cache_group.command("components")
-@click.option("--keep", type=click.IntRange(min=1), default=2, show_default=True)
 @click.option(
-    "--dry-run", is_flag=True, help="Report eligible payloads without deleting them."
+    "--keep",
+    type=click.IntRange(min=1),
+    default=None,
+    help="Component versions to keep (CLIO_KIT_COMPONENT_KEEP, default 2).",
 )
-def component_gc(keep: int, dry_run: bool) -> None:
-    """Prune superseded, unreferenced component payloads conservatively."""
-    from clio_kit.component_cache import collect_components
+@click.option(
+    "--dry-run/--apply",
+    default=True,
+    help="Preview by default; --apply deletes selected payloads.",
+)
+@click.option(
+    "--include-legacy",
+    is_flag=True,
+    help="Also select untracked legacy payloads; unknown consumers cannot be protected.",
+)
+def component_gc(keep: int | None, dry_run: bool, include_legacy: bool) -> None:
+    """Preview or prune superseded, unreferenced component payloads."""
+    from clio_kit.component_cache import prune_component_cache
 
     try:
         click.echo(
-            json.dumps(collect_components(keep=keep, dry_run=dry_run), sort_keys=True)
+            json.dumps(
+                prune_component_cache(
+                    keep=keep, dry_run=dry_run, include_legacy=include_legacy
+                ),
+                sort_keys=True,
+            )
         )
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+
+
+@cache_group.command("forget-project")
+@click.option(
+    "--config",
+    type=click.Path(path_type=Path),
+    required=True,
+    help="Original absolute client configuration path.",
+)
+@click.option(
+    "--dry-run/--apply",
+    default=True,
+    help="Preview by default; --apply releases this project's pins.",
+)
+@click.option(
+    "--confirm-unused",
+    is_flag=True,
+    help="Confirm no configuration, backup or running process still uses these payloads.",
+)
+def forget_project_refs(config: Path, dry_run: bool, confirm_unused: bool) -> None:
+    """Release project pins after retiring its component consumers."""
+    from clio_kit.component_cache import forget_project
+
+    if not dry_run and not confirm_unused:
+        raise click.ClickException(
+            "--apply requires --confirm-unused; live consumers may break after cleanup"
+        )
+    try:
+        click.echo(json.dumps(forget_project(config, dry_run=dry_run), sort_keys=True))
     except (ValueError, OSError) as exc:
         raise click.ClickException(str(exc)) from exc
 

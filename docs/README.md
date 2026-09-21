@@ -15,7 +15,6 @@ agent definitions and community contributions into one meta-marketplace.
   that reuse components across bundles.
 - [Marketplace guide](marketplace.md): installation options, external contributions,
   Clio Coder integration and tested coverage.
-- [Reviewing the rework](review.md): review areas, reproducible checks and acceptance boundaries.
 - [Agentic Search](agentic-search.md): the standalone scientific retrieval service.
 
 Server references are in [`mcps/`](https://github.com/iowarp/clio-kit/tree/main/docs/mcps)

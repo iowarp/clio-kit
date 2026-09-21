@@ -151,17 +151,45 @@ may remain in the shared cache after a failed installation. This rollback covers
 caught errors and interrupts, not power loss or forced process termination. If
 restoring files itself fails, the error reports the retained recovery paths.
 
+New client configuration files and backups are private (`0600`); they can contain
+credentials. Existing configuration permissions are preserved. For a shared
+checkout, review its contents before deliberately granting group read access.
+
 Preview component cleanup before applying it:
 
 ```bash
-clio-kit cache components --keep 2 --dry-run
 clio-kit cache components --keep 2
+clio-kit cache components --keep 2 --apply
 ```
 
-Cleanup keeps the newest requested number of versions per component, artifacts
-referenced by installed launcher catalogues, and paths still used in registered
-project configurations. It waits for component downloads and project installs.
-Older cache entries without tracking metadata are retained conservatively; age
-alone cannot establish that no client uses them. Copied skills and native plugin
-folders live outside this cache and are unaffected. `clio-kit cache gc` also
-includes component cleanup alongside its existing runtime cleanup.
+`cache components` defaults to dry run (`--dry-run` is also accepted). Both this
+command and the component phase of `cache gc` use `CLIO_KIT_COMPONENT_KEEP`
+(default 2). Override it with `cache components --keep N` or
+`cache gc --component-keep N`. The existing `cache gc --keep` and
+`CLIO_KIT_ENV_KEEP` govern runtime environments only. Unlike `cache components`,
+`cache gc` retains its existing apply-by-default behavior; use `--dry-run` first.
+
+Cleanup retains recent versions, installed catalogue references and explicit
+project pins. Project pins do not depend on the contents or continued existence
+of the configuration file: variables, moved files and backups must not silently
+make their payloads disposable. Pins are staged with the installation transaction.
+Copied skills and native marketplace folders do not need project cache pins.
+Component cleanup waits for other tracked downloads and project installations.
+
+After retiring a project's consumers, preview and explicitly release its pins:
+
+```bash
+clio-kit cache forget-project --config /original/project/.codex/config.toml
+clio-kit cache forget-project --config /original/project/.codex/config.toml --apply --confirm-unused
+```
+
+Only confirm after checking active clients, indirect paths, configuration backups
+and running processes. This removes tracking, not project files; other catalogue
+or project references still protect shared payloads.
+
+Older payloads without tracking metadata remain protected by default. To reclaim
+them, inspect `cache components --include-legacy`, then repeat with `--apply` only
+when their old consumers have been retired. Known references are always retained;
+unrecorded legacy consumers cannot be detected and may break if their payload is
+removed. This option is also available on `cache gc`. Copied skill/plugin folders
+outside the cache are unaffected.

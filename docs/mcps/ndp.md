@@ -7,7 +7,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 <MCPDetail
   name="Ndp"
-  icon="🔧"
+  icon="🔎"
   category="Data Processing"
   description="National Data Platform (NDP) MCP server for searching and discovering datasets across multiple CKAN instances"
   version="2.2.5"

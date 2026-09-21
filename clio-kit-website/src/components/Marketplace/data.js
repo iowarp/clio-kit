@@ -1,5 +1,6 @@
 import catalogue from '@site/src/data/catalogue.json';
 export {catalogue};
+export const itemsById = new Map(catalogue.items.map((item) => [item.id, item]));
 
 export const kinds = [
   ['all', 'All entries'],
@@ -103,6 +104,6 @@ export function installation(item, client) {
 }
 
 export function featuredItems(data = catalogue) {
-  const items = new Map(data.items.map((item) => [item.id, item]));
+  const items = data === catalogue ? itemsById : new Map(data.items.map((item) => [item.id, item]));
   return (data.featured || []).map((id) => items.get(id)).filter(Boolean);
 }

@@ -11,8 +11,9 @@ and which commands realise it, which is what this table holds.
 resolving when the lock disagrees with the manifest. Go uses ``go.mod`` versions and ``go.sum`` checksums with read-only module
 resolution; the toolchain remains an explicit system prerequisite.
 
-Server sources are vendored into the wheel. All runtimes may download
-dependencies on first build; offline execution requires a prewarmed cache.
+Released launchers fetch selected source-and-lock component artifacts. All
+runtimes may download dependencies on first build; offline execution requires
+a prewarmed cache.
 Go servers are compiled on first build and then run as binaries.
 """
 
@@ -135,7 +136,15 @@ def build_command(
     """
     require_runtime(runtime)
     if runtime == "python":
-        return [executable, "sync", "--frozen", "--no-dev", "--project", str(project)]
+        return [
+            executable,
+            "sync",
+            "--frozen",
+            "--no-dev",
+            "--no-editable",
+            "--project",
+            str(project),
+        ]
     if runtime == "node":
         # npm resolves --prefix inconsistently across versions, so the project
         # is selected by working directory instead; the caller runs it there.
@@ -153,11 +162,14 @@ def start_command(
     """Return the command that starts the server from its built environment."""
     require_runtime(runtime)
     if runtime == "python":
+        # The frozen, non-editable sync completed before launch. A second sync
+        # here could mutate files while another client is importing this package.
         return [
             executable,
             "run",
             "--no-dev",
             "--no-editable",
+            "--no-sync",
             "--frozen",
             "--project",
             str(project),

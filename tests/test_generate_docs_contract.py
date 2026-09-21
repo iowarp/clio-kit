@@ -1,8 +1,6 @@
 """Regression tests for generated MCP site contract metadata."""
 
 import importlib.util
-import json
-import re
 from pathlib import Path
 from types import ModuleType
 
@@ -31,7 +29,7 @@ def test_generation_from_website_directory_keeps_docs_at_repository_root(
     monkeypatch.chdir(site)
     DocusaurusGenerator(Path(".")).generate_all_docs({})
     assert (tmp_path / "docs/mcps").is_dir()
-    assert (site / "src/data/mcpData.js").is_file()
+    assert not (site / "src/data/mcpData.js").exists()
     assert not (site / "docs").exists()
 
 
@@ -70,10 +68,7 @@ def test_generated_page_replaces_stale_description(tmp_path: Path) -> None:
     assert 'actions={["slurm_submit"]}' in rendered
 
 
-def test_showcase_generation_is_deterministic_and_keeps_non_mcp_tile(
-    tmp_path: Path,
-) -> None:
-    """Clean and incremental generation produce identical complete showcase data."""
+def test_reference_generation_is_deterministic_without_legacy_catalogue(tmp_path):
     server = tmp_path / "server"
     server.mkdir()
     source_data = {
@@ -89,37 +84,17 @@ def test_showcase_generation_is_deterministic_and_keeps_non_mcp_tile(
             "platforms": ["claude"],
             "keywords": ["spack"],
             "license": "BSD-3-Clause",
-            "tools": [{"name": "spack_install", "description": "Install."}],
+            "tools": [],
             "path": str(server),
         }
     }
-    incremental = tmp_path / "incremental" / "site"
-    stale_data = incremental / "src" / "data"
-    stale_data.mkdir(parents=True)
-    (stale_data / "mcpData.js").write_text(
-        'export const mcpData = {"spack":{"description":"stale"}};\n',
-        encoding="utf-8",
-    )
-    clean = tmp_path / "clean" / "site"
-
-    DocusaurusGenerator(incremental).generate_all_docs(source_data)
-    DocusaurusGenerator(clean).generate_all_docs(source_data)
-
-    incremental_output = (incremental / "src" / "data" / "mcpData.js").read_text(
-        encoding="utf-8"
-    )
-    clean_output = (clean / "src" / "data" / "mcpData.js").read_text(encoding="utf-8")
-    assert incremental_output == clean_output
-    match = re.search(r"export const mcpData = ({.*?});", clean_output, re.DOTALL)
-    assert match is not None
-    showcase = json.loads(match.group(1))
-    assert showcase["agentic_search"]["docPath"] == "/docs/agentic-search"
-    assert showcase["spack"]["description"] == "Authoritative Spack description"
-    assert showcase["spack"]["stats"]["updated"] == "2026-07-13"
-    assert (incremental.parent / "docs/mcps/spack.md").read_text() == (
-        clean.parent / "docs/mcps/spack.md"
-    ).read_text()
-    assert not (clean / "docs").exists()
+    first, second = tmp_path / "first/site", tmp_path / "second/site"
+    for site in (first, second):
+        DocusaurusGenerator(site).generate_all_docs(source_data)
+        assert not (site / "src/data/mcpData.js").exists()
+    assert (first.parent / "docs/mcps/spack.md").read_bytes() == (
+        second.parent / "docs/mcps/spack.md"
+    ).read_bytes()
 
 
 @pytest.mark.parametrize("value", [None, "2026-7-13", "not-a-date"])
@@ -199,3 +174,34 @@ def test_python_descriptor_preserves_project_documentation_metadata(
     assert data["description"] == "Scientific analysis"
     assert data["license"] == "BSD-3-Clause"
     assert data["keywords"] == ["data-analysis"]
+
+
+def test_partial_metadata_extraction_cannot_publish_an_incomplete_site(
+    tmp_path, monkeypatch, capsys
+):
+    servers = tmp_path / "mcp-servers"
+    (servers / "pandas").mkdir(parents=True)
+    (servers / "pandas/pyproject.toml").write_text('[project]\nname="pandas-mcp"\n')
+    (tmp_path / "mcp-server-versions.toml").write_text(
+        '[servers]\npandas="1.0.0"\n[documentation]\nupdated="2026-09-21"\n'
+    )
+    monkeypatch.setattr(
+        GENERATOR.sys,
+        "argv",
+        ["generate_docs.py", str(servers), str(tmp_path / "site")],
+    )
+    monkeypatch.setattr(
+        GENERATOR.MCPDataExtractor, "extract_mcp_data", lambda *args: {}
+    )
+    with pytest.raises(SystemExit) as error:
+        GENERATOR.main()
+    assert error.value.code == 1
+    assert "extraction is incomplete" in capsys.readouterr().out
+    assert not (tmp_path / "docs/mcps").exists()
+
+
+def test_ci_runs_documentation_generator_in_its_locked_package_environment():
+    workflow = (
+        Path(__file__).resolve().parents[1] / ".github/workflows/docs-and-website.yml"
+    ).read_text()
+    assert "uv run --frozen python scripts/generate_docs.py" in workflow

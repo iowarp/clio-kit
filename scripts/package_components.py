@@ -156,6 +156,13 @@ def build_components(root: Path, output: Path) -> dict:
     for descriptor in sorted((root / "mcp-servers").glob("*/clio-server.toml")):
         data = tomllib.loads(descriptor.read_text())
         directory = descriptor.parent
+        name = data.get("name")
+        if not isinstance(name, str) or not re.fullmatch(
+            r"[a-z0-9]+(?:-[a-z0-9]+)*", name
+        ):
+            raise ValueError(f"Invalid server name: {name!r}")
+        if name in index["servers"]:
+            raise ValueError(f"Duplicate server: {name}")
         lock = {"python": "uv.lock", "node": "package-lock.json", "go": "go.sum"}[
             data["runtime"]
         ]
@@ -226,7 +233,20 @@ def build_components(root: Path, output: Path) -> dict:
                 configurations.append(json.loads((directory / ".mcp.json").read_text()))
             inline = manifest.get("mcpServers")
             if isinstance(inline, str):
-                inline = json.loads((directory / inline).read_text())
+                target = directory / inline
+                if (
+                    not inline.startswith("./")
+                    or ".." in Path(inline).parts
+                    or not target.resolve().is_relative_to(directory.resolve())
+                ):
+                    raise ValueError(
+                        f"MCP configuration must stay inside its package: {inline}"
+                    )
+                if target.is_symlink() or any(
+                    parent.is_symlink() for parent in target.parents if parent != root
+                ):
+                    raise ValueError(f"Linked MCP configuration: {inline}")
+                inline = json.loads(target.read_text())
             if inline:
                 configurations.append(inline)
             servers: dict = {}

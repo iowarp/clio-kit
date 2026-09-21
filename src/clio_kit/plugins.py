@@ -258,6 +258,9 @@ def build_community_entry(
     manifest: dict[str, Any], repo: str, *, kind: str = "plugin"
 ) -> str:
     """Render the marketplace entry that indexes a plugin we do not own."""
+    from clio_kit.community import validate_source_location
+
+    validate_source_location({"source": "github", "repo": repo})
     author = manifest.get("author") or {}
     maintainer = author.get("name") if isinstance(author, dict) else author
     entry = {
@@ -516,7 +519,10 @@ def plugin_submit(
     if repo.count("/") != 1 or repo.startswith("/") or repo.endswith("/"):
         raise click.ClickException(f"--repo {repo!r} must be in owner/name form")
 
-    entry = build_community_entry(manifest, repo, kind=kind)
+    try:
+        entry = build_community_entry(manifest, repo, kind=kind)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
     if open_pr:
         from clio_kit.submissions import open_submission
 

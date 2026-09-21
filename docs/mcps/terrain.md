@@ -7,7 +7,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 <MCPDetail
   name="Terrain"
-  icon="🔧"
+  icon="⛰️"
   category="Analysis & Visualization"
   description="MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding"
   version="2.2.5"

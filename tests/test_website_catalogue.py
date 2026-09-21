@@ -214,3 +214,17 @@ console.log(JSON.stringify({
     for item in data["items"]:
         if item["installation"] == "launcher":
             assert item["icon"] == server_icon(item["name"])
+
+
+def test_maintained_icon_coverage_cannot_silently_fall_back(monkeypatch):
+    from clio_kit.server_icons import SERVER_ICONS
+
+    monkeypatch.delitem(SERVER_ICONS, "spack")
+    with pytest.raises(ValueError, match="explicit icons.*spack"):
+        catalogue.generate(ROOT)
+
+
+def test_retired_showcase_has_no_remaining_website_consumers():
+    for path in (ROOT / "clio-kit-website/src").rglob("*.js"):
+        assert "mcpData" not in path.read_text(), path
+        assert "MCPShowcase" not in path.read_text(), path

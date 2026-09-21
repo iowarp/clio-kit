@@ -18,7 +18,7 @@ from clio_kit.skills import read_skill_frontmatter
 try:
     import tomllib
 except ImportError:
-    import tomli as tomllib  # type: ignore[no-redef]
+    import tomli as tomllib  # type: ignore[import-not-found,no-redef]
 
 
 # These are project-local paths; installation never changes the global profile.
@@ -223,6 +223,8 @@ def install_for_client(
         for artifact_key in components["artifacts"]:
             fetch(artifact_key)
     with InstallTransaction() as transaction:
+        if root is None and components["servers"]:
+            register_project(config, components["artifacts"], transaction)
         if components["skills"]:
             stage_skills(components["skills"], target, replace, transaction)
         if components["servers"]:
@@ -239,7 +241,5 @@ def install_for_client(
                     transaction.file(backup, original)
                     result["backup"] = str(backup)
                 transaction.file(config, rendered)
-        if root is None and components["servers"]:
-            register_project(config, components["artifacts"])
         transaction.commit()
     return result

@@ -16,7 +16,10 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
+import re
+import shlex
+from urllib.parse import urlparse
+from pathlib import Path, PurePosixPath
 from typing import Any, cast
 
 # Where the federated catalogue is published, in preference order.
@@ -69,6 +72,56 @@ COMMUNITY_KINDS: tuple[str, ...] = ("plugin", "marketplace")
 MARKETPLACE_SOURCE_TYPES: frozenset[str] = frozenset({"github", "url"})
 
 
+def validate_source_location(source: dict[str, Any]) -> None:
+    """Reject malformed coordinates before displaying commands or cloning."""
+    kind = source["source"]
+    if kind == "github" and not re.fullmatch(
+        r"[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*", source["repo"]
+    ):
+        raise ValueError("GitHub repo must be owner/name without shell syntax")
+    if kind == "git-subdir":
+        value = source["path"]
+        path = PurePosixPath(value)
+        if (
+            not value
+            or path.is_absolute()
+            or ".." in path.parts
+            or "\\" in value
+            or ":" in value
+        ):
+            raise ValueError("Plugin source path must stay inside its repository")
+    if kind == "npm" and not re.fullmatch(
+        r"(?:@[a-z0-9_.-]+/)?[a-z0-9][a-z0-9_.-]*", source["package"]
+    ):
+        raise ValueError("Invalid npm package coordinate")
+    for field in ("url", "registry"):
+        if field not in source:
+            continue
+        value = source[field]
+        if any(c.isspace() for c in value) or value.startswith("-"):
+            raise ValueError(f"Invalid source {field}")
+        if field == "url" and re.fullmatch(
+            r"git@[A-Za-z0-9.-]+:[A-Za-z0-9_./-]+", value
+        ):
+            continue
+        parsed = urlparse(value)
+        if not (
+            (parsed.scheme in {"https", "ssh"} and parsed.hostname)
+            or parsed.scheme == "file"
+            and parsed.path.startswith("/")
+            and field == "url"
+            or parsed.scheme == "http"
+            and parsed.hostname in {"127.0.0.1", "localhost", "::1"}
+        ):
+            raise ValueError(
+                f"Unsupported source {field}: use HTTPS, SSH, or an explicit local test source"
+            )
+    for field in ("ref", "sha"):
+        value = source.get(field)
+        if value and (value.startswith("-") or any(c.isspace() for c in value)):
+            raise ValueError(f"Invalid source {field}")
+
+
 def read_community_entries(repo_root: Path) -> list[dict[str, Any]]:
     """Read the installable outside contributions, name-sorted.
 
@@ -102,7 +155,7 @@ def read_federated_marketplaces(repo_root: Path) -> list[dict[str, Any]]:
 def marketplace_add_command(source: dict[str, Any]) -> str:
     """Return the one command that adds a federated marketplace."""
     target = source["repo"] if source["source"] == "github" else source["url"]
-    return f"claude plugin marketplace add {target}"
+    return f"claude plugin marketplace add {shlex.quote(target)}"
 
 
 def write_shipped_marketplaces(
@@ -200,6 +253,8 @@ def _read_entries(repo_root: Path) -> list[tuple[str, dict[str, Any]]]:
         name = data.get("name")
         if not isinstance(name, str) or not name:
             raise ValueError(f"{path} needs a name")
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", name):
+            raise ValueError(f"{path} needs a lower-case kebab-case name")
         if name != path.stem:
             raise ValueError(f"{path} declares name {name!r}; rename the file to match")
         if name.startswith("clio-"):
@@ -255,6 +310,7 @@ def _read_entries(repo_root: Path) -> list[tuple[str, dict[str, Any]]]:
             if source.get(field):
                 marketplace_source[field] = source[field]
 
+        validate_source_location(marketplace_source)
         entry: dict[str, Any] = {
             "name": name,
             "source": marketplace_source,
@@ -267,8 +323,9 @@ def _read_entries(repo_root: Path) -> list[tuple[str, dict[str, Any]]]:
         # here. Claude Code ignores `metadata`, which is what makes it safe to
         # carry provenance in.
         maintainer = data.get("maintainer")
+        entry["metadata"] = {"indexed": True}
         if maintainer:
-            entry["metadata"] = {"maintainer": maintainer, "indexed": True}
+            entry["metadata"]["maintainer"] = maintainer
         entries.append((kind, entry))
 
     names = [entry["name"] for _, entry in entries]

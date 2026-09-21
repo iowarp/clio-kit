@@ -15,6 +15,14 @@ SERVER_ICONS = {
     "parallel_sort": "🔄",
     "jarvis": "🤖",
     "chronolog": "⏰",
+    "geo": "🌍",
+    "ndp": "🔎",
+    "paraview": "🧊",
+    "scientific_catalog": "🗃️",
+    "seismology": "〰️",
+    "spack": "🛠️",
+    "terrain": "⛰️",
+    "web": "🌐",
 }
 
 
