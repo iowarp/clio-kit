@@ -7,7 +7,6 @@ metadata:
   provenance: designed
   eval-status: scenarios-recorded
 ---
-
 # Summarize and Plot Scientific Results
 
 Two servers, and the handoff between them is where this goes wrong.
@@ -26,9 +25,9 @@ plot at the original input after a transformation.
 Almost every tool on both servers takes `file_path`. Two do not, and they are
 the two you reach for early:
 
-| Tool | Argument |
-|---|---|
-| `clio-pandas:profile_csv` | `data_path` |
+| Tool                          | Argument      |
+| ----------------------------- | ------------- |
+| `clio-pandas:profile_csv`   | `data_path` |
 | `clio-plot:plot_timeseries` | `data_path` |
 
 Fifteen pandas tools and six plot tools use `file_path`, so the pattern learned
@@ -73,8 +72,7 @@ figure can actually show.
 
 `groupby_operations` returns an `output_file` and a `results` array. Pass the
 returned `output_file` to the plotting tool. If a different destination is
-needed, call `save_data(data={"data": result["results"]},
-file_path="/absolute/path/means.csv", index=False)`. Do not pass the entire
+needed, call `save_data(data={"data": result["results"]}, file_path="/absolute/path/means.csv", index=False)`. Do not pass the entire
 response envelope: metadata and nested results are not a dataframe.
 
 For a numeric matrix from another server, map each column to its supplied name
@@ -89,14 +87,14 @@ correctness.
 
 **6. Plot from that file.**
 
-| Question | Tool |
-|---|---|
-| How does y change with x | `clio-plot:line_plot` |
-| Several series over time | `clio-plot:plot_timeseries` |
-| Compare across categories | `clio-plot:bar_plot` |
-| Are these two related | `clio-plot:scatter_plot` |
-| How is one variable distributed | `clio-plot:histogram_plot` |
-| Which of many columns move together | `clio-plot:heatmap_plot` |
+| Question                            | Tool                          |
+| ----------------------------------- | ----------------------------- |
+| How does y change with x            | `clio-plot:line_plot`       |
+| Several series over time            | `clio-plot:plot_timeseries` |
+| Compare across categories           | `clio-plot:bar_plot`        |
+| Are these two related               | `clio-plot:scatter_plot`    |
+| How is one variable distributed     | `clio-plot:histogram_plot`  |
+| Which of many columns move together | `clio-plot:heatmap_plot`    |
 
 Match the chart to the question, not to preference — see
 `choosing-the-right-chart`.
