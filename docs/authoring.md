@@ -162,6 +162,32 @@ tokens (`--max-uncached-tokens`); already-running cases can exceed that limit.
 Authentication, quota and sandbox failures also stop further cases. Native Claude
 agents and hooks require their separate supported-client acceptance checks.
 
+Select a workflow's predefined evaluation case with `--plugin`:
+
+```bash
+uv run --frozen python evals/codex_eval.py --plugin clio-dataset-report --modes skill --output /tmp/clio-plugin-eval
+uv run --frozen python evals/codex_report.py /tmp/clio-plugin-eval
+```
+
+The runner keeps the installer-generated Codex project configuration and records
+any components excluded by the portable route, such as Claude-format agents and
+hooks. `--list` previews coverage without needing an output directory. For a
+separate explicit-invocation smoke test, use `--modes skill --invoke-skill`;
+automatic skill selection remains a different test.
+
+Use `--mcp-config /path/to/backends.toml` for site-specific settings in a Codex
+`[mcp_servers.<name>]` table: stdio `command`, `args`, `env` and timeouts are
+supported. The same overrides apply to both comparison arms. Keep credentials
+out of that file; temporary configuration may be retained as local evidence.
+Temporary authentication links are removed after each run, including failures.
+Incomplete model runs return a nonzero exit code.
+
+Reports distinguish task-outcome checks from skill/MCP activation. To recheck
+trusted saved fixtures after correcting a checker, add `--recheck-artifacts` to
+the report command. This can execute generated fixture code and writes a separate
+`rechecked-summary`, preserving the original results. Drafts and prerequisite
+checks still do not establish operational scientific workflows.
+
 ## Add an MCP server
 
 For an external server, add `.mcp.json` at the plugin root. For example, a plugin

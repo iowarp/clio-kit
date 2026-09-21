@@ -14,16 +14,18 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import signal
+import sys
 import subprocess
 import threading
 import time
 
 import tomli_w
 
-from clio_kit.client_install import install_for_client
+from clio_kit.client_install import install_for_client, tomllib
 from clio_kit.skill_cli import install_skills, selected_skills, skill_records
 from codex_cases import CASES
 from codex_fixtures import ROOT, check_artifacts, prepare
@@ -79,6 +81,17 @@ def summarize_events(events, servers=None):
         shell_calls=len(commands),
         shell_failed=sum(i.get("exit_code", 0) != 0 for i in commands),
         completed=any(e.get("type") == "turn.completed" for e in events),
+        skill_names_read=sorted(
+            {
+                name
+                for i in commands
+                if "SKILL.md" in i.get("command", "") and i.get("exit_code") == 0
+                for name in re.findall(
+                    r"(?m)^name:\s*[\"']?([a-z0-9-]+)",
+                    i.get("aggregated_output", ""),
+                )
+            }
+        ),
         skill_reads=[
             i.get("command", "")
             for i in commands
@@ -101,7 +114,54 @@ def tool_failed(item):
     )
 
 
+def load_mcp_overrides(path):
+    """Read explicit local stdio backend settings, without importing user config."""
+    if path is None:
+        return {}
+    data = tomllib.loads(path.read_text()).get("mcp_servers")
+    if not isinstance(data, dict):
+        raise ValueError("--mcp-config needs a TOML mcp_servers table")
+    for name, settings in data.items():
+        if not isinstance(settings, dict) or set(settings) - {
+            "command",
+            "args",
+            "env",
+            "startup_timeout_sec",
+            "tool_timeout_sec",
+        }:
+            raise ValueError(f"Unsupported stdio override for {name}")
+        if "command" in settings and (
+            not isinstance(settings["command"], str) or not settings["command"].strip()
+        ):
+            raise ValueError(f"Invalid command for {name}")
+        if "args" in settings and (
+            not isinstance(settings["args"], list)
+            or not all(isinstance(v, str) for v in settings["args"])
+        ):
+            raise ValueError(f"Invalid args for {name}")
+        env = settings.get("env", {})
+        if not isinstance(env, dict) or not all(
+            isinstance(v, str) for v in env.values()
+        ):
+            raise ValueError(f"Invalid env for {name}")
+        for key in ("startup_timeout_sec", "tool_timeout_sec"):
+            if key in settings and (
+                type(settings[key]) not in (int, float) or settings[key] <= 0
+            ):
+                raise ValueError(f"Invalid timeout for {name}")
+    return data
+
+
 def run(case, mode, args):
+    try:
+        return execute_run(case, mode, args)
+    finally:
+        auth_link = args.output / case["skill"] / mode / "codex/auth.json"
+        if auth_link.is_symlink():
+            auth_link.unlink()
+
+
+def execute_run(case, mode, args):
     global UNCACHED_USED
     label = case["skill"]
     folder = args.output / label / mode
@@ -132,11 +192,20 @@ def run(case, mode, args):
     # The benchmark's expected outcomes must not be visible to the model.
     for path in (project / ".agents").rglob("evals.md"):
         path.unlink()
-    configured_servers = set(case["servers"]) | {
-        name.removeprefix("clio-") for name in installation.get("servers", [])
-    }
-    servers = {
-        name: {
+    project_config = project / ".codex/config.toml"
+    installed_config = (
+        tomllib.loads(project_config.read_text()) if project_config.exists() else {}
+    )
+    installed_config_sha256 = (
+        hashlib.sha256(project_config.read_bytes()).hexdigest()
+        if project_config.exists()
+        else None
+    )
+    servers = installed_config.get("mcp_servers", {})
+    for name in case["servers"]:
+        if name in servers or f"clio-{name}" in servers:
+            continue
+        servers[name] = {
             "command": "uv",
             "args": [
                 "run",
@@ -147,28 +216,43 @@ def run(case, mode, args):
                 "mcp-server",
                 name,
             ],
-            "startup_timeout_sec": 120,
-            "tool_timeout_sec": 90,
-            "default_tools_approval_mode": "approve"
-            if case["kind"] not in {"boundary"}
-            else "auto",
         }
-        for name in sorted(configured_servers)
-    }
-    # Use the same checkout-backed MCP commands in both arms, independent of PATH.
+    for name, settings in servers.items():
+        settings.update(
+            startup_timeout_sec=120,
+            tool_timeout_sec=90,
+            default_tools_approval_mode="auto"
+            if case["kind"] == "boundary"
+            else "approve",
+        )
+        override = args.mcp_overrides.get(
+            name, args.mcp_overrides.get(name.removeprefix("clio-"), {})
+        )
+        settings.update(override)
+    configured_servers = set(servers)
+    installed_config["mcp_servers"] = servers
+    project_config.parent.mkdir(exist_ok=True)
+    project_config.touch(mode=0o600)
+    project_config.write_text(tomli_w.dumps(installed_config))
+    # Both arms use identical backend settings, independent of global client config.
     config = {
         "model": args.model,
         "model_reasoning_effort": "low",
         "features": {"apps": False},
         "sandbox_workspace_write": {"network_access": args.network_access},
-        "mcp_servers": servers,
         "projects": {str(project): {"trust_level": "trusted"}},
     }
-    (home / "config.toml").write_text(tomli_w.dumps(config))
-    # Package configuration has been checked above; use the common evaluation
-    # config to avoid overriding it with a globally installed release launcher.
-    (project / ".codex/config.toml").unlink(missing_ok=True)
+    config_path = home / "config.toml"
+    config_path.touch(mode=0o600)
+    config_path.write_text(tomli_w.dumps(config))
+    # Keep the installer's project configuration. Codex must consume the same
+    # command/args/env that users receive, with only harness policy overrides.
     prompt = COMMON + "\nTask:\n" + case["prompt"]
+    if args.invoke_skill:
+        prompt += (
+            f"\nExplicitly use ${label}; read its SKILL.md before performing the task."
+        )
+
     (folder / "request.txt").write_text(prompt)
     env = {
         k: v
@@ -184,6 +268,7 @@ def run(case, mode, args):
         )
     }
     env["CODEX_HOME"] = str(home)
+    env["PATH"] = str(Path(sys.executable).parent) + os.pathsep + env.get("PATH", "")
     command = [
         "codex",
         "exec",
@@ -249,7 +334,7 @@ def run(case, mode, args):
     }:
         checks["actual_mcp_call"] = record["mcp_calls"] > 0
     if mode == "skill":
-        checks["skill_read"] = any(label in c for c in record["skill_reads"])
+        checks["skill_read"] = label in record["skill_names_read"]
     runtime_blocked = any(
         marker in (folder / "trace.jsonl").read_text()
         for marker in ("bwrap: loopback:", "bwrap: setting up uid map:")
@@ -289,6 +374,17 @@ def run(case, mode, args):
         ),
         quality="requires independent review",
         installation=installation,
+        package=case.get("package"),
+        installed_config_sha256=installed_config_sha256,
+        config_route="project",
+        invocation="explicit" if args.invoke_skill else "automatic",
+        server_config_sha256=hashlib.sha256(
+            json.dumps(servers, sort_keys=True).encode()
+        ).hexdigest(),
+        harness_sha256={
+            p.name: hashlib.sha256(p.read_bytes()).hexdigest()
+            for p in Path(__file__).parent.glob("codex_*.py")
+        },
         servers=sorted(configured_servers),
         prompt_sha256=hashlib.sha256(prompt.encode()).hexdigest(),
         source_hashes=protected,
@@ -329,9 +425,24 @@ def pair(case, args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--output", type=Path)
     parser.add_argument("--model", default="gpt-5.6-luna")
     parser.add_argument("--skill", action="append")
+    parser.add_argument(
+        "--plugin",
+        action="append",
+        help="Select cases that install this workflow package's portable components",
+    )
+    parser.add_argument(
+        "--mcp-config",
+        type=Path,
+        help="Local TOML stdio backend overrides; used identically in both arms",
+    )
+    parser.add_argument(
+        "--invoke-skill",
+        action="store_true",
+        help="Explicit invocation smoke test; requires --modes skill",
+    )
     parser.add_argument(
         "--modes",
         choices=("baseline,skill", "skill", "baseline"),
@@ -358,8 +469,12 @@ def main():
     )
     parser.add_argument("--list", action="store_true")
     args = parser.parse_args()
-    args.output = args.output.resolve()
-    cases = [c for c in CASES if not args.skill or c["skill"] in args.skill]
+    cases = [
+        c
+        for c in CASES
+        if (not args.skill or c["skill"] in args.skill)
+        and (not args.plugin or c.get("package") in args.plugin)
+    ]
     inventory = skill_records()
     if {c["skill"] for c in CASES} != set(inventory):
         raise ValueError(
@@ -367,9 +482,19 @@ def main():
         )
     if args.skill and set(args.skill) - {c["skill"] for c in cases}:
         raise ValueError("Unknown requested case")
+    if args.plugin and set(args.plugin) - {c.get("package") for c in cases}:
+        raise ValueError("Unknown plugin or no matching evaluation case")
     if args.list:
         print(json.dumps(cases, indent=2))
         return
+    if args.output is None:
+        parser.error("--output is required for a live run")
+    if args.invoke_skill and args.modes != "skill":
+        parser.error(
+            "--invoke-skill requires --modes skill; do not mix it with an automatic-selection baseline"
+        )
+    args.output = args.output.resolve()
+    args.mcp_overrides = load_mcp_overrides(args.mcp_config)
     if not 1 <= args.workers <= 3 or args.timeout < 1 or args.max_uncached_tokens < 1:
         raise ValueError("Use 1..3 workers and positive timeout/token budgets")
     args.output.mkdir(parents=True, exist_ok=False)
@@ -380,6 +505,12 @@ def main():
                 "modes": args.modes,
                 "cases": cases,
                 "sandbox": args.sandbox,
+                "invocation": "explicit" if args.invoke_skill else "automatic",
+                "mcp_config_sha256": hashlib.sha256(
+                    args.mcp_config.read_bytes()
+                ).hexdigest()
+                if args.mcp_config
+                else None,
                 "max_uncached_tokens": args.max_uncached_tokens,
                 "scope": "One case per skill; boundary/draft cases do not prove live delivery. Native Claude hooks/agents are not translated to Codex.",
             },
@@ -407,6 +538,15 @@ def main():
     print(
         f"Recorded {len(records)} runs for {len(cases)} requested skills. Quality needs review; see {args.output}"
     )
+    expected = len(cases) * len(args.modes.split(","))
+    if len(records) != expected or any(
+        r.get("harness_error")
+        or not r.get("completed")
+        or r.get("timed_out")
+        or r.get("exit_code") != 0
+        for r in records
+    ):
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
