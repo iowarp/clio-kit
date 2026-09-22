@@ -391,9 +391,23 @@ def verify(
                 for b in e.get("message", {}).get("content", [])
                 if b.get("type") == "tool_use"
             ]
-            assert any(u["name"] == "Skill" for u in uses)
-            for name in ("__export_dataset", "__statistical_summary", "__line_plot"):
-                assert any(u["name"].endswith(name) for u in uses), name
+            assert any(
+                u["name"] == "Skill"
+                and u["input"].get("skill") == f"{name}:dataset-report"
+                for u in uses
+            )
+            assert any(
+                u["name"] == "Agent"
+                and u["input"].get("subagent_type")
+                == "clio-agents:scientific-evidence-reviewer"
+                for u in uses
+            ), "The installed evidence reviewer was not invoked"
+            for tool_suffix in (
+                "__export_dataset",
+                "__statistical_summary",
+                "__line_plot",
+            ):
+                assert any(u["name"].endswith(tool_suffix) for u in uses), tool_suffix
             suite.command(
                 "live-independent-check",
                 [

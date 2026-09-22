@@ -416,7 +416,7 @@
       "name": "clio-scientific-io-skills",
       "source": "./skills/clio-scientific-io-skills",
       "description": "Skills for the clio-scientific-io workflow: open a scientific data file, see its structure, and read part of it.",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "category": "skills",
       "keywords": [
         "dataset-explore",
@@ -430,7 +430,7 @@
       "name": "clio-scientific-io",
       "source": "./plugins/clio-scientific-io",
       "description": "Open a scientific data file, see its structure, and read part of it.",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "category": "workflow",
       "keywords": [
         "adios2",
@@ -578,7 +578,7 @@
       "name": "clio-agents",
       "source": "./plugins/clio-agents",
       "description": "Scientific workflow planning and independent evidence review agents.",
-      "version": "1.0.1",
+      "version": "1.0.2",
       "category": "agents"
     },
     {

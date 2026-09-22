@@ -162,6 +162,22 @@ tokens (`--max-uncached-tokens`); already-running cases can exceed that limit.
 Authentication, quota and sandbox failures also stop further cases. Native Claude
 agents and hooks require their separate supported-client acceptance checks.
 
+For the native scientific planner, use an existing Claude sign-in:
+
+```bash
+uv run --frozen python evals/claude_planner_eval.py --output /tmp/clio-planner-eval
+```
+
+This installs the agent in temporary profiles and repeats missing-reader,
+preview-only and supported-reader scenarios. The agent has read-only tools.
+The planner selects Claude Sonnet 5 with medium reasoning effort for scientific
+planning, using the client's [native agent settings](https://code.claude.com/docs/en/sub-agents#supported-frontmatter-fields).
+The evaluation reads those settings from the installed agent; `--model` allows
+comparison with another model without changing the plugin.
+Inspect each `answer.md`: successful execution does not establish a correct plan.
+Use `--fixture /path/to/saved/project` to also repeat a trusted earlier fixture;
+`--case` and `--repeat` limit model usage. Reports remain in the output directory.
+
 Select a workflow's predefined evaluation case with `--plugin`:
 
 ```bash

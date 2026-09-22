@@ -24,30 +24,40 @@ overhead. Shape and dtype require separate tool calls.
 
 | Question | Tool |
 |---|---|
-| Mean/min/max over HDF5 datasets | `clio-hdf5:hdf5_aggregate_stats` |
+| Mean/min/max over all elements of each HDF5 dataset | `clio-hdf5:hdf5_aggregate_stats` |
 | Aggregate over a Parquet column | `clio-parquet:aggregate_column_tool` |
 | Discover structure across many HDF5 files | `clio-hdf5:hdf5_parallel_scan` |
+
+`hdf5_aggregate_stats` reduces all elements of each selected dataset; it has no
+column or axis selector. Do not use its scalar mean as one column's mean in a
+multicolumn array, especially when columns have different units. Select a tool
+that implements the requested column reduction, or report the missing capability.
 
 Open the HDF5 file before requesting aggregate statistics. For datasets larger
 than 500 MiB, `hdf5_aggregate_stats` may use a strided sample. Read the response's
 `SAMPLED` or `FULL DATA` label, processed/total element counts and coverage.
 Sample sum/count/min/max describe selected values only, not whole-dataset
 totals or bounds. Cross-dataset aggregation is omitted when any result is sampled.
-For example, a 70-million-element array of ones reports 700,000 sampled values
-and 1% coverage. Striding can miss patterns; it is not a random representative
-sample. Older server versions may omit these labels, so verify coverage against
-the full shape. Multidimensional sampling also does not guarantee a small allocation.
+Striding can miss patterns; it is not a random representative sample. Older
+server versions may omit these labels, so verify coverage against the full shape.
+One- and multidimensional arrays use different stride logic. Use the actual
+response's counts and coverage; before a call, leave those quantities unverified.
+Multidimensional sampling also does not guarantee a small allocation.
 For exact results, use a separately verified chunked calculation with complete
 coverage or report that the available tool cannot establish the exact answer.
 Do not request thousands of `hdf5_stream_data` summaries to reconstruct an exact
 mean: they are rounded summaries, not lossless sums. Establish that a suitable
-local reader is available before choosing a fallback.
+local reader is available before choosing a fallback. Inspect its actual callable
+and selection/coverage behavior; an importable library or a source file containing
+the existing aggregate does not establish that a chunked column reader exists.
 
 ## If you genuinely need values, take a bounded piece
 
-- `clio-hdf5:read_partial_dataset` — slice it. A slice for a sanity check should
-  be small: a few hundred elements shows you the units, the sign, and whether it
-  is full of NaN.
+- `clio-hdf5:read_partial_dataset` — reads the requested slice internally, but
+  returns shape, dtype and only the first five flattened values. Keep the slice
+  small. If the selected region contains more than five elements, this response
+  cannot supply all of them for a CSV, a whole-region monotonicity check or an
+  exact reduction. Verify an export tool's contract before using it for that handoff.
 - `clio-parquet:read_slice_tool` — a row range with only the columns you need.
 - `clio-parquet:get_column_preview_tool` — paginated values from one column.
 - `clio-adios:read_variable_at_step` — one variable at one step, which is already
@@ -67,9 +77,9 @@ local reader is available before choosing a fallback.
   `max_chunks`; it is not an exact whole-dataset reduction. For multidimensional
   data, `chunk_size` slices the first axis, so account for all remaining
   dimensions when estimating memory. Check processed coverage explicitly.
-- `clio-hdf5:read_full_dataset` — chunked internally, and the right call when the
-  whole array is genuinely needed and fits. Check the size first; do not arrive
-  here by default.
+- `clio-hdf5:read_full_dataset` — reads the full dataset internally and returns a
+  description, not its values. Internal chunking does not establish bounded total
+  memory. Do not use it as a value-export or exact-reduction fallback.
 
 ## Align reads to the chunks
 

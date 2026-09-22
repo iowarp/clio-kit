@@ -24,6 +24,7 @@ check. Valid rounding differences are not numerical defects.
 Separate descriptive statistics, patterns in ordered observations, fitted models
 and physical explanations. Skewness and coefficient of variation alone cannot
 establish a temporal growth law: a permutation of the values preserves both.
+It does not generally preserve their time ordering or a doubling pattern.
 Matching summaries do not prove matching raw values or distributions; require
 the actual data for an equality or permutation claim.
 For a growth claim, inspect time/value pairs and interval spacing; for a fitted

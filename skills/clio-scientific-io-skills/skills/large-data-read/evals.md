@@ -48,6 +48,11 @@ Expected:
 - Passing a list to `paths` on `hdf5_batch_read` or `hdf5_aggregate_stats`;
   both want a comma-separated string.
 - Reading every Parquet column to aggregate one.
+- Treating a mixed-column HDF5 aggregate as the selected column's mean.
+- Naming an aggregate implementation as a chunked column-reader fallback when
+  no such callable exists. Report the missing implementation separately.
+- Promising complete rows from `read_partial_dataset` or values from
+  `read_full_dataset`; their responses are previews/descriptions.
 
 ## Smoke record (2026-08-21)
 
@@ -73,4 +78,3 @@ kit fired nothing.
 
 Selection is checked. Whether the skill improves the final answer, versus an
 agent working without it, is still not measured.
-

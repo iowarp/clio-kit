@@ -62,6 +62,10 @@ currently open", which reads as an empty file rather than a failed open.
 Note `path` means the file in `open_file` and a dataset inside it everywhere
 else.
 
+`read_partial_dataset` returns the selected shape and dtype plus only the first
+five flattened values. The slice may contain more values internally; do not claim
+all rows were returned or use this preview as an export or full-region check.
+
 ### Walking an HDF5 file
 
 1. `clio-hdf5:open_file`
