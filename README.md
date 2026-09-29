@@ -83,11 +83,11 @@ CLIO Kit is part of the IoWarp platform's comprehensive tooling ecosystem for AI
 
 ```bash
 # Install the released CLI into its own persistent tool environment
-uv tool install 'clio-kit==2.4.3'
+uv tool install clio-kit
 # If uv reports that its executable directory is not on PATH:
 uv tool update-shell
 
-# List all 23 available MCP servers
+# List all 24 available MCP servers
 clio-kit mcp-servers
 
 # Run any installed server
@@ -105,7 +105,7 @@ clio-kit prompt code-coverage-prompt # Use a prompt
 ```
 
 `uv tool install` keeps CLIO Kit in a persistent, isolated tool environment.
-Use `uvx --from 'clio-kit==2.4.3' clio-kit ...` only for a temporary, one-shot
+Use `uvx clio-kit ...` only for a temporary, one-shot
 invocation.
 
 Released `clio-kit` wheels execute each embedded MCP server from that server's
@@ -392,7 +392,7 @@ pip install uv
 Then install CLIO Kit persistently and expose uv's tool directory:
 
 ```bash
-uv tool install 'clio-kit==2.4.3'
+uv tool install clio-kit
 uv tool update-shell
 ```
 

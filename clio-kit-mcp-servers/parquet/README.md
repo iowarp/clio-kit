@@ -1,6 +1,6 @@
 # Parquet MCP Server
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
 
 **Part of [CLIO Kit](https://docs.iowarp.ai/) - Gnosis Research Center**
@@ -269,7 +269,7 @@ Tested on IceCube Neutrino dataset (131M+ rows, 830MB):
 
 ## License
 
-MIT License - see LICENSE for details
+BSD-3-Clause License. See LICENSE for details.
 
 ## Resources
 
