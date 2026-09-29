@@ -40,8 +40,10 @@ Repository = "https://github.com/iowarp/clio-kit"
 Issues = "https://github.com/iowarp/clio-kit/issues"
 
 [project.scripts]
-# Only the unified launcher entry point
-clio-kit = "clio_kit:cli"
+# The launcher entry point. Points at cli_entry.py, not clio_kit:cli, so a new
+# extension command group (see src/clio_kit/cli_entry.py's docstring) never has
+# to grow the ratcheted src/clio_kit/__init__.py to become reachable.
+clio-kit = "clio_kit.cli_entry:cli"
 
 [dependency-groups]
 dev = [
@@ -80,6 +82,7 @@ packages = ["src/clio_kit"]
 "clio-kit-mcp-servers" = "clio-kit-mcp-servers"
 "clio-agentic-search" = "clio-agentic-search"
 "prompts" = "prompts"
+"skills" = "skills"
 
 [tool.hatch.build.targets.sdist]
 include = [
@@ -87,6 +90,7 @@ include = [
     "clio-kit-mcp-servers/",
     "clio-agentic-search/",
     "prompts/",
+    "skills/",
     "README.md",
     "mcp-server-versions.toml",
     "pyproject.toml"
