@@ -22,10 +22,7 @@ from clio_kit.env_cache import (
     maintain_after_build,
     measure_cache_budget,
 )
-from clio_kit.mcp_contracts import (
-    load_mcp_user_contract,
-    load_mcp_user_contract_index,
-)
+from clio_kit.mcp_contracts import load_mcp_user_contract, load_mcp_user_contract_index
 
 # Determine if we're running from development or installed package
 MODULE_DIR = Path(__file__).parent
@@ -953,6 +950,8 @@ def cli():
     """Entry point for the CLI"""
     main()
 
+
+from clio_kit import server_identity as _server_identity  # noqa: E402,F401 (registers the command)
 
 if __name__ == "__main__":
     main()
