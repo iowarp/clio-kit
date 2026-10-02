@@ -24,37 +24,6 @@ except ImportError:
         sys.exit(1)
 
 
-# Agentic Search is a first-class CLIO showcase surface, but it is an HTTP/CLI
-# service rather than an embedded MCP server. Keep its tile in the same
-# generated data without pretending it belongs to the MCP Registry inventory.
-NON_MCP_SHOWCASE_ENTRIES = {
-    "agentic_search": {
-        "name": "Agentic Search",
-        "category": "Search & Retrieval",
-        "description": (
-            "Hybrid retrieval engine. Lexical, vector, graph, and scientific "
-            "search over namespaced document corpora. DuckDB storage. FastAPI "
-            "service with async job queue."
-        ),
-        "icon": "🔍",
-        "actions": [
-            "query",
-            "index",
-            "list_documents",
-            "submit_index_job",
-            "get_job_status",
-            "cancel_job",
-            "health",
-            "metrics",
-        ],
-        "stats": {"version": "1.0.0", "updated": "2026-02-23"},
-        "platforms": ["claude", "cursor", "vscode"],
-        "slug": "agentic_search",
-        "docPath": "/docs/agentic-search",
-    }
-}
-
-
 def read_documentation_updated(inventory: dict[str, object]) -> str:
     """Return the explicit deterministic date for generated website metadata."""
     raw_documentation = inventory.get("documentation")
@@ -75,25 +44,10 @@ def read_documentation_updated(inventory: dict[str, object]) -> str:
 class MCPDataExtractor:
     """Extract MCP data from project files."""
 
-    def __init__(self, server_versions: Dict[str, str], updated_date: str):
+    def __init__(self, server_versions: Dict[str, str], updated_date: str, icons=None):
         self.server_versions = server_versions
         self.updated_date = updated_date
-        self.icon_mapping = {
-            "adios": "📊",
-            "arxiv": "📄",
-            "hdf5": "🗂️",
-            "pandas": "🐼",
-            "parquet": "📋",
-            "plot": "📈",
-            "darshan": "⚡",
-            "slurm": "🖥️",
-            "lmod": "📦",
-            "node_hardware": "💻",
-            "compression": "🗜️",
-            "parallel_sort": "🔄",
-            "jarvis": "🤖",
-            "chronolog": "⏰",
-        }
+        self.icons = icons or {}
 
     def extract_mcp_data(self, mcps_dir: Path) -> Dict:
         """Extract data for all MCPs in the directory."""
@@ -113,21 +67,22 @@ class MCPDataExtractor:
 
     def _extract_single_mcp_data(self, mcp_dir: Path) -> Optional[Dict]:
         """Extract data for a single MCP."""
-        # Read pyproject.toml
         pyproject_file = mcp_dir / "pyproject.toml"
-        if not pyproject_file.exists():
-            print(f"Warning: No pyproject.toml found in {mcp_dir.name}")
+        descriptor_file = mcp_dir / "clio-server.toml"
+        if descriptor_file.is_file():
+            with descriptor_file.open("rb") as stream:
+                project_info = tomllib.load(stream)
+            # Python descriptors contain launch metadata only. The project's
+            # description, license and keywords remain in pyproject.toml.
+            if project_info.get("runtime") == "python" and pyproject_file.is_file():
+                with pyproject_file.open("rb") as stream:
+                    project_info = tomllib.load(stream).get("project", {})
+        elif pyproject_file.is_file():
+            with pyproject_file.open("rb") as stream:
+                project_info = tomllib.load(stream).get("project", {})
+        else:
             return None
 
-        try:
-            with open(pyproject_file, "rb") as f:
-                pyproject_data = tomllib.load(f)
-        except Exception as e:
-            print(f"Error reading pyproject.toml in {mcp_dir.name}: {e}")
-            return None
-
-        # Extract basic info from pyproject.toml
-        project_info = pyproject_data.get("project", {})
         name = (
             project_info.get("name", mcp_dir.name)
             .replace("-mcp", "")
@@ -142,7 +97,7 @@ class MCPDataExtractor:
         # Determine slug and category
         slug = mcp_dir.name.lower().replace("_", "_").replace("-", "_")
         category = self._determine_category(name, description, keywords)
-        icon = self.icon_mapping.get(slug, "🔧")
+        icon = self.icons.get(mcp_dir.name, "🔧")
 
         # Extract tools from server.py
         tools = self._extract_tools_from_server(mcp_dir)
@@ -233,12 +188,27 @@ class MCPDataExtractor:
         extract_script = script_dir / "extract_mcp_metadata.py"
 
         try:
+            command = ["uv", "run", "python", str(extract_script)]
+            descriptor = mcp_dir / "clio-server.toml"
+            if descriptor.is_file():
+                command = [
+                    "uv",
+                    "run",
+                    "--project",
+                    str(script_dir.parent),
+                    "--extra",
+                    "verification",
+                    "clio-kit",
+                    "server",
+                    "inspect",
+                    str(mcp_dir.resolve()),
+                ]
             result = subprocess.run(
-                ["uv", "run", "python", str(extract_script)],
+                command,
                 cwd=str(mcp_dir),
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=180 if descriptor.is_file() else 30,
             )
             if result.returncode != 0:
                 print(
@@ -268,23 +238,18 @@ class DocusaurusGenerator:
     """Generate Docusaurus markdown files from MCP data."""
 
     def __init__(self, output_dir: Path):
-        self.output_dir = output_dir
-        self.mcps_output_dir = output_dir / "docs" / "mcps"
-        self.data_output_dir = output_dir / "src" / "data"
+        self.output_dir = output_dir.resolve()
+        self.mcps_output_dir = self.output_dir.parent / "docs" / "mcps"
 
     def generate_all_docs(self, mcps_data: Dict):
         """Generate all documentation files."""
         # Ensure output directories exist
         self.mcps_output_dir.mkdir(parents=True, exist_ok=True)
-        self.data_output_dir.mkdir(parents=True, exist_ok=True)
 
         # Generate individual MCP markdown files
         for slug in sorted(mcps_data):
             mcp_data = mcps_data[slug]
             self._generate_mcp_markdown(mcp_data)
-
-        # Generate mcpData.js file
-        self._generate_mcp_data_js(mcps_data)
 
         print(f"Generated {len(mcps_data)} MCP documentation files")
 
@@ -307,6 +272,17 @@ class DocusaurusGenerator:
         keywords_jsx = json.dumps(mcp_data.get("keywords", []))
         tools_jsx = json.dumps(mcp_data.get("tools", []))
 
+        usage = self._extract_examples_from_readme(mcp_data)
+        start_marker = "{/* clio-kit:usage:start */}"
+        end_marker = "{/* clio-kit:usage:end */}"
+        if output_file.exists():
+            previous = output_file.read_text(encoding="utf-8")
+            if start_marker in previous and end_marker in previous:
+                usage = (
+                    previous.split(start_marker, 1)[1].split(end_marker, 1)[0].strip()
+                )
+        usage = f"{start_marker}\n\n{usage.strip()}\n\n{end_marker}"
+
         content = f"""---
 title: {mcp_data["name"]} MCP
 description: "{description}"
@@ -327,7 +303,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   tools={{{tools_jsx}}}
 >
 
-{self._extract_examples_from_readme(mcp_data)}
+{usage}
 
 </MCPDetail>
 """
@@ -511,178 +487,21 @@ Refer to your MCP client documentation for specific setup instructions.
         return self._generate_basic_examples(mcp_data)
 
     def _generate_basic_examples(self, mcp_data: Dict) -> str:
-        """Generate basic examples based on category."""
-        name = mcp_data["name"]
-        category = mcp_data["category"]
-
-        if "Data Processing" in category:
-            return f"""
-### Basic Usage
-```python
-# Load and process data with {name}
-data = load_data("input_file")
-processed_data = process_data(data)
-save_data(processed_data, "output_file")
-```
-
-### Integration Example
-```python
-# Use {name} in a data pipeline
-for file in data_files:
-    data = load_data(file)
-    result = analyze_data(data)
-    export_results(result, f"analysis_{{file}}")
-```
-"""
-        elif "System Management" in category:
-            return f"""
-### System Monitoring
-```python
-# Monitor system status with {name}
-status = get_system_status()
-if status.needs_attention:
-    send_alert("System requires attention")
-```
-
-### Resource Management
-```python
-# Manage system resources
-resources = get_available_resources()
-allocate_resources(resources, job_requirements)
-```
-"""
-        else:
-            return f"""
-### Basic Usage
-```python
-# Use {name} MCP
-result = perform_operation("input_data")
-print(f"Result: {{result}}")
-```
-
-### Advanced Usage
-```python
-# Chain multiple operations
-data = load_input("source")
-processed = process_data(data)
-final_result = finalize_output(processed)
-```
-"""
-
-    def _generate_mcp_data_js(self, mcps_data: Dict):
-        """Generate the mcpData.js file for the frontend."""
-        # Build only from committed source data. Reading a previous generated
-        # file made clean and incremental checkouts produce different output.
-        js_mcps = dict(NON_MCP_SHOWCASE_ENTRIES)
-        for slug in sorted(mcps_data):
-            mcp_data = mcps_data[slug]
-            js_mcps[slug] = {
-                "name": mcp_data["name"],
-                "category": mcp_data["category"],
-                "description": mcp_data["description"],
-                "icon": mcp_data["icon"],
-                "actions": mcp_data["actions"],
-                "stats": {
-                    "version": mcp_data["version"],
-                    "updated": mcp_data["updated"],
-                },
-                "platforms": mcp_data["platforms"],
-                "slug": mcp_data["slug"],
-            }
-
-        category_counts = {}
-        for showcase_data in js_mcps.values():
-            category = showcase_data["category"]
-            category_counts[category] = category_counts.get(category, 0) + 1
-
-        # Generate categories object
-        categories = {"All": {"count": len(js_mcps), "color": "#6b7280", "icon": "🔍"}}
-
-        category_colors = {
-            "Data Processing": "#3b82f6",
-            "Analysis & Visualization": "#10b981",
-            "System Management": "#f59e0b",
-            "Search & Retrieval": "#6366f1",
-            "Utilities": "#ef4444",
-        }
-
-        category_icons = {
-            "Data Processing": "📊",
-            "Analysis & Visualization": "📈",
-            "System Management": "🖥️",
-            "Search & Retrieval": "🔍",
-            "Utilities": "🔧",
-        }
-
-        for category in sorted(category_counts):
-            count = category_counts[category]
-            categories[category] = {
-                "count": count,
-                "color": category_colors.get(category, "#6b7280"),
-                "icon": category_icons.get(category, "🔧"),
-            }
-
-        # Popular MCPs (those with most actions)
-        popular_mcps = sorted(
-            js_mcps,
-            key=lambda slug: (-len(js_mcps[slug]["actions"]), slug),
-        )[:6]
-
-        # Category types for TypeScript/JSDoc
-        category_types = {
-            "Data Processing": "data",
-            "Analysis & Visualization": "analysis",
-            "Search & Retrieval": "search",
-            "System Management": "system",
-            "Utilities": "util",
-        }
-
-        # GitHub stats placeholder
-        github_stats = {
-            "stars": 0,
-            "forks": 0,
-            "watchers": 0,
-            "url": "https://github.com/iowarp/clio-kit",
-        }
-
-        # MCP endorsements/badges
-        mcp_endorsement = {
-            "hdf5": ["flagship", "v1.0"],
-            "slurm": ["hpc"],
-            "arxiv": ["research"],
-            "pandas": ["data"],
-        }
-
-        content = f"""// MCP data structure for tile-based showcase
-export const mcpData = {json.dumps(js_mcps, indent=2)};
-
-// Categories with counts and colors
-export const categories = {json.dumps(categories, indent=2)};
-
-// Popular MCPs for featured section
-export const popularMcps = {json.dumps(popular_mcps, indent=2)};
-
-// Category type mappings
-export const categoryTypes = {json.dumps(category_types, indent=2)};
-
-// GitHub repository statistics
-export const githubStats = {json.dumps(github_stats, indent=2)};
-
-// MCP endorsements and badges
-export const mcpEndorsement = {json.dumps(mcp_endorsement, indent=2)};
-"""
-
-        output_file = self.data_output_dir / "mcpData.js"
-        with open(output_file, "w", encoding="utf-8") as f:
-            f.write(content)
-
-        print(f"Generated {output_file}")
+        """Describe the known tool surface without inventing executable examples."""
+        actions = ", ".join(f"`{name}`" for name in mcp_data.get("actions", []))
+        return (
+            "### Usage\n\n"
+            f"Available tools: {actions or 'No tool metadata was extracted'}.\n\n"
+            "Inspect the tool input schema in your MCP client before calling it. "
+            "Use a small known input, check the result and any reported errors, "
+            "then expand to the intended workload.\n"
+        )
 
 
 def main():
     """Main entry point."""
     if len(sys.argv) != 3:
-        print("Usage: python generate_docs.py <mcps_directory> <docs_output_directory>")
+        print("Usage: python generate_docs.py <mcps_directory> <website_directory>")
         sys.exit(1)
 
     mcps_dir = Path(sys.argv[1])
@@ -702,6 +521,7 @@ def main():
             path.name
             for path in mcps_dir.iterdir()
             if (path / "pyproject.toml").is_file()
+            or (path / "clio-server.toml").is_file()
         }
         if set(server_versions) != discovered_servers:
             raise ValueError(
@@ -709,12 +529,16 @@ def main():
             )
 
         # Extract MCP data using each public agent-contract version.
-        extractor = MCPDataExtractor(server_versions, updated_date)
+        extractor = MCPDataExtractor(
+            server_versions, updated_date, inventory.get("icons")
+        )
         mcps_data = extractor.extract_mcp_data(mcps_dir)
 
-        if not mcps_data:
-            print("Error: No MCPs found or processed")
-            sys.exit(1)
+        expected_slugs = {name.replace("-", "_") for name in server_versions}
+        if set(mcps_data) != expected_slugs:
+            raise ValueError(
+                f"MCP documentation extraction is incomplete: {sorted(expected_slugs - set(mcps_data))}"
+            )
 
         # Generate documentation
         generator = DocusaurusGenerator(docs_output_dir)

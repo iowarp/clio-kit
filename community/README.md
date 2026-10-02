@@ -1,0 +1,342 @@
+# Community contributions
+
+Shared skills use standard `SKILL.md` folders and can be installed for Codex or
+other compatible agents with `clio-kit skill install --target DIRECTORY`.
+See [Agent integrations](../README.md#agent-integrations) for Codex, Claude Code,
+Cursor, VS Code / GitHub Copilot, Antigravity, and Claude Desktop.
+`clio-kit skill validate DIRECTORY` checks standalone skill contributions.
+The entries below retain Claude-compatible manifest metadata. Kit's shared
+catalogue installs those packages for Codex, Claude Code, OpenCode, Cursor,
+Antigravity and VS Code through the same command:
+
+```bash
+clio-kit plugin install PACKAGE --client codex --project /path/to/project
+```
+
+Use the selected client's name. GitHub, Git URL, Git subdirectory, npm and
+federated entries follow this route. Skills and stdio MCPs are shared; agents
+and hooks need [supported adapters](../docs/clients.md#component-support).
+Unsupported components stop installation unless explicitly omitted with
+`--components-only`. This does not translate arbitrary native plugin formats.
+Publisher revisions are locked per project; use `--update --replace` after
+reviewing updates, and `plugin uninstall` with the same client/project to remove
+managed components. Keep `.clio-kit/packages`, `sources` and `installed` state
+out of version control.
+
+MCPs, skills, agents and hooks are components; workflow plugins bundle them.
+A native wrapper makes an individual component installable without turning it
+into a workflow plugin. The website keeps indexed external packages separate
+when their component types have not been inspected; see
+[catalogue types](../docs/plugins.md#catalogue-types-and-installation-packages).
+
+
+List externally maintained plugins, MCP servers, skills and marketplace
+collections in the CLIO Kit meta-marketplace. One entry file per contribution.
+
+Your code stays yours. You release on your own schedule, and your updates reach
+users through catalogue refresh and plugin updates without a CLIO package release.
+Publishers must bump plugin versions for content changes; refreshing the catalogue
+alone does not necessarily replace an installed plugin.
+
+## What belongs where
+
+| You have | Where it goes |
+|---|---|
+| A skill for CLIO Kit's own servers | A PR into `skills/`, not here — it names our tool names, so it has to move when those move |
+| Your own MCP server, in any language | An entry here, pointing at your repo |
+| Your own plugin, skills and servers together | An entry here |
+| Your own marketplace | An entry here with `kind = "marketplace"` — see [Federated marketplaces](#federated-marketplaces) for what that does and does not do |
+
+## Adding an entry
+
+Create `entries/<name>.toml`. The filename must match the `name` field.
+
+```toml
+name        = "materials-lab"
+kind        = "plugin"          # or "marketplace"; defaults to "plugin"
+description = "Crystal structure and diffraction skills for materials workflows."
+category    = "materials-science"
+maintainer  = "some-lab"
+keywords    = ["materials", "crystallography"]
+
+[source]
+type = "github"
+repo = "some-lab/materials-agent-skills"
+```
+
+Then open a pull request. We review ownership, entry shape, native plugin validation, and a minimal install
+and component check. Indexing does not certify all external implementation code.
+Maintained CLIO contributions additionally require implementation review and
+acceptance tests. External code and update ownership remain with the publisher.
+
+When adapting an external skill, give the changed copy a distinct name and retain
+its source revision and license. CLIO Kit's Clio Coder collection uses
+`clio-kit-` names to avoid collisions with upstream audited skills. See the
+[integration and validation guide](../docs/marketplace.md#clio-coder-integration)
+for installation routes, prerequisites and tested coverage.
+
+## Source types
+
+**`github`** — the whole repository is the plugin.
+
+```toml
+[source]
+type = "github"
+repo = "owner/repo"
+ref  = "v2.0.0"                              # optional: branch or tag
+sha  = "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0"    # optional: exact commit, wins over ref
+```
+
+**`git-subdir`** — the plugin lives in a subdirectory of a larger repository.
+Fetched with a sparse clone, so a monorepo costs no more than the plugin.
+
+```toml
+[source]
+type = "git-subdir"
+url  = "https://github.com/acme/monorepo.git"
+path = "tools/claude-plugin"
+ref  = "v2.0.0"                              # optional
+```
+
+**`npm`** — a published **Claude plugin package** containing its manifest and
+components. A raw npm MCP server is not a plugin: wrap its executable in
+`.mcp.json` using `clio-kit plugin init my-plugin --mcp-command npx
+--mcp-arg=-y --mcp-arg=@lab/server`. Go and other servers can likewise be
+wrapped using their actual executable or `clio-kit server run` descriptor.
+Not valid for `kind = "marketplace"`.
+
+```toml
+[source]
+type     = "npm"
+package  = "@acme/claude-plugin"
+version  = "^2.0.0"                          # optional
+registry = "https://npm.example.com"         # optional, for a private registry
+```
+
+`package` must be a name the registry resolves. A local path, folder or tarball
+does not work: the client appends a version to whatever you write, so
+`./my-plugin.tgz` is looked up as `./my-plugin.tgz@latest`. Test against a real
+publish, even a prerelease tag, rather than a file on disk.
+
+**Omitting `version` selects the package's latest published version.** Installed
+plugin updates still follow the client's version/update rules. Bump the plugin
+manifest version on each content release, refresh the marketplace, update the
+plugin, and reload it. Third-party auto-updates are not enabled by default.
+
+## Federated marketplaces
+
+If you run your own marketplace, submit it the same way as a plugin, naming the
+other kind — the command reads your `.claude-plugin/marketplace.json` and
+writes the entry:
+
+```bash
+clio-kit plugin submit /path/to/your-marketplace \
+  --repo some-lab/materials-marketplace --kind marketplace
+```
+
+Your catalogue needs a `metadata.description`: it is what a user reads before
+adding it, and an entry without one is refused when we merge. The entry it
+writes is a single file naming the whole repository:
+
+```toml
+name        = "materials-lab"
+kind        = "marketplace"
+description = "A materials-science catalogue: crystallography servers and skills."
+maintainer  = "some-lab"
+
+[source]
+type = "github"
+repo = "some-lab/materials-marketplace"
+```
+
+`clio-kit marketplace refresh --root /path/to/clio-kit` fetches each indexed
+catalogue and merges its plugins into our native `marketplace.json`. Relative
+plugin sources become Git subdirectory sources pinned to the fetched commit;
+plugin implementations remain in their owners' repositories. The adjacent
+`federation.lock.json` records provenance and supports reproducible generation.
+Name conflicts fail the entire refresh; identical direct/indexed sources are
+deduplicated. Removing an external entry removes its imported listings on the
+next refresh. It does not silently uninstall an existing user's plugin.
+
+```bash
+clio-kit marketplace refresh --root .
+claude plugin marketplace update clio-kit
+claude plugin update scientific-debugging@clio-kit
+```
+
+For a GitHub-hosted catalogue, maintainers can run the federation refresh
+workflow and commit the resulting catalogue without publishing a new launcher.
+Users must update installed plugins and reload them after refreshing. External
+marketplaces must be Git repositories with `.claude-plugin/marketplace.json`;
+unsupported source forms or escaping relative paths fail with a diagnostic.
+`clio-kit marketplaces` also lists the original collections for direct access.
+
+## What a skill has to clear
+
+`clio-kit plugin validate` enforces these. They are not style preferences: a
+skill's description is carried in **every** session whether or not it fires, so
+a vague one is a permanent tax on every user.
+
+**Blocking** — the submission is refused:
+
+- frontmatter parses, and `name` matches the folder it lives in
+- recorded scenarios exist (`evals.md`, or an `evals/` directory). A skill with
+  none is untested by definition
+- the description opens with `Use when` and names the situation, rather than
+  restating what the body says
+- the description carries a `Triggers on` clause quoting the literal phrases a
+  user types, because that is what the match runs against
+
+**Advisory** — reported, never used to reject:
+
+- no `Not for X; use Y` boundary. Skills covering neighbouring ground hijack
+  each other, but a first skill with nothing to collide against is legitimately
+  unbounded
+- a description over 500 characters, reported with its real size
+
+`clio-kit plugin init` scaffolds a skill that already satisfies all of this, so
+the starting point passes and you edit from there. The sample skill is named
+`<plugin>-workflow`, and its frontmatter carries the optional `metadata` block
+(`bundle`, `servers`, `provenance`, `eval-status`) for you to fill in.
+
+`plugin validate` also refuses linked files, an empty `evals.md`, and a command
+hook whose `${CLAUDE_PLUGIN_ROOT}/...` handler file is not in the plugin.
+`plugin submit` additionally refuses the scaffold's placeholder description and
+author name.
+
+## Trying something before you index it
+
+An entry becomes discoverable after a marketplace update, so try
+a contribution locally first. Nothing below touches this repository or your own
+Claude Code config.
+
+**A bare skill folder is not a Claude Code marketplace plugin.** A standard
+`SKILL.md` folder can be installed into a compatible agent's skill directory,
+but it needs a plugin wrapper to enter this native marketplace. For the
+marketplace trial below, wrap it first:
+
+Create a temporary plugin and the marketplace that will contain it:
+
+```bash
+trial_root="$(mktemp -d /tmp/clio-trial.XXXXXX)"
+clio-kit plugin init "$trial_root/trial"
+rm -r "$trial_root/trial/skills/trial-workflow"
+cp -r /path/to/their-skill-folder "$trial_root/trial/skills/"
+clio-kit plugin validate "$trial_root/trial"
+claude plugin validate "$trial_root/trial" --strict
+mkdir -p "$trial_root/.claude-plugin"
+cat > "$trial_root/.claude-plugin/marketplace.json" <<'JSON'
+{
+  "name": "clio-trial",
+  "owner": {"name": "Local trial"},
+  "plugins": [{"name": "trial", "source": "./trial"}]
+}
+JSON
+```
+
+Install into an isolated client configuration in a subshell:
+
+```bash
+(
+  export CLAUDE_CONFIG_DIR="$trial_root/client-config"
+  claude plugin marketplace add "$trial_root"
+  claude plugin install trial@clio-trial --scope user
+  claude plugin details trial@clio-trial
+)
+```
+
+`plugin details` shows installed components and a context estimate. Skill
+names/descriptions support selection; full bodies load when used. Judge quality
+with recorded scenarios and observed results, not a token estimate alone.
+
+**What to look at before indexing:**
+
+- Does every skill carry recorded scenarios (`evals.md`)? A skill with none is
+  untested by definition. Ours are required to have them.
+- Is the description triggers-only? A description restating what the body says
+  adds discovery text without helping selection.
+- Does it declare boundaries against skills we already ship? Twenty skills with
+  overlapping domains will hijack each other without "Not for X; use Y".
+- Is its description concise and distinct from the existing skills?
+
+## Rules the generator enforces
+
+Generation fails, rather than publishing something broken, when:
+
+- the filename and the `name` field disagree
+- a directly submitted entry's `name` starts with `clio-`, which is reserved for
+  generated components. Federated catalogues retain their publisher's names,
+  including other Clio products; they cannot replace an existing owned entry.
+- `name` collides with a generated plugin or another community entry
+- `description` is missing — it is what a user reads before installing
+- `[source]` names an unknown type, omits a field that type requires, or carries
+  a field that type does not use
+
+## Pin your source if your users need stability
+
+Without `ref` or `sha`, an entry tracks your default branch. Publish version
+bumps so users can update installed plugins after refreshing the marketplace.
+Pin a source when consumers need a reviewed revision rather than that moving
+branch. Imported relative sources are pinned by the federation snapshot.
+
+## What we ask of you
+
+Keep the repository reachable and the plugin installable. If you stop
+maintaining it, open a PR removing the entry — a listing that fails to install
+is worse for a user than no listing.
+
+Nothing here is reviewed line by line on every update, and users can see that:
+each entry carries `metadata.indexed`, so the catalogue distinguishes what we
+maintain from what we point at.
+
+## Contributor commands
+
+`plugin init` creates a skills-only starter by default. Add `--agent` for a
+read-only agent and `--mcp-command` / repeated `--mcp-arg` for a real MCP wrapper.
+`plugin validate` checks structure; native `claude plugin validate --strict`
+checks client compatibility. `plugin submit ... --output entry.toml` prepares
+a reviewable entry; `plugin submit ... --open-pr` uses authenticated `gh` to
+fork, create a branch, push the one-file contribution, and open its PR. No
+GitHub write occurs without `--open-pr`.
+
+## Hooks
+
+Maintained and community Claude Code plugins can both include optional event hooks.
+Use the same validation for each; test enabled hooks together for duplicate or
+conflicting actions. See the [authoring guide](../docs/authoring.md#add-a-hook).
+
+```bash
+clio-kit plugin init my-plugin --hook
+clio-kit plugin validate my-plugin
+claude plugin validate my-plugin --strict
+```
+
+The starter uses `python3` to supply context on `SessionStart`; it does not modify
+project files. Hooks are executable behavior, so review their commands before
+installing an external plugin. They are not installed by copying a `SKILL.md` folder.
+
+CLIO checks `hooks/hooks.json` by default and paths or inline event maps declared
+in the manifest's `hooks` field. Files wrap their event map in a top-level `hooks`
+object; inline manifest values contain that event map directly. Missing files,
+escaping paths, invalid JSON, unknown events and malformed handlers are rejected.
+An empty hooks directory does not count as a working plugin component.
+
+Required fields are checked for command, HTTP, prompt, agent and MCP-tool handlers.
+Optional fields, event/type combinations and client-version compatibility remain
+subject to [Claude's native hook rules](https://code.claude.com/docs/en/hooks).
+Validation never executes submitted hooks. Claude's hooks are host-specific;
+no automatic conversion to Codex, Antigravity or Clio Coder hooks is provided.
+
+Reproduce installation, session-start, allowed-write, denied-write, refresh and
+uninstall checks from this checkout:
+
+```bash
+uv run --frozen python scripts/verify_plugin_hooks.py --output /tmp/clio-hook-check
+# Optional: exercise the same scenario with authenticated Claude model access
+uv run --frozen python scripts/verify_plugin_hooks.py --output /tmp/clio-hook-live --live
+```
+
+Use fresh output directories. The default test uses Claude's actual installed
+hook runtime with a local scripted model endpoint, so CI needs no model account.
+`--live` uses model access and may consume account quota. Neither test publishes
+anything to GitHub or installs into your normal client profile.

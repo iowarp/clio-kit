@@ -1,0 +1,112 @@
+import catalogue from '@site/src/data/catalogue.json';
+export {catalogue};
+export const itemsById = new Map(
+  catalogue.items.map((item) => [item.id, item]),
+);
+
+export const kinds = [
+  ['all', 'All entries'],
+  ['plugin', 'Plugins'],
+  ['skill', 'Skills'],
+  ['mcp', 'MCP servers'],
+  ['agent', 'Agents'],
+  ['hook', 'Hooks'],
+  ['collection', 'Component collections'],
+  ['package', 'External packages'],
+];
+export const clientNames = {
+  'claude-code': 'Claude Code',
+  codex: 'Codex',
+  antigravity: 'Antigravity',
+  opencode: 'OpenCode',
+  cursor: 'Cursor',
+  vscode: 'VS Code / Copilot',
+  other: 'Other clients',
+};
+export const itemUrl = (item) => `/catalogue/${item.id}`;
+export const publisherUrl = (id) =>
+  `/publishers?publisher=${encodeURIComponent(id)}`;
+export const publisherFor = (item) =>
+  catalogue.publishers.find((p) => p.id === item.publisher);
+export const kindLabel = (kind) =>
+  kinds.find(([key]) => key === kind)?.[1] || kind;
+export const summary = (text) =>
+  text
+    .replace(/^Use when this workflow is requested:\s*/i, '')
+    .replace(/^Use when\s+/i, '')
+    .split(' Triggers on')[0];
+
+export function installation(item, client) {
+  if (item.installation === 'portable-skill') {
+    const target = (
+      catalogue.clientProfiles[client] || catalogue.clientProfiles.other
+    ).skills;
+    return {
+      label: 'Install this skill',
+      code: `clio-kit skill install ${item.name} --target ${target}`,
+      note: 'Installs the procedure and its resources. Configure required MCP servers separately. Other host tools may need their own setup.',
+    };
+  }
+  if (item.installation === 'launcher') {
+    const command = `clio-kit mcp-server ${item.name}`;
+    const code =
+      client === 'codex'
+        ? `codex mcp add clio-${item.name} -- ${command}`
+        : client === 'claude-code'
+          ? `claude mcp add --scope project clio-${item.name} -- ${command}`
+          : JSON.stringify(
+              {
+                [(
+                  catalogue.clientProfiles[client] ||
+                  catalogue.clientProfiles.other
+                ).key]: {
+                  [`clio-${item.name}`]:
+                    item.mcpSettings[client] || item.mcpSettings.other,
+                },
+              },
+              null,
+              2,
+            );
+    return {
+      label: !['codex', 'claude-code'].includes(client)
+        ? 'MCP configuration'
+        : 'Register this MCP server',
+      code,
+      note: 'Install the launcher first. Restart or reload your client and verify the MCP connection. System backends may require additional setup.',
+    };
+  }
+  const plugin = item.nativePackage || item.plugin || item.name;
+  if (item.projectInstall && client !== 'claude-code') {
+    const partial = item.clientSupport?.[client] === false;
+    return {
+      label: 'Install selected components',
+      code: `clio-kit plugin install ${plugin} --client ${client} --project /path/to/project${partial ? ' --components-only' : ''}`,
+      note: partial
+        ? 'Installs only skills and MCP configuration. This package contains components without an adapter for the selected client.'
+        : 'Installs supported package components in your project. External content is checked during installation; unsupported components stop the install. Reload your client and verify tools and hooks. Codex hooks need /hooks review.',
+    };
+  }
+  return {
+    label: item.plugin
+      ? `Install containing package: ${plugin}`
+      : 'Download this native package',
+    code:
+      item.origin === 'Indexed'
+        ? `claude plugin marketplace add iowarp/clio-kit\nclaude plugin install ${plugin}@clio-kit`
+        : `clio-kit plugin fetch ${plugin} --target /path/to/clio-selected\nclaude plugin marketplace add /path/to/clio-selected\nclaude plugin install ${plugin}@clio-kit`,
+    note:
+      item.origin === 'Indexed'
+        ? 'Installs the upstream package from the pinned marketplace source. Upstream code and prerequisites remain with its maintainer.'
+        : item.plugin
+          ? `This installs ${plugin} and its included components. It does not install only this ${item.kind}. Native agents and hooks require Claude Code.`
+          : 'Requires a release with component artifacts published. Downloads this package and its dependencies; MCP implementations download on first launch. For unreleased checkout testing, register the checkout instead.',
+  };
+}
+
+export function featuredItems(data = catalogue) {
+  const items =
+    data === catalogue
+      ? itemsById
+      : new Map(data.items.map((item) => [item.id, item]));
+  return (data.featured || []).map((id) => items.get(id)).filter(Boolean);
+}

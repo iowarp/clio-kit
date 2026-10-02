@@ -1,0 +1,183 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/hdf5-mcp",
+  "title": "CLIO Hdf5",
+  "description": "HDF5 FastMCP - Scientific Data Access for AI Agents | CLIO Kit MCP Server",
+  "version": "2.2.6",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.11.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "hdf5"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "open_file",
+      "description": "Open an HDF5 file for operations."
+    },
+    {
+      "name": "close_file",
+      "description": "Close the current HDF5 file.\n\nReturns:\n    Status message"
+    },
+    {
+      "name": "get_filename",
+      "description": "Get the current file's path.\n\nReturns:\n    File path"
+    },
+    {
+      "name": "get_mode",
+      "description": "Get the current file's access mode.\n\nReturns:\n    File mode"
+    },
+    {
+      "name": "get_by_path",
+      "description": "Get a dataset or group by path."
+    },
+    {
+      "name": "list_keys",
+      "description": "List keys in a group."
+    },
+    {
+      "name": "visit",
+      "description": "Visit all nodes recursively."
+    },
+    {
+      "name": "read_full_dataset",
+      "description": "Read an entire dataset with efficient chunked reading for large datasets."
+    },
+    {
+      "name": "read_partial_dataset",
+      "description": "Read a portion of a dataset with slicing."
+    },
+    {
+      "name": "get_shape",
+      "description": "Get the shape of a dataset."
+    },
+    {
+      "name": "get_dtype",
+      "description": "Get the data type of a dataset."
+    },
+    {
+      "name": "get_size",
+      "description": "Get the size of a dataset."
+    },
+    {
+      "name": "get_chunks",
+      "description": "Get chunk information for a dataset."
+    },
+    {
+      "name": "read_attribute",
+      "description": "Read an attribute from an object."
+    },
+    {
+      "name": "list_attributes",
+      "description": "List all attributes of an object."
+    },
+    {
+      "name": "hdf5_parallel_scan",
+      "description": "Fast multi-file scanning with parallel processing."
+    },
+    {
+      "name": "hdf5_batch_read",
+      "description": "Read multiple datasets in parallel."
+    },
+    {
+      "name": "hdf5_stream_data",
+      "description": "Stream large datasets efficiently with memory management."
+    },
+    {
+      "name": "hdf5_aggregate_stats",
+      "description": "Parallel statistics, with explicit sampling coverage above 500 MiB.\n\nSample statistics describe only the selected values, not full-dataset totals."
+    },
+    {
+      "name": "analyze_dataset_structure",
+      "description": "Analyze and understand file organization and data patterns with AI insights."
+    },
+    {
+      "name": "find_similar_datasets",
+      "description": "Find datasets with similar characteristics to a reference dataset with AI analysis."
+    },
+    {
+      "name": "suggest_next_exploration",
+      "description": "Suggest interesting data to explore next based on current location with AI recommendations."
+    },
+    {
+      "name": "identify_io_bottlenecks",
+      "description": "Identify potential I/O bottlenecks and performance issues with AI recommendations."
+    },
+    {
+      "name": "optimize_access_pattern",
+      "description": "Suggest better approaches for data access based on usage patterns."
+    },
+    {
+      "name": "refresh_hdf5_resources",
+      "description": "Re-scan configured discovery directories; explicit paths can be opened separately.\n\nFastMCP automatically sends notifications/resources/list_changed to clients.\n\nReturns:\n    Summary of refreshed resources"
+    },
+    {
+      "name": "list_available_hdf5_files",
+      "description": "List discovered HDF5 files; open_file(path) also accepts unlisted explicit paths.\n\nReturns:\n    List of available files with resource URIs"
+    },
+    {
+      "name": "export_dataset",
+      "description": "Export dataset to various formats with user format selection."
+    }
+  ],
+  "resource_templates": [
+    {
+      "uri_template": "hdf5://{file_path}/metadata",
+      "name": "hdf5_file_metadata",
+      "description": "Expose HDF5 file metadata as resource.\n\nArgs:\n    file_path: Path to HDF5 file\n\nReturns:\n    JSON metadata"
+    },
+    {
+      "uri_template": "hdf5://{file_path}/datasets/{dataset_path*}",
+      "name": "hdf5_dataset_resource",
+      "description": "Expose HDF5 dataset as resource.\n\nArgs:\n    file_path: Path to HDF5 file\n    dataset_path: Path to dataset within file (supports nested paths)\n\nReturns:\n    Dataset data (preview for large datasets)"
+    },
+    {
+      "uri_template": "hdf5://{file_path}/structure",
+      "name": "hdf5_structure_resource",
+      "description": "Expose HDF5 file structure as resource.\n\nArgs:\n    file_path: Path to HDF5 file\n\nReturns:\n    Hierarchical structure"
+    }
+  ],
+  "prompts": [
+    {
+      "name": "explore_hdf5_file",
+      "description": "Generate workflow for exploring an HDF5 file."
+    },
+    {
+      "name": "optimize_hdf5_access",
+      "description": "Generate optimization workflow for HDF5 I/O."
+    },
+    {
+      "name": "compare_hdf5_datasets",
+      "description": "Generate comparison workflow for two datasets."
+    },
+    {
+      "name": "batch_process_hdf5",
+      "description": "Generate batch processing workflow for multiple HDF5 files."
+    }
+  ],
+  "tags": [
+    "scientific-computing",
+    "hdf5",
+    "data-analysis",
+    "hierarchical-data"
+  ],
+  "scope": "scientific"
+}

@@ -1,0 +1,960 @@
+.shell,
+:global(body):has(.shell) {
+  --market-bg: var(--brand-cream);
+  --market-surface: var(--market-bg);
+  --market-text: var(--color-text);
+  --market-muted: #596270;
+  --market-line: #e2ddd5;
+  --market-accent: var(--brand-teal-ink);
+  --market-tint: #edf3f6;
+  --market-shadow: none;
+  background: var(--market-bg);
+  color: var(--market-text);
+  font-family:
+    'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+}
+:global([data-theme='dark']) .shell,
+:global([data-theme='dark']) :global(body):has(.shell) {
+  --market-bg: var(--color-bg);
+  --market-surface: var(--market-bg);
+  --market-text: var(--color-text);
+  --market-muted: #a4afbf;
+  --market-line: rgba(107, 194, 228, 0.25);
+  --market-accent: var(--brand-teal-light);
+  --market-tint: #142b43;
+  --market-shadow: none;
+}
+.page h1,
+.page h2,
+.page h3 {
+  font-family: inherit;
+  color: var(--market-text);
+  font-weight: 650;
+  letter-spacing: -0.65px;
+}
+.page h1 {
+  font-size: 42px;
+  line-height: 1.15;
+}
+.page h2 {
+  font-size: 25px;
+  line-height: 1.35;
+}
+.page a {
+  color: var(--market-accent);
+  text-decoration: none;
+}
+.page a:hover {
+  text-decoration: underline;
+}
+.page button,
+.page input,
+.page select {
+  font: inherit;
+}
+.page button {
+  cursor: pointer;
+}
+.page :is(a, button, input, select):focus-visible {
+  outline: 3px solid var(--market-accent);
+  outline-offset: 4px;
+  border-radius: 5px;
+}
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  font-weight: 700;
+  color: var(--market-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  line-height: 1.6;
+}
+.primary,
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  padding: 11px 17px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+.page .primary {
+  background: var(--brand-orange);
+  border: 1px solid var(--brand-orange);
+  color: #111827;
+}
+.page .secondary {
+  background: var(--market-surface);
+  border: 1px solid var(--market-line);
+  color: var(--market-text);
+}
+.page :is(.primary, .secondary):hover {
+  text-decoration: none;
+  transform: translateY(-1px);
+  box-shadow: var(--market-shadow);
+}
+.sectionHeading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.sectionHeading h2 {
+  margin: 7px 0 0;
+}
+.textLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 550;
+}
+.glyph {
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--market-tint);
+  color: var(--market-accent);
+  flex-shrink: 0;
+}
+.serverIcon {
+  font-size: 24px;
+  line-height: 1;
+}
+.largeGlyph .serverIcon {
+  font-size: 34px;
+}
+.skill {
+  background: #eef1fc;
+  color: #687abb;
+}
+.mcp {
+  background: #eaf3f8;
+  color: var(--brand-teal);
+}
+.plugin {
+  background: #fbf1e5;
+  color: #ac773d;
+}
+.agent {
+  background: #f1eefa;
+  color: #8b72a8;
+}
+.hook {
+  background: #fff3de;
+  color: #a98028;
+}
+:global([data-theme='dark'])
+  :is(.skill, .plugin, .agent, .hook, .mcp) {
+  background: var(--market-tint);
+  color: var(--brand-teal-light);
+}
+.card {
+  background: var(--market-surface);
+  border: 1px solid var(--market-line);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  min-width: 0;
+  box-shadow: var(--market-shadow);
+  transition:
+    border-color 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+.card:hover {
+  border-color: var(--market-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(33, 124, 163, 0.07);
+}
+.card:focus-within {
+  outline: 2px solid var(--market-accent);
+  outline-offset: 2px;
+}
+.cardTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 17px;
+}
+.typeLabel {
+  font-size: 10px;
+  color: var(--market-muted);
+  font-weight: 550;
+}
+.cardTop > svg {
+  margin-left: auto;
+  color: var(--market-muted);
+  opacity: 0.65;
+}
+.card h3 {
+  font-size: 15px;
+  line-height: 1.4;
+  margin: 0 0 9px;
+  letter-spacing: -0.3px;
+}
+.cardLink {
+  color: var(--market-text) !important;
+}
+.cardLink::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  border-radius: 10px;
+}
+.cardDescription {
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--market-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 20px;
+  min-height: 63px;
+}
+.cardFoot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--market-muted);
+  border-top: 1px solid var(--market-line);
+  padding-top: 13px;
+}
+.origin {
+  font-size: 9px;
+  border-radius: 4px;
+  padding: 3px 6px;
+  background: var(--market-bg);
+  border: 1px solid var(--market-line);
+}
+.featuredCard {
+  padding: 22px;
+}
+.featuredCard h3 {
+  font-size: 17px;
+}
+.featuredCard .cardDescription {
+  min-height: 42px;
+  -webkit-line-clamp: 2;
+  margin-bottom: 18px;
+}
+.memberChips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.memberChips span {
+  padding: 3px 7px;
+  background: var(--market-tint);
+  color: var(--market-accent);
+  border-radius: 4px;
+  font-size: 10px;
+}
+.catalogue {
+  border-top: 1px solid var(--market-line);
+  padding: 34px 0 50px;
+  scroll-margin-top: 90px;
+}
+.catalogueLayout {
+  display: grid;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 28px;
+}
+.filters {
+  min-width: 0;
+  padding-top: 3px;
+}
+.moreFilters {
+  display: none;
+}
+.clearFilters {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--market-accent);
+  font-size: 10px !important;
+}
+.filterLabel {
+  font-size: 9px;
+  color: var(--market-muted);
+  letter-spacing: 1.3px;
+  font-weight: 650;
+  display: block;
+  margin: 0 0 12px;
+}
+.kindFilters {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 28px;
+}
+.filterButton {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--market-muted);
+  text-align: left;
+  font-size: 12px !important;
+  width: 100%;
+}
+.filterButton:hover {
+  background: var(--market-surface);
+  color: var(--market-accent);
+}
+.activeFilter {
+  background: var(--market-tint);
+  color: var(--market-accent);
+  border-color: transparent;
+  font-weight: 600 !important;
+}
+.count {
+  margin-left: auto;
+  font-size: 10px;
+  color: var(--market-muted);
+  font-variant-numeric: tabular-nums;
+}
+.select {
+  width: 100%;
+  min-height: 39px;
+  padding: 8px 10px;
+  border: 1px solid var(--market-line);
+  border-radius: 6px;
+  background: var(--market-surface);
+  color: var(--market-text);
+  font-size: 12px !important;
+  margin-bottom: 22px;
+  text-overflow: ellipsis;
+}
+.filterHelp {
+  padding: 18px 13px;
+  margin-top: 6px;
+  border: 1px solid var(--market-line);
+  border-radius: 8px;
+  color: var(--market-muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+.filterHelp strong {
+  display: block;
+  margin: 8px 0 5px;
+  color: var(--market-text);
+  font-size: 12px;
+}
+.filterHelp p {
+  margin-bottom: 9px;
+}
+.resultArea {
+  min-width: 0;
+}
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid var(--market-line);
+  padding: 0 15px;
+  border-radius: 8px;
+  background: var(--market-surface);
+  height: 47px;
+  color: var(--market-muted);
+}
+.searchBox:focus-within {
+  outline: 2px solid var(--market-accent);
+  outline-offset: 2px;
+}
+.searchBox input {
+  border: 0;
+  outline: 0 !important;
+  width: 100%;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--market-text);
+  background: transparent;
+  padding: 10px 0;
+}
+.searchBox input::placeholder {
+  color: var(--market-muted);
+  opacity: 0.85;
+}
+.searchBox button {
+  border: 0;
+  background: transparent;
+  color: var(--market-muted);
+  font-size: 22px;
+  padding: 0 7px;
+}
+.searchHint {
+  font-size: 8px;
+  letter-spacing: 1.2px;
+  color: var(--market-muted);
+  border: 1px solid var(--market-line);
+  padding: 4px 7px;
+  border-radius: 4px;
+}
+.resultsMeta {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 17px 0;
+  font-size: 10px;
+  color: var(--market-muted);
+}
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+}
+.loadMore {
+  display: flex;
+  justify-content: center;
+  padding-top: 25px;
+}
+.loadMore span {
+  font-weight: 400;
+  color: var(--market-muted);
+  font-size: 11px;
+}
+.empty {
+  padding: 65px 25px;
+  border: 1px dashed var(--market-line);
+  border-radius: 10px;
+  text-align: center;
+  color: var(--market-muted);
+  background: var(--market-surface);
+  margin: 25px 0;
+}
+.empty h3 {
+  font-size: 19px;
+  margin-top: 16px;
+}
+.empty > a {
+  display: inline-flex;
+  margin: 15px;
+}
+.empty p {
+  max-width: 430px;
+  margin: 12px auto 20px;
+  line-height: 1.8;
+}
+.contribute {
+  border: 1px solid var(--market-line);
+  background: var(--market-tint);
+  border-radius: 12px;
+  padding: 30px 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 15px 0 30px;
+}
+.contribute h2 {
+  margin: 6px 0 8px;
+}
+.contribute p {
+  margin: 0;
+  color: var(--market-muted);
+  font-size: 13px;
+}
+.contribute .secondary {
+  flex-shrink: 0;
+}
+.backLink {
+  display: inline-flex;
+  margin: 28px 0;
+  font-size: 12px;
+}
+.detailHeader {
+  display: flex;
+  gap: 23px;
+  padding: 18px 0 39px;
+  max-width: 930px;
+}
+.largeGlyph {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+  margin-top: 7px;
+}
+.detailHeader h1 {
+  font-size: 35px;
+  margin: 0 0 15px;
+  letter-spacing: -1px;
+}
+.detailHeader p {
+  color: var(--market-muted);
+  font-size: 14px;
+  line-height: 1.8;
+  margin-bottom: 12px;
+}
+.detailSection {
+  margin-bottom: 33px;
+}
+.detailSection h2 {
+  font-size: 21px;
+  margin: 9px 0 17px;
+}
+.detailSection > p {
+  font-size: 13px;
+  line-height: 1.9;
+  color: var(--market-muted);
+}
+.inlineCount {
+  display: inline-flex;
+  font-size: 11px;
+  margin-left: 5px;
+  background: var(--market-tint);
+  border-radius: 5px;
+  padding: 4px 7px;
+  vertical-align: middle;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.memberList {
+  border: 1px solid var(--market-line);
+  border-radius: 9px;
+  overflow: hidden;
+  background: var(--market-surface);
+}
+.memberList > a {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 17px;
+  color: var(--market-text);
+  border-bottom: 1px solid var(--market-line);
+}
+.memberList > a:last-child {
+  border-bottom: 0;
+}
+.memberList > a:hover {
+  background: var(--market-tint);
+  text-decoration: none;
+}
+.memberList .glyph {
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+}
+.memberList strong {
+  font-size: 12px;
+  font-weight: 550;
+}
+.memberList div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.memberList div span {
+  color: var(--market-muted);
+  font-size: 10px;
+}
+.memberList > a > svg {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.linkRow {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  margin-top: 20px;
+}
+.linkRow a {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+}
+.installNote {
+  font-size: 11px;
+  line-height: 1.85;
+  color: var(--market-muted);
+  margin: 15px 0 20px;
+}
+.publisherIntro {
+  padding: 20px 0 30px;
+}
+.publisherIntro h1 {
+  margin: 15px 0;
+}
+.publisherIntro p {
+  color: var(--market-muted);
+  font-size: 15px;
+}
+.publisherGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+.publisherCard {
+  padding: 29px;
+  border: 1px solid var(--market-line);
+  border-radius: 12px;
+  background: var(--market-surface);
+}
+.publisherMark {
+  background: var(--market-tint);
+  color: var(--market-accent);
+  width: 58px;
+  height: 58px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  flex-shrink: 0;
+}
+.publisherCard h2 {
+  margin: 6px 0 13px;
+}
+.publisherCard p {
+  color: var(--market-muted);
+  line-height: 1.85;
+  font-size: 13px;
+  min-height: 72px;
+}
+.publisherStats {
+  font-size: 11px;
+  color: var(--market-muted);
+  border-top: 1px solid var(--market-line);
+  margin: 22px 0 17px;
+  padding-top: 15px;
+}
+.publisherStats span {
+  margin-inline: 9px;
+}
+.publisherHero {
+  display: flex;
+  gap: 26px;
+  border: 1px solid var(--market-line);
+  background: var(--market-surface);
+  padding: 36px;
+  border-radius: 12px;
+  margin: 6px 0 35px;
+  align-items: center;
+}
+.publisherHero .publisherMark {
+  width: 80px;
+  height: 80px;
+  margin: 0;
+}
+.publisherHero h1 {
+  margin: 9px 0 12px;
+}
+.publisherHero p {
+  font-size: 14px;
+  color: var(--market-muted);
+  max-width: 750px;
+  line-height: 1.8;
+}
+@media (max-width: 1100px) {
+  .cardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .catalogueLayout {
+    gap: 22px;
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+}
+@media (max-width: 800px) {
+  .featuredCard {
+    padding: 16px;
+  }
+  .featuredCard h3 {
+    font-size: 15px;
+  }
+  .featuredCard .memberChips {
+    display: none;
+  }
+  .sectionHeading {
+    align-items: start;
+  }
+  .sectionHeading h2 {
+    font-size: 23px;
+  }
+  .publisherHero {
+    align-items: start;
+  }
+  .contribute {
+    padding: 25px;
+  }
+  .detailHeader h1 {
+    font-size: 30px;
+  }
+}
+@media (max-width: 600px) {
+  .container {
+    padding: 0 20px;
+  }
+  :global(body):has(.shell) :global(.navbar) {
+    padding-inline: 17px;
+    height: 62px;
+  }
+  .sectionHeading {
+    flex-direction: column;
+    gap: 13px;
+  }
+  .sectionHeading h2 {
+    font-size: 24px;
+  }
+  .featuredCard {
+    padding: 20px;
+  }
+  .featuredCard h3 {
+    font-size: 18px;
+  }
+  .featuredCard .cardDescription {
+    min-height: 0;
+  }
+  .featuredCard .memberChips {
+    display: flex;
+  }
+  .featuredCard .cardFoot {
+    display: none;
+  }
+  .featuredCard .memberChips {
+    margin-bottom: 0;
+  }
+  .catalogueLayout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .kindFilters {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 17px;
+  }
+  .filterButton {
+    width: auto;
+    padding: 7px 9px;
+    font-size: 11px !important;
+    border-color: var(--market-line);
+    background: var(--market-surface);
+    gap: 6px;
+  }
+  .activeFilter {
+    background: var(--market-tint);
+    border-color: var(--market-accent);
+  }
+  .filterButton .count {
+    font-size: 9px;
+  }
+  .filterButton svg {
+    width: 14px;
+  }
+  .filters .filterLabel:not(:first-child),
+  .filters .select,
+  .filterHelp {
+    display: none;
+  }
+  .cardGrid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .card {
+    padding: 19px;
+  }
+  .card h3 {
+    font-size: 17px;
+  }
+  .cardDescription {
+    min-height: 0;
+  }
+  .cardTop {
+    margin-bottom: 13px;
+  }
+  .searchHint {
+    display: none;
+  }
+  .contribute {
+    flex-direction: column;
+    align-items: start;
+    gap: 20px;
+    padding: 24px;
+  }
+  .contribute h2 {
+    font-size: 23px;
+  }
+  .contribute p {
+    font-size: 12px;
+  }
+  .detailHeader {
+    flex-direction: column;
+    gap: 17px;
+    padding-top: 0;
+  }
+  .detailHeader h1 {
+    font-size: 29px;
+  }
+  .detailHeader p {
+    font-size: 13px;
+  }
+  .publisherGrid {
+    grid-template-columns: 1fr;
+  }
+  .publisherHero {
+    padding: 23px;
+    flex-direction: column;
+    gap: 17px;
+  }
+  .publisherIntro h1 {
+    font-size: 33px;
+  }
+  .publisherHero h1 {
+    font-size: 30px;
+  }
+  .publisherHero .eyebrow {
+    font-size: 9px;
+  }
+  .empty {
+    padding: 40px 20px;
+  }
+  .backLink {
+    margin: 22px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .primary,
+  .secondary {
+    transition: none;
+  }
+  .card:hover,
+  .page :is(.primary, .secondary):hover {
+    transform: none;
+  }
+}
+@media (max-width: 600px) {
+  .moreFilters {
+    display: block;
+    margin: 0 0 15px;
+    border: 0;
+    background: none;
+    color: var(--market-accent);
+    font-size: 12px !important;
+    padding: 4px 0;
+  }
+  .filtersExpanded .filterLabel:not(:first-child),
+  .filtersExpanded .select {
+    display: block;
+  }
+}
+
+.page p a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.page .catalogueTitle {
+  padding-top: 54px;
+  font-family: Newsreader, Georgia, serif;
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 500;
+}
+
+.detailPage {
+  width: min(860px, calc(100% - 3rem));
+  margin: 0 auto;
+  padding-bottom: 5rem;
+}
+.detailPage .detailHeader {
+  padding-block: 1.5rem 2.5rem;
+}
+.detailPage .detailHeader h1 {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+.detailPage .detailMeta {
+  font-size: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.detailPage .largeGlyph {
+  border: 0;
+  background: transparent;
+}
+.detailInstall {
+  border-block: 1px solid var(--market-line);
+  padding-block: 1.5rem;
+  margin-bottom: 2.5rem;
+}
+.detailToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.detailToolbar h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.detailToolbar label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.detailToolbar label > span {
+  font-size: 0.75rem;
+  color: var(--market-muted);
+}
+.detailToolbar .select {
+  width: auto;
+  margin: 0;
+}
+.detailInstall > a,
+.detailFooter {
+  font-size: 0.85rem;
+}
+.detailPage .installNote {
+  font-size: 0.85rem;
+}
+.detailOutcome {
+  color: var(--market-muted);
+  margin-bottom: 2rem;
+}
+.detailFooter {
+  border-top: 1px solid var(--market-line);
+  padding-top: 1.5rem;
+  color: var(--market-muted);
+}
+.detailPage .memberList > a {
+  border-radius: 0;
+  background: transparent;
+}
+.detailPage .referenceTitle {
+  font-family: 'Newsreader', Georgia, serif;
+  font-size: clamp(2.25rem, 4vw, 3.5rem);
+  font-weight: 500;
+  margin-block: 3rem 1rem;
+}

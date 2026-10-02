@@ -1,0 +1,282 @@
+---
+sidebar_position: 1
+---
+
+# Getting Started
+
+CLIO Kit is a meta-marketplace for scientific MCP servers, workflow skills,
+plugins, agent definitions, hooks and external marketplace collections.
+Choose individual components or a plugin that bundles what your workflow needs.
+Skill and agent collections can also be installed separately. External packages
+and marketplaces remain under their maintainers' control. See
+[components and plugins](plugins.md) for the catalogue and installation model.
+
+The shipped scientific servers are Python projects. The launcher also supports
+Node/TypeScript and Go descriptors with runtime-specific dependency locks.
+See [Marketplace and Contributions](./marketplace.md) for supported components,
+contribution commands, update behavior and tested runtime boundaries.
+
+For client-specific commands, use [Set up your agent](clients.md). For the individual MCP, skill and plugin routes, follow
+[Install components](tutorials/install-components.md), then try the
+[terminal tutorials](/tutorials).
+
+## Install from source
+
+Use the same checkout for the launcher and marketplace. The commands below
+install the checked-out code; package releases are published separately.
+
+```bash
+git clone https://github.com/iowarp/clio-kit.git
+cd clio-kit
+uv tool install --force --reinstall --editable ".[verification]"
+clio-kit mcp-servers
+```
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first.
+If the launcher is not on PATH, run `uv tool update-shell` and open a new shell.
+The editable launcher reads component sources from this checkout. For selective
+downloads without a checkout, see [release installation](installation.md).
+First server launches may download dependencies.
+
+### Portable skills: Codex and other compatible agents
+
+```bash
+clio-kit skill install --bundle clio-scientific-io --target /path/to/project/.agents/skills
+```
+
+For Codex, `.agents/skills` is a project skill directory; `~/.agents/skills` is
+user-wide. Other agents use their own documented discovery path as `--target`.
+Omit `--bundle` for all bundled skills, including adapted Clio Coder skills and
+the dataset-report procedure. Configure required MCP servers separately;
+for example `codex mcp add clio-hdf5 -- clio-kit mcp-server hdf5` registers HDF5.
+The scientific I/O workflow also requires ADIOS, Parquet and compression.
+
+The optional npm [`skills` CLI](./marketplace.md#optional-skills-cli) can also
+install these folders into agent projects. It does not configure MCP servers.
+
+### Claude Code native plugins
+
+```bash
+claude plugin marketplace add "$PWD"
+claude plugin install clio-scientific-io@clio-kit
+claude mcp list
+```
+
+This route requires Claude Code with plugin dependency support. Reload plugins
+or restart an existing session before using its new tools. Plugin registration
+alone does not establish that servers connect.
+
+The repository's [setup guide](https://github.com/iowarp/clio-kit/blob/main/setup.md)
+includes an actual compression round-trip check and troubleshooting steps.
+
+## Choose a workflow
+
+| Bundle | Work |
+|---|---|
+| `clio-hpc` | Software discovery, JARVIS execution and Slurm scheduling |
+| `clio-performance` | I/O diagnosis, log investigation and session provenance |
+| `clio-scientific-io` | Inspect and read HDF5, ADIOS BP5, Parquet and compressed files |
+| `clio-analysis` | Tabular data, statistics, charts and ParaView |
+| `clio-geoscience` | Geospatial, terrain and seismic analysis |
+| `clio-research` | Literature, public datasets and operator catalogues |
+
+In Claude Code, a bundle installs its member servers and matching skills. Install a server alone
+with `claude plugin install clio-hdf5@clio-kit`, a workflow's procedures with
+`clio-scientific-io-skills@clio-kit`, or all procedures with `clio-skills@clio-kit`.
+`clio-agents@clio-kit` provides a workflow planner and evidence reviewer.
+
+## Agent integrations
+
+### Install a workflow for your client
+
+Install a workflow's skills and MCP configuration together into a working
+project. A released launcher uses its component catalogue; inside a CLIO Kit
+checkout, the command uses local packages instead:
+
+```bash
+clio-kit plugin install clio-scientific-io --client codex --project /path/to/project
+```
+
+Choose `codex`, `opencode`, `cursor`, `antigravity`, `vscode` or `claude-code`.
+Use `--root /path/to/clio-kit` when running elsewhere, and `--dry-run` to inspect
+the plan. New local package folders are discovered without a separate sync.
+The command resolves selected dependencies, obtains complete skill folders and
+merges stdio MCP entries into the client's project configuration. It does not
+change global settings or install a native client plugin. Install the launcher
+first. Keep source checkouts available when using `--root`; released package scripts
+use the component cache.
+Codex and Antigravity share `.agents/skills`; installing the same skill there
+once is enough, and replacing it affects both clients.
+
+Existing unrelated configuration is preserved. Conflicting names stop installation;
+review before using `--replace`. Changed configurations get a recovery backup;
+TOML comments remain in that backup. OpenCode JSONC and remote/host-specific MCP
+options require manual configuration. Maintained packages and indexed GitHub, Git URL,
+Git subdirectory and npm packages use the same installer, including federated entries.
+
+**Agents and hooks:** Codex, Claude Code and OpenCode have adapters for the
+scientific agents and Dataset Report hooks. Other native components need their
+own supported adapter; installation refuses to silently omit them. Use
+`--components-only` only when you deliberately want skills and MCPs without the
+other components. Review Codex hooks through `/hooks` before use. See the
+[client support table](clients.md#component-support).
+
+Reload your client and verify skills and MCP connections. Codex project settings
+require a trusted project. For Antigravity CLI, first open the project using
+`agy --new-project`. Installation alone does not prove a model used the workflow.
+
+### Individual component configuration
+
+Client format references: [Codex plugins](https://developers.openai.com/plugins/build/plugins),
+[OpenCode MCPs](https://opencode.ai/docs/mcp-servers/) and
+[skills](https://opencode.ai/docs/skills/),
+[Cursor MCPs](https://cursor.com/docs/mcp), and
+[Antigravity MCPs](https://antigravity.google/docs/mcp).
+
+MCP servers provide tools; skills provide procedures for using them. Configure
+both for a complete workflow. The scientific I/O workflow needs `hdf5`, `adios`,
+`parquet`, and `compression`, plus its three skills.
+
+| Client | Register MCP servers | Project skill target |
+|---|---|---|
+| Codex CLI / IDE extension | `codex mcp add`; shared `~/.codex/config.toml` | `.agents/skills` |
+| Claude Code | Native marketplace above, or `claude mcp add --scope project` | Bundle-managed, or `.claude/skills` |
+| Cursor | `.cursor/mcp.json` with `mcpServers` | `.cursor/skills` |
+| OpenCode | `opencode.json` with `mcp` (`type: local`, command array) | `.agents/skills` |
+| VS Code / GitHub Copilot | `.vscode/mcp.json` with `servers` | `.github/skills` |
+| Antigravity | MCP settings → raw config; workspace `.agents/mcp_config.json` | `.agents/skills` |
+| Claude Desktop | Developer settings → `claude_desktop_config.json` with `mcpServers` | Local MCP setup does not install skills |
+
+For example, in Codex:
+
+```bash
+codex mcp add clio-hdf5 -- clio-kit mcp-server hdf5
+codex mcp add clio-adios -- clio-kit mcp-server adios
+codex mcp add clio-parquet -- clio-kit mcp-server parquet
+codex mcp add clio-compression -- clio-kit mcp-server compression
+clio-kit skill install --bundle clio-scientific-io --target .agents/skills
+codex mcp list
+```
+
+For Cursor, Antigravity, or Claude Desktop, merge these entries into the
+configuration file listed above:
+
+```json
+{
+  "mcpServers": {
+    "clio-hdf5": { "command": "clio-kit", "args": ["mcp-server", "hdf5"] },
+    "clio-adios": { "command": "clio-kit", "args": ["mcp-server", "adios"] },
+    "clio-parquet": { "command": "clio-kit", "args": ["mcp-server", "parquet"] },
+    "clio-compression": { "command": "clio-kit", "args": ["mcp-server", "compression"] }
+  }
+}
+```
+
+For VS Code / GitHub Copilot, use this complete `.vscode/mcp.json` structure:
+
+```json
+{
+  "servers": {
+    "clio-hdf5": { "type": "stdio", "command": "clio-kit", "args": ["mcp-server", "hdf5"] },
+    "clio-adios": { "type": "stdio", "command": "clio-kit", "args": ["mcp-server", "adios"] },
+    "clio-parquet": { "type": "stdio", "command": "clio-kit", "args": ["mcp-server", "parquet"] },
+    "clio-compression": { "type": "stdio", "command": "clio-kit", "args": ["mcp-server", "compression"] }
+  }
+}
+```
+
+Run **MCP: List Servers** to start the servers, then use Copilot's Agent mode.
+The Codex extension uses Codex's own configuration, even when running in VS Code.
+
+Install skills using the appropriate target from the table:
+
+```bash
+# Cursor
+clio-kit skill install --bundle clio-scientific-io --target .cursor/skills
+# VS Code / GitHub Copilot
+clio-kit skill install --bundle clio-scientific-io --target .github/skills
+# Antigravity
+clio-kit skill install --bundle clio-scientific-io --target .agents/skills
+```
+
+Current Cursor, VS Code, and Antigravity also discover `.agents/skills`;
+reuse a shared installation there instead of making duplicate copies.
+Antigravity also supports the older `.agent/skills` directory. Its current global
+locations are `~/.gemini/config/mcp_config.json` for servers and
+`~/.gemini/config/skills` for skills. Use the IDE's **MCP Servers → Manage MCP
+Servers → View raw config** to locate the configuration for your installed version.
+For Antigravity CLI, start the first session from your project with
+`agy --new-project` so its local skills and MCP configuration are loaded.
+Reopen it with `agy --project <project-name-or-id>`.
+
+The `.claude-plugin` export remains available for Claude's native marketplace.
+Kit's project installer adapts shared packages for the selected client; see
+[component support](clients.md#component-support) for agents and hooks.
+Claude Desktop's MCP configuration installs only servers.
+For another local stdio client, use command `clio-kit` with arguments
+`["mcp-server", "SERVER_NAME"]` in its documented schema. Remote-only clients
+need a separately deployed MCP endpoint.
+
+Install the launcher in the environment where your client starts its MCP
+processes, including SSH, WSL, or a container. If `clio-kit` is not on the
+client's PATH, use its absolute executable path. Reload or restart the client,
+inspect its discovered tools and skills, and continue with verification below.
+
+Client references: [Codex MCP](https://developers.openai.com/codex/mcp) and
+[skills](https://developers.openai.com/codex/skills),
+[Cursor MCP](https://cursor.com/docs/mcp) and [skills](https://cursor.com/docs/skills),
+[VS Code MCP](https://code.visualstudio.com/docs/agent-customization/mcp-servers) and
+[skills](https://code.visualstudio.com/docs/agent-customization/agent-skills),
+[Antigravity MCP](https://antigravity.google/docs/mcp) and
+[skills](https://antigravity.google/docs/skills/), and
+[Claude Desktop MCP](https://modelcontextprotocol.io/docs/develop/connect-local-servers).
+
+## Verify the workflow
+
+`clio-kit doctor --server hdf5 --connect` checks prerequisites and a real MCP
+connection. Follow it with a representative tool call on known data and inspect
+the result. HPC workflows require site software and scheduler access; ParaView
+and ChronoLog require compatible native backends. A successful connection does
+not establish that those dependencies are available or that a scientific result
+is correct.
+
+The [marketplace guide](./marketplace.md#reproduce-the-installed-system-checks)
+describes fresh-wheel installation tests, real client installation, Node/Go
+fixture execution, scientific data checks and remaining acceptance boundaries.
+
+## Repository structure
+
+```text
+clio-kit/
+├── .claude-plugin/marketplace.json
+├── mcp-servers/            # Independent scientific server projects
+├── plugins/                # Workflow bundles, aggregate skills and agents
+├── skills/                 # Workflow and imported skill collections
+├── community/entries/      # External plugin and marketplace entries
+├── src/clio_kit/            # Launcher, authoring, discovery and cache management
+├── tests/fixtures/         # Runtime acceptance fixtures
+├── docs/                   # Shared human documentation
+├── website/        # Website configuration and UI
+└── AGENTS.md               # Agent contribution entry point
+```
+
+Server environments are isolated and identified by source and lock contents.
+Python projects use `uv.lock`, Node projects use `package-lock.json`, and Go
+projects use module versions and checksums. Released component artifacts download separately from the launcher. A cold
+installation requires network access; see [offline preparation](installation.md#offline-use-and-updates).
+
+## Contribute and get help
+
+Start with [Authoring components](authoring.md) for plugin, MCP, skill and hook
+recipes, or the [documentation index](README.md) for other guides. Read the [contributor guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md)
+for local skills, hosted servers and indexed contributions. Use
+`clio-kit plugin init`, `plugin validate` and `plugin submit` for plugin authoring.
+The marketplace guide explains what each command validates and publishes.
+
+CLIO Kit is developed by the [Gnosis Research Center](https://grc.iit.edu/) at
+[Illinois Institute of Technology](https://www.iit.edu/) as part of
+[IoWarp](https://iowarp.ai), with National Science Foundation support.
+The repository is licensed under BSD-3-Clause.
+
+Report issues on [GitHub](https://github.com/iowarp/clio-kit/issues) or join the
+[community discussion](https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit).

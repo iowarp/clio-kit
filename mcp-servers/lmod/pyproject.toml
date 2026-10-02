@@ -1,0 +1,57 @@
+[project]
+name = "lmod-mcp"
+version = "1.0.0"
+description = "Lmod MCP - Environment Module Management for LLMs with comprehensive module operations"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+authors = [
+    { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
+]
+
+keywords = ["lmod", "environment-modules", "module-management", "hpc", "scientific-computing", "supercomputing", "cluster-computing", "module-system"]
+
+dependencies = [
+  "authlib>=1.6.12",
+  "cryptography>=48.0.1",
+  "fastmcp>=4.0.3,<5",
+  "idna>=3.15",
+  "msgpack>=1.2.1",
+  "pydantic-settings>=2.14.2",
+  "pygments>=2.20.0",
+  "pyjwt>=2.15.1",
+  "python-dotenv>=1.2.2",
+  "python-multipart>=0.0.31",
+  "requests>=2.33.0",
+  "starlette>=1.3.1",
+  "urllib3>=2.8.0",
+]
+
+[project.urls]
+Homepage = "https://toolkit.iowarp.ai/"
+Repository = "https://github.com/iowarp/clio-kit"
+
+[project.scripts]
+lmod-mcp = "lmod_mcp.server:main"
+
+[tool.uv]
+dev-dependencies = [
+    "pip>=26.1.2",
+    "pip-audit>=2.10.0",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/lmod_mcp"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"

@@ -4,16 +4,34 @@ on:
   push:
     branches: [main]
     paths:
-      - 'clio-kit-website/**'
-      - 'clio-kit-mcp-servers/**'
+      - 'website/**'
+      - 'docs/**'
+      - 'skills/**'
+      - 'plugins/**'
+      - 'agents/**'
+      - 'hooks/**'
+      - '.claude-plugin/**'
+      - 'community/**'
+      - 'mcp-server-versions.toml'
+      - 'mcp-servers/**'
       - 'scripts/**'
+      - 'src/clio_kit/**'
       - '.github/workflows/docs-and-website.yml'
   pull_request:
     branches: [main, dev]
     paths:
-      - 'clio-kit-website/**'
-      - 'clio-kit-mcp-servers/**'
+      - 'website/**'
+      - 'docs/**'
+      - 'skills/**'
+      - 'plugins/**'
+      - 'agents/**'
+      - 'hooks/**'
+      - '.claude-plugin/**'
+      - 'community/**'
+      - 'mcp-server-versions.toml'
+      - 'mcp-servers/**'
       - 'scripts/**'
+      - 'src/clio_kit/**'
       - '.github/workflows/docs-and-website.yml'
 
 permissions:
@@ -24,6 +42,7 @@ jobs:
   # Job 1: Build and test documentation (runs on all branches/PRs)
   build-docs:
     name: Build Documentation
+    timeout-minutes: 20
     runs-on: ubuntu-latest
 
     steps:
@@ -45,34 +64,34 @@ jobs:
     - name: Install root dependencies
       run: |
         if [ -f pyproject.toml ]; then
-          uv sync
+          uv sync --frozen
         fi
 
     - name: Pre-sync MCP server environments
       run: |
-        for dir in clio-kit-mcp-servers/*/; do
+        for dir in mcp-servers/*/; do
           if [ -f "$dir/pyproject.toml" ]; then
             echo "Syncing $(basename $dir)..."
-            (cd "$dir" && uv sync --all-extras --dev) || echo "Warning: sync failed for $(basename $dir)"
+            (cd "$dir" && uv sync --frozen --all-extras --dev) || echo "Warning: sync failed for $(basename $dir)"
           fi
         done
 
     # Generate and build documentation
     - name: Generate Docusaurus documentation
       run: |
-        python3 scripts/generate_docs.py clio-kit-mcp-servers clio-kit-website
+        uv run --frozen python scripts/generate_docs.py mcp-servers website
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '24'
 
     - name: Install Node.js dependencies
-      working-directory: ./clio-kit-website
-      run: npm install
+      working-directory: ./website
+      run: npm ci
 
     - name: Build Docusaurus website
-      working-directory: ./clio-kit-website
+      working-directory: ./website
       run: npm run build
 
     # Store build artifacts for deployment job (only on main pushes)
@@ -81,7 +100,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: docs-build
-        path: ./clio-kit-website/build
+        path: ./website/build
         retention-days: 1
 
 

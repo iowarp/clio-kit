@@ -2,6 +2,49 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
+## 2.11.0
+
+CLIO Kit now provides a meta-marketplace with 22 MCP servers, six workflow
+bundles, 60 portable Agent Skills (20 workflow skills, the dataset-report
+skill and 39 adapted Clio Coder skills), and two Claude Code agent definitions.
+External authors can validate and submit plugin entries; indexed marketplace
+collections compile into a versioned catalogue with recorded provenance.
+Node/TypeScript and Go projects can use the locked local-project launcher.
+The shipped scientific servers remain Python projects.
+
+The CLI can install portable skill folders into an agent's discovery directory.
+Native dependency bundles and agent manifests currently target Claude Code;
+other clients configure skills and stdio MCP separately. See `setup.md` and the
+website's marketplace documentation for tested paths and backend prerequisites.
+
+Scientific fixes make Pandas interpolation, directional fills and categorical
+mode fills honor the requested method and report actual fill counts. HDF5
+labels sampled statistics with coverage and omits misleading combined totals.
+Parallel-sort recognizes bracketed log levels consistently. Slurm diagnostics
+use stderr so job submission cannot corrupt the MCP stdout stream.
+
+This release incorporates main's JARVIS 1.8.1 dependency and Web task-based
+fetch support, with ordinary-call compatibility for agents without the tasks
+extension. All 22 server locks update vulnerable HTTP dependencies, and
+fresh registry versions point to the 2.11.0 wheel. The compatible JARVIS user
+schema remains v3.7.2; its component release is 3.7.4.
+
+All 22 servers now use stable FastMCP 4.0.3 with MCP Python SDK 2.2.0.
+The verification client negotiates the 2026-07-28 protocol and supports legacy
+connections. HDF5 exports accept an explicit `export_format` so clients can
+select CSV, JSON or NumPy without a mid-call prompt; modern connections default
+to JSON. Legacy elicitation remains available when the argument is omitted.
+
+Website builds now use a committed npm lock, updated Docusaurus dependencies
+and a pre-build image-format check, documented in `website/README.md`.
+
+### Removed and renamed
+
+The standalone `clio-kit search` command is no longer part of this package.
+The `geojson` server merged into `geo`, and `sac` and `seismic` merged into
+`seismology`; tool names are unchanged, and launching a retired name prints
+where it went. The launcher now lists 22 servers.
+
 ## 2.10.5
 
 ### Python 3.13: pandas and plot servers install again
@@ -62,7 +105,7 @@ enum gains `frame` (for scientific output files like `.h5`, `.dcd`, `.vtk`,
 trajectory/checkpoint frames) alongside the execution-output declarations
 above. No tool is renamed, removed, or gains a required field. Every prior
 contract revision (down to `clio-kit-jarvis-user-v3`) remains loadable by
-exact identifier â€” nothing already deployed is invalidated by this bump.
+exact identifier — nothing already deployed is invalidated by this bump.
 
 This release also closes a gap where a kit build could be asked to load the
 `clio-kit-jarvis-user-v3.7` contract family and not recognize it. The kit now

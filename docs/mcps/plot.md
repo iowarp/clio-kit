@@ -1,0 +1,127 @@
+---
+title: Plot MCP
+description: "MCP server for advanced data visualization and plotting operations"
+---
+
+import MCPDetail from '@site/src/components/MCPDetail';
+
+<MCPDetail
+  name="Plot"
+  icon="📈"
+  category="Data Processing"
+  description="MCP server for advanced data visualization and plotting operations"
+  version="2.2.5"
+  actions={["line_plot", "bar_plot", "scatter_plot", "histogram_plot", "heatmap_plot", "plot_timeseries", "data_info"]}
+  platforms={["claude", "cursor", "vscode"]}
+  keywords={["MCP", "plotting", "visualization", "analytics", "matplotlib", "seaborn", "data-science"]}
+  license="BSD-3-Clause"
+  tools={[{"name": "line_plot", "description": "Create a line plot from CSV or Excel data with customizable styling.", "function_name": "line_plot"}, {"name": "bar_plot", "description": "Create a bar chart from CSV or Excel data, one bar per x value. Rows that share an x value are averaged (mean of y; the result reports aggregated=true and the y axis is labelled 'mean <y>'), keeping the 20 largest means; a file with one row per x value is plotted as-is (aggregated=false). For any other statistic, aggregate first and plot that file.", "function_name": "bar_plot"}, {"name": "scatter_plot", "description": "Create a scatter plot from CSV or Excel data for correlation analysis.", "function_name": "scatter_plot"}, {"name": "histogram_plot", "description": "Create a histogram from CSV or Excel data showing value distribution.", "function_name": "histogram_plot"}, {"name": "heatmap_plot", "description": "Create a correlation heatmap from numeric columns in CSV or Excel data.", "function_name": "heatmap_plot"}, {"name": "plot_timeseries", "description": "Create a multi-series line chart PNG from one or more y columns of a CSV or Excel file, auto-detecting a time, numeric, or categorical x axis.", "function_name": "plot_timeseries"}, {"name": "data_info", "description": "Get schema, column types, and summary statistics for a CSV or Excel file.", "function_name": "data_info"}]}
+>
+
+{/* clio-kit:usage:start */}
+
+### 1. Data Exploration and Analysis
+```
+I have a CSV file at /data/sales_data.csv with sales information. Can you first analyze the data structure and then create appropriate visualizations to show sales trends over time?
+```
+
+**Tools called:**
+- `data_info` - Analyze the dataset structure
+- `line_plot` - Create time-series plots showing sales trends
+
+This prompt will:
+- Use `data_info` to analyze the dataset structure
+- Create time-series plots using `line_plot` showing sales trends
+- Provide statistical insights about the data
+
+
+### 2. Comparative Analysis with Multiple Charts
+```
+Using the file /data/survey_results.csv, create a comprehensive analysis showing:
+1. Age distribution of respondents (histogram)
+2. Correlation between satisfaction scores (heatmap)  
+3. Department vs average salary comparison (bar chart)
+```
+
+**Tools called:**
+- `histogram_plot` - Age distribution of respondents
+- `heatmap_plot` - Correlation between satisfaction scores
+- `bar_plot` - Department vs average salary comparison
+
+This prompt will:
+- Generate multiple complementary visualizations
+- Provide statistical analysis for each chart type
+- Show data relationships and distributions
+- Create professional publication-ready plots
+
+
+### 3. Scientific Data Visualization
+```
+I have temperature measurement data in /data/temperature.csv. Create a scatter plot showing the relationship between ambient temperature and device performance, and add a trend analysis.
+```
+
+**Tools called:**
+- `scatter_plot` - Relationship between ambient temperature and device performance
+
+This prompt will:
+- Create correlation analysis between variables using `scatter_plot`
+- Generate scatter plot with trend lines
+- Provide statistical correlation metrics
+- Include uncertainty analysis if applicable
+
+
+### 4. Business Intelligence Dashboard
+```
+From /data/quarterly_metrics.xlsx, create visualizations showing:
+- Revenue trends by quarter (line plot)
+- Performance metrics distribution (histogram)
+- Regional comparison (bar chart)
+```
+
+**Tools called:**
+- `line_plot` - Revenue trends by quarter
+- `histogram_plot` - Performance metrics distribution
+- `bar_plot` - Regional comparison
+
+This prompt will:
+- Handle Excel file format automatically
+- Create multiple business-focused visualizations
+- Provide executive summary statistics
+- Generate dashboard-style layouts
+
+
+### 5. Research Data Publication
+```
+Using /data/experiment_results.csv, create publication-quality figures showing experimental conditions vs outcomes with proper error handling and statistical annotations.
+```
+
+**Tools called:**
+- `data_info` - Analyze experimental data structure and quality
+- `scatter_plot` - Show relationship between experimental conditions and outcomes
+- `heatmap_plot` - Display correlation matrix of experimental variables
+
+This prompt will:
+- Use `data_info` to analyze data structure and handle missing values
+- Generate `scatter_plot` for condition-outcome relationships
+- Create `heatmap_plot` for correlation analysis
+- Generate publication-ready 300 DPI plots
+- Include proper statistical annotations
+
+
+### 6. Quick Data Quality Check
+```
+I need to quickly assess the quality of my dataset at /data/customer_data.csv - show me data completeness, distributions, and suggest the best visualization approaches.
+```
+
+**Tools called:**
+- `data_info` - Comprehensive data quality assessment
+
+This prompt will:
+- Use `data_info` to perform comprehensive data quality assessment
+- Identify missing values and data issues
+- Suggest optimal visualization strategies
+- Provide data cleaning recommendations
+
+{/* clio-kit:usage:end */}
+
+</MCPDetail>

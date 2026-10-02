@@ -1,11 +1,11 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "PyYAML>=6.0.2", "tomli>=2; python_version < '3.11'"]
 build-backend = "hatchling.build"
 
 [project]
 name = "clio-kit"
-version = "2.10.6"
-description = "CLIO Kit - MCP Servers, Clients, and Tools for AI Agents"
+version = "2.11.0"
+description = "CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "BSD-3-Clause"}
@@ -16,6 +16,9 @@ authors = [
 # Only dependencies needed for the launcher
 dependencies = [
   "click>=8.3.3",
+  "tomli>=2; python_version < '3.11'",
+  "tomli-w>=1.2",
+  "PyYAML>=6.0.2",
 ]
 
 keywords = ["mcp", "model-context-protocol", "ai-agents", "llm-tools", "scientific-computing", "hpc", "hdf5", "slurm", "parquet", "research-tools"]
@@ -31,8 +34,12 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
 ]
+
+[project.optional-dependencies]
+verification = ["mcp>=2.2,<3", "jsonschema>=4"]
 
 [project.urls]
 Homepage = "https://github.com/iowarp/clio-kit"
@@ -46,19 +53,22 @@ clio-kit = "clio_kit:cli"
 [dependency-groups]
 dev = [
   "mypy>=1.17.0",
+  "mcp>=2.2,<3",
+  "types-PyYAML>=6",
   "pytest>=8.3",
   "ruff>=0.12.5",
 ]
 
 [tool.hatch.build]
-# NB: do NOT set a global `sources = ["src"]` â€” it strips `src/` from the sdist
+# NB: do NOT set a global `sources = ["src"]` — it strips `src/` from the sdist
 # (cli lands at `clio_kit/` root), then the wheel-from-sdist build looks under
 # `src/clio_kit` and ships a wheel with no cli. The per-target `packages =
 # ["src/clio_kit"]` below handles the src-layout correctly for both direct and
 # from-sdist builds (this is what `uv build` / CI do).
-# Shared-data copies from filesystem, not git â€” exclude non-runtime artifacts
+# Shared-data copies from filesystem, not git — exclude non-runtime artifacts
 exclude = [
     "**/.venv",
+    "**/node_modules",
     "**/.virtualenv-app-data",
     "**/.uv-cache",
     "**/.mypy_cache",
@@ -72,22 +82,18 @@ exclude = [
     "**/.gitignore",
 ]
 
-# Include every server project for persistent-tool and one-shot execution
+# Runtime payloads are separate release assets; only metadata ships in the launcher.
 [tool.hatch.build.targets.wheel]
 packages = ["src/clio_kit"]
 
-[tool.hatch.build.targets.wheel.shared-data]
-"clio-kit-mcp-servers" = "clio-kit-mcp-servers"
-"clio-agentic-search" = "clio-agentic-search"
-"prompts" = "prompts"
+[tool.hatch.build.hooks.custom]
+path = "scripts/package_skill_assets.py"
 
 [tool.hatch.build.targets.sdist]
-include = [
-    "src/",
-    "clio-kit-mcp-servers/",
-    "clio-agentic-search/",
-    "prompts/",
+only-include = [
+    "src/clio_kit",
+    "scripts/package_skill_assets.py",
+    "scripts/package_components.py",
     "README.md",
-    "mcp-server-versions.toml",
     "pyproject.toml"
 ]

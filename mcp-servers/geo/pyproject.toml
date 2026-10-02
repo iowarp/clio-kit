@@ -1,0 +1,68 @@
+[project]
+name = "geo-mcp"
+version = "1.0.1"
+description = "MCP server for rendering GeoJSON vector layers into map images with basemaps"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+authors = [
+    { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
+]
+
+keywords = ["MCP", "geospatial", "mapping", "geojson", "visualization", "matplotlib", "geopandas"]
+
+dependencies = [
+    "fastmcp>=4.0.3,<5",
+    "python-dotenv>=1.2.2",
+    "matplotlib>=3.6.0",
+    "geopandas>=0.14.0",
+    "shapely>=2.0.0",
+    "contextily>=1.5.0",
+    "numpy>=1.24.0",
+    "httpx>=0.27.0",
+    "authlib>=1.6.12",
+    "cryptography>=48.0.1",
+    "idna>=3.15",
+    "pydantic-settings>=2.14.2",
+    "pygments>=2.20.0",
+    "pyjwt>=2.15.1",
+    "python-multipart>=0.0.31",
+    "starlette>=1.3.1",
+    "urllib3>=2.8.0",
+    "msgpack>=1.2.1",
+    "requests>=2.33.0",
+]
+
+[project.urls]
+Homepage = "https://toolkit.iowarp.ai/"
+Repository = "https://github.com/iowarp/clio-kit"
+
+[project.scripts]
+geo-mcp = "geo_mcp.server:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.0",
+    "pip>=26.1.2",
+    "pip-audit>=2.10.0",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.1.0",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/geo_mcp"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
