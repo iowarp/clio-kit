@@ -25,7 +25,15 @@ def fingerprint(path: Path) -> str:
     )
 
 
-def remove_owned(current: dict, owned: dict, before: dict, shared: list[dict]) -> None:
+def remove_owned(
+    current: dict,
+    owned: dict,
+    before: dict,
+    shared: list[dict],
+    *,
+    mcp_key: str | None = None,
+    atomic: bool = False,
+) -> None:
     """Inverse a named merge, preserving unrelated settings and shared owners."""
     for key, value in owned.items():
         if any(other.get(key) == value for other in shared):
@@ -33,16 +41,17 @@ def remove_owned(current: dict, owned: dict, before: dict, shared: list[dict]) -
         if key not in current:
             continue
         previous = before.get(key)
-        if isinstance(value, dict) and isinstance(current[key], dict):
+        if not atomic and isinstance(value, dict) and isinstance(current[key], dict):
             remove_owned(
                 current[key],
                 value,
                 previous if isinstance(previous, dict) else {},
                 [other[key] for other in shared if isinstance(other.get(key), dict)],
+                atomic=key == mcp_key,
             )
             if not current[key] and key not in before:
                 del current[key]
-        elif isinstance(value, list) and isinstance(current[key], list):
+        elif not atomic and isinstance(value, list) and isinstance(current[key], list):
             keep = (previous if isinstance(previous, list) else []) + [
                 v for other in shared for v in other.get(key, [])
             ]
@@ -62,11 +71,12 @@ def remove_owned(current: dict, owned: dict, before: dict, shared: list[dict]) -
 
 class Receipt:
     def __init__(self, project: Path, client: str, name: str):
-        from clio_kit.client_install import safe_destination
+        from clio_kit.client_install import CLIENTS, safe_destination
 
         if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", name):
             raise ValueError("Invalid package name")
         self.project = project
+        self.mcp_key = CLIENTS[client][2]
         self.path = safe_destination(
             project, f".clio-kit/installed/{client}/{name}.json"
         )
@@ -86,20 +96,41 @@ class Receipt:
         }
 
     def configuration(self, relative: str, current: dict, owned: dict) -> None:
+        # Unlike additive hooks, two owners must agree on the entire transport.
+        for other in self.others:
+            servers = (
+                other.get("configs", {})
+                .get(relative, {})
+                .get("owned", {})
+                .get(self.mcp_key, {})
+            )
+            for name, settings in owned.get(self.mcp_key, {}).items():
+                if name in servers and servers[name] != settings:
+                    raise ValueError(
+                        f"Another installed package ({other['package']}) owns different MCP configuration: {name}"
+                    )
         old = self.old.get("configs", {}).get(relative)
         before = copy.deepcopy(current)
         if not old:
             for other in self.others:
                 previous = other.get("configs", {}).get(relative)
                 if previous:
-                    remove_owned(before, previous["owned"], previous["before"], [])
+                    remove_owned(
+                        before,
+                        previous["owned"],
+                        previous["before"],
+                        [],
+                        mcp_key=self.mcp_key,
+                    )
         if old:
             shared = [
                 r["configs"][relative]["owned"]
                 for r in self.others
                 if relative in r.get("configs", {})
             ]
-            remove_owned(current, old["owned"], old["before"], shared)
+            remove_owned(
+                current, old["owned"], old["before"], shared, mcp_key=self.mcp_key
+            )
             before = old["before"]
         self.data["configs"][relative] = {
             "before": before,
@@ -154,7 +185,9 @@ class Receipt:
             for r in self.others
             if relative in r.get("configs", {})
         ]
-        remove_owned(current, record["owned"], record["before"], shared)
+        remove_owned(
+            current, record["owned"], record["before"], shared, mcp_key=self.mcp_key
+        )
         return path, (
             tomli_w.dumps(current) if is_toml else json.dumps(current, indent=2) + "\n"
         ).encode()

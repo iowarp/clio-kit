@@ -415,7 +415,14 @@ def _install(
             raise ValueError(
                 f"{server} has different configuration; review before using --replace"
             )
-    merge_configuration(data, owned, replace=replace)
+    # A transport is one executable definition, not a mergeable list of args
+    # or environment fragments. Hooks and other native settings still merge.
+    configured.update(owned.get(key, {}))
+    merge_configuration(
+        data,
+        {field: value for field, value in owned.items() if field != key},
+        replace=replace,
+    )
     result = {
         "client": client,
         "package": name,
