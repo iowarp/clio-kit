@@ -105,7 +105,8 @@ async def analyze_file_access_patterns_tool(
 
     Args:
         log_file_path: Path to the Darshan log file.
-        file_pattern: Filter files by pattern (e.g., '*.dat', '/scratch/*').
+        file_pattern: Shell-style glob matched against the full file path
+            (e.g. '*.dat', '/scratch/*', '*data2*'); not a substring or regex.
 
     Returns:
         Dictionary with access pattern analysis including sequential vs random access statistics.

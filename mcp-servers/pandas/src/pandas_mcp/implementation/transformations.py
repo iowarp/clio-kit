@@ -5,7 +5,8 @@ Data transformation capabilities including groupby, merge, and pivot operations.
 import pandas as pd
 from pathlib import Path
 import os
-from typing import Any, Literal, Optional, List, Dict, TypedDict
+from typing import Any, Literal, Optional, List, Dict
+from typing_extensions import TypedDict
 import traceback
 
 
