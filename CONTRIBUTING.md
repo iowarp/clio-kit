@@ -710,7 +710,7 @@ write for your server:
 - `mcp-servers/my-server/clio-server.toml` and `server.json` (both generated
   for a Python server; do not write them by hand)
 - `plugins/clio-my-server/` and the bundle's `plugins/<bundle>/.claude-plugin/plugin.json`
-- `.claude-plugin/marketplace.json`, `claude_desktop_config.json`, `gemini-extension.json`
+- `.claude-plugin/marketplace.json`, `claude_desktop_config.json`
 - `docs/mcps/my_server.md` and `website/src/data/catalogue.json`
 
 On an up-to-date checkout nothing else changes. If another server's

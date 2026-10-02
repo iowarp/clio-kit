@@ -179,14 +179,6 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     # Every server has a patched HTTP runtime in this coordinated release.
     assert publish_servers == tuple(sorted(expected_server_versions))
     assert marketplace["metadata"]["version"] == expected_version
-    gemini = json.loads((repository_root / "gemini-extension.json").read_text())
-    assert gemini["version"] == expected_version
-    assert (
-        gemini["mcpServers"]
-        == GENERATOR.build_claude_desktop_config(sorted(expected_server_versions))[
-            "mcpServers"
-        ]
-    )
     assert set(marketplace_plugins) == set(expected_server_versions)
     assert set(bundle_plugins) == set(expected_bundles)
     assert set(skill_plugins) == expected_skill_plugins
