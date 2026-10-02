@@ -74,9 +74,8 @@ class TestInspectVariables:
         }
         mock_stream.available_variables.return_value = mock_vars_info
 
-        result = inspect_variables("test.bp", "nonexistent_var")
-
-        assert result["error"] == "Variable 'nonexistent_var' not found in file."
+        with pytest.raises(ValueError, match="Variable 'nonexistent_var' not found"):
+            inspect_variables("test.bp", "nonexistent_var")
 
     @patch("adios_mcp.implementation.bp5_inspect_variables.FileReader")
     def test_inspect_variables_empty_file(self, mock_file_reader):
@@ -160,6 +159,5 @@ class TestInspectVariables:
         mock_vars_info = {"Temperature": {"Shape": "100", "Type": "double"}}
         mock_stream.available_variables.return_value = mock_vars_info
 
-        result = inspect_variables("test.bp", "temperature")
-
-        assert result["error"] == "Variable 'temperature' not found in file."
+        with pytest.raises(ValueError, match="Variable 'temperature' not found"):
+            inspect_variables("test.bp", "temperature")

@@ -34,6 +34,7 @@ classifiers = [
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Operating System :: OS Independent",
 ]
 
@@ -59,12 +60,12 @@ dev = [
 ]
 
 [tool.hatch.build]
-# NB: do NOT set a global `sources = ["src"]` â€” it strips `src/` from the sdist
+# NB: do NOT set a global `sources = ["src"]` — it strips `src/` from the sdist
 # (cli lands at `clio_kit/` root), then the wheel-from-sdist build looks under
 # `src/clio_kit` and ships a wheel with no cli. The per-target `packages =
 # ["src/clio_kit"]` below handles the src-layout correctly for both direct and
 # from-sdist builds (this is what `uv build` / CI do).
-# Shared-data copies from filesystem, not git â€” exclude non-runtime artifacts
+# Shared-data copies from filesystem, not git — exclude non-runtime artifacts
 exclude = [
     "**/.venv",
     "**/node_modules",

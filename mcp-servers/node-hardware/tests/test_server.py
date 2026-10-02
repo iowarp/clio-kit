@@ -75,3 +75,14 @@ class TestServerFixed:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_server_version_matches_release_manifest():
+    """serverInfo.version is the server release, not FastMCP's version."""
+    import re
+    from pathlib import Path
+
+    manifest = (Path(__file__).parents[1] / "clio-server.toml").read_text()
+    assert server.mcp.version == re.search(r'^version = "(.+)"', manifest, re.M).group(
+        1
+    )

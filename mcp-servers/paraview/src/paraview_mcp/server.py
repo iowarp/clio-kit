@@ -26,6 +26,7 @@ from fastmcp.exceptions import ToolError
 from fastmcp.prompts import Message
 from fastmcp.utilities.types import Image
 from dotenv import load_dotenv
+from .implementation import guards
 
 if TYPE_CHECKING:
     from .implementation.paraview_capabilities import VisualizationEngine
@@ -54,6 +55,7 @@ When using ParaView through this interface, please follow these guidelines:
 # Initialize MCP server
 mcp: FastMCP = FastMCP(
     "paraview",
+    version="2.2.5",
     instructions=(
         "Controls ParaView for scientific visualization. "
         "Open data files, apply filters, create renderings, and manage visualization pipelines."
@@ -75,29 +77,27 @@ def get_pv_manager() -> "VisualizationEngine":
         try:
             from .implementation.paraview_capabilities import VisualizationEngine
 
-            pv_manager = VisualizationEngine(server_host, server_port)
+            engine = VisualizationEngine(server_host, server_port)
 
             # Connect to the ParaView server
             logger.info(
                 f"Connecting visualization engine to {server_host}:{server_port}"
             )
-            success = pv_manager.connect(server_host, server_port)
+            success = engine.connect(server_host, server_port)
             if not success:
                 logger.error(
                     f"Failed to connect to ParaView server at {server_host}:{server_port}"
                 )
-                logger.error(
-                    "Make sure pvserver is running with: pvserver --multi-clients --server-port=11111"
-                )
+                # Not cached: the next tool call retries the connection.
                 raise RuntimeError(
-                    f"Could not connect to ParaView server at {server_host}:{server_port}"
+                    guards.CONNECT_FAILED.format(host=server_host, port=server_port)
                 )
-            else:
-                logger.info("Successfully connected to ParaView server")
+            pv_manager = engine
+            logger.info("Successfully connected to ParaView server")
 
         except ImportError as e:
             logger.error(f"Failed to import ParaView: {e}")
-            raise RuntimeError(f"ParaView not properly installed: {e}")
+            raise RuntimeError(f"{guards.IMPORT_HELP} Import error: {e}") from e
     assert pv_manager is not None
     return pv_manager
 

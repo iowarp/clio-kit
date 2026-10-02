@@ -356,6 +356,7 @@ load_dotenv()
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "jarvis",
+    version="3.7.4",
     instructions=(
         "Manages JARVIS data pipelines for scientific computing. "
         "Create, configure, monitor, and manage data processing pipelines."
@@ -1580,11 +1581,8 @@ def apply_tool_profile(profile: str) -> None:
     normalized = profile.strip().lower()
     if normalized == "all":
         return
-    if normalized == "user":
-        allowed = USER_TOOLS
-    elif normalized == "admin":
-        allowed = ADMIN_TOOLS
-    else:
+    allowed = {"user": USER_TOOLS, "admin": ADMIN_TOOLS}.get(normalized)
+    if allowed is None:
         raise ValueError("profile must be one of: all, user, admin")
     for tool in _registered_tools():
         if tool.name not in allowed:

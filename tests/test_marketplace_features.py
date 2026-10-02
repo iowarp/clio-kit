@@ -63,7 +63,9 @@ def test_scaffold_can_wrap_a_real_command_and_include_an_agent(tmp_path: Path) -
     assert result.exit_code == 0, result.output
     assert validate_plugin(directory)[1] == []
     config = json.loads((directory / ".mcp.json").read_text())
-    assert config["mcpServers"]["server"]["args"] == ["${CLAUDE_PLUGIN_ROOT}/server.js"]
+    assert config["mcpServers"]["crystal"]["args"] == [
+        "${CLAUDE_PLUGIN_ROOT}/server.js"
+    ]
     assert (directory / "agents" / "workflow-reviewer.md").is_file()
 
 
@@ -134,6 +136,34 @@ def _publish(directory: Path, plugins: list[str]) -> str:
         "Update catalogue",
     )
     return _git(directory, "rev-parse", "HEAD")
+
+
+def test_refresh_keeps_the_federated_block_where_the_generator_put_it(
+    tmp_path: Path,
+) -> None:
+    upstream = tmp_path / "upstream"
+    upstream.mkdir()
+    _git(upstream, "init", "-q")
+    _publish(upstream, ["crystal"])
+    root = tmp_path / "kit"
+    entries = root / "community" / "entries"
+    entries.mkdir(parents=True)
+    (entries / "lab.toml").write_text(
+        f'name="lab"\nkind="marketplace"\ndescription="Lab"\n[source]\ntype="url"\nurl="{upstream.as_uri()}"\n'
+    )
+    index = root / ".claude-plugin" / "marketplace.json"
+    index.parent.mkdir()
+    first, last = ({"name": name, "source": f"./plugins/{name}"} for name in "az")
+    index.write_text(json.dumps({"name": "clio-kit", "plugins": [first, last]}))
+    refresh_marketplace(root)
+    crystal = json.loads(index.read_text())["plugins"][-1]
+    # The generator lists task and folder packages after the federated block.
+    index.write_text(
+        json.dumps({"name": "clio-kit", "plugins": [first, crystal, last]})
+    )
+    refresh_marketplace(root)
+    names = [plugin["name"] for plugin in json.loads(index.read_text())["plugins"]]
+    assert names == ["a", "crystal", "z"]
 
 
 def test_federation_fetch_update_removal_and_atomic_failure(tmp_path: Path) -> None:

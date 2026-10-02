@@ -140,10 +140,11 @@ class TestDirectModuleCoverage:
                     {
                         "device": "/dev/sda1",
                         "mountpoint": "/",
-                        "fstype": "ext4",
+                        "filesystem": "ext4",
                         "total": 1000000000,
                         "used": 500000000,
                         "free": 500000000,
+                        "percent": 50.0,
                     }
                 ]
             }
@@ -179,7 +180,9 @@ class TestDirectModuleCoverage:
                         "cpu_percent": 5.0,
                         "memory_percent": 2.5,
                     }
-                ]
+                ],
+                "total_processes": 1,
+                "statistics": {"running": 0},
             }
             result = mcp_handlers.process_info_handler()
             assert isinstance(result, dict)
@@ -203,9 +206,12 @@ class TestDirectModuleCoverage:
         # Test performance monitor handler with mocked capability
         with patch("node_hardware_mcp.mcp_handlers.monitor_performance") as mock_perf:
             mock_perf.return_value = {
-                "cpu_usage": 25.5,
-                "memory_usage": 60.0,
-                "disk_io": {"read": 1000, "write": 500},
+                "cpu": {"average_usage": 25.5},
+                "memory": {"current_usage": 60.0},
+                "disk_io": {
+                    "read_rate_formatted": "1.00 KB/s",
+                    "write_rate_formatted": "500.00 B/s",
+                },
             }
             result = mcp_handlers.performance_monitor_handler()
             assert isinstance(result, dict)
@@ -231,7 +237,9 @@ class TestDirectModuleCoverage:
         # Test sensor handler with mocked capability
         with patch("node_hardware_mcp.mcp_handlers.get_sensor_info") as mock_sensor:
             mock_sensor.return_value = {
-                "temperatures": {"coretemp": [{"current": 45.0, "high": 85.0}]}
+                "temperatures": {"coretemp": [{"current": 45.0, "high": 85.0}]},
+                "fans": {},
+                "battery": {},
             }
             result = mcp_handlers.sensor_info_handler()
             assert isinstance(result, dict)
@@ -372,9 +380,11 @@ class TestDirectModuleCoverage:
             # Simulate large process list
             large_process_list = {
                 "processes": [
-                    {"pid": i, "name": f"process_{i}", "cpu": 1.0, "memory": 100.0}
+                    {"pid": i, "name": f"process_{i}", "cpu_percent": 1.0}
                     for i in range(1000)
-                ]
+                ],
+                "total_processes": 1000,
+                "statistics": {"running": 0},
             }
             mock_process.return_value = large_process_list
             result = mcp_handlers.process_info_handler()

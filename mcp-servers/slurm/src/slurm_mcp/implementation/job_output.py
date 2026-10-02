@@ -35,62 +35,40 @@ def get_job_output(
         )
 
     try:
-        # First get job details to find output files
-        details = get_job_details(job_id)
-
-        if "details" in details:
-            job_details = details["details"]
-
-            # Look for standard output file patterns in logs directory
-            output_file = None
-            if output_type == "stdout":
-                # Try multiple possible locations
-                possible_files = [
-                    job_details.get("stdout"),
-                    f"logs/slurm_output/slurm_{job_id}.out",
-                    f"slurm_{job_id}.out",  # fallback for old files
-                ]
-                for file_path in possible_files:
-                    if file_path and os.path.exists(file_path):
-                        output_file = file_path
-                        break
-            elif output_type == "stderr":
-                # Try multiple possible locations
-                possible_files = [
-                    job_details.get("stderr"),
-                    f"logs/slurm_output/slurm_{job_id}.err",
-                    f"slurm_{job_id}.err",  # fallback for old files
-                ]
-                for file_path in possible_files:
-                    if file_path and os.path.exists(file_path):
-                        output_file = file_path
-                        break
-
-            if output_file and os.path.exists(output_file):
-                content, truncated = _read_output(output_file, max_chars=max_chars)
-
-                return {
-                    "job_id": job_id,
-                    "output_type": output_type,
-                    "file_path": output_file,
-                    "content": content,
-                    "truncated": truncated,
-                    "real_slurm": True,
-                }
-            else:
-                return {
-                    "job_id": job_id,
-                    "output_type": output_type,
-                    "error": f"Output file not found: {output_file}",
-                    "real_slurm": True,
-                }
-        else:
+        # Scheduler detail names the output file while the job is known. Once
+        # it ages out of the controller on a cluster without accounting, the
+        # file this server asked sbatch to write is still found by job ID.
+        job_details = get_job_details(job_id).get("details") or {}
+        extension = {"stdout": "out", "stderr": "err"}.get(output_type)
+        possible_files = [job_details.get(output_type)] if extension else []
+        if extension and os.path.basename(job_id) == job_id:
+            possible_files += [
+                f"logs/slurm_output/slurm_{job_id}.{extension}",
+                f"slurm_{job_id}.{extension}",  # fallback for old files
+            ]
+        output_file = next(
+            (path for path in possible_files if path and os.path.exists(path)), None
+        )
+        if output_file is None:
             return {
                 "job_id": job_id,
                 "output_type": output_type,
-                "error": "Could not get job details",
+                "error": (
+                    f"No {output_type} file found for job {job_id}: nothing at a "
+                    "scheduler-reported path, and logs/slurm_output/ under "
+                    f"{os.getcwd()} has no file for this job ID"
+                ),
                 "real_slurm": True,
             }
+        content, truncated = _read_output(output_file, max_chars=max_chars)
+        return {
+            "job_id": job_id,
+            "output_type": output_type,
+            "file_path": output_file,
+            "content": content,
+            "truncated": truncated,
+            "real_slurm": True,
+        }
 
     except Exception as e:
         return {

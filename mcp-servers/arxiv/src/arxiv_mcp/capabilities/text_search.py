@@ -4,7 +4,7 @@ ArXiv text-based search capabilities (title, abstract, author).
 
 from typing import Dict, Any
 import logging
-from .arxiv_base import execute_arxiv_query
+from .arxiv_base import execute_arxiv_query, field_query
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ async def search_by_title(title_keywords: str, max_results: int = 10) -> Dict[st
     """
     # Construct title search URL
     params = {
-        "search_query": f"ti:{title_keywords}",
+        "search_query": field_query("ti", title_keywords),
         "start": 0,
         "max_results": max_results,
         "sortBy": "relevance",
@@ -56,7 +56,7 @@ async def search_by_abstract(
     """
     # Construct abstract search URL
     params = {
-        "search_query": f"abs:{abstract_keywords}",
+        "search_query": field_query("abs", abstract_keywords),
         "start": 0,
         "max_results": max_results,
         "sortBy": "relevance",
@@ -88,7 +88,7 @@ async def search_papers_by_author(author: str, max_results: int = 10) -> Dict[st
     """
     # Construct author search URL
     params = {
-        "search_query": f"au:{author}",
+        "search_query": field_query("au", author),
         "start": 0,
         "max_results": max_results,
         "sortBy": "submittedDate",

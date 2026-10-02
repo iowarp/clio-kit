@@ -126,7 +126,7 @@ async def test_get_timeline_analysis_with_missing_timestamps():
         assert result["success"] is True
         assert result["analysis"]["total_duration"] is None
         assert "message" in result
-        assert "requires timestamp data" in result["message"]
+        assert "needs DXT trace data" in result["message"]
 
 
 @pytest.mark.asyncio
@@ -389,9 +389,11 @@ async def test_get_timeline_analysis_structure():
         # Check types
         assert isinstance(result["success"], bool)
         assert isinstance(result["time_resolution"], str)
-        assert isinstance(analysis["peak_periods"], list)
-        assert isinstance(analysis["idle_periods"], list)
-        assert isinstance(analysis["io_phases"], list)
+        # A summary log cannot be binned over time: not computed, not "empty".
+        assert result["timeline_available"] is False
+        assert analysis["peak_periods"] is None
+        assert analysis["idle_periods"] is None
+        assert analysis["io_phases"] is None
 
 
 @pytest.mark.asyncio

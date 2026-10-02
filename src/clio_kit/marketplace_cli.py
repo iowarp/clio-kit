@@ -9,6 +9,7 @@ from pathlib import Path
 import click
 
 from clio_kit.federation import refresh_marketplace
+from clio_kit.skills import SkillProblem
 
 
 @click.group("marketplace")
@@ -29,13 +30,15 @@ def sync(root: Path) -> None:
     if not script.is_file() or not (root / "mcp-server-versions.toml").is_file():
         raise click.ClickException("--root must point to a CLIO Kit source checkout")
     try:
-        subprocess.run(
+        completed = subprocess.run(
             [sys.executable, str(script), "--root", str(root), "--website"],
             cwd=root,
-            check=True,
         )
-    except (OSError, subprocess.SubprocessError) as exc:
+    except OSError as exc:
         raise click.ClickException(f"Catalogue sync failed: {exc}") from exc
+    if completed.returncode:
+        # The generator has already printed its one-line error.
+        raise click.exceptions.Exit(completed.returncode)
 
 
 @marketplace_group.command("refresh")
@@ -44,7 +47,7 @@ def refresh(root: Path) -> None:
     """Fetch indexed collections and merge their plugins into marketplace.json."""
     try:
         result = refresh_marketplace(root.resolve())
-    except (OSError, ValueError, subprocess.SubprocessError) as exc:
+    except (OSError, ValueError, SkillProblem, subprocess.SubprocessError) as exc:
         raise click.ClickException(f"Marketplace refresh failed: {exc}") from exc
     click.echo(
         f"Refreshed {len(result['marketplaces'])} collections; {len(result['imported_names'])} imported plugins."

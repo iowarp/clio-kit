@@ -103,10 +103,10 @@ class TestProfileCsv:
         assert set(result["dtypes"].keys()) == {"col_int", "col_text"}
         assert "col_float" not in result["numeric_summary"]
 
-    def test_column_subset_ignores_unknown(self, sample_csv):
+    def test_column_subset_rejects_unknown(self, sample_csv):
         result = profile_csv(sample_csv, columns=["col_int", "does_not_exist"])
-        assert result["columns"] == ["col_int"]
-        assert result["column_count"] == 1
+        assert not result["success"]
+        assert "does_not_exist" in result["error"]
 
     def test_max_rows_limits_profile(self):
         df = pd.DataFrame({"x": range(100), "y": range(100, 200)})

@@ -91,6 +91,19 @@ class TestAggregateBasicOperations:
 
         assert result["status"] == "success"
         assert result["result"] > 0  # Should have some standard deviation
+        assert result["metadata"]["std_type"] == "population (ddof=0)"
+
+    async def test_aggregate_rejects_fractional_row_bounds(self, aggregate_test_file):
+        """A fractional row index is an error, not a silent truncation."""
+        from parquet_mcp.capabilities.parquet_handler import aggregate_column
+
+        result_str = await aggregate_column(
+            aggregate_test_file, "int_col", "sum", start_row=0.7, end_row=5
+        )
+        result = json.loads(result_str)
+
+        assert result["status"] == "error"
+        assert "start_row must be an integer" in result["message"]
 
     async def test_aggregate_count_distinct(self, aggregate_test_file):
         """Test count_distinct aggregation."""

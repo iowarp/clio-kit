@@ -68,6 +68,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "slurm",
+    version="3.0.2",
     instructions=(
         "Manages HPC jobs via the Slurm workload manager. "
         "Submit jobs, monitor queue status, cancel jobs, and manage node allocations."
@@ -470,7 +471,10 @@ async def get_job_output_tool(job_id: str, output_type: str = "stdout") -> dict:
     """
     try:
         logger.info(f"Getting {output_type} for job: {job_id}")
-        return get_job_output(job_id, output_type)
+        result = get_job_output(job_id, output_type)
+        if result.get("error"):
+            raise RuntimeError(result["error"])
+        return result
     except Exception as e:
         logger.error(f"Job output error: {e}")
         raise ToolError(f"Job output retrieval failed: {e}")

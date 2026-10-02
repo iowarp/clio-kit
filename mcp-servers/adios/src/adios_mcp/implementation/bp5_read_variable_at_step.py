@@ -12,8 +12,8 @@ def read_variable_at_step(filename: str, variable_name: str, target_step: int):
       target_step: The integer step index to fetch
 
     Returns:
-      A Python scalar or list (flattened array) of that variable’s value
-      at the specified step.
+      {"value": Python scalar or flattened (row-major) list, "shape": list of
+      dimensions ([] for a scalar)} for that variable at the specified step.
 
     Raises:
       ValueError: if the step or variable is not found.
@@ -33,7 +33,10 @@ def read_variable_at_step(filename: str, variable_name: str, target_step: int):
                 if isinstance(arr, np.generic) or (
                     hasattr(arr, "shape") and arr.shape == ()
                 ):
-                    return np.array(arr).item()
+                    return {"value": np.array(arr).item(), "shape": []}
                 else:
-                    return np.array(arr).flatten().tolist()
+                    return {
+                        "value": np.array(arr).flatten().tolist(),
+                        "shape": list(np.shape(arr)),
+                    }
     raise ValueError(f"Step {target_step} not found in file '{filename}'")

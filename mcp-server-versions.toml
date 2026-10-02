@@ -41,7 +41,7 @@ description = "Work out why a finished job was slower than it should have been."
 servers = ["chronolog", "darshan", "parallel-sort"]
 
 [bundles.clio-scientific-io]
-version = "1.0.5"
+version = "1.0.6"
 description = "Open a scientific data file, see its structure, and read part of it."
 servers = ["adios", "compression", "hdf5", "parquet"]
 
@@ -132,17 +132,25 @@ web = "🌐"
 
 # Declarative doctor checks; these do not execute server code.
 
+# `executables` are searched on PATH, then in `executable-paths`. A set
+# `executable-environment` variable replaces that search, as it does in the
+# server. `environment-files` variables must name an existing path.
+
 [prerequisites.spack]
 executables = ["spack"]
+executable-environment = ["SPACK_MCP_COMMAND"]
+executable-paths = ["$SPACK_ROOT/bin/spack", "~/.local/spack/bin/spack", "/opt/spack/bin/spack"]
 
 [prerequisites.slurm]
 executables = ["sbatch"]
 
 [prerequisites.lmod]
-executables = ["modulecmd"]
+executables = ["lmod"]
+executable-environment = ["LMOD_CMD"]
+executable-paths = ["/usr/share/lmod/lmod/libexec/lmod", "/usr/local/lmod/lmod/libexec/lmod"]
 
 [prerequisites.scientific-catalog]
-environment = ["SCIENTIFIC_CATALOG_FILE"]
+environment-files = ["SCIENTIFIC_CATALOG_FILE"]
 
 [prerequisites.paraview]
 note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
@@ -151,6 +159,7 @@ note = "Scientific backend requires a workflow check; a handshake alone is insuf
 note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
 
 [prerequisites.darshan]
+executables = ["darshan-parser"]
 note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
 
 [prerequisites.jarvis]

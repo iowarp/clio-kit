@@ -53,6 +53,8 @@ async def filter_logs(
         Dictionary containing filtered results
     """
     try:
+        validate_filters(filter_conditions, logical_operator)
+
         with open(file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
@@ -109,6 +111,40 @@ async def filter_logs(
         return {"error": f"File not found: {file_path}", "filtered_lines": []}
     except Exception as e:
         return {"error": f"Filtering failed: {str(e)}", "filtered_lines": []}
+
+
+FILTER_FIELDS = ("timestamp", "level", "message", "line", "line_number")
+
+
+def validate_filters(conditions: Any, logical_op: Any) -> None:
+    """Reject filters that could only ever match nothing (ValueError)."""
+    if str(logical_op).lower() not in ("and", "or"):
+        raise ValueError(f"Unknown logical_operator {logical_op!r}; use 'AND' or 'OR'")
+    if not isinstance(conditions, list):
+        raise ValueError("filters must be a list of {field, operator, value} objects")
+    operators = [op.value for op in FilterOperator]
+    for condition in conditions:
+        if not isinstance(condition, dict):
+            raise ValueError(
+                f"Each filter must be an object with field, operator and value; got {condition!r}"
+            )
+        field = str(condition.get("field", "")).lower()
+        operator = str(condition.get("operator", "")).lower()
+        if field not in FILTER_FIELDS and field not in ("original_line", "is_valid"):
+            raise ValueError(
+                f"Unknown filter field {condition.get('field')!r}; use one of {list(FILTER_FIELDS)}"
+            )
+        if operator not in operators:
+            raise ValueError(
+                f"Unknown filter operator {condition.get('operator')!r}; use one of {operators}"
+            )
+        if operator == FilterOperator.REGEX.value:
+            try:
+                re.compile(str(condition.get("value")))
+            except re.error as e:
+                raise ValueError(
+                    f"Invalid regex {condition.get('value')!r}: {e}"
+                ) from e
 
 
 def parse_log_entry(line: str) -> Dict[str, Any]:
@@ -212,7 +248,9 @@ def evaluate_single_condition(entry: Dict[str, Any], condition: Dict[str, Any]) 
         field_value = get_field_value(entry, field)
 
         # Apply the operator
-        return apply_operator(field_value, operator, value)
+        return apply_operator(
+            field_value, operator, value, bool(condition.get("case_sensitive", False))
+        )
 
     except Exception:
         # If condition evaluation fails, return False
@@ -256,7 +294,9 @@ def get_field_value(entry: Dict[str, Any], field: str) -> Any:
     return field_mapping.get(field, "")
 
 
-def apply_operator(field_value: Any, operator: str, filter_value: Any) -> bool:
+def apply_operator(
+    field_value: Any, operator: str, filter_value: Any, case_sensitive: bool = False
+) -> bool:
     """
     Apply a filter operator to compare field value with filter value.
 
@@ -264,6 +304,7 @@ def apply_operator(field_value: Any, operator: str, filter_value: Any) -> bool:
         field_value: Value from log entry field
         operator: Filter operator to apply
         filter_value: Value to compare against
+        case_sensitive: Compare text exactly instead of ignoring case
 
     Returns:
         True if comparison matches, False otherwise
@@ -272,13 +313,12 @@ def apply_operator(field_value: Any, operator: str, filter_value: Any) -> bool:
         field_value = ""
 
     # Convert to string for most operations
-    field_str = (
-        str(field_value).lower() if isinstance(field_value, str) else str(field_value)
-    )
+    def fold(text: Any) -> str:
+        return str(text) if case_sensitive else str(text).lower()
+
+    field_str = fold(field_value) if isinstance(field_value, str) else str(field_value)
     filter_str = (
-        str(filter_value).lower()
-        if isinstance(filter_value, str)
-        else str(filter_value)
+        fold(filter_value) if isinstance(filter_value, str) else str(filter_value)
     )
 
     if operator == FilterOperator.EQUALS.value:
@@ -301,7 +341,8 @@ def apply_operator(field_value: Any, operator: str, filter_value: Any) -> bool:
 
     elif operator == FilterOperator.REGEX.value:
         try:
-            return bool(re.search(str(filter_value), str(field_value), re.IGNORECASE))
+            flags = 0 if case_sensitive else re.IGNORECASE
+            return bool(re.search(str(filter_value), str(field_value), flags))
         except re.error:
             return False
 
@@ -320,12 +361,12 @@ def apply_operator(field_value: Any, operator: str, filter_value: Any) -> bool:
 
     elif operator == FilterOperator.IN.value:
         if isinstance(filter_value, list):
-            return field_str in [str(v).lower() for v in filter_value]
+            return field_str in [fold(v) for v in filter_value]
         return False
 
     elif operator == FilterOperator.NOT_IN.value:
         if isinstance(filter_value, list):
-            return field_str not in [str(v).lower() for v in filter_value]
+            return field_str not in [fold(v) for v in filter_value]
         return True
 
     return False
@@ -487,7 +528,8 @@ async def filter_by_keyword(
             {
                 "field": "message",
                 "operator": "contains",
-                "value": keyword if case_sensitive else keyword.lower(),
+                "value": keyword,
+                "case_sensitive": case_sensitive,
             }
         )
 

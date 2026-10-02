@@ -4,7 +4,7 @@ ArXiv paper details and analysis capabilities.
 
 from typing import Dict, Any
 import logging
-from .arxiv_base import execute_arxiv_query, parse_arxiv_entry
+from .arxiv_base import execute_arxiv_query, field_query, parse_arxiv_entry
 import xml.etree.ElementTree as ET
 import httpx
 
@@ -92,6 +92,8 @@ async def find_similar_papers(
     Returns:
         Dictionary containing similar papers
     """
+    if max_results < 1:
+        raise ValueError(f"max_results must be a positive integer, got {max_results}")
     try:
         # First, get details of the reference paper
         reference_details = await get_paper_details(reference_paper_id)
@@ -113,7 +115,7 @@ async def find_similar_papers(
 
         # Search for papers in the same category with similar keywords
         params = {
-            "search_query": f"cat:{primary_category} AND ti:{key_terms}",
+            "search_query": f"cat:{primary_category} AND {field_query('ti', key_terms)}",
             "start": 0,
             "max_results": max_results
             + 5,  # Get a few extra to filter out the reference paper

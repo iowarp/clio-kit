@@ -28,8 +28,10 @@ external component types from package names.
 For repository-owned component packages, add a named folder under `plugins/`,
 `skills/`, `agents/` or `hooks/`, with `.claude-plugin/plugin.json` and the needed
 components. Website start/build and CI sync both catalogues automatically;
-discovery needs no central TOML entry or manual generator commands. For native
-client testing before a build, use `clio-kit marketplace sync --root .`.
+discovery needs no central TOML entry or manual generator commands. CI syncs the
+catalogues before the root suite; do the same locally with
+`clio-kit marketplace sync --root .`, which is also what native client testing
+before a build needs.
 Validate the package, then run `scripts/verify_local_components.py --output`
 with a new temporary directory for native installation and usage checks.
 
@@ -69,7 +71,7 @@ environment. Root pytest targets `tests/`; recursive collection mixes independen
 server dependencies. For launcher or packaging changes, also run
 `uv run --frozen python scripts/verify_marketplace_install.py --all-servers`.
 For distribution changes, also run `uv run --frozen python scripts/verify_partial_install.py --output /tmp/clio-partial-install` with a new output directory.
-For hooks, run `uv run --frozen python scripts/verify_plugin_hooks.py`.
+For hooks, run `uv run --frozen python scripts/verify_plugin_hooks.py --output /tmp/clio-hook-acceptance` with a new output directory.
 These acceptance scripts create temporary client configurations and evidence.
 Check [acceptance boundaries](docs/marketplace.md#scientific-acceptance-boundaries)
 before interpreting a successful connection as scientific workflow validation.

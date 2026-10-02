@@ -74,7 +74,7 @@ def get_statistical_summary(
                         additional_stats[col]["normality_test"] = {
                             "shapiro_wilk_statistic": float(shapiro_stat),
                             "shapiro_wilk_p_value": float(shapiro_p),
-                            "is_normal": shapiro_p > 0.05,
+                            "is_normal": bool(shapiro_p > 0.05),
                         }
 
         # Categorical column analysis

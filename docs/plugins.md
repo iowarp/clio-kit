@@ -140,7 +140,12 @@ between servers. Add the skills needed for a complete workflow, and document
 how their inputs and outputs connect before calling it an end-to-end solution.
 
 Dependencies are **plugin names**, not skill folder names. They can name existing
-maintained MCP, skill-collection, agent or primary-bundle plugins. Selecting a
+maintained MCP, skill-collection, agent or primary-bundle plugins: the generated
+ones, such as `clio-hdf5`, `clio-analysis-skills`, `clio-agents` or
+`clio-scientific-io`. A package you added as a folder under `plugins/`,
+`skills/`, `agents/` or `hooks/` cannot be a `[workflows.*]` dependency, because
+tasks are generated before folders are discovered. To build on such a package,
+list `dependencies` in that package's own `plugin.json` instead. Selecting a
 collection installs its whole collection; selecting a primary bundle installs
 its dependencies. A skills-only dependency does not register its suggested MCPs.
 Several task plugins may reuse the same components.

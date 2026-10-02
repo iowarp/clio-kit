@@ -307,7 +307,7 @@ class TestReadVariableAtStepHandler:
         with patch(
             "adios_mcp.mcp_handlers.bp5_read_variable_at_step.read_variable_at_step"
         ) as mock_read:
-            mock_read.return_value = mock_value
+            mock_read.return_value = {"value": mock_value}
 
             result = await read_variable_at_step_handler("/test/file.bp", "pressure", 3)
 
@@ -321,7 +321,7 @@ class TestReadVariableAtStepHandler:
         with patch(
             "adios_mcp.mcp_handlers.bp5_read_variable_at_step.read_variable_at_step"
         ) as mock_read:
-            mock_read.return_value = mock_value
+            mock_read.return_value = {"value": mock_value}
 
             result = await read_variable_at_step_handler(
                 "/test/file.bp", "scalar_var", 0
@@ -379,7 +379,7 @@ class TestReadVariableAtStepHandler:
         with patch(
             "adios_mcp.mcp_handlers.bp5_read_variable_at_step.read_variable_at_step"
         ) as mock_read:
-            mock_read.return_value = mock_value
+            mock_read.return_value = {"value": mock_value}
 
             result = await read_variable_at_step_handler(
                 "/test/file.bp", "large_array", 0
@@ -395,7 +395,7 @@ class TestReadVariableAtStepHandler:
         with patch(
             "adios_mcp.mcp_handlers.bp5_read_variable_at_step.read_variable_at_step"
         ) as mock_read:
-            mock_read.return_value = mock_value
+            mock_read.return_value = {"value": mock_value}
 
             result = await read_variable_at_step_handler(
                 "/test/file.bp", "empty_var", 0
@@ -410,7 +410,7 @@ class TestReadVariableAtStepHandler:
         with patch(
             "adios_mcp.mcp_handlers.bp5_read_variable_at_step.read_variable_at_step"
         ) as mock_read:
-            mock_read.return_value = mock_value
+            mock_read.return_value = {"value": mock_value}
 
             result = await read_variable_at_step_handler("/test/file.bp", "null_var", 0)
 
@@ -432,6 +432,20 @@ class TestHandlersIntegration:
         for handler in handlers:
             assert callable(handler)
             assert hasattr(handler, "__name__")
+
+    @pytest.mark.asyncio
+    async def test_tool_errors_carry_no_ansi_escapes(self):
+        with patch(
+            "adios_mcp.mcp_handlers.bp5_inspect_variables.inspect_variables"
+        ) as mock_impl:
+            mock_impl.side_effect = RuntimeError(
+                "\x1b[1;36m[now]\x1b[1;34m [ADIOS2 EXCEPTION]\x1b[0m bad file\x1b[0m\n"
+            )
+
+            with pytest.raises(ToolError) as error:
+                await inspect_variables_handler("/test.bp")
+
+        assert str(error.value) == "[now] [ADIOS2 EXCEPTION] bad file"
 
     @pytest.mark.asyncio
     async def test_error_response_raises_tool_error(self):

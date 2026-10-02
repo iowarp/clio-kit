@@ -147,7 +147,7 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\plot run plot-mcp --help
 **Tags**: line-chart, plot, visualization
 
 ### `bar_plot`
-**Description**: Create a bar chart from CSV or Excel data with categorical grouping.
+**Description**: Create a bar chart from CSV or Excel data, one bar per x value. Rows that share an x value are averaged (mean of y; the result reports aggregated=true and the y axis is labelled 'mean <y>'), keeping the 20 largest means; a file with one row per x value is plotted as-is (aggregated=false). For any other statistic, aggregate first and plot that file.
 **Hints**: destructive, idempotent
 **Tags**: bar-chart, plot, visualization
 

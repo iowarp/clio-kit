@@ -235,3 +235,34 @@ async def test_histogram_preview_keeps_six_to_ten_bins(monkeypatch):
     result = await server.get_histogram("density", 8)
     assert "Bin 8: center=7, count=8" in result
     assert result.count("  Bin ") == 8
+
+
+def test_paraview_import_failure_names_the_launch_requirements():
+    """A broken ParaView import must say what the launch environment needs."""
+    from paraview_mcp import server
+
+    with (
+        patch.object(server, "pv_manager", None),
+        patch.dict("sys.modules", {"paraview": None, "paraview.simple": None}),
+        pytest.raises(RuntimeError) as error,
+    ):
+        server.get_pv_manager()
+
+    for requirement in ("UV_PYTHON", "PYTHONPATH", "LD_LIBRARY_PATH"):
+        assert requirement in str(error.value)
+
+
+def test_failed_connection_is_not_cached():
+    """A failed pvserver connection is retried, not kept as a dead engine."""
+    from paraview_mcp import server
+
+    capabilities = Mock()
+    capabilities.VisualizationEngine.return_value.connect.return_value = False
+    module = "paraview_mcp.implementation.paraview_capabilities"
+    with (
+        patch.object(server, "pv_manager", None),
+        patch.dict("sys.modules", {module: capabilities}),
+    ):
+        with pytest.raises(RuntimeError, match="Could not connect"):
+            server.get_pv_manager()
+        assert server.pv_manager is None

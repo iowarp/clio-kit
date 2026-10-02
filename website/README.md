@@ -53,7 +53,7 @@ a three-step workflow, client routes, installation and contribution. It contains
 no tutorial screenshots; the searchable catalogue stays directly accessible. `/tutorials` presents
 walkthroughs stored in `docs/tutorials/`; titles, descriptions and thumbnails are
 read from their Markdown metadata, rather than maintained in a second list. `/catalogue` browses workflows, skills, MCP servers, plugins,
-agents, hooks and the standalone search service, separately from the overview.
+agents and hooks, separately from the overview.
 Component details live at `/catalogue/<type>/<name>`; legacy `/component?id=…`
 links redirect to their catalogue pages.
 publisher profiles live at `/publishers`. Filters are encoded in the URL so a
@@ -118,13 +118,14 @@ Developed by the [Gnosis Research Center](https://grc.iit.edu/) at
 
 ## Image parser advisory
 
-The locked Docusaurus dependency `image-size@2.0.2` has no published fix for
+The Docusaurus dependency `image-size` had parser-loop advisories for
 [ICNS](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr) and
-[JPEG XL/HEIF](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) parser loops.
+[JPEG XL/HEIF](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq) containers.
+The lock now resolves `image-size@2.0.4` and `npm audit` reports no advisories.
 `npm run build` and `npm start` run a byte-signature check before Docusaurus
 starts, rejecting those containers even if their extensions are misleading.
 Use PNG, JPEG, GIF, WebP or SVG website assets. Do not bypass the check with a
-direct Docusaurus command when processing contributed files. The check limits
-exposure; it does not patch the dependency, and `npm audit` still reports it.
+direct Docusaurus command when processing contributed files. The check is kept
+as a build-time guard independent of the dependency version.
 The deployed site is static; this parser runs during builds, not in visitors'
-browsers. Remove the workaround once an upstream patched release is available.
+browsers.

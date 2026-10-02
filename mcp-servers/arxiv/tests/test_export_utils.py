@@ -42,7 +42,7 @@ class TestExportUtils:
         assert "title = {Attention Is All You Need}" in bibtex
         assert "author = {Ashish Vaswani and Noam Shazeer and Niki Parmar}" in bibtex
         assert "year = {2017}" in bibtex
-        assert "eprint = {1706.03762v5}" in bibtex
+        assert "eprint = {1706.03762}" in bibtex  # versionless
         assert "archivePrefix = {arXiv}" in bibtex
         assert "primaryClass = {cs.CL}" in bibtex
         assert "url = {http://arxiv.org/abs/1706.03762v5}" in bibtex

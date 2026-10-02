@@ -17,7 +17,8 @@ mask from optional `elevation_min`, `elevation_max`, and `slope_max_degrees`
 criteria.
 
 - Formats: CSV numeric grid, NPY, NPZ (uses a `dem` array if present).
-- GeoTIFF (`.tif`/`.tiff`) needs the optional `geotiff` extra (rasterio).
+- GeoTIFF (`.tif`/`.tiff`) needs the optional `geotiff` extra (rasterio), which
+  a `clio-kit` launcher install does not include; see Optional extras.
 - Returns `{ok, shape, cell_size, metadata, criteria, valid_cell_count,
   suitable_cell_count, suitable_fraction, elevation, slope_degrees,
   aspect_degrees, representative_suitable_cells}`.
@@ -28,7 +29,8 @@ Read an x/y/z point cloud and bin it onto a regular grid (mean z per cell) to
 produce a DEM-like surface.
 
 - Formats: CSV with `x,y,z` columns, NPY, NPZ (uses `x`/`y`/`z` or `points`).
-- LAS/LAZ needs the optional `laz` extra (laspy).
+- LAS/LAZ needs the optional `laz` extra (laspy), which a `clio-kit` launcher
+  install does not include; see Optional extras.
 - With `output_dem_path`, writes the gridded surface as a CSV DEM you can feed
   straight into `dem_terrain`.
 - Returns `{ok, point_count, grid_cell_size, metadata, bounds, grid_shape,
@@ -37,13 +39,21 @@ produce a DEM-like surface.
 
 ## Optional extras
 
+The `geotiff` and `laz` extras are **not part of a `clio-kit` launcher install**
+(`clio-kit mcp-server terrain` runs in an isolated environment with the base
+formats only, and `pip install` cannot add to it). Through the launcher, convert
+GeoTIFF to a CSV/NPY/NPZ grid and LAS/LAZ to CSV/NPY/NPZ x,y,z points first.
+
+For a standalone development install of this package, the extras enable those
+formats:
+
 ```sh
 pip install 'terrain-mcp[geotiff]'   # GeoTIFF DEMs via rasterio
 pip install 'terrain-mcp[laz]'       # LAS/LAZ point clouds via laspy
 ```
 
 Without the extras, CSV/NPY/NPZ work out of the box; requesting GeoTIFF or
-LAS/LAZ returns an actionable tool error.
+LAS/LAZ returns a tool error that names the supported formats.
 
 ## Run
 

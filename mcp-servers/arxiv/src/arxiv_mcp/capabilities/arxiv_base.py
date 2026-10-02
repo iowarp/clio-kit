@@ -5,6 +5,7 @@ Base utilities for ArXiv search capabilities.
 import asyncio
 import httpx
 import math
+import re
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Any, Union, cast
 import logging
@@ -27,6 +28,38 @@ _RATE_LIMIT_MAX_ATTEMPTS = 4
 _RATE_LIMIT_BACKOFF_SECONDS = 1.0
 _RATE_LIMIT_MAX_DELAY_SECONDS = 10.0
 _RATE_LIMIT_TOTAL_BUDGET_SECONDS = 20.0
+
+
+# Text fields drop English stop words ("ti:attention AND ti:is" finds nothing).
+# Author and category terms are identifiers: "An" is a searchable author name.
+_STOP_WORDS = frozenset(
+    "a an and are as at be but by for if in into is it no not of on or such that "
+    "the their then there these they this to was will with".split()
+)
+_OPERATORS = ("AND", "OR", "ANDNOT")
+
+
+def field_query(field: str, text: str) -> str:
+    """Scope every word of ``text`` to ``field``, AND-ed together.
+
+    arXiv applies a field prefix only to the next term, so ``ti:a b`` means
+    ``ti:a OR all:b`` and returns unrelated papers. Quoted phrases stay whole
+    and explicit AND/OR/ANDNOT operators are kept.
+    """
+    parts: list[str] = []
+    for token in re.findall(r'"[^"]+"|[^\s()"]+', text):
+        if token in _OPERATORS:
+            if parts and parts[-1] not in _OPERATORS:
+                parts.append(token)
+        elif field not in {"ti", "abs", "all"} or token.lower() not in _STOP_WORDS:
+            if parts and parts[-1] not in _OPERATORS:
+                parts.append("AND")
+            parts.append(f"{field}:{token}")
+    if parts and parts[-1] in _OPERATORS:
+        parts.pop()
+    if not parts:
+        raise ValueError(f"Search text for '{field}' has no searchable words")
+    return parts[0] if len(parts) == 1 else f"({' '.join(parts)})"
 
 
 def parse_arxiv_entry(
@@ -112,6 +145,10 @@ async def execute_arxiv_query(
         List of parsed paper dictionaries
     """
     base_url = "https://export.arxiv.org/api/query"
+
+    max_results = params.get("max_results", 1)
+    if not isinstance(max_results, int) or max_results < 1:
+        raise ValueError(f"max_results must be a positive integer, got {max_results!r}")
 
     try:
         response = await _get_with_rate_limit_retry(base_url, params)
@@ -231,11 +268,16 @@ def generate_bibtex(
     Returns:
         BibTeX formatted string
     """
-    # Extract ArXiv ID from the paper ID URL
+    # Extract ArXiv ID from the paper ID URL. Old-style IDs carry an archive
+    # prefix ("hep-th/9901001"), so split on "/abs/" rather than the last "/".
     paper_id = paper.get("id", "")
     arxiv_id = (
-        paper_id.split("/")[-1] if isinstance(paper_id, str) and paper_id else "unknown"
+        paper_id.split("/abs/")[-1]
+        if isinstance(paper_id, str) and paper_id
+        else "unknown"
     )
+    # eprint is the versionless identifier; the key and url keep the version.
+    eprint = re.sub(r"v\d+$", "", arxiv_id)
 
     # Clean title and remove newlines
     paper_title = paper.get("title", "")
@@ -265,7 +307,7 @@ def generate_bibtex(
     title = {{{title}}},
     author = {{{authors}}},
     year = {{{year}}},
-    eprint = {{{arxiv_id}}},
+    eprint = {{{eprint}}},
     archivePrefix = {{arXiv}},
     primaryClass = {{{paper.get("categories", [""])[0] if isinstance(paper.get("categories"), list) and paper.get("categories") else ""}}},
     url = {{http://arxiv.org/abs/{arxiv_id}}}

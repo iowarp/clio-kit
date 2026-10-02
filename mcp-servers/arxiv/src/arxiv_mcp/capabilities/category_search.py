@@ -4,28 +4,40 @@ ArXiv category and subject search capabilities.
 
 from typing import Dict, Any
 import logging
-from .arxiv_base import execute_arxiv_query
+import re
+from .arxiv_base import execute_arxiv_query, field_query
 
 logger = logging.getLogger(__name__)
+
+# arXiv category codes: an archive, optionally followed by a subject class
+# ("cs.LG", "astro-ph", "cond-mat.mes-hall"). Anything else is free text.
+_CATEGORY = re.compile(
+    r"(astro-ph|cond-mat|gr-qc|hep-(ex|lat|ph|th)|math-ph|nlin|nucl-(ex|th)"
+    r"|physics|quant-ph|math|cs|q-bio|q-fin|stat|eess|econ)(\.[A-Za-z-]+)?"
+)
 
 
 async def search_arxiv(query: str = "astro-ph", max_results: int = 3) -> Dict[str, Any]:
     """
-    Search ArXiv for research papers.
+    Search ArXiv for research papers by category or topic.
 
     Args:
-        query: Search query (default: "astro-ph")
+        query: ArXiv category code (e.g. "cs.LG": newest papers in it) or
+            free-text topic (all fields, most relevant first) (default: "astro-ph")
         max_results: Maximum number of results to return (default: 3)
 
     Returns:
         Dictionary containing search results and metadata
     """
     # Construct search URL
+    is_category = _CATEGORY.fullmatch(query.strip()) is not None
     params = {
-        "search_query": f"cat:{query}",
+        "search_query": f"cat:{query.strip()}"
+        if is_category
+        else field_query("all", query),
         "start": 0,
         "max_results": max_results,
-        "sortBy": "submittedDate",
+        "sortBy": "submittedDate" if is_category else "relevance",
         "sortOrder": "descending",
     }
 
@@ -70,7 +82,7 @@ async def search_by_subject(subject: str, max_results: int = 10) -> Dict[str, An
     """
     # Construct subject search URL
     params = {
-        "search_query": f"cat:{subject}",
+        "search_query": field_query("cat", subject),
         "start": 0,
         "max_results": max_results,
         "sortBy": "submittedDate",

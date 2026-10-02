@@ -6,7 +6,9 @@
 retrieves an HTTP(S) URL or DOI inline for ordinary MCP clients, or as a task
 when the client negotiates task support. HTML becomes Markdown;
 plain text is returned directly; supported PDFs, Office documents, XML, and
-images are sent to CLIO Web Search for structured conversion.
+images are sent to CLIO Web Search for structured conversion. DOI targets and
+document conversion require `--remote-url` (or `WEB_REMOTE_URL`); without it
+those calls fail with an actionable error, while HTML and text URLs still work.
 
 Task progress contains the backend conversion ID, stage, percentage, and a
 human-readable message. The task stays alive until completion, explicit
@@ -22,7 +24,8 @@ policy. Empty HTML extraction reports
 
 `fetch_events(conversion_id, after_sequence=0, limit=100)` retrieves a cursor
 page from the persistent backend conversion log. Use it when the latest
-`tasks/get` status message is insufficient. It is a synchronous read-only tool.
+`tasks/get` status message is insufficient. It is a synchronous read-only tool
+and requires `--remote-url`.
 
 ## `search`
 

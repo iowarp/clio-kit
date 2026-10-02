@@ -1,11 +1,30 @@
 """Base utilities for compression capabilities."""
 
+import contextlib
 import gzip
 import os
 import shutil
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+@contextlib.contextmanager
+def _new_output(opener, output_path: str):
+    """Open output_path for writing; never overwrite, and remove it if writing fails."""
+    try:
+        f_out = opener(output_path, "xb")
+    except FileExistsError:
+        raise FileExistsError(
+            f"Output file already exists, refusing to overwrite: {output_path}. "
+            "Move or delete it and retry."
+        ) from None
+    try:
+        with f_out:
+            yield f_out
+    except BaseException:
+        os.unlink(output_path)
+        raise
 
 
 async def compress_file(file_path: str) -> dict:
@@ -19,6 +38,7 @@ async def compress_file(file_path: str) -> dict:
 
     Raises:
         FileNotFoundError: If the file does not exist
+        FileExistsError: If the .gz output already exists (never overwritten)
         PermissionError: If access is denied
     """
     if not os.path.exists(file_path):
@@ -28,7 +48,7 @@ async def compress_file(file_path: str) -> dict:
     original_size = os.path.getsize(file_path)
 
     with open(file_path, "rb") as f_in:
-        with gzip.open(output_path, "wb") as f_out:
+        with _new_output(gzip.open, output_path) as f_out:
             shutil.copyfileobj(f_in, f_out)
 
     compressed_size = os.path.getsize(output_path)
@@ -68,6 +88,7 @@ async def decompress_file(file_path: str) -> dict:
     Raises:
         FileNotFoundError: If the file does not exist
         ValueError: If the file is not a .gz file
+        FileExistsError: If the output already exists (never overwritten)
         PermissionError: If access is denied
     """
     if not os.path.exists(file_path):
@@ -80,7 +101,7 @@ async def decompress_file(file_path: str) -> dict:
     compressed_size = os.path.getsize(file_path)
 
     with gzip.open(file_path, "rb") as f_in:
-        with open(output_path, "wb") as f_out:
+        with _new_output(open, output_path) as f_out:
             shutil.copyfileobj(f_in, f_out)
 
     decompressed_size = os.path.getsize(output_path)

@@ -10,6 +10,8 @@ from unittest.mock import patch, AsyncMock, Mock
 
 from arxiv_mcp import mcp_handlers
 
+from . import settle
+
 
 @pytest.fixture
 def empty_arxiv_api():
@@ -51,12 +53,8 @@ class TestMCPHandlers:
         ) as mock_search:
             mock_search.side_effect = ValueError("Test error")
 
-            result = await mcp_handlers.search_arxiv_handler("cs.AI", 5)
-
-            assert result["isError"] is True
-            assert "Test error" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "search_arxiv"
-            assert result["_meta"]["error"] == "ValueError"
+            with pytest.raises(ValueError, match="Test error"):
+                await mcp_handlers.search_arxiv_handler("cs.AI", 5)
 
     @pytest.mark.asyncio
     async def test_get_recent_papers_handler_success(self):
@@ -81,12 +79,8 @@ class TestMCPHandlers:
         ) as mock_recent:
             mock_recent.side_effect = ConnectionError("Network error")
 
-            result = await mcp_handlers.get_recent_papers_handler("cs.AI", 5)
-
-            assert result["isError"] is True
-            assert "Network error" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "get_recent_papers"
-            assert result["_meta"]["error"] == "ConnectionError"
+            with pytest.raises(ConnectionError, match="Network error"):
+                await mcp_handlers.get_recent_papers_handler("cs.AI", 5)
 
     @pytest.mark.asyncio
     async def test_search_papers_by_author_handler_success(self):
@@ -113,14 +107,8 @@ class TestMCPHandlers:
         ) as mock_author:
             mock_author.side_effect = RuntimeError("Runtime error")
 
-            result = await mcp_handlers.search_papers_by_author_handler(
-                "Test Author", 10
-            )
-
-            assert result["isError"] is True
-            assert "Runtime error" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "search_papers_by_author"
-            assert result["_meta"]["error"] == "RuntimeError"
+            with pytest.raises(RuntimeError, match="Runtime error"):
+                await mcp_handlers.search_papers_by_author_handler("Test Author", 10)
 
     @pytest.mark.asyncio
     async def test_search_by_title_handler_success(self):
@@ -145,12 +133,8 @@ class TestMCPHandlers:
         ) as mock_title:
             mock_title.side_effect = Exception("Generic error")
 
-            result = await mcp_handlers.search_by_title_handler("neural networks", 10)
-
-            assert result["isError"] is True
-            assert "Generic error" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "search_by_title"
-            assert result["_meta"]["error"] == "Exception"
+            with pytest.raises(Exception, match="Generic error"):
+                await mcp_handlers.search_by_title_handler("neural networks", 10)
 
     @pytest.mark.asyncio
     async def test_search_by_abstract_handler_success(self):
@@ -177,14 +161,8 @@ class TestMCPHandlers:
         ) as mock_abstract:
             mock_abstract.side_effect = KeyError("Key not found")
 
-            result = await mcp_handlers.search_by_abstract_handler(
-                "machine learning", 10
-            )
-
-            assert result["isError"] is True
-            assert "Key not found" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "search_by_abstract"
-            assert result["_meta"]["error"] == "KeyError"
+            with pytest.raises(KeyError, match="Key not found"):
+                await mcp_handlers.search_by_abstract_handler("machine learning", 10)
 
     @pytest.mark.asyncio
     async def test_search_by_subject_handler_success(self):
@@ -211,14 +189,8 @@ class TestMCPHandlers:
         ) as mock_subject:
             mock_subject.side_effect = AttributeError("Attribute error")
 
-            result = await mcp_handlers.search_by_subject_handler(
-                "Computer Science", 10
-            )
-
-            assert result["isError"] is True
-            assert "Attribute error" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "search_by_subject"
-            assert result["_meta"]["error"] == "AttributeError"
+            with pytest.raises(AttributeError, match="Attribute error"):
+                await mcp_handlers.search_by_subject_handler("Computer Science", 10)
 
     @pytest.mark.asyncio
     async def test_search_date_range_handler_success(self):
@@ -245,14 +217,10 @@ class TestMCPHandlers:
         ) as mock_date:
             mock_date.side_effect = TypeError("Type error")
 
-            result = await mcp_handlers.search_date_range_handler(
-                "2023-06-01", "2023-06-30", "", 10
-            )
-
-            assert result["isError"] is True
-            assert "Type error" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "search_date_range"
-            assert result["_meta"]["error"] == "TypeError"
+            with pytest.raises(TypeError, match="Type error"):
+                await mcp_handlers.search_date_range_handler(
+                    "2023-06-01", "2023-06-30", "", 10
+                )
 
     @pytest.mark.asyncio
     async def test_get_paper_details_handler_success(self):
@@ -277,12 +245,8 @@ class TestMCPHandlers:
         ) as mock_details:
             mock_details.side_effect = FileNotFoundError("Paper not found")
 
-            result = await mcp_handlers.get_paper_details_handler("2023.12345")
-
-            assert result["isError"] is True
-            assert "Paper not found" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "get_paper_details"
-            assert result["_meta"]["error"] == "FileNotFoundError"
+            with pytest.raises(FileNotFoundError, match="Paper not found"):
+                await mcp_handlers.get_paper_details_handler("2023.12345")
 
     @pytest.mark.asyncio
     async def test_find_similar_papers_handler_success(self):
@@ -307,12 +271,8 @@ class TestMCPHandlers:
         ) as mock_similar:
             mock_similar.side_effect = IndexError("Index error")
 
-            result = await mcp_handlers.find_similar_papers_handler("2023.12345", 5)
-
-            assert result["isError"] is True
-            assert "Index error" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "find_similar_papers"
-            assert result["_meta"]["error"] == "IndexError"
+            with pytest.raises(IndexError, match="Index error"):
+                await mcp_handlers.find_similar_papers_handler("2023.12345", 5)
 
     @pytest.mark.asyncio
     async def test_export_to_bibtex_handler_success(self):
@@ -338,12 +298,8 @@ class TestMCPHandlers:
         ) as mock_export:
             mock_export.side_effect = PermissionError("Permission denied")
 
-            result = await mcp_handlers.export_to_bibtex_handler('["2023.12345"]')
-
-            assert result["isError"] is True
-            assert "Permission denied" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "export_to_bibtex"
-            assert result["_meta"]["error"] == "PermissionError"
+            with pytest.raises(PermissionError, match="Permission denied"):
+                await mcp_handlers.export_to_bibtex_handler('["2023.12345"]')
 
     @pytest.mark.asyncio
     async def test_download_paper_pdf_handler_success(self):
@@ -368,12 +324,8 @@ class TestMCPHandlers:
         ) as mock_download:
             mock_download.side_effect = OSError("OS error")
 
-            result = await mcp_handlers.download_paper_pdf_handler("2023.12345", "/tmp")
-
-            assert result["isError"] is True
-            assert "OS error" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "download_paper_pdf"
-            assert result["_meta"]["error"] == "OSError"
+            with pytest.raises(OSError, match="OS error"):
+                await mcp_handlers.download_paper_pdf_handler("2023.12345", "/tmp")
 
     @pytest.mark.asyncio
     async def test_get_pdf_url_handler_success(self):
@@ -398,12 +350,8 @@ class TestMCPHandlers:
         ) as mock_url:
             mock_url.side_effect = ImportError("Import error")
 
-            result = await mcp_handlers.get_pdf_url_handler("2023.12345")
-
-            assert result["isError"] is True
-            assert "Import error" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "get_pdf_url"
-            assert result["_meta"]["error"] == "ImportError"
+            with pytest.raises(ImportError, match="Import error"):
+                await mcp_handlers.get_pdf_url_handler("2023.12345")
 
     @pytest.mark.asyncio
     async def test_download_multiple_pdfs_handler_success(self):
@@ -431,14 +379,10 @@ class TestMCPHandlers:
         ) as mock_multi:
             mock_multi.side_effect = NotImplementedError("Not implemented")
 
-            result = await mcp_handlers.download_multiple_pdfs_handler(
-                '["2023.12345", "2023.67890"]', "/tmp", 2
-            )
-
-            assert result["isError"] is True
-            assert "Not implemented" in str(result["content"][0]["text"])
-            assert result["_meta"]["tool"] == "download_multiple_pdfs"
-            assert result["_meta"]["error"] == "NotImplementedError"
+            with pytest.raises(NotImplementedError, match="Not implemented"):
+                await mcp_handlers.download_multiple_pdfs_handler(
+                    '["2023.12345", "2023.67890"]', "/tmp", 2
+                )
 
     @pytest.mark.asyncio
     async def test_all_handlers_error_format_consistency(self):
@@ -471,18 +415,9 @@ class TestMCPHandlers:
                 ) as mock_func:
                     mock_func.side_effect = RuntimeError("Test error")
 
-                    result = await handler(*args)
-
-                    # Verify consistent error format
-                    assert result["isError"] is True
-                    assert "content" in result
-                    assert isinstance(result["content"], list)
-                    assert len(result["content"]) > 0
-                    assert "text" in result["content"][0]
-                    assert "_meta" in result
-                    assert "tool" in result["_meta"]
-                    assert "error" in result["_meta"]
-                    assert result["_meta"]["error"] == "RuntimeError"
+                    # Failures propagate; no success-shaped error envelope
+                    with pytest.raises(RuntimeError, match="Test error"):
+                        await handler(*args)
 
     @pytest.mark.asyncio
     async def test_handlers_with_none_parameters(self, empty_arxiv_api):
@@ -500,7 +435,7 @@ class TestMCPHandlers:
                 handler = getattr(mcp_handlers, handler_name)
 
                 # Should handle None parameters gracefully
-                result = await handler(*args)
+                result = await settle(handler(*args))
                 # May return error or handle gracefully
                 assert result is not None
 
@@ -534,7 +469,7 @@ class TestMCPHandlers:
                     handler = getattr(mcp_handlers, handler_name)
 
                     # Should handle empty strings gracefully
-                    result = await handler(*args)
+                    result = await settle(handler(*args))
                     assert result is not None
 
     @pytest.mark.asyncio
@@ -553,20 +488,26 @@ class TestMCPHandlers:
             mock_session.get.return_value = mock_response
 
             # Test with very large max_results
-            large_result = await mcp_handlers.search_arxiv_handler("cs.AI", 10000)
+            large_result = await settle(
+                mcp_handlers.search_arxiv_handler("cs.AI", 10000)
+            )
             assert large_result is not None
 
             # Test with zero max_results
-            zero_result = await mcp_handlers.search_arxiv_handler("cs.AI", 0)
+            zero_result = await settle(mcp_handlers.search_arxiv_handler("cs.AI", 0))
             assert zero_result is not None
 
             # Test with negative max_results
-            negative_result = await mcp_handlers.search_arxiv_handler("cs.AI", -1)
+            negative_result = await settle(
+                mcp_handlers.search_arxiv_handler("cs.AI", -1)
+            )
             assert negative_result is not None
 
             # Test with very long strings (reduced for speed)
             long_query = "A" * 100  # Reduced from 10000 to 100
-            long_result = await mcp_handlers.search_by_title_handler(long_query, 5)
+            long_result = await settle(
+                mcp_handlers.search_by_title_handler(long_query, 5)
+            )
             assert long_result is not None
 
     @pytest.mark.asyncio
@@ -575,11 +516,11 @@ class TestMCPHandlers:
 
         # Create tasks for concurrent execution
         tasks = [
-            mcp_handlers.search_arxiv_handler("cs.AI", 3),
-            mcp_handlers.get_recent_papers_handler("cs.LG", 2),
-            mcp_handlers.search_papers_by_author_handler("Test Author", 1),
-            mcp_handlers.search_by_title_handler("Test Title", 1),
-            mcp_handlers.search_by_abstract_handler("Test Abstract", 1),
+            settle(mcp_handlers.search_arxiv_handler("cs.AI", 3)),
+            settle(mcp_handlers.get_recent_papers_handler("cs.LG", 2)),
+            settle(mcp_handlers.search_papers_by_author_handler("Test Author", 1)),
+            settle(mcp_handlers.search_by_title_handler("Test Title", 1)),
+            settle(mcp_handlers.search_by_abstract_handler("Test Abstract", 1)),
         ]
 
         # Execute all tasks concurrently
@@ -625,14 +566,14 @@ class TestMCPHandlers:
             ]
 
             for json_str in json_test_cases:
-                result = await mcp_handlers.export_to_bibtex_handler(json_str)
+                result = await settle(mcp_handlers.export_to_bibtex_handler(json_str))
                 assert result is not None
 
             # Test download_multiple_pdfs_handler with mocked file operations
             with patch("os.makedirs"), patch("builtins.open", create=True):
                 for json_str in json_test_cases:
-                    result = await mcp_handlers.download_multiple_pdfs_handler(
-                        json_str, "/tmp", 1
+                    result = await settle(
+                        mcp_handlers.download_multiple_pdfs_handler(json_str, "/tmp", 1)
                     )
                     assert result is not None
 
@@ -650,13 +591,13 @@ class TestMCPHandlers:
 
         for invalid_json in invalid_json_cases:
             # export_to_bibtex_handler should handle invalid JSON
-            result = await mcp_handlers.export_to_bibtex_handler(invalid_json)
+            result = await settle(mcp_handlers.export_to_bibtex_handler(invalid_json))
             # Should return error or handle gracefully
             assert result is not None
 
             # download_multiple_pdfs_handler should handle invalid JSON
-            result = await mcp_handlers.download_multiple_pdfs_handler(
-                invalid_json, "/tmp", 1
+            result = await settle(
+                mcp_handlers.download_multiple_pdfs_handler(invalid_json, "/tmp", 1)
             )
             assert result is not None
 
@@ -685,8 +626,10 @@ class TestMCPHandlers:
             ]
 
             for start_date, end_date, max_results in date_edge_cases:
-                result = await mcp_handlers.search_date_range_handler(
-                    start_date, end_date, max_results
+                result = await settle(
+                    mcp_handlers.search_date_range_handler(
+                        start_date, end_date, max_results
+                    )
                 )
                 assert result is not None
 
@@ -729,11 +672,11 @@ class TestMCPHandlers:
                             handler = getattr(mcp_handlers, handler_name)
 
                             if handler_name == "download_paper_pdf_handler":
-                                result = await handler(paper_id, "/tmp")
+                                result = await settle(handler(paper_id, "/tmp"))
                             elif handler_name == "find_similar_papers_handler":
-                                result = await handler(paper_id, 5)
+                                result = await settle(handler(paper_id, 5))
                             else:
-                                result = await handler(paper_id)
+                                result = await settle(handler(paper_id))
 
                             # Should handle invalid IDs gracefully
                             assert result is not None
@@ -786,65 +729,5 @@ class TestMCPHandlers:
             ) as mock_search:
                 mock_search.side_effect = exception_type(message)
 
-                result = await mcp_handlers.search_arxiv_handler("cs.AI", 5)
-
-                assert result["isError"] is True
-                assert message in str(result["content"][0]["text"])
-                assert result["_meta"]["error"] == exception_type.__name__
-
-    @pytest.mark.asyncio
-    async def test_handler_metadata_consistency(self):
-        """Test that handler metadata is consistent."""
-
-        handlers_and_tools = [
-            ("search_arxiv_handler", "search_arxiv"),
-            ("get_recent_papers_handler", "get_recent_papers"),
-            ("search_papers_by_author_handler", "search_papers_by_author"),
-            ("search_by_title_handler", "search_by_title"),
-            ("search_by_abstract_handler", "search_by_abstract"),
-            ("search_by_subject_handler", "search_by_subject"),
-            ("search_date_range_handler", "search_date_range"),
-            ("get_paper_details_handler", "get_paper_details"),
-            ("find_similar_papers_handler", "find_similar_papers"),
-            ("export_to_bibtex_handler", "export_to_bibtex"),
-            ("download_paper_pdf_handler", "download_paper_pdf"),
-            ("get_pdf_url_handler", "get_pdf_url"),
-            ("download_multiple_pdfs_handler", "download_multiple_pdfs"),
-        ]
-
-        for handler_name, expected_tool_name in handlers_and_tools:
-            if hasattr(mcp_handlers, handler_name):
-                handler = getattr(mcp_handlers, handler_name)
-
-                # Force an error to check metadata
-                func_name = handler_name.replace("_handler", "")
-                with patch(
-                    f"arxiv_mcp.mcp_handlers.{func_name}", new_callable=AsyncMock
-                ) as mock_func:
-                    mock_func.side_effect = ValueError("Test error")
-
-                    # Call with appropriate parameters
-                    if handler_name == "search_date_range_handler":
-                        result = await handler("2023-01-01", "2023-12-31", 5)
-                    elif handler_name in [
-                        "export_to_bibtex_handler",
-                        "download_multiple_pdfs_handler",
-                    ]:
-                        if handler_name == "download_multiple_pdfs_handler":
-                            result = await handler('["test"]', "/tmp", 1)
-                        else:
-                            result = await handler('["test"]')
-                    elif handler_name in ["download_paper_pdf_handler"]:
-                        result = await handler("test", "/tmp")
-                    elif handler_name in ["find_similar_papers_handler"]:
-                        result = await handler("test", 5)
-                    elif (
-                        "search" in handler_name
-                        and handler_name != "search_date_range_handler"
-                    ):
-                        result = await handler("test", 5)
-                    else:
-                        result = await handler("test")
-
-                    # Check metadata
-                    assert result["_meta"]["tool"] == expected_tool_name
+                with pytest.raises(exception_type, match=message):
+                    await mcp_handlers.search_arxiv_handler("cs.AI", 5)

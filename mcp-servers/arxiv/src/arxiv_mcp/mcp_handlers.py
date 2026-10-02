@@ -30,7 +30,7 @@ async def search_arxiv_handler(
 ) -> Dict[str, Any]:
     """
     Handler wrapping the ArXiv search capability for MCP.
-    Returns search results or an error payload on failure.
+    Returns search results; raises on failure.
 
     Args:
         query: Search query or category
@@ -39,15 +39,7 @@ async def search_arxiv_handler(
     Returns:
         MCP-compliant response dictionary
     """
-    try:
-        result = await search_arxiv(query, max_results)
-        return result
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "search_arxiv", "error": type(e).__name__},
-            "isError": True,
-        }
+    return await search_arxiv(query, max_results)
 
 
 async def get_recent_papers_handler(
@@ -55,7 +47,7 @@ async def get_recent_papers_handler(
 ) -> Dict[str, Any]:
     """
     Handler wrapping the recent papers capability for MCP.
-    Returns recent papers or an error payload on failure.
+    Returns recent papers; raises on failure.
 
     Args:
         category: ArXiv category
@@ -64,15 +56,7 @@ async def get_recent_papers_handler(
     Returns:
         MCP-compliant response dictionary
     """
-    try:
-        result = await get_recent_papers(category, max_results)
-        return result
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "get_recent_papers", "error": type(e).__name__},
-            "isError": True,
-        }
+    return await get_recent_papers(category, max_results)
 
 
 async def search_papers_by_author_handler(
@@ -80,7 +64,7 @@ async def search_papers_by_author_handler(
 ) -> Dict[str, Any]:
     """
     Handler wrapping the author search capability for MCP.
-    Returns author's papers or an error payload on failure.
+    Returns author's papers; raises on failure.
 
     Args:
         author: Author name to search for
@@ -89,15 +73,7 @@ async def search_papers_by_author_handler(
     Returns:
         MCP-compliant response dictionary
     """
-    try:
-        result = await search_papers_by_author(author, max_results)
-        return result
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "search_papers_by_author", "error": type(e).__name__},
-            "isError": True,
-        }
+    return await search_papers_by_author(author, max_results)
 
 
 async def search_by_title_handler(
@@ -105,7 +81,7 @@ async def search_by_title_handler(
 ) -> Dict[str, Any]:
     """
     Handler wrapping the title search capability for MCP.
-    Returns papers matching title keywords or an error payload on failure.
+    Returns papers matching title keywords; raises on failure.
 
     Args:
         title_keywords: Keywords to search in paper titles
@@ -114,15 +90,7 @@ async def search_by_title_handler(
     Returns:
         MCP-compliant response dictionary
     """
-    try:
-        result = await search_by_title(title_keywords, max_results)
-        return result
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "search_by_title", "error": type(e).__name__},
-            "isError": True,
-        }
+    return await search_by_title(title_keywords, max_results)
 
 
 async def search_by_abstract_handler(
@@ -130,7 +98,7 @@ async def search_by_abstract_handler(
 ) -> Dict[str, Any]:
     """
     Handler wrapping the abstract search capability for MCP.
-    Returns papers matching abstract keywords or an error payload on failure.
+    Returns papers matching abstract keywords; raises on failure.
 
     Args:
         abstract_keywords: Keywords to search in paper abstracts
@@ -139,15 +107,7 @@ async def search_by_abstract_handler(
     Returns:
         MCP-compliant response dictionary
     """
-    try:
-        result = await search_by_abstract(abstract_keywords, max_results)
-        return result
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "search_by_abstract", "error": type(e).__name__},
-            "isError": True,
-        }
+    return await search_by_abstract(abstract_keywords, max_results)
 
 
 async def search_by_subject_handler(
@@ -155,7 +115,7 @@ async def search_by_subject_handler(
 ) -> Dict[str, Any]:
     """
     Handler wrapping the subject search capability for MCP.
-    Returns papers from specified subject or an error payload on failure.
+    Returns papers from specified subject; raises on failure.
 
     Args:
         subject: ArXiv subject classification
@@ -164,15 +124,7 @@ async def search_by_subject_handler(
     Returns:
         MCP-compliant response dictionary
     """
-    try:
-        result = await search_by_subject(subject, max_results)
-        return result
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "search_by_subject", "error": type(e).__name__},
-            "isError": True,
-        }
+    return await search_by_subject(subject, max_results)
 
 
 async def search_date_range_handler(
@@ -180,7 +132,7 @@ async def search_date_range_handler(
 ) -> Dict[str, Any]:
     """
     Handler wrapping the date range search capability for MCP.
-    Returns papers from specified date range or an error payload on failure.
+    Returns papers from specified date range; raises on failure.
 
     Args:
         start_date: Start date in YYYY-MM-DD format
@@ -191,21 +143,13 @@ async def search_date_range_handler(
     Returns:
         MCP-compliant response dictionary
     """
-    try:
-        result = await search_date_range(start_date, end_date, category, max_results)
-        return result
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "search_date_range", "error": type(e).__name__},
-            "isError": True,
-        }
+    return await search_date_range(start_date, end_date, category, max_results)
 
 
 async def get_paper_details_handler(arxiv_id: str) -> Dict[str, Any]:
     """
     Handler wrapping the paper details capability for MCP.
-    Returns detailed paper information or an error payload on failure.
+    Returns detailed paper information; raises on failure.
 
     Args:
         arxiv_id: ArXiv paper ID
@@ -213,21 +157,13 @@ async def get_paper_details_handler(arxiv_id: str) -> Dict[str, Any]:
     Returns:
         MCP-compliant response dictionary
     """
-    try:
-        result = await get_paper_details(arxiv_id)
-        return result
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "get_paper_details", "error": type(e).__name__},
-            "isError": True,
-        }
+    return await get_paper_details(arxiv_id)
 
 
 async def export_to_bibtex_handler(papers_json: str) -> Dict[str, Any]:
     """
     Handler wrapping the BibTeX export capability for MCP.
-    Returns BibTeX citations or an error payload on failure.
+    Returns BibTeX citations; raises on failure.
 
     Args:
         papers_json: JSON string containing list of papers
@@ -244,19 +180,7 @@ async def export_to_bibtex_handler(papers_json: str) -> Dict[str, Any]:
         result = await export_to_bibtex(papers)
         return result
     except json.JSONDecodeError as e:
-        return {
-            "content": [
-                {"text": json.dumps({"error": f"Invalid JSON format: {str(e)}"})}
-            ],
-            "_meta": {"tool": "export_to_bibtex", "error": "JSONDecodeError"},
-            "isError": True,
-        }
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "export_to_bibtex", "error": type(e).__name__},
-            "isError": True,
-        }
+        raise ValueError(f"Invalid JSON format: {e}") from e
 
 
 async def find_similar_papers_handler(
@@ -264,7 +188,7 @@ async def find_similar_papers_handler(
 ) -> Dict[str, Any]:
     """
     Handler wrapping the similar papers capability for MCP.
-    Returns similar papers or an error payload on failure.
+    Returns similar papers; raises on failure.
 
     Args:
         reference_paper_id: ArXiv ID of the reference paper
@@ -273,15 +197,7 @@ async def find_similar_papers_handler(
     Returns:
         MCP-compliant response dictionary
     """
-    try:
-        result = await find_similar_papers(reference_paper_id, max_results)
-        return result
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "find_similar_papers", "error": type(e).__name__},
-            "isError": True,
-        }
+    return await find_similar_papers(reference_paper_id, max_results)
 
 
 async def download_paper_pdf_handler(
@@ -298,15 +214,7 @@ async def download_paper_pdf_handler(
     Returns:
         MCP-compliant response dictionary
     """
-    try:
-        result = await download_paper_pdf(arxiv_id, download_path)
-        return result
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "download_paper_pdf", "error": type(e).__name__},
-            "isError": True,
-        }
+    return await download_paper_pdf(arxiv_id, download_path)
 
 
 async def get_pdf_url_handler(arxiv_id: str) -> Dict[str, Any]:
@@ -320,15 +228,7 @@ async def get_pdf_url_handler(arxiv_id: str) -> Dict[str, Any]:
     Returns:
         MCP-compliant response dictionary
     """
-    try:
-        result = await get_pdf_url(arxiv_id)
-        return result
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "get_pdf_url", "error": type(e).__name__},
-            "isError": True,
-        }
+    return await get_pdf_url(arxiv_id)
 
 
 async def download_multiple_pdfs_handler(
@@ -355,16 +255,4 @@ async def download_multiple_pdfs_handler(
         result = await download_multiple_pdfs(arxiv_ids, download_path, max_concurrent)
         return result
     except json.JSONDecodeError as e:
-        return {
-            "content": [
-                {"text": json.dumps({"error": f"Invalid JSON format: {str(e)}"})}
-            ],
-            "_meta": {"tool": "download_multiple_pdfs", "error": "JSONDecodeError"},
-            "isError": True,
-        }
-    except Exception as e:
-        return {
-            "content": [{"text": json.dumps({"error": str(e)})}],
-            "_meta": {"tool": "download_multiple_pdfs", "error": type(e).__name__},
-            "isError": True,
-        }
+        raise ValueError(f"Invalid JSON format: {e}") from e

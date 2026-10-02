@@ -4,8 +4,8 @@ Set up the CLIO Kit meta-marketplace with an agent that supports Agent Skills
 and/or stdio MCP. Choose individual skills and servers or a workflow bundle.
 The commands below test the current checkout using an editable launcher; keep
 that checkout available. Released launchers use a separate, selective download
-route described in [installation](docs/installation.md). Do not assume an older
-PyPI version includes unreleased changes.
+route described in [installation](docs/installation.md). Releases before 2.11.0
+do not include the `skill`, `plugin` or `doctor` commands used below.
 
 ## 1. Check prerequisites and the checkout
 
@@ -187,10 +187,11 @@ For example, install the scientific file workflow:
 
 ```bash
 claude plugin install clio-scientific-io@clio-kit
-claude plugin details clio-scientific-io@clio-kit
+claude plugin details clio-scientific-io-skills@clio-kit
 ```
 
-This installs four servers and the associated skills as dependencies. A single
+This installs four servers and the associated skills as dependencies; the
+bundle itself is empty, so inspect its dependencies such as the skills package above. A single
 server is also installable, for example `clio-hdf5@clio-kit`. For procedures
 without servers, use `clio-scientific-io-skills@clio-kit` or `clio-skills@clio-kit`
 for the six primary bundles' skills. `clio-agents@clio-kit` adds planning and evidence-review agents.
@@ -265,10 +266,10 @@ and services still need a site installation.
 | Server | Backend and launch requirements | Real acceptance check |
 | --- | --- | --- |
 | Darshan | Install Darshan utilities and put `darshan-parser` on `PATH`. Generate a real log using the matching Darshan runtime. | Compare MCP bytes/operations with `darshan-parser --base LOG`. |
-| Lmod | Install Lmod and Bash; set `LMOD_CMD` to its `libexec/lmod` executable and `MODULEPATH` to your modulefiles. | Inspect a module, save a collection, then restore/list it in a new MCP process. |
+| Lmod | Install Lmod and Bash; set `LMOD_CMD` to its `libexec/lmod` executable and `MODULEPATH` to your modulefiles. The server has no load tool: set `LMOD_SYSTEM_DEFAULT_MODULES` (then `module_restore` the `system` collection), or start it from a shell with modules already loaded. | Inspect a module, save a collection from a non-empty module set, then restore/list it in a new MCP process. |
 | Spack | Set `SPACK_MCP_COMMAND` to `spack`; use `SPACK_PYTHON` if that Spack release needs a different Python. | Install a small package, locate its prefix, and verify the installation. Use `package/HASH` when several builds match. |
 | JARVIS | Use a writable `JARVIS_ROOT`; configure its private/shared directories and available recipes. Administrative setup requires `--profile all`. | Create an `echo` pipeline, run with `execution.mode="local"`, and inspect its execution status and stdout. |
-| ParaView | Run `pvserver`; use `UV_PYTHON` matching ParaView's Python ABI, with its modules on `PYTHONPATH` and shared libraries on `LD_LIBRARY_PATH`. Forward `--server HOST --pv-port PORT` after `--`. | Create a sphere, compute its area, and save a PNG screenshot. Headless builds may require a display such as Xvfb or an EGL/OSMesa-capable build. |
+| ParaView | Run `pvserver` (it exits when its client disconnects, so restart it for each MCP session or run it in a loop); use `UV_PYTHON` matching ParaView's Python ABI, with its modules on `PYTHONPATH` and shared libraries on `LD_LIBRARY_PATH`. Forward `--server HOST --pv-port PORT` after `--`. | Create a sphere, compute its area, and save a PNG screenshot. Headless builds may require a display such as Xvfb or an EGL/OSMesa-capable build. |
 | ChronoLog | Run its visor/keeper/grapher/player services. Set `UV_PYTHON` to match `py_chronolog_client`, `PYTHONPATH`, `LD_LIBRARY_PATH`, `CHRONO_PORT`, `CHRONO_CONF`, and `HDF5_READER_BIN`. | Start, record, stop, then retrieve and compare the exact archived text. Archiving is asynchronous; allow the configured flush interval. |
 
 For ChronoLog reader compilation, see the
@@ -341,7 +342,8 @@ claude plugin marketplace remove clio-kit
 ```
 
 Inspect the prune preview first: it covers orphaned dependencies at the selected
-scope. To reclaim old runtime environments, stop active servers, preview with
+scope (default `user`; add `--scope project` to all three plugin commands if you
+installed with it). To reclaim old runtime environments, stop active servers, preview with
 `clio-kit cache gc --keep 1 --dry-run`, then run `clio-kit cache gc --keep 1`.
 This retains the newest environment per server. `--all` is not a supported flag.
 Remove the launcher separately with `uv tool uninstall clio-kit` if it is no

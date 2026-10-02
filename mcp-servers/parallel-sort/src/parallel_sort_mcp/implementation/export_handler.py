@@ -9,6 +9,8 @@ import io
 from datetime import datetime
 from typing import Dict, Any, cast
 
+from .filter_handler import parse_log_entry
+
 
 async def export_to_json(
     data: Dict[str, Any], include_metadata: bool = True
@@ -87,12 +89,12 @@ async def export_to_csv(
         # Parse log entries into structured data
         csv_data = []
         for i, line in enumerate(lines):
-            parts = line.split(" ", 3)  # Split into timestamp, level, and message
-            if len(parts) >= 3:
-                timestamp = f"{parts[0]} {parts[1]}"
-                level = parts[2] if len(parts) > 2 else ""
-                message = parts[3] if len(parts) > 3 else ""
-            else:
+            try:  # same timestamp/level parsing as filtering and statistics
+                entry = parse_log_entry(line)
+                timestamp = entry["timestamp"].strftime("%Y-%m-%d %H:%M:%S")
+                level = entry["level"]
+                message = entry["message"]
+            except ValueError:
                 timestamp = ""
                 level = ""
                 message = line
@@ -215,18 +217,12 @@ async def export_summary_report(data: Dict[str, Any]) -> Dict[str, Any]:
         timestamps = []
 
         for line in lines:
-            parts = line.split(" ", 3)
-            if len(parts) >= 3:
-                level = parts[2].upper()
-                level_counts[level] = level_counts.get(level, 0) + 1
-
-                # Extract timestamp for time analysis
-                try:
-                    timestamp_str = f"{parts[0]} {parts[1]}"
-                    timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
-                    timestamps.append(timestamp)
-                except ValueError:
-                    pass
+            try:  # same timestamp/level parsing as filtering and statistics
+                entry = parse_log_entry(line)
+            except ValueError:
+                continue
+            level_counts[entry["level"]] = level_counts.get(entry["level"], 0) + 1
+            timestamps.append(entry["timestamp"])
 
         # Time analysis
         time_analysis = {}

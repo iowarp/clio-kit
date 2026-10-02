@@ -507,3 +507,37 @@ class TestGetDatasetDetailsTool:
             assert result["dataset"]["extras"] is not None
             assert result["dataset"]["extras"]["metadata_version"] == "1.0"
             assert result["_meta"]["status"] == "success"
+
+
+class TestReleaseRegressions:
+    """2026-10 acceptance findings: whole-catalogue searches time out upstream."""
+
+    @pytest.mark.asyncio
+    async def test_details_by_id_filters_server_side(self, get_dataset_details_fn):
+        dataset = Dataset(id="abc-123", name="n", title="T")
+        with patch(
+            "ndp_mcp.server.ndp_client.search_datasets_advanced",
+            new=AsyncMock(return_value=[dataset]),
+        ) as search:
+            result = await get_dataset_details_fn(dataset_identifier="abc-123")
+
+        search.assert_awaited_once_with(filter_list=["id:abc-123"], server="global")
+        assert result["dataset"]["id"] == "abc-123"
+
+    @pytest.mark.asyncio
+    async def test_unfiltered_search_is_rejected_without_a_request(self, search_datasets_fn):
+        with patch("ndp_mcp.server.ndp_client._make_request", new=AsyncMock()) as request:
+            with pytest.raises(ToolError, match="at least one search term or filter"):
+                await search_datasets_fn()
+        request.assert_not_awaited()
+
+    def test_base_url_env_override(self, monkeypatch):
+        monkeypatch.setenv("NDP_API_URL", "https://ndp.example.org/")
+        assert server.NDPClient().base_url == "https://ndp.example.org"
+
+    @pytest.mark.asyncio
+    async def test_server_info_reports_release_version(self):
+        from fastmcp import Client
+
+        async with Client(server.mcp) as client:
+            assert client.server_info.version == "2.2.5"

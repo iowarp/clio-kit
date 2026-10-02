@@ -32,6 +32,14 @@ def engine(mock_paraview):
 
     engine = VisualizationEngine()
     engine.primary_data_source = Mock()
+    # Every point-data array of the loaded source spans [0, 100].
+    point_info = (
+        engine.primary_data_source.GetDataInformation().GetPointDataInformation()
+    )
+    point_info.GetArrayInformation.return_value.GetComponentRange.return_value = (
+        0.0,
+        100.0,
+    )
     return engine
 
 
@@ -40,9 +48,9 @@ class TestCreateIsosurface:
 
     def test_create_isosurface_new(self, engine, mock_paraview):
         """Test creating new isosurface"""
-        from paraview.simple import Contour, Show, GetActiveView
+        from paraview.simple import Contour, Show, GetActiveView, SetActiveSource
 
-        mock_contour = Mock()
+        mock_contour = Mock(ContourBy=["POINTS", "density"])
         mock_view = Mock()
 
         Contour.return_value = mock_contour
@@ -56,6 +64,25 @@ class TestCreateIsosurface:
             assert "Created isosurface" in message
             assert mock_contour.Isosurfaces == [50.0]
             assert name == "Contour1"
+            # The new contour is left active so follow-up tools act on it.
+            SetActiveSource.assert_called_with(mock_contour)
+
+    def test_create_isosurface_rejects_value_outside_data_range(
+        self, engine, mock_paraview
+    ):
+        """An out-of-range isovalue is an error naming the range, not a success"""
+        from paraview.simple import Contour, Delete, GetActiveSource, SetActiveSource
+
+        mock_contour = Mock(ContourBy=["POINTS", "density"])
+        Contour.return_value = mock_contour
+
+        success, message, contour, name = engine.create_isosurface(999.0)
+
+        assert success is False
+        assert "outside the data range [0.0, 100.0] of field 'density'" in message
+        assert not getattr(engine, "isosurface_filter", None)
+        SetActiveSource.assert_called_with(GetActiveSource.return_value)
+        Delete.assert_called_once_with(mock_contour)
 
     def test_create_isosurface_with_field(self, engine, mock_paraview):
         """Test creating isosurface with specific field"""
@@ -78,7 +105,7 @@ class TestCreateIsosurface:
         """Test updating existing isosurface"""
         from paraview.simple import Show, GetActiveView
 
-        mock_contour = Mock()
+        mock_contour = Mock(ContourBy=["POINTS", "density"])
         engine.isosurface_filter = mock_contour
         GetActiveView.return_value = Mock()
         Show.return_value = Mock()
@@ -119,7 +146,12 @@ class TestComputeSurfaceArea:
 
     def test_compute_surface_area_success(self, engine, mock_paraview):
         """Test successful surface area computation"""
-        from paraview.simple import GetActiveSource, IntegrateVariables
+        from paraview.simple import (
+            Delete,
+            GetActiveSource,
+            IntegrateVariables,
+            SetActiveSource,
+        )
         import paraview.servermanager as sm
 
         mock_source = Mock()
@@ -138,6 +170,9 @@ class TestComputeSurfaceArea:
         assert success is True
         assert area == 123.45
         assert "123.45" in message
+        # Read-only: the active source is restored and the filter removed.
+        SetActiveSource.assert_called_once_with(mock_source)
+        Delete.assert_called_once_with(mock_integrate)
 
     def test_compute_surface_area_no_source(self, engine, mock_paraview):
         """Test with no active source"""
@@ -198,7 +233,7 @@ class TestCreateSlice:
 
     def test_create_slice_with_origin(self, engine, mock_paraview):
         """Test creating slice with specified origin"""
-        from paraview.simple import Slice, Show, GetActiveView
+        from paraview.simple import Slice, Show, GetActiveView, SetActiveSource
 
         # Create a mock slice type object
         mock_slice_type_obj = Mock()
@@ -224,6 +259,7 @@ class TestCreateSlice:
             # Check that Origin and Normal were set correctly
             assert mock_slice_type_obj.Origin == [1.0, 2.0, 3.0]
             assert mock_slice_type_obj.Normal == [0, 0, 1]
+            SetActiveSource.assert_called_with(mock_slice)
 
     def test_create_slice_auto_origin(self, engine, mock_paraview):
         """Test creating slice with auto-calculated origin"""

@@ -85,7 +85,13 @@ def resolve_write_path(output_path: str) -> Path:
 
 def _normalize_events(geojson: dict[str, Any]) -> list[dict[str, Any]]:
     events: list[dict[str, Any]] = []
-    for feature in geojson.get("features", []):
+    features = geojson.get("features", [])
+    if features and not any("mag" in (f.get("properties") or {}) for f in features):
+        raise CatalogError(
+            "GeoJSON has features but none has a 'mag' property; this is not an "
+            "earthquake catalog."
+        )
+    for feature in features:
         props = feature.get("properties") or {}
         geom = feature.get("geometry") or {}
         coords = geom.get("coordinates") or [None, None, None]
@@ -165,6 +171,13 @@ def _events_from_csv(path: Path) -> list[dict[str, Any]]:
         if reader.fieldnames is None:
             raise CatalogError("CSV catalog has no header row.")
         normalized_field = {name: name.strip().lower() for name in reader.fieldnames}
+        columns = set(normalized_field.values())
+        for what, keys in (("magnitude", _MAG_KEYS), ("time", _TIME_KEYS)):
+            if not columns.intersection(keys):
+                raise CatalogError(
+                    f"CSV catalog has no {what} column (expected one of "
+                    f"{', '.join(keys)}); found columns: {', '.join(sorted(columns))}."
+                )
         for raw_row in reader:
             row = {normalized_field.get(key, key): val for key, val in raw_row.items()}
             mag = _to_float(_first(row, _MAG_KEYS))

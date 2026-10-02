@@ -777,6 +777,35 @@ class TestPipelineOperations:
         assert "Create failed" in str(exc_info.value.detail)
 
     @pytest.mark.asyncio
+    async def test_create_pipeline_refuses_existing_id(self, mock_pipeline, tmp_path):
+        """Re-creating an existing id must not reset the stored pipeline."""
+        (tmp_path / "pipeline.yaml").write_text("name: test_pipeline\n")
+        mock_pipeline.jarvis.get_pipeline_dir.return_value = tmp_path
+
+        with pytest.raises(HTTPException) as exc_info:
+            await create_pipeline("test_pipeline")
+
+        assert exc_info.value.status_code == 409
+        assert "'test_pipeline' already exists" in str(exc_info.value.detail)
+        mock_pipeline.create.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_create_pipeline_names_admin_step_when_uninitialized(
+        self, mock_pipeline
+    ):
+        """A fresh JARVIS_ROOT must say which admin tool initializes it."""
+        mock_pipeline.create.side_effect = RuntimeError(
+            "JARVIS config_dir is not initialized"
+        )
+
+        with pytest.raises(HTTPException) as exc_info:
+            await create_pipeline("test_pipeline")
+
+        assert exc_info.value.status_code == 500
+        assert "--profile all" in str(exc_info.value.detail)
+        assert "jm_create_config" in str(exc_info.value.detail)
+
+    @pytest.mark.asyncio
     async def test_load_pipeline_success(self, mock_pipeline):
         """Test successful pipeline loading."""
         result = await load_pipeline("test_pipeline")

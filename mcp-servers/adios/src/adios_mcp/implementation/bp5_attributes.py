@@ -1,11 +1,11 @@
 from adios2 import FileReader
 import numpy as np
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any
 
 
 def inspect_attributes(
     filename: str, variable_name: Optional[str] = None
-) -> Union[Dict[str, Dict[str, Any]], Dict[str, str]]:
+) -> Dict[str, Dict[str, Any]]:
     """
     List and read attributes from a BP5 file.
     If variable_name is None, returns global attributes;
@@ -18,18 +18,27 @@ def inspect_attributes(
         "SingleValue": "true" or "false",
         ...any other Params returned by ADIOS
       }
+    (empty when there are no attributes).
+
+    Raises:
+      ValueError: if variable_name is not a variable in the file.
     """
     with FileReader(filename) as stream:
         # Fetch metadata for the requested scope
         if variable_name:
+            # available_attributes() segfaults in native code on an unknown variable
+            variables = stream.available_variables()
+            if variable_name not in variables:
+                raise ValueError(
+                    f"Variable '{variable_name}' not found in file. "
+                    f"Available variables: {sorted(variables)}"
+                )
             attrs_meta = stream.available_attributes(variable_name)
         else:
             attrs_meta = stream.available_attributes()
 
         result: Dict[str, Dict[str, Any]] = {}
-        if attrs_meta is None or not attrs_meta:
-            return {"error": "Invalid Variable name or no attributes found"}
-        for attr_name, meta in attrs_meta.items():
+        for attr_name, meta in (attrs_meta or {}).items():
             # Build full attribute path for reading
             full_name = f"{variable_name}/{attr_name}" if variable_name else attr_name
             raw = stream.read_attribute(full_name)

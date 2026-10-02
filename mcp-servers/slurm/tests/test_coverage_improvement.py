@@ -275,7 +275,9 @@ def test_job_status_error_cases():
         mock_run.return_value.returncode = 0
         mock_run.return_value.stdout = ""
         result = get_job_status("99999")
-        assert result["status"] == "COMPLETED"
+        # Absence from the queue is not proof of completion (job may never
+        # have existed); without a scheduler record the state is UNKNOWN.
+        assert result["status"] == "UNKNOWN"
         assert "not found" in result["reason"]
 
     # Test when subprocess raises exception

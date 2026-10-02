@@ -7,6 +7,8 @@ See https://code.claude.com/docs/en/hooks and /docs/en/plugins-reference.
 from __future__ import annotations
 
 import json
+import re
+import shlex
 from pathlib import Path
 from typing import Any
 
@@ -27,7 +29,41 @@ REQUIRED_FIELDS = {
 }
 
 
-def _event_problems(events: Any, label: str) -> tuple[bool, list[str]]:
+def _missing_files(handler: dict[str, Any], directory: Path) -> list[str]:
+    # Check simple executable/script invocations only. Shell programs and
+    # interpreter options need their host's parser; never execute them here.
+    command = handler.get("command")
+    if not isinstance(command, str):
+        return []
+    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        words = list(lexer) + handler.get("args", [])
+    except ValueError:
+        return []
+    if not words or any(word and set(word) <= set(";&|<>()") for word in words):
+        return []
+    target = words[0]
+    if re.fullmatch(
+        r"python(?:\d+(?:\.\d+)?)?|node|bash|sh|ruby|perl", Path(target).name
+    ):
+        if len(words) < 2 or words[1].startswith("-"):
+            return []
+        target = words[1]
+    prefix = "${CLAUDE_PLUGIN_ROOT}/"
+    if target.startswith(prefix):
+        path = target[len(prefix) :]
+        if (
+            not any(char in path for char in "$*?`")
+            and not (directory / path).is_file()
+        ):
+            return [path]
+    return []
+
+
+def _event_problems(
+    events: Any, label: str, directory: Path | None = None
+) -> tuple[bool, list[str]]:
     if not isinstance(events, dict):
         return False, [f"{label} must be a hook event object"]
     problems: list[str] = []
@@ -81,6 +117,11 @@ def _event_problems(events: Any, label: str) -> tuple[bool, list[str]]:
                     or not all(isinstance(arg, str) for arg in handler["args"])
                 ):
                     problems.append(f"{item}.args must be a command-hook string array")
+                elif kind == "command" and directory is not None:
+                    for path in _missing_files(handler, directory):
+                        problems.append(
+                            f"{item}.command runs {path!r}, which is not in the plugin"
+                        )
     return active, problems
 
 
@@ -96,7 +137,7 @@ def hook_components(
         paths.append("./hooks/hooks.json")
     value = manifest.get("hooks")
     if isinstance(value, dict):
-        active, inline_problems = _event_problems(value, "hooks")
+        active, inline_problems = _event_problems(value, "hooks", directory)
         problems.extend(inline_problems)
     elif isinstance(value, str):
         paths.append(value)
@@ -122,7 +163,7 @@ def hook_components(
             if not isinstance(config, dict) or "hooks" not in config:
                 problems.append(f"{name} needs a top-level hooks object")
                 continue
-            present, found = _event_problems(config["hooks"], name)
+            present, found = _event_problems(config["hooks"], name, directory)
             active |= present
             problems.extend(found)
         except (OSError, ValueError) as exc:

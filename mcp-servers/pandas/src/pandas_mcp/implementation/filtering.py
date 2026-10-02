@@ -3,6 +3,7 @@ Data filtering capabilities using boolean indexing.
 """
 
 import pandas as pd
+from pathlib import Path
 import os
 from typing import Optional, Any, Dict, List
 import traceback
@@ -205,7 +206,9 @@ def filter_data(
 
         # Save filtered data
         if output_file is None:
-            output_file = file_path.replace(".csv", "_filtered.csv")
+            output_file = str(
+                Path(file_path).with_name(f"{Path(file_path).stem}_filtered.csv")
+            )
 
         filtered_df.to_csv(output_file, index=False)
 
@@ -281,7 +284,9 @@ def advanced_filter(
 
         # Save filtered data
         if output_file is None:
-            output_file = file_path.replace(".csv", "_query_filtered.csv")
+            output_file = str(
+                Path(file_path).with_name(f"{Path(file_path).stem}_query_filtered.csv")
+            )
 
         filtered_df.to_csv(output_file, index=False)
 
@@ -380,7 +385,9 @@ def sample_data(
 
         # Save sampled data
         if output_file is None:
-            output_file = file_path.replace(".csv", f"_sample_{method}.csv")
+            output_file = str(
+                Path(file_path).with_name(f"{Path(file_path).stem}_sample_{method}.csv")
+            )
 
         sampled_df.to_csv(output_file, index=False)
 

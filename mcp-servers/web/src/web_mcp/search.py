@@ -16,13 +16,19 @@ _TAVILY_ENDPOINT = "https://api.tavily.com/search"
 _MAX_SEARCH_COUNT = 25
 
 
+def _effective_count(count: int) -> int:
+    if count < 1:
+        raise ToolError(f"count must be between 1 and {_MAX_SEARCH_COUNT}; got {count}.")
+    return min(count, _MAX_SEARCH_COUNT)
+
+
 async def search_common(configured: Settings, query: str, count: int = 5) -> dict[str, Any]:
     """Search the configured DDG, Brave, or Tavily provider."""
 
     text = (query or "").strip()
     if not text:
         raise ToolError("A non-empty query is required.")
-    effective_count = min(count if count and count > 0 else 5, _MAX_SEARCH_COUNT)
+    effective_count = _effective_count(count)
     if configured.search_provider == "ddg":
         results = await _search_ddg(text, effective_count)
     elif configured.search_provider == "brave":
@@ -56,7 +62,7 @@ async def search_searxng_provider(
     text = (query or "").strip()
     if not text:
         raise ToolError("A non-empty query is required.")
-    effective_count = min(count if count and count > 0 else 5, _MAX_SEARCH_COUNT)
+    effective_count = _effective_count(count)
     results, engines_answered, unresponsive_engines = await search_searxng(
         text,
         effective_count,

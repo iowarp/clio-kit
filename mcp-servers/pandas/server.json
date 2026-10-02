@@ -55,23 +55,23 @@
     },
     {
       "name": "clean_data",
-      "description": "Remove duplicates, detect outliers via IQR/Z-score, and optimize data types in a single pass."
+      "description": "Remove duplicates, detect outliers via IQR/Z-score, and optimize data types in a single pass. Writes <input>_cleaned.csv beside the input, overwriting any previous one."
     },
     {
       "name": "groupby_operations",
-      "description": "Group data by columns and apply aggregations (sum, mean, count, min, max, std, median) with optional pre-filter."
+      "description": "Group data by columns and apply aggregations (sum, mean, count, min, max, std, median) with optional pre-filter. Writes <input>_grouped.csv beside the input, overwriting any previous one."
     },
     {
       "name": "merge_datasets",
-      "description": "Join two datasets using inner, outer, left, or right joins on specified key columns."
+      "description": "Join two datasets using inner, outer, left, or right joins on specified key columns. Writes <left_file>_merged.csv beside the left file, overwriting any previous one."
     },
     {
       "name": "pivot_table",
-      "description": "Create pivot tables with configurable row index, column headers, value columns, and aggregation function."
+      "description": "Create pivot tables with configurable row index, column headers, value columns, and aggregation function. Writes <input>_pivot.csv beside the input, overwriting any previous one."
     },
     {
       "name": "time_series_operations",
-      "description": "Resample, compute rolling statistics, create lag features, or difference a time series."
+      "description": "Resample, compute rolling statistics, create lag features, or difference a time series. Writes <input>_<operation>.csv beside the input, overwriting any previous one."
     },
     {
       "name": "validate_data",
@@ -79,11 +79,11 @@
     },
     {
       "name": "filter_data",
-      "description": "Filter rows using comparison, membership, pattern-matching, and null-check operators across multiple columns."
+      "description": "Filter rows using comparison, membership, pattern-matching, and null-check operators across multiple columns. Writes <input>_filtered.csv beside the input (or output_file), overwriting any previous one."
     },
     {
       "name": "optimize_memory",
-      "description": "Analyze and reduce DataFrame memory usage through automatic dtype optimization and chunked-processing recommendations."
+      "description": "Analyze and reduce DataFrame memory usage through automatic dtype optimization and chunked-processing recommendations. Writes <input>_optimized.csv beside the input, overwriting any previous one."
     },
     {
       "name": "profile_data",

@@ -18,6 +18,13 @@ from .capabilities.sensor_info import get_sensor_info
 from .capabilities.remote_node_info import get_node_info, get_remote_node_info
 
 
+def _checked(result: dict) -> dict:
+    """Return a capability result, raising if the capability reported an error."""
+    if result.get("error"):
+        raise RuntimeError(result["error"])
+    return result
+
+
 def cpu_info_handler() -> dict:
     """
     Handler wrapping the CPU info capability for MCP.
@@ -27,7 +34,7 @@ def cpu_info_handler() -> dict:
         MCP-compliant response dictionary
     """
     try:
-        result = get_cpu_info()
+        result = _checked(get_cpu_info())
 
         # Generate summary
         summary = {
@@ -43,8 +50,8 @@ def cpu_info_handler() -> dict:
             insights.append(f"System has {result.get('logical_cores')} logical cores")
         if result.get("physical_cores", 0) > 0:
             insights.append(f"System has {result.get('physical_cores')} physical cores")
-        if result.get("cpu_usage"):
-            avg_usage = sum(result["cpu_usage"]) / len(result["cpu_usage"])
+        if result.get("usage_per_core"):
+            avg_usage = result["average_usage"]
             if avg_usage > 80:
                 insights.append(
                     "High CPU usage detected - consider checking running processes"
@@ -83,9 +90,7 @@ def memory_info_handler() -> dict:
         MCP-compliant response dictionary
     """
     try:
-        result = get_memory_info()
-        if result.get("error"):
-            raise RuntimeError(result["error"])
+        result = _checked(get_memory_info())
         memory = result["virtual_memory"]
         swap = result["swap_memory"]
 
@@ -144,26 +149,29 @@ def disk_info_handler() -> dict:
         MCP-compliant response dictionary
     """
     try:
-        result = get_disk_info()
+        result = _checked(get_disk_info())
+        partitions = result["partitions"]
 
         # Generate summary
         summary = {
-            "total_partitions": len(result.get("partitions", [])),
-            "total_devices": len(result.get("disk_io", {})),
+            "total_partitions": len(partitions),
+            "total_devices": len({p["device"] for p in partitions}),
         }
 
         # Generate insights
         insights = []
-        for partition in result.get("partitions", []):
-            usage = partition.get("usage", {})
-            if usage.get("percent", 0) > 85:
+        for partition in partitions:
+            percent = partition.get("percent")
+            # Skip unreadable partitions and always-full read-only snap/loop images.
+            virtual = partition["device"].startswith(("/dev/loop", "/dev/ram", "/snap"))
+            if percent is None or virtual:
+                continue
+            if percent > 85:
                 insights.append(
-                    f"High disk usage on {partition.get('mountpoint', 'unknown')} - consider cleanup"
+                    f"High disk usage on {partition['mountpoint']} - consider cleanup"
                 )
-            elif usage.get("percent", 0) < 20:
-                insights.append(
-                    f"Good disk space on {partition.get('mountpoint', 'unknown')}"
-                )
+            elif percent < 20:
+                insights.append(f"Good disk space on {partition['mountpoint']}")
 
         return create_beautiful_response(
             operation="disk_info",
@@ -196,7 +204,7 @@ def network_info_handler() -> dict:
         MCP-compliant response dictionary
     """
     try:
-        result = get_network_info()
+        result = _checked(get_network_info())
 
         # Generate summary
         summary = {
@@ -257,7 +265,7 @@ def system_info_handler() -> dict:
         MCP-compliant response dictionary
     """
     try:
-        result = get_system_info()
+        result = _checked(get_system_info())
 
         # Generate summary
         summary = {
@@ -311,26 +319,23 @@ def process_info_handler() -> dict:
         MCP-compliant response dictionary
     """
     try:
-        result = get_process_info()
+        result = _checked(get_process_info())
 
-        # Generate summary
+        # Generate summary ("processes" is only the top `limit` by CPU)
         summary = {
-            "total_processes": len(result.get("processes", [])),
-            "running_processes": len(
-                [p for p in result.get("processes", []) if p.get("status") == "running"]
-            ),
+            "total_processes": result["total_processes"],
+            "running_processes": result["statistics"]["running"],
+            "processes_listed": len(result["processes"]),
         }
 
         # Generate insights
         insights = []
-        if result.get("processes"):
-            insights.append(
-                f"System is running {len(result.get('processes', []))} processes"
-            )
+        if result["processes"]:
+            insights.append(f"System is running {result['total_processes']} processes")
 
             # Find high CPU processes
             high_cpu_processes = [
-                p for p in result.get("processes", []) if p.get("cpu_percent", 0) > 10
+                p for p in result["processes"] if (p.get("cpu_percent") or 0) > 10
             ]
             if high_cpu_processes:
                 insights.append(
@@ -368,26 +373,21 @@ def hardware_summary_handler() -> dict:
         MCP-compliant response dictionary
     """
     try:
-        result = get_hardware_summary()
+        result = _checked(get_hardware_summary())
+        detailed = result["detailed"]
 
         # Generate summary
         summary = {
-            "components_gathered": len(
-                [k for k in result.keys() if not k.startswith("_")]
-            ),
-            "hostname": result.get("hostname", "unknown"),
+            "components_gathered": len(detailed),
+            "hostname": result["summary"]["system"]["hostname"],
         }
 
         # Generate insights
         insights = []
-        if result.get("cpu_info"):
-            insights.append("CPU information successfully collected")
-        if result.get("memory_info"):
-            insights.append("Memory information successfully collected")
-        if result.get("disk_info"):
-            insights.append("Disk information successfully collected")
-        if result.get("network_info"):
-            insights.append("Network information successfully collected")
+        for key in ("cpu", "memory", "disk", "network"):
+            if detailed.get(key) and not detailed[key].get("error"):
+                label = "CPU" if key == "cpu" else key.title()
+                insights.append(f"{label} information successfully collected")
 
         return create_beautiful_response(
             operation="hardware_summary",
@@ -420,26 +420,25 @@ def performance_monitor_handler() -> dict:
         MCP-compliant response dictionary
     """
     try:
-        result = monitor_performance()
+        result = _checked(monitor_performance())
+        cpu_usage = result["cpu"]["average_usage"]
+        memory_usage = result["memory"]["current_usage"]
 
-        # Generate summary
+        # Generate summary (the monitor measures disk I/O rates, not disk fullness)
         summary = {
-            "cpu_usage": result.get("cpu_usage", 0),
-            "memory_usage": result.get("memory_usage", 0),
-            "disk_usage": result.get("disk_usage", 0),
+            "cpu_usage": cpu_usage,
+            "memory_usage": memory_usage,
+            "disk_read_rate": result["disk_io"]["read_rate_formatted"],
+            "disk_write_rate": result["disk_io"]["write_rate_formatted"],
         }
 
         # Generate insights
         insights = []
-        if result.get("cpu_usage", 0) > 80:
+        if cpu_usage > 80:
             insights.append("High CPU usage detected - system may be under heavy load")
-        if result.get("memory_usage", 0) > 85:
+        if memory_usage > 85:
             insights.append(
                 "High memory usage detected - consider closing applications"
-            )
-        if result.get("disk_usage", 0) > 90:
-            insights.append(
-                "High disk usage detected - consider cleanup or storage expansion"
             )
 
         return create_beautiful_response(
@@ -473,7 +472,7 @@ def gpu_info_handler() -> dict:
         MCP-compliant response dictionary
     """
     try:
-        result = get_gpu_info()
+        result = _checked(get_gpu_info())
 
         # Generate summary
         summary = {
@@ -519,24 +518,25 @@ def sensor_info_handler() -> dict:
         MCP-compliant response dictionary
     """
     try:
-        result = get_sensor_info()
+        result = _checked(get_sensor_info())
 
-        # Generate summary
+        # Generate summary; /sys thermal zones only count when psutil saw none
+        temperature_sensors = sum(
+            len(readings) for readings in result["temperatures"].values()
+        ) or len(result.get("thermal_zones", []))
+        fan_sensors = sum(len(readings) for readings in result["fans"].values())
+        sensor_count = temperature_sensors + fan_sensors + bool(result["battery"])
         summary = {
-            "sensor_count": len(result.get("sensors", [])),
-            "temperature_sensors": len(
-                [
-                    s
-                    for s in result.get("sensors", [])
-                    if "temperature" in s.get("type", "").lower()
-                ]
-            ),
+            "sensor_count": sensor_count,
+            "temperature_sensors": temperature_sensors,
+            "fan_sensors": fan_sensors,
+            "battery_present": bool(result["battery"]),
         }
 
         # Generate insights
         insights = []
-        if result.get("sensors"):
-            insights.append(f"Found {len(result.get('sensors', []))} sensors")
+        if sensor_count:
+            insights.append(f"Found {sensor_count} sensors")
         else:
             insights.append("No sensors detected or sensor information unavailable")
 

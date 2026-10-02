@@ -204,7 +204,7 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\arxiv run arxiv-mcp --help
 
 ### `download_paper_pdf`
 **Description**: Download the PDF of a paper from ArXiv.
-**Hints**: read-only, idempotent
+**Hints**: idempotent
 **Tags**: arxiv, download
 
 ### `get_pdf_url`
@@ -214,7 +214,7 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\arxiv run arxiv-mcp --help
 
 ### `download_multiple_pdfs`
 **Description**: Download multiple PDFs concurrently with rate limiting.
-**Hints**: read-only, idempotent
+**Hints**: idempotent
 **Tags**: arxiv, download
 
 ### Resources

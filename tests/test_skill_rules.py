@@ -30,7 +30,6 @@ from clio_kit.skills import (
     always_on_cost,
     check_skill,
     check_skill_collection,
-    read_skill_frontmatter,
 )
 
 GOOD_DESCRIPTION = (
@@ -374,10 +373,34 @@ def test_every_rung_of_the_ladder_is_accepted(tmp_path: Path) -> None:
         assert check_skill(skill).ok, rung
 
 
-def test_our_own_skills_all_declare_a_rung_we_recognise() -> None:
-    for skill_md in Path("skills").glob("*/skills/*/SKILL.md"):
-        fields = read_skill_frontmatter(skill_md.parent)
-        assert fields.get("eval-status") in EVAL_LADDER, skill_md
+def test_a_maintained_skill_must_say_where_it_belongs(tmp_path: Path) -> None:
+    skill = write_skill(tmp_path, "demo")
+    assert check_skill(skill).ok
+    problems = check_skill(skill, maintained=True).problems
+    assert any("metadata.bundle" in p for p in problems)
+    assert any("metadata.eval-status" in p for p in problems)
+
+
+def test_an_empty_scenario_file_records_nothing(tmp_path: Path) -> None:
+    skill = write_skill(tmp_path, "demo")
+    (skill / "evals.md").write_text("\n")
+    assert any("no eval scenarios" in p for p in check_skill(skill).problems)
+
+
+def test_our_own_skills_all_pass_the_maintained_rules() -> None:
+    """Maintained means a `clio-` package; other folders follow the open rules.
+
+    `clio-kit skill validate --maintained <skill>` reports the same problems.
+    """
+    root = Path(__file__).resolve().parents[1]
+    skills = [
+        path.parent
+        for kind in ("skills", "plugins", "agents", "hooks")
+        for path in (root / kind).glob("clio-*/skills/*/SKILL.md")
+    ]
+    assert skills
+    for skill in skills:
+        assert check_skill(skill, maintained=True).problems == []
 
 
 # --- the entries actually committed here -----------------------------------

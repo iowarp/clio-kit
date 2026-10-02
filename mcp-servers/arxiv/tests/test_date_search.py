@@ -203,7 +203,7 @@ class TestDateSearch:
 
             call_args = mock_query.call_args[0][0]
             expected_query = (
-                "cat:cs.AI OR cs.LG AND submittedDate:[20240115 TO 20240116]"
+                "(cat:cs.AI OR cat:cs.LG) AND submittedDate:[20240115 TO 20240116]"
             )
             assert call_args["search_query"] == expected_query
 

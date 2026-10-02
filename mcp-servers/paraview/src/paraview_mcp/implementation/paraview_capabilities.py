@@ -23,6 +23,7 @@ import logging
 import re
 import time
 from paraview.simple import *  # noqa: F403, F405
+from . import guards
 
 # Check for ADIOS2 availability for BP5 file support
 try:
@@ -461,6 +462,8 @@ class VisualizationEngine:
                 )
 
             # Compose the full path in the same folder as the loaded data
+            if problem := guards.stl_name_problem(stl_filename, self._data_directory):
+                return False, problem, ""
             full_path = os.path.join(self._data_directory, stl_filename)
 
             # Save to STL
@@ -618,7 +621,6 @@ class VisualizationEngine:
             from paraview.simple import (
                 GetActiveView,
                 SetActiveSource,
-                Contour,
                 Show,
                 GetActiveSource,
             )
@@ -629,26 +631,23 @@ class VisualizationEngine:
                 return False, "Error: No active source. Load data first.", None, ""
 
             # Determine whether to update an existing isosurface or create a new one.
-            if hasattr(self, "isosurface_filter") and self.isosurface_filter:
-                contour = self.isosurface_filter
-                contour.Isosurfaces = [value]
-                if field:
-                    contour.ContourBy = ["POINTS", field]
-                message = f"Updated isosurface to value {value}"
-            else:
-                contour = Contour(Input=base_source)
-                contour.Isosurfaces = [value]
-                if field:
-                    contour.ContourBy = ["POINTS", field]
-                self.isosurface_filter = contour
-                message = f"Created isosurface at value {value}"
+            existing = getattr(self, "isosurface_filter", None)
+            contour, problem = guards.contour_for(existing, base_source, field, value)
+            if problem:
+                return False, problem, None, ""
+            contour.Isosurfaces = [value]
+            if field:
+                contour.ContourBy = ["POINTS", field]
+            self.isosurface_filter = contour
+            verb = "Updated isosurface to" if existing else "Created isosurface at"
+            message = f"{verb} value {value}"
 
             # Show the contour in the active view
             view = GetActiveView()
             Show(contour, view)
 
-            # Optionally reset active source to the original data
-            SetActiveSource(base_source)
+            # Like every filter-creating tool, leave the new output active.
+            SetActiveSource(contour)
 
             # Get the source name using the helper function
             contour_name = self._get_source_name(contour)
@@ -674,6 +673,7 @@ class VisualizationEngine:
         Returns:
             tuple: (success: bool, message: str, area_value: float)
         """
+        source = integrate_filter = None
         try:
             from paraview.simple import GetActiveSource, IntegrateVariables
             import paraview.servermanager as sm
@@ -706,15 +706,8 @@ class VisualizationEngine:
         except Exception as e:
             self.logger.error(f"Error computing surface area: {str(e)}")
             return False, f"Error computing surface area: {str(e)}", 0.0
-
-            # The integrated filter typically stores one value (the total area) in index 0
-            total_area = area_array.GetValue(0)
-
-            return (True, "Successfully computed surface area.", total_area)
-
-        except Exception as e:
-            self.logger.error(f"Error computing surface area: {str(e)}")
-            return (False, f"Error computing surface area: {str(e)}", None)
+        finally:
+            guards.discard_temporary(source, integrate_filter)
 
     def create_slice(
         self,
@@ -773,8 +766,8 @@ class VisualizationEngine:
             view = GetActiveView()
             Show(slice_filter, view)
 
-            # (Optional) reset the active source to the original volume
-            SetActiveSource(base_source)
+            # Like every filter-creating tool, leave the new output active.
+            SetActiveSource(slice_filter)
 
             # Get the source name using the helper function
             slice_name = self._get_source_name(slice_filter)
@@ -1065,6 +1058,7 @@ class VisualizationEngine:
             Since direct assignment to properties like 'NumberOfBins' is disallowed, the code retrieves
             the proper property (either "NumberOfBins" or "BinCount") via GetProperty() and sets it via SetElement().
         """
+        source = hist_filter = None
         try:
             from paraview.simple import (
                 GetActiveSource,
@@ -1153,6 +1147,8 @@ class VisualizationEngine:
         except Exception as e:
             self.logger.error(f"Error computing histogram: {str(e)}")
             return False, f"Error computing histogram: {str(e)}", None
+        finally:
+            guards.discard_temporary(source, hist_filter)
 
     def set_representation_type(self, rep_type):
         """
@@ -1178,6 +1174,8 @@ class VisualizationEngine:
             view = GetActiveView()
             display = GetDisplayProperties(source, view)
 
+            if problem := guards.representation_problem(display, rep_type):
+                return False, problem
             display.SetRepresentationType(rep_type)
 
             return True, f"Set representation type to {rep_type}"

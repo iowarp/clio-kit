@@ -1,5 +1,6 @@
 # mcp_handlers.py
 import importlib
+import re
 from collections.abc import Callable
 from typing import Any, Dict, Optional
 
@@ -40,6 +41,11 @@ bp5_inspect_variables_at_step = _LazyImplementation(
 )
 
 
+def _tool_error(error: Exception) -> ToolError:
+    """Build an MCP error without the ANSI colour escapes ADIOS2 puts in messages."""
+    return ToolError(re.sub(r"\x1b\[[0-9;]*m", "", str(error)).strip())
+
+
 class UnknownToolError(Exception):
     """Raised when an unsupported tool_name is requested."""
 
@@ -59,7 +65,7 @@ async def list_bp5_files(directory: str = "data") -> Dict[str, Any]:
         files = bp5_list.list_bp5(directory)
         return {"files": files}
     except Exception as e:
-        raise ToolError(str(e)) from e
+        raise _tool_error(e) from e
 
 
 async def inspect_variables_handler(
@@ -80,7 +86,7 @@ async def inspect_variables_handler(
         else:
             return bp5_inspect_variables.inspect_variables(filename)
     except Exception as e:
-        raise ToolError(str(e)) from e
+        raise _tool_error(e) from e
 
 
 async def inspect_variables_at_step_handler(
@@ -102,7 +108,7 @@ async def inspect_variables_at_step_handler(
         )
         return result
     except Exception as e:
-        raise ToolError(str(e)) from e
+        raise _tool_error(e) from e
 
 
 async def inspect_attributes_handler(
@@ -112,7 +118,7 @@ async def inspect_attributes_handler(
     try:
         return bp5_attributes.inspect_attributes(filename, variable_name)
     except Exception as e:
-        raise ToolError(str(e)) from e
+        raise _tool_error(e) from e
 
 
 async def read_variable_at_step_handler(
@@ -120,9 +126,8 @@ async def read_variable_at_step_handler(
 ) -> Dict[str, Any]:
     """Async handler for 'read_variable_at_step' tool."""
     try:
-        value = bp5_read_variable_at_step.read_variable_at_step(
+        return bp5_read_variable_at_step.read_variable_at_step(
             filename, variable_name, target_step
         )
-        return {"value": value}
     except Exception as e:
-        raise ToolError(str(e)) from e
+        raise _tool_error(e) from e

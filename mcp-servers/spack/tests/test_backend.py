@@ -125,6 +125,37 @@ def test_find_normalizes_spack_no_match_to_empty_result(
     }
 
 
+@pytest.mark.parametrize(
+    "stderr",
+    [
+        "==> No package matches the query: nosuchpkgxyz",  # Spack 0.21.2, literal
+        "==> Error: No package matches the query: nosuchpkgxyz",  # newer Spack
+    ],
+)
+def test_no_match_diagnostic_is_recognized_across_spack_versions(
+    monkeypatch: pytest.MonkeyPatch, stderr: str
+) -> None:
+    """Spack 0.21.2 prints the no-match diagnostic without the ``Error:`` prefix."""
+    monkeypatch.setattr(backend, "_spack_executable", lambda: "/opt/spack/bin/spack")
+    monkeypatch.setattr(
+        backend,
+        "_run_bounded_command",
+        lambda *args, **kwargs: backend._CommandResult(
+            argv=("/opt/spack/bin/spack", "find", "--json", "nosuchpkgxyz"),
+            returncode=1,
+            stdout="",
+            stderr=stderr,
+            duration_seconds=0.1,
+        ),
+    )
+
+    found = backend.find_installed("nosuchpkgxyz")
+    assert (found.count, found.packages) == (0, [])
+    with pytest.raises(backend.SpackBackendError) as error:
+        backend.locate_installed("nosuchpkgxyz")
+    assert error.value.code == "not_installed"
+
+
 def test_locate_maps_spack_no_match_to_not_installed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

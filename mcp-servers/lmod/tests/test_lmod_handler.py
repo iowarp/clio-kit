@@ -348,3 +348,56 @@ setenv("CC", "gcc")
 
         assert result["success"] is True
         assert "/apps/modulefiles/gcc/11.2.0.tcl" in result["path"]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("name", ["../escape", "a/b", "..", "-f", ""])
+async def test_collection_names_cannot_escape_the_collection_directory(name):
+    """Lmod treats a name with separators as a path outside ~/.lmod.d."""
+    with patch("lmod_mcp.capabilities.lmod_handler._run_module_command") as mock_cmd:
+        saved = await lmod_handler.save_module_collection(name)
+        restored = await lmod_handler.restore_module_collection(name)
+
+    assert saved["success"] is False and restored["success"] is False
+    assert "Invalid collection name" in saved["error"]
+    mock_cmd.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_empty_save_explains_how_to_start_with_modules_loaded():
+    """Lmod's literal empty-collection refusal gets the actionable next step."""
+    refusal = (
+        "Lmod Warning: You are trying to save an empty collection of modules in\n"
+        '"first". If this is what you want then enter:\n'
+        "  $ module --force save first\n"
+    )
+    with patch("lmod_mcp.capabilities.lmod_handler._run_module_command") as mock_cmd:
+        mock_cmd.return_value = ("", refusal, 1)
+        result = await lmod_handler.save_module_collection("first")
+
+    assert result["success"] is False
+    assert "LMOD_SYSTEM_DEFAULT_MODULES" in result["error"]
+    assert "collection_name='system'" in result["error"]
+
+
+@pytest.mark.asyncio
+async def test_missing_backend_and_directory_entries_are_reported_truthfully():
+    """avail/spider name the missing prerequisite and do not count 'name/'."""
+    with (
+        patch("lmod_mcp.capabilities.lmod_handler.lmod_command", return_value=None),
+        patch(
+            "lmod_mcp.capabilities.lmod_handler.asyncio.create_subprocess_exec",
+            side_effect=FileNotFoundError(),
+        ),
+    ):
+        avail = await lmod_handler.search_available_modules()
+        spider = await lmod_handler.spider_search()
+    assert "LMOD_CMD" in avail["error"] and "LMOD_CMD" in spider["error"]
+
+    terse = "clio-test/\nclio-test/1.0\n"  # literal Lmod 8.6 `-t` output
+    with patch("lmod_mcp.capabilities.lmod_handler._run_module_command") as mock_cmd:
+        mock_cmd.side_effect = [("", "/apps/modules:\n" + terse, 0), ("", terse, 0)]
+        avail = await lmod_handler.search_available_modules()
+        spider = await lmod_handler.spider_search()
+    assert avail["modules"] == ["clio-test/1.0"] and avail["count"] == 1
+    assert list(spider["modules"]) == ["clio-test/1.0"]

@@ -75,7 +75,7 @@ async def test_analyze_posix_operations_command_failure():
         result = await darshan_parser.analyze_posix_operations("/test/file.darshan")
 
         assert result["success"] is False
-        assert result["error"] == "Failed to extract POSIX module data"
+        assert result["error"].startswith("Failed to extract POSIX module data: ")
         assert result["message"] == mock_stderr
 
 
@@ -226,7 +226,7 @@ async def test_analyze_mpiio_operations_parser_failure():
 
         assert result["success"] is False
         assert result["message"] == mock_stderr
-        assert result["error"] == "Failed to extract MPI-IO module data"
+        assert result["error"].startswith("Failed to extract MPI-IO module data: ")
 
 
 @pytest.mark.asyncio

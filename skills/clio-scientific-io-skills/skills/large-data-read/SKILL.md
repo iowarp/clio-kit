@@ -57,10 +57,12 @@ the existing aggregate does not establish that a chunked column reader exists.
 ## If you genuinely need values, take a bounded piece
 
 - `clio-hdf5:read_partial_dataset` — reads the requested slice internally, but
-  returns shape, dtype and only the first five flattened values. Keep the slice
-  small. If the selected region contains more than five elements, this response
-  cannot supply all of them for a CSV, a whole-region monotonicity check or an
-  exact reduction. Verify an export tool's contract before using it for that handoff.
+  returns shape, dtype and up to 1,000 values. Larger slices return the first
+  1,000 values in row-major order and state how many were omitted. Keep the slice
+  small; the response limit does not bound server memory. Check the returned
+  shape and truncation notice before using values for a whole-region check or
+  exact reduction. `read_full_dataset` has the same response limit but reads the
+  full dataset internally; do not use it as a memory-bounded preview.
 - `clio-parquet:read_slice_tool` — a row range with only the columns you need.
 - `clio-parquet:get_column_preview_tool` — paginated values from one column.
 - `clio-adios:read_variable_at_step` — one variable at one step, which is already

@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 import tomli_w
 
-from clio_kit.workflow_plugins import write_workflow_plugins
+from clio_kit.local_plugins import COMPONENT_ROOTS
+from clio_kit.workflow_plugins import tomllib, write_workflow_plugins
 
 ROOT = Path(__file__).resolve().parents[1]
 AUTHOR = {"name": "IoWarp Team"}
@@ -92,32 +93,29 @@ def test_workflows_are_optional(tmp_path):
 
 
 def test_cross_bundle_workflow_is_browsable_with_exact_installed_servers(tmp_path):
-    for folder in ("plugins", "skills", ".claude-plugin"):
-        shutil.copytree(ROOT / folder, tmp_path / folder)
-    shutil.copyfile(
-        ROOT / "mcp-server-versions.toml", tmp_path / "mcp-server-versions.toml"
+    for folder in (*COMPONENT_ROOTS, ".claude-plugin"):
+        if (ROOT / folder).is_dir():
+            shutil.copytree(ROOT / folder, tmp_path / folder)
+    # Added to whatever tasks the checkout already defines, so a newly
+    # contributed [workflows.*] table cannot collide with this test.
+    inventory = tomllib.loads((ROOT / "mcp-server-versions.toml").read_text())
+    inventory.setdefault("workflows", {}).update(
+        {
+            "clio-inspect-plot": SPEC,
+            "clio-review-data": {
+                **SPEC,
+                "dependencies": [
+                    "clio-scientific-io",
+                    "clio-analysis-skills",
+                    "clio-agents",
+                ],
+            },
+        }
     )
-    with (tmp_path / "mcp-server-versions.toml").open("a") as stream:
-        stream.write(
-            tomli_w.dumps(
-                {
-                    "workflows": {
-                        "clio-inspect-plot": SPEC,
-                        "clio-review-data": {
-                            **SPEC,
-                            "dependencies": [
-                                "clio-scientific-io",
-                                "clio-analysis-skills",
-                                "clio-agents",
-                            ],
-                        },
-                    }
-                }
-            )
-        )
+    (tmp_path / "mcp-server-versions.toml").write_text(tomli_w.dumps(inventory))
     marketplace_path = tmp_path / ".claude-plugin/marketplace.json"
     marketplace = json.loads(marketplace_path.read_text())
-    task_names = {"clio-dataset-report", "clio-inspect-plot", "clio-review-data"}
+    task_names = set(inventory["workflows"])
     base = [e for e in marketplace["plugins"] if e["name"] not in task_names]
     marketplace["plugins"] = base + write_workflow_plugins(
         tmp_path, base, author=AUTHOR

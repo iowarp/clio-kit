@@ -15,6 +15,18 @@ from clio_kit.client_install import (
 from clio_kit.plugins import plugin_group
 
 ROOT = Path(__file__).resolve().parents[1]
+# Read from the inventory and the folder, so adding a server to the bundle or
+# a skill to its collection does not need a second edit here.
+SERVERS = {
+    f"clio-{name}"
+    for name in tomllib.loads((ROOT / "mcp-server-versions.toml").read_text())[
+        "bundles"
+    ]["clio-scientific-io"]["servers"]
+}
+SKILLS = {
+    path.parent.name
+    for path in (ROOT / "skills/clio-scientific-io-skills/skills").glob("*/SKILL.md")
+}
 
 
 def test_editable_cli_installs_workflow_outside_checkout(tmp_path, monkeypatch):
@@ -34,12 +46,7 @@ def test_editable_cli_installs_workflow_outside_checkout(tmp_path, monkeypatch):
     assert result.exit_code == 0, result.output
     assert (project / ".agents/skills/dataset-explore/SKILL.md").is_file()
     config = tomllib.loads((project / ".codex/config.toml").read_text())
-    assert set(config["mcp_servers"]) == {
-        "clio-hdf5",
-        "clio-adios",
-        "clio-parquet",
-        "clio-compression",
-    }
+    assert set(config["mcp_servers"]) == SERVERS
 
 
 @pytest.mark.parametrize("client", CLIENTS)
@@ -54,10 +61,10 @@ def test_install_bundle_and_reinstall_preserving_unrelated_settings(tmp_path, cl
     )
     config.write_text(original)
     result = install_for_client(ROOT, "clio-scientific-io", client, tmp_path)
-    assert len(result["skills"]) == 3
-    assert len(result["servers"]) == 4
+    assert set(result["skills"]) == SKILLS
+    assert set(result["servers"]) == SERVERS
     assert result["not_installed"] == []
-    assert len(list((tmp_path / skill_path).glob("*/SKILL.md"))) == 3
+    assert len(list((tmp_path / skill_path).glob("*/SKILL.md"))) == len(SKILLS)
     assert Path(result["backup"]).read_text() == original
     data = (
         tomllib.loads(config.read_text())
@@ -97,7 +104,7 @@ def test_dry_run_and_conflicts_never_rewrite_settings(tmp_path):
     result = install_for_client(
         ROOT, "clio-scientific-io", "cursor", tmp_path, dry_run=True
     )
-    assert len(result["servers"]) == 4
+    assert set(result["servers"]) == SERVERS
     assert list(tmp_path.iterdir()) == []
     config = tmp_path / ".cursor/mcp.json"
     config.parent.mkdir()

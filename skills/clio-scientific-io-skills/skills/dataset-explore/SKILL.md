@@ -67,9 +67,11 @@ array, use `start="0", count="3"`; for a two-dimensional slice, use
 After a validation error, correct the arguments against the live schema; do not
 repeat the same invalid call or bypass an explicit user requirement to use MCP.
 
-`read_partial_dataset` returns the selected shape and dtype plus only the first
-five flattened values. The slice may contain more values internally; do not claim
-all rows were returned or use this preview as an export or full-region check.
+`read_partial_dataset` returns the selected shape, dtype and up to 1,000 values.
+Larger slices return the first 1,000 values in row-major order with an omitted
+count. Check the returned shape and truncation notice before claiming complete
+coverage of a slice. Claim full-dataset coverage only if the slice spans every element.
+Keep the requested slice small: the server reads it all before truncating its reply.
 
 ### Walking an HDF5 file
 

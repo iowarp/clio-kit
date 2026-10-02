@@ -3,6 +3,7 @@ Memory optimization capabilities for efficient data processing.
 """
 
 import pandas as pd
+from pathlib import Path
 import numpy as np
 import os
 import psutil
@@ -143,7 +144,9 @@ def optimize_memory_usage(
         memory_reduction = ((initial_memory - final_memory) / initial_memory) * 100
 
         # Save optimized data
-        output_path = file_path.replace(".csv", "_optimized.csv")
+        output_path = str(
+            Path(file_path).with_name(f"{Path(file_path).stem}_optimized.csv")
+        )
         optimized_df.to_csv(output_path, index=False)
 
         # Chunked processing analysis
@@ -153,12 +156,13 @@ def optimize_memory_usage(
 
         # Memory usage by column
         column_memory = {}
+        columns_total = optimized_df.memory_usage(deep=True, index=False).sum()
         for col in optimized_df.columns:
-            col_memory = optimized_df[col].memory_usage(deep=True)
+            col_memory = optimized_df[col].memory_usage(deep=True, index=False)
             column_memory[col] = {
                 "memory_mb": round(col_memory / (1024 * 1024), 4),
                 "dtype": str(optimized_df[col].dtype),
-                "percentage_of_total": round((col_memory / final_memory) * 100, 2),
+                "percentage_of_total": round((col_memory / columns_total) * 100, 2),
             }
 
         # Recommendations

@@ -18,7 +18,7 @@ def mock_arxiv_query(monkeypatch):
 
     async def fake_execute_arxiv_query(params):
         max_results = int(params["max_results"])
-        query = str(params["search_query"])
+        query = str(params["search_query"]).lstrip("(")  # multi-word: (ti:a AND ti:b)
         if query.startswith("ti:"):
             topic = query.removeprefix("ti:")
             title = f"{topic.title()} methods for scientific computing"

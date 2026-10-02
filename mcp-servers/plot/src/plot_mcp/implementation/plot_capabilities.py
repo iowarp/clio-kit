@@ -78,6 +78,26 @@ def load_data(file_path: str) -> pd.DataFrame:
         raise
 
 
+def _require_numeric(df: pd.DataFrame, column: str) -> None:
+    """Reject a text column where the plot needs numbers on the y axis."""
+    if not pd.api.types.is_numeric_dtype(df[column]):
+        raise ValueError(
+            f"Column '{column}' is not numeric (dtype {df[column].dtype}); "
+            "y values must be numeric"
+        )
+
+
+def _save_figure(output_path: str) -> str:
+    """Save and close the current figure; return the absolute path written."""
+    output_path = os.path.abspath(output_path)
+    try:
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    finally:
+        plt.close()
+    return output_path
+
+
 def get_data_info(file_path: str) -> Dict[str, Any]:
     """
     Get information about the data file.
@@ -135,6 +155,7 @@ def create_line_plot(
             raise ValueError(f"Column '{x_column}' not found in data")
         if y_column not in df.columns:
             raise ValueError(f"Column '{y_column}' not found in data")
+        _require_numeric(df, y_column)
 
         plt.figure(figsize=(10, 6))
         plt.plot(df[x_column], df[y_column], marker="o", linewidth=2, markersize=6)
@@ -144,14 +165,7 @@ def create_line_plot(
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
 
-        # Create output directory if it doesn't exist
-        os.makedirs(
-            os.path.dirname(output_path) if os.path.dirname(output_path) else ".",
-            exist_ok=True,
-        )
-
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        plt.close()
+        output_path = _save_figure(output_path)
 
         return {
             "status": "success",
@@ -194,14 +208,15 @@ def create_bar_plot(
             raise ValueError(f"Column '{x_column}' not found in data")
         if y_column not in df.columns:
             raise ValueError(f"Column '{y_column}' not found in data")
+        _require_numeric(df, y_column)
 
         # Clean the data by removing NaN values
         df_clean = df.dropna(subset=[x_column, y_column])
 
-        # If x_column is categorical and y_column is numeric, aggregate by mean
-        if df_clean[x_column].dtype == "object" and pd.api.types.is_numeric_dtype(
-            df_clean[y_column]
-        ):
+        # One bar per x value: rows sharing an x value are averaged, never
+        # overplotted (stacked translucent bars read as the maximum).
+        aggregated = bool(df_clean[x_column].duplicated().any())
+        if aggregated:
             # Group by x_column and take mean of y_column
             grouped_data = df_clean.groupby(x_column)[y_column].mean().reset_index()
 
@@ -212,7 +227,7 @@ def create_bar_plot(
             x_values = grouped_data[x_column]
             y_values = grouped_data[y_column]
         else:
-            # Use data as-is if it's already suitable for bar plotting
+            # One row per x value already: plot as-is
             x_values = df_clean[x_column]
             y_values = df_clean[y_column]
 
@@ -220,7 +235,7 @@ def create_bar_plot(
         plt.bar(x_values, y_values, color="skyblue", edgecolor="navy", alpha=0.7)
         plt.title(title, fontsize=14, fontweight="bold")
         plt.xlabel(x_column, fontsize=12)
-        plt.ylabel(y_column, fontsize=12)
+        plt.ylabel(f"mean {y_column}" if aggregated else y_column, fontsize=12)
         plt.grid(True, alpha=0.3, axis="y")
 
         # Rotate x-axis labels if they're text and long
@@ -229,14 +244,7 @@ def create_bar_plot(
 
         plt.tight_layout()
 
-        # Create output directory if it doesn't exist
-        os.makedirs(
-            os.path.dirname(output_path) if os.path.dirname(output_path) else ".",
-            exist_ok=True,
-        )
-
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        plt.close()
+        output_path = _save_figure(output_path)
 
         return {
             "status": "success",
@@ -246,8 +254,7 @@ def create_bar_plot(
             "y_column": y_column,
             "title": title,
             "data_points": len(df_clean),
-            "aggregated": df_clean[x_column].dtype == "object"
-            and pd.api.types.is_numeric_dtype(df_clean[y_column]),
+            "aggregated": aggregated,
         }
     except Exception as e:
         logger.error(f"Error creating bar plot: {e}")
@@ -281,6 +288,7 @@ def create_scatter_plot(
             raise ValueError(f"Column '{x_column}' not found in data")
         if y_column not in df.columns:
             raise ValueError(f"Column '{y_column}' not found in data")
+        _require_numeric(df, y_column)
 
         plt.figure(figsize=(10, 6))
         plt.scatter(df[x_column], df[y_column], alpha=0.6, s=60, color="darkblue")
@@ -290,14 +298,7 @@ def create_scatter_plot(
         plt.grid(True, alpha=0.3)
         plt.tight_layout()
 
-        # Create output directory if it doesn't exist
-        os.makedirs(
-            os.path.dirname(output_path) if os.path.dirname(output_path) else ".",
-            exist_ok=True,
-        )
-
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        plt.close()
+        output_path = _save_figure(output_path)
 
         return {
             "status": "success",
@@ -349,14 +350,7 @@ def create_histogram(
         plt.grid(True, alpha=0.3, axis="y")
         plt.tight_layout()
 
-        # Create output directory if it doesn't exist
-        os.makedirs(
-            os.path.dirname(output_path) if os.path.dirname(output_path) else ".",
-            exist_ok=True,
-        )
-
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        plt.close()
+        output_path = _save_figure(output_path)
 
         return {
             "status": "success",
@@ -410,14 +404,7 @@ def create_heatmap(
         plt.title(title, fontsize=14, fontweight="bold")
         plt.tight_layout()
 
-        # Create output directory if it doesn't exist
-        os.makedirs(
-            os.path.dirname(output_path) if os.path.dirname(output_path) else ".",
-            exist_ok=True,
-        )
-
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        plt.close()
+        output_path = _save_figure(output_path)
 
         return {
             "status": "success",
@@ -649,12 +636,7 @@ def create_timeseries_plot(
         ax.legend(loc="best")
         fig.tight_layout()
 
-        os.makedirs(
-            os.path.dirname(output_path) if os.path.dirname(output_path) else ".",
-            exist_ok=True,
-        )
-        fig.savefig(output_path, dpi=300, bbox_inches="tight")
-        plt.close(fig)
+        output_path = _save_figure(output_path)
 
         return {
             "status": "success",

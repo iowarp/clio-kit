@@ -158,6 +158,14 @@ def profile_csv(
 
         if columns is not None:
             requested = set(columns)
+            unknown = sorted(requested - set(all_columns))
+            if unknown:
+                return {
+                    "success": False,
+                    "error": f"Column(s) not found: {unknown}. "
+                    f"Available columns: {all_columns}",
+                    "error_type": "ValueError",
+                }
             selected_columns = [c for c in all_columns if c in requested]
         else:
             selected_columns = all_columns

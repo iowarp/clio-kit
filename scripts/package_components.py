@@ -90,6 +90,16 @@ def files_in(root: Path, directory: Path, excluded: set[str]) -> list[Path]:
     return selected
 
 
+# String-list fields of a [prerequisites.<server>] table; see clio_kit.doctor.
+PREREQUISITE_LISTS = (
+    "executables",
+    "executable-environment",
+    "executable-paths",
+    "environment",
+    "environment-files",
+)
+
+
 def build_components(root: Path, output: Path) -> dict:
     version = tomllib.loads((root / "pyproject.toml").read_text())["project"]["version"]
     inventory_path = root / "mcp-server-versions.toml"
@@ -102,12 +112,11 @@ def build_components(root: Path, output: Path) -> dict:
         raise ValueError("prerequisites must be a table")
     for name, checks in prerequisites.items():
         if not isinstance(checks, dict) or set(checks) - {
-            "executables",
-            "environment",
+            *PREREQUISITE_LISTS,
             "note",
         }:
             raise ValueError(f"Invalid prerequisites for {name}")
-        for field in ("executables", "environment"):
+        for field in PREREQUISITE_LISTS:
             values = checks.get(field, [])
             if not isinstance(values, list) or not all(
                 isinstance(v, str) and v.strip() for v in values

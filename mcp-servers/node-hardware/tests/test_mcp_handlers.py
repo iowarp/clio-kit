@@ -453,5 +453,127 @@ def test_memory_summary_matches_capability_and_propagates_failure():
         assert result["error_message"] == "denied"
 
 
+def _handle(handler_name, capability_name, data):
+    """Run a handler on the real capability output shape; return its raw kwargs."""
+    from node_hardware_mcp import mcp_handlers
+
+    with (
+        patch.object(mcp_handlers, capability_name, return_value=data),
+        patch.object(
+            mcp_handlers, "create_beautiful_response", side_effect=lambda **kw: kw
+        ),
+    ):
+        return getattr(mcp_handlers, handler_name)()
+
+
+def test_performance_summary_matches_capability():
+    data = {
+        "cpu": {"average_usage": 91.5, "usage_per_core": [91.5]},
+        "memory": {"current_usage": 88.0},
+        "disk_io": {
+            "read_rate_formatted": "1.00 MB/s",
+            "write_rate_formatted": "0 B/s",
+        },
+    }
+    result = _handle("performance_monitor_handler", "monitor_performance", data)
+    assert result["summary"] == {
+        "cpu_usage": 91.5,
+        "memory_usage": 88.0,
+        "disk_read_rate": "1.00 MB/s",
+        "disk_write_rate": "0 B/s",
+    }
+    assert len(result["insights"]) == 2
+    failed = {"monitoring_duration": {"requested": 5, "actual": 0}, "error": "denied"}
+    result = _handle("performance_monitor_handler", "monitor_performance", failed)
+    assert result["success"] is False and result["error_message"] == "denied"
+
+
+def test_sensor_summary_counts_real_sensor_shape():
+    data = {
+        "temperatures": {"coretemp": [{"current": 45.0}, {"current": 47.0}]},
+        "fans": {"thinkpad": [{"current": 2400}]},
+        "battery": {"percent": 80.0},
+        "sensors_available": True,
+        "thermal_zones": [{"zone": "thermal_zone0", "temperature": 45.0}],
+    }
+    result = _handle("sensor_info_handler", "get_sensor_info", data)
+    assert result["summary"] == {
+        "sensor_count": 4,
+        "temperature_sensors": 2,
+        "fan_sensors": 1,
+        "battery_present": True,
+    }
+    assert result["insights"] == ["Found 4 sensors"]
+
+
+def test_disk_summary_and_insights_use_partition_percent():
+    data = {
+        "partitions": [
+            {"device": "/dev/sda1", "mountpoint": "/", "percent": 100.0},
+            {"device": "/dev/sda1", "mountpoint": "/home", "percent": 5.0},
+            {"device": "/dev/loop3", "mountpoint": "/snap/core/1", "percent": 100.0},
+            {
+                "device": "/dev/sdb1",
+                "mountpoint": "/secret",
+                "error": "Permission denied",
+            },
+        ],
+        "total_partitions": 4,
+        "summary": {},
+        "io_statistics": {"read_count": 1},
+    }
+    result = _handle("disk_info_handler", "get_disk_info", data)
+    assert result["summary"] == {"total_partitions": 4, "total_devices": 3}
+    assert result["insights"] == [
+        "High disk usage on / - consider cleanup",
+        "Good disk space on /home",
+    ]
+
+
+def test_process_summary_uses_system_totals_not_the_top_list():
+    data = {
+        "processes": [{"pid": 1, "status": "sleeping", "cpu_percent": None}] * 10,
+        "total_processes": 614,
+        "statistics": {"running": 3, "sleeping": 611},
+        "limit": 10,
+    }
+    result = _handle("process_info_handler", "get_process_info", data)
+    assert result["summary"] == {
+        "total_processes": 614,
+        "running_processes": 3,
+        "processes_listed": 10,
+    }
+    assert result["insights"] == ["System is running 614 processes"]
+
+
+def test_cpu_and_hardware_summary_read_real_capability_keys():
+    cpu = {"logical_cores": 8, "usage_per_core": [90.0, 92.0], "average_usage": 91.0}
+    result = _handle("cpu_info_handler", "get_cpu_info", cpu)
+    assert any("High CPU usage" in item for item in result["insights"])
+    data = {
+        "summary": {"system": {"hostname": "node1"}},
+        "detailed": {"cpu": cpu, "memory": {"error": "denied"}, "disk": {"x": 1}},
+    }
+    result = _handle("hardware_summary_handler", "get_hardware_summary", data)
+    assert result["summary"] == {"components_gathered": 3, "hostname": "node1"}
+    assert result["insights"] == [
+        "CPU information successfully collected",
+        "Disk information successfully collected",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_handler_error_payload_is_a_real_tool_error():
+    from fastmcp import Client
+    from fastmcp.exceptions import ToolError
+    from node_hardware_mcp import mcp_handlers, server
+
+    failed = {"partitions": [], "summary": {}, "io_statistics": {}, "error": "denied"}
+    with patch.object(mcp_handlers, "get_disk_info", return_value=failed):
+        async with Client(server.mcp) as client:
+            with pytest.raises(ToolError, match="denied"):
+                await client.call_tool("get_disk_info", {})
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

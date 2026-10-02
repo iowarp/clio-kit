@@ -185,12 +185,21 @@ def refresh_marketplace(root: Path) -> dict[str, Any]:
     marketplace = json.loads(manifest_path.read_text())
     previous = json.loads(lock_path.read_text()) if lock_path.exists() else {}
     imported_names = set(previous.get("imported_names", []))
-    entries = {
-        e["name"]: e
-        for e in marketplace["plugins"]
-        if e["name"] not in imported_names
-        and not (e.get("metadata") or {}).get("clioFederation")
-    }
+
+    def owned(entry: dict[str, Any]) -> bool:
+        return entry["name"] not in imported_names and not (
+            entry.get("metadata") or {}
+        ).get("clioFederation")
+
+    entries = {e["name"]: e for e in marketplace["plugins"] if owned(e)}
+    # The generator decides where the federated block sits among owned entries
+    # (scripts/generate_marketplace.py); a refresh replaces it in that place.
+    position = len(entries)
+    for index, entry in enumerate(marketplace["plugins"]):
+        if not owned(entry):
+            position = sum(owned(e) for e in marketplace["plugins"][:index])
+            break
+    owned_count = len(entries)
     imports: list[str] = []
     provenance = []
     referrals = read_federated_marketplaces(root)
@@ -242,7 +251,10 @@ def refresh_marketplace(root: Path) -> dict[str, Any]:
                 "plugins": names,
             }
         )
-    marketplace["plugins"] = list(entries.values())
+    ordered = list(entries.values())
+    marketplace["plugins"] = (
+        ordered[:position] + ordered[owned_count:] + ordered[position:owned_count]
+    )
     lock = {
         "schema": "clio-kit.federation.v1",
         "imported_names": imports,

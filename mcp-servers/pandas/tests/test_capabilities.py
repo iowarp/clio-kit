@@ -144,7 +144,7 @@ class TestPandasMCPCapabilities:
         result = groupby_operations(
             temp_csv_file,
             group_by=["department"],
-            operations={"salary": "mean", "age": "avg"},
+            operations={"salary": "mean", "age": "max"},
         )
 
         assert result["success"]

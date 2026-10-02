@@ -8,6 +8,8 @@ import asyncio
 from unittest.mock import patch, Mock
 
 from arxiv_mcp import mcp_handlers
+
+from . import settle
 from arxiv_mcp.capabilities import text_search as search_tools
 from arxiv_mcp.capabilities import export_utils
 
@@ -60,17 +62,19 @@ class TestAdvancedScenarios:
             mock_session.get = mock_get
 
             # Step 1: Search for papers
-            search_result = await mcp_handlers.search_arxiv_handler("cs.AI", 1)
+            search_result = await settle(mcp_handlers.search_arxiv_handler("cs.AI", 1))
             assert search_result is not None
 
             # Step 2: Get paper details
             paper_id = "2301.12345"
-            details_result = await mcp_handlers.get_paper_details_handler(paper_id)
+            details_result = await settle(
+                mcp_handlers.get_paper_details_handler(paper_id)
+            )
             assert details_result is not None
 
             # Step 3: Download paper
-            download_result = await mcp_handlers.download_paper_pdf_handler(
-                paper_id, "/tmp"
+            download_result = await settle(
+                mcp_handlers.download_paper_pdf_handler(paper_id, "/tmp")
             )
             assert download_result is not None
 
@@ -99,10 +103,10 @@ class TestAdvancedScenarios:
 
             # Create multiple concurrent operations
             tasks = [
-                mcp_handlers.search_arxiv_handler("cs.AI", 5),
-                mcp_handlers.get_recent_papers_handler("cs.LG", 3),
-                mcp_handlers.search_papers_by_author_handler("Test Author", 2),
-                mcp_handlers.search_by_title_handler("Test Title", 1),
+                settle(mcp_handlers.search_arxiv_handler("cs.AI", 5)),
+                settle(mcp_handlers.get_recent_papers_handler("cs.LG", 3)),
+                settle(mcp_handlers.search_papers_by_author_handler("Test Author", 2)),
+                settle(mcp_handlers.search_by_title_handler("Test Title", 1)),
             ]
 
             # Execute concurrently
@@ -123,7 +127,7 @@ class TestAdvancedScenarios:
             mock_session.get.side_effect = Exception("Network error")
 
             # Should handle network errors gracefully
-            result = await mcp_handlers.search_arxiv_handler("cs.AI", 5)
+            result = await settle(mcp_handlers.search_arxiv_handler("cs.AI", 5))
             assert "isError" in result or result is None
 
         # Test 2: XML parsing error propagation
@@ -135,7 +139,7 @@ class TestAdvancedScenarios:
             mock_session.get.return_value = mock_response
 
             # Should handle XML parsing errors
-            result = await mcp_handlers.search_arxiv_handler("cs.AI", 5)
+            result = await settle(mcp_handlers.search_arxiv_handler("cs.AI", 5))
             assert result is not None
 
     @pytest.mark.asyncio
@@ -168,7 +172,7 @@ class TestAdvancedScenarios:
             mock_session.get.return_value = mock_response
 
             # Test handling large responses
-            result = await mcp_handlers.search_arxiv_handler("cs.AI", 100)
+            result = await settle(mcp_handlers.search_arxiv_handler("cs.AI", 100))
             assert result is not None
 
             # Should handle large responses efficiently
@@ -203,7 +207,7 @@ class TestAdvancedScenarios:
 
             for handler_name, args in handlers_to_test:
                 handler = getattr(mcp_handlers, handler_name)
-                result = await handler(*args)
+                result = await settle(handler(*args))
                 assert result is not None
 
     @pytest.mark.asyncio
@@ -255,7 +259,7 @@ class TestAdvancedScenarios:
 
             for handler_name, args in complex_scenarios:
                 handler = getattr(mcp_handlers, handler_name)
-                result = await handler(*args)
+                result = await settle(handler(*args))
                 assert result is not None
 
     @pytest.mark.asyncio
@@ -278,17 +282,21 @@ class TestAdvancedScenarios:
             mock_session.get.return_value = mock_response
 
             # Test single download
-            result = await mcp_handlers.download_paper_pdf_handler("2301.12345", "/tmp")
+            result = await settle(
+                mcp_handlers.download_paper_pdf_handler("2301.12345", "/tmp")
+            )
             assert result is not None
 
             # Test multiple downloads
-            result = await mcp_handlers.download_multiple_pdfs_handler(
-                ["2301.12345", "2301.67890"], "/tmp"
+            result = await settle(
+                mcp_handlers.download_multiple_pdfs_handler(
+                    ["2301.12345", "2301.67890"], "/tmp"
+                )
             )
             assert result is not None
 
             # Test PDF URL extraction
-            result = await mcp_handlers.get_pdf_url_handler("2301.12345")
+            result = await settle(mcp_handlers.get_pdf_url_handler("2301.12345"))
             assert result is not None
 
     @pytest.mark.asyncio
@@ -324,7 +332,7 @@ class TestAdvancedScenarios:
             ]
 
             for args in export_scenarios:
-                result = await mcp_handlers.export_to_bibtex_handler(*args)
+                result = await settle(mcp_handlers.export_to_bibtex_handler(*args))
                 assert result is not None
 
                 # Verify bibtex structure if result contains data
@@ -366,12 +374,12 @@ class TestAdvancedScenarios:
             paper_ids = ["2301.12345", "2301.67890", "invalid.id", "9999.99999"]
 
             for paper_id in paper_ids:
-                result = await mcp_handlers.get_paper_details_handler(paper_id)
+                result = await settle(mcp_handlers.get_paper_details_handler(paper_id))
                 assert result is not None
 
                 # Test similar papers functionality
-                similar_result = await mcp_handlers.find_similar_papers_handler(
-                    paper_id, 5
+                similar_result = await settle(
+                    mcp_handlers.find_similar_papers_handler(paper_id, 5)
                 )
                 assert similar_result is not None
 
@@ -400,7 +408,7 @@ class TestAdvancedScenarios:
             # Stress test: Multiple rapid requests
             rapid_tasks = []
             for i in range(5):  # Reduced for faster execution
-                task = mcp_handlers.search_arxiv_handler("cs.AI", 1)
+                task = settle(mcp_handlers.search_arxiv_handler("cs.AI", 1))
                 rapid_tasks.append(task)
 
             # Execute all tasks concurrently
@@ -455,7 +463,7 @@ class TestAdvancedScenarios:
                 for handler_name, args in handlers:
                     handler = getattr(mcp_handlers, handler_name)
                     try:
-                        result = await handler(*args)
+                        result = await settle(handler(*args))
                         # Should return some result or handle error gracefully
                         assert result is not None or result is None
                     except Exception:

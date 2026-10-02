@@ -176,8 +176,10 @@ class TestGetHistogram:
     def test_get_histogram_auto_field(self, engine, mock_paraview):
         """Test histogram with auto-selected field"""
         from paraview.simple import (
+            Delete,
             GetActiveSource,
             Histogram,
+            SetActiveSource,
             servermanager,
         )
 
@@ -220,6 +222,9 @@ class TestGetHistogram:
         assert "'density'" in message
         assert len(hist_data) == 3
         assert hist_data[0] == (0.0, 10)
+        # Read-only: the active source is restored and the filter removed.
+        SetActiveSource.assert_called_once_with(mock_source)
+        Delete.assert_called_once_with(mock_hist_filter)
 
     def test_get_histogram_custom_field(self, engine, mock_paraview):
         """Test histogram with custom field and parameters"""

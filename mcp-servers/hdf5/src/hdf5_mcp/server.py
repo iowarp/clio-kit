@@ -65,9 +65,8 @@ import h5py
 import numpy as np
 from fastmcp import FastMCP, Context
 from fastmcp.exceptions import ToolError, ResourceError
-from fastmcp.prompts import Message
 
-from .exports import select_export_format
+from .exports import format_values, json_safe, select_export_format
 from .statistics import (
     compute_dataset_stats as _compute_dataset_stats,
     format_statistics,
@@ -152,7 +151,7 @@ async def lifespan(app):
 # Create FastMCP server with lifespan and instructions
 mcp = FastMCP(
     name="hdf5",
-    version="1.0.0",
+    version="2.2.6",
     instructions="""
         HDF5 FastMCP provides comprehensive HDF5 file operations with AI intelligence.
 
@@ -252,18 +251,26 @@ async def open_file(path: str, mode: str = "r") -> str:
 
     Args:
         path: Path to HDF5 file
-        mode: File access mode ('r', 'r+', 'w', 'a')
+        mode: File access mode; only 'r' (read-only) is supported
 
     Returns:
         Success message with file info
     """
     global current_file
 
-    current_file = resource_manager.get_hdf5_file(path)
-    if current_file is None:
+    if mode != "r":
+        raise ToolError(
+            f"Unsupported mode '{mode}': this server is read-only, use mode 'r'."
+        )
+    if Path(path).exists() and not h5py.is_hdf5(path):
+        raise ToolError(f"{path} is not an HDF5 file.")
+
+    proxy = resource_manager.get_hdf5_file(path)
+    if proxy is None or proxy.file is None:
         raise ToolError(
             f"Could not open file {path}. File may not exist or is not accessible."
         )
+    current_file = proxy
 
     return f"Successfully opened {path} in {mode} mode"
 
@@ -479,7 +486,7 @@ async def read_full_dataset(path: str) -> str:
         path: Path to dataset within file
 
     Returns:
-        Dataset description
+        Dataset description and values (at most 1000; truncation is stated)
     """
     if not current_file:
         raise ToolError("No file currently open. Use open_file first.")
@@ -493,18 +500,10 @@ async def read_full_dataset(path: str) -> str:
     if dataset.nbytes > 1e8:  # 100MB threshold
         data = _read_large_dataset(dataset)
     else:
-        data = dataset[:]
+        data = dataset[()]  # () also reads scalar datasets, [:] does not
 
-    # Format output
-    if isinstance(data, np.ndarray) and data.size > 0:
-        if np.array_equal(data, np.arange(data.size)):
-            description = f"array from 0 to {data.size - 1}"
-        else:
-            description = f"array of shape {data.shape} with dtype {data.dtype}"
-    else:
-        description = str(data)
-
-    return f"Successfully read dataset {path}: {description}"
+    description = f"shape {dataset.shape}, dtype {dataset.dtype}"
+    return f"Successfully read dataset {path}: {description}\n{format_values(data)}"
 
 
 @mcp.tool(
@@ -531,7 +530,7 @@ async def read_partial_dataset(
         count: Number of elements as comma-separated string (e.g., "10,10,10")
 
     Returns:
-        Partial dataset description
+        Partial dataset description and values (at most 1000; truncation is stated)
     """
     if not current_file:
         raise ToolError("No file currently open. Use open_file first.")
@@ -547,6 +546,12 @@ async def read_partial_dataset(
     # Parse start and count
     if start:
         start_tuple = tuple(int(x.strip()) for x in start.split(","))
+        if len(start_tuple) > dataset.ndim or any(
+            not 0 <= s < dim for s, dim in zip(start_tuple, dataset.shape)
+        ):
+            raise ToolError(
+                f"start {start_tuple} is out of range for dataset shape {dataset.shape}"
+            )
     else:
         start_tuple = tuple(0 for _ in dataset.shape)
 
@@ -564,7 +569,7 @@ async def read_partial_dataset(
         f"Slice: start={start_tuple}, count={count_tuple}\n"
         f"Result shape: {data.shape}\n"
         f"Dtype: {data.dtype}\n"
-        f"First few values: {data.flat[:5].tolist()}"
+        f"{format_values(data)}"
     )
 
 
@@ -1075,7 +1080,7 @@ async def hdf5_stream_data(
         del chunk_data
 
     # Generate report
-    streaming_rate = total_processed / (1024 * 1024)
+    processed_mb = total_processed * dataset.dtype.itemsize / (1024 * 1024)
     summary = f"Stream processing complete for dataset: {path}\n\n"
     summary += "Dataset info:\n"
     summary += f"  Total size: {dataset.nbytes / (1024 * 1024):.2f} MB\n"
@@ -1084,7 +1089,7 @@ async def hdf5_stream_data(
     summary += "Streaming stats:\n"
     summary += f"  Chunks processed: {len(chunk_summaries)}\n"
     summary += f"  Elements processed: {total_processed:,}\n"
-    summary += f"  Processing rate: {streaming_rate:.2f} MB\n\n"
+    summary += f"  Data processed: {processed_mb:.2f} MB\n\n"
     summary += "Chunk statistics:\n"
 
     for chunk in chunk_summaries[:10]:
@@ -1247,24 +1252,12 @@ async def analyze_dataset_structure(
             except ValueError as e:
                 # Client doesn't support sampling
                 logger.debug(f"Sampling not supported: {e}")
-                analysis += f"\n\n[Debug: Context sampling not supported - {str(e)}]\n"
             except Exception as e:
                 # Unexpected error - log it
                 logger.warning(f"Error during sampling: {e}")
                 import traceback
 
                 logger.debug(traceback.format_exc())
-                analysis += (
-                    f"\n\n[Debug: Sampling error - {type(e).__name__}: {str(e)}]\n"
-                )
-        elif not ctx:
-            analysis += "\n\n[Debug: No Context provided to tool]\n"
-        elif not sample:
-            analysis += (
-                "\n\n[Debug: Context sampling not supported on this connection]\n"
-            )
-        elif not datasets:
-            analysis += "\n\n[Debug: No datasets to analyze]\n"
 
     elif isinstance(obj, h5py.Dataset):
         analysis = f"Structure Analysis for: {path}\n"
@@ -1577,29 +1570,28 @@ async def identify_io_bottlenecks(
     for path in analysis_paths:
         try:
             dataset = current_file[path]
-            issues = []
+        except KeyError:
+            raise ToolError(f"Dataset not found: {path}")
+        if not isinstance(dataset, h5py.Dataset):
+            raise ToolError(f"{path} is not a dataset")
+        issues = []
 
-            size_mb = dataset.nbytes / (1024 * 1024)
+        size_mb = dataset.nbytes / (1024 * 1024)
 
-            if size_mb > 100 and dataset.chunks is None:
-                issues.append(f"Large dataset ({size_mb:.1f} MB) without chunking")
+        if size_mb > 100 and dataset.chunks is None:
+            issues.append(f"Large dataset ({size_mb:.1f} MB) without chunking")
 
-            if (
-                dataset.chunks
-                and np.prod(dataset.chunks) * dataset.dtype.itemsize < 1024
-            ):
-                issues.append("Very small chunk size may hurt performance")
+        if dataset.chunks and np.prod(dataset.chunks) * dataset.dtype.itemsize < 1024:
+            issues.append("Very small chunk size may hurt performance")
 
-            if size_mb > 50 and not hasattr(dataset, "compression"):
-                issues.append("Large dataset without compression")
+        if size_mb > 50 and not hasattr(dataset, "compression"):
+            issues.append("Large dataset without compression")
 
-            if len(dataset.shape) > 3:
-                issues.append("High-dimensional array may have access pattern issues")
+        if len(dataset.shape) > 3:
+            issues.append("High-dimensional array may have access pattern issues")
 
-            if issues:
-                bottlenecks.append({"path": path, "size_mb": size_mb, "issues": issues})
-        except Exception:
-            continue
+        if issues:
+            bottlenecks.append({"path": path, "size_mb": size_mb, "issues": issues})
 
     result = "I/O Bottleneck Analysis:\n\n"
     if bottlenecks:
@@ -1882,7 +1874,7 @@ async def export_dataset(
                     "path": path,
                     "shape": data.shape,
                     "dtype": str(data.dtype),
-                    "data": data.tolist(),
+                    "data": json_safe(data),
                 },
                 indent=2,
             )
@@ -1890,19 +1882,24 @@ async def export_dataset(
             export_data = json.dumps({"path": path, "data": str(data)}, indent=2)
 
     elif export_format == "numpy":
-        # NumPy export (return info about how to save)
+        # NumPy export: a .npy file when output_path is given, else a preview only
         export_data = f"NumPy array shape {data.shape}, dtype {data.dtype}\n"
-        export_data += f"To save: np.save('{output_path or 'output.npy'}', data)\n"
+        if not output_path:
+            export_data += "No file written: pass output_path to save a .npy file\n"
         export_data += f"First few values: {data.flat[:10].tolist()}"
 
     else:
         raise ToolError(f"Unsupported format: {export_format}")
 
     # Write to file if output_path provided
-    if output_path and export_format != "numpy":
+    if output_path:
         try:
-            with open(output_path, "w") as f:
-                f.write(export_data)
+            if export_format == "numpy":
+                with open(output_path, "wb") as npy:  # exact path, no ".npy" appended
+                    np.save(npy, data)
+            else:
+                with open(output_path, "w") as f:
+                    f.write(export_data)
             return f"Exported {path} to {output_path} as {export_format}\n{export_data[:500]}..."
         except Exception as e:
             raise ToolError(f"Error writing to {output_path}: {str(e)}")
@@ -2025,7 +2022,7 @@ async def hdf5_file_metadata(file_path: str) -> str:
                 "mode": f.mode,
                 "userblock_size": f.userblock_size,
                 "keys": list(f.keys()),
-                "attrs": dict(f.attrs),
+                "attrs": {k: json_safe(v) for k, v in f.attrs.items()},
             }
             return json.dumps(metadata, indent=2)
     except FileNotFoundError:
@@ -2069,7 +2066,7 @@ async def hdf5_dataset_resource(file_path: str, dataset_path: str) -> str:
             if dataset.nbytes < 1024 * 1024:  # 1MB
                 data = dataset[:]
                 if hasattr(data, "tolist"):
-                    data_info["data"] = data.tolist()
+                    data_info["data"] = json_safe(data)
                 else:
                     data_info["data"] = str(data)
             else:
@@ -2140,7 +2137,7 @@ def explore_hdf5_file(file_path: str):
     Returns:
         Exploration workflow prompt
     """
-    return Message(f"""Please explore the HDF5 file at {file_path}:
+    return f"""Please explore the HDF5 file at {file_path}:
 
 1. First, use open_file to open {file_path}
 2. Use analyze_dataset_structure to understand the hierarchy
@@ -2149,7 +2146,7 @@ def explore_hdf5_file(file_path: str):
 5. Generate summary statistics with hdf5_aggregate_stats
 6. Close the file when done with close_file
 
-This workflow will give you a comprehensive understanding of the file's contents.""")
+This workflow will give you a comprehensive understanding of the file's contents."""
 
 
 @mcp.prompt()
@@ -2163,7 +2160,7 @@ def optimize_hdf5_access(file_path: str, access_pattern: str = "sequential"):
     Returns:
         Optimization workflow prompt
     """
-    return Message(f"""Optimize I/O access for {file_path}:
+    return f"""Optimize I/O access for {file_path}:
 
 1. Use open_file to open {file_path}
 2. Use identify_io_bottlenecks to detect performance issues
@@ -2172,7 +2169,7 @@ def optimize_hdf5_access(file_path: str, access_pattern: str = "sequential"):
 5. Use hdf5_stream_data for large datasets to avoid memory issues
 6. Monitor performance with HDF5_SHOW_PERFORMANCE=true environment variable
 
-This workflow will help you achieve optimal performance for your access patterns.""")
+This workflow will help you achieve optimal performance for your access patterns."""
 
 
 @mcp.prompt()
@@ -2187,7 +2184,7 @@ def compare_hdf5_datasets(file_path: str, dataset1: str, dataset2: str):
     Returns:
         Comparison workflow prompt
     """
-    return Message(f"""Compare datasets in {file_path}:
+    return f"""Compare datasets in {file_path}:
 
 1. Use open_file to open {file_path}
 2. Use get_shape and get_dtype to compare metadata for:
@@ -2198,7 +2195,7 @@ def compare_hdf5_datasets(file_path: str, dataset1: str, dataset2: str):
 5. Use find_similar_datasets starting from {dataset1} to see if {dataset2} is similar
 6. Close the file with close_file
 
-This workflow provides a comprehensive comparison of the two datasets.""")
+This workflow provides a comprehensive comparison of the two datasets."""
 
 
 @mcp.prompt()
@@ -2212,7 +2209,7 @@ def batch_process_hdf5(directory: str, operation: str = "statistics"):
     Returns:
         Batch processing workflow prompt
     """
-    return Message(f"""Batch process HDF5 files in {directory}:
+    return f"""Batch process HDF5 files in {directory}:
 
 1. Use hdf5_parallel_scan with directory="{directory}" to discover all files
 2. For each interesting file found:
@@ -2223,7 +2220,7 @@ def batch_process_hdf5(directory: str, operation: str = "statistics"):
 3. Aggregate results across all files
 4. Use identify_io_bottlenecks to find common performance issues
 
-This parallel workflow efficiently processes multiple files with minimal overhead.""")
+This parallel workflow efficiently processes multiple files with minimal overhead."""
 
 
 # =========================================================================

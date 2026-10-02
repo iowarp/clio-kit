@@ -303,7 +303,8 @@ class TestMcpHandlersEdgeCases:
             "physical_cores": 4,
             "cpu_model": "Test CPU",
             "frequency": {"current": 2400.0},
-            "cpu_usage": [10.0, 12.0, 8.0, 15.0],  # Low average usage
+            "usage_per_core": [10.0, 12.0, 8.0, 15.0],
+            "average_usage": 11.25,  # Low average usage
         }
 
         with patch("node_hardware_mcp.mcp_handlers.get_cpu_info") as mock_get:
@@ -357,11 +358,12 @@ class TestMcpHandlersEdgeCases:
         mock_disk_data = {
             "partitions": [
                 {
+                    "device": "/dev/sda1",
                     "mountpoint": "/",
-                    "usage": {"percent": 15.0},  # Low usage
+                    "percent": 15.0,  # Low usage
                 }
             ],
-            "disk_io": {},
+            "io_statistics": {},
         }
 
         with patch("node_hardware_mcp.mcp_handlers.get_disk_info") as mock_get:
@@ -438,7 +440,9 @@ class TestMcpHandlersEdgeCases:
                 {"name": "proc1", "status": "running", "cpu_percent": 15.0},
                 {"name": "proc2", "status": "running", "cpu_percent": 25.0},
                 {"name": "proc3", "status": "sleeping", "cpu_percent": 5.0},
-            ]
+            ],
+            "total_processes": 3,
+            "statistics": {"running": 2, "sleeping": 1},
         }
 
         with patch("node_hardware_mcp.mcp_handlers.get_process_info") as mock_get:
@@ -461,11 +465,13 @@ class TestMcpHandlersEdgeCases:
         from node_hardware_mcp import mcp_handlers
 
         mock_summary_data = {
-            "hostname": "test-host",
-            "cpu_info": {"model": "Test CPU"},
-            "memory_info": {"total": 16000000000},
-            "disk_info": {"partitions": []},
-            "network_info": {"interfaces": []},
+            "summary": {"system": {"hostname": "test-host"}},
+            "detailed": {
+                "cpu": {"cpu_model": "Test CPU"},
+                "memory": {"virtual_memory": {"total": 16000000000}},
+                "disk": {"partitions": []},
+                "network": {"interfaces": []},
+            },
         }
 
         with patch("node_hardware_mcp.mcp_handlers.get_hardware_summary") as mock_get:
@@ -486,9 +492,12 @@ class TestMcpHandlersEdgeCases:
         from node_hardware_mcp import mcp_handlers
 
         mock_perf_data = {
-            "cpu_usage": 85.0,  # High
-            "memory_usage": 90.0,  # High
-            "disk_usage": 95.0,  # High
+            "cpu": {"average_usage": 85.0},  # High
+            "memory": {"current_usage": 90.0},  # High
+            "disk_io": {
+                "read_rate_formatted": "1.00 MB/s",
+                "write_rate_formatted": "2.00 MB/s",
+            },
         }
 
         with patch(
@@ -503,8 +512,8 @@ class TestMcpHandlersEdgeCases:
             response = json.loads(content_text)
 
             insights = response.get("💡 Insights", [])
-            # Should have 3 high usage insights
-            assert len(insights) >= 3
+            # CPU and memory are the two usage figures the monitor measures
+            assert len(insights) == 2
 
     def test_gpu_info_handler_no_gpus(self):
         """Test GPU info handler with no GPUs"""
@@ -531,7 +540,7 @@ class TestMcpHandlersEdgeCases:
         """Test sensor info handler with no sensors"""
         from node_hardware_mcp import mcp_handlers
 
-        mock_sensor_data = {"sensors": []}
+        mock_sensor_data = {"temperatures": {}, "fans": {}, "battery": {}}
 
         with patch("node_hardware_mcp.mcp_handlers.get_sensor_info") as mock_get:
             mock_get.return_value = mock_sensor_data

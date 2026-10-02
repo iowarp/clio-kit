@@ -44,6 +44,8 @@ class TestInspectAttributes:
             np.array([1, 2, 3], dtype=np.int64),
         ]
 
+        mock_stream.available_variables.return_value = {"my_variable": {}}
+
         result = inspect_attributes("test.bp", "my_variable")
 
         mock_stream.available_attributes.assert_called_once_with("my_variable")
@@ -61,7 +63,7 @@ class TestInspectAttributes:
 
         result = inspect_attributes("test.bp")
 
-        assert result == {"error": "Invalid Variable name or no attributes found"}
+        assert result == {}
 
     @patch("adios_mcp.implementation.bp5_attributes.FileReader")
     def test_inspect_attributes_empty_dict(self, mock_file_reader):
@@ -71,7 +73,7 @@ class TestInspectAttributes:
 
         result = inspect_attributes("test.bp")
 
-        assert result == {"error": "Invalid Variable name or no attributes found"}
+        assert result == {}
 
     @patch("adios_mcp.implementation.bp5_attributes.FileReader")
     def test_inspect_attributes_scalar_conversion(self, mock_file_reader):
@@ -128,9 +130,23 @@ class TestInspectAttributes:
         mock_stream.available_attributes.return_value = mock_attrs_meta
         mock_stream.read_attribute.return_value = "test_value"
 
+        mock_stream.available_variables.return_value = {"my_var": {}}
+
         inspect_attributes("test.bp", "my_var")
 
         mock_stream.read_attribute.assert_called_with("my_var/var_attr")
+
+    @patch("adios_mcp.implementation.bp5_attributes.FileReader")
+    def test_unknown_variable_is_rejected_before_native_call(self, mock_file_reader):
+        """available_attributes(<unknown variable>) segfaults inside ADIOS2."""
+        mock_stream = Mock()
+        mock_file_reader.return_value.__enter__.return_value = mock_stream
+        mock_stream.available_variables.return_value = {"temperature": {}}
+
+        with pytest.raises(ValueError, match="Variable 'nope' not found"):
+            inspect_attributes("test.bp", "nope")
+
+        mock_stream.available_attributes.assert_not_called()
 
     @patch("adios_mcp.implementation.bp5_attributes.FileReader")
     def test_inspect_attributes_file_error(self, mock_file_reader):

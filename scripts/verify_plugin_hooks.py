@@ -199,7 +199,7 @@ def verify(output: Path, claude: str, live: bool) -> None:
         "scaffold-client-validation",
         [claude, "plugin", "validate", str(publisher), "--strict"],
     )
-    (publisher / "hook.py").write_text(HOOK)
+    (publisher / "hook script.py").write_text(HOOK)
     events = {
         event: [
             {
@@ -207,7 +207,7 @@ def verify(output: Path, claude: str, live: bool) -> None:
                 "hooks": [
                     {
                         "type": "command",
-                        "command": 'python3 "${CLAUDE_PLUGIN_ROOT}/hook.py"',
+                        "command": 'python3 "${CLAUDE_PLUGIN_ROOT}/hook script.py"',
                         "timeout": 10,
                     }
                 ],

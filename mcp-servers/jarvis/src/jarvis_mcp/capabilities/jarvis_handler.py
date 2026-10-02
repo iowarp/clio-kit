@@ -26,6 +26,7 @@ from fastapi import HTTPException
 from fastmcp.exceptions import ToolError
 
 from jarvis_mcp.artifact_content import execution_root_from_record
+from jarvis_mcp.pipeline_guards import failure, refuse_existing
 from jarvis_mcp.artifacts import (
     ArtifactQueryError,
     ArtifactSnapshotError,
@@ -409,14 +410,14 @@ async def create_pipeline(
     try:
         with _protocol_stdout_to_stderr():
             pipeline = _require_pipeline_class()()
-            _create_pipeline(pipeline, pipeline_id)
+            _create_pipeline(refuse_existing(pipeline, pipeline_id), pipeline_id)
             if initial_config is not None:
                 _apply_pipeline_config(pipeline, initial_config)
             _build_pipeline_env(pipeline)
             _save_pipeline(pipeline)
         return {"pipeline_id": pipeline_id, "status": "created"}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Create failed: {e}")
+        raise failure("Create", e)
 
 
 @_locked_pipeline_operation
@@ -476,7 +477,7 @@ async def export_pipeline(pipeline_id: str, include_yaml: bool = True) -> dict:
                 payload["pipeline_yaml"] = yaml_file.read_text(encoding="utf-8")
         return payload
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Export failed: {e}")
+        raise failure("Export", e)
 
 
 @_locked_pipeline_operation
@@ -3161,9 +3162,7 @@ def _protocol_stdout_to_stderr() -> Any:
 
 
 def _optional_str(value: Any) -> str | None:
-    if value is None:
-        return None
-    return str(value)
+    return None if value is None else str(value)
 
 
 def _load_pipeline(pipeline_id: str | None) -> Any:

@@ -33,4 +33,7 @@ def inspect_variables(
         if variable_name in all_vars:
             return {variable_name: all_vars[variable_name]}
         else:
-            return {"error": f"Variable '{variable_name}' not found in file."}
+            raise ValueError(
+                f"Variable '{variable_name}' not found in file. "
+                f"Available variables: {sorted(all_vars)}"
+            )

@@ -424,6 +424,19 @@ class TestSaveContourAsStl:
             assert "/test/dir/output.stl" in message
             SaveData.assert_called_once()
 
+    @pytest.mark.parametrize("name", ["../escape.stl", "/tmp/abs.stl", "a/b.stl", ".."])
+    def test_save_stl_stays_inside_data_directory(self, engine, mock_paraview, name):
+        """A file name with directories must not escape the data directory"""
+        from paraview.simple import SaveData
+
+        engine._data_directory = "/test/dir"
+
+        success, message, path = engine.save_contour_as_stl(name)
+
+        assert success is False
+        assert "plain file name" in message
+        SaveData.assert_not_called()
+
     def test_save_stl_no_active_source(self, engine, mock_paraview):
         """Test STL save with no active source"""
         from paraview.simple import GetActiveSource

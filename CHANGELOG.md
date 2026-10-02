@@ -2,10 +2,11 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
-## 2.11.0 — release candidate
+## 2.11.0
 
 CLIO Kit now provides a meta-marketplace with 22 MCP servers, six workflow
-bundles, 20 portable Agent Skills, and two Claude Code agent definitions.
+bundles, 60 portable Agent Skills (20 workflow skills, the dataset-report
+skill and 39 adapted Clio Coder skills), and two Claude Code agent definitions.
 External authors can validate and submit plugin entries; indexed marketplace
 collections compile into a versioned catalogue with recorded provenance.
 Node/TypeScript and Go projects can use the locked local-project launcher.
@@ -22,7 +23,7 @@ labels sampled statistics with coverage and omits misleading combined totals.
 Parallel-sort recognizes bracketed log levels consistently. Slurm diagnostics
 use stderr so job submission cannot corrupt the MCP stdout stream.
 
-This candidate incorporates main's JARVIS 1.8.1 dependency and Web task-based
+This release incorporates main's JARVIS 1.8.1 dependency and Web task-based
 fetch support, with ordinary-call compatibility for agents without the tasks
 extension. All 22 server locks update vulnerable HTTP dependencies, and
 fresh registry versions point to the 2.11.0 wheel. The compatible JARVIS user
@@ -35,9 +36,14 @@ select CSV, JSON or NumPy without a mid-call prompt; modern connections default
 to JSON. Legacy elicitation remains available when the argument is omitted.
 
 Website builds now use a committed npm lock, updated Docusaurus dependencies
-and a format check for the remaining unpatched image-size advisory. That
-workaround is documented in `website/README.md`; it does not produce
-a clean npm audit. No public release has been published by this preparation.
+and a pre-build image-format check, documented in `website/README.md`.
+
+### Removed and renamed
+
+The standalone `clio-kit search` command is no longer part of this package.
+The `geojson` server merged into `geo`, and `sac` and `seismic` merged into
+`seismology`; tool names are unchanged, and launching a retired name prints
+where it went. The launcher now lists 22 servers.
 
 ## 2.10.5
 
@@ -99,7 +105,7 @@ enum gains `frame` (for scientific output files like `.h5`, `.dcd`, `.vtk`,
 trajectory/checkpoint frames) alongside the execution-output declarations
 above. No tool is renamed, removed, or gains a required field. Every prior
 contract revision (down to `clio-kit-jarvis-user-v3`) remains loadable by
-exact identifier â€” nothing already deployed is invalidated by this bump.
+exact identifier — nothing already deployed is invalidated by this bump.
 
 This release also closes a gap where a kit build could be asked to load the
 `clio-kit-jarvis-user-v3.7` contract family and not recognize it. The kit now

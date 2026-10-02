@@ -156,6 +156,10 @@ def list_available_servers():
 def subprocess_env_with_github_https_rewrite() -> dict[str, str]:
     """Return an environment that lets uv install GitHub deps without SSH keys."""
     env = os.environ.copy()
+    # FastMCP's start-up banner and its update check (a network call) are noise
+    # on a launched server's stderr. An explicit user setting still wins.
+    env.setdefault("FASTMCP_SHOW_SERVER_BANNER", "false")
+    env.setdefault("FASTMCP_CHECK_FOR_UPDATES", "off")
     if "GIT_CONFIG_COUNT" in env:
         return env
     env["GIT_CONFIG_COUNT"] = "1"
@@ -388,20 +392,22 @@ def _locked_server_environment_path(
 
 
 @click.group(invoke_without_command=True)
+@click.version_option(package_name="clio-kit", prog_name="clio-kit")
 @click.pass_context
 def main(ctx):
-    """clio-kit: Unified launcher for MCP servers and AI prompts"""
+    """clio-kit: launcher for scientific MCP servers, skills and plugins"""
     if ctx.invoked_subcommand is None:
-        click.echo("clio-kit: Unified launcher for MCP servers and AI prompts")
+        click.echo("clio-kit: launcher for scientific MCP servers, skills and plugins")
         click.echo("\nAvailable commands:")
-        click.echo("  mcp-server   Run an MCP server")
         click.echo("  mcp-servers  List all available MCP servers")
-        click.echo("  prompt       Print a prompt to stdout")
-        click.echo("  prompts      List all available prompts")
+        click.echo("  mcp-server   Run an MCP server")
+        click.echo("  skill        List, validate and install portable skills")
+        click.echo("  plugin       Author, install, check and submit plugins")
+        click.echo("  doctor       Check launcher and server prerequisites")
         click.echo("\nUsage:")
         click.echo("  clio-kit mcp-server <server-name>")
-        click.echo("  clio-kit prompt <prompt-name>")
-        click.echo("\nFor more help: clio-kit <command> --help")
+        click.echo("  clio-kit skill install --bundle <bundle> --target <directory>")
+        click.echo("\nFor every command: clio-kit --help")
 
 
 @main.command(
@@ -631,7 +637,12 @@ def list_mcp_contracts() -> None:
 @click.argument("contract_id")
 def show_mcp_contract(contract_id: str) -> None:
     """Print one verified locked-server user contract as machine-readable JSON."""
-    artifact = load_mcp_user_contract(contract_id)
+    try:
+        artifact = load_mcp_user_contract(contract_id)
+    except ValueError as exc:
+        known = [e["contract_id"] for e in load_mcp_user_contract_index()["contracts"]]
+        hint = f"; valid ids: {', '.join(known)}" if contract_id not in known else ""
+        raise click.ClickException(f"{exc}{hint}") from exc
     click.echo(json.dumps(artifact, separators=(",", ":"), sort_keys=True))
 
 

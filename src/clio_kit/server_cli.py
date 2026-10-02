@@ -11,6 +11,30 @@ import click
 
 from clio_kit.discovery import read_server_descriptor
 from clio_kit.protocol_probe import inspect_stdio
+from clio_kit.registry import registry_package
+
+# Ignored repository-wide, so compiled output placed there never ships.
+UNSHIPPED_DIRECTORIES = {"dist", "lib", "build"}
+
+
+def checked_descriptor(directory: Path) -> dict:
+    """Read a descriptor and apply the hosting rules a launch would not notice."""
+    descriptor = read_server_descriptor(directory)
+    if descriptor is None:
+        raise ValueError(f"{directory} needs clio-server.toml")
+    if descriptor["registry"] is not None:
+        if not isinstance(descriptor["registry"], dict):
+            raise ValueError("clio-server.toml [registry] must be a table")
+        registry_package(descriptor["registry"])
+    entry = Path(descriptor["entry"])
+    if descriptor["runtime"] == "node" and entry.parts[0] in UNSHIPPED_DIRECTORIES:
+        click.echo(
+            f"Warning: entry {descriptor['entry']!r} is under {entry.parts[0]}/, "
+            "which CLIO Kit's .gitignore drops from release artifacts; a hosted "
+            "server must commit its compiled output under bundle/.",
+            err=True,
+        )
+    return descriptor
 
 
 @click.group("server")
@@ -31,9 +55,7 @@ def run_server(directory: Path, args: tuple[str, ...]) -> None:
     )
 
     try:
-        descriptor = read_server_descriptor(directory)
-        if descriptor is None:
-            raise ValueError(f"{directory} needs clio-server.toml")
+        descriptor = checked_descriptor(directory)
         _run_locked_local_server(
             directory.resolve(),
             descriptor["entry"],
@@ -52,6 +74,11 @@ def run_server(directory: Path, args: tuple[str, ...]) -> None:
 def inspect_server(directory: Path, output: Path | None) -> None:
     """Initialize a real server and list all its tools, resources and prompts."""
     try:
+        # Report a descriptor problem itself, not the session it would break.
+        checked_descriptor(directory)
+    except (OSError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    try:
         result = asyncio.run(
             inspect_stdio(
                 sys.executable,
@@ -65,6 +92,9 @@ def inspect_server(directory: Path, output: Path | None) -> None:
             )
         )
     except Exception as exc:
+        # A task group wraps the one real failure; report that, not the wrapper.
+        while getattr(exc, "exceptions", None):
+            exc = exc.exceptions[0]  # type: ignore[attr-defined]
         raise click.ClickException(f"MCP inspection failed: {exc}") from exc
     text = json.dumps(result, indent=2) + "\n"
     if output:

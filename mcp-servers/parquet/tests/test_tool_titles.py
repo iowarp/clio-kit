@@ -39,3 +39,10 @@ async def test_titles_have_no_parentheses() -> None:
 
     with_parens = [tool.name for tool in tools if tool.title and "(" in tool.title]
     assert not with_parens, f"Tools with parens in title: {with_parens}"
+
+
+@pytest.mark.asyncio
+async def test_server_version_matches_release() -> None:
+    """serverInfo.version must be the clio-server.toml release, not FastMCP's."""
+    async with Client(mcp) as client:
+        assert client.server_info.version == "2.2.5"

@@ -133,7 +133,9 @@ def discover_local_plugins(
             name = read_skill_frontmatter(skill.parent)["name"]
             if name in skills:
                 raise ValueError(
-                    f"Duplicate portable skill {name!r}: {skills[name]} and {skill}"
+                    f"Duplicate portable skill {name!r} in {skills[name]} and "
+                    f"{skill.parents[2].relative_to(root)}; rename one of them "
+                    "(skills install by name)"
                 )
-            skills[name] = skill
+            skills[name] = skill.parents[2].relative_to(root)
     return result

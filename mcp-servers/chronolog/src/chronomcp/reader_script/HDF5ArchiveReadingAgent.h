@@ -43,7 +43,7 @@ public:
 
     static std::string getChronicleName(const std::string &file_name)
     {
-        // Example file name: /home/kfeng/chronolog/Debug/output/chronicle_0_0.story_0_0.1736806500.vlen.h5
+        // Example file name: /path/to/archive/chronicle_0_0.story_0_0.1736806500.vlen.h5
         std::string base_name = file_name.substr(file_name.find_last_of("/\\") + 1);
         std::string chronicle_name = base_name.substr(0, base_name.find_first_of('.'));
         return chronicle_name;
@@ -51,7 +51,7 @@ public:
 
     static std::string getStoryName(const std::string &file_name)
     {
-        // Example file name: /home/kfeng/chronolog/Debug/output/chronicle_0_0.story_0_0.1736806500.vlen.h5
+        // Example file name: /path/to/archive/chronicle_0_0.story_0_0.1736806500.vlen.h5
         std::string base_name = file_name.substr(file_name.find_last_of("/\\") + 1);
         size_t first_dot = base_name.find_first_of('.');
         size_t second_dot = base_name.find_first_of('.', first_dot + 1);
@@ -61,7 +61,7 @@ public:
 
     static uint64_t getStartTime(const std::string &file_name)
     {
-        // Example file name: /home/kfeng/chronolog/Debug/output/chronicle_0_0.story_0_0.1736806500.vlen.h5
+        // Example file name: /path/to/archive/chronicle_0_0.story_0_0.1736806500.vlen.h5
         std::string base_name = file_name.substr(file_name.find_last_of("/\\") + 1);
         size_t first_dot = base_name.find_first_of('.');
         size_t second_dot = base_name.find_first_of('.', first_dot + 1);

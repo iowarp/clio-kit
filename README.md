@@ -94,7 +94,7 @@ Read setup.md and set up CLIO Kit for me.
 ```
 
 **Manual setup:** Install this checkout's launcher, then choose an option below.
-For the upcoming no-clone release route, see [selective installation](docs/installation.md).
+For the no-clone release route (2.11.0 or newer), see [selective installation](docs/installation.md).
 
 ```bash
 uv tool install --force --reinstall --editable ".[verification]"
@@ -179,11 +179,12 @@ clio-kit mcp-server pandas
 clio-kit mcp-server slurm
 ```
 
-To install the published release instead, use `uv tool install clio-kit`.
+To install the published release instead, use `uv tool install clio-kit`
+(2.11.0 or newer; earlier releases lack the `skill`, `plugin` and `doctor` commands).
 `uv tool install` creates a persistent, isolated environment; use
 `uvx --from clio-kit clio-kit ...` for a temporary, one-shot invocation.
 
-The next release separates the small launcher from component downloads: one MCP
+The release separates the small launcher from component downloads: one MCP
 fetches only that server, one skill fetches only its files, and a workflow selects
 its components. Server dependencies stay isolated and locked. See
 [selective installation](docs/installation.md) for release, checkout and native plugin routes.
@@ -464,7 +465,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`slurm`** | 3.0.2 | HPC | Job submission and management | `clio-kit mcp-server slurm` |
 | **`spack`** | 2.3.1 | Package Management | Structured package discovery, installation, and location | `clio-kit mcp-server spack` |
 | **`terrain`** | 2.2.5 | Geospatial | Analyze DEMs and terrain point clouds | `clio-kit mcp-server terrain` |
-| **`web`** | 2.1.3 | Web | Synchronous search plus durable, queryable, cancellable URL, DOI, and document fetch tasks | `clio-kit mcp-server web` |
+| **`web`** | 2.1.3 | Web | Web search and URL fetch, with queryable, cancellable fetch tasks; DOI and document conversion need a remote service | `clio-kit mcp-server web` |
 
 </div>
 
@@ -486,7 +487,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 "Submit simulation.py to Slurm with 32 cores, 64GB memory, 24-hour runtime. Monitor progress and retrieve output when complete."
 ```
 
-**Tools used:** `submit_slurm_job`, `check_job_status`, `get_job_output`
+**Tools used:** `slurm_submit`, `slurm_list`, `slurm_describe`
 
 ### ArXiv: Research Discovery
 
@@ -499,7 +500,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 ### Pandas: Data Processing
 
 ```
-"Load sales_data.csv, clean missing values, compute statistics by region, and save as Parquet with compression."
+"Load sales_data.csv, clean missing values, compute statistics by region, and save as Parquet."
 ```
 
 **Tools used:** `load_data`, `handle_missing_data`, `groupby_operations`, `save_data`

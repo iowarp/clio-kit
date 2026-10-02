@@ -51,8 +51,17 @@ Native Darshan text logs are read with `darshan-parser --base`. Totals prefer
 POSIX over MPI-IO/STDIO when several layers describe the same file, avoiding
 double counting. Request-size statistics summarize operation-weighted per-file
 averages, not individual I/O requests. Job timing preserves the native runtime's
-subsecond precision. The timeline tool reports duration and leaves unavailable
-peak/idle phase lists empty; it does not reconstruct an event timeline.
+subsecond precision. The timeline tool reports the job time span and each
+module's first/last open/read/write/close timestamps; it does not reconstruct an
+event timeline (peak/idle/phase fields are `null`), which needs DXT trace data.
+
+Fields named `*_mbps` hold MiB/s. `total_bandwidth_mbps` is total bytes divided
+by read time plus write time, in both `get_job_summary` and
+`get_io_performance_metrics`. `compare_darshan_logs` supports the metrics
+`bandwidth`, `iops` and `file_count`. `file_pattern` is a shell-style glob. The
+server does not produce plots; `include_visualizations=true` says so in the
+report. Without `darshan-parser` on the server's PATH every tool fails with an
+error naming it.
 
 <details>
 <summary><b>Install in Cursor</b></summary>
@@ -195,7 +204,7 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\darshan run darshan-mcp --hel
 **Tags**: darshan, performance
 
 ### `get_timeline_analysis`
-**Description**: Generate timeline analysis showing I/O activity over time and temporal patterns.
+**Description**: Report the job time span and each module's first/last open/read/write/close timestamps. Binned activity over time (peaks, idle periods) needs DXT trace data and is not computed from a Darshan summary log.
 **Hints**: read-only, idempotent
 **Tags**: darshan, performance
 

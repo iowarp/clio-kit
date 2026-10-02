@@ -140,13 +140,17 @@ def _plot_tool_result(structured: dict[str, Any]) -> ToolResult:
     ``ImageContent`` block (a downscaled preview, bounded to ~800px wide so
     the wire payload stays small) and the unmodified structured dict —
     ``output_path`` in that dict still points at the full-resolution file on
-    disk; nothing about the saved file changes.
+    disk; nothing about the saved file changes. Vector outputs (PDF, SVG)
+    carry a text block naming the saved file instead of a preview.
     """
-    preview_bytes = build_preview_png(structured["output_path"])
-    return ToolResult(
-        content=[Image(data=preview_bytes, format="png")],
-        structured_content=structured,
-    )
+    output_path = structured["output_path"]
+    try:
+        content: Any = [Image(data=build_preview_png(output_path), format="png")]
+    except OSError:
+        # ponytail: PDF/SVG and other formats Pillow cannot read get the saved
+        # path instead of a preview; rasterize one here if previews are needed.
+        content = f"Saved {output_path} (no inline preview for this format)"
+    return ToolResult(content=content, structured_content=structured)
 
 
 # Configure logging
@@ -161,13 +165,15 @@ load_dotenv()
 # Initialize MCP server
 mcp: FastMCP = FastMCP(
     "plot",
+    version="2.2.5",  # keep equal to clio-server.toml (tests/test_release_regressions.py)
     instructions=(
         "Creates data visualizations using matplotlib. "
         "Generate line plots, bar charts, scatter plots, histograms, heatmaps, and "
         "multi-series time-series line charts from data. Use plot_timeseries to plot "
         "one or more y columns against an auto-detected time, numeric, or categorical "
         "x axis. Every plot tool saves the full-resolution image to output_path and "
-        "also returns a bounded PNG preview inline in the response for immediate viewing."
+        "also returns a bounded PNG preview inline in the response for immediate viewing "
+        "(PDF and SVG outputs return the saved path without a preview)."
     ),
 )
 
@@ -217,7 +223,13 @@ async def line_plot_tool(
 @mcp.tool(
     name="bar_plot",
     title="Bar Plot",
-    description="Create a bar chart from CSV or Excel data with categorical grouping.",
+    description=(
+        "Create a bar chart from CSV or Excel data, one bar per x value. Rows that "
+        "share an x value are averaged (mean of y; the result reports aggregated=true "
+        "and the y axis is labelled 'mean <y>'), keeping the 20 largest means; a file "
+        "with one row per x value is plotted as-is (aggregated=false). For any other "
+        "statistic, aggregate first and plot that file."
+    ),
     annotations={
         "readOnlyHint": False,
         "destructiveHint": True,

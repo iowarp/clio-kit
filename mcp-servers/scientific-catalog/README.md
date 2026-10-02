@@ -61,3 +61,27 @@ The catalog file uses `clio-kit.scientific-dataset-catalog.v1`:
   ]
 }
 ```
+
+### Computing `fingerprint.digest`
+
+`fingerprint.digest` is the SHA-256 of the descriptor itself, encoded as canonical JSON (keys
+sorted, compact `,` / `:` separators, UTF-8, no ASCII escaping) with the `fingerprint` field
+omitted. The server recomputes it on load and rejects a catalog whose digest does not match. It
+hashes the validated descriptor, so write every descriptor field explicitly (including `null`
+values such as `bounds` and `source_artifact`, as above). This prints the digest for each dataset
+in a catalog file:
+
+```python
+import hashlib, json, sys
+
+for dataset in json.load(open(sys.argv[1]))["datasets"]:
+    descriptor = dict(dataset["descriptor"])
+    descriptor.pop("fingerprint", None)
+    payload = json.dumps(
+        descriptor, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    )
+    print(dataset["dataset_id"], hashlib.sha256(payload.encode("utf-8")).hexdigest())
+```
+
+For the example above it prints
+`example-volume 0e3f72c38f94d2435756f8f2807b154f5cbec5166a1b9071f894277f0ea031dd`.

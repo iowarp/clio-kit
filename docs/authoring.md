@@ -30,9 +30,10 @@ clio-kit plugin validate my-plugin
 claude plugin validate my-plugin --strict
 ```
 
-The scaffold contains `.claude-plugin/plugin.json`, a sample skill and evaluation
-scenarios. Edit the manifest's name, description and version, then add the
-components you need. The last command checks Claude Code's native rules; it
+The scaffold contains `.claude-plugin/plugin.json`, a sample skill named
+`<plugin>-workflow` and evaluation scenarios. Edit the manifest's description,
+author and version, then add the components you need. With `--mcp-command` the
+wrapped server is registered under the plugin's name. The last command checks Claude Code's native rules; it
 requires that client. Portable skills can also be installed independently.
 
 For a maintained example combining MCP dependencies, a task skill, an evidence
@@ -67,6 +68,9 @@ claude plugin validate plugins/my-plugin --strict
 
 Add the package folder to your PR. CI discovers it and updates both catalogues
 for validation; contributors do not run generator scripts or hand-edit the index.
+CI runs `clio-kit marketplace sync` before the root test suite. To run that
+suite locally (`uv run --frozen pytest tests -q`), sync first with the command
+below; otherwise the catalogue tests report a stale index.
 Website `npm start` and `npm run build` also sync automatically. Handwritten
 manifests are preserved and discovery does not execute component commands.
 
@@ -93,8 +97,12 @@ Package names must be unique across the four directories and external entries.
 Portable skill names must also be unique, because `clio-kit skill install` selects
 by skill name. Dependencies may name other local packages or generated CLIO
 components; missing names, cycles and external dependencies are rejected.
-Linked files are not supported. `clio-` names remain reserved for maintained
-packages; validate those explicitly with `--maintained`.
+Linked files are not supported; `plugin validate` reports each one. `clio-` names
+remain reserved for maintained packages; scaffold and validate those explicitly
+with `--maintained` (`clio-kit plugin init plugins/clio-my-task --maintained`).
+Skills in a `clio-` package must also declare `metadata.bundle` and
+`metadata.eval-status`, and each needs an evaluation case; see
+[Add a skill](#add-a-skill).
 
 Release builds automatically package skills and their resources into individual
 artifacts, and packages into separate native payloads. The launcher carries their
@@ -122,6 +130,11 @@ Place each skill in `my-plugin/skills/<name>/SKILL.md`. A minimal example:
 ---
 name: inspecting-simulation-output
 description: 'Use when inspecting an unfamiliar simulation dataset. Triggers on "inspect simulation output". Not for plotting; use results-summary.'
+metadata:
+  bundle: my-plugin
+  servers: clio-hdf5
+  provenance: designed
+  eval-status: scenarios-recorded
 ---
 
 Discover the available scientific I/O tools. Inspect the file metadata and
@@ -129,15 +142,51 @@ dataset shapes first, then read a bounded slice. Report the slice bounds and
 units; do not treat a sample as a whole-dataset summary.
 ```
 
-Add `evals.md` beside it with concrete prompts, expected results and failure
-cases, then validate:
+`metadata` values are strings. `bundle` names the package or bundle that lists
+the skill, `servers` the MCP plugins it expects (`none` if it calls no tools).
+`eval-status` records how far the skill has been checked and must be one of,
+weakest first: `untested`, `scenarios-recorded`, `trigger-checked`,
+`smoke-checked`, `eval-run`.
+
+Add a nonempty `evals.md` beside it with concrete prompts, expected results and
+failure cases:
+
+```markdown
+# Evals - inspecting-simulation-output
+
+## S1 - unfamiliar HDF5 file
+
+Setup: Prompt: "Inspect simulation output in run.h5 and tell me what it holds."
+
+Expected:
+
+- Lists the datasets with their shapes and units before reading any values.
+- Reads a bounded slice and states its bounds.
+
+Without the skill: reads a whole dataset, or reports a sample as the whole file.
+```
+
+Then validate:
 
 ```bash
 clio-kit skill validate my-plugin/skills/inspecting-simulation-output
 clio-kit plugin validate my-plugin
 ```
 
-For skills maintained here, use `skills/clio-<bundle>-skills/skills/<name>/`.
+For skills maintained here, use `skills/clio-<bundle>-skills/skills/<name>/`,
+set `metadata.bundle: clio-<bundle>`, and validate with `--maintained`, which
+makes `metadata.bundle` and `metadata.eval-status` blocking:
+
+```bash
+clio-kit skill validate --maintained skills/clio-<bundle>-skills/skills/<name>
+```
+
+A skill added to a maintained bundle also needs an evaluation case in
+`evals/codex_cases.py` and a version bump in `mcp-server-versions.toml`
+(`[bundles.clio-<bundle>].version`; the skills plugin's manifest is generated
+from it, so editing the manifest is reverted by the next sync). The
+[contributor guide](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md#contributing-a-skill)
+lists every step.
 Use concise capability names such as `dataset-explore`, `data-clean` and
 `slurm-script`, matching the folder and frontmatter. Imported adaptations retain
 their upstream provenance and distinct names.
@@ -227,6 +276,9 @@ To ship a maintained server with CLIO Kit, add `mcp-servers/<name>/`, a
 `mcp-server-versions.toml` and generate its manifests. Include its icon in
 `[icons]` and any executable or environment checks in `[prerequisites.<name>]`;
 these feed the website and `clio-kit doctor`, including partial installations.
+The contributor guide's
+[Adding a New MCP Server](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md#adding-a-new-mcp-server)
+lists every file to touch and ends with a green root suite.
 Python, Node and Go are supported; see the
 [hosted-server requirements](https://github.com/iowarp/clio-kit/blob/main/CONTRIBUTING.md#contributing-a-server-in-another-language).
 
@@ -257,8 +309,10 @@ exercises SessionStart, successful tool completion and a blocked tool call in
 the real Claude Code runtime:
 
 ```bash
-uv run --frozen python scripts/verify_plugin_hooks.py
+uv run --frozen python scripts/verify_plugin_hooks.py --output /tmp/clio-hook-acceptance
 ```
+
+Use a new output directory for each run.
 
 This establishes those command-hook paths, not every event or handler type.
 See the [hook reference](https://github.com/iowarp/clio-kit/blob/main/community/README.md#hooks)
@@ -270,8 +324,12 @@ for supported configuration forms and isolated client trials.
 clio-kit plugin submit my-plugin --repo owner/name
 ```
 
-This prints an entry for `community/entries/<name>.toml`. Review it and open a
-pull request, or use `--open-pr` for the submission command to do so. For an
+This prints the TOML entry for `community/entries/<name>.toml` on standard
+output and its guidance on standard error, so `> <name>.toml` (or
+`--output <name>.toml`) saves exactly the entry. The command refuses a manifest
+that still carries the scaffold's placeholder description or author. Review the
+entry and open a pull request, or use `--open-pr` for the submission command to
+do so. For an
 entire marketplace, pass its directory and `--kind marketplace` instead.
 Implementations stay upstream. Source types, pinning and local installation
 trials are documented in the

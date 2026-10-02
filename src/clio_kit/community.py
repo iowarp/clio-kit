@@ -247,8 +247,11 @@ def _read_entries(repo_root: Path) -> list[tuple[str, dict[str, Any]]]:
 
     entries: list[tuple[str, dict[str, Any]]] = []
     for path in sorted(entries_dir.glob("*.toml")):
-        with open(path, "rb") as f:
-            data = tomllib.load(f)
+        try:
+            with open(path, "rb") as f:
+                data = tomllib.load(f)
+        except tomllib.TOMLDecodeError as exc:
+            raise ValueError(f"{path} is not valid TOML: {exc}") from exc
 
         name = data.get("name")
         if not isinstance(name, str) or not name:
@@ -310,7 +313,10 @@ def _read_entries(repo_root: Path) -> list[tuple[str, dict[str, Any]]]:
             if source.get(field):
                 marketplace_source[field] = source[field]
 
-        validate_source_location(marketplace_source)
+        try:
+            validate_source_location(marketplace_source)
+        except ValueError as exc:
+            raise ValueError(f"{path}: {exc}") from exc
         entry: dict[str, Any] = {
             "name": name,
             "source": marketplace_source,

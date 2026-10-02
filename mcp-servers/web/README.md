@@ -10,10 +10,11 @@ provider is fixed when the MCP starts; no tool call can silently switch it.
 
 ## Install
 
-Connect a local stdio MCP to one unified CLIO Web Search deployment:
+Connect a local stdio MCP to one unified CLIO Web Search deployment (replace
+`http://localhost:8089` with the address of your deployment):
 
 ```bash
-claude mcp add web -- clio-kit mcp-server web --remote-url http://homelab:8089
+claude mcp add web -- clio-kit mcp-server web --remote-url http://localhost:8089
 ```
 
 `--remote_url` is accepted as an alias for clients or scripts that prefer
@@ -26,6 +27,20 @@ For standalone keyless search without remote document conversion:
 ```bash
 claude mcp add web -- clio-kit mcp-server web --provider ddg
 ```
+
+### What works without a remote deployment
+
+| Capability | Standalone (`--provider ddg`, no `--remote-url`) | With `--remote-url` |
+|---|---|---|
+| `search` | DuckDuckGo (`query`, `count`) | SearXNG with native selectors |
+| `fetch` of an HTTP(S) URL (HTML to Markdown, plain text), inline or `to_file=True` | yes | yes |
+| `fetch` as a task (create, status, result, cancel) | yes, in-memory task backend | yes, durable Valkey backend |
+| `fetch` of a DOI (bare, `doi:`, or `doi.org` URL) | no: fails with "Document enrichment requires ..." | yes |
+| PDF, Office, XML, and image conversion | no: binary content is only saved with `to_file=True` | yes |
+| `fetch_events` | no: fails with the same error | yes |
+
+Read `web://capabilities` to see what the running installation supports
+(`document_enrichment`, `task_backend`).
 
 Legacy `--address` and `--document-address` options remain compatible, but only
 `--remote-url` enables automatic durable Valkey discovery.
@@ -59,5 +74,5 @@ uv run ruff check --fix .
 uv run ruff format .
 uv run pyright src tests
 uv run pytest -m "not integration"
-WEB_MCP_LIVE=1 WEB_REMOTE_URL=http://homelab:8089 uv run pytest -m integration
+WEB_MCP_LIVE=1 WEB_REMOTE_URL=http://localhost:8089 uv run pytest -m integration
 ```

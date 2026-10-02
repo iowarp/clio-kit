@@ -25,6 +25,7 @@ load_dotenv()
 # Initialize MCP server
 mcp: FastMCP = FastMCP(
     "arxiv",
+    version="2.2.5",
     instructions=(
         "Searches and retrieves academic papers from arXiv. "
         "Search by keyword, author, title, or subject. Fetch paper details and abstracts."
@@ -36,6 +37,8 @@ _READONLY_ANNOTATIONS = {
     "destructiveHint": False,
     "idempotentHint": True,
 }
+# Downloads write a PDF to disk (re-downloading rewrites the same file).
+_DOWNLOAD_ANNOTATIONS = {**_READONLY_ANNOTATIONS, "readOnlyHint": False}
 
 
 @mcp.tool(
@@ -214,7 +217,7 @@ async def find_similar_papers_tool(
     name="download_paper_pdf",
     title="Download PDF",
     description="Download the PDF of a paper from ArXiv.",
-    annotations=_READONLY_ANNOTATIONS,
+    annotations=_DOWNLOAD_ANNOTATIONS,
     tags={"arxiv", "download"},
 )
 async def download_paper_pdf_tool(
@@ -248,7 +251,7 @@ async def get_pdf_url_tool(arxiv_id: str) -> dict:
     name="download_multiple_pdfs",
     title="Download Multiple PDFs",
     description="Download multiple PDFs concurrently with rate limiting.",
-    annotations=_READONLY_ANNOTATIONS,
+    annotations=_DOWNLOAD_ANNOTATIONS,
     tags={"arxiv", "download"},
 )
 async def download_multiple_pdfs_tool(

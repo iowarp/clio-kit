@@ -453,6 +453,28 @@ def pair(case, args):
     return records
 
 
+def case_coverage_problem() -> str | None:
+    """Maintained (`clio-`) skills each need a case; other packages may add one."""
+    inventory = skill_records()
+    covered = {c["skill"] for c in CASES}
+    stale = sorted(covered - set(inventory))
+    if stale:
+        return (
+            f"evals/codex_cases.py has cases for skills that no longer exist: {stale}"
+        )
+    missing = sorted(
+        name
+        for name, record in inventory.items()
+        if record["bundle"].startswith("clio-") and name not in covered
+    )
+    if missing:
+        return (
+            f"Maintained skills without an evaluation case: {missing}. Add a "
+            "case(...) for each to CASES in evals/codex_cases.py."
+        )
+    return None
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
@@ -505,11 +527,9 @@ def main():
         if (not args.skill or c["skill"] in args.skill)
         and (not args.plugin or c.get("package") in args.plugin)
     ]
-    inventory = skill_records()
-    if {c["skill"] for c in CASES} != set(inventory):
-        raise ValueError(
-            "Evaluation cases must cover the current complete skill inventory"
-        )
+    problem = case_coverage_problem()
+    if problem:
+        raise ValueError(problem)
     if args.skill and set(args.skill) - {c["skill"] for c in cases}:
         raise ValueError("Unknown requested case")
     if args.plugin and set(args.plugin) - {c.get("package") for c in cases}:

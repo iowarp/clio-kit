@@ -129,3 +129,74 @@ async def test_filter_with_no_match_raises(sac_archive: Path) -> None:
                 "compute_trace_statistics",
                 {"filepath": str(sac_archive), "member_filter": "zzz-nope"},
             )
+
+
+def _sac_with_header(station: bytes = b"", phase: bytes = b"") -> bytes:
+    from .conftest import make_sac_bytes
+
+    payload = bytearray(make_sac_bytes([0.0, 1.0, -1.0]))
+    payload[440:448] = station.ljust(8)  # KSTNM
+    payload[480:488] = phase.ljust(8)  # KA (first-arrival phase)
+    return bytes(payload)
+
+
+@pytest.mark.asyncio
+async def test_station_and_phase_come_from_the_sac_header(tmp_path: Path) -> None:
+    event_dir = tmp_path / "ev1"
+    event_dir.mkdir()
+    labelled = event_dir / "one.sac"
+    labelled.write_bytes(_sac_with_header(b"AAA", b"Pn"))
+    unset = event_dir / "XX.BBB.00.BHN.sac"
+    unset.write_bytes(_sac_with_header(b"-12345"))
+    async with Client(mcp) as client:
+        inspected = (
+            await client.call_tool("inspect_archive", {"filepath": str(labelled)})
+        ).data
+        stats = (
+            await client.call_tool(
+                "compute_trace_statistics", {"filepath": str(labelled)}
+            )
+        ).data["traces"][0]
+        fallback = (
+            await client.call_tool("compute_trace_statistics", {"filepath": str(unset)})
+        ).data["traces"][0]
+    assert (inspected["stations"], inspected["phases"]) == (["AAA"], ["Pn"])
+    assert inspected["station_sources"] == inspected["phase_sources"] == ["header"]
+    assert (stats["station"], stats["station_source"]) == ("AAA", "header")
+    assert (stats["phase"], stats["phase_source"]) == ("Pn", "header")
+    assert (fallback["station"], fallback["station_source"]) == ("BBB", "path")
+    assert fallback["phase_source"] == "path"
+
+
+@pytest.mark.asyncio
+async def test_inspect_rejects_a_sac_named_file_that_is_not_sac(
+    tmp_path: Path, sac_file: Path
+) -> None:
+    import tarfile
+
+    garbage = tmp_path / "garbage.sac"
+    garbage.write_bytes(b"not a sac file at all" * 40)  # longer than a SAC header
+    archive_path = tmp_path / "mixed.tar"
+    with tarfile.open(archive_path, "w") as archive:
+        archive.add(garbage, arcname="garbage.sac")
+        archive.add(sac_file, arcname="P/IU.ANMO.00.BHZ.sac")
+    async with Client(mcp) as client:
+        with pytest.raises(ToolError, match="not a SAC file"):
+            await client.call_tool("inspect_archive", {"filepath": str(garbage)})
+        with pytest.raises(ToolError, match="not a SAC file"):
+            await client.call_tool(
+                "compute_trace_statistics", {"filepath": str(garbage)}
+            )
+        mixed = (
+            await client.call_tool("inspect_archive", {"filepath": str(archive_path)})
+        ).data
+    assert mixed["sac_trace_count"] == 1
+    assert mixed["sample_members"] == ["P/IU.ANMO.00.BHZ.sac"]
+    assert [item["member"] for item in mixed["invalid_members"]] == ["garbage.sac"]
+
+
+def test_server_version_matches_release_manifest() -> None:
+    import re
+
+    manifest = (Path(__file__).parents[1] / "clio-server.toml").read_text()
+    assert mcp.version == re.search(r'^version = "(.+)"', manifest, re.M).group(1)

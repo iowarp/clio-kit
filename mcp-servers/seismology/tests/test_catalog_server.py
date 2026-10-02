@@ -261,3 +261,56 @@ async def test_plot_rejects_empty_catalog(empty_geojson: Path) -> None:
             await client.call_tool(
                 "plot_sequence", {"catalog_path": str(empty_geojson)}
             )
+
+
+@pytest.mark.parametrize("end_day", [1, 2, 4, 8, 16, 32])
+def test_omori_counts_every_event_at_the_final_bucket_boundary(end_day) -> None:
+    days = [0.5, end_day, end_day]  # simultaneous events at the endpoint count too
+    events = [{"time_ms": int(day * 86_400_000)} for day in days]
+    buckets = _omori_decay(events, 0)["rate_buckets"]
+    assert sum(bucket["count"] for bucket in buckets) == len(events)
+    assert buckets[-1]["day_end"] == end_day
+    assert all(bucket["day_end"] > bucket["day_start"] for bucket in buckets)
+
+
+def test_omori_last_bucket_is_truncated_to_the_catalogue_end() -> None:
+    """A steady rate must not read as a decay because the catalogue stops mid-bucket."""
+    t0 = 1_700_000_000_000
+    events = [{"mag": 6.0, "time_ms": t0}] + [
+        {"mag": 3.0, "time_ms": t0 + k * 7_200_000}
+        for k in range(1, 67)  # 12 per day; ends 5.5 days in
+    ]
+    decay = _omori_decay(events, t0)
+    buckets = decay["rate_buckets"]
+    assert [(b["day_start"], b["day_end"]) for b in buckets] == [
+        (0, 1),
+        (1, 2),
+        (2, 4),
+        (4, 5.5),
+    ]
+    assert sum(b["count"] for b in buckets) == 66
+    assert all(11 <= b["rate_per_day"] <= 13 for b in buckets)
+    assert decay["decay_ratio_first_to_last"] < 1.0  # was 2.3 with a full 4-day divisor
+
+
+@pytest.mark.asyncio
+async def test_non_catalogue_inputs_and_bad_mag_bin_are_errors(
+    tmp_path: Path, aftershock_csv: Path
+) -> None:
+    sites = tmp_path / "sites.csv"
+    sites.write_text("site,lat,lon\nchi,41.8781,-87.6298\n", encoding="utf-8")
+    points = tmp_path / "points.geojson"
+    points.write_text(
+        '{"type": "FeatureCollection", "features": [{"type": "Feature", '
+        '"properties": {"name": "chi"}, "geometry": null}]}',
+        encoding="utf-8",
+    )
+    async with Client(mcp) as client:
+        with pytest.raises(ToolError, match="no magnitude column"):
+            await client.call_tool("analyze_sequence", {"catalog_path": str(sites)})
+        with pytest.raises(ToolError, match="'mag' property"):
+            await client.call_tool("analyze_sequence", {"catalog_path": str(points)})
+        with pytest.raises(ToolError, match="mag_bin must be greater than 0"):
+            await client.call_tool(
+                "analyze_sequence", {"catalog_path": str(aftershock_csv), "mag_bin": 0}
+            )

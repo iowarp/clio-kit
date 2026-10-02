@@ -1,12 +1,42 @@
-"""Export selection for modern and legacy MCP connections."""
+"""Export selection and value formatting for tool responses."""
 
 import logging
-from typing import Literal
+from typing import Any, Literal
 
+import numpy as np
 from fastmcp import Context
 from fastmcp.exceptions import ToolError
 
 logger = logging.getLogger(__name__)
+
+# ponytail: fixed inline-response bound; make it a setting if clients need more.
+MAX_VALUES = 1000
+
+
+def json_safe(value: Any) -> Any:
+    """Convert HDF5/NumPy values to strict-JSON types; NaN and infinity become null."""
+    if isinstance(value, (np.ndarray, np.generic)):
+        array = np.asarray(value)
+        if array.dtype.kind == "f":
+            finite = np.isfinite(array)
+            array = array.astype(object)
+            array[~finite] = None
+        elif array.dtype.kind == "S":
+            array = np.char.decode(array, "utf-8", "replace")
+        return array.tolist()
+    return value if isinstance(value, (str, int, float, bool)) else str(value)
+
+
+def format_values(data: Any) -> str:
+    """Render values for a tool response, stating any truncation beyond MAX_VALUES."""
+    array = np.asarray(data)
+    if array.size <= MAX_VALUES:
+        return f"Values: {array.tolist()}"
+    return (
+        f"Values (first {MAX_VALUES} of {array.size} in row-major order, "
+        f"{array.size - MAX_VALUES} omitted; use read_partial_dataset for a slice): "
+        f"{array.flat[:MAX_VALUES].tolist()}"
+    )
 
 
 async def select_export_format(

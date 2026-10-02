@@ -378,14 +378,9 @@ class TestGenerateBibtex:
         """Test BibTeX generation with complex ArXiv ID formats"""
         test_cases = [
             ("http://arxiv.org/abs/2401.12345v1", "2401.12345v1"),
-            (
-                "https://arxiv.org/abs/cs/0601001v2",
-                "0601001v2",
-            ),  # Only the last part after /
-            (
-                "http://arxiv.org/abs/math.NT/0601001",
-                "0601001",
-            ),  # Only the last part after /
+            # Old-style IDs keep their archive prefix
+            ("https://arxiv.org/abs/cs/0601001v2", "cs/0601001v2"),
+            ("http://arxiv.org/abs/math.NT/0601001", "math.NT/0601001"),
             ("simple_id", "simple_id"),
             ("", "unknown"),
         ]

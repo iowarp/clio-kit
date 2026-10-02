@@ -30,3 +30,11 @@ async def test_render_tool_runs_in_memory(tmp_path) -> None:
         )
     assert out.is_file() and out.stat().st_size > 0
     assert result.structured_content["status"] == "success"
+
+
+def test_server_version_matches_release_manifest() -> None:
+    import re
+    from pathlib import Path
+
+    manifest = (Path(__file__).parents[1] / "clio-server.toml").read_text()
+    assert mcp.version == re.search(r'^version = "(.+)"', manifest, re.M).group(1)

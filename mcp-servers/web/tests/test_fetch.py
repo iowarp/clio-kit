@@ -90,6 +90,19 @@ async def test_fetch_rejects_non_http_scheme() -> None:
 
 
 @pytest.mark.asyncio
+async def test_fetch_rejects_target_that_is_neither_url_nor_doi() -> None:
+    """Free text is an invalid target, not a DOI needing the remote service."""
+    async with Client(mcp) as client:
+        with pytest.raises(Exception) as excinfo:
+            await client.call_tool("fetch", {"target": "not a url"})
+        with pytest.raises(Exception) as doi_excinfo:
+            await client.call_tool("fetch", {"target": "10.1109/CLUSTR.2009.5289150"})
+    assert "Invalid target" in str(excinfo.value)
+    # A well-formed DOI still reaches the (unconfigured) resolver.
+    assert "--remote-url" in str(doi_excinfo.value)
+
+
+@pytest.mark.asyncio
 async def test_fetch_size_cap_content_length(httpx_mock: HTTPXMock) -> None:
     """An advertised content-length over the cap raises a ToolError."""
     httpx_mock.add_response(

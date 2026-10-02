@@ -18,8 +18,11 @@ from ._common import MAX_DEM_CELLS, MAX_POINT_CLOUD_POINTS, finite_values, summa
 from .errors import DependencyMissingError, TerrainError
 
 
-def _read_csv_points(path: Path, max_points: int) -> np.ndarray:
-    """Read up to ``max_points`` x,y,z rows from a CSV file (header optional)."""
+def _read_csv_points(path: Path, max_points: int) -> tuple[np.ndarray, bool]:
+    """Read up to ``max_points`` x,y,z rows from a CSV file (header optional).
+
+    Also returns whether x/y/z were taken from named header columns.
+    """
     with path.open("r", encoding="utf-8", newline="") as handle:
         sample = handle.read(4096)
         handle.seek(0)
@@ -31,8 +34,9 @@ def _read_csv_points(path: Path, max_points: int) -> np.ndarray:
                 if index >= max_points:
                     break
                 rows.append((float(row["x"]), float(row["y"]), float(row["z"])))
-            return np.asarray(rows, dtype=float)
-        return np.loadtxt(handle, delimiter=",", dtype=float, max_rows=max_points)
+            return np.asarray(rows, dtype=float), True
+        points = np.loadtxt(handle, delimiter=",", dtype=float, max_rows=max_points)
+        return points, False
 
 
 def load_point_cloud(
@@ -56,8 +60,9 @@ def load_point_cloud(
         except ImportError as exc:
             raise DependencyMissingError(
                 "laspy",
-                "Install the 'laz' extra (pip install 'terrain-mcp[laz]') "
-                "or provide CSV/NPY/NPZ x,y,z points.",
+                "It is not included in this installation, so LAS/LAZ input is "
+                "unavailable here. Supported point-cloud inputs: CSV with x,y,z "
+                "columns, .npy, .npz; convert the LAS/LAZ file to one of those.",
             ) from exc
         las = laspy.read(path)
         total = len(las.x)
@@ -76,15 +81,25 @@ def load_point_cloud(
             points = np.column_stack((payload["x"], payload["y"], payload["z"])).astype(
                 float
             )
+            metadata["xyz_columns"] = "arrays named x, y, z"
         else:
             key = "points" if "points" in payload else sorted(payload.files)[0]
             points = np.asarray(payload[key], dtype=float)
             metadata["array_key"] = key
         points = points[:max_points]
     else:
-        points = _read_csv_points(path, max_points)
+        points, named = _read_csv_points(path, max_points)
+        if named:
+            metadata["xyz_columns"] = "header columns named x, y, z"
     if points.ndim != 2 or points.shape[1] < 3:
         raise TerrainError("Point cloud must have at least three columns: x, y, z.")
+    if suffix not in {".las", ".laz"}:
+        # Unnamed input is read by position; say so, since a DEM grid passed here
+        # by mistake would otherwise be silently read as three columns of points.
+        metadata.setdefault(
+            "xyz_columns",
+            f"no column names: columns 1, 2, 3 of {points.shape[1]} read as x, y, z",
+        )
     points = np.asarray(points[:, :3], dtype=float)
     finite = np.isfinite(points).all(axis=1)
     return points[finite], metadata

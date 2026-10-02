@@ -31,11 +31,11 @@
   "tools": [
     {
       "name": "fetch",
-      "description": "Fetch an HTTP(S) URL or DOI inline or as a task. HTML and text are read locally; supported documents use CLIO Web Search conversion when configured."
+      "description": "Fetch an HTTP(S) URL or DOI inline or as a task. HTML and text are read locally. DOI targets and PDF/Office/image conversion require a CLIO Web Search deployment (--remote-url); without one a DOI fails with a clear error and binary documents are only saved with to_file=True."
     },
     {
       "name": "fetch_events",
-      "description": "Query the full ordered backend event log for a document fetch conversion."
+      "description": "Query the full ordered backend event log for a document fetch conversion. Requires a CLIO Web Search deployment (--remote-url)."
     },
     {
       "name": "search",

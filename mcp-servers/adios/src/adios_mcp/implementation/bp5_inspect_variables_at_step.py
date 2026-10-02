@@ -35,9 +35,7 @@ def inspect_variables_at_step(filename: str, variable_name: str, step: int):
                         raise ValueError(
                             f"Variable {variable_name} not found at step {step}"
                         )
-            return {
-                "error": f"Step {step} exceeds available steps in the variable or incorrect step."
-            }
+            raise ValueError(f"Step {step} not found in file '{filename}'")
 
     except Exception as e:
         raise RuntimeError(

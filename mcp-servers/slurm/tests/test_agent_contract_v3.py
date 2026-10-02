@@ -28,7 +28,9 @@ from slurm_mcp.agent_contract import (
     submit,
 )
 from slurm_mcp import server
-from slurm_mcp.implementation.job_output import _read_output
+from slurm_mcp.implementation.cluster_info import get_slurm_info
+from slurm_mcp.implementation.job_output import _read_output, get_job_output
+from slurm_mcp.implementation.job_status import get_job_status
 from slurm_mcp.implementation.job_submission import _create_sbatch_script
 from slurm_mcp.implementation.array_jobs import submit_array_job
 from slurm_mcp.implementation.utils import (
@@ -577,6 +579,110 @@ def test_empty_details_do_not_turn_queue_absence_into_completion() -> None:
         result = describe_job("42")
     assert result.state == "UNKNOWN"
     assert result.terminal is False
+
+
+def test_job_status_uses_scheduler_record_for_jobs_absent_from_the_queue() -> None:
+    """A job that left the queue reports its accounted state, never a guess."""
+    empty_queue = SlurmCommandResult(
+        args=["squeue"], returncode=0, stdout="", stderr=""
+    )
+    with (
+        patch(
+            "slurm_mcp.implementation.job_status.check_slurm_available",
+            return_value=True,
+        ),
+        patch(
+            "slurm_mcp.implementation.job_status.run_slurm_command",
+            return_value=empty_queue,
+        ),
+        patch(
+            "slurm_mcp.implementation.job_status.get_job_details",
+            side_effect=[
+                {"job_id": "999999", "error": "Job not found"},
+                {"job_id": "41", "details": {"state": "FAILED"}},
+            ],
+        ),
+    ):
+        assert get_job_status("999999")["status"] == "UNKNOWN"
+        assert get_job_status("41")["status"] == "FAILED"
+
+
+def test_outputs_are_found_by_job_id_after_the_scheduler_forgets_the_job(
+    tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Without accounting, the server's own output file outlives MinJobAge."""
+    monkeypatch.chdir(tmp_path)
+    logs = tmp_path / "logs" / "slurm_output"
+    logs.mkdir(parents=True)
+    (logs / "slurm_42.out").write_text("node01\n")
+    forgotten = {"job_id": "42", "error": "Job not found"}
+    with (
+        patch("slurm_mcp.implementation.job_output.check_slurm_available"),
+        patch(
+            "slurm_mcp.implementation.job_output.get_job_details",
+            return_value=forgotten,
+        ),
+        patch.object(
+            agent_contract,
+            "get_job_status",
+            return_value={
+                "job_id": "42",
+                "status": "UNKNOWN",
+                "reason": "Job not found (may have completed)",
+            },
+        ),
+        patch.object(agent_contract, "get_job_details", return_value=forgotten),
+    ):
+        result = describe_job("42", output="both")
+        escaped = get_job_output("../42", "stdout")
+    assert result.state == "UNKNOWN"
+    assert [(item.stream, item.content) for item in result.outputs] == [
+        ("stdout", "node01\n")
+    ]
+    assert any(note.startswith("lifecycle unavailable") for note in result.diagnostics)
+    assert any(note.startswith("stderr unavailable") for note in result.diagnostics)
+    assert "No stdout file found" in escaped["error"]
+
+
+def test_cluster_info_reads_the_configured_cluster_name() -> None:
+    """ClusterName comes from the controller; the literal is only a fallback."""
+
+    def fake(command: list[str], **_kwargs: Any) -> SlurmCommandResult:
+        stdout = "ClusterName             = ares\n" if command[0] == "scontrol" else ""
+        return SlurmCommandResult(args=command, returncode=0, stdout=stdout, stderr="")
+
+    target = "slurm_mcp.implementation.cluster_info"
+    with patch(f"{target}.check_slurm_available", return_value=True):
+        with patch(f"{target}.run_slurm_command", side_effect=fake):
+            assert get_slurm_info()["cluster_name"] == "ares"
+        with patch(
+            f"{target}.run_slurm_command",
+            return_value=SlurmCommandResult(
+                args=["sinfo"], returncode=1, stdout="", stderr=""
+            ),
+        ):
+            assert get_slurm_info()["cluster_name"] == "slurm-cluster"
+
+
+def test_node_info_lists_each_node_once_and_filters_by_partition() -> None:
+    """sinfo --Node repeats a node per partition; the snapshot must not."""
+    row = SLURM_FIELD_SEPARATOR.join(["node01", "idle", "0/24/0/24", "29825", "", ""])
+    response = SlurmCommandResult(
+        args=["sinfo"], returncode=0, stdout=f"{row}\n{row}\n{row}\n", stderr=""
+    )
+    with (
+        patch(
+            "slurm_mcp.implementation.node_info.check_slurm_available",
+            return_value=True,
+        ),
+        patch(
+            "slurm_mcp.implementation.node_info.run_slurm_command",
+            return_value=response,
+        ) as run,
+    ):
+        result = get_node_info(partition="debug")
+    assert [node["node_name"] for node in result["nodes"]] == ["node01"]
+    assert run.call_args.args[0][-2:] == ["--partition", "debug"]
 
 
 def test_cluster_snapshot_unifies_cluster_queue_and_opt_in_nodes() -> None:

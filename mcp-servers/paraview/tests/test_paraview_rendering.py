@@ -445,11 +445,19 @@ class TestSetRepresentationType:
         GetActiveSource.return_value = mock_source
         GetActiveView.return_value = Mock()
         GetDisplayProperties.return_value = mock_display
+        mock_display.GetProperty.return_value.Available = ["Surface", "Wireframe"]
 
         success, message = engine.set_representation_type("Wireframe")
 
         assert success is True
         assert "Wireframe" in message
+        mock_display.SetRepresentationType.assert_called_once_with("Wireframe")
+
+        # ParaView ignores an unknown type silently; the tool must not.
+        success, message = engine.set_representation_type("Banana")
+
+        assert success is False
+        assert "Banana" in message and "Surface, Wireframe" in message
         mock_display.SetRepresentationType.assert_called_once_with("Wireframe")
 
     def test_set_representation_type_no_source(self, engine, mock_paraview):

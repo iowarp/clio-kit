@@ -173,28 +173,28 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\pandas run pandas-mcp --help
 **Tags**: cleaning, data-analysis
 
 ### `clean_data`
-**Description**: Remove duplicates, detect outliers via IQR/Z-score, and optimize data types in a single pass.
-**Hints**: read-only, idempotent
+**Description**: Remove duplicates, detect outliers via IQR/Z-score, and optimize data types in a single pass. Writes <input>_cleaned.csv beside the input, overwriting any previous one.
+**Hints**: idempotent
 **Tags**: cleaning, data-analysis
 
 ### `groupby_operations`
-**Description**: Group data by columns and apply aggregations (sum, mean, count, min, max, std, median) with optional pre-filter.
-**Hints**: read-only, idempotent
+**Description**: Group data by columns and apply aggregations (sum, mean, count, min, max, std, median) with optional pre-filter. Writes <input>_grouped.csv beside the input, overwriting any previous one.
+**Hints**: idempotent
 **Tags**: data-analysis, transformation
 
 ### `merge_datasets`
-**Description**: Join two datasets using inner, outer, left, or right joins on specified key columns.
-**Hints**: read-only, idempotent
+**Description**: Join two datasets using inner, outer, left, or right joins on specified key columns. Writes <left_file>_merged.csv beside the left file, overwriting any previous one.
+**Hints**: idempotent
 **Tags**: data-analysis, transformation
 
 ### `pivot_table`
-**Description**: Create pivot tables with configurable row index, column headers, value columns, and aggregation function.
-**Hints**: read-only, idempotent
+**Description**: Create pivot tables with configurable row index, column headers, value columns, and aggregation function. Writes <input>_pivot.csv beside the input, overwriting any previous one.
+**Hints**: idempotent
 **Tags**: data-analysis, transformation
 
 ### `time_series_operations`
-**Description**: Resample, compute rolling statistics, create lag features, or difference a time series.
-**Hints**: read-only, idempotent
+**Description**: Resample, compute rolling statistics, create lag features, or difference a time series. Writes <input>_<operation>.csv beside the input, overwriting any previous one.
+**Hints**: idempotent
 **Tags**: data-analysis, time-series
 
 ### `validate_data`
@@ -203,13 +203,13 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\pandas run pandas-mcp --help
 **Tags**: data-analysis, validation
 
 ### `filter_data`
-**Description**: Filter rows using comparison, membership, pattern-matching, and null-check operators across multiple columns.
-**Hints**: read-only, idempotent
+**Description**: Filter rows using comparison, membership, pattern-matching, and null-check operators across multiple columns. Writes <input>_filtered.csv beside the input (or output_file), overwriting any previous one.
+**Hints**: idempotent
 **Tags**: data-analysis, filtering
 
 ### `optimize_memory`
-**Description**: Analyze and reduce DataFrame memory usage through automatic dtype optimization and chunked-processing recommendations.
-**Hints**: read-only, idempotent
+**Description**: Analyze and reduce DataFrame memory usage through automatic dtype optimization and chunked-processing recommendations. Writes <input>_optimized.csv beside the input, overwriting any previous one.
+**Hints**: idempotent
 **Tags**: data-analysis, optimization
 
 ### `profile_data`

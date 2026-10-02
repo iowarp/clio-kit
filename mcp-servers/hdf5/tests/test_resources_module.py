@@ -5,11 +5,11 @@ Tests LRU cache, lazy loading proxies, resource manager,
 and file discovery functions.
 """
 
+import asyncio
 import pytest
 import json
 import h5py
 import numpy as np
-from pathlib import Path
 from datetime import datetime
 
 # Import the resources module directly - DO NOT import server
@@ -291,10 +291,14 @@ def test_resource_manager_initialization(temp_dir):
     assert rm.history_db_path.exists()
 
 
-def test_resource_manager_default_data_dir():
-    """Test ResourceManager with default data directory."""
+def test_resource_manager_default_writes_nothing(temp_dir, monkeypatch):
+    """Without a data_dir, state stays in memory: no data/ litter in the cwd."""
+    monkeypatch.chdir(temp_dir)
     rm = resources.ResourceManager()
-    assert rm.data_dir == Path("data")
+    rm.cache_dataset("f.h5", "/d", [1])
+    asyncio.run(rm.shutdown())
+    assert rm.data_dir is None
+    assert list(temp_dir.iterdir()) == []
 
 
 def test_resource_manager_load_storage_index(temp_dir):

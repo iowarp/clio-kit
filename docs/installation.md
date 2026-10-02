@@ -4,19 +4,19 @@ title: Selective installation
 
 # Install only what you need
 
-The distribution built from this branch separates the launcher from component
-payloads. This behavior becomes available to public users when its release
-artifacts and launcher are published; an older PyPI release keeps its old layout.
+From version 2.11.0 the distribution separates the launcher from component
+payloads. Releases before 2.11.0 keep the old single-package layout and lack the
+`skill`, `plugin` and `doctor` commands; check `clio-kit --version`.
 A source checkout remains the development route.
 
 | Selection | Download behavior |
 | --- | --- |
-| Launcher | CLI, catalogue metadata, contracts and provenance; no server, skill or search payloads |
+| Launcher | CLI, catalogue metadata, contracts and provenance; no server or skill payloads |
 | MCP | Only that server's source and lock, followed by its isolated runtime dependencies on first launch |
 | Skill | Only the selected skill folder, resources and license |
 | Workflow project setup | Its skills and necessary local scripts; MCP configuration is written, and each server downloads when started |
 | Native plugin | The selected package, dependency packages and their skills; server implementations download when started |
-| Search or prompt | Its own payload when first used |
+| Prompt | Its own payload when first used |
 
 Listing servers, skills and prompts, or previewing a project installation with
 `--dry-run`, does not download component payloads. Selecting all skills or a large
@@ -24,7 +24,7 @@ workflow intentionally selects all of that collection's members.
 
 ## Released launcher
 
-After this distribution is released:
+With the 2.11.0 or newer launcher:
 
 ```bash
 uv tool install clio-kit

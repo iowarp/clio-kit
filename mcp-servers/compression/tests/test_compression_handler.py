@@ -85,6 +85,7 @@ async def test_decompress_success(sample_file):
     """Test successful compress then decompress round-trip."""
     result = await compress_file(sample_file)
     gz_path = result["compressed_file"]
+    os.unlink(sample_file)  # an existing output is never overwritten
 
     decomp_result = await decompress_file(gz_path)
     assert isinstance(decomp_result, dict)
@@ -107,3 +108,37 @@ async def test_decompress_non_gz_file(sample_file):
     """Test decompression of a file without .gz extension."""
     with pytest.raises(ValueError, match="Not a gzip file"):
         await decompress_file(sample_file)
+
+
+# --- OUTPUT SAFETY (never overwrite, no partial output) ---
+
+
+@pytest.mark.asyncio
+async def test_existing_outputs_are_not_overwritten(tmp_path):
+    source = tmp_path / "c.txt"
+    source.write_bytes(b"payload\n" * 50)
+    await compress_file(str(source))
+    compressed = (tmp_path / "c.txt.gz").read_bytes()
+
+    with pytest.raises(FileExistsError, match="refusing to overwrite"):
+        await compress_file(str(source))
+    assert (tmp_path / "c.txt.gz").read_bytes() == compressed
+
+    source.write_bytes(b"KEEPME")
+    with pytest.raises(FileExistsError, match="refusing to overwrite"):
+        await decompress_file(str(tmp_path / "c.txt.gz"))
+    assert source.read_bytes() == b"KEEPME"
+
+    source.unlink()
+    await decompress_file(str(tmp_path / "c.txt.gz"))
+    assert source.read_bytes() == b"payload\n" * 50
+
+
+@pytest.mark.asyncio
+async def test_failed_decompress_leaves_no_partial_output(tmp_path):
+    bad = tmp_path / "notgz.gz"
+    bad.write_bytes(b"this is not gzip")
+
+    with pytest.raises(OSError, match="Not a gzipped file"):
+        await decompress_file(str(bad))
+    assert not (tmp_path / "notgz").exists()

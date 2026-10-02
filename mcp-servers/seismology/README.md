@@ -17,14 +17,19 @@ endianness is auto-detected. Statistics use NumPy and plotting uses Matplotlib.
 ### `inspect_archive`
 
 List the SAC members of a file/archive: count, sample member names and sizes,
-and inferred stations and phases. Read-only.
+and stations and phases. Stations and phases come from the SAC header (KSTNM,
+KA) and fall back to the member path only when the header field is unset;
+`station_sources` / `phase_sources` say which was used. Read-only.
 
 ```jsonc
 { "filepath": "events.tar.gz", "member_filter": "BHZ", "max_members": 12 }
 ```
 
 Returns `{status, filepath, sac_trace_count, sample_members, sample_sizes_bytes,
-phases, stations, members_truncated}`.
+phases, stations, phase_sources, station_sources, members_truncated}`, plus
+`invalid_member_count` and `invalid_members` when an archive contains `.sac`
+members that are not SAC data. If no member is valid SAC data the call is an
+error.
 
 ### `compute_trace_statistics`
 

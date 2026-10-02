@@ -4,6 +4,7 @@ Handles job status monitoring and checking.
 """
 
 import subprocess
+from .job_details import get_job_details
 from .utils import (
     SLURM_FIELD_SEPARATOR,
     check_slurm_available,
@@ -51,9 +52,14 @@ def get_job_status(job_id: str) -> dict:
                 "real_slurm": True,
             }
         else:
+            # Absent from the live queue: only scheduler detail or accounting
+            # can say how the job ended. Never invent COMPLETED for an id that
+            # may not exist.
+            details = get_job_details(job_id).get("details") or {}
+            state = details.get("jobstate") or details.get("state")
             return {
                 "job_id": job_id,
-                "status": "COMPLETED",
+                "status": str(state).upper() if state else "UNKNOWN",
                 "reason": "Job not found (may have completed)",
                 "real_slurm": True,
             }

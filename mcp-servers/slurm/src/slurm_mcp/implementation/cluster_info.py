@@ -3,6 +3,7 @@ Slurm cluster information capabilities.
 Handles cluster configuration and information retrieval.
 """
 
+import re
 import subprocess
 from typing import Optional
 from .utils import (
@@ -73,6 +74,19 @@ def get_slurm_info(*, max_records: Optional[int] = None) -> dict:
             "truncated": truncated,
             "real_slurm": True,
         }
+
+        # The literal above is only the fallback when the controller cannot
+        # be asked for its configured ClusterName.
+        try:
+            config_result = run_slurm_command(
+                ["scontrol", "show", "config"],
+                test_runner=subprocess.run,
+            )
+            name = re.search(r"^ClusterName\s*=\s*(\S+)", config_result.stdout, re.M)
+            if config_result.returncode == 0 and name:
+                cluster_info["cluster_name"] = name.group(1)
+        except Exception:
+            pass
 
         # Try to get Slurm version
         try:

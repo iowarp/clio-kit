@@ -40,12 +40,11 @@ def validate_data(
 
         for column, rules in validation_rules.items():
             if column not in df.columns:
-                validation_results[column] = {
-                    "valid": False,
+                return {
+                    "success": False,
                     "error": f"Column '{column}' not found in dataset",
+                    "error_type": "ValueError",
                 }
-                overall_valid = False
-                continue
 
             column_results: Dict[str, Any] = {
                 "valid": True,
@@ -299,6 +298,7 @@ def hypothesis_testing(
                 statistic, p_value = stats.ttest_ind(data1, data2)
                 test_info = {
                     "test_type": "two_sample_t_test",
+                    "variance_assumption": "pooled (Student's t-test, equal variances)",
                     "null_hypothesis": "Means are equal",
                     "sample1_size": len(data1),
                     "sample1_mean": float(data1.mean()),
@@ -328,6 +328,8 @@ def hypothesis_testing(
                 )
                 test_info = {
                     "test_type": "chi_square_independence",
+                    # scipy applies Yates' continuity correction only to 2x2 tables
+                    "yates_correction": bool(dof == 1),
                     "null_hypothesis": "Variables are independent",
                     "degrees_of_freedom": dof,
                     "contingency_table": contingency_table.to_dict(),

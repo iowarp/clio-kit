@@ -59,7 +59,7 @@
     },
     {
       "name": "get_timeline_analysis",
-      "description": "Generate timeline analysis showing I/O activity over time and temporal patterns."
+      "description": "Report the job time span and each module's first/last open/read/write/close timestamps. Binned activity over time (peaks, idle periods) needs DXT trace data and is not computed from a Darshan summary log."
     },
     {
       "name": "compare_darshan_logs",

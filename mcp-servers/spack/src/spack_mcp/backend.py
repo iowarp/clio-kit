@@ -35,7 +35,7 @@ _STREAM_JOIN_TIMEOUT_SECONDS = 5.0
 _ENVIRONMENT_MARKER = b"\0__SPACK_MCP_ENVIRONMENT_V1__\0"
 _ENVIRONMENT_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _FIND_NO_MATCH_DIAGNOSTIC = re.compile(
-    r"\A(?:==>\s*)?Error:\s*No packages? match(?:es)? the query"
+    r"\A(?:==>\s*)?(?:Error:\s*)?No packages? match(?:es)? the query"
     r"(?::[^\r\n]*)?\s*\Z",
     re.IGNORECASE,
 )
@@ -725,7 +725,7 @@ def _spack_executable() -> str:
             return str(candidate)
     raise SpackBackendError(
         "command_not_found",
-        "Spack executable was not found in PATH, SPACK_ROOT/bin, ~/.local/spack, or /opt/spack",
+        "No Spack in PATH, SPACK_ROOT/bin, ~/.local/spack, /opt/spack; set SPACK_MCP_COMMAND",
         operation="startup",
     )
 

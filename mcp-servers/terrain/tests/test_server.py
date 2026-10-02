@@ -147,3 +147,80 @@ async def test_capabilities_resource_payload() -> None:
     payload = json.loads(contents[0].text)
     assert payload["tools"] == ["dem_terrain", "pointcloud_read"]
     assert "geotiff" in payload["dem_formats"]["optional"]
+
+
+@pytest.mark.asyncio
+async def test_slope_next_to_nodata_is_excluded_not_computed_from_a_fill(
+    tmp_path: Path,
+) -> None:
+    rows, cols = np.mgrid[0:20, 0:30]
+    plane = 100.0 + 0.5 * cols  # slope = atan(0.5) = 26.565 degrees everywhere
+    plane[10, 15] = -9999.0
+    path = tmp_path / "nodata.npy"
+    np.save(path, plane)
+    async with Client(mcp) as client:
+        data = (
+            await client.call_tool(
+                "dem_terrain", {"filepath": str(path), "nodata": -9999}
+            )
+        ).data
+        strict = (
+            await client.call_tool(
+                "dem_terrain",
+                {"filepath": str(path), "nodata": -9999, "slope_max_degrees": 30},
+            )
+        ).data
+    assert data["valid_cell_count"] == 599
+    # The no-data cell and its four gradient neighbours have no defined slope.
+    assert data["slope_degrees"]["count"] == data["aspect_degrees"]["count"] == 595
+    assert data["slope_degrees"]["min"] == pytest.approx(26.565, abs=1e-3)
+    assert data["slope_degrees"]["max"] == pytest.approx(26.565, abs=1e-3)
+    assert data["suitable_cell_count"] == 599  # no slope criterion: elevation only
+    assert strict["suitable_cell_count"] == 595
+
+
+@pytest.mark.asyncio
+async def test_dem_terrain_rejects_inverted_elevation_range(dem_csv: Path) -> None:
+    async with Client(mcp) as client:
+        with pytest.raises(ToolError, match="elevation_min"):
+            await client.call_tool(
+                "dem_terrain",
+                {"filepath": str(dem_csv), "elevation_min": 200, "elevation_max": 100},
+            )
+
+
+@pytest.mark.asyncio
+async def test_pointcloud_read_says_which_columns_were_xyz(
+    dem_csv: Path, points_csv: Path
+) -> None:
+    async with Client(mcp) as client:
+        grid = await client.call_tool("pointcloud_read", {"filepath": str(dem_csv)})
+        named = await client.call_tool("pointcloud_read", {"filepath": str(points_csv)})
+    assert grid.data["metadata"]["xyz_columns"] == (
+        "no column names: columns 1, 2, 3 of 5 read as x, y, z"
+    )
+    assert named.data["metadata"]["xyz_columns"] == "header columns named x, y, z"
+
+
+@pytest.mark.asyncio
+async def test_geotiff_error_does_not_suggest_an_impossible_install(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import sys
+
+    monkeypatch.setitem(sys.modules, "rasterio", None)  # force ImportError
+    path = tmp_path / "dem.tif"
+    path.write_bytes(b"II*\x00")
+    async with Client(mcp) as client:
+        with pytest.raises(ToolError) as excinfo:
+            await client.call_tool("dem_terrain", {"filepath": str(path)})
+    message = str(excinfo.value)
+    assert "not included in this installation" in message and "CSV" in message
+    assert "pip install" not in message
+
+
+def test_server_version_matches_release_manifest() -> None:
+    import re
+
+    manifest = (Path(__file__).parents[1] / "clio-server.toml").read_text()
+    assert mcp.version == re.search(r'^version = "(.+)"', manifest, re.M).group(1)

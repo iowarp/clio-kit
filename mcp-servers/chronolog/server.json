@@ -43,7 +43,7 @@
     },
     {
       "name": "retrieve_interaction",
-      "description": "Retrieve logged records from a chronicle and story, with optional time filtering."
+      "description": "Retrieve logged records from a chronicle and story, with optional time filtering.\n\nWrites the records to a new text file in the server's working directory and\nreturns that file's absolute path, or \"No records found.\"."
     }
   ],
   "resources": [

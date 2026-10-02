@@ -35,6 +35,7 @@ load_dotenv()
 
 mcp: FastMCP = FastMCP(
     "terrain",
+    version="2.2.5",
     instructions=(
         "Generic terrain analysis over gridded elevation data and point clouds. "
         "Use dem_terrain to analyze a Digital Elevation Model for elevation, slope, "

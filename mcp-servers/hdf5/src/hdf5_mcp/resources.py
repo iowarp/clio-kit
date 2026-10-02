@@ -207,24 +207,23 @@ class ResourceManager:
         Initialize resource manager.
 
         Args:
-            data_dir: Directory to store metadata
+            data_dir: Directory to store metadata; None keeps state in memory
+                only, so nothing is written to the working directory
             cache_capacity: Maximum number of datasets to cache
         """
-        self.data_dir = data_dir or Path("data")
+        self.data_dir = data_dir
+        state_dir = data_dir or Path()  # paths are unused without a data_dir
         self.cache_capacity = cache_capacity
         self.file_cache: LRUCache = LRUCache(capacity=cache_capacity)
-        self.storage_index_path = self.data_dir / ".storage_index.json"
-        self.cache_db_path = self.data_dir / ".cache_db.json"
-        self.history_db_path = self.data_dir / ".history_db.json"
+        self.storage_index_path = state_dir / ".storage_index.json"
+        self.cache_db_path = state_dir / ".cache_db.json"
+        self.history_db_path = state_dir / ".history_db.json"
 
         # Initialize paths
-        if not self.data_dir.exists():
-            self.data_dir.mkdir(parents=True)
-        if not self.storage_index_path.exists():
+        if data_dir:
+            data_dir.mkdir(parents=True, exist_ok=True)
             self.storage_index_path.touch()
-        if not self.cache_db_path.exists():
             self.cache_db_path.touch()
-        if not self.history_db_path.exists():
             self.history_db_path.touch()
 
         # Initialize data structures immediately (before any operations)
@@ -253,7 +252,7 @@ class ResourceManager:
 
     def _load_storage_index(self) -> Dict[str, Any]:
         """Load the storage index from disk."""
-        if self.storage_index_path.exists():
+        if self.data_dir and self.storage_index_path.exists():
             try:
                 with open(self.storage_index_path, "r") as f:
                     return json.load(f)
@@ -265,6 +264,8 @@ class ResourceManager:
 
     def _save_storage_index(self):
         """Save the storage index to disk."""
+        if self.data_dir is None:
+            return
         try:
             self.storage_index["last_updated"] = datetime.now().isoformat()
             with open(self.storage_index_path, "w") as f:
@@ -274,7 +275,7 @@ class ResourceManager:
 
     def _load_cache_db(self) -> Dict[str, Any]:
         """Load the cache database from disk."""
-        if self.cache_db_path.exists():
+        if self.data_dir and self.cache_db_path.exists():
             try:
                 with open(self.cache_db_path, "r") as f:
                     return json.load(f)
@@ -290,6 +291,8 @@ class ResourceManager:
 
     def _save_cache_db(self):
         """Save the cache database to disk."""
+        if self.data_dir is None:
+            return
         try:
             self.cache_db["last_updated"] = datetime.now().isoformat()
             with open(self.cache_db_path, "w") as f:
@@ -299,7 +302,7 @@ class ResourceManager:
 
     def _load_history_db(self) -> Dict[str, Any]:
         """Load the history database from disk."""
-        if self.history_db_path.exists():
+        if self.data_dir and self.history_db_path.exists():
             try:
                 with open(self.history_db_path, "r") as f:
                     return json.load(f)
@@ -311,6 +314,8 @@ class ResourceManager:
 
     def _save_history_db(self):
         """Save the history database to disk."""
+        if self.data_dir is None:
+            return
         try:
             with open(self.history_db_path, "w") as f:
                 json.dump(self.history_db, f, indent=2)

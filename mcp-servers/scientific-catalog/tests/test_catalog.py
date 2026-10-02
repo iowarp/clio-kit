@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+import sys
 from pathlib import Path
 from typing import Any, cast
 
@@ -220,3 +222,26 @@ async def test_discover_prompt_preserves_search_describe_boundary() -> None:
     assert "scientific_dataset_describe" in text
     assert "dataset_descriptor unchanged" in text
     assert "Do not invent camera, colormap, filter, scheduler" in text
+
+
+def test_readme_fingerprint_snippet_reproduces_the_example_digest(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The documented recipe yields the digest the server itself accepts."""
+    readme = (Path(__file__).parents[1] / "README.md").read_text(encoding="utf-8")
+    example = re.search(r"```json\n(.*?)```", readme, re.S)
+    snippet = re.search(r"```python\n(.*?)```", readme, re.S)
+    assert example is not None and snippet is not None
+    catalog = tmp_path / "catalog.json"
+    catalog.write_text(example.group(1), encoding="utf-8")
+    monkeypatch.setattr(sys, "argv", ["digest", str(catalog)])
+
+    exec(snippet.group(1), {})
+
+    accepted = DatasetDescriptor.model_validate(
+        json.loads(example.group(1))["datasets"][0]["descriptor"]
+    )
+    assert capsys.readouterr().out.split() == [
+        "example-volume",
+        accepted.fingerprint.digest,
+    ]

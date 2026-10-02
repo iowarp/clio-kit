@@ -22,8 +22,8 @@ class TestReadVariableAtStep:
 
         result = read_variable_at_step("test.bp", "temperature", 1)
 
-        assert result == 25.5
-        assert isinstance(result, float)
+        assert result["value"] == 25.5
+        assert isinstance(result["value"], float)
         mock_stream.read.assert_called_once_with("temperature")
 
     @patch("adios_mcp.implementation.bp5_read_variable_at_step.adios2.Stream")
@@ -44,8 +44,8 @@ class TestReadVariableAtStep:
         result = read_variable_at_step("test.bp", "pressure", 0)
 
         # Use pytest.approx for floating point comparisons
-        assert result == pytest.approx([1.1, 2.2, 3.3, 4.4], rel=1e-6)
-        assert isinstance(result, list)
+        assert result["value"] == pytest.approx([1.1, 2.2, 3.3, 4.4], rel=1e-6)
+        assert isinstance(result["value"], list)
 
     @patch("adios_mcp.implementation.bp5_read_variable_at_step.adios2.Stream")
     def test_read_variable_not_found(self, mock_stream_class):
@@ -91,8 +91,8 @@ class TestReadVariableAtStep:
 
         result = read_variable_at_step("test.bp", "scalar_var", 0)
 
-        assert result == 42
-        assert isinstance(result, int)
+        assert result["value"] == 42
+        assert isinstance(result["value"], int)
 
     @patch("adios_mcp.implementation.bp5_read_variable_at_step.adios2.Stream")
     def test_read_variable_multiple_steps(self, mock_stream_class):
@@ -111,7 +111,7 @@ class TestReadVariableAtStep:
 
         result = read_variable_at_step("test.bp", "velocity", 2)
 
-        assert result == [10.0, 20.0, 30.0]
+        assert result["value"] == [10.0, 20.0, 30.0]
 
     @patch("adios_mcp.implementation.bp5_read_variable_at_step.adios2.Stream")
     def test_read_variable_numpy_generic_type(self, mock_stream_class):
@@ -130,8 +130,8 @@ class TestReadVariableAtStep:
 
         result = read_variable_at_step("test.bp", "test_var", 0)
 
-        assert result == 123456789
-        assert isinstance(result, int)
+        assert result["value"] == 123456789
+        assert isinstance(result["value"], int)
 
     @patch("adios_mcp.implementation.bp5_read_variable_at_step.adios2.Stream")
     def test_read_variable_1d_array(self, mock_stream_class):
@@ -150,8 +150,8 @@ class TestReadVariableAtStep:
 
         result = read_variable_at_step("test.bp", "data_1d", 0)
 
-        assert result == [1, 2, 3, 4, 5]
-        assert isinstance(result, list)
+        assert result["value"] == [1, 2, 3, 4, 5]
+        assert isinstance(result["value"], list)
 
     @patch("adios_mcp.implementation.bp5_read_variable_at_step.adios2.Stream")
     def test_read_variable_3d_array_flattened(self, mock_stream_class):
@@ -172,8 +172,8 @@ class TestReadVariableAtStep:
 
         result = read_variable_at_step("test.bp", "data_3d", 0)
 
-        assert result == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
-        assert isinstance(result, list)
+        assert result["value"] == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0]
+        assert result["shape"] == [2, 2, 2]
 
     @patch("adios_mcp.implementation.bp5_read_variable_at_step.adios2.Stream")
     def test_read_variable_file_error(self, mock_stream_class):

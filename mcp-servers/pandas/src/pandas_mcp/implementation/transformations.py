@@ -3,9 +3,12 @@ Data transformation capabilities including groupby, merge, and pivot operations.
 """
 
 import pandas as pd
+from pathlib import Path
 import os
 from typing import Optional, List, Dict
 import traceback
+
+GROUPBY_OPERATIONS = ("count", "sum", "mean", "median", "std", "min", "max", "nunique")
 
 
 def groupby_operations(
@@ -60,30 +63,16 @@ def groupby_operations(
         # Group by operations
         grouped = df.groupby(group_by)
 
-        # Apply aggregations
-        agg_dict = {}
-        for col, operation in operations.items():
-            if col not in df.columns:
-                continue
-
-            if operation == "count":
-                agg_dict[col] = "count"
-            elif operation == "sum":
-                agg_dict[col] = "sum"
-            elif operation == "mean":
-                agg_dict[col] = "mean"
-            elif operation == "median":
-                agg_dict[col] = "median"
-            elif operation == "std":
-                agg_dict[col] = "std"
-            elif operation == "min":
-                agg_dict[col] = "min"
-            elif operation == "max":
-                agg_dict[col] = "max"
-            elif operation == "nunique":
-                agg_dict[col] = "nunique"
-            else:
-                agg_dict[col] = "mean"  # Default to mean
+        # Apply aggregations (an unknown operation used to silently become mean)
+        unknown_ops = sorted(set(operations.values()) - set(GROUPBY_OPERATIONS))
+        if unknown_ops:
+            return {
+                "success": False,
+                "error": f"Unknown aggregation operation(s): {unknown_ops}. "
+                f"Valid operations: {', '.join(GROUPBY_OPERATIONS)}",
+                "error_type": "ValueError",
+            }
+        agg_dict = {col: op for col, op in operations.items() if col in df.columns}
 
         # Perform aggregation
         result = grouped.agg(agg_dict)
@@ -105,7 +94,9 @@ def groupby_operations(
         }
 
         # Save result
-        output_path = file_path.replace(".csv", "_grouped.csv")
+        output_path = str(
+            Path(file_path).with_name(f"{Path(file_path).stem}_grouped.csv")
+        )
         result.to_csv(output_path, index=False)
 
         return {
@@ -219,7 +210,9 @@ def merge_datasets(
         }
 
         # Save merged dataset
-        output_path = left_file.replace(".csv", "_merged.csv")
+        output_path = str(
+            Path(left_file).with_name(f"{Path(left_file).stem}_merged.csv")
+        )
         merged_df.to_csv(output_path, index=False)
 
         # Convert to JSON-serializable format (limit to first 100 rows)
@@ -304,14 +297,29 @@ def create_pivot_table(
                     "error_type": "ValueError",
                 }
 
-        # Create pivot table
+        # None means every numeric column that is not already a pivot key
+        if not values:
+            keys = set(index) | set(columns or [])
+            values = [
+                col
+                for col in df.select_dtypes(include="number").columns
+                if col not in keys
+            ]
+            if not values:
+                return {
+                    "success": False,
+                    "error": "No numeric value columns to aggregate",
+                    "error_type": "ValueError",
+                }
+
+        # An empty cell has no observations: only a count of it is truly 0.
         pivot_table = pd.pivot_table(
             df,
             index=index,
             columns=columns,
             values=values,
             aggfunc=aggfunc,
-            fill_value=0,
+            fill_value=0 if aggfunc == "count" else None,
         )
 
         # Reset index to make it a regular DataFrame
@@ -325,7 +333,11 @@ def create_pivot_table(
             ]
 
         # Convert to JSON-serializable format
-        pivot_dict = pivot_table.to_dict("records")
+        pivot_dict = (
+            pivot_table.astype(object)
+            .where(pivot_table.notna(), None)
+            .to_dict("records")
+        )
 
         # Pivot table information
         pivot_info = {
@@ -338,7 +350,9 @@ def create_pivot_table(
         }
 
         # Save pivot table
-        output_path = file_path.replace(".csv", "_pivot.csv")
+        output_path = str(
+            Path(file_path).with_name(f"{Path(file_path).stem}_pivot.csv")
+        )
         pivot_table.to_csv(output_path, index=False)
 
         return {

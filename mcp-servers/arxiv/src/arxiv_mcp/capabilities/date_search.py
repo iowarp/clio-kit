@@ -2,9 +2,10 @@
 ArXiv date-based search capabilities.
 """
 
+from datetime import datetime
 from typing import Dict, Any
 import logging
-from .arxiv_base import execute_arxiv_query
+from .arxiv_base import execute_arxiv_query, field_query
 
 logger = logging.getLogger(__name__)
 
@@ -24,12 +25,18 @@ async def search_date_range(
     Returns:
         Dictionary containing search results and metadata
     """
+    for value in (start_date, end_date):
+        try:
+            datetime.strptime(value, "%Y-%m-%d")
+        except ValueError:
+            raise ValueError(f"Invalid date '{value}': expected YYYY-MM-DD") from None
+
     # Construct date range search query
     date_query = (
         f"submittedDate:[{start_date.replace('-', '')} TO {end_date.replace('-', '')}]"
     )
     if category:
-        search_query = f"cat:{category} AND {date_query}"
+        search_query = f"{field_query('cat', category)} AND {date_query}"
     else:
         search_query = date_query
 

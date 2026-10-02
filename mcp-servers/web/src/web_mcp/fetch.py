@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -72,6 +73,11 @@ async def fetch_target(
         if "://" in requested_target and not is_doi_url:
             raise ToolError(
                 f"fetch only supports http(s) URLs or DOI targets; got: {requested_target!r}"
+            )
+        if not is_doi_url and not re.fullmatch(r"(?i)(doi:\s*)?10\.\d{4,9}/\S+", requested_target):
+            raise ToolError(
+                f"Invalid target {requested_target!r}: expected an http(s) URL or a DOI "
+                "such as 10.1000/example."
             )
         doi = parsed_target.path.strip("/") if is_doi_url else requested_target
         doi_resolution = await resolve_doi(

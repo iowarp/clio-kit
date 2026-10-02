@@ -244,6 +244,13 @@ selected collection with `module_restore`, then call `module_list` again to
 verify its contents. Collection changes persist for subsequent calls in that
 MCP process, but do not change the parent shell or other MCP servers.
 
+A first collection needs at least one loaded module, and the server has no load
+tool: it only sees the modules its own process started with. Either start the
+server from a shell where the modules are already loaded (it inherits Lmod's
+state from its environment), or set `LMOD_SYSTEM_DEFAULT_MODULES=<mod1:mod2>`
+for the server and call `module_restore` with `collection_name="system"` before
+`module_save`. Collection names may contain letters, digits, `_`, `.` and `-`.
+
 The seven-tool surface does not expose module loading, unloading or swapping.
 For a JARVIS workload, resolve software with Spack and pass the exact returned
 load specifications to `jarvis_run`. Verify the actual workload environment.

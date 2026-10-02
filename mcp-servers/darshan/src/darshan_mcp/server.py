@@ -3,12 +3,13 @@
 
 import os
 import logging
-from typing import Optional
+from typing import Annotated, Optional
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 from fastmcp.prompts import Message
 from dotenv import load_dotenv
+from pydantic import Field
 
 from darshan_mcp.capabilities import darshan_parser
 
@@ -24,6 +25,7 @@ load_dotenv()
 # Initialize MCP server
 mcp: FastMCP = FastMCP(
     "darshan",
+    version="2.2.5",
     instructions=(
         "Analyzes I/O performance logs from Darshan profiler. "
         "Open log files, examine module data, analyze counters, and generate performance insights."
@@ -90,7 +92,14 @@ async def get_job_summary_tool(log_file_path: str) -> dict:
     tags={"darshan", "io-analysis"},
 )
 async def analyze_file_access_patterns_tool(
-    log_file_path: str, file_pattern: Optional[str] = None
+    log_file_path: str,
+    file_pattern: Annotated[
+        Optional[str],
+        Field(
+            description="Shell-style glob matched against the full file path "
+            "(e.g. '*.dat', '/scratch/*', '*data2*'); not a substring or regex."
+        ),
+    ] = None,
 ) -> dict:
     """Analyze file access patterns to understand application I/O behavior.
 
@@ -200,7 +209,11 @@ async def identify_io_bottlenecks_tool(log_file_path: str) -> dict:
 @mcp.tool(
     name="get_timeline_analysis",
     title="Timeline Analysis",
-    description="Generate timeline analysis showing I/O activity over time and temporal patterns.",
+    description=(
+        "Report the job time span and each module's first/last open/read/write/close "
+        "timestamps. Binned activity over time (peaks, idle periods) needs DXT trace "
+        "data and is not computed from a Darshan summary log."
+    ),
     annotations=_READ_ONLY_ANNOTATIONS,
     tags={"darshan", "performance"},
 )

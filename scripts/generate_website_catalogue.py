@@ -266,7 +266,11 @@ def generate(root: Path) -> dict:
                 for s in metadata.get("servers", "").split(",")
                 if s.strip() not in ("", "none")
             ],
-            tags=[bundle, "Clio Coder" if adapted else "Scientific workflow"],
+            tags=[
+                tag
+                for tag in (bundle, "Clio Coder" if adapted else "Scientific workflow")
+                if tag
+            ],
             clients=["claude-code", "codex", "antigravity", "other"],
             license=meta.get("license", "BSD-3-Clause"),
             evidence="Scenarios recorded"

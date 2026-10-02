@@ -22,10 +22,44 @@ def module_counters(text: str) -> dict[str, dict[str, float]]:
     return result
 
 
+def activity_windows(text: str) -> dict[str, dict[str, dict[str, float]]]:
+    """Per module, first/last open/read/write/close time in seconds since job start.
+
+    Built from the ``*_F_<OP>_START/END_TIMESTAMP`` counters; 0 means the
+    operation never happened on that record.
+    """
+    windows: dict[str, dict[str, dict[str, float]]] = {}
+    for line in text.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 6 or line.startswith("#"):
+            continue
+        match = re.fullmatch(
+            r"\w+_F_(OPEN|READ|WRITE|CLOSE)_(START|END)_TIMESTAMP", parts[3]
+        )
+        try:
+            value = float(parts[4])
+        except ValueError:
+            continue
+        if not match or value <= 0:
+            continue
+        window = windows.setdefault(parts[0], {}).setdefault(match[1].lower(), {})
+        if match[2] == "START":
+            window["first"] = min(window.get("first", value), value)
+        else:
+            window["last"] = max(window.get("last", value), value)
+    return windows
+
+
 def parse_native_text(text: str) -> dict | None:
     if "# darshan log version:" not in text:
         return None
-    result: dict = {"success": True, "job": {}, "modules": [], "files": {}}
+    result: dict = {
+        "success": True,
+        "job": {},
+        "modules": [],
+        "files": {},
+        "activity_windows": activity_windows(text),
+    }
     job = result["job"]
     aliases = {
         "uid": "user_id",

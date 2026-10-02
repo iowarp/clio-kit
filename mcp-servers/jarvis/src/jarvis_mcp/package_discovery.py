@@ -31,6 +31,7 @@ from typing import Any
 from fastmcp.exceptions import ToolError
 from pydantic import BaseModel, ValidationError
 
+from .pipeline_guards import UNINITIALIZED_HINT
 from .models.describe import PACKAGE_SEARCH_CURSOR_SCHEMA, PACKAGE_SEARCH_SCHEMA
 from .models.packages import (
     PACKAGE_DEPLOYMENT_SCHEMA,
@@ -65,11 +66,17 @@ def _discover_package_inventory() -> list[_PackageInventoryEntry]:
 
     packages: list[_PackageInventoryEntry] = []
     seen: set[str] = set()
+    manager = None
     try:
         manager = get_manager()
         repos = [Path(str(repo)) for repo in manager.list_repos()]
     except Exception:
         repos = []
+    # An empty inventory on a root with no JARVIS configuration is a setup gap,
+    # not a search result; name the admin step instead of reporting 0 packages.
+    jarvis = getattr(manager, "jarvis", None)
+    if not repos and getattr(jarvis, "config_dir", "") is None:
+        raise ToolError(UNINITIALIZED_HINT)
     for repo in repos:
         if not repo.exists():
             continue

@@ -36,6 +36,8 @@ class SacTrace:
     member: str
     station: str
     phase: str
+    station_source: str  # "header" (KSTNM) or "path" (file-name fallback)
+    phase_source: str  # "header" (KA) or "path" (directory/file-name fallback)
     npts: int
     delta_s: float
     begin_s: float
@@ -140,6 +142,42 @@ def member_station(member: str) -> str:
     return "unknown"
 
 
+def _header_text(payload: bytes, offset: int) -> str:
+    """Return an 8-character SAC header string, or "" when it is unset."""
+    text = payload[offset : offset + 8].decode("ascii", "replace").strip(" \x00")
+    return "" if text == "-12345" else text
+
+
+def header_labels(member: str, payload: bytes) -> dict[str, str]:
+    """Station and phase of one trace, and where each label came from.
+
+    The SAC header is authoritative (KSTNM for the station, KA for the phase);
+    the member path is only a fallback when the header field is unset.
+
+    Raises:
+        SacAnalysisError: If ``payload`` does not start with a valid SAC header.
+    """
+    _unpack_sac_header(member, payload)
+    station = _header_text(payload, 440)
+    phase = _header_text(payload, 480)
+    return {
+        "station": station or member_station(member),
+        "station_source": "header" if station else "path",
+        "phase": phase or member_phase(member),
+        "phase_source": "header" if phase else "path",
+    }
+
+
+def read_archive_headers(filepath: Path, members: list[tarfile.TarInfo]) -> list[bytes]:
+    """Read just the SAC header bytes of each member (bounded, no extraction)."""
+    headers = []
+    with tarfile.open(filepath, "r:*") as archive:
+        for member in members:
+            handle = archive.extractfile(member)
+            headers.append(handle.read(_SAC_HEADER_BYTES) if handle else b"")
+    return headers
+
+
 def iter_archive_sac_members(
     filepath: Path, *, member_filter: str
 ) -> list[tarfile.TarInfo]:
@@ -226,11 +264,19 @@ def iter_sac_payloads(
 
 
 def _unpack_sac_header(
+    member: str,
     payload: bytes,
 ) -> tuple[str, tuple[float, ...], tuple[int, ...]]:
-    """Unpack a SAC binary header using the more plausible endian variant."""
+    """Unpack a SAC binary header using the more plausible endian variant.
+
+    Raises:
+        SacAnalysisError: If the payload is too short or is not SAC data
+            (header version NVHDR is neither 6 nor 7 in either byte order).
+    """
     if len(payload) < _SAC_HEADER_BYTES:
-        raise SacAnalysisError("SAC payload is smaller than the 632-byte SAC header.")
+        raise SacAnalysisError(
+            f"{member!r} is not a SAC file: it is smaller than the 632-byte SAC header."
+        )
     header = payload[:440]
     data_floats = (len(payload) - _SAC_HEADER_BYTES) // 4
     candidates: list[tuple[str, tuple[float, ...], tuple[int, ...], int]] = []
@@ -239,7 +285,7 @@ def _unpack_sac_header(
         ints = struct.unpack(f"{endian}40i", header[280:440])
         npts = ints[9] if len(ints) > 9 else 0
         delta = floats[0] if floats else -1.0
-        score = 0
+        score = 8 if ints[6] in (6, 7) else 0  # NVHDR: SAC header version
         if npts == data_floats:
             score += 4
         if 0 < npts <= data_floats:
@@ -247,7 +293,12 @@ def _unpack_sac_header(
         if 0 < delta < 1000:
             score += 1
         candidates.append((endian, floats, ints, score))
-    endian, floats, ints, _score = max(candidates, key=lambda item: item[3])
+    endian, floats, ints, score = max(candidates, key=lambda item: item[3])
+    if score < 8:
+        raise SacAnalysisError(
+            f"{member!r} is not a SAC file: its header version field (NVHDR) is "
+            "not 6 or 7 in either byte order."
+        )
     return endian, floats, ints
 
 
@@ -261,7 +312,8 @@ def parse_sac_trace(member: str, payload: bytes) -> SacTrace:
     Raises:
         SacAnalysisError: If the payload is malformed or contains no samples.
     """
-    endian, floats, ints = _unpack_sac_header(payload)
+    endian, floats, ints = _unpack_sac_header(member, payload)
+    labels = header_labels(member, payload)
     available_npts = (len(payload) - _SAC_HEADER_BYTES) // 4
     header_npts = ints[9] if len(ints) > 9 else available_npts
     npts = header_npts if 0 < header_npts <= available_npts else available_npts
@@ -285,8 +337,10 @@ def parse_sac_trace(member: str, payload: bytes) -> SacTrace:
         end_s = begin_s + delta_s * max(0, npts - 1)
     return SacTrace(
         member=member,
-        station=member_station(member),
-        phase=member_phase(member),
+        station=labels["station"],
+        phase=labels["phase"],
+        station_source=labels["station_source"],
+        phase_source=labels["phase_source"],
         npts=npts,
         delta_s=delta_s,
         begin_s=begin_s,
@@ -340,6 +394,8 @@ def trace_statistics(trace: SacTrace) -> dict[str, object]:
         "member": trace.member,
         "station": trace.station,
         "phase": trace.phase,
+        "station_source": trace.station_source,
+        "phase_source": trace.phase_source,
         "npts": trace.npts,
         "delta_s": trace.delta_s,
         "begin_s": trace.begin_s,

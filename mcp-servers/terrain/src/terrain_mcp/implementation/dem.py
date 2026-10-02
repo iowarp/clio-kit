@@ -35,8 +35,9 @@ def load_dem(path: Path, *, nodata: float | None) -> tuple[np.ndarray, dict[str,
         except ImportError as exc:
             raise DependencyMissingError(
                 "rasterio",
-                "Install the 'geotiff' extra (pip install 'terrain-mcp[geotiff]') "
-                "or provide a CSV/NPY/NPZ DEM grid.",
+                "It is not included in this installation, so GeoTIFF input is "
+                "unavailable here. Supported DEM inputs: CSV numeric grid, .npy, "
+                ".npz (with a 'dem' array); convert the GeoTIFF to one of those.",
             ) from exc
         with rasterio.open(path) as dataset:
             dem = dataset.read(1).astype(float)
@@ -75,25 +76,37 @@ def load_dem(path: Path, *, nodata: float | None) -> tuple[np.ndarray, dict[str,
     return dem, metadata
 
 
+def _gradient(dem: np.ndarray, cell_size: float) -> tuple[np.ndarray, np.ndarray]:
+    """Return (gy, gx); NaN at no-data cells and at cells differenced against one.
+
+    No-data is never filled: a fill value would invent a cliff next to every gap.
+    """
+    grid = np.array(dem, dtype=float, copy=True)
+    grid[~np.isfinite(grid)] = np.nan
+    gy, gx = np.gradient(grid, float(cell_size), float(cell_size))
+    gy[np.isnan(grid)] = np.nan  # central differences skip the cell itself
+    return gy, gx
+
+
 def slope_degrees(dem: np.ndarray, cell_size: float) -> np.ndarray:
-    """Compute per-cell slope in degrees from elevation using a gradient."""
-    filled = np.array(dem, dtype=float, copy=True)
-    if not np.isfinite(filled).all():
-        finite = finite_values(filled)
-        fill_value = float(np.median(finite)) if finite.size else 0.0
-        filled[~np.isfinite(filled)] = fill_value
-    gy, gx = np.gradient(filled, float(cell_size), float(cell_size))
+    """Per-cell slope in degrees; NaN where it would depend on a no-data cell."""
+    gy, gx = _gradient(dem, cell_size)
     return np.degrees(np.arctan(np.hypot(gx, gy)))
 
 
 def aspect_degrees(dem: np.ndarray, cell_size: float) -> np.ndarray:
-    """Compute per-cell aspect (downslope compass direction) in degrees [0, 360)."""
-    filled = np.array(dem, dtype=float, copy=True)
-    finite = finite_values(filled)
-    filled[~np.isfinite(filled)] = float(np.median(finite)) if finite.size else 0.0
-    gy, gx = np.gradient(filled, float(cell_size), float(cell_size))
+    """Per-cell aspect (downslope compass direction) in degrees [0, 360).
+
+    NaN where it would depend on a no-data cell.
+    """
+    gy, gx = _gradient(dem, cell_size)
     aspect = np.degrees(np.arctan2(-gx, gy))
     return (aspect + 360.0) % 360.0
+
+
+def _finite_or_none(value: float) -> float | None:
+    """NaN is not valid JSON; report an undefined slope/aspect as null."""
+    return float(value) if np.isfinite(value) else None
 
 
 def suitability_mask(
@@ -105,13 +118,14 @@ def suitability_mask(
     slope_max_degrees: float | None,
 ) -> np.ndarray:
     """Boolean mask of cells meeting the given elevation/slope criteria."""
-    mask = np.isfinite(dem) & np.isfinite(slope)
+    mask = np.isfinite(dem)
     if elevation_min is not None:
         mask &= dem >= float(elevation_min)
     if elevation_max is not None:
         mask &= dem <= float(elevation_max)
     if slope_max_degrees is not None:
-        mask &= slope <= float(slope_max_degrees)
+        # An undefined (NaN) slope never satisfies a slope criterion.
+        mask &= np.isfinite(slope) & (slope <= float(slope_max_degrees))
     return mask
 
 
@@ -132,10 +146,20 @@ def analyze_dem(
 
     Raises:
         DependencyMissingError: GeoTIFF requested but ``rasterio`` is unavailable.
-        TerrainError: ``cell_size`` is non-positive or the grid is invalid.
+        TerrainError: ``cell_size`` is non-positive, the elevation range is
+            inverted, or the grid is invalid.
     """
     if cell_size <= 0:
         raise TerrainError("cell_size must be positive.")
+    if (
+        elevation_min is not None
+        and elevation_max is not None
+        and elevation_min > elevation_max
+    ):
+        raise TerrainError(
+            f"elevation_min ({elevation_min}) must not exceed elevation_max "
+            f"({elevation_max})."
+        )
     path = Path(filepath)
     if not path.is_file():
         raise TerrainError(f"DEM file not found: {filepath}")
@@ -161,8 +185,8 @@ def analyze_dem(
             "row": int(row),
             "col": int(col),
             "elevation": float(dem[row, col]),
-            "slope_degrees": float(slope[row, col]),
-            "aspect_degrees": float(aspect[row, col]),
+            "slope_degrees": _finite_or_none(slope[row, col]),
+            "aspect_degrees": _finite_or_none(aspect[row, col]),
         }
         for row, col in list(zip(rows, cols, strict=False))[:10]
     ]

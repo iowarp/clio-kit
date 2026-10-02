@@ -172,7 +172,8 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     readme = (repository_root / "README.md").read_text(encoding="utf-8")
 
     assert projects
-    assert manifests == [project / "server.json" for project in projects]
+    # Every runtime: a hosted Node or Go server publishes a manifest too.
+    assert manifests == [project / "server.json" for project in all_projects]
     assert list(expected_server_versions) == sorted(expected_server_versions)
     assert set(expected_server_versions) == {project.name for project in all_projects}
     # Every server has a patched HTTP runtime in this coordinated release.
@@ -432,7 +433,7 @@ def test_shipped_bundle_catalogue_partitions_the_shipped_servers() -> None:
     shipped = {
         server_dir.name
         for server_dir in (repo_root / "mcp-servers").iterdir()
-        if (server_dir / "pyproject.toml").exists()
+        if GENERATOR.is_server_dir(server_dir)
     }
 
     GENERATOR.assert_bundles_partition_servers(bundles, shipped)
@@ -531,6 +532,9 @@ def test_shipped_skills_load_and_are_reachable_from_a_bundle() -> None:
                 assert read_skill_frontmatter(skill)["name"] == skill.name
             continue
         bundle_name = plugin_dir.name.removesuffix("-skills")
+        if bundle_name not in GENERATOR.read_bundles(repo_root):
+            # A folder-discovered package, validated by local discovery instead.
+            continue
         bundle_manifest = json.loads(
             (
                 repo_root / "plugins" / bundle_name / ".claude-plugin" / "plugin.json"
@@ -802,7 +806,9 @@ def test_readme_server_count_matches_the_shipped_inventory() -> None:
     """A count in prose is the first thing to go stale after a server merge."""
     repo_root = Path(__file__).resolve().parents[1]
     readme = (repo_root / "README.md").read_text(encoding="utf-8")
-    shipped = len(list((repo_root / "mcp-servers").glob("*/pyproject.toml")))
+    shipped = sum(
+        GENERATOR.is_server_dir(path) for path in (repo_root / "mcp-servers").iterdir()
+    )
 
     for claim in re.findall(r"(\d+) (?:available )?MCP servers", readme):
         assert int(claim) == shipped, f"README claims {claim} servers, {shipped} ship"

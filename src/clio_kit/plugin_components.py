@@ -81,10 +81,13 @@ def component_problems(directory: Path, manifest: dict[str, Any]) -> list[str]:
     return problems
 
 
-def write_mcp_wrapper(directory: Path, command: str, args: tuple[str, ...]) -> None:
+def write_mcp_wrapper(
+    directory: Path, name: str, command: str, args: tuple[str, ...]
+) -> None:
+    # Named after the plugin: a generic key collides across project installs.
     (directory / ".mcp.json").write_text(
         json.dumps(
-            {"mcpServers": {"server": {"command": command, "args": list(args)}}},
+            {"mcpServers": {name: {"command": command, "args": list(args)}}},
             indent=2,
         )
         + "\n"

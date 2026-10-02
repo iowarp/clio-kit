@@ -44,7 +44,7 @@ def test_scaffold_is_valid_the_moment_it_is_created(tmp_path: Path) -> None:
     # fields would hand every contributor one more thing that can point
     # somewhere that does not survive installation.
     assert not {"skills", "agents", "commands", "hooks"} & set(manifest)
-    assert (plugin_dir / "skills" / "example-workflow" / "SKILL.md").is_file()
+    assert (plugin_dir / "skills" / "materials-lab-workflow" / "SKILL.md").is_file()
     assert not (plugin_dir / ".mcp.json").exists()  # no fictitious executable
 
 
@@ -55,6 +55,10 @@ def test_scaffolding_refuses_a_name_that_would_shadow_ours(tmp_path: Path) -> No
     )
     assert result.exit_code != 0
     assert "reserved" in result.output
+    # A maintainer scaffolds one the same way `plugin validate` accepts it.
+    args = ["init", str(tmp_path / "clio-materials"), "--maintained"]
+    assert CliRunner().invoke(plugin_group, args).exit_code == 0
+    assert validate_plugin(tmp_path / "clio-materials", allow_reserved=True)[1] == []
 
 
 def test_validation_catches_what_breaks_only_after_install(tmp_path: Path) -> None:
@@ -75,10 +79,10 @@ def test_validation_catches_a_skill_that_resolves_nowhere(tmp_path: Path) -> Non
     """A skill is namespaced by its directory and referred to by its name."""
     plugin_dir = tmp_path / "materials-lab"
     _scaffold(plugin_dir)
-    skill = plugin_dir / "skills" / "example-workflow" / "SKILL.md"
+    skill = plugin_dir / "skills" / "materials-lab-workflow" / "SKILL.md"
     skill.write_text(
         skill.read_text(encoding="utf-8").replace(
-            "name: example-workflow", "name: example"
+            "name: materials-lab-workflow", "name: example"
         ),
         encoding="utf-8",
     )

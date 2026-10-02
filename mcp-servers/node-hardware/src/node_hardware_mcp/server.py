@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "node-hardware",
+    version="2.2.5",
     instructions=(
         "Monitors system hardware including CPU, memory, disk, network, and GPU. "
         "Use individual tools for specific metrics or get a full system overview."
@@ -47,6 +48,14 @@ class NodeHardwareMCPError(Exception):
     """Custom exception for Node Hardware MCP-related errors"""
 
     pass
+
+
+def _checked(result: dict) -> dict:
+    """Turn a handler's error payload into a real MCP tool error."""
+    if result.get("isError"):
+        message = " ".join(block.get("text", "") for block in result.get("content", []))
+        raise ToolError(message or "Hardware collection failed")
+    return result
 
 
 # ---- Shared annotation constants ----
@@ -72,7 +81,7 @@ async def get_cpu_info_tool() -> dict:
     """Get CPU specifications, core counts, frequencies, and per-core usage."""
     try:
         logger.info("Collecting CPU information")
-        return mcp_handlers.cpu_info_handler()
+        return _checked(mcp_handlers.cpu_info_handler())
     except Exception as e:
         logger.error(f"CPU information collection error: {e}")
         raise ToolError(f"CPU collection failed: {e}") from e
@@ -89,7 +98,7 @@ async def get_memory_info_tool() -> dict:
     """Get RAM and swap capacity, usage percentages, and availability."""
     try:
         logger.info("Collecting memory information")
-        return mcp_handlers.memory_info_handler()
+        return _checked(mcp_handlers.memory_info_handler())
     except Exception as e:
         logger.error(f"Memory information collection error: {e}")
         raise ToolError(f"Memory collection failed: {e}") from e
@@ -106,7 +115,7 @@ async def get_system_info_tool() -> dict:
     """Get OS details, hostname, uptime, and active users."""
     try:
         logger.info("Collecting system information")
-        return mcp_handlers.system_info_handler()
+        return _checked(mcp_handlers.system_info_handler())
     except Exception as e:
         logger.error(f"System information collection error: {e}")
         raise ToolError(f"System collection failed: {e}") from e
@@ -123,7 +132,7 @@ async def get_disk_info_tool() -> dict:
     """Get disk partitions, usage statistics, and I/O counters."""
     try:
         logger.info("Collecting disk information")
-        return mcp_handlers.disk_info_handler()
+        return _checked(mcp_handlers.disk_info_handler())
     except Exception as e:
         logger.error(f"Disk information collection error: {e}")
         raise ToolError(f"Disk collection failed: {e}") from e
@@ -140,7 +149,7 @@ async def get_network_info_tool() -> dict:
     """Get network interfaces, IP addresses, and I/O statistics."""
     try:
         logger.info("Collecting network information")
-        return mcp_handlers.network_info_handler()
+        return _checked(mcp_handlers.network_info_handler())
     except Exception as e:
         logger.error(f"Network information collection error: {e}")
         raise ToolError(f"Network collection failed: {e}") from e
@@ -157,7 +166,7 @@ async def get_gpu_info_tool() -> dict:
     """Get GPU model, memory, temperature, and utilization."""
     try:
         logger.info("Collecting GPU information")
-        return mcp_handlers.gpu_info_handler()
+        return _checked(mcp_handlers.gpu_info_handler())
     except Exception as e:
         logger.error(f"GPU information collection error: {e}")
         raise ToolError(f"GPU collection failed: {e}") from e
@@ -174,7 +183,7 @@ async def get_sensor_info_tool() -> dict:
     """Get temperature, fan speed, and battery sensor readings."""
     try:
         logger.info("Collecting sensor information")
-        return mcp_handlers.sensor_info_handler()
+        return _checked(mcp_handlers.sensor_info_handler())
     except Exception as e:
         logger.error(f"Sensor information collection error: {e}")
         raise ToolError(f"Sensor collection failed: {e}") from e
@@ -191,7 +200,7 @@ async def get_process_info_tool() -> dict:
     """Get running processes with CPU, memory, and status details."""
     try:
         logger.info("Collecting process information")
-        return mcp_handlers.process_info_handler()
+        return _checked(mcp_handlers.process_info_handler())
     except Exception as e:
         logger.error(f"Process information collection error: {e}")
         raise ToolError(f"Process collection failed: {e}") from e
@@ -208,7 +217,7 @@ async def get_performance_info_tool() -> dict:
     """Get real-time CPU, memory, disk, and network performance metrics."""
     try:
         logger.info("Collecting performance information")
-        return mcp_handlers.performance_monitor_handler()
+        return _checked(mcp_handlers.performance_monitor_handler())
     except Exception as e:
         logger.error(f"Performance information collection error: {e}")
         raise ToolError(f"Performance collection failed: {e}") from e
@@ -266,12 +275,7 @@ async def get_remote_node_info_tool(
             include_filters=components,
             exclude_filters=exclude_components,
         )
-        if result.get("isError"):
-            message = " ".join(
-                block.get("text", "") for block in result.get("content", [])
-            )
-            raise ToolError(message or "Remote hardware collection failed")
-        return result
+        return _checked(result)
     except Exception as e:
         logger.error(f"Remote hardware information collection error: {e}")
         raise ToolError(f"Remote hardware collection failed for {hostname}: {e}") from e

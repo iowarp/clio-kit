@@ -128,6 +128,15 @@ uv run --frozen ndp-mcp
 
 </details>
 
+## Configuration
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `NDP_API_URL` | `http://155.101.6.191:8003` | Base URL of the NDP endpoint API. The default is the public NDP endpoint, reached over plain HTTP; set this to use another deployment. |
+| `CLIO_KIT_ARTIFACTS` | current working directory | Where `stage_resource` writes files when `output_dir` is not given. |
+
+`search_datasets` needs at least one search term or filter, and `get_dataset_details` looks a dataset up by `id` (default) or `name`.
+
 ## Capabilities
 
 ### `list_organizations`

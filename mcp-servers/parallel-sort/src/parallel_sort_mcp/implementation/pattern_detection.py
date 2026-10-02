@@ -35,6 +35,21 @@ async def detect_patterns(
             **(detection_config or {}),
         }
 
+        detectors = {
+            "error_clusters": detect_error_clusters,
+            "anomalies": detect_anomalies,
+            "repeated_patterns": detect_repeated_patterns,
+            "trending_issues": detect_trending_issues,
+            "temporal_patterns": detect_temporal_patterns,
+            "message_patterns": detect_message_patterns,
+        }
+        requested = config.get("pattern_types") or list(detectors)
+        unknown = [name for name in requested if name not in detectors]
+        if unknown:
+            raise ValueError(
+                f"Unknown pattern_types {unknown}; use any of {list(detectors)}"
+            )
+
         with open(file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
@@ -57,15 +72,11 @@ async def detect_patterns(
                 "patterns": {},
             }
 
-        # Run pattern detection algorithms
-        patterns = {
-            "error_clusters": detect_error_clusters(parsed_entries, config),
-            "anomalies": detect_anomalies(parsed_entries, config),
-            "repeated_patterns": detect_repeated_patterns(parsed_entries, config),
-            "trending_issues": detect_trending_issues(parsed_entries, config),
-            "temporal_patterns": detect_temporal_patterns(parsed_entries, config),
-            "message_patterns": detect_message_patterns(parsed_entries, config),
-        }
+        # Clustering walks entries in time order; logs are often interleaved.
+        parsed_entries.sort(key=lambda entry: entry["timestamp"])
+
+        # Run the requested pattern detection algorithms
+        patterns = {name: detectors[name](parsed_entries, config) for name in requested}
 
         # Generate summary
         summary = generate_pattern_summary(patterns)
@@ -500,26 +511,26 @@ def generate_pattern_summary(patterns: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     # Analyze error clusters
-    if patterns["error_clusters"]["total_clusters"] > 0:
+    if patterns.get("error_clusters", {}).get("total_clusters", 0) > 0:
         summary["high_priority_findings"].append(
             f"{patterns['error_clusters']['total_clusters']} error clusters detected"
         )
         summary["overall_assessment"] = "concerning"
 
     # Analyze anomalies
-    if patterns["anomalies"]["total_anomalies"] > 0:
+    if patterns.get("anomalies", {}).get("total_anomalies", 0) > 0:
         summary["medium_priority_findings"].append(
             f"{patterns['anomalies']['total_anomalies']} temporal anomalies detected"
         )
 
     # Analyze trending issues
-    if patterns["trending_issues"]["total_trending"] > 0:
+    if patterns.get("trending_issues", {}).get("total_trending", 0) > 0:
         summary["medium_priority_findings"].append(
             f"{patterns['trending_issues']['total_trending']} trending issues detected"
         )
 
     # Analyze repeated patterns
-    if patterns["repeated_patterns"]["total_patterns"] > 10:
+    if patterns.get("repeated_patterns", {}).get("total_patterns", 0) > 10:
         summary["low_priority_findings"].append(
             f"{patterns['repeated_patterns']['total_patterns']} repeated message patterns found"
         )

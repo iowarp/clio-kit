@@ -1,4 +1,5 @@
 # server.py
+import importlib.util
 import os
 from typing import Optional
 
@@ -73,16 +74,37 @@ async def retrieve_interaction(
     start_time: Optional[str] = None,
     end_time: Optional[str] = None,
 ) -> str:
-    """Retrieve logged records from a chronicle and story, with optional time filtering."""
+    """Retrieve logged records from a chronicle and story, with optional time filtering.
+
+    Writes the records to a new text file in the server's working directory and
+    returns that file's absolute path, or "No records found.".
+    """
     return await _retrieve(chronicle_name, story_name, start_time, end_time)
 
 
 @mcp.resource("chronolog://status")
 def chronolog_status() -> dict:
     """Current ChronoLog system status."""
+    client_available = importlib.util.find_spec("py_chronolog_client") is not None
+    active = config._story_handle is not None
+    if not client_available:
+        status = "client_unavailable"
+    elif active:
+        status = "session_active"
+    else:
+        # Service reachability is only known once start_chronolog connects.
+        status = "no_session"
     return {
         "service": "chronolog",
-        "status": "ready",
+        "status": status,
+        "native_client_available": client_available,
+        "session": (
+            {"chronicle": config._active_chronicle, "story": config._active_story}
+            if active
+            else None
+        ),
+        "endpoint": f"{config.CHRONO_PROTOCOL}://{config.CHRONO_HOST}:{config.CHRONO_PORT}",
+        "reader_configured": bool(config.CONFIG_FILE),
         "description": "Distributed logging system for scientific computing",
     }
 

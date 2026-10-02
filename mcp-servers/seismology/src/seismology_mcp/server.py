@@ -38,6 +38,7 @@ load_dotenv()
 
 mcp: FastMCP = FastMCP(
     "seismology",
+    version="2.3.1",
     instructions=(
         "Analyzes SAC seismic-waveform files that already exist on disk. Accepts a "
         "single .sac file or a .tar/.tar.gz/.tgz archive containing SAC files. Use "

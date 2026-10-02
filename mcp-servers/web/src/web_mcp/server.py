@@ -35,6 +35,7 @@ def _new_mcp() -> FastMCP:
 
     return FastMCP(
         "web",
+        version="2.1.3",
         instructions=(
             "Use search to discover sources and fetch to read HTTP(S), DOI, HTML, text, "
             "PDF, and structured-document targets. Fetch supports durable tasks; query them for "
@@ -220,8 +221,10 @@ def create_mcp(configured: Settings | None = None) -> FastMCP:
         name="fetch",
         title="Fetch Target",
         description=(
-            "Fetch an HTTP(S) URL or DOI inline or as a task. HTML and text are read locally; "
-            "supported documents use CLIO Web Search conversion when configured."
+            "Fetch an HTTP(S) URL or DOI inline or as a task. HTML and text are read locally. "
+            "DOI targets and PDF/Office/image conversion require a CLIO Web Search "
+            "deployment (--remote-url); without one a DOI fails with a clear error and "
+            "binary documents are only saved with to_file=True."
         ),
         annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True},
         tags={"web", "fetch", "http", "documents"},
@@ -230,7 +233,10 @@ def create_mcp(configured: Settings | None = None) -> FastMCP:
     instance.tool(
         name="fetch_events",
         title="Get Fetch Events",
-        description="Query the full ordered backend event log for a document fetch conversion.",
+        description=(
+            "Query the full ordered backend event log for a document fetch conversion. "
+            "Requires a CLIO Web Search deployment (--remote-url)."
+        ),
         annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
         tags={"web", "fetch", "documents", "progress"},
         task=TaskConfig(mode="forbidden"),

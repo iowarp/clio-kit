@@ -249,3 +249,15 @@ async def test_searxng_schema_contains_native_selectors_and_exact_page_descripti
     assert properties["pageno"]["description"] == (
         "SearXNG result page, bounded by this deployment to 1 through 3."
     )
+
+
+@pytest.mark.asyncio
+async def test_search_rejects_non_positive_count(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A negative count is an error, not a silent fallback to the default."""
+    monkeypatch.setattr(server, "settings", Settings(search_provider="ddg"))
+    monkeypatch.setattr("ddgs.DDGS", _FakeDDGS)
+
+    async with Client(mcp) as client:
+        with pytest.raises(Exception) as excinfo:
+            await client.call_tool("search", {"query": "darshan", "count": -3})
+    assert "count must be between 1 and 25" in str(excinfo.value)

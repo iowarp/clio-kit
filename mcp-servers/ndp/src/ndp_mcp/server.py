@@ -13,12 +13,15 @@ from fastmcp.prompts import Message
 from pydantic import BaseModel, Field
 from typing_extensions import NotRequired, TypedDict
 
+from ndp_mcp.staging_utils import _clean_max_bytes, _parse_resource_size_bytes, _safe_filename
+
 # Environment setup
 load_dotenv()
 
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "ndp",
+    version="2.2.5",
     instructions=(
         "Discovers and explores scientific datasets from the National Data Platform "
         "(NDP) and stages their resources for analysis. Use search_datasets to find "
@@ -32,27 +35,11 @@ mcp: FastMCP = FastMCP(
 # Resource staging configuration and helpers (standalone, domain-neutral)
 # ---------------------------------------------------------------------------
 
-# Default ceiling for direct resource staging to avoid runaway downloads.
-_MAX_STAGE_BYTES = 50 * 1024 * 1024
 # Network timeouts (seconds) for staging HTTP resources.
 _HTTP_CONNECT_TIMEOUT_S = 8.0
 _HTTP_READ_TIMEOUT_S = 60.0
 # Wall-clock timeout (seconds) for OSDF/Pelican CLI staging.
 _PELICAN_TIMEOUT_S = 900
-
-_SIZE_UNITS = {
-    "b": 1,
-    "byte": 1,
-    "bytes": 1,
-    "kb": 1024,
-    "kib": 1024,
-    "mb": 1024 * 1024,
-    "mib": 1024 * 1024,
-    "gb": 1024 * 1024 * 1024,
-    "gib": 1024 * 1024 * 1024,
-    "tb": 1024 * 1024 * 1024 * 1024,
-    "tib": 1024 * 1024 * 1024 * 1024,
-}
 
 
 def artifacts_root(output_dir: str | Path | None = None) -> Path:
@@ -101,44 +88,6 @@ def _validate_output_path(
     target = (root / name).resolve()
     target.parent.mkdir(parents=True, exist_ok=True)
     return target
-
-
-def _safe_filename(value: str, *, default: str) -> str:
-    """Return a conservative filesystem name for staged resources."""
-    cleaned = "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in value.strip())
-    cleaned = cleaned.strip("._-")
-    return cleaned[:120] or default
-
-
-def _clean_max_bytes(value: int | str | None) -> int:
-    """Normalize an optional byte limit for resource staging."""
-    if value is None or value == "":
-        return _MAX_STAGE_BYTES
-    try:
-        parsed = int(value)
-    except (TypeError, ValueError):
-        return _MAX_STAGE_BYTES
-    return max(1, parsed)
-
-
-def _parse_resource_size_bytes(value: Any) -> int | None:
-    """Parse common resource size strings such as ``1.4 GB``."""
-    if isinstance(value, int) and not isinstance(value, bool):
-        return value if value >= 0 else None
-    if not isinstance(value, str) or not value.strip():
-        return None
-    parts = value.strip().replace(",", "").split()
-    if not parts:
-        return None
-    try:
-        number = float(parts[0])
-    except ValueError:
-        return None
-    unit = parts[1].lower() if len(parts) > 1 else "bytes"
-    multiplier = _SIZE_UNITS.get(unit)
-    if multiplier is None:
-        return None
-    return int(number * multiplier)
 
 
 def _stage_pelican_resource(
@@ -297,7 +246,9 @@ class StageResourceResult(TypedDict):
 class NDPClient:
     """Client for interacting with NDP API with retry logic and error handling."""
 
-    def __init__(self, base_url: str = "http://155.101.6.191:8003"):
+    def __init__(self, base_url: str | None = None):
+        # NDP_API_URL overrides the default public NDP endpoint.
+        base_url = base_url or os.getenv("NDP_API_URL") or "http://155.101.6.191:8003"
         self.base_url = base_url.rstrip("/")
         self.timeout = httpx.Timeout(30.0)
         self.max_retries = 3
@@ -512,6 +463,29 @@ async def search_datasets(
     ] = None,
 ) -> SearchDatasetsResult:
     """Search for datasets in the National Data Platform."""
+    # An unfiltered search asks the API for the whole catalogue, which times out
+    # upstream (HTTP 504 after ~25 s). Require something to search for.
+    if not any(
+        (
+            search_terms,
+            dataset_name,
+            dataset_title,
+            owner_org,
+            resource_url,
+            resource_name,
+            dataset_description,
+            resource_description,
+            resource_format,
+            search_term,
+            filter_list,
+            timestamp,
+        )
+    ):
+        raise ToolError(
+            "search_datasets needs at least one search term or filter, e.g. "
+            "search_terms=['climate'] or owner_org='<organization>' "
+            "(see list_organizations). Listing the whole catalogue is not supported."
+        )
     try:
         # Determine which search method to use
         if search_terms:
@@ -603,7 +577,11 @@ async def get_dataset_details(
     try:
         # Search for the specific dataset
         if identifier_type == "id":
-            datasets = await ndp_client.search_datasets_advanced(server=server)
+            # Filter server-side: an unfiltered search returns the whole
+            # catalogue and times out upstream.
+            datasets = await ndp_client.search_datasets_advanced(
+                filter_list=[f"id:{dataset_identifier}"], server=server
+            )
             matching_dataset = next((d for d in datasets if d.id == dataset_identifier), None)
         else:
             datasets = await ndp_client.search_datasets_advanced(

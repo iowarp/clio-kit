@@ -4,6 +4,9 @@ from fastmcp.exceptions import ToolError
 
 from chronomcp.utils import config
 
+# chronolog::ClientErrorCode (Client/cpp/include/client_errcode.h)
+CL_ERR_NOT_ACQUIRED = -5
+
 
 async def stop_chronolog() -> str:
     """Release the story and disconnect from ChronoLog."""
@@ -12,7 +15,9 @@ async def stop_chronolog() -> str:
     client = config.get_client()
 
     ret = client.ReleaseStory(config._active_chronicle, config._active_story)
-    if ret != 0:
+    # Already released is still "stopped"; failing here would leave the session
+    # state set with no way to clear it.
+    if ret not in (0, CL_ERR_NOT_ACQUIRED):
         raise ToolError(f"Failed to release story '{config._active_story}': {ret}")
 
     ret = client.Disconnect()

@@ -15,13 +15,17 @@ from .utils import (
 
 
 def get_node_info(
-    node: Optional[str] = None, *, max_records: Optional[int] = None
+    node: Optional[str] = None,
+    *,
+    max_records: Optional[int] = None,
+    partition: Optional[str] = None,
 ) -> dict:
     """
     Get information about cluster nodes.
 
     Args:
         node: Specific node name to query (optional)
+        partition: Only list nodes that belong to this partition (optional)
 
     Returns:
         Dictionary with node information
@@ -43,6 +47,8 @@ def get_node_info(
         ]
         if node:
             cmd.extend(["--nodes", node])
+        if partition:
+            cmd.extend(["--partition", partition])
         max_bytes = (
             2 * 1024 * 1024 if max_records is None else max_records * 4096 + 4096
         )
@@ -54,11 +60,14 @@ def get_node_info(
 
         if result.returncode == 0:
             nodes: list[dict[str, str]] = []
+            seen: set[str] = set()
             truncated = result.stdout_truncated
             for line in complete_stdout_lines(result):
                 if line.strip():
                     parts = split_slurm_fields(line)
-                    if len(parts) >= 4:
+                    # sinfo --Node prints one row per (node, partition) pair.
+                    if len(parts) >= 4 and parts[0] not in seen:
+                        seen.add(parts[0])
                         if max_records is not None and len(nodes) >= max_records:
                             truncated = True
                             break

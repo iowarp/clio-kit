@@ -12,7 +12,7 @@ Follow [Getting Started](./intro.md) to install the launcher, register the
 marketplace and configure your agent. Source installation uses one checkout
 for the launcher and catalogue; publishing a package is a separate release step.
 
-The next release downloads selected components separately from its small launcher;
+Release installations download selected components separately from the small launcher;
 see [selective installation](installation.md) for the no-clone routes and checks.
 
 ## Installable components
@@ -177,7 +177,7 @@ universal compatibility or scientific correctness for arbitrary inputs.
 
 | Check | Verified behavior |
 |---|---|
-| Package and installers | A fresh wheel installed all 39 adapted skills with matching resource bytes. The npm skills CLI discovered and copied all 59 skills, refreshed resources and removed them for Codex, Claude Code and Antigravity targets. |
+| Package and installers | A fresh wheel installed all 39 adapted skills with matching resource bytes. The npm skills CLI discovered and copied all 60 skills, refreshed resources and removed them for Codex, Claude Code and Antigravity targets. |
 | External contributions | All six isolated transport routes installed, queried an actual MCP, refreshed and uninstalled successfully. A real one-file contribution [PR on the contributor's fork](https://github.com/SIslamMun/scientific-mcps/pull/2) was opened, inspected and closed without merging. |
 | Claude plugin hooks | Default, custom-file and inline hook validation is covered. Installed hooks ran at session start, observed an allowed write and denied a protected write. Both the CI-pinned client's scripted-model run and an authenticated model run passed. |
 | Codex 0.154.0 | Loaded the renamed debugging and experiment-protocol skills, queried a numerical MCP and wrote evidence/protocol artifacts while preserving source files. |
@@ -187,7 +187,7 @@ universal compatibility or scientific correctness for arbitrary inputs.
 | Clio Coder 0.4.8 | Discovered and activated the adapted debugging skill without an upstream audit-hash collision. Generated diagnostics still require evidence review; a causal explanation needed correction. |
 | Native Materio on Clio Coder 0.4.8 | Its executor and read-only verifier completed a protocol-preparation task within their write boundaries. No physical measurements were performed. |
 
-The root suite passed 348 tests. Materio's earlier offline helper suite passed
+The root suite passed 348 tests at that follow-up (it has grown since; use the current CI result). Materio's earlier offline helper suite passed
 92 tests and its generated Claude export passed strict validation. One native
 Clio model run exceeded the test timeout; resuming that interrupted session
 returned an upstream tool-history error. A fresh bounded run completed. Drafting and
@@ -434,10 +434,9 @@ certify a later release or a different scientific environment.
 
 Dependency advisory scans are separate from installation tests. Locally built
 packages and Git-hosted dependencies may not be covered by PyPI matching.
-The website build has an unpatched upstream image-parser advisory with a
-pre-build format restriction; see the
+The website build keeps a pre-build image-format restriction introduced for an
+upstream image-parser advisory; the locked dependency is now patched. See the
 [website maintenance notes](https://github.com/iowarp/clio-kit/blob/main/website/README.md#image-parser-advisory).
-This is a disclosed build dependency limitation, not a clean npm audit.
 
 Use the GitHub Actions results for the exact commit being reviewed. Public
 publication and target-site backend acceptance remain separate steps; the
@@ -536,8 +535,6 @@ Remaining release and deployment limits:
   see the [setup guide](https://github.com/iowarp/clio-kit/blob/main/setup.md).
 - Native bundle/agent manifests remain Claude Code-specific. Portable skills
   and explicit MCP registrations are the supported path for other clients.
-- The website's upstream image-parser advisory remains unpatched; the build
-  guard restricts affected formats, but this is not a clean dependency audit.
 
 To repeat installed-wheel acceptance with the verification extra installed:
 

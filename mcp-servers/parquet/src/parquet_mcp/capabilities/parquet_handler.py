@@ -283,7 +283,7 @@ async def read_slice(
                         "message": f"start_row must be an integer, got: '{start_row}'",
                     }
                 )
-        elif isinstance(start_row, float):
+        elif isinstance(start_row, float) and start_row.is_integer():
             # Convert float to int (common when parameters come from JSON)
             start_row = int(start_row)
         elif not isinstance(start_row, int):
@@ -304,7 +304,7 @@ async def read_slice(
                         "message": f"end_row must be an integer, got: '{end_row}'",
                     }
                 )
-        elif isinstance(end_row, float):
+        elif isinstance(end_row, float) and end_row.is_integer():
             # Convert float to int (common when parameters come from JSON)
             end_row = int(end_row)
         elif not isinstance(end_row, int):
@@ -677,7 +677,7 @@ async def aggregate_column(
                             "message": f"start_row must be an integer, got: '{start_row}'",
                         }
                     )
-            elif isinstance(start_row, float):
+            elif isinstance(start_row, float) and start_row.is_integer():
                 # Convert float to int (common when parameters come from JSON)
                 start_row = int(start_row)
             elif not isinstance(start_row, int):
@@ -699,7 +699,7 @@ async def aggregate_column(
                             "message": f"end_row must be an integer, got: '{end_row}'",
                         }
                     )
-            elif isinstance(end_row, float):
+            elif isinstance(end_row, float) and end_row.is_integer():
                 # Convert float to int (common when parameters come from JSON)
                 end_row = int(end_row)
             elif not isinstance(end_row, int):
@@ -762,11 +762,9 @@ async def aggregate_column(
             elif operation == "count":
                 result = pc.count(column).as_py()
             elif operation == "std":
-                result = pc.stddev(column).as_py()
-            elif operation == "count_distinct":
+                result = pc.stddev(column, ddof=0).as_py()
+            else:  # count_distinct; operation was validated above
                 result = len(pc.unique(column))
-            else:
-                result = None
 
         except Exception as e:
             return json.dumps(
@@ -797,6 +795,8 @@ async def aggregate_column(
             },
         }
 
+        if operation == "std":
+            response["metadata"]["std_type"] = "population (ddof=0)"
         if filter_dict is not None:
             response["metadata"]["filter_spec"] = filter_dict
 

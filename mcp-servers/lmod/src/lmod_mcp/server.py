@@ -25,6 +25,7 @@ load_dotenv()
 # Initialize MCP server
 mcp: FastMCP = FastMCP(
     "lmod",
+    version="3.0.1",
     instructions=(
         "Inspects Lmod environment modules on HPC systems: list loaded modules, "
         "search what is available, show module details, and manage saved "

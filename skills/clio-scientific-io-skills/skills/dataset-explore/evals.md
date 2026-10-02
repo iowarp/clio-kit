@@ -43,6 +43,19 @@ Expected:
 - The `.gz` is decompressed before any format tool is pointed at it.
 - Parquet is read with column projection rather than all columns.
 
+## S4 - distinguish complete slices from truncated replies
+
+Setup: An HDF5 array with 1,200 values. Prompt: "Show the first 12 values,
+then check whether a read of all 1,200 returns every value."
+
+Expected:
+
+- Reports all 12 values of the small slice, rather than claiming only five
+  were returned.
+- For the larger slice, reports 1,000 returned and 200 omitted; does not claim
+  that the response establishes a property of all 1,200 values.
+- Distinguishes response truncation from the amount read internally.
+
 ## Baseline failure modes to watch for (RED)
 
 - Reading a dataset before checking its shape and dtype.
@@ -84,4 +97,3 @@ kit fired nothing.
 
 Selection is checked. Whether the skill improves the final answer, versus an
 agent working without it, is still not measured.
-

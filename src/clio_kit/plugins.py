@@ -56,6 +56,11 @@ NAME_PATTERN = "abcdefghijklmnopqrstuvwxyz0123456789-"
 # plugin claiming the prefix would shadow one of ours in the same catalogue.
 RESERVED_PREFIX = "clio-"
 
+# What `plugin init` writes for the author to replace. Publishing them would
+# index a plugin that describes nothing and belongs to nobody.
+PLACEHOLDER_DESCRIPTION = "One sentence on what this plugin is for."
+PLACEHOLDER_AUTHOR = "Your name"
+
 
 class PluginProblem(Exception):
     """One reason a plugin directory would not publish correctly."""
@@ -173,13 +178,18 @@ def validate_plugin(
     problems.extend(component_problems(plugin_dir, manifest))
     has_hooks, hook_problems = hook_components(plugin_dir, manifest)
     problems.extend(hook_problems)
+    # Installation copies regular files only; a link resolves in the author's
+    # checkout and to nothing (or to something else) on the user's machine.
+    for path in sorted(plugin_dir.rglob("*")):
+        relative = path.relative_to(plugin_dir)
+        if path.is_symlink() and not {".git", "node_modules"} & set(relative.parts):
+            problems.append(f"{relative} is a link; linked content is not supported")
 
     # Every skill is checked against the published rules, not merely parsed:
     # a skill's description is carried in every session whether or not it
     # fires, so a vague one is a permanent cost this is the only chance to
     # catch. Advisories are surfaced by the CLI rather than blocking here.
-    skills_root = plugin_dir / "skills"
-    for report in check_skill_collection(skills_root):
+    for report in _skill_reports(plugin_dir, manifest):
         problems.extend(report.problems)
 
     has_components = (
@@ -198,6 +208,12 @@ def validate_plugin(
             "declares no dependencies -- installing it would do nothing"
         )
     return manifest, problems
+
+
+def _skill_reports(plugin_dir: Path, manifest: dict[str, Any]) -> list[Any]:
+    """Check a package's skills; a `clio-` package also owes maintained metadata."""
+    maintained = str(manifest.get("name", "")).startswith(RESERVED_PREFIX)
+    return check_skill_collection(plugin_dir / "skills", maintained=maintained)
 
 
 def validate_marketplace(marketplace_dir: Path) -> dict[str, Any]:
@@ -350,6 +366,11 @@ def install_plugin(name, client, project, root, components_only, replace, dry_ru
     help="Include a read-only Claude SessionStart hook (requires python3).",
 )
 @click.option("--mcp-arg", multiple=True, help="Server argument; repeat as needed.")
+@click.option(
+    "--maintained",
+    is_flag=True,
+    help="Allow reserved names for packages maintained inside CLIO Kit.",
+)
 def plugin_init(
     directory: Path,
     name: str | None,
@@ -357,17 +378,21 @@ def plugin_init(
     mcp_command: str | None,
     mcp_arg: tuple[str, ...],
     hook: bool,
+    maintained: bool = False,
 ) -> None:
     """Scaffold skills with optional agents, hooks and a real MCP wrapper."""
     plugin_name = name or directory.name
     problems: list[str] = []
-    _check_name(plugin_name, problems)
+    _check_name(plugin_name, problems, allow_reserved=maintained)
     if problems:
         raise click.ClickException("\n".join(problems))
     if (directory / ".claude-plugin" / "plugin.json").exists():
         raise click.ClickException(f"{directory} already contains a plugin manifest")
 
-    skill_dir = directory / "skills" / "example-workflow"
+    # Named after the plugin: portable skill names are global, so two
+    # scaffolds sharing one sample name could not be indexed together.
+    skill_name = f"{plugin_name}-workflow"
+    skill_dir = directory / "skills" / skill_name
     skill_dir.mkdir(parents=True, exist_ok=True)
     if hook:
         write_hook(directory)
@@ -378,16 +403,16 @@ def plugin_init(
     # not survive installation.
     manifest = {
         "name": plugin_name,
-        "description": "One sentence on what this plugin is for.",
+        "description": PLACEHOLDER_DESCRIPTION,
         "version": "0.1.0",
-        "author": {"name": "Your name", "url": "https://example.org"},
+        "author": {"name": PLACEHOLDER_AUTHOR, "url": "https://example.org"},
         "keywords": [],
     }
     (directory / ".claude-plugin" / "plugin.json").write_text(
         json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
     )
     if mcp_command:
-        write_mcp_wrapper(directory, mcp_command, mcp_arg)
+        write_mcp_wrapper(directory, plugin_name, mcp_command, mcp_arg)
     if agent:
         write_agent(directory)
     # The scaffold satisfies the skill rules the moment it is written. A
@@ -396,11 +421,16 @@ def plugin_init(
     # placeholder demonstrates the required shape instead of describing it.
     (skill_dir / "SKILL.md").write_text(
         "---\n"
-        "name: example-workflow\n"
+        f"name: {skill_name}\n"
         "description: Use when the agent must run this plugin's tools in a "
         "particular order, or would otherwise reach for the wrong one. "
         'Triggers on "example workflow", "replace this phrase". '
         "Not for work another skill already covers; use that skill.\n"
+        "metadata:\n"
+        f"  bundle: {plugin_name}\n"
+        "  servers: none\n"
+        "  provenance: designed\n"
+        "  eval-status: untested\n"
         "---\n"
         "\n"
         "# Example workflow\n"
@@ -409,7 +439,7 @@ def plugin_init(
         encoding="utf-8",
     )
     (skill_dir / "evals.md").write_text(
-        "# Evals - example-workflow\n"
+        f"# Evals - {skill_name}\n"
         "\n"
         "Run each scenario WITHOUT the skill to capture the gap, then WITH it to\n"
         "confirm the gap closes. Rubric is pass/fail per bullet.\n"
@@ -461,7 +491,7 @@ def plugin_validate(directory: Path, maintained: bool = False) -> None:
     # Reported whether or not the plugin passes: a contributor fixing a hard
     # failure should see the judgement calls in the same run rather than
     # discovering them after a second submission.
-    reports = check_skill_collection(directory / "skills")
+    reports = _skill_reports(directory, manifest)
     advisories = [advisory for report in reports for advisory in report.advisories]
 
     if problems:
@@ -529,6 +559,16 @@ def plugin_submit(
         entry = build_community_entry(manifest, repo, kind=kind)
     except ValueError as exc:
         raise click.ClickException(str(exc)) from exc
+    author = manifest.get("author")
+    author = author.get("name") if isinstance(author, dict) else author
+    if manifest.get("description") == PLACEHOLDER_DESCRIPTION:
+        problems.append("plugin.json still has the scaffold's placeholder description")
+    if author == PLACEHOLDER_AUTHOR:
+        problems.append("plugin.json still has the scaffold's placeholder author name")
+    if problems:
+        raise click.ClickException(
+            "Edit the manifest before submitting:\n  - " + "\n  - ".join(problems)
+        )
     if open_pr:
         from clio_kit.submissions import open_submission
 
@@ -541,17 +581,20 @@ def plugin_submit(
         return
     if output is not None:
         output.write_text(entry, encoding="utf-8")
-        click.echo(f"Wrote {output}")
+        click.echo(f"Wrote {output}", err=True)
     else:
         click.echo(entry, nl=False)
+    # Guidance goes to stderr so redirected stdout is exactly the TOML entry.
     click.echo(
         f"\nAdd this as community/entries/{manifest['name']}.toml in a pull "
         "request against iowarp/clio-kit. Your code stays in your repository; "
-        "the entry is the only thing we merge."
+        "the entry is the only thing we merge.",
+        err=True,
     )
     if kind == "marketplace":
         click.echo(
-            "Run `clio-kit marketplace refresh` in the catalogue checkout to merge the external collection."
+            "Run `clio-kit marketplace refresh` in the catalogue checkout to merge the external collection.",
+            err=True,
         )
 
 

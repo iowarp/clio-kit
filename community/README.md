@@ -180,7 +180,14 @@ a vague one is a permanent tax on every user.
 - a description over 500 characters, reported with its real size
 
 `clio-kit plugin init` scaffolds a skill that already satisfies all of this, so
-the starting point passes and you edit from there.
+the starting point passes and you edit from there. The sample skill is named
+`<plugin>-workflow`, and its frontmatter carries the optional `metadata` block
+(`bundle`, `servers`, `provenance`, `eval-status`) for you to fill in.
+
+`plugin validate` also refuses linked files, an empty `evals.md`, and a command
+hook whose `${CLAUDE_PLUGIN_ROOT}/...` handler file is not in the plugin.
+`plugin submit` additionally refuses the scaffold's placeholder description and
+author name.
 
 ## Trying something before you index it
 
@@ -198,7 +205,7 @@ Create a temporary plugin and the marketplace that will contain it:
 ```bash
 trial_root="$(mktemp -d /tmp/clio-trial.XXXXXX)"
 clio-kit plugin init "$trial_root/trial"
-rm -r "$trial_root/trial/skills/example-workflow"
+rm -r "$trial_root/trial/skills/trial-workflow"
 cp -r /path/to/their-skill-folder "$trial_root/trial/skills/"
 clio-kit plugin validate "$trial_root/trial"
 claude plugin validate "$trial_root/trial" --strict

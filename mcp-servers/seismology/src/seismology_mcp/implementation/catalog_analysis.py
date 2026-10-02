@@ -18,7 +18,7 @@ from typing import Any
 
 import numpy as np
 
-from .catalog_io import load_catalog
+from .catalog_io import CatalogError, load_catalog
 
 _DEFAULT_MAG_BIN = 0.1
 
@@ -73,19 +73,34 @@ def _b_value(
 
 def _omori_decay(events: list[dict[str, Any]], t0_ms: int) -> dict[str, Any]:
     """Event-rate decay after the largest event. Returns rate buckets + a fitted
-    Omori-Utsu p exponent (modified Omori, c fixed small) when fittable. Data only."""
+    Omori-Utsu p exponent (modified Omori, c fixed small) when fittable. Data only.
+
+    Buckets cover only the observed span: the bucket containing the last event is
+    truncated there (``day_end`` and the rate use the days actually covered) and
+    later buckets are omitted, so an unobserved tail never reads as a decay.
+    """
     day_ms = 86_400_000
     after = [e for e in events if e["time_ms"] > t0_ms]
+    end_day = max((e["time_ms"] - t0_ms) / day_ms for e in after) if after else 0.0
     buckets = [(0, 1), (1, 2), (2, 4), (4, 8), (8, 16), (16, 32)]
     rate_per_day: list[dict[str, Any]] = []
     for lo, hi in buckets:
-        c = sum(1 for e in after if lo * day_ms <= e["time_ms"] - t0_ms < hi * day_ms)
+        if rate_per_day and end_day <= lo:
+            break  # nothing observed here (a zero-width bucket has no rate)
+        covered_hi = min(hi, end_day) if end_day > lo else hi
+        # Include the observed endpoint in the final bucket, even at a boundary.
+        c = sum(
+            1
+            for e in after
+            if lo * day_ms <= e["time_ms"] - t0_ms < hi * day_ms
+            or (end_day == hi and e["time_ms"] - t0_ms == hi * day_ms)
+        )
         rate_per_day.append(
             {
                 "day_start": lo,
-                "day_end": hi,
+                "day_end": covered_hi,
                 "count": c,
-                "rate_per_day": round(c / (hi - lo), 3),
+                "rate_per_day": round(c / (covered_hi - lo), 3),
             }
         )
     # Crude p-fit: log(rate) vs log(t_mid) least squares over non-empty buckets.
@@ -152,6 +167,8 @@ def analyze_sequence(
     Raises:
         CatalogError: If the catalog cannot be read or parsed.
     """
+    if not mag_bin > 0:
+        raise CatalogError(f"mag_bin must be greater than 0, got {mag_bin}.")
     path, events = load_catalog(catalog_path)
 
     n = len(events)

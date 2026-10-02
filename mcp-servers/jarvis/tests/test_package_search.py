@@ -412,6 +412,20 @@ async def test_package_search_is_ranked_summary_only_and_cursor_bound(
 
 
 @pytest.mark.asyncio
+async def test_package_search_names_admin_step_on_uninitialized_root() -> None:
+    """No repos on a root without JARVIS configuration is a setup gap, not 0 hits."""
+
+    manager = Mock()
+    manager.list_repos.return_value = []
+    manager.jarvis.config_dir = None
+    with (
+        patch("jarvis_mcp.server.get_manager", return_value=manager),
+        pytest.raises(ToolError, match="jm_create_config"),
+    ):
+        await jarvis_describe_tool(target="package_search", query="echo")
+
+
+@pytest.mark.asyncio
 async def test_package_search_enforces_response_byte_ceiling(tmp_path: Path) -> None:
     """Large repositories are shortened into safe pages with continuations."""
 

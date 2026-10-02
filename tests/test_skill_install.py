@@ -37,9 +37,10 @@ def test_shipped_skills_use_standard_metadata():
             "allowed-tools",
         }
         assert fields["name"] == name
+        # Optional outside maintained packages, which test_skill_rules covers.
         assert all(
             isinstance(k, str) and isinstance(v, str)
-            for k, v in fields["metadata"].items()
+            for k, v in fields.get("metadata", {}).items()
         )
 
 
@@ -49,7 +50,11 @@ def test_selection_and_cli_errors(tmp_path):
         skill_group, ["list", "--bundle", "clio-scientific-io", "--json"]
     )
     assert result.exit_code == 0, result.output
-    assert len(json.loads(result.output)) == 3
+    root = Path(__file__).resolve().parents[1]
+    bundle = root / "skills/clio-scientific-io-skills/skills"
+    assert {record["name"] for record in json.loads(result.output)} == {
+        path.parent.name for path in bundle.glob("*/SKILL.md")
+    }
     result = runner.invoke(
         skill_group, ["install", "unknown-skill", "--target", str(tmp_path / "target")]
     )

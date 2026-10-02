@@ -23,6 +23,35 @@ from .implementation.export_handler import (
 )
 from .implementation.parallel_processor import parallel_sort_large_file
 
+# Lines returned inline once the full result has been written to output_file.
+PREVIEW_LINES = 100
+
+
+def _finish(
+    result: Dict[str, Any],
+    lines_key: Optional[str] = None,
+    output_file: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Raise implementation errors as tool errors; write output_file and bound the reply."""
+    if result.get("error"):
+        raise ToolError(str(result["error"]))
+    if output_file and lines_key in result:
+        lines = result[lines_key]
+        with open(output_file, "w", encoding="utf-8") as f:
+            for line in lines:
+                f.write(line + "\n")
+        result["output_file"] = output_file
+        if len(lines) > PREVIEW_LINES:
+            result[lines_key] = lines[:PREVIEW_LINES]
+            result["truncated"] = True
+            result["lines_returned"] = PREVIEW_LINES
+            result["lines_written"] = len(lines)
+            result["truncation_note"] = (
+                f"{lines_key} shows the first {PREVIEW_LINES} of {len(lines)} lines; "
+                f"all {len(lines)} are in {output_file}"
+            )
+    return result
+
 
 async def sort_log_handler(
     file_path: str,
@@ -41,13 +70,9 @@ async def sort_log_handler(
         # Apply reverse sorting if requested
         if reverse and "sorted_lines" in result:
             result["sorted_lines"] = list(reversed(result["sorted_lines"]))
-        # Write to output file if specified
-        if output_file and "sorted_lines" in result and not result.get("error"):
-            with open(output_file, "w", encoding="utf-8") as f:
-                for line in result["sorted_lines"]:
-                    f.write(line + "\n")
-            result["output_file"] = output_file
-        return result
+        return _finish(result, "sorted_lines", output_file)
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"sort_log failed: {e}") from e
 
@@ -68,13 +93,9 @@ async def parallel_sort_handler(
     """
     try:
         result = await parallel_sort_large_file(file_path, chunk_size_mb, num_workers)
-        # Write to output file if provided and no error
-        if output_file and "sorted_lines" in result and not result.get("error"):
-            with open(output_file, "w", encoding="utf-8") as f:
-                for line in result["sorted_lines"]:
-                    f.write(line + "\n")
-            result["output_file"] = output_file
-        return result
+        return _finish(result, "sorted_lines", output_file)
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"parallel_sort failed: {e}") from e
 
@@ -92,7 +113,9 @@ async def analyze_statistics_handler(
         result = await analyze_log_statistics(file_path)
         if not include_patterns and "statistics" in result:
             result["statistics"].pop("message_analysis", None)
-        return result
+        return _finish(result)
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"analyze_statistics failed: {e}") from e
 
@@ -118,11 +141,17 @@ async def detect_patterns_handler(
                 detection_config["pattern_types"] = pattern_types
             if sensitivity is not None:
                 sensitivity_thresholds = {"low": 4.0, "medium": 3.0, "high": 2.0}
-                detection_config["anomaly_threshold"] = sensitivity_thresholds.get(
-                    sensitivity, 3.0
-                )
+                if sensitivity not in sensitivity_thresholds:
+                    raise ToolError(
+                        f"Unknown sensitivity {sensitivity!r}; use 'low', 'medium' or 'high'"
+                    )
+                detection_config["anomaly_threshold"] = sensitivity_thresholds[
+                    sensitivity
+                ]
         result = await detect_patterns(file_path, detection_config)
-        return result
+        return _finish(result)
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"detect_patterns failed: {e}") from e
 
@@ -144,12 +173,9 @@ async def filter_logs_handler(
     try:
         op = logical_operator if logical_operator is not None else "and"
         result = await filter_logs(file_path, filter_conditions, op)
-        if output_file and "filtered_lines" in result and not result.get("error"):
-            with open(output_file, "w", encoding="utf-8") as f:
-                for line in result["filtered_lines"]:
-                    f.write(line + "\n")
-            result["output_file"] = output_file
-        return result
+        return _finish(result, "filtered_lines", output_file)
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"filter_logs failed: {e}") from e
 
@@ -170,12 +196,9 @@ async def filter_time_range_handler(
     """
     try:
         result = await filter_by_time_range(file_path, start_time, end_time)
-        if output_file and "filtered_lines" in result and not result.get("error"):
-            with open(output_file, "w", encoding="utf-8") as f:
-                for line in result["filtered_lines"]:
-                    f.write(line + "\n")
-            result["output_file"] = output_file
-        return result
+        return _finish(result, "filtered_lines", output_file)
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"filter_time_range failed: {e}") from e
 
@@ -194,12 +217,9 @@ async def filter_level_handler(
     """
     try:
         result = await filter_by_log_level(file_path, levels)
-        if output_file and "filtered_lines" in result and not result.get("error"):
-            with open(output_file, "w", encoding="utf-8") as f:
-                for line in result["filtered_lines"]:
-                    f.write(line + "\n")
-            result["output_file"] = output_file
-        return result
+        return _finish(result, "filtered_lines", output_file)
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"filter_level failed: {e}") from e
 
@@ -222,14 +242,15 @@ async def filter_keyword_handler(
     """
     try:
         # Map logical_operator to match_all boolean
+        if (logical_operator or "OR").upper() not in ("AND", "OR"):
+            raise ToolError(
+                f"Unknown logical_operator {logical_operator!r}; use 'AND' or 'OR'"
+            )
         match_all = (logical_operator or "").upper() == "AND"
         result = await filter_by_keyword(file_path, keywords, case_sensitive, match_all)
-        if output_file and "filtered_lines" in result and not result.get("error"):
-            with open(output_file, "w", encoding="utf-8") as f:
-                for line in result["filtered_lines"]:
-                    f.write(line + "\n")
-            result["output_file"] = output_file
-        return result
+        return _finish(result, "filtered_lines", output_file)
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"filter_keyword failed: {e}") from e
 
@@ -248,12 +269,9 @@ async def filter_preset_handler(
     """
     try:
         result = await apply_filter_preset(file_path, preset_name)
-        if output_file and "filtered_lines" in result and not result.get("error"):
-            with open(output_file, "w", encoding="utf-8") as f:
-                for line in result["filtered_lines"]:
-                    f.write(line + "\n")
-            result["output_file"] = output_file
-        return result
+        return _finish(result, "filtered_lines", output_file)
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"filter_preset failed: {e}") from e
 
@@ -263,8 +281,9 @@ async def export_json_handler(
 ) -> Dict[str, Any]:
     """Handler wrapping the JSON export capability for MCP."""
     try:
-        result = await export_to_json(data, include_metadata)
-        return result
+        return _finish(await export_to_json(data, include_metadata))
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"export_json failed: {e}") from e
 
@@ -274,8 +293,9 @@ async def export_csv_handler(
 ) -> Dict[str, Any]:
     """Handler wrapping the CSV export capability for MCP."""
     try:
-        result = await export_to_csv(data, include_headers)
-        return result
+        return _finish(await export_to_csv(data, include_headers))
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"export_csv failed: {e}") from e
 
@@ -285,8 +305,9 @@ async def export_text_handler(
 ) -> Dict[str, Any]:
     """Handler wrapping the text export capability for MCP."""
     try:
-        result = await export_to_text(data, include_summary)
-        return result
+        return _finish(await export_to_text(data, include_summary))
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"export_text failed: {e}") from e
 
@@ -294,7 +315,8 @@ async def export_text_handler(
 async def summary_report_handler(data: Dict[str, Any]) -> Dict[str, Any]:
     """Handler wrapping the summary report capability for MCP."""
     try:
-        result = await export_summary_report(data)
-        return result
+        return _finish(await export_summary_report(data))
+    except ToolError:
+        raise
     except Exception as e:
         raise ToolError(f"summary_report failed: {e}") from e

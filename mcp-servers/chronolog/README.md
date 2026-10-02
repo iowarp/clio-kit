@@ -187,7 +187,7 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\chronolog run chronolog-mcp -
 - `chronicle_name` (str, optional): Name of the chronicle to create or connect to. Defaults to config.DEFAULT_CHRONICLE.
 - `story_name` (str, optional): Name of the story to acquire. Defaults to config.DEFAULT_STORY.
 
-**Returns**: str: Confirmation message with chronicle and story identifiers.
+**Returns**: str: Confirmation message with chronicle and story identifiers. A chronicle that already exists is reused, so the same names can be started again.
 
 ### `record_interaction`
 **Description**: Logs user messages and LLM responses to the active story with structured event formatting.
@@ -212,7 +212,7 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\chronolog run chronolog-mcp -
 - `start_time` (str, optional): Start time for filtering records (YYYY-MM-DD HH:MM:SS or similar).
 - `end_time` (str, optional): End time for filtering records (YYYY-MM-DD HH:MM:SS or similar).
 
-**Returns**: str: Generated text file with interaction history or error message if no records found.
+**Returns**: str: Absolute path of the text file written in the MCP working directory, or "No records found.".
 ## Examples
 
 ### 1. Session Logging and Analysis

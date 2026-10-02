@@ -15,7 +15,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   platforms={["claude", "cursor", "vscode"]}
   keywords={["web", "fetch", "search", "mcp", "llm-integration", "agentic-web"]}
   license="BSD-3-Clause"
-  tools={[{"name": "fetch", "description": "Fetch an HTTP(S) URL or DOI inline or as a task. HTML and text are read locally; supported documents use CLIO Web Search conversion when configured.", "function_name": "fetch"}, {"name": "fetch_events", "description": "Query the full ordered backend event log for a document fetch conversion.", "function_name": "fetch_events"}, {"name": "search", "description": "Search the web using this installation's fixed ddg provider.", "function_name": "search"}]}
+  tools={[{"name": "fetch", "description": "Fetch an HTTP(S) URL or DOI inline or as a task. HTML and text are read locally. DOI targets and PDF/Office/image conversion require a CLIO Web Search deployment (--remote-url); without one a DOI fails with a clear error and binary documents are only saved with to_file=True.", "function_name": "fetch"}, {"name": "fetch_events", "description": "Query the full ordered backend event log for a document fetch conversion. Requires a CLIO Web Search deployment (--remote-url).", "function_name": "fetch_events"}, {"name": "search", "description": "Search the web using this installation's fixed ddg provider.", "function_name": "search"}]}
 >
 
 {/* clio-kit:usage:start */}

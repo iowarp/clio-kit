@@ -3,6 +3,7 @@ Time series analysis capabilities.
 """
 
 import pandas as pd
+from pathlib import Path
 import numpy as np
 import os
 from typing import Optional, Dict, Any
@@ -177,12 +178,15 @@ def time_series_operations(
         else:
             return {
                 "success": False,
-                "error": f"Unknown operation: {operation}",
+                "error": f"Unknown operation: {operation}. "
+                "Valid operations: resample, rolling, lag, diff",
                 "error_type": "ValueError",
             }
 
         # Save result
-        output_path = file_path.replace(".csv", f"_{operation}.csv")
+        output_path = str(
+            Path(file_path).with_name(f"{Path(file_path).stem}_{operation}.csv")
+        )
         result_df.to_csv(output_path, index=False)
 
         # Convert to JSON-serializable format (limit to first 100 rows)

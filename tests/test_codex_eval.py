@@ -136,7 +136,7 @@ def test_mcp_error_envelopes():
 def test_cases_cover_current_inventory_without_duplicate_ids():
     cases = runner.CASES
     assert len(cases) == len({c["skill"] for c in cases})
-    assert {c["skill"] for c in cases} == set(runner.skill_records())
+    assert runner.case_coverage_problem() is None
 
 
 def test_large_data_check_accepts_exact_or_qualified_sample_not_unqualified_mean(

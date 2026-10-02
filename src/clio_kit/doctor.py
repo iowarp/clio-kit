@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import sys
+from pathlib import Path
 
 import click
 
@@ -29,6 +30,37 @@ def server_prerequisites() -> dict:
     if not inventory.is_file():
         return {}
     return tomllib.loads(inventory.read_text()).get("prerequisites", {})
+
+
+def prerequisite_checks(declared: dict) -> list[dict]:
+    """Mirror each server's own lookup: override variable, PATH, known locations."""
+    checks = []
+    override = next(
+        (v for v in declared.get("executable-environment", []) if os.getenv(v)), None
+    )
+    if override:
+        # A configured command replaces the search entirely, as in the server.
+        value = os.path.expanduser(os.environ[override])
+        found = bool(shutil.which(value))
+        checks.append({"name": f"{override}={value}", "available": found})
+    else:
+        located = any(
+            bool(shutil.which(os.path.expandvars(os.path.expanduser(path))))
+            for path in declared.get("executable-paths", [])
+        )
+        for executable in declared.get("executables", []):
+            found = bool(shutil.which(executable)) or located
+            checks.append({"name": executable, "available": found})
+    for variable in declared.get("environment", []):
+        checks.append({"name": variable, "available": bool(os.getenv(variable))})
+    for variable in declared.get("environment-files", []):
+        value = os.getenv(variable, "").strip()
+        exists = bool(value) and Path(value).expanduser().exists()
+        name = (
+            f"{variable}={value} (no such file)" if value and not exists else variable
+        )
+        checks.append({"name": name, "available": exists})
+    return checks
 
 
 @click.command("doctor")
@@ -62,14 +94,7 @@ def doctor_command(servers: tuple[str, ...], connect: bool, as_json: bool) -> No
     for server in selected:
         record: dict = {"server": server, "prerequisites": []}
         declared = prerequisites.get(server, {})
-        for executable in declared.get("executables", []):
-            record["prerequisites"].append(
-                {"name": executable, "available": bool(shutil.which(executable))}
-            )
-        for variable in declared.get("environment", []):
-            record["prerequisites"].append(
-                {"name": variable, "available": bool(os.getenv(variable))}
-            )
+        record["prerequisites"] = prerequisite_checks(declared)
         if declared.get("note"):
             record["note"] = declared["note"]
         if connect:

@@ -81,7 +81,9 @@ class TestResource:
         result = chronolog_status()
         assert isinstance(result, dict)
         assert result["service"] == "chronolog"
-        assert result["status"] == "ready"
+        # Truthful: never "ready" without a client or a session.
+        assert result["status"] in {"client_unavailable", "no_session"}
+        assert result["session"] is None
         assert "description" in result
 
 

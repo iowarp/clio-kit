@@ -76,10 +76,8 @@ class TestInspectVariablesAtStep:
         mock_step_context = Mock()
         mock_stream.steps.return_value = [mock_step_context, mock_step_context]
 
-        result = inspect_variables_at_step("test.bp", "temperature", 5)
-
-        assert "error" in result
-        assert "Step 5 exceeds available steps" in result["error"]
+        with pytest.raises(RuntimeError, match="Step 5 not found"):
+            inspect_variables_at_step("test.bp", "temperature", 5)
 
     @patch("adios_mcp.implementation.bp5_inspect_variables_at_step.Stream")
     def test_inspect_variable_with_timeout(self, mock_stream_class):

@@ -48,7 +48,7 @@ def test_remote_runtime_discovers_stable_agent_queue(httpx_mock: HTTPXMock, tmp_
         url=f"{_REMOTE}/v1/task-backend/session",
         json={
             "scheme": "redis",
-            "host": "homelab",
+            "host": "localhost",
             "port": 8090,
             "database": 0,
             "username": "agent-a",
@@ -64,7 +64,7 @@ def test_remote_runtime_discovers_stable_agent_queue(httpx_mock: HTTPXMock, tmp_
     )
     first = resolve_task_runtime(configured)
 
-    assert first.url == "redis://agent-a:secret@homelab:8090/0"
+    assert first.url == "redis://agent-a:secret@localhost:8090/0"
     assert first.queue_name == "clio-web-prod-agent-a"
     request = httpx_mock.get_requests()[1]
     assert request.headers["Authorization"] == "Bearer deployment-token"
@@ -81,7 +81,7 @@ def test_remote_runtime_discovers_stable_agent_queue(httpx_mock: HTTPXMock, tmp_
         url=f"{_REMOTE}/v1/task-backend/session",
         json={
             "scheme": "redis",
-            "host": "homelab",
+            "host": "localhost",
             "port": 8090,
             "database": 0,
             "username": "agent-a",

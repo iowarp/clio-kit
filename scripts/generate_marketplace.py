@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 from pathlib import Path
 
 from clio_kit.community import (
@@ -15,6 +16,8 @@ from clio_kit.community import (
 from clio_kit.federation import LOCK_NAME, refresh_marketplace, read_snapshot
 from clio_kit.marketplace_assets import imported_skill_entries, write_extra_plugins
 from clio_kit.local_plugins import discover_local_plugins
+from clio_kit.plugins import PluginProblem
+from clio_kit.skills import SkillProblem
 from clio_kit.workflow_plugins import write_workflow_plugins
 from generate_server_json import (
     PLUGIN_AUTHOR,
@@ -56,7 +59,8 @@ def generate(root: Path, *, refresh: bool = False) -> None:
         refresh_marketplace(root)
     elif path.with_name(LOCK_NAME).exists():
         print(
-            "Kept the last federation snapshot; use --refresh to fetch external updates."
+            "Kept the last federation snapshot; run `clio-kit marketplace refresh` "
+            "to fetch external updates."
         )
     write_shipped_marketplaces(
         root / "src" / "clio_kit", read_federated_marketplaces(root)
@@ -72,14 +76,24 @@ if __name__ == "__main__":
     parser.add_argument("--refresh", action="store_true")
     parser.add_argument("--website", action="store_true")
     args = parser.parse_args()
-    generate(args.root, refresh=args.refresh)
-    if args.website:
-        from generate_website_catalogue import generate as website_catalogue
+    try:
+        generate(args.root, refresh=args.refresh)
+        if args.website:
+            from generate_website_catalogue import generate as website_catalogue
 
-        output = args.root / "website/src/data/catalogue.json"
-        output.parent.mkdir(parents=True, exist_ok=True)
-        output.write_text(
-            json.dumps(website_catalogue(args.root), indent=2, ensure_ascii=False)
-            + "\n"
-        )
-        print(f"Updated website catalogue: {output}")
+            output = args.root / "website/src/data/catalogue.json"
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(
+                json.dumps(website_catalogue(args.root), indent=2, ensure_ascii=False)
+                + "\n"
+            )
+            print(f"Updated website catalogue: {output}")
+    except (
+        ValueError,
+        OSError,
+        PluginProblem,
+        SkillProblem,
+        subprocess.SubprocessError,
+    ) as error:
+        # Contribution mistakes are expected input, not program faults.
+        raise SystemExit(f"Error: {error}") from None

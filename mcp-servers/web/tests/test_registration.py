@@ -51,3 +51,13 @@ async def test_capabilities_resource_reports_configured_searxng() -> None:
     assert payload["active_provider"] == "searxng"
     assert "pageno" in payload["search_parameters"]
     assert "10.0.0.102" not in contents.text
+
+
+@pytest.mark.asyncio
+async def test_server_info_and_remote_prerequisite_are_stated() -> None:
+    """serverInfo carries the release version; remote-only features say so."""
+    async with Client(mcp) as client:
+        tools = {tool.name: tool for tool in await client.list_tools()}
+        assert client.server_info.version == "2.1.3"
+    assert "--remote-url" in (tools["fetch"].description or "")
+    assert "--remote-url" in (tools["fetch_events"].description or "")

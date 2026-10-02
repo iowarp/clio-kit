@@ -39,7 +39,18 @@ cd clio-kit
 
 # Install all dependencies (development mode)
 uv sync --all-extras --dev
+
+# Install the launcher from this checkout, so `clio-kit` runs the code you edit
+uv tool install --force --reinstall --editable ".[verification]"
 ```
+
+This guide calls `clio-kit` directly. A `clio-kit` installed any other way (for
+example `uv tool install clio-kit`) reads the release it was installed from, not
+your checkout, and nothing warns you. Check with `clio-kit --version`, or use
+`uv run clio-kit ...` from the repository root, which always runs the checkout.
+`clio-kit marketplace sync` and `marketplace refresh` act on the checkout named
+by `--root`, which defaults to the current directory: run them from the
+repository root or pass `--root` explicitly.
 
 For client setup and contribution checks, use the
 [Agent integration guide](README.md#agent-integrations). It covers MCP and skill
@@ -70,7 +81,8 @@ clio-kit/
 │   │   ├── tests/             # - Test suite
 │   │   ├── pyproject.toml     # - Dependencies & entry points
 │   │   ├── uv.lock            # - Pinned runtime
-│   │   ├── clio-server.toml   # - Runtime descriptor (generated)
+│   │   ├── clio-server.toml   # - Runtime descriptor (generated for Python,
+│   │   │                      #   handwritten for Node and Go)
 │   │   └── README.md          # - Documentation
 │   └── ...
 ├── skills/                    # Workflow skills, grouped per bundle
@@ -121,18 +133,86 @@ add a `Not for X; use Y` clause wherever another skill could plausibly claim the
 same request. Descriptions support discovery; full bodies load when invoked. Keep
 descriptions concise and put procedural detail in the body.
 
-`evals.md` is required. Generation fails without it. Record the scenarios that
-separate the skill's behaviour from the baseline: the exact prompt, checkable
-expectations, and the failure modes the agent shows without the skill.
+A minimal `SKILL.md` that passes validation as written:
 
-`clio-kit skill validate /path/to/your-skill` enforces these rules for standalone
-skills. `clio-kit plugin validate` also applies them to plugin contents, rather than trusting a
-reviewer to notice. It refuses a skill whose frontmatter does not parse, whose
-`name` disagrees with its folder, that records no scenarios, whose description
-does not open with `Use when`, or that carries no `Triggers on` clause. A
-missing `Not for X; use Y` boundary and an over-long description are reported
-as advisories, because a first skill with nothing to collide against is
-legitimately unbounded. Plugin validation also reports description character counts.
+```markdown
+---
+name: inspecting-simulation-output
+description: 'Use when inspecting an unfamiliar simulation dataset. Triggers on "inspect simulation output". Not for plotting; use results-summary.'
+metadata:
+  bundle: clio-scientific-io
+  servers: clio-hdf5
+  provenance: designed
+  eval-status: scenarios-recorded
+---
+
+Discover the available scientific I/O tools. Inspect the file metadata and
+dataset shapes first, then read a bounded slice. Report the slice bounds and
+units; do not treat a sample as a whole-dataset summary.
+```
+
+`metadata.bundle` is the bundle that lists the skill (`clio-<bundle>`, without
+`-skills`); `servers` is a comma-separated list of plugin names, or `none`.
+`eval-status` says how far the skill has been checked and must be one of,
+weakest first: `untested`, `scenarios-recorded`, `trigger-checked`,
+`smoke-checked`, `eval-run`.
+
+`evals.md` is required and must not be empty. Record the scenarios that separate
+the skill's behaviour from the baseline: the exact prompt, checkable
+expectations, and the failure modes the agent shows without the skill. For the
+example above:
+
+```markdown
+# Evals - inspecting-simulation-output
+
+## S1 - unfamiliar HDF5 file
+
+Setup: Prompt: "Inspect simulation output in run.h5 and tell me what it holds."
+
+Expected:
+
+- Lists the datasets with their shapes and units before reading any values.
+- Reads a bounded slice and states its bounds.
+
+Without the skill: reads a whole dataset, or reports a sample as the whole file.
+```
+
+Validate the skill, then the collection it joins:
+
+```bash
+clio-kit skill validate --maintained skills/clio-scientific-io-skills/skills/inspecting-simulation-output
+clio-kit plugin validate --maintained skills/clio-scientific-io-skills
+```
+
+`skill validate` refuses a skill whose frontmatter does not parse, whose `name`
+disagrees with its folder, that records no scenarios, whose description does not
+open with `Use when`, or that carries no `Triggers on` clause. `--maintained`
+adds the two things a skill in a `clio-` package owes: `metadata.bundle` and
+`metadata.eval-status`. A missing `Not for X; use Y` boundary and an over-long
+description are reported as advisories, because a first skill with nothing to
+collide against is legitimately unbounded. `clio-kit plugin validate` applies
+the same rules to every skill in a package and reports description character
+counts.
+
+A skill added to a maintained bundle also needs, in the same pull request:
+
+1. **An evaluation case.** Add one `case("<skill-name>", "<prompt>", ...)` to
+   `CASES` in `evals/codex_cases.py`. The root suite fails, naming the skill,
+   while a maintained skill has none.
+2. **A version bump in the inventory.** Raise `[bundles.clio-<bundle>].version`
+   in `mcp-server-versions.toml`. The skills plugin's manifest
+   (`skills/clio-<bundle>-skills/.claude-plugin/plugin.json`) is generated from
+   that table, so a version edited in the manifest is reverted by the next sync.
+3. **A catalogue sync before the root suite**, as CI does:
+
+   ```bash
+   clio-kit marketplace sync --root .
+   uv run --frozen pytest tests -q
+   ```
+
+Skills in your own package (`plugins/<name>/skills/`, `skills/<package>/`) follow
+the same blocking rules without `--maintained`; they need no evaluation case and
+no inventory entry.
 
 ## Contributing a Server in Another Language
 
@@ -222,6 +302,25 @@ and description that a Python server states in `pyproject.toml`, so a hosted
 server reaches the marketplace like any other. A server it cannot describe is
 refused by name rather than skipped in silence.
 
+**Every gate a hosted Node or Go server must pass.** Registration is step 7-9 of
+[Adding a New MCP Server](#adding-a-new-mcp-server) with these differences; the
+root suite (`uv run --frozen pytest tests -q`) checks each one:
+
+| What you add | Checked by |
+| --- | --- |
+| `clio-server.toml`, written by hand, with `name` equal to the folder, `runtime`, `entry`, `version` and a `description`; the generator never overwrites a non-Python descriptor | `tests/test_discovery.py`, generation |
+| The runtime's manifest and lock: `package.json` + `package-lock.json`, or `go.mod` + `go.sum` | `tests/test_discovery.py` |
+| For TypeScript, the compiled JavaScript committed under `bundle/` | `clio-kit server inspect` warns about `dist/`, `lib/` and `build/` |
+| The inventory edits of step 7: `[servers]`, one primary `[bundles.*]`, `[icons]`, `[mcp-registry-release].publish` | `tests/test_generate_server_json_contract.py` |
+| `SERVER_TAGS` entry in `scripts/generate_server_json.py` | same file (marketplace keywords) |
+| `README.md` rows: bundle table, server table, `mcp-name` comment, server count | same file |
+| A workflow under `.github/workflows/` that lints, type-checks and tests the server, and its entry in `DEDICATED_WORKFLOWS` | `tests/test_ci_covers_every_server.py` |
+| Generated files from step 8, including `mcp-servers/<name>/server.json` | `tests/test_generate_server_json_contract.py`, `tests/test_website_catalogue.py` |
+
+Generation starts a hosted server over stdio to read its tools, so install the
+verification extra (`uv sync --all-extras --dev`) and the runtime's toolchain
+(`npm`, or `go`) before step 8. A server that cannot start is not published.
+
 Selected Node and Go servers use a real stdio MCP session for registry metadata
 extraction. Install `.[verification]` for this operation. Without a `[registry]`
 table, a hosted server uses the shared `clio-kit` wheel coordinate. A descriptor
@@ -278,8 +377,13 @@ uv run pytest tests/test_server.py -v
 uv run pytest tests/test_server.py::test_function_name -v
 
 # Run with coverage
-uv run pytest --cov=src/ --cov-report=html --cov-report=term
+uv run --with pytest-cov pytest --cov=src/ --cov-report=html --cov-report=term
 ```
+
+Every server's own environment has `pytest` and `ruff`. `mypy`, `pip-audit` and
+`pytest-cov` are missing from several servers' dev groups, and CI installs them
+on top of the locked environment. `uv run --with <tool>` does the same locally
+without changing the server's lock, so the commands below work in every server.
 
 ### Test All Servers
 
@@ -319,7 +423,7 @@ uv run ruff format .
 cd mcp-servers/hdf5
 
 # Run type checking
-uv run mypy src/ --ignore-missing-imports
+uv run --with mypy mypy src/ --ignore-missing-imports
 ```
 
 ### pip-audit (Security)
@@ -328,7 +432,7 @@ uv run mypy src/ --ignore-missing-imports
 cd mcp-servers/hdf5
 
 # Scan for vulnerabilities
-uv run pip-audit
+uv run --with pip-audit pip-audit
 ```
 
 ### Run All Quality Checks (Mimic CI)
@@ -338,9 +442,9 @@ cd mcp-servers/hdf5
 
 uv run ruff check .
 uv run ruff format . --check
-uv run mypy src/ --ignore-missing-imports
-uv run pytest -v --cov=src/
-uv run pip-audit
+uv run --with mypy mypy src/ --ignore-missing-imports
+uv run --with pytest-cov pytest -v --cov=src/
+uv run --with pip-audit pip-audit
 ```
 
 ## Submitting Pull Requests
@@ -362,7 +466,7 @@ uv run pip-audit
    ```bash
    uv run ruff check .
    uv run ruff format .
-   uv run mypy src/
+   uv run --with mypy mypy src/ --ignore-missing-imports
    ```
 
 4. **Update documentation** if needed (README.md, docstrings)
@@ -402,30 +506,35 @@ Brief description of changes
 
 ## Adding a New MCP Server
 
-Follow these steps to add a new MCP server to the monorepo:
+These steps add a Python server named `my-server` and end with a green root
+suite. Run them from the repository root unless a step says otherwise. For Node
+and Go, read [Contributing a Server in Another Language](#contributing-a-server-in-another-language)
+first; steps 7-9 apply to every runtime.
 
 ### 1. Create Directory Structure
 
 ```bash
-# Use kebab-case for directory name
+# Use kebab-case for the directory, snake_case for the package
 mkdir -p mcp-servers/my-server/src/my_server_mcp
 mkdir -p mcp-servers/my-server/tests
+touch mcp-servers/my-server/src/my_server_mcp/__init__.py
 ```
 
 ### 2. Create `pyproject.toml`
+
+`mcp-servers/my-server/pyproject.toml`:
 
 ```toml
 [project]
 name = "my-server-mcp"
 version = "1.0.0"
-description = "Your server description"
+description = "Format a labeled count"
 readme = "README.md"
 requires-python = ">=3.10"
-license = "MIT"
+license = "BSD-3-Clause"
 authors = [
-    {name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu"}
+    { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
 ]
-
 dependencies = [
     "fastmcp>=4.0.3,<5",
     # Add your dependencies
@@ -436,18 +545,32 @@ my-server-mcp = "my_server_mcp.server:main"
 
 [dependency-groups]
 dev = [
+    "mypy>=1.17.0",
+    "pip-audit>=2.10.0",
     "pytest>=9.0.3",
     "pytest-asyncio>=1.1.0",
-    "pytest-cov>=4.0.0",
-    "ruff>=0.1.0",
-    "mypy>=1.0.0",
-    "pip-audit>=2.0.0"
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.5",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/my_server_mcp"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
 ```
+
+The console script must end in `-mcp`. The `description` is what the
+marketplace shows. Keep `requires-python = ">=3.10"`: the CI matrix runs every
+server on each Python version it lists, and
+`tests/test_ci_covers_every_server.py` fails when a server's range and the
+matrix disagree.
 
 ### 3. Implement Server (`src/my_server_mcp/server.py`)
 
@@ -455,39 +578,55 @@ build-backend = "hatchling.build"
 from fastmcp import FastMCP
 from fastmcp.prompts import Message
 
-mcp = FastMCP("my-server", instructions="Use my_tool to format a labeled count.")
+mcp = FastMCP(
+    "my-server",
+    version="1.0.0",  # keep equal to mcp-server-versions.toml
+    instructions="Use my_tool to format a labeled count.",
+)
+
 
 @mcp.tool(
     description="Format a label and count.",
-    annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
+    annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+    },
     tags={"formatting"},
 )
 def my_tool(param1: str, param2: int) -> str:
     return f"Result: {param1} {param2}"
 
+
 @mcp.resource("my-server://capabilities")
 def capabilities() -> dict:
     return {"tools": ["my_tool"]}
+
 
 @mcp.prompt()
 def format_count(label: str) -> list[Message]:
     return [Message(f"Use my_tool to format the count for {label}.")]
 
+
 def main() -> None:
     mcp.run(transport="stdio")
+
 
 if __name__ == "__main__":
     main()
 ```
 
+Pass `version=` explicitly. Without it FastMCP reports its own library version
+as the server's, and `tests/test_server_version_reporting.py` fails.
+
 ### 4. Create Tests (`tests/test_server.py`)
 
 ```python
-import pytest
 from fastmcp import Client
+
 from my_server_mcp.server import mcp
 
-@pytest.mark.asyncio
+
 async def test_my_tool():
     async with Client(mcp) as client:
         result = await client.call_tool("my_tool", {"param1": "test", "param2": 42})
@@ -498,43 +637,97 @@ async def test_my_tool():
 
 Use the standard template from existing servers (see `mcp-servers/hdf5/README.md` as reference).
 
-### 6. Test Your Server
+### 6. Lock and Test Your Server
 
 ```bash
 cd mcp-servers/my-server
+uv lock                      # writes uv.lock; commit it
 uv sync --all-extras --dev
 uv run pytest -v
 uv run ruff check .
-uv run mypy src/
+uv run ruff format --check .
+uv run mypy src/ --ignore-missing-imports
+cd ../..
 ```
 
-### 7. Register and verify discovery
+The launcher refuses a server without `uv.lock`, because it never resolves
+dependencies at start-up. Run `uv lock` again whenever `pyproject.toml` changes.
 
-Add `clio-server.toml` in the server directory:
+### 7. Register the server
+
+Three handwritten files name every server. Generation or the root suite fails
+until all three agree.
+
+**`mcp-server-versions.toml`** — four edits:
 
 ```toml
-name = "my-server"
-runtime = "python"
-version = "1.0.0"
-lock = "uv.lock"
-entry = "my-server-mcp"
+[mcp-registry-release]
+publish = [..., "lmod", "my-server", "ndp", ...]    # sorted
+
+[bundles.clio-analysis]                              # exactly one primary bundle
+servers = ["my-server", "pandas", "paraview", "plot"]  # sorted
+
+[servers]                                            # sorted; a bare name = "version" line
+my-server = "1.0.0"
+
+[icons]
+my-server = "🔢"
 ```
 
-Add the server's version, description and category to
-`mcp-server-versions.toml`, following an existing entry. From the repository
-root, generate manifests with `uv run python scripts/generate_server_json.py`
-and website references with
-`uv run python scripts/generate_docs.py mcp-servers website`.
-Review the generated plugin and registry metadata, and add an installed-server
-check to CI. For Node and Go, follow [Contributing a Server in Another Language](#contributing-a-server-in-another-language).
+The description comes from `pyproject.toml`. A server is published as
+`scientific` unless you also add it to `[classification].general`. Add
+`[prerequisites.my-server]` only if the server needs an external executable or
+configuration file for `clio-kit doctor` to check.
+
+**`scripts/generate_server_json.py`** — add the marketplace keywords to
+`SERVER_TAGS`:
+
+```python
+    "my-server": ["formatting", "example"],
+```
+
+**`README.md`** — four edits, each checked against the inventory:
+
+- the `<!-- mcp-name: io.github.iowarp/my-server-mcp -->` comment at the top
+- the server's name in its bundle's row of the bundle table
+- the count in the `# List all N available MCP servers` comment
+- a row in the server table beginning `| **`my-server`** | 1.0.0 |`
+
+### 8. Generate manifests and catalogues
 
 ```bash
-# From root directory
-uv run clio-kit mcp-servers
-
-# Your server should appear in the list
-uv run clio-kit mcp-server my-server
+uv run python scripts/generate_server_json.py
+uv run python scripts/generate_docs.py mcp-servers website
+uv run clio-kit marketplace sync --root .
 ```
+
+The first command starts every Python server in its own environment to read
+its tools, so its first run can take several minutes. Commit what these commands
+write for your server:
+
+- `mcp-servers/my-server/clio-server.toml` and `server.json` (both generated
+  for a Python server; do not write them by hand)
+- `plugins/clio-my-server/` and the bundle's `plugins/<bundle>/.claude-plugin/plugin.json`
+- `.claude-plugin/marketplace.json`, `claude_desktop_config.json`, `gemini-extension.json`
+- `docs/mcps/my_server.md` and `website/src/data/catalogue.json`
+
+On an up-to-date checkout nothing else changes. If another server's
+`server.json` or page is rewritten, leave it out of your pull request and
+report it.
+
+### 9. Verify
+
+```bash
+uv run clio-kit mcp-servers            # my-server is listed
+uv run clio-kit mcp-server my-server   # starts on stdio; Ctrl+C to stop
+uv run --frozen pytest tests -q        # root suite
+uv run --frozen python scripts/check_file_size.py
+```
+
+CI needs no change for a Python server: the shared matrix discovers it through
+`pyproject.toml`. Exercise at least one tool through a real MCP client before
+opening the pull request; a passing unit test does not show that the launcher
+can start the server.
 
 ## Issue Reporting
 
@@ -626,10 +819,10 @@ uv run ruff format .
 uv run ruff check --fix .
 
 # Type check
-uv run mypy src/
+uv run --with mypy mypy src/ --ignore-missing-imports
 
 # Security scan
-uv run pip-audit
+uv run --with pip-audit pip-audit
 
 # Run server
 uv run <server-name>-mcp
@@ -644,7 +837,7 @@ uv run <server-name>-mcp
 
 - **Formatting**: Ruff (automatic)
 - **Imports**: Sorted by Ruff
-- **Line length**: 100 characters (Ruff default)
+- **Line length**: 88 characters (Ruff's default) for the launcher and most servers; `geo`, `ndp`, `scientific-catalog`, `spack` and `web` set 100 in their own `pyproject.toml`
 - **Type hints**: Required for all public functions
 - **Docstrings**: Required for all public functions
 

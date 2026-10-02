@@ -562,6 +562,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "pandas",
+    version="2.2.6",  # keep equal to clio-server.toml (tests/test_release_regressions.py)
     instructions=(
         "Performs data analysis operations using pandas DataFrames. "
         "Load CSV/Excel files, compute statistics, filter data, group and aggregate, "
@@ -575,6 +576,13 @@ class PandasMCPError(Exception):
     """Custom exception for pandas MCP-related errors"""
 
     pass
+
+
+def _checked(result: dict) -> Any:
+    """Turn an implementation's ``{"success": False}`` payload into a ToolError."""
+    if not result.get("success"):
+        raise ToolError(result.get("error", "operation failed"))
+    return result
 
 
 # ===============================================================================
@@ -621,11 +629,8 @@ async def load_data_tool(
     """Load data from various file formats with comprehensive parsing options."""
     try:
         logger.info(f"Loading data from: {file_path}")
-        return cast(
-            LoadDataResult,
-            load_data_file(
-                file_path, file_format, sheet_name, encoding, columns, nrows
-            ),
+        return _checked(
+            load_data_file(file_path, file_format, sheet_name, encoding, columns, nrows)
         )
     except Exception as e:
         logger.error(f"Data loading error: {e}")
@@ -663,7 +668,7 @@ async def save_data_tool(
     """Save data to various file formats with comprehensive export options."""
     try:
         logger.info(f"Saving data to: {file_path}")
-        return cast(SaveDataResult, save_data_file(data, file_path, file_format, index))
+        return _checked(save_data_file(data, file_path, file_format, index))
     except Exception as e:
         logger.error(f"Data saving error: {e}")
         raise ToolError(f"Data saving error: {e}") from e
@@ -698,9 +703,8 @@ async def statistical_summary_tool(
     """Generate comprehensive statistical summary with advanced analytics."""
     try:
         logger.info(f"Generating statistical summary for: {file_path}")
-        return cast(
-            StatisticalSummaryResult,
-            get_statistical_summary(file_path, columns, include_distributions),
+        return _checked(
+            get_statistical_summary(file_path, columns, include_distributions)
         )
     except Exception as e:
         logger.error(f"Statistical analysis error: {e}")
@@ -731,10 +735,7 @@ async def correlation_analysis_tool(
     """Perform comprehensive correlation analysis with statistical significance testing."""
     try:
         logger.info(f"Performing correlation analysis on: {file_path}")
-        return cast(
-            CorrelationAnalysisResult,
-            get_correlation_analysis(file_path, method, columns),
-        )
+        return _checked(get_correlation_analysis(file_path, method, columns))
     except Exception as e:
         logger.error(f"Correlation analysis error: {e}")
         raise ToolError(f"Correlation analysis error: {e}") from e
@@ -828,9 +829,9 @@ async def handle_missing_data_tool(
 @mcp.tool(
     name="clean_data",
     title="Clean Data",
-    description="Remove duplicates, detect outliers via IQR/Z-score, and optimize data types in a single pass.",
+    description="Remove duplicates, detect outliers via IQR/Z-score, and optimize data types in a single pass. Writes <input>_cleaned.csv beside the input, overwriting any previous one.",
     annotations={
-        "readOnlyHint": True,
+        "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
     },
@@ -851,9 +852,8 @@ async def clean_data_tool(
     """Perform comprehensive data cleaning with advanced quality improvement techniques."""
     try:
         logger.info(f"Cleaning data in: {file_path}")
-        return cast(
-            CleanDataResult,
-            clean_data(file_path, remove_duplicates, detect_outliers, convert_types),
+        return _checked(
+            clean_data(file_path, remove_duplicates, detect_outliers, convert_types)
         )
     except Exception as e:
         logger.error(f"Data cleaning error: {e}")
@@ -868,9 +868,9 @@ async def clean_data_tool(
 @mcp.tool(
     name="groupby_operations",
     title="Group Data",
-    description="Group data by columns and apply aggregations (sum, mean, count, min, max, std, median) with optional pre-filter.",
+    description="Group data by columns and apply aggregations (sum, mean, count, min, max, std, median) with optional pre-filter. Writes <input>_grouped.csv beside the input, overwriting any previous one.",
     annotations={
-        "readOnlyHint": True,
+        "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
     },
@@ -893,9 +893,8 @@ async def groupby_operations_tool(
     """Perform sophisticated groupby operations with comprehensive aggregation options."""
     try:
         logger.info(f"Performing groupby operations on: {file_path}")
-        return cast(
-            GroupByOperationsResult,
-            groupby_operations(file_path, group_by, operations, filter_condition),
+        return _checked(
+            groupby_operations(file_path, group_by, operations, filter_condition)
         )
     except Exception as e:
         logger.error(f"Groupby operations error: {e}")
@@ -905,9 +904,9 @@ async def groupby_operations_tool(
 @mcp.tool(
     name="merge_datasets",
     title="Merge Datasets",
-    description="Join two datasets using inner, outer, left, or right joins on specified key columns.",
+    description="Join two datasets using inner, outer, left, or right joins on specified key columns. Writes <left_file>_merged.csv beside the left file, overwriting any previous one.",
     annotations={
-        "readOnlyHint": True,
+        "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
     },
@@ -932,9 +931,8 @@ async def merge_datasets_tool(
     """Merge and join datasets with comprehensive integration capabilities."""
     try:
         logger.info(f"Merging datasets: {left_file} and {right_file}")
-        return cast(
-            MergeDatasetsResult,
-            merge_datasets(left_file, right_file, join_type, left_on, right_on, on),
+        return _checked(
+            merge_datasets(left_file, right_file, join_type, left_on, right_on, on)
         )
     except Exception as e:
         logger.error(f"Dataset merge error: {e}")
@@ -944,9 +942,9 @@ async def merge_datasets_tool(
 @mcp.tool(
     name="pivot_table",
     title="Pivot Table",
-    description="Create pivot tables with configurable row index, column headers, value columns, and aggregation function.",
+    description="Create pivot tables with configurable row index, column headers, value columns, and aggregation function. Writes <input>_pivot.csv beside the input, overwriting any previous one.",
     annotations={
-        "readOnlyHint": True,
+        "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
     },
@@ -970,10 +968,7 @@ async def pivot_table_tool(
     """Create sophisticated pivot tables with comprehensive aggregation options."""
     try:
         logger.info(f"Creating pivot table for: {file_path}")
-        return cast(
-            PivotTableResult,
-            create_pivot_table(file_path, index, columns, values, aggfunc),
-        )
+        return _checked(create_pivot_table(file_path, index, columns, values, aggfunc))
     except Exception as e:
         logger.error(f"Pivot table error: {e}")
         raise ToolError(f"Pivot table error: {e}") from e
@@ -987,9 +982,9 @@ async def pivot_table_tool(
 @mcp.tool(
     name="time_series_operations",
     title="Transform Series",
-    description="Resample, compute rolling statistics, create lag features, or difference a time series.",
+    description="Resample, compute rolling statistics, create lag features, or difference a time series. Writes <input>_<operation>.csv beside the input, overwriting any previous one.",
     annotations={
-        "readOnlyHint": True,
+        "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
     },
@@ -1000,9 +995,7 @@ async def time_series_operations_tool(
     date_column: Annotated[str, Field(description="Column containing datetime values")],
     operation: Annotated[
         str,
-        Field(
-            description="Operation: resample, rolling_mean, lag, trend, seasonality, rolling, diff"
-        ),
+        Field(description="Operation: resample, rolling, lag, or diff"),
     ],
     window_size: Annotated[
         Optional[int], Field(description="Window size for rolling/lag operations")
@@ -1014,11 +1007,10 @@ async def time_series_operations_tool(
     """Perform comprehensive time series operations with advanced temporal analysis."""
     try:
         logger.info(f"Performing time series operations on: {file_path}")
-        return cast(
-            TimeSeriesOperationsResult,
+        return _checked(
             time_series_operations(
                 file_path, date_column, operation, window_size, frequency
-            ),
+            )
         )
     except Exception as e:
         logger.error(f"Time series operations error: {e}")
@@ -1053,7 +1045,7 @@ async def validate_data_tool(
     """Perform comprehensive data validation with advanced constraint checking."""
     try:
         logger.info(f"Validating data in: {file_path}")
-        return cast(ValidateDataResult, validate_data(file_path, validation_rules))
+        return _checked(validate_data(file_path, validation_rules))
     except Exception as e:
         logger.error(f"Data validation error: {e}")
         raise ToolError(f"Data validation error: {e}") from e
@@ -1067,9 +1059,9 @@ async def validate_data_tool(
 @mcp.tool(
     name="filter_data",
     title="Filter Data",
-    description="Filter rows using comparison, membership, pattern-matching, and null-check operators across multiple columns.",
+    description="Filter rows using comparison, membership, pattern-matching, and null-check operators across multiple columns. Writes <input>_filtered.csv beside the input (or output_file), overwriting any previous one.",
     annotations={
-        "readOnlyHint": True,
+        "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
     },
@@ -1106,9 +1098,9 @@ async def filter_data_tool(
 @mcp.tool(
     name="optimize_memory",
     title="Optimize Memory",
-    description="Analyze and reduce DataFrame memory usage through automatic dtype optimization and chunked-processing recommendations.",
+    description="Analyze and reduce DataFrame memory usage through automatic dtype optimization and chunked-processing recommendations. Writes <input>_optimized.csv beside the input, overwriting any previous one.",
     annotations={
-        "readOnlyHint": True,
+        "readOnlyHint": False,
         "destructiveHint": False,
         "idempotentHint": True,
     },
@@ -1128,10 +1120,7 @@ async def optimize_memory_tool(
     """Perform advanced memory optimization for large datasets."""
     try:
         logger.info(f"Optimizing memory usage for: {file_path}")
-        return cast(
-            OptimizeMemoryResult,
-            optimize_memory_usage(file_path, optimize_dtypes, chunk_size),
-        )
+        return _checked(optimize_memory_usage(file_path, optimize_dtypes, chunk_size))
     except Exception as e:
         logger.error(f"Memory optimization error: {e}")
         raise ToolError(f"Memory optimization error: {e}") from e
@@ -1166,10 +1155,7 @@ async def profile_data_tool(
     """Perform comprehensive data profiling with statistical analysis and quality assessment."""
     try:
         logger.info(f"Profiling data in: {file_path}")
-        return cast(
-            ProfileDataResult,
-            profile_data(file_path, include_correlations, sample_size),
-        )
+        return _checked(profile_data(file_path, include_correlations, sample_size))
     except Exception as e:
         logger.error(f"Data profiling error: {e}")
         raise ToolError(f"Data profiling error: {e}") from e

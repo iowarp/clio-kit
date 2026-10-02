@@ -97,6 +97,9 @@ def install_spec(
             f"timeout_seconds must be between 1 and {_MAX_INSTALL_TIMEOUT_SECONDS}",
             operation="install",
         )
+    # Resolved before the recipe check: a missing Spack is command_not_found,
+    # not a missing recipe.
+    executable = backend._spack_executable()
     base_name = discovery.base_package_name(normalized)
     availability = discovery.classify_recipe_availability(base_name)
     if not availability.available:
@@ -129,7 +132,6 @@ def install_spec(
             detail=str(exc),
         ) from exc
 
-    executable = backend._spack_executable()
     argv = [executable, "install", "--reuse" if reuse else "--fresh", normalized]
     started = time.monotonic()
     try:

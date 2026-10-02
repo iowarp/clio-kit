@@ -9,6 +9,15 @@ from typing import List, Dict, Optional, Any
 
 from .module_runtime import lmod_command, run_lmod
 
+_COLLECTION_NAME = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]*")
+_EMPTY_SAVE_HINT = (
+    "This server has no module loaded: it has no load tool and only sees the "
+    "modules its own process started with. Start it from a shell where the "
+    "modules are already loaded, or set LMOD_SYSTEM_DEFAULT_MODULES=<mod1:mod2> "
+    "for the server and call module_restore with collection_name='system', then "
+    "save again."
+)
+
 
 async def _run_module_command(
     args: List[str], capture_stderr: bool = False
@@ -53,7 +62,12 @@ async def _run_module_command(
 
         return stdout_str, stderr_str, process.returncode or 0
     except FileNotFoundError:
-        return "", "Module command not found. Is Lmod installed and in PATH?", 1
+        return (
+            "",
+            "Module command not found. Set LMOD_CMD to Lmod's libexec/lmod "
+            "executable, or put `lmod` on PATH.",
+            1,
+        )
     except Exception as e:
         return "", f"Error running module command: {str(e)}", 1
 
@@ -101,7 +115,11 @@ async def search_available_modules(pattern: Optional[str] = None) -> Dict[str, A
     output = stderr if stderr else stdout
 
     if returncode != 0:
-        return {"success": False, "error": "Failed to search modules", "modules": []}
+        return {
+            "success": False,
+            "error": stderr or "Failed to search modules",
+            "modules": [],
+        }
 
     # Parse available modules
     modules = []
@@ -109,8 +127,8 @@ async def search_available_modules(pattern: Optional[str] = None) -> Dict[str, A
 
     for line in lines:
         line = line.strip()
-        # Skip headers and empty lines
-        if line and not line.endswith(":") and not line.startswith("/"):
+        # Skip headers, empty lines, and "name/" directory entries (not modules)
+        if line and not line.endswith((":", "/")) and not line.startswith("/"):
             modules.append(line)
 
     return {
@@ -218,7 +236,11 @@ async def spider_search(pattern: Optional[str] = None) -> Dict[str, Any]:
     output = stderr if stderr else stdout
 
     if returncode != 0:
-        return {"success": False, "error": "Failed to run spider search", "modules": []}
+        return {
+            "success": False,
+            "error": stderr or "Failed to run spider search",
+            "modules": [],
+        }
 
     # Parse spider output
     modules = {}
@@ -228,6 +250,7 @@ async def spider_search(pattern: Optional[str] = None) -> Dict[str, Any]:
         line = line.strip()
         if (
             line
+            and not line.endswith("/")  # terse "name/" directory entry
             and not line.startswith("The following")
             and not line.startswith("To find")
         ):
@@ -241,12 +264,30 @@ async def spider_search(pattern: Optional[str] = None) -> Dict[str, Any]:
     return {"success": True, "modules": modules, "pattern": pattern}
 
 
+def _invalid_collection(collection_name: str) -> Optional[Dict[str, Any]]:
+    """Reject names Lmod would treat as a path outside ~/.lmod.d or as an option."""
+    if _COLLECTION_NAME.fullmatch(collection_name):
+        return None
+    return {
+        "success": False,
+        "error": (
+            f"Invalid collection name {collection_name!r}: use letters, digits, "
+            "'_', '.' or '-' (no path separators, not starting with '.' or '-')"
+        ),
+        "collection": collection_name,
+    }
+
+
 async def save_module_collection(collection_name: str) -> Dict[str, Any]:
     """Save current module configuration."""
+    if invalid := _invalid_collection(collection_name):
+        return invalid
     stdout, stderr, returncode = await _run_module_command(
         ["save", collection_name], capture_stderr=True
     )
 
+    if returncode != 0 and "empty collection" in stderr:
+        stderr += _EMPTY_SAVE_HINT
     if returncode != 0:
         return {
             "success": False,
@@ -263,6 +304,8 @@ async def save_module_collection(collection_name: str) -> Dict[str, Any]:
 
 async def restore_module_collection(collection_name: str) -> Dict[str, Any]:
     """Restore a saved module collection."""
+    if invalid := _invalid_collection(collection_name):
+        return invalid
     stdout, stderr, returncode = await _run_module_command(
         ["restore", collection_name], capture_stderr=True
     )

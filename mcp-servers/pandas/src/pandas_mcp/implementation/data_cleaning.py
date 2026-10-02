@@ -285,7 +285,9 @@ def clean_data(
         )
 
         # Save cleaned data
-        output_path = file_path.replace(".csv", "_cleaned.csv")
+        output_path = str(
+            Path(file_path).with_name(f"{Path(file_path).stem}_cleaned.csv")
+        )
         df.to_csv(output_path, index=False)
 
         return {

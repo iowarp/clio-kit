@@ -57,11 +57,11 @@ class TestMainFunction:
         """One remote URL configures search as well as fetch and tasks."""
 
         with patch("web_mcp.server.create_mcp") as create:
-            with patch("sys.argv", ["web-mcp", "--remote_url", "http://homelab:8089"]):
+            with patch("sys.argv", ["web-mcp", "--remote_url", "http://localhost:8089"]):
                 main()
         configured = create.call_args.args[0]
         assert configured.search_provider == "searxng"
-        assert configured.remote_url == "http://homelab:8089"
+        assert configured.remote_url == "http://localhost:8089"
 
 
 class TestServerInitialization:

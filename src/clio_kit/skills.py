@@ -135,14 +135,19 @@ def read_skill_frontmatter(skill_dir: Path) -> dict[str, str]:
 
 def has_recorded_scenarios(skill_dir: Path) -> bool:
     """Whether this skill records the scenarios it was checked against."""
-    if any((skill_dir / name).is_file() for name in EVAL_FILENAMES):
-        return True
+    for name in EVAL_FILENAMES:
+        path = skill_dir / name
+        if path.is_file() and path.read_text(encoding="utf-8").strip():
+            return True
     evals_dir = skill_dir / EVAL_DIRNAME
     return evals_dir.is_dir() and any(evals_dir.iterdir())
 
 
-def check_skill(skill_dir: Path) -> SkillReport:
+def check_skill(skill_dir: Path, *, maintained: bool = False) -> SkillReport:
     """Run every rule against one skill directory and report what it found.
+
+    ``maintained`` adds what a skill shipped in a ``clio-`` package must also
+    declare: the bundle that lists it and how far it has been checked.
 
     Raises ``SkillProblem`` only when the directory cannot be read at all;
     everything a contributor can fix comes back in the report so they see the
@@ -159,9 +164,20 @@ def check_skill(skill_dir: Path) -> SkillReport:
             f"ladder: {', '.join(EVAL_LADDER)}."
         )
 
+    if maintained:
+        for key, why in (
+            ("bundle", "`clio-kit skill list --bundle` and installation select by it"),
+            ("eval-status", f"use one of: {', '.join(EVAL_LADDER)}"),
+        ):
+            if not fields.get(key):
+                report.problems.append(
+                    f"{skill_dir.name} is a maintained skill, so its frontmatter "
+                    f"needs metadata.{key}; {why}."
+                )
+
     if not has_recorded_scenarios(skill_dir):
         report.problems.append(
-            f"{skill_dir.name} records no eval scenarios; add evals.md with the "
+            f"{skill_dir.name} records no eval scenarios; add a nonempty evals.md with the "
             "situations this skill was checked against. A skill with none is "
             "untested by definition."
         )
@@ -197,14 +213,16 @@ def check_skill(skill_dir: Path) -> SkillReport:
     return report
 
 
-def check_skill_collection(skills_root: Path) -> list[SkillReport]:
+def check_skill_collection(
+    skills_root: Path, *, maintained: bool = False
+) -> list[SkillReport]:
     """Check every skill under one ``skills/`` directory, name-sorted."""
     if not skills_root.is_dir():
         return []
     reports: list[SkillReport] = []
     for skill_dir in sorted(path for path in skills_root.iterdir() if path.is_dir()):
         try:
-            reports.append(check_skill(skill_dir))
+            reports.append(check_skill(skill_dir, maintained=maintained))
         except SkillProblem as exc:
             reports.append(SkillReport(name=skill_dir.name, problems=[str(exc)]))
     return reports

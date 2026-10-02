@@ -43,11 +43,14 @@ def _local_skill_inventory() -> dict[str, Path]:
                 skills += sorted((root.parent / kind).glob("*/skills/*/SKILL.md"))
         if not skills:
             continue
-        inventory = {}
+        inventory: dict[str, Path] = {}
         for skill in skills:
             fields = read_skill_frontmatter(skill.parent)
             if fields["name"] in inventory:
-                raise SkillProblem(f"Duplicate skill name: {fields['name']}")
+                raise SkillProblem(
+                    f"Duplicate skill name {fields['name']!r}: "
+                    f"{inventory[fields['name']]} and {skill.parent}"
+                )
             inventory[fields["name"]] = skill.parent
         return inventory
     return {}
@@ -58,12 +61,17 @@ def skill_inventory() -> dict[str, Path]:
     return selected_skills((), None)
 
 
+def _folder_bundle(package: str) -> str:
+    """A maintained `clio-<bundle>-skills` folder belongs to `clio-<bundle>`."""
+    return package.removesuffix("-skills") if package.startswith("clio-") else package
+
+
 def skill_records() -> dict[str, dict]:
     local = _local_skill_inventory()
     if local:
         return {
             name: {
-                "bundle": path.parents[1].name,
+                "bundle": _folder_bundle(path.parents[1].name),
                 "servers": "unspecified",
                 **read_skill_frontmatter(path),
             }
@@ -183,10 +191,15 @@ def list_skills(bundle: str | None, as_json: bool) -> None:
 @click.argument(
     "directory", type=click.Path(exists=True, file_okay=False, path_type=Path)
 )
-def validate_skill(directory: Path) -> None:
+@click.option(
+    "--maintained",
+    is_flag=True,
+    help="Also require the metadata of a skill maintained inside CLIO Kit.",
+)
+def validate_skill(directory: Path, maintained: bool = False) -> None:
     """Validate a standalone skill without requiring a plugin manifest."""
     try:
-        report = check_skill(directory)
+        report = check_skill(directory, maintained=maintained)
         if report.problems:
             raise SkillProblem("; ".join(report.problems))
     except (SkillProblem, OSError, ValueError) as exc:

@@ -40,6 +40,19 @@ Expected:
 - The answer notes the access crosses the chunk grain, or proposes the aligned
   alternative, rather than issuing the naive slice silently.
 
+## S4 - response limits do not establish full-region results
+
+Setup: A 1,200-element HDF5 array whose first 1,000 values increase but whose
+last 200 decrease. Prompt: "Read this region and check whether it is increasing."
+
+Expected:
+
+- Notices that the reply omits 200 values and does not claim the whole region
+  is increasing based on its first 1,000 values.
+- If reading the remainder, requests a bounded slice and checks its coverage
+  and the boundary between the two slices before concluding.
+- Does not use `read_full_dataset` to evade the same response limit.
+
 ## Baseline failure modes to watch for (RED)
 
 - Calling `read_full_dataset` to compute one number.
@@ -51,8 +64,9 @@ Expected:
 - Treating a mixed-column HDF5 aggregate as the selected column's mean.
 - Naming an aggregate implementation as a chunked column-reader fallback when
   no such callable exists. Report the missing implementation separately.
-- Promising complete rows from `read_partial_dataset` or values from
-  `read_full_dataset`; their responses are previews/descriptions.
+- Treating a truncated response from `read_partial_dataset` or
+  `read_full_dataset` as complete. Both return at most 1,000 values; neither
+  response limit bounds how much data the server reads internally.
 
 ## Smoke record (2026-08-21)
 

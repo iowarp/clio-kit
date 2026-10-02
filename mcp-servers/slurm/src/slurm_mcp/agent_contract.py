@@ -503,11 +503,7 @@ def describe_job(
         diagnostics.append(f"details unavailable: {details_result['error']}")
 
     status_reason = str(status_result.get("reason", ""))
-    if (
-        state == "COMPLETED"
-        and status_reason.startswith("Job not found")
-        and authoritative_detail_state is None
-    ):
+    if status_reason.startswith("Job not found") and authoritative_detail_state is None:
         state = "UNKNOWN"
         diagnostics.append(
             "lifecycle unavailable: job is absent from the live queue and no "
@@ -571,7 +567,9 @@ def cluster_snapshot(
     _raise_backend_error(queue_result, "queue query")
     node_result: dict[str, Any] = {"nodes": []}
     if include_nodes:
-        node_result = get_node_info(max_records=node_limit)
+        node_result = get_node_info(
+            max_records=node_limit, partition=normalized_partition
+        )
         _raise_backend_error(node_result, "node query")
 
     raw_partitions = _object_list(cluster_result, "partitions")

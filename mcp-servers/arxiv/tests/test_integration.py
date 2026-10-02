@@ -7,6 +7,8 @@ import json
 
 from arxiv_mcp import mcp_handlers
 
+from . import settle
+
 
 class TestIntegration:
     """Integration tests for the full MCP stack"""
@@ -14,7 +16,7 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_search_arxiv_handler(self):
         """Test the search ArXiv handler"""
-        result = await mcp_handlers.search_arxiv_handler("cs.AI", 3)
+        result = await settle(mcp_handlers.search_arxiv_handler("cs.AI", 3))
 
         assert isinstance(result, dict)
         if result.get("isError"):
@@ -26,7 +28,9 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_search_by_title_handler(self):
         """Test the title search handler"""
-        result = await mcp_handlers.search_by_title_handler("machine learning", 2)
+        result = await settle(
+            mcp_handlers.search_by_title_handler("machine learning", 2)
+        )
 
         assert isinstance(result, dict)
         if not result.get("isError"):
@@ -36,7 +40,7 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_get_recent_papers_handler(self):
         """Test the recent papers handler"""
-        result = await mcp_handlers.get_recent_papers_handler("cs.LG", 2)
+        result = await settle(mcp_handlers.get_recent_papers_handler("cs.LG", 2))
 
         assert isinstance(result, dict)
         if not result.get("isError"):
@@ -46,7 +50,7 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_search_papers_by_author_handler(self):
         """Test the author search handler"""
-        result = await mcp_handlers.search_papers_by_author_handler("LeCun", 2)
+        result = await settle(mcp_handlers.search_papers_by_author_handler("LeCun", 2))
 
         assert isinstance(result, dict)
         if not result.get("isError"):
@@ -56,7 +60,9 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_search_by_abstract_handler(self):
         """Test the abstract search handler"""
-        result = await mcp_handlers.search_by_abstract_handler("deep learning", 2)
+        result = await settle(
+            mcp_handlers.search_by_abstract_handler("deep learning", 2)
+        )
 
         assert isinstance(result, dict)
         if not result.get("isError"):
@@ -66,7 +72,7 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_search_by_subject_handler(self):
         """Test the subject search handler"""
-        result = await mcp_handlers.search_by_subject_handler("cs.CV", 2)
+        result = await settle(mcp_handlers.search_by_subject_handler("cs.CV", 2))
 
         assert isinstance(result, dict)
         if not result.get("isError"):
@@ -76,8 +82,10 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_search_date_range_handler(self):
         """Test the date range search handler"""
-        result = await mcp_handlers.search_date_range_handler(
-            "2023-01-01", "2023-01-31", "cs.AI", 3
+        result = await settle(
+            mcp_handlers.search_date_range_handler(
+                "2023-01-01", "2023-01-31", "cs.AI", 3
+            )
         )
 
         assert isinstance(result, dict)
@@ -91,7 +99,7 @@ class TestIntegration:
         # Use a well-known paper
         paper_id = "1706.03762"
 
-        result = await mcp_handlers.get_paper_details_handler(paper_id)
+        result = await settle(mcp_handlers.get_paper_details_handler(paper_id))
 
         assert isinstance(result, dict)
         if result.get("isError"):
@@ -116,7 +124,7 @@ class TestIntegration:
         ]
 
         papers_json = json.dumps(sample_papers)
-        result = await mcp_handlers.export_to_bibtex_handler(papers_json)
+        result = await settle(mcp_handlers.export_to_bibtex_handler(papers_json))
 
         assert isinstance(result, dict)
         if not result.get("isError"):
@@ -126,7 +134,7 @@ class TestIntegration:
     @pytest.mark.asyncio
     async def test_export_to_bibtex_handler_invalid_json(self):
         """Test BibTeX export with invalid JSON"""
-        result = await mcp_handlers.export_to_bibtex_handler("invalid json")
+        result = await settle(mcp_handlers.export_to_bibtex_handler("invalid json"))
 
         assert isinstance(result, dict)
         assert result.get("isError") is True
@@ -137,7 +145,7 @@ class TestIntegration:
         """Test the similar papers handler"""
         paper_id = "1706.03762"
 
-        result = await mcp_handlers.find_similar_papers_handler(paper_id, 3)
+        result = await settle(mcp_handlers.find_similar_papers_handler(paper_id, 3))
 
         assert isinstance(result, dict)
         if result.get("isError"):
@@ -157,21 +165,17 @@ class TestIntegration:
         ]
 
         for handler, args in handlers_to_test:
-            result = await handler(*args)
+            result = await settle(handler(*args))
 
-            if result.get("isError"):
-                # Check error format consistency
-                assert "content" in result
-                assert "_meta" in result
-                assert "tool" in result["_meta"]
-                assert "error" in result["_meta"]
+            # Handlers raise; the server maps that to a real MCP error
+            assert result.get("isError") is True
 
     @pytest.mark.asyncio
     async def test_full_workflow(self):
         """Test a complete workflow: search -> details -> export"""
         try:
             # Step 1: Search for papers
-            search_result = await mcp_handlers.search_arxiv_handler("cs.AI", 2)
+            search_result = await settle(mcp_handlers.search_arxiv_handler("cs.AI", 2))
 
             if search_result.get("isError") or not search_result.get("success"):
                 pytest.skip("Search failed, skipping workflow test")
@@ -183,14 +187,18 @@ class TestIntegration:
             # Step 2: Get details of first paper
             paper_id = papers[0]["id"].split("/")[-1] if papers[0]["id"] else None
             if paper_id:
-                details_result = await mcp_handlers.get_paper_details_handler(paper_id)
+                details_result = await settle(
+                    mcp_handlers.get_paper_details_handler(paper_id)
+                )
 
                 if not details_result.get("isError"):
                     assert details_result["success"] is True
 
             # Step 3: Export to BibTeX
             papers_json = json.dumps(papers[:1])  # Just first paper
-            export_result = await mcp_handlers.export_to_bibtex_handler(papers_json)
+            export_result = await settle(
+                mcp_handlers.export_to_bibtex_handler(papers_json)
+            )
 
             if not export_result.get("isError"):
                 assert export_result["success"] is True

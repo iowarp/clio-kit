@@ -186,8 +186,9 @@ class TestCompleteNodeHardwareMCP:
                     {
                         "device": "/dev/sda1",
                         "mountpoint": "/",
-                        "fstype": "ext4",
+                        "filesystem": "ext4",
                         "total": 1000000000,
+                        "percent": 50.0,
                     }
                 ]
             }
@@ -230,7 +231,9 @@ class TestCompleteNodeHardwareMCP:
                         "cpu_percent": 5.0,
                         "memory_percent": 2.5,
                     }
-                ]
+                ],
+                "total_processes": 1,
+                "statistics": {"running": 0},
             }
             result = process_info_handler()
             assert isinstance(result, dict)
@@ -240,7 +243,9 @@ class TestCompleteNodeHardwareMCP:
         # Test sensor handler
         with patch("node_hardware_mcp.mcp_handlers.get_sensor_info") as mock_sensor:
             mock_sensor.return_value = {
-                "temperatures": {"coretemp": [{"current": 45.0, "high": 85.0}]}
+                "temperatures": {"coretemp": [{"current": 45.0, "high": 85.0}]},
+                "fans": {},
+                "battery": {},
             }
             result = sensor_info_handler()
             assert isinstance(result, dict)
@@ -250,9 +255,12 @@ class TestCompleteNodeHardwareMCP:
         # Test performance handler
         with patch("node_hardware_mcp.mcp_handlers.monitor_performance") as mock_perf:
             mock_perf.return_value = {
-                "cpu_usage": 25.5,
-                "memory_usage": 60.0,
-                "disk_io": {"read": 1000, "write": 500},
+                "cpu": {"average_usage": 25.5},
+                "memory": {"current_usage": 60.0},
+                "disk_io": {
+                    "read_rate_formatted": "1.00 KB/s",
+                    "write_rate_formatted": "500.00 B/s",
+                },
             }
             result = performance_monitor_handler()
             assert isinstance(result, dict)

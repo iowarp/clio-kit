@@ -12,13 +12,14 @@ from pathlib import Path
 from typing import Any
 
 from .sac_io import (
+    _SAC_HEADER_BYTES,
     SacAnalysisError,
     clean_positive_int,
     iter_archive_sac_members,
+    header_labels,
     load_sac_traces,
-    member_phase,
-    member_station,
     normalize_member_filter,
+    read_archive_headers,
     resolve_read_path,
     resolve_write_path,
     trace_statistics,
@@ -39,10 +40,14 @@ def inspect_archive(
 
     Returns:
         A summary dict with the member count, a sample of member names/sizes,
-        inferred phases and stations, and a truncation flag.
+        the stations and phases (from the SAC headers, falling back to the
+        member path when a header field is unset; ``*_sources`` says which),
+        and a truncation flag. Members named ``.sac`` that are not SAC data are
+        listed under ``invalid_members`` and excluded from everything else.
 
     Raises:
-        SacAnalysisError: If the file or archive cannot be read.
+        SacAnalysisError: If the file or archive cannot be read, or none of the
+            matching members is a valid SAC file.
     """
     safe_path = resolve_read_path(filepath)
     limit = clean_positive_int(max_members, default=12, max_value=100)
@@ -54,25 +59,41 @@ def inspect_archive(
             else []
         )
         sizes = [safe_path.stat().st_size] if members else []
+        with safe_path.open("rb") as handle:
+            headers = [handle.read(_SAC_HEADER_BYTES)] if members else []
     else:
         tar_members = iter_archive_sac_members(
             safe_path, member_filter=normalized_filter
         )
         members = [member.name for member in tar_members]
         sizes = [member.size for member in tar_members]
-    sample_members = members[:limit]
-    phases = sorted({member_phase(member) for member in members})
-    stations = sorted({member_station(member) for member in members})
-    return {
+        headers = read_archive_headers(safe_path, tar_members)
+    valid: list[tuple[str, int, dict[str, str]]] = []
+    invalid: list[dict[str, str]] = []
+    for member, size, header in zip(members, sizes, headers, strict=True):
+        try:
+            valid.append((member, size, header_labels(member, header)))
+        except SacAnalysisError as exc:
+            invalid.append({"member": member, "error": str(exc)})
+    if invalid and not valid:
+        raise SacAnalysisError(invalid[0]["error"])
+    labels = [label for _, _, label in valid]
+    result: dict[str, Any] = {
         "status": "success",
         "filepath": str(safe_path),
-        "sac_trace_count": len(members),
-        "sample_members": sample_members,
-        "sample_sizes_bytes": sizes[:limit],
-        "phases": phases[:20],
-        "stations": stations[:20],
-        "members_truncated": len(members) > limit,
+        "sac_trace_count": len(valid),
+        "sample_members": [member for member, _, _ in valid[:limit]],
+        "sample_sizes_bytes": [size for _, size, _ in valid[:limit]],
+        "phases": sorted({label["phase"] for label in labels})[:20],
+        "stations": sorted({label["station"] for label in labels})[:20],
+        "phase_sources": sorted({label["phase_source"] for label in labels}),
+        "station_sources": sorted({label["station_source"] for label in labels}),
+        "members_truncated": len(valid) > limit,
     }
+    if invalid:
+        result["invalid_member_count"] = len(invalid)
+        result["invalid_members"] = invalid[:limit]
+    return result
 
 
 def compute_trace_statistics(

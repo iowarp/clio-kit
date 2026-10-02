@@ -13,6 +13,7 @@ from pathlib import Path
 import pytest
 
 from clio_kit.discovery import (
+    RUNTIME_LOCKS,
     discover_servers_in,
     is_servers_root,
     read_server_descriptor,
@@ -152,15 +153,23 @@ def test_a_servers_root_may_hold_only_descriptors(tmp_path: Path) -> None:
 def test_every_shipped_server_describes_itself() -> None:
     """A shipped server with no descriptor falls back; one with a wrong one lies."""
     servers_root = REPOSITORY_ROOT / "mcp-servers"
-    shipped = sorted(path.parent for path in servers_root.glob("*/pyproject.toml"))
+    # Python servers by their manifest, hosted Node and Go ones by descriptor.
+    shipped = sorted(
+        {
+            path.parent
+            for pattern in ("*/pyproject.toml", "*/clio-server.toml")
+            for path in servers_root.glob(pattern)
+        }
+    )
     assert shipped
 
     for server_dir in shipped:
         descriptor = read_server_descriptor(server_dir)
         assert descriptor is not None, f"{server_dir.name} has no clio-server.toml"
         assert descriptor["name"] == server_dir.name
-        assert descriptor["runtime"] == "python"
-        assert (server_dir / "uv.lock").is_file()
+        python = (server_dir / "pyproject.toml").is_file()
+        assert (descriptor["runtime"] == "python") == python
+        assert (server_dir / RUNTIME_LOCKS[descriptor["runtime"]]).is_file()
 
     entry_commands, directories = discover_servers_in(servers_root)
     assert set(entry_commands) == {server.name for server in shipped}

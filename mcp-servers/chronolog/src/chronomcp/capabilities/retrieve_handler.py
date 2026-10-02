@@ -63,4 +63,5 @@ async def retrieve_interaction(
     ) as f:
         filename = f.name
         f.write("\n".join(records))
-    return filename
+    # Absolute path of the file written in the server's working directory.
+    return str(Path(filename).resolve())

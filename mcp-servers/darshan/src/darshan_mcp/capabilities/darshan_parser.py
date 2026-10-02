@@ -15,6 +15,13 @@ from .native_text import (
     weighted_size_stats,
     job_runtime,
 )
+from .derived import (
+    _UNITS,
+    _total_bandwidth_mbps,
+    compare_metrics,
+    resolution_error,
+    timeline_result,
+)
 
 
 async def _run_darshan_command(
@@ -44,7 +51,13 @@ async def _run_darshan_command(
 
         return stdout_str, stderr_str, process.returncode
     except FileNotFoundError:
-        return "", "darshan-parser command not found. Is Darshan installed?", 1
+        return (
+            "",
+            "darshan-parser command not found on PATH. This server needs the "
+            "darshan-util tools: install darshan-util and put its bin directory "
+            "on the PATH of the MCP server process.",
+            1,
+        )
     except Exception as e:
         return "", f"Error running darshan command: {str(e)}", 1
 
@@ -171,9 +184,10 @@ async def get_job_summary(log_file_path: str) -> Dict[str, Any]:
             summary["avg_write_bandwidth_mbps"] = (
                 total_bytes_written / (1024 * 1024)
             ) / runtime
-            summary["total_bandwidth_mbps"] = (
-                summary["avg_read_bandwidth_mbps"] + summary["avg_write_bandwidth_mbps"]
-            )
+        total_bandwidth = _total_bandwidth_mbps(files)
+        if total_bandwidth is not None:
+            summary["total_bandwidth_mbps"] = total_bandwidth
+        summary["units"] = _UNITS
 
         return summary
 
@@ -324,6 +338,8 @@ async def get_io_performance_metrics(log_file_path: str) -> Dict[str, Any]:
             "read_metrics": {},
             "write_metrics": {},
             "overall_metrics": {},
+            "file_count": len(files),
+            "units": _UNITS,
         }
 
         # Aggregate data for calculations
@@ -405,15 +421,12 @@ async def get_io_performance_metrics(log_file_path: str) -> Dict[str, Any]:
                 )
 
         # Overall metrics
-        total_time = max(total_read_time, total_write_time)
+        total_time = total_read_time + total_write_time
         if total_time > 0:
             metrics["overall_metrics"] = {
                 "total_io_volume": total_read_bytes + total_write_bytes,
                 "total_operations": total_read_ops + total_write_ops,
-                "total_bandwidth_mbps": (
-                    (total_read_bytes + total_write_bytes) / (1024 * 1024)
-                )
-                / total_time,
+                "total_bandwidth_mbps": _total_bandwidth_mbps(files),
                 "total_iops": (total_read_ops + total_write_ops) / total_time,
                 "read_write_ratio": total_read_bytes / max(total_write_bytes, 1),
             }
@@ -438,7 +451,8 @@ async def analyze_posix_operations(log_file_path: str) -> Dict[str, Any]:
         if returncode != 0:
             return {
                 "success": False,
-                "error": "Failed to extract POSIX module data",
+                "error": "Failed to extract POSIX module data"
+                + (f": {stderr.strip()}" if stderr.strip() else ""),
                 "message": stderr,
             }
 
@@ -512,7 +526,8 @@ async def analyze_mpiio_operations(log_file_path: str) -> Dict[str, Any]:
         if returncode != 0:
             return {
                 "success": False,
-                "error": "Failed to extract MPI-IO module data",
+                "error": "Failed to extract MPI-IO module data"
+                + (f": {stderr.strip()}" if stderr.strip() else ""),
                 "message": stderr,
             }
 
@@ -583,7 +598,9 @@ async def identify_io_bottlenecks(log_file_path: str) -> Dict[str, Any]:
         if not perf_metrics.get("success") or not file_patterns.get("success"):
             return {
                 "success": False,
-                "error": "Failed to get required metrics for bottleneck analysis",
+                "error": perf_metrics.get("error")
+                or file_patterns.get("error")
+                or "Failed to get required metrics for bottleneck analysis",
             }
 
         bottlenecks: Dict[str, Any] = {
@@ -652,7 +669,7 @@ async def identify_io_bottlenecks(log_file_path: str) -> Dict[str, Any]:
             bottlenecks["identified_issues"].append(
                 {
                     "type": "low_bandwidth",
-                    "description": f"Total I/O bandwidth is {total_bw:.1f} MB/s, which may be suboptimal",
+                    "description": f"Total I/O bandwidth is {total_bw:.1f} MiB/s, which may be suboptimal",
                     "severity": "medium",
                 }
             )
@@ -690,31 +707,16 @@ async def identify_io_bottlenecks(log_file_path: str) -> Dict[str, Any]:
 async def get_timeline_analysis(
     log_file_path: str, time_resolution: str = "1s"
 ) -> Dict[str, Any]:
-    """Generate timeline analysis of I/O activity."""
+    """Report the timing a Darshan summary log actually carries (see derived)."""
     try:
-        # This would require timestamp data from Darshan logs
-        # For now, provide a basic analysis structure
-        timeline: Dict[str, Any] = {
-            "success": True,
-            "time_resolution": time_resolution,
-            "message": "Timeline analysis requires timestamp data from Darshan logs",
-            "analysis": {
-                "total_duration": None,
-                "peak_periods": [],
-                "idle_periods": [],
-                "io_phases": [],
-            },
-        }
+        error = resolution_error(time_resolution)
+        if error:
+            return {"success": False, "error": error}
 
-        # Try to get basic timing information
         parsed_data = await _parse_darshan_json(log_file_path)
         if not parsed_data.get("success", True):
             return parsed_data
-        job_info = parsed_data.get("job", {})
-
-        timeline["analysis"]["total_duration"] = job_runtime(job_info)
-
-        return timeline
+        return timeline_result(parsed_data, time_resolution)
 
     except Exception as e:
         return {
@@ -728,6 +730,10 @@ async def compare_darshan_logs(
 ) -> Dict[str, Any]:
     """Compare two Darshan log files."""
     try:
+        error = compare_metrics(None, None, comparison_metrics).get("error")
+        if error:
+            return {"success": False, "error": error}
+
         # Get metrics for both logs
         metrics_1 = await get_io_performance_metrics(log_file_1)
         metrics_2 = await get_io_performance_metrics(log_file_2)
@@ -735,47 +741,18 @@ async def compare_darshan_logs(
         if not metrics_1.get("success") or not metrics_2.get("success"):
             return {
                 "success": False,
-                "error": "Failed to get metrics for one or both log files",
+                "error": metrics_1.get("error")
+                or metrics_2.get("error")
+                or "Failed to get metrics for one or both log files",
             }
 
-        comparison: Dict[str, Any] = {
+        return {
             "success": True,
             "log_file_1": log_file_1,
             "log_file_2": log_file_2,
             "comparison_metrics": comparison_metrics,
-            "differences": {},
-            "summary": {},
+            **compare_metrics(metrics_1, metrics_2, comparison_metrics),
         }
-
-        # Compare specified metrics
-        for metric in comparison_metrics:
-            if metric == "bandwidth":
-                bw1 = metrics_1.get("overall_metrics", {}).get(
-                    "total_bandwidth_mbps", 0
-                )
-                bw2 = metrics_2.get("overall_metrics", {}).get(
-                    "total_bandwidth_mbps", 0
-                )
-                comparison["differences"]["bandwidth"] = {
-                    "log_1": bw1,
-                    "log_2": bw2,
-                    "difference": bw2 - bw1,
-                    "percent_change": ((bw2 - bw1) / bw1 * 100) if bw1 > 0 else 0,
-                }
-
-            elif metric == "iops":
-                iops1 = metrics_1.get("overall_metrics", {}).get("total_iops", 0)
-                iops2 = metrics_2.get("overall_metrics", {}).get("total_iops", 0)
-                comparison["differences"]["iops"] = {
-                    "log_1": iops1,
-                    "log_2": iops2,
-                    "difference": iops2 - iops1,
-                    "percent_change": ((iops2 - iops1) / iops1 * 100)
-                    if iops1 > 0
-                    else 0,
-                }
-
-        return comparison
 
     except Exception as e:
         return {"success": False, "error": f"Error comparing Darshan logs: {str(e)}"}
@@ -806,6 +783,17 @@ async def generate_io_summary_report(
             "key_findings": [],
             "recommendations": [],
         }
+        if not report["success"]:
+            report["error"] = next(
+                (section["error"] for section in parts if section.get("error")),
+                "Failed to generate I/O summary report",
+            )
+        if include_visualizations:
+            report["visualizations"] = {
+                "available": False,
+                "reason": "This server does not generate plots or chart data; "
+                "the report is the numeric sections above.",
+            }
 
         # Generate executive summary
         if job_summary.get("success"):

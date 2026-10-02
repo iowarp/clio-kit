@@ -194,6 +194,7 @@ load_dotenv()
 
 mcp: FastMCP = FastMCP(
     "geo",
+    version="2.3.1",
     instructions=(
         "Renders and retrieves geospatial vector data. Pass one or more layers of "
         "GeoJSON (polygons, lines, points) to render_feature_map and get back a PNG "

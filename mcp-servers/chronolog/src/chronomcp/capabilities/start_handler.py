@@ -4,6 +4,9 @@ from fastmcp.exceptions import ToolError
 
 from chronomcp.utils import config
 
+# chronolog::ClientErrorCode (Client/cpp/include/client_errcode.h)
+CL_ERR_CHRONICLE_EXISTS = -6
+
 
 async def start_chronolog(
     chronicle_name: str | None = None, story_name: str | None = None
@@ -19,7 +22,8 @@ async def start_chronolog(
 
     attrs: dict[str, str] = {}
     ret = client.CreateChronicle(chronicle, attrs, 1)
-    if ret != 0:
+    # An existing chronicle is the normal case on every start after the first.
+    if ret not in (0, CL_ERR_CHRONICLE_EXISTS):
         client.Disconnect()
         raise ToolError(f"Failed to create chronicle '{chronicle}': {ret}")
 

@@ -41,8 +41,9 @@ individual servers into elevated workflow plugins.
 Valid folders are discovered automatically. Website start/build and CI update
 catalogues; contributors do not manually edit generated JSON or run generator
 commands. Until a build/sync has happened, a client's native marketplace snapshot
-may still show the previous entries. The optional `clio-kit marketplace sync
---root .` refreshes it for local native testing.
+may still show the previous entries. `clio-kit marketplace sync --root .`
+refreshes it for local native testing, and is what CI runs before the root test
+suite: sync first when you run `uv run --frozen pytest tests -q` yourself.
 
 See [package layouts](authoring.md#add-a-component-folder-to-clio-kit),
 [skill rules](authoring.md#add-a-skill), and [workflow composition](plugins.md).
@@ -71,7 +72,10 @@ Create and validate the plugin there, then render the entry:
 clio-kit plugin submit /path/to/my-plugin --repo your-org/your-repo
 ```
 
-Review the generated TOML and put it in `community/entries/` in a PR. A whole
+The entry is printed on standard output (add `--output <name>.toml` to write a
+file). Replace the scaffold's placeholder description and author first; the
+command refuses them. Review the generated TOML and put it in
+`community/entries/` in a PR. A whole
 marketplace uses `--kind marketplace`; it remains controlled by its publisher.
 `--open-pr` is an optional public submission action, requiring GitHub access.
 

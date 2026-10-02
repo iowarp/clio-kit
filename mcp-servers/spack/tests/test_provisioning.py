@@ -114,6 +114,24 @@ def test_install_raises_recipe_not_found_without_invoking_spack(
     assert invoked == []  # never shelled out once availability said no
 
 
+def test_install_without_spack_reports_the_missing_executable(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """No Spack at all is command_not_found naming the override, not a missing recipe."""
+    monkeypatch.undo()  # drop the autouse executable stub
+    monkeypatch.delenv("SPACK_MCP_COMMAND", raising=False)
+    monkeypatch.delenv("SPACK_ROOT", raising=False)
+    monkeypatch.setattr(backend.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(Path, "home", lambda: tmp_path)
+    monkeypatch.setattr(Path, "is_file", lambda _path: False)
+
+    with pytest.raises(backend.SpackBackendError) as error:
+        provisioning.install_spec("zlib", timeout_seconds=60)
+
+    assert error.value.code == "command_not_found"
+    assert "SPACK_MCP_COMMAND" in error.value.message
+
+
 # ── unreadable repo: never hard-refuse on an unverified catalog (R2) ──
 
 

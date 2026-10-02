@@ -142,7 +142,10 @@ def test_local_hooks_are_discovered_without_executing_them(tmp_path, config):
 
 def test_generated_catalogue_is_current_and_deterministic():
     actual = json.loads((ROOT / "website/src/data/catalogue.json").read_text())
-    assert actual == catalogue.generate(ROOT) == catalogue.generate(ROOT)
+    assert actual == catalogue.generate(ROOT) == catalogue.generate(ROOT), (
+        "website/src/data/catalogue.json is out of date; run "
+        "`clio-kit marketplace sync --root .` (CI syncs before this suite)"
+    )
 
 
 def test_indexed_source_cannot_be_a_script_url():
