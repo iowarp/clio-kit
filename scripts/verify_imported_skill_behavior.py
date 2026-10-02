@@ -16,7 +16,7 @@ import subprocess
 import sys
 
 from clio_kit.skill_cli import install_skills, selected_skills
-from verify_external_contributions import SERVER
+from verify_external_contributions import NUMERICS, SERVER
 
 REQUEST = """Use clio-kit-scientific-debugging to diagnose the failing weighted mean reference test in this directory.
 Do not edit calculation.py or test_calculation.py. Inspect the installed skill.
@@ -71,6 +71,7 @@ def main(output: Path, sandbox: str) -> bool:
     if (user_home / "auth.json").is_file():
         (home / "auth.json").symlink_to(user_home / "auth.json")
     (output / "server.py").write_text(SERVER)
+    (output / "numerics.py").write_text(NUMERICS)
     (home / "config.toml").write_text(
         "[mcp_servers.numerics]\ncommand = "
         + json.dumps(sys.executable)
@@ -151,6 +152,8 @@ def main(output: Path, sandbox: str) -> bool:
             "status": "blocked",
             "reason": "Codex exceeded the 600-second evaluation timeout",
         }
+    finally:
+        (home / "auth.json").unlink(missing_ok=True)
     (output / "results.json").write_text(json.dumps(result, indent=2) + "\n")
     print(f"{result['status']}: evidence in {output}")
     return passed

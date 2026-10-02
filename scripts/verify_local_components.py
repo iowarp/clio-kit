@@ -26,7 +26,7 @@ from clio_kit.plugins import validate_plugin
 from clio_kit.client_install import CLIENTS, install_for_client, tomllib
 from generate_marketplace import generate
 from generate_website_catalogue import generate as catalogue
-from verify_external_contributions import SERVER
+from verify_external_contributions import NUMERICS, SERVER
 from verify_plugin_hooks import HOOK, model_server
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -104,6 +104,7 @@ def verify(output: Path) -> None:
 
     tools = package("plugins", "dropin-tools")
     (tools / "server.py").write_text(SERVER)
+    (tools / "numerics.py").write_text(NUMERICS)
     (tools / ".mcp.json").write_text(
         json.dumps(
             {

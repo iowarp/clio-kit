@@ -12,6 +12,16 @@ import click
 from clio_kit.client_install import safe_destination, tomllib
 
 
+def _inline_toml(value: object) -> str:
+    """Render strings, numbers, booleans, lists and tables as one-line TOML."""
+    if isinstance(value, dict):
+        items = (f"{_inline_toml(k)}={_inline_toml(v)}" for k, v in value.items())
+        return "{" + ",".join(items) + "}"
+    if isinstance(value, list):
+        return "[" + ",".join(_inline_toml(v) for v in value) + "]"
+    return json.dumps(value, ensure_ascii=False, allow_nan=False)
+
+
 @click.command("run-agent")
 @click.argument("name")
 @click.option("--client", type=click.Choice(["codex"]), required=True)
@@ -46,10 +56,13 @@ def run_agent(name: str, client: str, project: Path, prompt: str, model: str | N
             "-c",
             'approval_policy="never"',
             "-c",
-            "developer_instructions=" + json.dumps(role["developer_instructions"]),
+            "developer_instructions=" + _inline_toml(role["developer_instructions"]),
         ]
-        for server in role.get("mcp_servers", {}):
-            args.extend(["-c", f"mcp_servers.{json.dumps(server)}.enabled=false"])
+        # Codex rejects an override that names a server without its transport, so
+        # pass the whole installed entry, disabled.
+        for server, entry in role.get("mcp_servers", {}).items():
+            disabled = _inline_toml({**entry, "enabled": False})
+            args.extend(["-c", f"mcp_servers.{_inline_toml(server)}={disabled}"])
         if model:
             args.extend(["--model", model])
         args.append("-")

@@ -187,7 +187,7 @@ def test_codex_only_hook_package_and_explicit_agent_invocation(tmp_path, monkeyp
     role = project / ".codex/agents/reviewer.toml"
     role.parent.mkdir(parents=True)
     role.write_text(
-        'name="reviewer"\nsandbox_mode="read-only"\ndeveloper_instructions="Inspect supplied scientific evidence."\n[mcp_servers.lab]\nenabled=false\n'
+        'name="reviewer"\nsandbox_mode="read-only"\ndeveloper_instructions="Inspect supplied scientific evidence."\n[mcp_servers.lab]\ncommand="lab-mcp"\nargs=["serve"]\nenabled=false\n'
     )
     calls = []
 
@@ -213,5 +213,21 @@ def test_codex_only_hook_package_and_explicit_agent_invocation(tmp_path, monkeyp
     args, options = calls[0]
     assert args[args.index("--sandbox") + 1] == "read-only"
     assert 'developer_instructions="Inspect supplied scientific evidence."' in args
-    assert 'mcp_servers."lab".enabled=false' in args
+    assert (
+        'mcp_servers."lab"={"command"="lab-mcp","args"=["serve"],"enabled"=false}'
+        in args
+    )
     assert options["input"] == "Compare supplied results."
+
+
+def test_agent_override_toml_preserves_unicode_and_nested_settings():
+    from clio_kit.client_agent import _inline_toml, tomllib
+
+    entry = {
+        "command": "/tmp/🔬/server",
+        "args": ["serve", 'quote" and newline\n'],
+        "env": {"LABEL": "μm 🔬"},
+        "startup_timeout_sec": 300,
+        "enabled": False,
+    }
+    assert tomllib.loads("server=" + _inline_toml(entry))["server"] == entry

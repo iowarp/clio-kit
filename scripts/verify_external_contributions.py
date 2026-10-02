@@ -47,6 +47,9 @@ for line in sys.stdin:
 """
 
 
+NUMERICS = "import math\ndef weighted_mean(values, weights):\n    return math.fsum(v * w for v, w in zip(values, weights)) / math.fsum(weights)\n"
+
+
 class Acceptance:
     def __init__(self, output: Path):
         self.output = output
@@ -97,9 +100,7 @@ class Acceptance:
         source = ROOT / "skills/clio-coder-skills/skills/clio-kit-scientific-debugging"
         shutil.copytree(source, plugin / "skills/clio-kit-scientific-debugging")
         (plugin / "server.py").write_text(SERVER)
-        (plugin / "numerics.py").write_text(
-            "import math\ndef weighted_mean(values, weights):\n    return math.fsum(v * w for v, w in zip(values, weights)) / math.fsum(weights)\n"
-        )
+        (plugin / "numerics.py").write_text(NUMERICS)
         (plugin / ".mcp.json").write_text(
             json.dumps(
                 {
