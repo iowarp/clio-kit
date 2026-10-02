@@ -84,34 +84,34 @@ def memory_info_handler() -> dict:
     """
     try:
         result = get_memory_info()
+        if result.get("error"):
+            raise RuntimeError(result["error"])
+        memory = result["virtual_memory"]
+        swap = result["swap_memory"]
 
         # Generate summary
         summary = {
-            "total_memory": result.get("total", 0),
-            "available_memory": result.get("available", 0),
-            "used_memory": result.get("used", 0),
-            "memory_percent": result.get("percent", 0),
+            "total_memory": memory["total"],
+            "available_memory": memory["available"],
+            "used_memory": memory["used"],
+            "memory_percent": memory["percent"],
         }
 
         # Generate insights
         insights = []
-        if result.get("percent", 0) > 85:
+        if memory["percent"] > 85:
             insights.append(
                 "High memory usage detected - consider closing applications or adding more RAM"
             )
-        elif result.get("percent", 0) < 50:
+        elif memory["percent"] < 50:
             insights.append(
                 "Good memory utilization - system has sufficient available memory"
             )
 
-        if result.get("swap_total", 0) > 0 and result.get("swap_used", 0) > 0:
-            swap_percent = (
-                result.get("swap_used", 0) / result.get("swap_total", 1)
-            ) * 100
-            if swap_percent > 50:
-                insights.append(
-                    "High swap usage detected - consider adding more physical memory"
-                )
+        if swap["total"] > 0 and swap["used"] / swap["total"] > 0.5:
+            insights.append(
+                "High swap usage detected - consider adding more physical memory"
+            )
 
         return create_beautiful_response(
             operation="memory_info",

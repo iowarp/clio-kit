@@ -325,12 +325,13 @@ class TestMcpHandlersEdgeCases:
         from node_hardware_mcp import mcp_handlers
 
         mock_memory_data = {
-            "total": 16000000000,
-            "available": 8000000000,
-            "used": 8000000000,
-            "percent": 50.0,
-            "swap_total": 8000000000,
-            "swap_used": 5000000000,  # 62.5% swap usage
+            "virtual_memory": {
+                "total": 16000000000,
+                "available": 8000000000,
+                "used": 8000000000,
+                "percent": 50.0,
+            },
+            "swap_memory": {"total": 8000000000, "used": 5000000000},
         }
 
         with patch("node_hardware_mcp.mcp_handlers.get_memory_info") as mock_get:

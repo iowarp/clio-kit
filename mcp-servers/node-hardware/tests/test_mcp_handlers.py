@@ -424,5 +424,34 @@ class TestMCPHandlers100Coverage:
             pytest.skip("MCP handlers not available")
 
 
+def test_memory_summary_matches_capability_and_propagates_failure():
+    from node_hardware_mcp import mcp_handlers
+
+    memory = {"total": 1000, "available": 100, "used": 900, "percent": 90.0}
+    data = {"virtual_memory": memory, "swap_memory": {"total": 100, "used": 75}}
+    with (
+        patch.object(mcp_handlers, "get_memory_info", return_value=data) as read,
+        patch.object(
+            mcp_handlers, "create_beautiful_response", side_effect=lambda **kw: kw
+        ),
+    ):
+        result = mcp_handlers.memory_info_handler()
+        assert result["success"] is True
+        assert result["data"] == data
+        assert result["summary"] == {
+            "total_memory": 1000,
+            "available_memory": 100,
+            "used_memory": 900,
+            "memory_percent": 90.0,
+        }
+        assert any("High memory" in item for item in result["insights"])
+        assert any("High swap" in item for item in result["insights"])
+        assert not any("sufficient" in item for item in result["insights"])
+        read.return_value = {"virtual_memory": {}, "swap_memory": {}, "error": "denied"}
+        result = mcp_handlers.memory_info_handler()
+        assert result["success"] is False
+        assert result["error_message"] == "denied"
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
