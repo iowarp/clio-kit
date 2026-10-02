@@ -26,10 +26,10 @@ I have large log files in my application directory at /var/log/application.log t
 ```
 
 **Tools called:**
-- `compress_file` - Compress the log file with gzip compression
+- `compress_file_tool` - Compress the log file with gzip compression
 
 This prompt will:
-- Use `compress_file` to compress the log file using efficient gzip algorithms
+- Use `compress_file_tool` to compress the log file using efficient gzip algorithms
 - Provide detailed compression statistics including space savings
 - Generate compressed output file with .gz extension for storage optimization
 
@@ -39,10 +39,10 @@ I need to archive my research data files before backing them up. Compress the da
 ```
 
 **Tools called:**
-- `compress_file` - Compress the research dataset for archival
+- `compress_file_tool` - Compress the research dataset for archival
 
 This prompt will:
-- Apply gzip compression to the CSV dataset using `compress_file`
+- Apply gzip compression to the CSV dataset using `compress_file_tool`
 - Provide comprehensive compression analytics including ratio and file size reduction
 - Prepare the compressed file for efficient backup and archival operations
 
@@ -52,10 +52,10 @@ Before transferring large data files over the network, I want to compress /home/
 ```
 
 **Tools called:**
-- `compress_file` - Compress document for network transfer optimization
+- `compress_file_tool` - Compress document for network transfer optimization
 
 This prompt will:
-- Use `compress_file` to apply gzip compression to the PDF document
+- Use `compress_file_tool` to apply gzip compression to the PDF document
 - Generate detailed compression statistics for transfer planning
 - Create compressed file optimized for network transmission efficiency
 
@@ -65,10 +65,10 @@ My application generates large output files at /tmp/processing_output.txt that n
 ```
 
 **Tools called:**
-- `compress_file` - Compress application output files
+- `compress_file_tool` - Compress application output files
 
 This prompt will:
-- Apply professional-grade gzip compression using `compress_file`
+- Apply professional-grade gzip compression using `compress_file_tool`
 - Provide detailed analytics on storage space savings and compression efficiency
 - Generate compressed files suitable for long-term storage and archival systems
 
@@ -78,10 +78,10 @@ I have temporary files and logs in my development environment that are consuming
 ```
 
 **Tools called:**
-- `compress_file` - Compress development files for space management
+- `compress_file_tool` - Compress development files for space management
 
 This prompt will:
-- Use `compress_file` to compress debug logs with optimal compression algorithms
+- Use `compress_file_tool` to compress debug logs with optimal compression algorithms
 - Provide comprehensive compression statistics for storage management decisions
 - Create space-efficient compressed files while preserving original data integrity
 
@@ -91,10 +91,10 @@ As part of system maintenance, I need to compress old system logs at /var/log/sy
 ```
 
 **Tools called:**
-- `compress_file` - Compress system logs for maintenance operations
+- `compress_file_tool` - Compress system logs for maintenance operations
 
 This prompt will:
-- Apply gzip compression to system logs using `compress_file`
+- Apply gzip compression to system logs using `compress_file_tool`
 - Generate detailed compression reports for system administration monitoring
 - Create compressed log files that maintain data accessibility while reducing storage footprint
 

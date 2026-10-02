@@ -1,6 +1,8 @@
 import catalogue from '@site/src/data/catalogue.json';
 export {catalogue};
-export const itemsById = new Map(catalogue.items.map((item) => [item.id, item]));
+export const itemsById = new Map(
+  catalogue.items.map((item) => [item.id, item]),
+);
 
 export const kinds = [
   ['all', 'All entries'],
@@ -22,7 +24,7 @@ export const clientNames = {
   vscode: 'VS Code / Copilot',
   other: 'Other clients',
 };
-export const itemUrl = (item) => `/component?id=${encodeURIComponent(item.id)}`;
+export const itemUrl = (item) => `/catalogue/${item.id}`;
 export const publisherUrl = (id) =>
   `/publishers?publisher=${encodeURIComponent(id)}`;
 export const publisherFor = (item) =>
@@ -37,7 +39,9 @@ export const summary = (text) =>
 
 export function installation(item, client) {
   if (item.installation === 'portable-skill') {
-    const target = (catalogue.clientProfiles[client] || catalogue.clientProfiles.other).skills;
+    const target = (
+      catalogue.clientProfiles[client] || catalogue.clientProfiles.other
+    ).skills;
     return {
       label: 'Install this skill',
       code: `clio-kit skill install ${item.name} --target ${target}`,
@@ -53,8 +57,12 @@ export function installation(item, client) {
           ? `claude mcp add --scope project clio-${item.name} -- ${command}`
           : JSON.stringify(
               {
-                [(catalogue.clientProfiles[client] || catalogue.clientProfiles.other).key]: {
-                  [`clio-${item.name}`]: item.mcpSettings[client] || item.mcpSettings.other,
+                [(
+                  catalogue.clientProfiles[client] ||
+                  catalogue.clientProfiles.other
+                ).key]: {
+                  [`clio-${item.name}`]:
+                    item.mcpSettings[client] || item.mcpSettings.other,
                 },
               },
               null,
@@ -91,9 +99,10 @@ export function installation(item, client) {
     label: item.plugin
       ? `Install containing package: ${plugin}`
       : 'Download this native package',
-    code: item.origin === 'Indexed'
-      ? `claude plugin marketplace add iowarp/clio-kit\nclaude plugin install ${plugin}@clio-kit`
-      : `clio-kit plugin fetch ${plugin} --target /path/to/clio-selected\nclaude plugin marketplace add /path/to/clio-selected\nclaude plugin install ${plugin}@clio-kit`,
+    code:
+      item.origin === 'Indexed'
+        ? `claude plugin marketplace add iowarp/clio-kit\nclaude plugin install ${plugin}@clio-kit`
+        : `clio-kit plugin fetch ${plugin} --target /path/to/clio-selected\nclaude plugin marketplace add /path/to/clio-selected\nclaude plugin install ${plugin}@clio-kit`,
     note:
       item.origin === 'Indexed'
         ? 'Installs the upstream package from the pinned marketplace source. Upstream code and prerequisites remain with its maintainer.'
@@ -104,6 +113,9 @@ export function installation(item, client) {
 }
 
 export function featuredItems(data = catalogue) {
-  const items = data === catalogue ? itemsById : new Map(data.items.map((item) => [item.id, item]));
+  const items =
+    data === catalogue
+      ? itemsById
+      : new Map(data.items.map((item) => [item.id, item]));
   return (data.featured || []).map((id) => items.get(id)).filter(Boolean);
 }

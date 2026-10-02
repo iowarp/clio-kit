@@ -43,6 +43,8 @@ const config = {
     locales: ['en'],
   },
 
+  plugins: ['./plugins/catalogue-routes.cjs'],
+
   presets: [
     [
       'classic',
@@ -50,7 +52,7 @@ const config = {
       ({
         docs: {
           path: '../docs',
-          sidebarPath: false,
+          sidebarPath: './sidebars.js',
           routeBasePath: 'docs',
           // Please change this to your repo.
           // Remove this to remove the "edit this page" links.
@@ -58,7 +60,7 @@ const config = {
             'https://github.com/iowarp/clio-kit/tree/main/docs/',
         },
         theme: {
-          customCss: './src/css/custom.css',
+          customCss: ['./src/css/custom.css', './src/css/editorial.css'],
         },
       }),
     ],
@@ -89,27 +91,32 @@ const config = {
           {
             to: '/',
             position: 'left',
-            label: 'Explore',
+            label: 'Overview',
+            exact: true,
           },
           {
-            to: '/publishers',
+            to: '/catalogue',
             position: 'left',
-            label: 'Publishers',
+            label: 'Catalogue',
+            activeBaseRegex: '^/(catalogue|component|publishers)',
           },
           {
-            to: '/docs/intro',
+            to: '/docs',
             position: 'left',
-            label: 'Getting Started',
+            label: 'Docs',
+            activeBaseRegex: '^/docs(?!/tutorials)',
           },
           {
-            href: 'https://pypi.org/project/clio-kit/',
-            position: 'right',
-            label: 'PyPI',
+            to: '/tutorials',
+            position: 'left',
+            label: 'Tutorials',
+            activeBaseRegex: '^/(tutorials|docs/tutorials)',
           },
           {
-            href: 'https://grc.iit.edu/',
+            to: '/#start',
             position: 'right',
-            label: 'GRC',
+            label: 'Install CLIO Kit ↗',
+            className: 'kit-install-link',
           },
           {
             href: 'https://github.com/iowarp/clio-kit',
@@ -122,76 +129,14 @@ const config = {
       footer: {
         style: 'dark',
         links: [
-          {
-            title: 'CLIO Kit',
-            items: [
-              {
-                label: 'Project Overview',
-                to: '/docs/intro',
-              },
-              {
-                label: 'Explore Catalogue',
-                to: '/',
-              },
-              {
-                label: 'Platform Website',
-                href: 'https://iowarp.ai',
-              },
-              {
-                label: 'GitHub Repository',
-                href: 'https://github.com/iowarp/clio-kit',
-              },
-            ],
-          },
-          {
-            title: 'Research & Funding',
-            items: [
-              {
-                label: 'National Science Foundation',
-                href: 'https://new.nsf.gov/',
-              },
-              {
-                label: 'Gnosis Research Center',
-                href: 'https://grc.iit.edu/',
-              },
-              {
-                label: 'Illinois Tech',
-                href: 'https://www.iit.edu/',
-              },
-            ],
-          },
-          {
-            title: 'Community',
-            items: [
-              {
-                label: 'GitHub Repository',
-                href: 'https://github.com/iowarp/clio-kit',
-              },
-              {
-                label: 'Issue Tracker',
-                href: 'https://github.com/iowarp/clio-kit/issues',
-              },
-              {
-                label: 'Zulip Chat',
-                href: 'https://iowarp.zulipchat.com/#narrow/channel/543872-Agent-Toolkit',
-              },
-            ],
-          },
-          {
-            title: 'Distribution',
-            items: [
-              {
-                label: 'PyPI Package',
-                href: 'https://pypi.org/project/clio-kit/',
-              },
-              {
-                label: 'Release Notes',
-                href: 'https://github.com/iowarp/clio-kit/releases',
-              },
-            ],
-          },
+          {label: 'Docs', to: '/docs/intro'},
+          {label: 'Tutorials', to: '/tutorials'},
+          {label: 'Catalogue', to: '/catalogue'},
+          {label: 'GitHub', href: 'https://github.com/iowarp/clio-kit'},
+          {label: 'BSD-3-Clause', href: 'https://github.com/iowarp/clio-kit/blob/main/LICENSE'},
+          {label: 'Gnosis Research Center', href: 'https://grc.iit.edu/'},
         ],
-        copyright: `CLIO Kit · Part of the IoWarp Platform · Developed by Gnosis Research Center (GRC), Illinois Institute of Technology. Funded in part by the National Science Foundation. © ${new Date().getFullYear()}`,
+        copyright: `CLIO Kit · Part of the IoWarp Platform · © ${new Date().getFullYear()}`,
       },
       prism: {
         theme: prismThemes.github,

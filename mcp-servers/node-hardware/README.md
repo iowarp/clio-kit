@@ -242,7 +242,7 @@ I need a comprehensive overview of my local system's hardware including CPU, mem
 ```
 
 **Tools called:**
-- `get_node_info` - Get complete local hardware information with all components
+- `get_system_info`, `get_cpu_info`, `get_memory_info`, `get_disk_info` and `get_network_info` - Inspect local system components
 - Components collected: cpu, memory, disk, network, system, summary
 
 ### 2. Remote Server Monitoring
@@ -260,7 +260,7 @@ Check GPU specifications and thermal sensors on both local and remote systems fo
 ```
 
 **Tools called:**
-- `get_node_info` - Local GPU and sensor monitoring  
+- `get_gpu_info` and `get_sensor_info` - Local GPU and sensor monitoring
 - `get_remote_node_info` - Remote GPU and thermal analysis
 - Components collected: gpu, sensors, performance
 
@@ -271,9 +271,9 @@ Perform a comprehensive health check of system capabilities and verify all monit
 
 **Tools called:**
 - `health_check` - System health verification and diagnostic assessment
-- `get_node_info` - Comprehensive local system analysis with health metrics
+- `get_system_info` and `get_performance_info` - Local system information and performance metrics
 
-### 5. Performance Bottleneck Analysis  
+### 5. Performance Bottleneck Analysis
 ```
 Identify performance bottlenecks on a production server by analyzing CPU, memory, disk I/O, and running processes.
 ```
@@ -288,7 +288,7 @@ Analyze storage health and network interface performance on multiple systems for
 ```
 
 **Tools called:**
-- `get_node_info` - Local storage and network analysis
-- `get_remote_node_info` - Remote storage and network monitoring  
+- `get_disk_info` and `get_network_info` - Local storage and network analysis
+- `get_remote_node_info` - Remote storage and network monitoring
 - Components collected: disk, network, system, summary
 

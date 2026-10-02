@@ -1,0 +1,713 @@
+/* Clio Coder's editorial proportions, using CLIO Kit's existing brand tokens. */
+.home {
+  --chapter-color: var(--brand-teal-ink);
+  font:
+    1rem / 1.65 'IBM Plex Sans',
+    sans-serif;
+}
+:global([data-theme='dark']) .home {
+  --chapter-color: var(--brand-orange);
+}
+.page {
+  width: min(1248px, calc(100% - 6rem));
+  margin-inline: auto;
+}
+.home :is(h1, h2, p, dl, dd, figure) {
+  margin: 0;
+}
+.home :is(h1, h2) {
+  font-family: 'Newsreader', Georgia, serif;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.home h2 {
+  font-size: clamp(2.4rem, 4vw, 3.7rem);
+}
+.home h3 {
+  font:
+    500 1.25rem / 1.3 'IBM Plex Sans',
+    sans-serif;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+.home p {
+  color: var(--market-muted);
+  text-wrap: pretty;
+}
+.home em {
+  font-family: 'Newsreader', Georgia, serif;
+  font-style: italic;
+  font-weight: 480;
+  color: var(--market-accent);
+}
+.home .eyebrow {
+  font:
+    0.7rem / 1.5 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--market-muted);
+}
+.eyebrow > span:not(.dot) {
+  color: var(--chapter-color);
+  margin-right: 0.7rem;
+}
+.section {
+  padding-block: clamp(4rem, 7vw, 7rem);
+  border-top: 1px solid var(--market-line);
+  scroll-margin-top: 6rem;
+}
+.sectionHeading h2 {
+  margin: 1.2rem 0 1.5rem;
+}
+.sectionHeading > p:not(.eyebrow) {
+  max-width: 55ch;
+  font-size: 1.08rem;
+}
+.sectionHeading > .textLink {
+  margin-top: 1.5rem;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: center;
+}
+.home .primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.75rem;
+  min-height: 3rem;
+  padding: 0.7rem 1.2rem;
+  background: var(--brand-orange);
+  color: #111827;
+  border: 1px solid var(--brand-orange);
+  border-radius: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+.home .primary:hover {
+  background: var(--market-text);
+  border-color: var(--market-text);
+  color: var(--market-bg);
+}
+.home .textLink {
+  display: inline-flex;
+  gap: 1rem;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  min-height: 44px;
+}
+.textLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+.dot {
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--market-accent);
+  margin-right: 0.55rem;
+}
+.hero {
+  padding-top: 2.5rem;
+}
+.topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.topline > a {
+  font:
+    0.7rem 'IBM Plex Mono',
+    monospace;
+  color: var(--market-muted);
+}
+.heroHeading {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 5rem;
+  align-items: end;
+  padding-block: 3.75rem 3.5rem;
+}
+.home .heroHeading h1 {
+  font-size: clamp(3.4rem, 6.5vw, 6rem);
+}
+.heroIntro {
+  padding-bottom: 0.2rem;
+}
+.home .heroIntro .lede {
+  font-size: 1.35rem;
+  line-height: 1.5;
+  color: var(--market-text);
+  margin-bottom: 1rem;
+}
+.heroIntro > p {
+  max-width: 44ch;
+}
+.heroIntro .actions {
+  margin-top: 1.8rem;
+}
+.factStrip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  text-align: center;
+  padding-block: 1.75rem 2rem;
+  color: var(--market-muted);
+  font:
+    0.7rem 'IBM Plex Mono',
+    monospace;
+}
+.factStrip span + span {
+  border-left: 1px solid var(--market-line);
+}
+.workflowSteps {
+  list-style: none;
+  padding: 0;
+  margin: 3rem 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3rem;
+}
+.workflowSteps li {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--market-line);
+}
+.workflowSteps li > span,
+.installSteps > div > span {
+  color: var(--chapter-color);
+  font:
+    0.75rem 'IBM Plex Mono',
+    monospace;
+}
+.workflowSteps h3 {
+  margin: 1.5rem 0 0.8rem;
+}
+.workflowSteps p {
+  font-size: 0.95rem;
+}
+.firstRequest {
+  display: grid;
+  grid-template-columns: 1fr 2.4fr;
+  gap: 1rem 3rem;
+  border-top: 1px solid var(--market-line);
+  padding-top: 2rem;
+}
+.home .firstRequest > p {
+  font:
+    500 1.6rem / 1.4 'Newsreader',
+    Georgia,
+    serif;
+  color: var(--market-text);
+  max-width: 48ch;
+}
+.firstRequest > a {
+  grid-column: 2;
+}
+.interfaceGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+}
+.interfaceGrid article {
+  min-width: 0;
+}
+.componentExample {
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: start;
+  gap: 1rem;
+  padding: 2.5rem;
+  border: 1px solid var(--market-line);
+  border-radius: 0.35rem;
+  background: var(--market-bg);
+  margin-bottom: 1.5rem;
+}
+.home .componentExample h3 {
+  font-family: 'Newsreader', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  line-height: 1.1;
+}
+.interfaceGrid article > h3 {
+  margin-bottom: 1rem;
+}
+.interfaceGrid article > p {
+  font-size: 0.95rem;
+  min-height: 5rem;
+  margin-bottom: 1rem;
+}
+.interfaceGrid pre {
+  font-size: 0.73rem;
+}
+.agentRoutes > div {
+  border-top: 1px solid var(--market-line);
+  padding-block: 1.6rem;
+}
+.agentRoutes dt {
+  font-size: 1.3rem;
+  font-weight: 500;
+  margin-bottom: 0.6rem;
+}
+.agentRoutes dd {
+  font-size: 0.95rem;
+  color: var(--market-text);
+}
+.agentRoutes dd:last-child {
+  font-size: 0.8rem;
+  color: var(--market-muted);
+  margin-top: 0.4rem;
+}
+.headingSplit {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 3rem;
+}
+.headingSplit > p {
+  max-width: 34ch !important;
+  margin-bottom: 1.5rem;
+}
+.featureList {
+  margin-top: 2rem;
+  border-top: 1px solid var(--market-line);
+}
+.featureList a {
+  display: grid;
+  grid-template-columns: 2rem 1fr 1.4fr 1rem;
+  align-items: baseline;
+  gap: 2rem;
+  padding-block: 1.6rem;
+  border-bottom: 1px solid var(--market-line);
+  color: var(--market-text);
+}
+.home .featureList a:hover {
+  background: var(--market-surface);
+  text-decoration: none;
+}
+.featureList a > span:first-child {
+  font:
+    0.7rem 'IBM Plex Mono',
+    monospace;
+  color: var(--chapter-color);
+}
+.featureList a > span:last-child {
+  color: var(--market-accent);
+}
+.featureList p {
+  font-size: 0.92rem;
+}
+.featureList + .textLink {
+  margin-top: 1.5rem;
+}
+.installSteps > div + div {
+  margin-top: 2rem;
+}
+.installSteps pre {
+  margin-block: 0.75rem;
+  font-size: 0.73rem;
+}
+.installSteps p {
+  font-size: 0.85rem;
+}
+.faq details {
+  border: 0;
+  border-top: 1px solid var(--market-line);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 1.1rem 0;
+  margin: 0;
+  background: none;
+}
+.faq summary {
+  font-size: 1.05rem;
+  font-weight: 500;
+  padding-right: 1.5rem;
+}
+.faq details p {
+  font-size: 0.95rem;
+  margin-block: 1rem 0.25rem;
+  max-width: 57ch;
+}
+.project {
+  display: grid;
+  grid-template-columns: 0.7fr 1.3fr;
+  align-items: center;
+  gap: 5rem;
+}
+.projectMark {
+  display: grid;
+  place-items: center;
+}
+.projectMark img {
+  width: min(80%, 280px);
+  height: auto;
+}
+.project h2 {
+  margin-block: 1.2rem 1.5rem;
+}
+.project p:not(.eyebrow) {
+  max-width: 58ch;
+}
+.project .actions {
+  margin-top: 1.5rem;
+}
+.tutorialIntro {
+  padding-block: 4rem 3rem;
+}
+.home .tutorialIntro h1 {
+  font-size: clamp(3rem, 5vw, 5rem);
+  margin-block: 1.2rem;
+}
+.tutorialIntro .lede {
+  max-width: 58ch;
+  font-size: 1.15rem;
+}
+.tutorialGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3rem;
+  padding-bottom: 5rem;
+}
+.tutorialCard {
+  min-width: 0;
+}
+.tutorialCard img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1.8;
+  object-fit: contain;
+  background: #000;
+  border: 1px solid var(--market-line);
+  padding: 1rem;
+  border-radius: 0.35rem;
+}
+.tutorialCard a:hover img {
+  border-color: var(--market-accent);
+}
+.tutorialCard .eyebrow {
+  margin-block: 1.25rem 0.75rem;
+}
+.home .tutorialCard h2 {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+.tutorialCard h2 a {
+  color: var(--market-text);
+}
+.tutorialCard > p:not(.eyebrow) {
+  font-size: 0.95rem;
+}
+.tutorialCard .textLink {
+  margin-top: 1rem;
+}
+.home
+  :is(
+    .heroHeading,
+    .workflowSteps,
+    .firstRequest,
+    .interfaceGrid,
+    .split,
+    .faqLayout,
+    .project,
+    .tutorialGrid
+  )
+  > * {
+  min-width: 0;
+}
+.home :is(.installSteps, .faq) p a {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+@media (min-width: 1400px) {
+  .heroHeading {
+    gap: 6rem;
+  }
+}
+@media (max-width: 1100px) {
+  .page {
+    width: calc(100% - 4rem);
+  }
+  .heroHeading {
+    gap: 2.5rem;
+  }
+  .home .heroIntro .lede {
+    font-size: 1.15rem;
+  }
+  .workflowSteps,
+  .interfaceGrid {
+    gap: 2rem;
+  }
+
+  .project {
+    gap: 3rem;
+  }
+}
+@media (max-width: 850px) {
+  .heroHeading {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding-block: 2.5rem;
+  }
+  .home .heroHeading h1 {
+    font-size: clamp(3.5rem, 8vw, 5rem);
+  }
+  .heroIntro > p {
+    max-width: 60ch;
+  }
+  .headingSplit {
+    display: block;
+  }
+  .featureList a {
+    grid-template-columns: 1.2rem 1fr 1rem;
+    gap: 1rem;
+  }
+  .featureList p {
+    grid-column: 2;
+  }
+  .featureList a > span:last-child {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .componentExample {
+    padding: 1.5rem;
+  }
+}
+@media (max-width: 600px) {
+  .page {
+    width: calc(100% - 2.5rem);
+  }
+  .hero {
+    padding-top: 1.5rem;
+  }
+  .topline {
+    align-items: start;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .heroHeading {
+    padding-block: 2rem;
+    gap: 1.5rem;
+  }
+  .home .heroHeading h1 {
+    font-size: clamp(3rem, 10vw, 4rem);
+  }
+  .factStrip {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    font-size: 0.6rem;
+    padding-block: 1.5rem;
+  }
+  .factStrip span + span {
+    border: 0;
+  }
+  .section {
+    padding-block: 3.5rem;
+  }
+  .sectionHeading h2 {
+    font-size: 2.5rem;
+  }
+  .workflowSteps,
+  .interfaceGrid,
+  .tutorialGrid,
+  .project {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .workflowSteps {
+    margin-block: 2rem;
+  }
+  .firstRequest {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .firstRequest > a {
+    grid-column: 1;
+  }
+  .componentExample {
+    min-height: 220px;
+  }
+  .interfaceGrid article > p {
+    min-height: auto;
+  }
+  .projectMark {
+    place-items: start;
+  }
+  .projectMark img {
+    width: 130px;
+  }
+  .tutorialIntro {
+    padding-block: 2.5rem;
+  }
+}
+
+/* Alternating visual lanes follow Clio Coder's chapter layout, with Kit's mark. */
+.heroHeading {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: center;
+}
+.heroIntro {
+  margin-top: 2rem;
+}
+.heroVisual {
+  text-align: center;
+}
+.logoScene {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  aspect-ratio: 1;
+  margin-inline: auto;
+}
+.logoScene img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.story {
+  padding-block: clamp(6rem, 10vw, 9rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(220px, 1fr);
+  align-items: start;
+  gap: clamp(2rem, 5vw, 5rem);
+}
+.story:nth-of-type(even) {
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 1.65fr);
+}
+.storyBody {
+  min-width: 0;
+  grid-row: 1;
+}
+.story:nth-of-type(even) .storyBody {
+  grid-column: 2;
+}
+.storyVisual {
+  position: relative;
+  grid-row: 1;
+  grid-column: 2;
+  margin-top: 2rem;
+}
+.story:nth-of-type(even) .storyVisual {
+  grid-column: 1;
+}
+.story .logoScene {
+  max-width: 300px;
+}
+.story .firstRequest {
+  grid-template-columns: 1fr;
+}
+.story .firstRequest > a {
+  grid-column: 1;
+}
+.story .headingSplit {
+  display: block;
+}
+.story .agentRoutes,
+.story .installSteps,
+.story .faq {
+  margin-top: 2rem;
+}
+.story .featureList a {
+  grid-template-columns: 1.2rem 1fr 1rem;
+  gap: 1rem;
+}
+.story .featureList p {
+  grid-column: 2;
+}
+.story .featureList a > span:last-child {
+  grid-column: 3;
+  grid-row: 1;
+}
+@media (max-width: 1000px) {
+  .story,
+  .story:nth-of-type(even) {
+    padding-block: 3.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+  .story .storyBody,
+  .story:nth-of-type(even) .storyBody {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .story .storyVisual,
+  .story:nth-of-type(even) .storyVisual {
+    position: static;
+    grid-column: 1;
+    grid-row: 1;
+    margin-top: 0;
+  }
+  .story .logoScene {
+    width: 180px;
+    margin-inline: 0 auto;
+  }
+  .story:nth-of-type(even) .logoScene {
+    margin-inline: auto 0;
+  }
+}
+@media (max-width: 850px) {
+  .heroHeading {
+    grid-template-columns: 1fr;
+  }
+  .heroVisual {
+    grid-row: 1;
+  }
+  .heroVisual .logoScene {
+    max-width: 240px;
+  }
+}
+
+.storyBody[data-reveal] {
+  transition:
+    opacity 450ms ease-out,
+    transform 450ms ease-out;
+}
+.storyBody[data-reveal='pending'] {
+  opacity: 0;
+  transform: translateY(16px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .storyBody[data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+.travellingLogo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 440px;
+  height: 440px;
+  max-width: none;
+  transform-origin: top left;
+  pointer-events: none;
+  z-index: 1;
+  will-change: transform;
+}
+.travellingLogo[hidden] {
+  display: none;
+}
+.home[data-logo-journey='active'] [data-logo-slot] img {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .travellingLogo {
+    display: none;
+  }
+  .home[data-logo-journey='active'] [data-logo-slot] img {
+    visibility: visible;
+  }
+}

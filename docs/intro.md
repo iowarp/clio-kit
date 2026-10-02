@@ -16,6 +16,10 @@ Node/TypeScript and Go descriptors with runtime-specific dependency locks.
 See [Marketplace and Contributions](./marketplace.md) for supported components,
 contribution commands, update behavior and tested runtime boundaries.
 
+For client-specific commands, use [Set up your agent](clients.md). For the individual MCP, skill and plugin routes, follow
+[Install components](tutorials/install-components.md), then try the
+[terminal tutorials](/tutorials).
+
 ## Install from source
 
 Use the same checkout for the launcher and marketplace. The commands below

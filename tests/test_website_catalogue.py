@@ -176,7 +176,8 @@ console.log(JSON.stringify({
     client, skill: installation(skill, client), mcp: installation(server, client)
   })),
   featured: featuredItems().map(item => item.id),
-  missing: featuredItems({...catalogue, featured: ['missing/id']})
+  missing: featuredItems({...catalogue, featured: ['missing/id']}),
+  links: catalogue.items.map(item => ({id: item.id, url: itemUrl(item)}))
 }));
 """
     )
@@ -210,8 +211,11 @@ console.log(JSON.stringify({
             )
     assert output["featured"] == data["featured"]
     assert output["missing"] == []
+    links = {link["id"]: link["url"] for link in output["links"]}
     for item in data["items"]:
+        assert links[item["id"]] == f"/catalogue/{item['id']}"
         if item["installation"] == "launcher":
+            assert (ROOT / (item["docs"].lstrip("/") + ".md")).is_file()
             inventory = catalogue.tomllib.loads(
                 (ROOT / "mcp-server-versions.toml").read_text()
             )
@@ -230,3 +234,35 @@ def test_retired_showcase_has_no_remaining_website_consumers():
     for path in (ROOT / "clio-kit-website/src").rglob("*.js"):
         assert "mcpData" not in path.read_text(), path
         assert "MCPShowcase" not in path.read_text(), path
+
+
+def test_catalogue_routes_keep_every_component_out_of_docs():
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("Node.js is required to check catalogue routes")
+    site = ROOT / "clio-kit-website"
+    script = f"""
+const plugin = require({json.dumps(str(site / "plugins/catalogue-routes.cjs"))})({{siteDir: {json.dumps(str(site))}}});
+(async () => {{
+  const routes = [];
+  const content = await plugin.loadContent();
+  await plugin.contentLoaded({{content, actions: {{
+    createData: async (name) => name,
+    addRoute: route => routes.push(route),
+  }}}});
+  console.log(JSON.stringify(routes));
+}})().catch(error => {{ console.error(error); process.exitCode = 1; }});
+"""
+    routes = json.loads(subprocess.check_output([node, "-e", script], text=True))
+    items = catalogue.generate(ROOT)["items"]
+    assert {route["path"] for route in routes} == {
+        f"/catalogue/{item['id']}" for item in items
+    }
+    references = [
+        r["modules"]["reference"] for r in routes if "reference" in r["modules"]
+    ]
+    assert len(references) == sum(i["installation"] == "launcher" for i in items)
+    assert all(Path(reference).is_file() for reference in references)

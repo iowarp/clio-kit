@@ -18,7 +18,7 @@ export function PublishersPage() {
     >
       <div className={styles.container}>
         <Link
-          to={publisher ? '/publishers' : '/#catalogue'}
+          to={publisher ? '/publishers' : '/catalogue'}
           className={styles.backLink}
         >
           ← {publisher ? 'All publishers' : 'Back to catalogue'}
