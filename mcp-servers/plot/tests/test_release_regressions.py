@@ -1,6 +1,7 @@
 """Regressions from the 2026-10-02 pre-release acceptance test, driven over MCP."""
 
 import asyncio
+import json
 import tomllib
 from pathlib import Path
 
@@ -42,6 +43,16 @@ def runs(tmp_path):
 
 def source(tool, path):
     return {"data_path" if tool == "plot_timeseries" else "file_path": path}
+
+
+@pytest.mark.parametrize("tool", CALLS)
+def test_plot_metadata_reaches_text_only_clients(tool, runs, tmp_path):
+    output = tmp_path / "plot.png"
+    result = call(tool, CALLS[tool] | source(tool, runs) | {"output_path": str(output)})
+    assert not result.is_error
+    text = next(c.text for c in result.content if c.type == "text")
+    assert json.loads(text) == result.structured_content
+    assert any(c.type == "image" for c in result.content)
 
 
 @pytest.mark.parametrize("tool", CALLS)

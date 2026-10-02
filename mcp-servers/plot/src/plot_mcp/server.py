@@ -5,6 +5,7 @@ Provides plotting functionality for CSV, Excel, and other data formats using
 pandas and matplotlib.
 """
 
+import json
 import os
 from typing import Annotated, Any, Literal, cast
 
@@ -138,18 +139,20 @@ def _plot_tool_result(structured: dict[str, Any]) -> ToolResult:
 
     Every image-producing plot tool returns both a rendered MCP
     ``ImageContent`` block (a downscaled preview, bounded to ~800px wide so
-    the wire payload stays small) and the unmodified structured dict —
+    the wire payload stays small), text metadata for text-only clients,
+    and the unmodified structured dict —
     ``output_path`` in that dict still points at the full-resolution file on
     disk; nothing about the saved file changes. Vector outputs (PDF, SVG)
     carry a text block naming the saved file instead of a preview.
     """
     output_path = structured["output_path"]
+    content: Any = [json.dumps(structured)]
     try:
-        content: Any = [Image(data=build_preview_png(output_path), format="png")]
+        content.append(Image(data=build_preview_png(output_path), format="png"))
     except OSError:
         # ponytail: PDF/SVG and other formats Pillow cannot read get the saved
         # path instead of a preview; rasterize one here if previews are needed.
-        content = f"Saved {output_path} (no inline preview for this format)"
+        content.append(f"Saved {output_path} (no inline preview for this format)")
     return ToolResult(content=content, structured_content=structured)
 
 
