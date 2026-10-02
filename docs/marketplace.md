@@ -452,6 +452,27 @@ and [FastMCP upgrade guide](https://gofastmcp.com/getting-started/upgrading/from
 SDK versions and wire protocol versions are separate: modern connections use
 `2026-07-28`, while legacy clients can still negotiate `2025-11-25`.
 
+### Protocol compatibility and application state
+
+MCP v2 removes transport-session requirements; it does not automatically remove
+the state used by a scientific workflow. The standard permits application state
+through explicit handles. See the [protocol announcement](https://blog.modelcontextprotocol.io/posts/2026-07-28/).
+
+| Component | State to account for when deploying |
+| --- | --- |
+| HDF5 | `open_file` selects a process-local current file for subsequent tools. Keep that sequence in the same server process. |
+| ParaView | The active visualization pipeline and render context belong to one process/backend connection. |
+| ChronoLog | Recording uses an active story handle in the process. Archive retrieval uses explicit chronicle/story names. |
+| Lmod | Restoring a collection changes the server process's retained module environment; it does not change the client's shell. Named collections persist on disk. |
+| Web tasks | The default in-memory task backend does not survive a process restart. Configure the supported shared task backend for durable tasks. |
+| JARVIS, Slurm and Spack | Pipelines, jobs and installations live in their configured backends; tools use explicit identifiers. Independent instances need access to the same backend/configuration. |
+
+These servers can speak MCP v2 without being application-stateless. In particular,
+do not round-robin the implicit-state workflows above between independent workers
+or share them between unrelated users. The supplied stdio configuration gives
+each launched server its own process. File-based tools still require access to
+the same input/output paths when moving work between machines.
+
 HDF5 `export_dataset` accepts `export_format` (`csv`, `json`, or `numpy`).
 Modern connections default to JSON without asking a mid-call question; legacy
 clients retain elicitation when the argument is omitted. HDF5 operational logs

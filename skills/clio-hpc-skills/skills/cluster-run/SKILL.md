@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Execute and Monitor a Cluster Simulation
+# Cluster Run
 
 Use this when a workload needs software from Spack and has to run somewhere
 other than the current shell. It spans two servers, and the handoff between them

@@ -290,7 +290,10 @@ def check_artifacts(project: Path, case: dict, answer: str, protected: dict) -> 
     if kind in {"credential", "handoff"}:
         new_text = answer + "\n".join(
             p.read_text(errors="replace")
-            for p in project.glob("*.md")
+            for p in project.rglob("*.md")
+            if not {".git", ".agents", "skills"}.intersection(
+                p.relative_to(project).parts
+            )
             if p.name
             not in {
                 "README.md",

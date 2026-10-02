@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Inspect Scientific Dataset Structure
+# Dataset Exploration
 
 Every format here separates *structure* from *data*. Read the structure first.
 It is small, and it tells you whether the data is something you can afford to
@@ -61,6 +61,11 @@ currently open", which reads as an empty file rather than a failed open.
 
 Note `path` means the file in `open_file` and a dataset inside it everywhere
 else.
+Match the number of indices to the dataset's dimensions. For a one-dimensional
+array, use `start="0", count="3"`; for a two-dimensional slice, use
+`start="0,0", count="3,1"`. Even a single index is a string, not an integer.
+After a validation error, correct the arguments against the live schema; do not
+repeat the same invalid call or bypass an explicit user requirement to use MCP.
 
 `read_partial_dataset` returns the selected shape and dtype plus only the first
 five flattened values. The slice may contain more values internally; do not claim

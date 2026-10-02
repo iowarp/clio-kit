@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Interpret I/O Performance Metrics
+# I/O Performance
 
 A profiler hands back numbers. Nothing in the output says whether they are good.
 This is the missing half.

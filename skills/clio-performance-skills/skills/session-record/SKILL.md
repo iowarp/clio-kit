@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Record and Retrieve Research Session Provenance
+# Session Provenance
 
 ChronoLog stores **the conversation** — user messages and the responses to them —
 in a named chronicle and story. It is a provenance trail, not a profiler.

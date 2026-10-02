@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Investigate Large Application Logs
+# Log Search
 
 Most tools on this server take the file as `log_file`, not `file_path`. The
 four export tools are the exception: `export_to_csv`, `export_to_json`,

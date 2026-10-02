@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Build a Verified Research Bibliography
+# Bibliography
 
 A fabricated citation is the worst failure available here. It is fluent,
 correctly formatted, and points at a paper that does not exist. Every entry has

@@ -57,6 +57,34 @@ def read_events(path):
     return events
 
 
+def injected_skill_names(home, project):
+    """Accept native skill injection only when its content matches an installed file."""
+    names = set()
+    root = (project / ".agents/skills").resolve()
+    for path in (home / "sessions").rglob("*.jsonl"):
+        for event in read_events(path):
+            payload = event.get("payload", {})
+            if event.get("type") != "response_item" or payload.get("role") != "user":
+                continue
+            for part in payload.get("content", []):
+                match = re.fullmatch(
+                    r"<skill>\n<name>([a-z0-9-]+)</name>\n<path>([^\n]+)</path>\n(.*)\n</skill>",
+                    part.get("text", ""),
+                    re.DOTALL,
+                )
+                if not match:
+                    continue
+                name, filename, content = match.groups()
+                source = Path(filename).resolve()
+                if (
+                    source == root / name / "SKILL.md"
+                    and source.is_file()
+                    and source.read_text() == content
+                ):
+                    names.add(name)
+    return sorted(names)
+
+
 def summarize_events(events, servers=None):
     items = [e["item"] for e in events if e.get("type") == "item.completed"]
     usage = {}
@@ -205,7 +233,7 @@ def execute_run(case, mode, args):
     for name in case["servers"]:
         if name in servers or f"clio-{name}" in servers:
             continue
-        servers[name] = {
+        servers[f"clio-{name}"] = {
             "command": "uv",
             "args": [
                 "run",
@@ -273,7 +301,6 @@ def execute_run(case, mode, args):
         "codex",
         "exec",
         "--skip-git-repo-check",
-        "--ephemeral",
         "--sandbox",
         args.sandbox,
         "--json",
@@ -309,6 +336,7 @@ def execute_run(case, mode, args):
                 process.wait()
     events = read_events(folder / "trace.jsonl")
     record = summarize_events(events, configured_servers)
+    record["skill_names_injected"] = injected_skill_names(home, project)
     answer = (
         (folder / "answer.md").read_text() if (folder / "answer.md").exists() else ""
     )
@@ -334,7 +362,9 @@ def execute_run(case, mode, args):
     }:
         checks["actual_mcp_call"] = record["mcp_calls"] > 0
     if mode == "skill":
-        checks["skill_read"] = label in record["skill_names_read"]
+        checks["skill_read"] = label in (
+            record["skill_names_read"] + record["skill_names_injected"]
+        )
     runtime_blocked = any(
         marker in (folder / "trace.jsonl").read_text()
         for marker in ("bwrap: loopback:", "bwrap: setting up uid map:")

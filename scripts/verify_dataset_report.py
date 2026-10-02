@@ -304,7 +304,7 @@ def verify(
         assert "CLIO_DATASET_REPORT_CHECK" in hook_context
         assert "Statistic mismatch" in hook_context
         assert '\\"status\\": \\"PASS\\"' in hook_context
-        assert "Create a verified dataset report" in hook_context
+        assert "# Dataset Report" in hook_context
         assert json.loads(manifest.read_text())["statistics"]["mean"] == 21
         server.shutdown()
         server.server_close()

@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Analyze Seismic Waveforms and Event Catalogs
+# Seismic Analysis
 
 One server answers questions about earthquakes, but its tools split across two
 completely different kinds of input. Handing a tool the other kind fails in

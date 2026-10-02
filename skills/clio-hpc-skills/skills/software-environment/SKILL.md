@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Discover and Verify HPC Software Environments
+# Software Environments
 
 Two servers answer overlapping questions about available software, and they
 answer different ones. Reaching for the wrong one gives a confidently wrong

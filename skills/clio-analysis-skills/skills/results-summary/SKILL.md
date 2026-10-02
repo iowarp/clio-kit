@@ -7,7 +7,7 @@ metadata:
   provenance: designed
   eval-status: scenarios-recorded
 ---
-# Summarize and Plot Scientific Results
+# Results Summary
 
 Two servers, and the handoff between them is where this goes wrong.
 

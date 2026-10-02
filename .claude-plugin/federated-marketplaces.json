@@ -12,8 +12,8 @@
       "category": "development",
       "keywords": [],
       "metadata": {
-        "maintainer": "IOWarp",
-        "indexed": true
+        "indexed": true,
+        "maintainer": "IOWarp"
       },
       "add_command": "claude plugin marketplace add iowarp/clio-coder"
     }

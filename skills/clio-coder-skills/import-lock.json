@@ -11,6 +11,8 @@
     "Qualified Archify's separately installed renderer reference",
     "Corrected Herdr guidance for successful actions with empty stdout",
     "Corrected scientific-debugging's contradictory worked-example verdicts and tolerance guidance",
+    "Clarified handoff redaction applies to saved documents and final responses",
+    "Preserved explicit worktree destinations ahead of branch-derived defaults",
     "Recorded CLIO Kit evaluation status independently of upstream status"
   ],
   "skills": [
@@ -1420,8 +1422,8 @@
     }
   ],
   "files": {
-    ".claude-plugin/plugin.json": "5158ee487c09715f60e6364f719820237ee885e096992f8207d3003497705428",
-    "plugin.json": "e77abb2fd2524d125337a5a4e830ab0780c5acd2a31877600bb58ffbeb822738",
+    ".claude-plugin/plugin.json": "37741c1a8a6b1dcba2e146b671373f648f680bc5e5ec41b0148a694b309adbf6",
+    "plugin.json": "3093548b9d5c242d32e9702aac44c6cf3cf95a9407dc79061c7f0cae1398c516",
     "skills/clio-kit-archify/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "skills/clio-kit-archify/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
     "skills/clio-kit-archify/SKILL.md": "a3bbbbfd949ed59f2e31d69de524976ed75ff04141f377cff147d9543137ba60",
@@ -1464,7 +1466,7 @@
     "skills/clio-kit-coding-standards/evals.md": "f84c51375961cee928f73b85e29c4942344f0c51a6e88eaf3d1e2d12e811a26f",
     "skills/clio-kit-context-handoff/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "skills/clio-kit-context-handoff/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
-    "skills/clio-kit-context-handoff/SKILL.md": "e119427896608e03391f4f41d2baacbdf42d4f30a987ad4ca946d5a0ac5f49e2",
+    "skills/clio-kit-context-handoff/SKILL.md": "18ca9fa14b4cacd418cc54f3d8f3b22b1fc71b5e754b105c4c4fa0126c28038b",
     "skills/clio-kit-context-handoff/evals.md": "2fdc346381217914260fbce6edbee96fb10eaf1f5d17e454b9edf86b4f8400a8",
     "skills/clio-kit-context-handoff/scripts/new-handoff.sh": "5085a9d4c53c2d22d5b9b9100cb56193f9c0e28eb50123c7c52f7cf842d311e0",
     "skills/clio-kit-context-prime/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
@@ -1761,7 +1763,7 @@
     "skills/clio-kit-workflow-distiller/evals.md": "e18ba63fcc9591c08e110d36be7c6da9c5db4af79c97fa6c5fef03968e3b81b8",
     "skills/clio-kit-worktree-create/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "skills/clio-kit-worktree-create/NOTICE": "c123862ae8630d5a5728ce41f29eb4d4b846972af669871f70a9c5a694629a46",
-    "skills/clio-kit-worktree-create/SKILL.md": "2ca8ffb08dfc7ec114577ac151fedc2bf146f6681be99d7e67569f2cbf22b3a4",
+    "skills/clio-kit-worktree-create/SKILL.md": "52e5981663a5088402f30eac9da173cad9d6d84b1ea1bcecd297d0c5472bfa6b",
     "skills/clio-kit-worktree-create/evals.md": "1b303c877a1622c7317740d382b064231ea64893a60cc8a29c94d1cb943e0674",
     "skills/clio-kit-worktree-create/references/worktree-setup.md": "d235c2b9796b85c254c99911f04f2c8fc6cbc4fa0b57ebab0986ac3135e72a15",
     "skills/clio-kit-worktree-merge/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",

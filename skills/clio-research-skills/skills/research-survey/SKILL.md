@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Survey Research Literature and Associated Data
+# Research Survey
 
 ArXiv exposes seven search tools. They are not variations on one another, and
 defaulting to `search_arxiv` for every question is the main way this goes wrong.

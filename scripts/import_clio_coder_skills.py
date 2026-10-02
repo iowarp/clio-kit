@@ -128,6 +128,23 @@ def generate(
             fields = yaml.safe_load(header)
             upstream_name = fields["name"]
             name = SKILL_PREFIX + upstream_name
+            if upstream_name == "context-handoff":
+                body = body.replace(
+                    "6. **Redact.** Remove API keys, tokens, secrets, passwords, and PII unless it is\n"
+                    "   genuinely part of the project. Replace with `[REDACTED]` and note what was\n"
+                    "   removed.",
+                    "6. **Redact.** Remove credentials, tokens, passwords and unnecessary PII from\n"
+                    "   the handoff and every response about it. Replace values with `[REDACTED]`.\n"
+                    "   Describe only the category removed; never repeat a value to demonstrate\n"
+                    "   redaction. Check both the saved document and the final response before\n"
+                    "   returning them. This also applies to synthetic test credentials.",
+                )
+            if upstream_name == "worktree-create":
+                body = body.replace(
+                    "3. Derive safe filesystem paths under `--root` for each branch:",
+                    "3. Preserve an explicitly requested worktree destination exactly after path validation. "
+                    "Derive a path from the branch name only when the user did not provide a destination:",
+                )
             if upstream_name == "scientific-debugging":
                 start, end = body.index("## Worked Example"), body.index("## Red Flags")
                 body = (
@@ -292,6 +309,8 @@ def generate(
                 "Qualified Archify's separately installed renderer reference",
                 "Corrected Herdr guidance for successful actions with empty stdout",
                 "Corrected scientific-debugging's contradictory worked-example verdicts and tolerance guidance",
+                "Clarified handoff redaction applies to saved documents and final responses",
+                "Preserved explicit worktree destinations ahead of branch-derived defaults",
                 "Recorded CLIO Kit evaluation status independently of upstream status",
             ],
             "skills": records,

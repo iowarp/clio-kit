@@ -8,13 +8,16 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Read and Summarize Large Scientific Datasets
+# Dataset Reading
 
 Avoid transferring a whole dataset into the agent context to compute one
 number. Prefer a server-side reduction when it meets the requested coverage
 and accuracy. An exact reduction may still need to read every value.
 
 ## Work out the size first
+
+For a supplied HDF5 file, resolve its path and call `open_file` directly. Resource
+discovery scans configured directories; an empty listing does not mean that the supplied file is missing.
 
 From `get_shape` and `get_dtype`: multiply the dimensions, multiply by the item
 size. A `(2000, 2000, 500)` array of float64 is 16 GB. Use it to choose a bounded read, and allow for temporary arrays and conversion

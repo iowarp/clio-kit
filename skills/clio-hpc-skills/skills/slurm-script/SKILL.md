@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Prepare and Diagnose Slurm Job Scripts
+# Slurm Scripts
 
 This is about what goes *in* the request and how to read what comes back. For
 running a Spack package through JARVIS instead of a hand-written script, see

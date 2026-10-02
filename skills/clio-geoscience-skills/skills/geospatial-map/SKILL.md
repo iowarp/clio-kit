@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Validate and Map Geospatial Data
+# Geospatial Mapping
 
 Spatial mistakes do not raise errors. A bounding box computed over malformed
 features, or a place name the model invented coordinates for, produces a map that

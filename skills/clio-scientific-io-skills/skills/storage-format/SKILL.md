@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Choose a Scientific Storage Format
+# Storage Formats
 
 The format decides what is cheap later. Almost every slow read is a write-time
 decision showing up months afterwards.

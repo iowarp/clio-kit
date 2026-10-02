@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Create a verified dataset report
+# Dataset Report
 
 Deliver `data.csv`, `plot.png`, `dataset-report.md` and
 `clio-dataset-report.json` in a new output directory. This bounded workflow

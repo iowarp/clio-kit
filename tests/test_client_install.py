@@ -17,6 +17,31 @@ from clio_kit.plugins import plugin_group
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_editable_cli_installs_workflow_outside_checkout(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    project = tmp_path / "research"
+    result = CliRunner().invoke(
+        plugin_group,
+        [
+            "install",
+            "clio-scientific-io",
+            "--client",
+            "codex",
+            "--project",
+            str(project),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert (project / ".agents/skills/dataset-explore/SKILL.md").is_file()
+    config = tomllib.loads((project / ".codex/config.toml").read_text())
+    assert set(config["mcp_servers"]) == {
+        "clio-hdf5",
+        "clio-adios",
+        "clio-parquet",
+        "clio-compression",
+    }
+
+
 @pytest.mark.parametrize("client", CLIENTS)
 def test_install_bundle_and_reinstall_preserving_unrelated_settings(tmp_path, client):
     skill_path, config_path, key = CLIENTS[client]

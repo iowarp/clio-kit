@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Visualize Three-Dimensional Simulation Output
+# Simulation Visualization
 
 ParaView is a pipeline with an **active source**. Almost every tool acts on
 whichever object is active, not on one you name. Losing track of that is how you
@@ -30,7 +30,10 @@ failed.
 ## Steps
 
 **1. Load.** `clio-paraview:load_scientific_data` — VTK, EXODUS, CSV, RAW, BP5,
-with format detection.
+with format detection. This call also checks the configured server's backend.
+The MCP server has its own Python environment: a failed `import paraview` in
+the agent's shell does not establish that the server is unavailable. Use the
+MCP call's actual result and report its error if it fails.
 
 **2. Find out what fields exist.** `clio-paraview:get_available_arrays`. Do this
 before choosing a filter. Array names are exact; guessing one is the most common
@@ -40,6 +43,8 @@ vector.
 **3. Find a value worth contouring.** `clio-paraview:get_histogram` on the field.
 An isovalue picked without looking is usually outside the data range, and
 produces an empty surface with no error.
+Histogram bin centers are not the field's exact minimum and maximum. Report
+them as bin centers; obtain actual extrema before claiming an exact range.
 
 **4. Apply the filter that matches the question.**
 
@@ -106,4 +111,4 @@ If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 
-First verify that a compatible ParaView Python backend is available; an MCP connection alone is insufficient. Report source, timestep, active filter, field association (point/cell), units, color range and output image. Inspect the image before declaring rendering complete.
+Verify loading and rendering through the configured MCP tools; a connection alone is insufficient. Report source, timestep, active filter, field association (point/cell), units, color range and output image. Inspect the image before declaring rendering complete; do not infer its colors from the preset name alone.

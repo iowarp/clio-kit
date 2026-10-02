@@ -94,9 +94,11 @@ headless run.
 5. **Reference, don't duplicate.** Point at PRDs, ADRs, plans, issues, and diffs
    by path or URL (`docs/adr/001.md`, a PR link). Do not paste their contents.
 
-6. **Redact.** Remove API keys, tokens, secrets, passwords, and PII unless it is
-   genuinely part of the project. Replace with `[REDACTED]` and note what was
-   removed.
+6. **Redact.** Remove credentials, tokens, passwords and unnecessary PII from
+   the handoff and every response about it. Replace values with `[REDACTED]`.
+   Describe only the category removed; never repeat a value to demonstrate
+   redaction. Check both the saved document and the final response before
+   returning them. This also applies to synthetic test credentials.
 
 7. **Suggest skills** from the `context(scope="skills")` listing (do not scan
    the filesystem): name two to five the next session should invoke, one line

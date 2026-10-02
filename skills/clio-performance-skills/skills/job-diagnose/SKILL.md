@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Diagnose Scientific I/O Performance
+# Job Diagnosis
 
 A Darshan log records what a finished job did to the filesystem. This skill uses
 that evidence to develop and test a bottleneck hypothesis. It spans the profiler and the log tools, and the order is not

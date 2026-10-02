@@ -56,6 +56,10 @@ class Acceptance:
         self.env["GIT_CONFIG_GLOBAL"] = str(output / "gitconfig")
         self.env["GIT_CONFIG_NOSYSTEM"] = "1"
         self.env["npm_config_cache"] = str(output / "npm-cache")
+        for scope in ("userconfig", "globalconfig"):
+            config = output / f"npm-{scope}"
+            config.write_text("")
+            self.env[f"npm_config_{scope}"] = str(config)
 
     def record(self, **record):
         self.records.append(record)
@@ -235,6 +239,9 @@ class Acceptance:
                 ROOT,
             )
         env = {**self.env, "CLAUDE_CONFIG_DIR": str(project / "profile")}
+        if source.get("type") == "npm":
+            # The loopback fixture is this isolated client's default registry.
+            env["npm_config_registry"] = source["registry"]
         self.run(
             route + "-catalogue",
             ["claude", "plugin", "validate", str(project), "--strict"],

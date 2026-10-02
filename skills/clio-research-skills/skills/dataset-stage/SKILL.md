@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Discover and Stage Research Datasets
+# Dataset Staging
 
 Two catalogs answer "where is data about X", and they hold different things. The
 step everyone forgets is the last one: a dataset that has only been *found* is

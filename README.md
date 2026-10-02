@@ -112,6 +112,8 @@ claude mcp list
 ```
 
 Restart Claude Code after installation and confirm the servers connect.
+First launches download dependencies; see [startup recovery](setup.md#update-and-troubleshoot)
+if a server exceeds the client's connection timeout.
 
 Or install an individual MCP or a skill collection:
 

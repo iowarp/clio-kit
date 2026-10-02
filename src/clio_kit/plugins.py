@@ -308,10 +308,16 @@ def plugin_group() -> None:
 )
 def install_plugin(name, client, project, root, components_only, replace, dry_run):
     """Install selected release skills and MCP settings, or use --root CHECKOUT."""
+    from clio_kit import MODULE_DIR
+    from clio_kit.component_store import INDEX_FILE
     from clio_kit.skills import SkillProblem
 
     if root is None and (Path.cwd() / ".claude-plugin/marketplace.json").is_file():
         root = Path.cwd()
+    if root is None and not INDEX_FILE.is_file():
+        checkout = MODULE_DIR.parent.parent
+        if (checkout / ".claude-plugin/marketplace.json").is_file():
+            root = checkout
     try:
         result = install_for_client(
             root,

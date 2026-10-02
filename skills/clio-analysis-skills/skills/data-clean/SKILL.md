@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Clean and Validate Tabular Data
+# Data Cleaning
 
 Every repair here changes the numbers that come out. Look before repairing, and
 say what was done.
@@ -50,6 +50,8 @@ series first. `mode` fills numeric or categorical gaps from observed values.
 Mean/median operate only on numeric columns. Entirely missing columns stay
 missing, and `imputed_count` counts actual fills. Preserve the input and assert
 expected values before accepting any transformation.
+If the tool chooses its own output filename, preserve the input and copy the
+verified result to the user's requested destination, then verify that file.
 
 - **Scattered gaps** — inspect the measurement process; apparent randomness
   does not establish a missingness mechanism. Mean/median imputation changes

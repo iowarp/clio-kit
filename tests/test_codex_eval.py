@@ -1,6 +1,7 @@
 """Evaluation must not turn resource discovery or backend failures into success."""
 
 import importlib.util
+import json
 from pathlib import Path
 import sys
 
@@ -13,6 +14,37 @@ spec.loader.exec_module(runner)
 
 def event(item):
     return {"type": "item.completed", "item": item}
+
+
+def test_native_skill_injection_requires_exact_installed_content(tmp_path):
+    home, project = tmp_path / "home", tmp_path / "project"
+    source = project / ".agents/skills/example/SKILL.md"
+    source.parent.mkdir(parents=True)
+    source.write_text("---\nname: example\n---\nInstructions.\n")
+    sessions = home / "sessions"
+    sessions.mkdir(parents=True)
+    for role, content, expected in (
+        ("user", source.read_text(), ["example"]),
+        ("assistant", source.read_text(), []),
+        ("user", "description only", []),
+    ):
+        (sessions / "run.jsonl").write_text(
+            json.dumps(
+                {
+                    "type": "response_item",
+                    "payload": {
+                        "role": role,
+                        "content": [
+                            {
+                                "text": f"<skill>\n<name>example</name>\n<path>{source}</path>\n{content}\n</skill>"
+                            }
+                        ],
+                    },
+                }
+            )
+            + "\n"
+        )
+        assert runner.injected_skill_names(home, project) == expected
 
 
 def test_actual_server_calls_exclude_discovery_and_count_structured_errors():
@@ -136,6 +168,19 @@ def test_task_verification_accepts_report_beside_its_task(tmp_path):
         "facts": [],
     }
     assert check_artifacts(tmp_path, case, "", {})["incorrect_mean_rejected"]
+
+
+def test_handoff_check_rejects_secret_in_nested_output(tmp_path):
+    from codex_fixtures import SECRET, check_artifacts, git
+
+    git(tmp_path, "init", "-q")
+    report = tmp_path / ".claude/handoffs/research.md"
+    report.parent.mkdir(parents=True)
+    report.write_text(SECRET)
+    case = {"skill": "clio-kit-context-handoff", "kind": "handoff", "facts": []}
+    assert not check_artifacts(tmp_path, case, "Credential redacted.", {})[
+        "secret_not_reproduced"
+    ]
 
 
 def test_skill_activation_requires_content_not_only_listing():

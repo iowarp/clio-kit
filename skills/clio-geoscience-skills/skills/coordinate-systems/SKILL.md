@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Interpret Coordinate Reference Systems
+# Coordinate Systems
 
 Nothing here raises an error. Data in the wrong reference system plots, computes
 distances, and returns bounding boxes — just in the wrong place. This is the

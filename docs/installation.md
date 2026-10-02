@@ -144,6 +144,12 @@ public release workflow must still succeed before public availability is claimed
 
 ## Installation failures and cache cleanup
 
+After moving a checkout or renaming a server directory, an existing `.venv` can
+retain executable paths to its old location. From the affected server directory,
+run `uv sync --frozen --all-extras --dev --reinstall`, then
+`uv run --frozen python -m pytest tests -q`. This repairs the local development
+environment; released component environments are managed separately by the launcher.
+
 Project installation stages skill folders and configuration together. A failed
 write restores the previous files, including with `--replace`; successful changes
 retain the configuration backup reported by the command. Downloaded artifacts

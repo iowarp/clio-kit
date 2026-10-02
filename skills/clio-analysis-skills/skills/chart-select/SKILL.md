@@ -8,7 +8,7 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Choose an Effective Scientific Chart
+# Chart Selection
 
 The chart type follows from the question. Working the other way — picking a
 familiar chart and fitting the data to it — is how a figure ends up answering

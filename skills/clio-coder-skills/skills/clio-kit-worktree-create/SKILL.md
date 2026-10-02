@@ -71,7 +71,7 @@ Arguments are passed in the user invocation message. Interpret them structurally
 
 1. Validate branch names and `--base <ref>`.
 2. Ensure `--root <path>` is gitignored in the main repository. If not already ignored, add it to `.gitignore` and notify the user.
-3. Derive safe filesystem paths under `--root` for each branch:
+3. Preserve an explicitly requested worktree destination exactly after path validation. Derive a path from the branch name only when the user did not provide a destination:
    - Handle slashes in branch names safely (e.g. `feat/auth` maps to safe directory `<root>/feat-auth` or `<root>/feat/auth` without escaping `<root>`).
 
 ## Step 2 — Detect Project Setup Once

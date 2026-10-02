@@ -22,8 +22,8 @@ git branch --show-current
 test -f pyproject.toml && test -f .claude-plugin/marketplace.json
 ```
 
-Skill discovery is tested with Codex 0.154.0; native plugin installation is
-tested with Claude Code 2.1.266. Antigravity CLI checks use version 1.2.0.
+Skill discovery is tested with Codex 0.160.0; native plugin installation is
+tested with Claude Code 2.1.287. Antigravity CLI checks use version 1.2.14.
 Claude is not a prerequisite for portable
 skills or MCP servers. If `uv` is missing, install it using [the official instructions](https://docs.astral.sh/uv/getting-started/installation/).
 
@@ -63,6 +63,7 @@ four MCP servers and the three workflow skills.
 |---|---|---|
 | Codex CLI / IDE extension | `codex mcp add`; `~/.codex/config.toml` | `.agents/skills` |
 | Claude Code | Native marketplace below, or `claude mcp add --scope project` | Bundle-managed, or `.claude/skills` |
+| OpenCode | `opencode.json`, top-level `mcp` | `.opencode/skills` |
 | Cursor | `.cursor/mcp.json`, top-level `mcpServers` | `.cursor/skills` |
 | VS Code / GitHub Copilot | `.vscode/mcp.json`, top-level `servers` | `.github/skills` |
 | Antigravity | MCP settings → raw config; workspace `.agents/mcp_config.json` | `.agents/skills` |
@@ -266,7 +267,7 @@ and services still need a site installation.
 | Darshan | Install Darshan utilities and put `darshan-parser` on `PATH`. Generate a real log using the matching Darshan runtime. | Compare MCP bytes/operations with `darshan-parser --base LOG`. |
 | Lmod | Install Lmod and Bash; set `LMOD_CMD` to its `libexec/lmod` executable and `MODULEPATH` to your modulefiles. | Inspect a module, save a collection, then restore/list it in a new MCP process. |
 | Spack | Set `SPACK_MCP_COMMAND` to `spack`; use `SPACK_PYTHON` if that Spack release needs a different Python. | Install a small package, locate its prefix, and verify the installation. Use `package/HASH` when several builds match. |
-| JARVIS | Use a writable `JARVIS_ROOT`; configure its private/shared directories and available recipes. Administrative setup requires `--profile all`. | Create an `echo` pipeline, run with `submit=false`, and inspect its execution status and stdout. |
+| JARVIS | Use a writable `JARVIS_ROOT`; configure its private/shared directories and available recipes. Administrative setup requires `--profile all`. | Create an `echo` pipeline, run with `execution.mode="local"`, and inspect its execution status and stdout. |
 | ParaView | Run `pvserver`; use `UV_PYTHON` matching ParaView's Python ABI, with its modules on `PYTHONPATH` and shared libraries on `LD_LIBRARY_PATH`. Forward `--server HOST --pv-port PORT` after `--`. | Create a sphere, compute its area, and save a PNG screenshot. Headless builds may require a display such as Xvfb or an EGL/OSMesa-capable build. |
 | ChronoLog | Run its visor/keeper/grapher/player services. Set `UV_PYTHON` to match `py_chronolog_client`, `PYTHONPATH`, `LD_LIBRARY_PATH`, `CHRONO_PORT`, `CHRONO_CONF`, and `HDF5_READER_BIN`. | Start, record, stop, then retrieve and compare the exact archived text. Archiving is asynchronous; allow the configured flush interval. |
 
@@ -314,6 +315,8 @@ and multi-language runtime instructions.
   `clio-kit mcp-server pandas </dev/null` on Unix, and wait for installation to
   finish. Then run the connection check and restart the agent. This preparation
   command only installs/starts the server; it does not verify a scientific query.
+  For Claude Code, alternatively allow a longer first startup with
+  `MCP_TIMEOUT=300000 claude` (five minutes; see [Claude's MCP settings](https://code.claude.com/docs/en/mcp)).
 - **Missing tools in an existing session:** reinstall the launcher and restart
   the client. The current servers expose their complete small tool inventories
   on the first page, including clients that do not follow pagination.
