@@ -14,7 +14,11 @@ have to be written.
 from __future__ import annotations
 
 import re
+import tomllib
 from pathlib import Path
+
+import yaml
+from packaging.specifiers import SpecifierSet
 
 from clio_kit.discovery import read_server_descriptor
 
@@ -72,3 +76,26 @@ def test_every_dedicated_workflow_exemption_is_live() -> None:
     for server, workflow in DEDICATED_WORKFLOWS.items():
         assert (SERVERS / server).is_dir(), f"{server} no longer exists"
         assert (REPO / ".github" / "workflows" / workflow).is_file(), workflow
+
+
+def test_ci_python_lanes_match_package_requirements() -> None:
+    jobs = yaml.safe_load(QUALITY_CONTROL.read_text())["jobs"]
+    matrix = jobs["test"]["strategy"]["matrix"]
+    for manifest in SERVERS.glob("*/pyproject.toml"):
+        if manifest.parent.name in DEDICATED_WORKFLOWS:
+            continue
+        supported = SpecifierSet(
+            tomllib.loads(manifest.read_text())["project"]["requires-python"]
+        )
+        for version in matrix["python-version"]:
+            lane = {"mcp": manifest.parent.name, "python-version": version}
+            assert (lane not in matrix["exclude"]) == (version in supported), lane
+    setup = (REPO / ".github/actions/setup-mcp/action.yml").read_text()
+    assert (
+        'uv sync --frozen --all-extras --dev --python "${{ inputs.python-version }}"'
+        in setup
+    )
+    assert (
+        jobs["agentic-search-test"]["env"]["UV_PYTHON"]
+        == "${{ matrix.python-version }}"
+    )

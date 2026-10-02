@@ -60,6 +60,11 @@ not an event catalogue. Neither tool downloads data.
 
 ## Run
 
+Sequence statistics count events strictly before or after the largest event's
+timestamp. The largest event and simultaneous events are excluded from the
+after-event count and decay buckets; the after fraction uses the total catalog
+size as its denominator.
+
 ```sh
 clio-kit mcp-server seismology          # via the clio-kit launcher
 seismology-mcp            # direct entry point

@@ -10,6 +10,7 @@ import time
 import json
 import h5py
 import numpy as np
+from types import SimpleNamespace
 
 # Import the utils module directly - DO NOT import server
 from hdf5_mcp import utils
@@ -403,26 +404,29 @@ def test_file_handle_cache_close_all(temp_dir):
     assert len(cache._cache) == 0
 
 
-@pytest.mark.skip(reason="Expiry checker test can hang - tested via integration")
-def test_file_handle_cache_expiry_checker(temp_dir):
+def test_file_handle_cache_expiry_checker(temp_dir, monkeypatch):
     """Test expiry checker removes old handles."""
+    monkeypatch.setattr(utils.threading.Thread, "start", lambda self: None)
     cache = utils.FileHandleCache(max_size=10, expiry_time=0.1)  # 100ms expiry
 
     filepath = temp_dir / "test.h5"
     with h5py.File(filepath, "w") as f:
         f.create_dataset("data", data=[1, 2, 3])
 
-    cache.get(str(filepath), mode="r")
-    assert str(filepath) in cache._cache
-
-    # Wait for expiry
-    time.sleep(0.2)
-
-    # Trigger expiry check manually
-    cache._check_expiry()
-
-    # Clean up
-    cache.close_all()
+    handle = cache.get(str(filepath), mode="r")
+    cache._cache[str(filepath)] = (handle, time.time() - 1)
+    # Stop after one sweep instead of calling the infinite checker loop directly.
+    monkeypatch.setattr(
+        utils,
+        "time",
+        SimpleNamespace(time=time.time, sleep=lambda _: cache._stop_checker.set()),
+    )
+    try:
+        cache._check_expiry()
+        assert str(filepath) not in cache._cache
+        assert not handle.id.valid
+    finally:
+        cache.close_all()
 
 
 def test_file_handle_cache_move_to_end(sample_hdf5_file, empty_hdf5_file):

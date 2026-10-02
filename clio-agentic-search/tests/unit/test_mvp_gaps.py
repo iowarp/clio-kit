@@ -177,7 +177,10 @@ class TestEmptyResultsDiagnostics:
         monkeypatch.setenv("CLIO_LOCAL_ROOT", str(docs_dir))
         monkeypatch.setenv("CLIO_STORAGE_PATH", str(tmp_path / "diag.duckdb"))
 
-        exit_code = main(["query", "--q", "xyznonexistentquery99999", "--namespace", "local_fs"])
+        # A semantic embedder can match unrelated text; the absent metadata cannot.
+        exit_code = main(
+            ["query", "--q", "xyznonexistentquery99999", "--filter", "category=missing"]
+        )
         captured = capsys.readouterr()
 
         assert exit_code == 0

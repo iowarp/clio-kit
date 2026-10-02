@@ -160,12 +160,14 @@ class TestToggleVisibility:
 class TestColorBy:
     """Test color by field functionality"""
 
-    def test_color_by_point_data(self, engine, mock_paraview):
+    @pytest.mark.parametrize("component", [-1, 1])
+    def test_color_by_point_data(self, engine, mock_paraview, component):
         """Test coloring by point data field"""
         from paraview.simple import (
             GetActiveSource,
             GetActiveView,
             GetDisplayProperties,
+            ColorBy,
         )
 
         mock_source = Mock()
@@ -191,11 +193,14 @@ class TestColorBy:
         GetActiveView.return_value = Mock()
         GetDisplayProperties.return_value = mock_display
 
-        success, message = engine.color_by("temperature")
+        success, message = engine.color_by("temperature", component)
 
         assert success is True
         assert "'temperature'" in message
         assert "POINTS" in message
+        ColorBy.assert_called_once_with(
+            mock_display, ("POINTS", "temperature", str(component))
+        )
 
     def test_color_by_cell_data(self, engine, mock_paraview):
         """Test coloring by cell data field"""
@@ -237,6 +242,9 @@ class TestColorBy:
         assert success is True
         assert "'pressure'" in message
         assert "CELLS" in message
+        from paraview.simple import ColorBy
+
+        ColorBy.assert_called_once_with(mock_display, ("CELLS", "pressure", "-1"))
 
     def test_color_by_field_not_found(self, engine, mock_paraview):
         """Test coloring by non-existent field"""
@@ -341,7 +349,8 @@ class TestColorBy:
 class TestSetColorMapPreset:
     """Test color map preset setting"""
 
-    def test_set_color_map_preset_success(self, engine, mock_paraview):
+    @pytest.mark.parametrize("exact", [True, False])
+    def test_set_color_map_preset_success(self, engine, mock_paraview, exact):
         """Test setting color map preset successfully"""
         from paraview.simple import (
             GetActiveSource,
@@ -358,13 +367,31 @@ class TestSetColorMapPreset:
         GetActiveSource.return_value = mock_source
         GetActiveView.return_value = Mock()
         GetDisplayProperties.return_value = mock_display
+        from paraview import servermanager
+
+        presets = servermanager.vtkSMTransferFunctionPresets.GetInstance()
+        presets.HasPreset.side_effect = lambda name: (
+            name == ("Viridis" if exact else "Viridis (matplotlib)")
+        )
 
         # Call the preset version by passing only preset_name
         success, message = engine.set_color_map_preset("Viridis")
 
         assert success is True
         assert "Viridis" in message
-        mock_color_tf.ApplyPreset.assert_called_once_with("Viridis", True)
+        mock_color_tf.ApplyPreset.assert_called_once_with(
+            "Viridis" if exact else "Viridis (matplotlib)", True
+        )
+
+    def test_unknown_preset_does_not_silently_succeed(self, engine, mock_paraview):
+        from paraview import servermanager
+        from paraview.simple import GetDisplayProperties
+
+        servermanager.vtkSMTransferFunctionPresets.GetInstance().HasPreset.return_value = False
+        success, message = engine.set_color_map_preset("not-a-preset")
+        assert not success
+        assert "Unknown color map preset" in message
+        GetDisplayProperties.return_value.LookupTable.ApplyPreset.assert_not_called()
 
     def test_set_color_map_preset_no_source(self, engine, mock_paraview):
         """Test with no active source"""
@@ -515,7 +542,7 @@ class TestSetColorMapTransfer:
 
     def test_set_color_map_transfer_success(self, engine, mock_paraview):
         """Test setting color transfer function successfully"""
-        from paraview.simple import GetColorTransferFunction
+        from paraview.simple import GetColorTransferFunction, GetDisplayProperties
 
         mock_color_tf = Mock()
         GetColorTransferFunction.return_value = mock_color_tf
@@ -531,6 +558,9 @@ class TestSetColorMapTransfer:
         assert "density" in message
         expected_rgb = [0.0, 0.0, 0.0, 1.0, 50.0, 0.0, 1.0, 0.0, 100.0, 1.0, 0.0, 0.0]
         assert mock_color_tf.RGBPoints == expected_rgb
+        GetColorTransferFunction.assert_called_once_with(
+            "density", representation=GetDisplayProperties.return_value
+        )
 
     def test_set_color_map_transfer_empty_points(self, engine, mock_paraview):
         """Test with empty color points"""

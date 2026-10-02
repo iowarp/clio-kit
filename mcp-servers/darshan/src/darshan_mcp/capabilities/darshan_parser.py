@@ -215,13 +215,13 @@ async def analyze_file_access_patterns(
                 "files": [],
             }
 
-        # Analyze access patterns
         access_patterns: Dict[str, Any] = {
             "read_only_files": 0,
             "write_only_files": 0,
             "read_write_files": 0,
             "sequential_access": 0,
             "random_access": 0,
+            "unknown_access": 0,
             "file_sizes": [],
             "files_analysis": [],
         }
@@ -246,23 +246,23 @@ async def analyze_file_access_patterns(
             else:
                 access_type = "no_io"
 
-            # Analyze access pattern (sequential vs random)
             seq_reads = file_data.get("sequential_reads", 0)
             seq_writes = file_data.get("sequential_writes", 0)
             total_reads = file_data.get("read_ops", 0)
             total_writes = file_data.get("write_ops", 0)
-
-            is_sequential = False
-            if total_reads + total_writes > 0:
-                seq_ratio = (seq_reads + seq_writes) / (total_reads + total_writes)
-                is_sequential = seq_ratio >= 0.75
-
-            if is_sequential:
-                access_patterns["sequential_access"] += 1
-                pattern_type = "sequential"
+            # A single read and write, or absent counters, cannot establish a pattern.
+            if max(total_reads, total_writes) <= 1 or any(
+                count > 0 and file_data.get(key, -1) < 0
+                for count, key in (
+                    (total_reads, "sequential_reads"),
+                    (total_writes, "sequential_writes"),
+                )
+            ):
+                pattern_type = "unknown"
             else:
-                access_patterns["random_access"] += 1
-                pattern_type = "random"
+                seq_ratio = (seq_reads + seq_writes) / (total_reads + total_writes)
+                pattern_type = "sequential" if seq_ratio >= 0.75 else "random"
+            access_patterns[f"{pattern_type}_access"] += 1
 
             file_size = file_data.get("file_size")
             if file_size is not None:

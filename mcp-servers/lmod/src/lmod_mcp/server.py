@@ -193,7 +193,7 @@ def module_system_status() -> dict:
 
 @mcp.resource("lmod://capabilities")
 def module_capabilities() -> dict:
-    """Describe the stateless Lmod contract exposed by this server."""
+    """Describe module queries and named collection operations."""
     return {
         "operations": ["list", "avail", "show", "spider"],
         "collection_operations": ["save", "restore", "savelist"],

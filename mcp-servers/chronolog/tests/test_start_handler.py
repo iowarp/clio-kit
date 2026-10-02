@@ -27,7 +27,9 @@ class TestStartHandler:
     async def test_start_chronolog_basic(self):
         """Test basic ChronoLog session start"""
         if not are_chronolog_processes_running():
-            pytest.skip("ChronoLog processes are not running")
+            pytest.skip(
+                "ChronoLog native client, reader configuration or services unavailable"
+            )
 
         chronicle_name = (
             f"test_chronicle_{int(time.time())}_{random.randint(1000, 9999)}"

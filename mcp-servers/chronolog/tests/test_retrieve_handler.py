@@ -29,7 +29,9 @@ class TestRetrieveHandler:
     async def test_retrieve_empty_interaction(self):
         """Test basic retrieve functionality"""
         if not are_chronolog_processes_running():
-            pytest.skip("ChronoLog processes are not running")
+            pytest.skip(
+                "ChronoLog native client, reader configuration or services unavailable"
+            )
 
         chronicle_name = (
             f"test_chronicle_{int(time.time())}_{random.randint(1000, 9999)}"
@@ -43,7 +45,9 @@ class TestRetrieveHandler:
     async def test_retrieve_after_record(self):
         """Test retrieving interaction after recording one"""
         if not are_chronolog_processes_running():
-            pytest.skip("ChronoLog processes are not running")
+            pytest.skip(
+                "ChronoLog native client, reader configuration or services unavailable"
+            )
 
         chronicle_name = (
             f"test_chronicle_{int(time.time())}_{random.randint(1000, 9999)}"

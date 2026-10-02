@@ -193,7 +193,7 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\lmod run lmod-mcp --help
 ### Resources
 
 - `lmod://status` - Current Lmod module system status.
-- `lmod://capabilities` - Describe the stateless Lmod contract exposed by this server.
+- `lmod://capabilities` - Describe module queries and named collection operations.
 
 ### Prompts
 

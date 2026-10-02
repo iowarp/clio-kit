@@ -24,7 +24,11 @@ def test_explicit_csv_export_in_both_protocol_eras(tmp_path, mode):
             try:
                 await client.call_tool(
                     "export_dataset",
-                    {"path": "values", "output_path": str(target), "export_format": "csv"},
+                    {
+                        "path": "values",
+                        "output_path": str(target),
+                        "export_format": "csv",
+                    },
                 )
             finally:
                 await client.call_tool("close_file", {})
@@ -46,7 +50,11 @@ def test_modern_export_defaults_to_json_and_rejects_unknown_format(tmp_path):
                 with pytest.raises(ToolError):
                     await client.call_tool(
                         "export_dataset",
-                        {"path": "values", "output_path": str(target), "export_format": "invalid"},
+                        {
+                            "path": "values",
+                            "output_path": str(target),
+                            "export_format": "invalid",
+                        },
                     )
                 assert not target.exists()
                 await client.call_tool(

@@ -33,9 +33,9 @@ async def _run_module_command(
     # Compatibility for sites that provide an executable module wrapper.
     cmd = ["module"] + args
 
-    # Set up environment with LMOD_QUIET to reduce noise
+    # Preserve warning exit codes: quiet mode can report a refused save as success.
     env = os.environ.copy()
-    env["LMOD_QUIET"] = "1"
+    env.pop("LMOD_QUIET", None)
 
     try:
         process = await asyncio.create_subprocess_exec(

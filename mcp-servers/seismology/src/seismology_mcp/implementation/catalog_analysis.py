@@ -75,7 +75,7 @@ def _omori_decay(events: list[dict[str, Any]], t0_ms: int) -> dict[str, Any]:
     """Event-rate decay after the largest event. Returns rate buckets + a fitted
     Omori-Utsu p exponent (modified Omori, c fixed small) when fittable. Data only."""
     day_ms = 86_400_000
-    after = [e for e in events if e["time_ms"] >= t0_ms]
+    after = [e for e in events if e["time_ms"] > t0_ms]
     buckets = [(0, 1), (1, 2), (2, 4), (4, 8), (8, 16), (16, 32)]
     rate_per_day: list[dict[str, Any]] = []
     for lo, hi in buckets:
@@ -145,7 +145,9 @@ def analyze_sequence(
 
     Returns:
         A dict with ``ok``, ``event_count``, ``catalog_path``, and (when the
-        catalog is non-empty) a ``statistics`` block.
+        catalog is non-empty) a ``statistics`` block. Before/after counts use
+        strict timestamp comparisons; the largest event and simultaneous events
+        are not after-events. The after fraction divides by total catalog size.
 
     Raises:
         CatalogError: If the catalog cannot be read or parsed.
@@ -165,7 +167,7 @@ def analyze_sequence(
     others = sorted((e["mag"] for e in events if e is not largest), reverse=True)
     second = others[0] if others else None
     before = [e for e in events if e["time_ms"] < largest["time_ms"]]
-    after = [e for e in events if e["time_ms"] >= largest["time_ms"]]
+    after = [e for e in events if e["time_ms"] > largest["time_ms"]]
 
     mc = _magnitude_of_completeness(mags, mag_bin)
     bstats = (

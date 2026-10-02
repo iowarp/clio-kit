@@ -398,3 +398,22 @@ async def test_run_darshan_command_not_found():
         assert returncode == 1
         assert "darshan-parser command not found" in stderr
         assert stdout == ""
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "counters",
+    [
+        {"read_ops": 1, "write_ops": 1, "sequential_reads": 0, "sequential_writes": 0},
+        {"read_ops": 100},
+        {"read_ops": 100, "sequential_reads": -1},
+        {},
+    ],
+)
+async def test_insufficient_pattern_evidence_is_unknown(counters):
+    data = {"success": True, "files": {"fixture": {"bytes_read": 1024, **counters}}}
+    with patch.object(darshan_parser, "_parse_darshan_json", return_value=data):
+        result = await darshan_parser.analyze_file_access_patterns("fixture.darshan")
+    assert result["unknown_access"] == 1
+    assert result["random_access"] == result["sequential_access"] == 0
+    assert result["files_analysis"][0]["pattern_type"] == "unknown"

@@ -46,6 +46,7 @@ def _mock_arxiv_client(payload: str):
 @pytest.fixture(autouse=True)
 def paper_api():
     """Exercise parsing and similarity filtering with deterministic HTTP replies."""
+
     async def reply(url, **kwargs):
         paper_id = str(kwargs.get("params", {}).get("id_list", ""))
         payload = (

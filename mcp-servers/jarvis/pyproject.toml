@@ -23,9 +23,9 @@ dependencies = [
   "pydantic-settings>=2.14.2",
   "pydantic>=2.12.5",
   "pygments>=2.20.0",
-  "pyjwt>=2.13.0",
+  "pyjwt>=2.15.1",
   "python-multipart>=0.0.31",
-  "urllib3>=2.7.0",
+  "urllib3>=2.8.0",
   "typing-extensions>=4.15.0",
 ]
 

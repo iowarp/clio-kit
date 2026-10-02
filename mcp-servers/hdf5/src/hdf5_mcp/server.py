@@ -1740,7 +1740,7 @@ async def optimize_access_pattern(
     },
 )
 async def refresh_hdf5_resources(ctx: Optional[Context] = None) -> str:
-    """Re-scan client roots and update available HDF5 resources.
+    """Re-scan configured discovery directories; explicit paths can be opened separately.
 
     FastMCP automatically sends notifications/resources/list_changed to clients.
 
@@ -1764,7 +1764,7 @@ async def refresh_hdf5_resources(ctx: Optional[Context] = None) -> str:
         f"Roots scanned: {len(client_roots)}\n"
         f"Files found: {len(discovered)}\n"
         f"Newly registered: {newly_registered}\n\n"
-        f"Use list_available_hdf5_files() to see all files."
+        f"Use list_available_hdf5_files() for discovered files, or open_file(path) for an explicit file."
     )
 
 
@@ -1780,7 +1780,7 @@ async def refresh_hdf5_resources(ctx: Optional[Context] = None) -> str:
     },
 )
 async def list_available_hdf5_files() -> str:
-    """List all registered HDF5 files with resource URIs for Claude Code @ mentions.
+    """List discovered HDF5 files; open_file(path) also accepts unlisted explicit paths.
 
     Returns:
         List of available files with resource URIs
@@ -1788,7 +1788,7 @@ async def list_available_hdf5_files() -> str:
     files = resource_manager.get_registered_files()
 
     if not files:
-        return "No HDF5 files found. Use refresh_hdf5_resources to scan."
+        return "No files registered from configured discovery directories. Use open_file(path) for a supplied file, or refresh_hdf5_resources to rescan."
 
     result = f"Available HDF5 Files ({len(files)}):\n\n"
     for i, file_info in enumerate(files, 1):

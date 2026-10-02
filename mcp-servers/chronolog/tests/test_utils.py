@@ -2,6 +2,8 @@
 
 import subprocess
 import asyncio
+import importlib
+import shutil
 from pathlib import Path
 
 
@@ -30,6 +32,14 @@ def are_chronolog_processes_running():
     Returns:
         bool: True if all processes are running, False otherwise
     """
+    from chronomcp.utils import config
+
+    try:
+        importlib.import_module("py_chronolog_client")
+    except (ImportError, OSError):
+        return False
+    if not Path(config.CONFIG_FILE).is_file() or not shutil.which(config.READER_BINARY):
+        return False
     required_processes = [
         "chronovisor_server",
         "chrono_grapher",

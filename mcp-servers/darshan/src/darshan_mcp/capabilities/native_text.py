@@ -70,9 +70,11 @@ def parse_native_text(text: str) -> dict | None:
             "sequential_reads": "SEQ_READS",
             "sequential_writes": "SEQ_WRITES",
         }
-        entry = {
+        entry: dict[str, float | str] = {
             field: values.get(f"{prefix}_{counter}", 0)
             for field, counter in fields.items()
+            if not field.startswith("sequential_")
+            or values.get(f"{prefix}_{counter}", -1) >= 0
         }
         if prefix == "MPIIO":
             for field, suffix in (("read_ops", "READS"), ("write_ops", "WRITES")):

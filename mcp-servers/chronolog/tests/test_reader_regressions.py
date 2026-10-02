@@ -7,12 +7,13 @@ from types import SimpleNamespace
 import pytest
 from fastmcp.exceptions import ToolError
 from chronomcp.capabilities.retrieve_handler import retrieve_interaction
-from chronomcp.utils import helpers
+from chronomcp.utils import config, helpers
 
 
 @pytest.mark.asyncio
 async def test_quoted_multiline_record_and_untrusted_names(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(config, "CONFIG_FILE", "reader-fixture.json")
     expected = 'user: "quoted"\nassistant: preserved \\ content'
     monkeypatch.setattr(
         helpers,
@@ -34,3 +35,10 @@ def test_failed_reader_does_not_become_no_records(monkeypatch):
     )
     with pytest.raises(ToolError, match="archive cannot be opened"):
         helpers.run_reader(["reader"])
+
+
+@pytest.mark.asyncio
+async def test_missing_reader_configuration_is_explicit(monkeypatch):
+    monkeypatch.setattr(config, "CONFIG_FILE", "")
+    with pytest.raises(ToolError, match="Set CHRONO_CONF"):
+        await retrieve_interaction("fixture", "story")

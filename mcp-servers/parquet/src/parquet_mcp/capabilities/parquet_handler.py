@@ -68,15 +68,15 @@ def _build_filter_mask(table: pa.Table, filter_dict: Dict[str, Any]) -> pa.Chunk
     if logical:
         if len(filter_dict) != 1:
             raise ValueError("Invalid filter: use exactly one logical operator")
-        operator = next(iter(logical))
-        operand = filter_dict[operator]
-        if operator == "not":
+        logical_op = next(iter(logical))
+        operand = filter_dict[logical_op]
+        if logical_op == "not":
             return pc.invert(_build_filter_mask(table, operand))
         if not isinstance(operand, list) or not operand:
-            raise ValueError(f"Invalid filter: {operator} needs a non-empty list")
+            raise ValueError(f"Invalid filter: {logical_op} needs a non-empty list")
         masks = [_build_filter_mask(table, item) for item in operand]
         result = masks[0]
-        combine = pc.and_ if operator == "and" else pc.or_
+        combine = pc.and_ if logical_op == "and" else pc.or_
         for mask in masks[1:]:
             result = combine(result, mask)
         return result

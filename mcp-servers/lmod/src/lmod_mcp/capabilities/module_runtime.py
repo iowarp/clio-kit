@@ -49,9 +49,9 @@ async def run_lmod(
         args = ["-t", *[arg for arg in args if arg != "-t"]]
     async with _lock:
         env = environment()
-        env.update(
-            LMOD_CMD=command, LMOD_QUIET="1", LMOD_COLORIZE="no", LMOD_PAGER="none"
-        )
+        env.update(LMOD_CMD=command, LMOD_COLORIZE="no", LMOD_PAGER="none")
+        # Quiet mode suppresses warning exit codes, including refused empty saves.
+        env.pop("LMOD_QUIET", None)
         # Startup files must not contaminate either the protocol or captured state.
         env.pop("BASH_ENV", None)
         process = await asyncio.create_subprocess_exec(

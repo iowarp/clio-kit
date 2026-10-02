@@ -127,11 +127,11 @@
     },
     {
       "name": "refresh_hdf5_resources",
-      "description": "Re-scan client roots and update available HDF5 resources.\n\nFastMCP automatically sends notifications/resources/list_changed to clients.\n\nReturns:\n    Summary of refreshed resources"
+      "description": "Re-scan configured discovery directories; explicit paths can be opened separately.\n\nFastMCP automatically sends notifications/resources/list_changed to clients.\n\nReturns:\n    Summary of refreshed resources"
     },
     {
       "name": "list_available_hdf5_files",
-      "description": "List all registered HDF5 files with resource URIs for Claude Code @ mentions.\n\nReturns:\n    List of available files with resource URIs"
+      "description": "List discovered HDF5 files; open_file(path) also accepts unlisted explicit paths.\n\nReturns:\n    List of available files with resource URIs"
     },
     {
       "name": "export_dataset",

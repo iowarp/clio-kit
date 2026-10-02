@@ -6,19 +6,23 @@ import h5py
 import pytest
 from fastmcp import Client
 
-from hdf5_mcp.server import mcp
+from hdf5_mcp.server import mcp, resource_manager
 
 
 @pytest.mark.parametrize("mode", ["2026-07-28", "legacy"])
-def test_failures_are_flagged_and_session_recovers(tmp_path, mode):
+def test_failures_are_flagged_and_session_recovers(tmp_path, mode, monkeypatch):
     source = tmp_path / "input.h5"
     with h5py.File(source, "w") as file:
         file.create_dataset("values", data=[2, 4, 8])
     original = source.read_bytes()
+    monkeypatch.setattr(resource_manager, "get_registered_files", lambda: [])
 
     async def exercise():
         async with Client(mcp, mode=mode) as client:
             await client.call_tool("close_file", {}, raise_on_error=False)
+            listing = await client.call_tool("list_available_hdf5_files", {})
+            assert "configured discovery directories" in str(listing)
+            assert "open_file(path)" in str(listing)
 
             async def failure(tool, arguments, message):
                 result = await client.call_tool(tool, arguments, raise_on_error=False)

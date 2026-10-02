@@ -5,6 +5,7 @@ import json
 import asyncio
 from pathlib import Path
 import tempfile
+from fastmcp.exceptions import ToolError
 from chronomcp.utils import config, helpers
 
 
@@ -14,6 +15,10 @@ async def retrieve_interaction(
     start_time: str | None = None,
     end_time: str | None = None,
 ) -> str:
+    if not config.CONFIG_FILE:
+        raise ToolError(
+            "Set CHRONO_CONF to the site's ChronoLog reader configuration file"
+        )
     chronicle = chronicle_name or config.DEFAULT_CHRONICLE
     story = story_name or config.DEFAULT_STORY
 

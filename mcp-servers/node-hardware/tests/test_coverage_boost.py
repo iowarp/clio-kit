@@ -221,6 +221,7 @@ class TestServerHealthCheck:
         assert result is not None
         assert result["server_status"] == "healthy"
         from datetime import datetime, timezone
+
         observed = datetime.fromisoformat(result["timestamp"])
         assert abs((datetime.now(timezone.utc) - observed).total_seconds()) < 5
         assert set(result["performance_metrics"].values()) == {"not_measured"}
@@ -236,6 +237,7 @@ class TestServerHealthCheck:
     async def test_health_check_tool_error_path(self):
         """Test health check error handling"""
         from node_hardware_mcp import server
+
         with patch.object(server, "datetime") as mock_datetime:
             mock_datetime.now.side_effect = Exception("clock unavailable")
 

@@ -618,7 +618,7 @@ async def get_histogram(
         for i in range(preview_count):
             bin_center, frequency = histogram_data[i]
             hist_summary += (
-                f"  Bin {i + 1}: value={bin_center:.2f}, count={frequency}\n"
+                f"  Bin {i + 1}: center={bin_center:.6g}, count={frequency}\n"
             )
 
         if len(histogram_data) > preview_count * 2:
@@ -630,7 +630,7 @@ async def get_histogram(
         ):
             bin_center, frequency = histogram_data[i]
             hist_summary += (
-                f"  Bin {i + 1}: value={bin_center:.2f}, count={frequency}\n"
+                f"  Bin {i + 1}: center={bin_center:.6g}, count={frequency}\n"
             )
 
         return hist_summary

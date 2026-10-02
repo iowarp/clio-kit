@@ -41,12 +41,12 @@ description = "Work out why a finished job was slower than it should have been."
 servers = ["chronolog", "darshan", "parallel-sort"]
 
 [bundles.clio-scientific-io]
-version = "1.0.4"
+version = "1.0.5"
 description = "Open a scientific data file, see its structure, and read part of it."
 servers = ["adios", "compression", "hdf5", "parquet"]
 
 [bundles.clio-analysis]
-version = "1.0.5"
+version = "1.0.6"
 description = "Turn a dataset into summary statistics and a figure."
 servers = ["pandas", "paraview", "plot"]
 

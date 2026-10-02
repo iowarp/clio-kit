@@ -67,7 +67,7 @@
     {
       "uri": "lmod://capabilities",
       "name": "module_capabilities",
-      "description": "Describe the stateless Lmod contract exposed by this server."
+      "description": "Describe module queries and named collection operations."
     }
   ],
   "prompts": [

@@ -19,7 +19,9 @@ def empty_arxiv_api():
         text='<feed xmlns="http://www.w3.org/2005/Atom"/>',
         request=httpx.Request("GET", "https://export.arxiv.org/api/query"),
     )
-    with patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=response) as request:
+    with patch(
+        "httpx.AsyncClient.get", new_callable=AsyncMock, return_value=response
+    ) as request:
         yield request
 
 

@@ -30,7 +30,9 @@ class TestIntegration:
     async def test_basic_workflow(self):
         """Test basic workflow: start -> record -> retrieve -> stop"""
         if not are_chronolog_processes_running():
-            pytest.skip("ChronoLog processes are not running")
+            pytest.skip(
+                "ChronoLog native client, reader configuration or services unavailable"
+            )
 
         chronicle_name = (
             f"test_chronicle_{int(time.time())}_{random.randint(1000, 9999)}"

@@ -233,5 +233,5 @@ async def test_histogram_preview_keeps_six_to_ten_bins(monkeypatch):
     )
     monkeypatch.setattr(server, "get_pv_manager", lambda: manager)
     result = await server.get_histogram("density", 8)
-    assert "Bin 8: value=7.00, count=8" in result
+    assert "Bin 8: center=7, count=8" in result
     assert result.count("  Bin ") == 8

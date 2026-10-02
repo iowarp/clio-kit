@@ -40,3 +40,24 @@ async def test_failed_avail_is_not_a_successful_module_list(monkeypatch):
 
     monkeypatch.setattr(lmod_handler, "_run_module_command", failure)
     assert (await lmod_handler.search_available_modules())["success"] is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("native", [True, False])
+async def test_refused_save_is_not_silenced(tmp_path, monkeypatch, native):
+    backend = tmp_path / "module"
+    backend.write_text("""#!/bin/bash
+if [[ -n "$LMOD_QUIET" ]]; then exit 0; fi
+echo 'Refusing an empty collection' >&2
+exit 1
+""")
+    backend.chmod(0o755)
+    monkeypatch.setenv("LMOD_QUIET", "1")
+    monkeypatch.setenv("PATH", str(tmp_path) + os.pathsep + os.environ["PATH"])
+    monkeypatch.setattr(
+        lmod_handler, "lmod_command", lambda: str(backend) if native else None
+    )
+    monkeypatch.setattr(module_runtime, "_lock", asyncio.Lock())
+    result = await lmod_handler.save_module_collection("empty")
+    assert result["success"] is False
+    assert "Refusing an empty collection" in result["error"]

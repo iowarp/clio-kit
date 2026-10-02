@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 async def select_export_format(
     ctx: Context | None, requested_format: Literal["csv", "json", "numpy"] | None
-) -> str | None:
+) -> Literal["csv", "json", "numpy"] | None:
     """Return a format, or None when a legacy caller declines the export."""
     # Modern MCP has no mid-call back-channel. Its caller supplies the format
     # explicitly; retain optional elicitation for legacy connections only.

@@ -956,7 +956,7 @@ class VisualizationEngine:
             for i in range(point_info.GetNumberOfArrays()):
                 array_info = point_info.GetArrayInformation(i)
                 if array_info.GetName() == field:
-                    ColorBy(display, ("POINTS", field), component)
+                    ColorBy(display, ("POINTS", field, str(component)))
                     field_available = True
                     field_location = "POINTS"
                     break
@@ -966,7 +966,7 @@ class VisualizationEngine:
                 for i in range(cell_info.GetNumberOfArrays()):
                     array_info = cell_info.GetArrayInformation(i)
                     if array_info.GetName() == field:
-                        ColorBy(display, ("CELLS", field), component)
+                        ColorBy(display, ("CELLS", field, str(component)))
                         field_available = True
                         field_location = "CELLS"
                         break
@@ -994,21 +994,13 @@ class VisualizationEngine:
             self.logger.error(f"Error coloring by field: {str(e)}")
             return False, f"Error coloring by field: {str(e)}"
 
-    def set_color_map_preset(self, preset_name: str = "Blue-Red"):
+    def set_color_map_preset(self, preset_name: str = "Cool to Warm"):
         """
         Set the color map (lookup table) for the current visualization.
 
         Args:
             preset_name: Name of the color map preset.
-                        Available presets include (but are not limited to):
-                        - Blue-Red
-                        - Cool to Warm
-                        - Viridis
-                        - Plasma
-                        - Magma
-                        - Inferno
-                        - Rainbow
-                        - Grayscale
+                        Names are checked against the installed ParaView presets.
 
         Returns:
             tuple: (success, message)
@@ -1031,15 +1023,19 @@ class VisualizationEngine:
             if not color_tf:
                 return False, "Error: No active color transfer function"
 
-            # Apply the requested preset to the color transfer function.
-            if not color_tf.ApplyPreset(preset_name, True):
-                return False, f"Unknown color map preset: {preset_name}"
+            from paraview import servermanager
 
-            available_presets = "Blue-Red, Cool to Warm, Viridis, Plasma, Magma, Inferno, Rainbow, Grayscale"
-            return (
-                True,
-                f"Applied color map preset: {preset_name}. Available presets include: {available_presets}",
-            )
+            presets = servermanager.vtkSMTransferFunctionPresets.GetInstance()
+            if not presets.HasPreset(preset_name):
+                if presets.HasPreset(preset_name + " (matplotlib)"):
+                    preset_name += " (matplotlib)"
+                else:
+                    return False, f"Unknown color map preset: {preset_name}"
+            # ApplyPreset can return True for an unknown name without changing colors.
+            if not color_tf.ApplyPreset(preset_name, True):
+                return False, f"Failed to apply color map preset: {preset_name}"
+
+            return True, f"Applied color map preset: {preset_name}"
         except Exception as e:
             self.logger.error(f"Error setting color map: {str(e)}")
             return False, f"Error setting color map: {str(e)}"
@@ -1251,13 +1247,15 @@ class VisualizationEngine:
             tuple (success: bool, message: str)
         """
         try:
-            from paraview.simple import GetColorTransferFunction
+            from paraview.simple import GetColorTransferFunction, GetDisplayProperties
 
             if not color_points:
                 return False, "No color points provided."
 
             # Retrieve/create the color transfer function for the specified field
-            color_tf = GetColorTransferFunction(field_name)
+            color_tf = GetColorTransferFunction(
+                field_name, representation=GetDisplayProperties()
+            )
             if color_tf is None:
                 return (
                     False,
@@ -1274,12 +1272,6 @@ class VisualizationEngine:
 
             # Update the color transfer function
             color_tf.RGBPoints = new_rgb_points
-
-            # Optionally, you can rescale the transfer function based on min and max values
-            # Example:
-            # min_val = min([pt[0] for pt in color_points])
-            # max_val = max([pt[0] for pt in color_points])
-            # color_tf.RescaleTransferFunction(min_val, max_val)
 
             return True, f"Color transfer function updated for field '{field_name}'."
 

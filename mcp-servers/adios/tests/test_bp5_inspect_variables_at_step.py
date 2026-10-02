@@ -126,7 +126,9 @@ class TestInspectVariablesAtStep:
 
     @patch("builtins.print")
     @patch("adios_mcp.implementation.bp5_inspect_variables_at_step.Stream")
-    def test_inspect_variable_does_not_print_to_protocol_stdout(self, mock_stream_class, mock_print):
+    def test_inspect_variable_does_not_print_to_protocol_stdout(
+        self, mock_stream_class, mock_print
+    ):
         mock_stream = Mock()
         mock_stream_class.return_value.__enter__.return_value = mock_stream
 

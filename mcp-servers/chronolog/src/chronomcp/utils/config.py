@@ -25,13 +25,8 @@ DEFAULT_CHRONICLE = os.getenv("CHRONICLE_NAME", "LLM")
 DEFAULT_STORY = os.getenv("STORY_NAME", "conversation")
 
 # HDF5 reader binary + config file
-READER_BINARY = os.getenv(
-    "HDF5_READER_BIN",
-    "/home/ssonar/chronolog/Debug/reader_script/build/hdf5_file_reader",
-)
-CONFIG_FILE = os.getenv(
-    "CHRONO_CONF", "/home/ssonar/chronolog/Debug/conf/grapher_conf_1.json"
-)
+READER_BINARY = os.getenv("HDF5_READER_BIN", "hdf5_file_reader")
+CONFIG_FILE = os.getenv("CHRONO_CONF", "")
 
 # The native ChronoLog extension is site-provided and is not available on generic
 # metadata/build hosts. Keep module import side-effect free and initialize it only

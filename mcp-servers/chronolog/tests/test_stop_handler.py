@@ -32,7 +32,9 @@ class TestStopHandler:
     async def test_stop_chronolog_basic(self):
         """Test basic stop functionality with active session"""
         if not are_chronolog_processes_running():
-            pytest.skip("ChronoLog processes are not running")
+            pytest.skip(
+                "ChronoLog native client, reader configuration or services unavailable"
+            )
 
         from chronomcp.capabilities.start_handler import start_chronolog
         import time

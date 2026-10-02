@@ -127,13 +127,35 @@ async def test_analyze_returns_stats_not_classification(
     # data is present
     assert st["largest_event"]["magnitude"] == 6.5
     assert st["bath_gap"] is not None and st["bath_gap"] > 1.0
-    assert st["fraction_after_largest"] == 1.0  # mainshock first, all after
+    # The fixture has one smaller event simultaneous with the largest event.
+    assert st["events_after_largest"] == res["event_count"] - 2
+    assert st["fraction_after_largest"] == round(
+        (res["event_count"] - 2) / res["event_count"], 3
+    )
     assert st["temporal_decay"]["omori_p_estimate"] is not None
     # the tool must NOT make the judgment
     blob = json.dumps(res).lower()
     assert "sequence_type" not in blob
     assert "classification" not in blob
     assert "aftershock" not in blob and "swarm" not in blob
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("times, after", [("0,1,2", 0), ("1,2,0", 2), ("1,2,2", 0)])
+async def test_largest_event_is_not_its_own_aftershock(tmp_path, times, after):
+    path = tmp_path / "events.csv"
+    path.write_text(
+        "time,magnitude\n"
+        + "".join(
+            f"2026-01-01T00:00:0{t},{m}\n" for t, m in zip(times.split(","), [2, 3, 5])
+        )
+    )
+    async with Client(mcp) as client:
+        result = await client.call_tool("analyze_sequence", {"catalog_path": str(path)})
+    stats = result.data["statistics"]
+    assert stats["events_after_largest"] == after
+    assert stats["fraction_after_largest"] == round(after / 3, 3)
+    assert stats["temporal_decay"]["rate_buckets"][0]["count"] == after
 
 
 @pytest.mark.asyncio
