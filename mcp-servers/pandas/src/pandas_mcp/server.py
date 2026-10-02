@@ -31,6 +31,7 @@ from .implementation.pandas_statistics import (
 from .implementation.data_cleaning import handle_missing_data, clean_data
 from .implementation.transformations import (
     groupby_operations,
+    GroupByOperationsResult,
     merge_datasets,
     create_pivot_table,
 )
@@ -256,28 +257,6 @@ class CleanDataResult(TypedDict):
     file_path: str
     output_file: str
     cleaning_results: CleaningResults
-    message: str
-
-
-class GroupByInfo(TypedDict):
-    """Parameters and outcome summary of a groupby aggregation."""
-
-    group_by_columns: list[str]
-    operations: dict[str, str]
-    filter_condition: str | None
-    number_of_groups: int
-    original_rows: int
-    aggregated_columns: list[str]
-
-
-class GroupByOperationsResult(TypedDict):
-    """Structured result for a successful groupby operation."""
-
-    success: Literal[True]
-    file_path: str
-    output_file: str
-    group_info: GroupByInfo
-    results: list[dict[str, Any]]
     message: str
 
 
@@ -562,7 +541,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "pandas",
-    version="2.2.6",  # keep equal to clio-server.toml (tests/test_release_regressions.py)
+    version="2.3.0",  # keep equal to clio-server.toml (tests/test_release_regressions.py)
     instructions=(
         "Performs data analysis operations using pandas DataFrames. "
         "Load CSV/Excel files, compute statistics, filter data, group and aggregate, "
@@ -868,11 +847,11 @@ async def clean_data_tool(
 @mcp.tool(
     name="groupby_operations",
     title="Group Data",
-    description="Group data by columns and apply aggregations (sum, mean, count, min, max, std, median) with optional pre-filter. Writes <input>_grouped.csv beside the input, overwriting any previous one.",
+    description="Group data by columns and apply aggregations with optional pre-filter. Writes output_file or <input>_grouped.csv. Existing output is refused unless overwrite=true; the input cannot be replaced.",
     annotations={
         "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": True,
+        "destructiveHint": True,
+        "idempotentHint": False,
     },
     tags={"data-analysis", "transformation"},
 )
@@ -889,12 +868,26 @@ async def groupby_operations_tool(
         Optional[str],
         Field(description="Optional pandas query string to filter before grouping"),
     ] = None,
+    output_file: Annotated[
+        Optional[str],
+        Field(description="Output CSV path; defaults to <input>_grouped.csv"),
+    ] = None,
+    overwrite: Annotated[
+        bool, Field(description="Explicitly allow replacing an existing output file")
+    ] = False,
 ) -> GroupByOperationsResult:
     """Perform sophisticated groupby operations with comprehensive aggregation options."""
     try:
         logger.info(f"Performing groupby operations on: {file_path}")
         return _checked(
-            groupby_operations(file_path, group_by, operations, filter_condition)
+            groupby_operations(
+                file_path,
+                group_by,
+                operations,
+                filter_condition,
+                output_file,
+                overwrite,
+            )
         )
     except Exception as e:
         logger.error(f"Groupby operations error: {e}")

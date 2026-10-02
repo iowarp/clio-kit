@@ -24,10 +24,12 @@ workflow intentionally selects all of that collection's members.
 
 ## Released launcher
 
-With the 2.11.0 or newer launcher:
+This branch prepares the 2.11.0 release. Until that version is published, use
+the [source checkout](#current-checkout-and-local-builds) below. The version constraint prevents
+installing an older launcher that lacks these commands. After publication:
 
 ```bash
-uv tool install clio-kit
+uv tool install 'clio-kit>=2.11.0'
 clio-kit mcp-servers
 clio-kit mcp-server hdf5
 clio-kit skill install dataset-explore --target .agents/skills
@@ -50,7 +52,7 @@ writes nothing to the project. It never executes package lifecycle scripts.
 Remove managed project components with `clio-kit plugin uninstall NAME --client
 CLIENT --project /path/to/project`; edited content blocks removal.
 
-Optional verification tools are installed with `uv tool install 'clio-kit[verification]'`.
+Optional verification tools are installed with `uv tool install 'clio-kit[verification]>=2.11.0'`.
 The verification extra is not required to launch an MCP.
 
 ## Selected native Claude plugin

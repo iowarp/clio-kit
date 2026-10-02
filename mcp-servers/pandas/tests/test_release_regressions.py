@@ -126,7 +126,11 @@ def test_tools_that_write_side_files_say_so():
     for name, suffix in WRITERS.items():
         assert tools[name].annotations.read_only_hint is False, name
         assert suffix in tools[name].description, name
-        assert "overwriting" in tools[name].description, name
+        if name == "groupby_operations":
+            assert "unless overwrite=true" in tools[name].description
+            assert tools[name].annotations.destructive_hint is True
+        else:
+            assert "overwriting" in tools[name].description, name
 
 
 def test_optimize_memory_column_shares_sum_to_100(csv):
@@ -179,6 +183,12 @@ def test_side_file_never_overwrites_a_non_csv_input(tmp_path):
         source = tmp_path / name
         source.write_text(content)
         result = call("groupby_operations", arguments | {"file_path": str(source)})
+        if name == "t.csv":
+            assert result.is_error  # Both inputs map to the same side file.
+            result = call(
+                "groupby_operations",
+                arguments | {"file_path": str(source), "overwrite": True},
+            )
         assert result.structured_content["output_file"] == str(
             tmp_path / "t_grouped.csv"
         )

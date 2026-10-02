@@ -156,7 +156,7 @@
       "name": "clio-node-hardware",
       "source": "./plugins/clio-node-hardware",
       "description": "Node Hardware MCP - Comprehensive Hardware Monitoring and System Analysis for LLMs with real-time performance metrics",
-      "version": "2.2.5",
+      "version": "2.3.0",
       "category": "scientific",
       "keywords": [
         "hardware-monitoring",
@@ -170,7 +170,7 @@
       "name": "clio-pandas",
       "source": "./plugins/clio-pandas",
       "description": "Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations",
-      "version": "2.2.6",
+      "version": "2.3.0",
       "category": "scientific",
       "keywords": [
         "data-analysis",
@@ -185,7 +185,7 @@
       "name": "clio-parallel-sort",
       "source": "./plugins/clio-parallel-sort",
       "description": "Parallel Sort MCP - High-Performance Log File Processing for LLMs with advanced sorting and analysis",
-      "version": "2.2.5",
+      "version": "2.3.0",
       "category": "scientific",
       "keywords": [
         "log-processing",
@@ -449,7 +449,7 @@
       "name": "clio-analysis-skills",
       "source": "./skills/clio-analysis-skills",
       "description": "Skills for the clio-analysis workflow: turn a dataset into summary statistics and a figure.",
-      "version": "1.0.6",
+      "version": "1.0.7",
       "category": "skills",
       "keywords": [
         "chart-select",
@@ -464,7 +464,7 @@
       "name": "clio-analysis",
       "source": "./plugins/clio-analysis",
       "description": "Turn a dataset into summary statistics and a figure.",
-      "version": "1.0.6",
+      "version": "1.0.7",
       "category": "workflow",
       "keywords": [
         "3d-rendering",
@@ -578,7 +578,7 @@
       "name": "clio-coder-skills",
       "source": "./skills/clio-coder-skills",
       "description": "Optional Clio Coder coding and research skills, including Materio procedures. Native Clio agents and fleets require Clio Coder.",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "category": "skills"
     },
     {

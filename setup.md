@@ -63,7 +63,7 @@ four MCP servers and the three workflow skills.
 |---|---|---|
 | Codex CLI / IDE extension | `codex mcp add`; `~/.codex/config.toml` | `.agents/skills` |
 | Claude Code | Native marketplace below, or `claude mcp add --scope project` | Bundle-managed, or `.claude/skills` |
-| OpenCode | `opencode.json`, top-level `mcp` | `.opencode/skills` |
+| OpenCode | `opencode.json`, top-level `mcp` | `.agents/skills` |
 | Cursor | `.cursor/mcp.json`, top-level `mcpServers` | `.cursor/skills` |
 | VS Code / GitHub Copilot | `.vscode/mcp.json`, top-level `servers` | `.github/skills` |
 | Antigravity | MCP settings → raw config; workspace `.agents/mcp_config.json` | `.agents/skills` |

@@ -342,6 +342,26 @@ def create_beautiful_response(
 
     return {
         "content": [{"text": json.dumps(formatted_response, indent=2)}],
+        # Preserve the Python handler's display envelope for existing callers.
+        # MCP tools expose only this unformatted, machine-readable record.
+        "structuredContent": {
+            "operation": operation,
+            "success": success,
+            "data": data,
+            "summary": summary,
+            "metadata": metadata,
+            "insights": insights or [],
+            "hostname": hostname,
+            **(
+                {
+                    "error": error_message,
+                    "error_type": error_type,
+                    "suggestions": suggestions or [],
+                }
+                if not success
+                else {}
+            ),
+        },
         "_meta": {"tool": operation, "success": success, "hostname": hostname},
         "isError": not success,
     }

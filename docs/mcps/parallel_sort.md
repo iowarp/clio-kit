@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🔄"
   category="Data Processing"
   description="Parallel Sort MCP - High-Performance Log File Processing for LLMs with advanced sorting and analysis"
-  version="2.2.5"
+  version="2.3.0"
   actions={["sort_log_by_timestamp", "parallel_sort_large_file", "analyze_log_statistics", "detect_log_patterns", "filter_logs", "filter_by_time_range", "filter_by_log_level", "filter_by_keyword", "apply_filter_preset", "export_to_json", "export_to_csv", "export_to_text", "generate_summary_report"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["parallel-sorting", "log-processing", "log-analysis", "high-performance", "timestamp-sorting", "pattern-detection", "log-filtering", "data-export"]}
@@ -19,6 +19,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
 >
 
 {/* clio-kit:usage:start */}
+
+Sorting and filtering return previews of at most 100 lines and 16,384 UTF-8 bytes. Check `truncated` and `total_result_lines`. Set `output_file` to save every result line; without it, a truncated result has not been saved.
 
 ### 1. Large Log File Sorting and Analysis
 ```

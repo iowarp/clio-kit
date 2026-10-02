@@ -142,6 +142,8 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\node-hardware run node-hardwa
 
 ## Capabilities
 
+MCP tools return plain structured JSON with `operation`, `success`, `data`, `summary`, `metadata`, `insights` and `hostname`. Read hardware fields such as `data.partitions` directly; no nested JSON decoding or emoji-key matching is needed.
+
 ### `get_cpu_info`
 **Description**: Get CPU specifications, core counts, frequencies, and per-core usage.
 **Hints**: read-only, idempotent

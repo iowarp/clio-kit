@@ -308,9 +308,10 @@ async def test_output_file_gets_everything_and_reply_is_a_bounded_preview(tmp_pa
         assert result["truncated"] is True
         assert (result["lines_returned"], result["lines_written"]) == (100, 250)
         assert str(out) in result["truncation_note"]
-    # No output file: the reply is the only copy, so it stays complete.
+    # No output file: bound the reply and explicitly say it was not saved.
     result = await sort_log_handler(str(source))
-    assert result["sorted_lines"] == lines and "truncated" not in result
+    assert result["sorted_lines"] == lines[:100] and result["truncated"]
+    assert "not been saved" in result["truncation_note"]
 
 
 @pytest.mark.asyncio

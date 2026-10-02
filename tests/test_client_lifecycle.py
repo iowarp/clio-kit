@@ -163,3 +163,30 @@ def test_codex_report_hook_consumes_observed_apply_patch_event(tmp_path):
         "status": "FAIL",
         "reason": "Expected dataset-report schema 1",
     }
+
+
+@pytest.mark.parametrize("first", ["codex", "opencode"])
+def test_codex_opencode_share_skills_and_preserve_other_owner(tmp_path, first):
+    second = "opencode" if first == "codex" else "codex"
+    for client in (first, second):
+        install_for_client(ROOT, "clio-scientific-io", client, tmp_path)
+    assert not (tmp_path / ".opencode/skills").exists()
+    skill = tmp_path / ".agents/skills/dataset-explore/SKILL.md"
+    assert skill.is_file()
+    uninstall_for_client("clio-scientific-io", first, tmp_path)
+    assert skill.is_file()
+    uninstall_for_client("clio-scientific-io", second, tmp_path)
+    assert not skill.exists()
+
+
+def test_opencode_managed_legacy_skills_migrate_transactionally(tmp_path, monkeypatch):
+    monkeypatch.setitem(
+        CLIENTS, "opencode", (".opencode/skills", "opencode.json", "mcp")
+    )
+    install_for_client(ROOT, "clio-scientific-io", "opencode", tmp_path)
+    legacy = tmp_path / ".opencode/skills/dataset-explore"
+    assert legacy.is_dir()
+    monkeypatch.setitem(CLIENTS, "opencode", (".agents/skills", "opencode.json", "mcp"))
+    install_for_client(ROOT, "clio-scientific-io", "opencode", tmp_path)
+    assert not legacy.exists()
+    assert (tmp_path / ".agents/skills/dataset-explore/SKILL.md").is_file()

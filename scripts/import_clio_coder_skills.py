@@ -217,6 +217,12 @@ def generate(
                 # This helper generates whole native packages, not individual
                 # skills, and requires the unshipped native component graph.
                 (target / "assets/scripts/project_plugin.py").unlink(missing_ok=True)
+                for helper in ("check_physics.py", "check_scripts.py"):
+                    script = target / "assets/scripts" / helper
+                    if script.is_file():
+                        script.write_text(
+                            re.sub(r"\bl\b", "line_number", script.read_text())
+                        )
                 body = body.replace("../../assets/", "assets/")
                 shutil.copy2(
                     package / "ai.iowarp.portability" / "provenance.json",
@@ -326,6 +332,7 @@ def generate(
                 "Added host compatibility note; no foreign tool allowlist enforced",
                 "Made Materio assets self-contained for individual skill installation",
                 "Omitted the whole-package exporter from individual Materio skills",
+                "Renamed ambiguous diagnostic line variables in Materio Python helpers",
                 "Qualified Archify's separately installed renderer reference",
                 "Corrected Herdr guidance for successful actions with empty stdout",
                 "Corrected scientific-debugging's contradictory worked-example verdicts and tolerance guidance",

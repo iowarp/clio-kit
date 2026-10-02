@@ -36,7 +36,7 @@ when running elsewhere. Add `--dry-run` to preview changes first.
 | --- | --- | --- |
 | Codex CLI / IDE | `.codex/config.toml` | `.agents/skills` |
 | Claude Code (portable route) | `.mcp.json` | `.claude/skills` |
-| OpenCode | `opencode.json` | `.opencode/skills` |
+| OpenCode | `opencode.json` | `.agents/skills` |
 | Cursor | `.cursor/mcp.json` | `.cursor/skills` |
 | Antigravity | `.agents/mcp_config.json` | `.agents/skills` |
 | VS Code / GitHub Copilot | `.vscode/mcp.json` | `.github/skills` |
@@ -170,7 +170,7 @@ MCP entries use `type: "local"` and a command array. The installer refuses an
 existing `opencode.jsonc` rather than stripping comments; merge manually using
 the catalogue's OpenCode configuration in that case.
 For a skill alone, use `clio-kit skill install dataset-explore --target
-/path/to/project/.opencode/skills`.
+/path/to/project/.agents/skills`.
 Official references: [MCP servers](https://opencode.ai/docs/mcp-servers/),
 [skills](https://opencode.ai/docs/skills/).
 
@@ -276,6 +276,11 @@ invocation, MCP calls and saved outputs, and compare with the supplied inputs.
 Kit's six project adapters were exercised in fresh directories for this guide.
 That confirms generated files, not live behavior in every listed GUI. The [tutorials](/tutorials) also exercise live Codex and Claude Code sessions,
 including individual tools, portable skills, native plugins and a contributed package.
+
+Codex, OpenCode and Antigravity share `.agents/skills` in a project. Reinstalling
+a managed OpenCode package migrates its unchanged `.opencode/skills` copies;
+locally edited copies block migration and require review. Shared files remain
+until their last managed owner is removed.
 
 ## Updates, removal and troubleshooting
 

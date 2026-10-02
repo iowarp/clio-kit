@@ -149,6 +149,8 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\parallel-sort run parallel-so
  
 ## Capabilities
 
+Sorting and filtering return previews of at most 100 lines and 16,384 UTF-8 bytes. Check `truncated` and `total_result_lines`. Set `output_file` to save every result line; without it, a truncated result has not been saved.
+
 ### `sort_log_by_timestamp`
 **Description**: Sort log file lines by timestamps in YYYY-MM-DD HH:MM:SS format.
 **Tags**: execution, sort

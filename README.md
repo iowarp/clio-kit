@@ -179,10 +179,10 @@ clio-kit mcp-server pandas
 clio-kit mcp-server slurm
 ```
 
-To install the published release instead, use `uv tool install clio-kit`
+Once 2.11.0 is published, install it with `uv tool install 'clio-kit>=2.11.0'`
 (2.11.0 or newer; earlier releases lack the `skill`, `plugin` and `doctor` commands).
 `uv tool install` creates a persistent, isolated environment; use
-`uvx --from clio-kit clio-kit ...` for a temporary, one-shot invocation.
+`uvx --from 'clio-kit>=2.11.0' clio-kit ...` for a temporary, one-shot invocation.
 
 The release separates the small launcher from component downloads: one MCP
 fetches only that server, one skill fetches only its files, and a workflow selects
@@ -455,9 +455,9 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`jarvis`** | 3.7.4 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |
 | **`lmod`** | 3.0.1 | Environment | Environment module management | `clio-kit mcp-server lmod` |
 | **`ndp`** | 2.2.5 | Data Protocol | Search and discover datasets across CKAN instances | `clio-kit mcp-server ndp` |
-| **`node-hardware`** | 2.2.5 | System | System hardware information | `clio-kit mcp-server node-hardware` |
-| **`pandas`** | 2.2.6 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
-| **`parallel-sort`** | 2.2.5 | Computing | Large file sorting | `clio-kit mcp-server parallel-sort` |
+| **`node-hardware`** | 2.3.0 | System | System hardware information | `clio-kit mcp-server node-hardware` |
+| **`pandas`** | 2.3.0 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
+| **`parallel-sort`** | 2.3.0 | Computing | Large file sorting | `clio-kit mcp-server parallel-sort` |
 | **`paraview`** | 2.2.5 | Visualization | Scientific 3D visualization and analysis | `clio-kit mcp-server paraview` |
 | **`parquet`** | 2.2.5 | Data I/O | Read Parquet file columns | `clio-kit mcp-server parquet` |
 | **`plot`** | 2.2.5 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |

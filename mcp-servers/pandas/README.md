@@ -142,6 +142,8 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\pandas run pandas-mcp --help
 
 ## Capabilities
 
+`groupby_operations` accepts `output_file` and defaults to `<input>_grouped.csv`. It refuses existing output unless `overwrite=true` is explicitly requested. The input file is never a valid output destination.
+
 ### `load_data`
 **Description**: Load and parse data from CSV, Excel, JSON, Parquet, or HDF5 files with optional column selection and row limiting.
 **Hints**: read-only, idempotent

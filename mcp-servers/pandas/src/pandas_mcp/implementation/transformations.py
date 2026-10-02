@@ -5,8 +5,31 @@ Data transformation capabilities including groupby, merge, and pivot operations.
 import pandas as pd
 from pathlib import Path
 import os
-from typing import Optional, List, Dict
+from typing import Any, Literal, Optional, List, Dict, TypedDict
 import traceback
+
+
+class GroupByInfo(TypedDict):
+    """Parameters and outcome summary of a groupby aggregation."""
+
+    group_by_columns: list[str]
+    operations: dict[str, str]
+    filter_condition: str | None
+    number_of_groups: int
+    original_rows: int
+    aggregated_columns: list[str]
+
+
+class GroupByOperationsResult(TypedDict):
+    """Structured result for a successful groupby operation."""
+
+    success: Literal[True]
+    file_path: str
+    output_file: str
+    group_info: GroupByInfo
+    results: list[dict[str, Any]]
+    message: str
+
 
 GROUPBY_OPERATIONS = ("count", "sum", "mean", "median", "std", "min", "max", "nunique")
 
@@ -16,6 +39,8 @@ def groupby_operations(
     group_by: List[str],
     operations: Dict[str, str],
     filter_condition: Optional[str] = None,
+    output_file: Optional[str] = None,
+    overwrite: bool = False,
 ) -> dict:
     """
     Perform groupby operations on data.
@@ -94,10 +119,14 @@ def groupby_operations(
         }
 
         # Save result
-        output_path = str(
+        output_path = output_file or str(
             Path(file_path).with_name(f"{Path(file_path).stem}_grouped.csv")
         )
-        result.to_csv(output_path, index=False)
+        if Path(output_path).resolve() == Path(file_path).resolve() or (
+            Path(output_path).exists() and os.path.samefile(output_path, file_path)
+        ):
+            raise ValueError("The output must not replace the input file")
+        result.to_csv(output_path, index=False, mode="w" if overwrite else "x")
 
         return {
             "success": True,

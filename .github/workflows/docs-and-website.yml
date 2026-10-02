@@ -2,7 +2,7 @@ name: Update Documentation and Build Website
 
 on:
   push:
-    branches: [main, feat/360-meta-marketplace]
+    branches: [main]
     paths:
       - 'website/**'
       - 'docs/**'

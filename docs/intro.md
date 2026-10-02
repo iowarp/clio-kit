@@ -142,7 +142,7 @@ both for a complete workflow. The scientific I/O workflow needs `hdf5`, `adios`,
 | Codex CLI / IDE extension | `codex mcp add`; shared `~/.codex/config.toml` | `.agents/skills` |
 | Claude Code | Native marketplace above, or `claude mcp add --scope project` | Bundle-managed, or `.claude/skills` |
 | Cursor | `.cursor/mcp.json` with `mcpServers` | `.cursor/skills` |
-| OpenCode | `opencode.json` with `mcp` (`type: local`, command array) | `.opencode/skills` |
+| OpenCode | `opencode.json` with `mcp` (`type: local`, command array) | `.agents/skills` |
 | VS Code / GitHub Copilot | `.vscode/mcp.json` with `servers` | `.github/skills` |
 | Antigravity | MCP settings → raw config; workspace `.agents/mcp_config.json` | `.agents/skills` |
 | Claude Desktop | Developer settings → `claude_desktop_config.json` with `mcpServers` | Local MCP setup does not install skills |

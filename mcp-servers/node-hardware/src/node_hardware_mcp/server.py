@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "node-hardware",
-    version="2.2.5",
+    version="2.3.0",
     instructions=(
         "Monitors system hardware including CPU, memory, disk, network, and GPU. "
         "Use individual tools for specific metrics or get a full system overview."
@@ -53,9 +53,11 @@ class NodeHardwareMCPError(Exception):
 def _checked(result: dict) -> dict:
     """Turn a handler's error payload into a real MCP tool error."""
     if result.get("isError"):
-        message = " ".join(block.get("text", "") for block in result.get("content", []))
+        message = result.get("structuredContent", {}).get("error") or " ".join(
+            block.get("text", "") for block in result.get("content", [])
+        )
         raise ToolError(message or "Hardware collection failed")
-    return result
+    return result.get("structuredContent", result)
 
 
 # ---- Shared annotation constants ----

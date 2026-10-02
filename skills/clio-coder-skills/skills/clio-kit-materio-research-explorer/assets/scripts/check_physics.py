@@ -245,18 +245,18 @@ def main():
     if args.json:
         print(json.dumps({
             "coverage": {"files_requested": len(args.paths), "files_read": len(readable), "unreadable": unreadable},
-            "errors": [{"file": p, "line": l, "rule": r, "message": m}
-                       for p, l, r, m in fnd.errors],
-            "warnings": [{"file": p, "line": l, "rule": r, "message": m}
-                         for p, l, r, m in fnd.warnings],
+            "errors": [{"file": p, "line": line_number, "rule": r, "message": m}
+                       for p, line_number, r, m in fnd.errors],
+            "warnings": [{"file": p, "line": line_number, "rule": r, "message": m}
+                         for p, line_number, r, m in fnd.warnings],
         }, indent=2))
     else:
         def emit(items, label):
             if not items:
                 return
             print(f"\n{label} ({len(items)}):")
-            for p, l, r, m in sorted(items):
-                print(f"  {p}:{l}  [{r}]  {m}")
+            for p, line_number, r, m in sorted(items):
+                print(f"  {p}:{line_number}  [{r}]  {m}")
         emit(fnd.errors, "IMPOSSIBLE (errors)")
         emit(fnd.warnings, "IMPLAUSIBLE (warnings)")
         n = len(fnd.errors) + len(fnd.warnings)

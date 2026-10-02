@@ -23,8 +23,9 @@ from .implementation.export_handler import (
 )
 from .implementation.parallel_processor import parallel_sort_large_file
 
-# Lines returned inline once the full result has been written to output_file.
+# Bound inline replies even when no output file is requested.
 PREVIEW_LINES = 100
+PREVIEW_BYTES = 16_384
 
 
 def _finish(
@@ -35,20 +36,36 @@ def _finish(
     """Raise implementation errors as tool errors; write output_file and bound the reply."""
     if result.get("error"):
         raise ToolError(str(result["error"]))
-    if output_file and lines_key in result:
+    if lines_key in result:
         lines = result[lines_key]
-        with open(output_file, "w", encoding="utf-8") as f:
-            for line in lines:
-                f.write(line + "\n")
-        result["output_file"] = output_file
-        if len(lines) > PREVIEW_LINES:
-            result[lines_key] = lines[:PREVIEW_LINES]
-            result["truncated"] = True
-            result["lines_returned"] = PREVIEW_LINES
+        if output_file:
+            with open(output_file, "w", encoding="utf-8") as f:
+                for line in lines:
+                    f.write(line + "\n")
+            result["output_file"] = output_file
             result["lines_written"] = len(lines)
+        preview = []
+        remaining = PREVIEW_BYTES
+        for line in lines[:PREVIEW_LINES]:
+            encoded = line.encode("utf-8")
+            if len(encoded) > remaining:
+                if remaining:
+                    preview.append(encoded[:remaining].decode("utf-8", errors="ignore"))
+                break
+            preview.append(line)
+            remaining -= len(encoded)
+        if preview != lines:
+            result[lines_key] = preview
+            result["truncated"] = True
+            result["lines_returned"] = len(preview)
+            result["total_result_lines"] = len(lines)
             result["truncation_note"] = (
-                f"{lines_key} shows the first {PREVIEW_LINES} of {len(lines)} lines; "
-                f"all {len(lines)} are in {output_file}"
+                f"{lines_key} is a preview limited to {PREVIEW_LINES} lines and {PREVIEW_BYTES} UTF-8 bytes. "
+                + (
+                    f"All {len(lines)} lines are in {output_file}."
+                    if output_file
+                    else "Set output_file to save the full result; it has not been saved."
+                )
             )
     return result
 

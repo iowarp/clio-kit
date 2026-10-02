@@ -46,7 +46,7 @@ description = "Open a scientific data file, see its structure, and read part of 
 servers = ["adios", "compression", "hdf5", "parquet"]
 
 [bundles.clio-analysis]
-version = "1.0.6"
+version = "1.0.7"
 description = "Turn a dataset into summary statistics and a figure."
 servers = ["pandas", "paraview", "plot"]
 
@@ -87,9 +87,9 @@ hdf5 = "2.2.6"
 jarvis = "3.7.4"
 lmod = "3.0.1"
 ndp = "2.2.5"
-node-hardware = "2.2.5"
-pandas = "2.2.6"
-parallel-sort = "2.2.5"
+node-hardware = "2.3.0"
+pandas = "2.3.0"
+parallel-sort = "2.3.0"
 paraview = "2.2.5"
 parquet = "2.2.5"
 plot = "2.2.5"

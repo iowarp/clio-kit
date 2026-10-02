@@ -26,7 +26,7 @@ except ImportError:
 # These are project-local paths; installation never changes the global profile.
 CLIENTS = {
     "codex": (".agents/skills", ".codex/config.toml", "mcp_servers"),
-    "opencode": (".opencode/skills", "opencode.json", "mcp"),
+    "opencode": (".agents/skills", "opencode.json", "mcp"),
     "cursor": (".cursor/skills", ".cursor/mcp.json", "mcpServers"),
     "antigravity": (".agents/skills", ".agents/mcp_config.json", "mcpServers"),
     "claude-code": (".claude/skills", ".mcp.json", "mcpServers"),

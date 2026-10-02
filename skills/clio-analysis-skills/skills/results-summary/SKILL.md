@@ -71,8 +71,9 @@ figure can actually show.
 **5. Hand off the transformed file or records explicitly.**
 
 `groupby_operations` returns an `output_file` and a `results` array. Pass the
-returned `output_file` to the plotting tool. If a different destination is
-needed, call `save_data(data={"data": result["results"]}, file_path="/absolute/path/means.csv", index=False)`. Do not pass the entire
+returned `output_file` to the plotting tool. Set `output_file` when grouping to
+choose a destination. Existing output is refused unless `overwrite=true`; obtain
+permission before replacing results. For records already returned, call `save_data(data={"data": result["results"]}, file_path="/absolute/path/means.csv", index=False)`. Do not pass the entire
 response envelope: metadata and nested results are not a dataframe.
 
 For a numeric matrix from another server, map each column to its supplied name

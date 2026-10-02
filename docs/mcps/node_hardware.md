@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="💻"
   category="Analysis & Visualization"
   description="Node Hardware MCP - Comprehensive Hardware Monitoring and System Analysis for LLMs with real-time performance metrics"
-  version="2.2.5"
+  version="2.3.0"
   actions={["get_cpu_info", "get_memory_info", "get_system_info", "get_disk_info", "get_network_info", "get_gpu_info", "get_sensor_info", "get_process_info", "get_performance_info", "get_remote_node_info", "health_check"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["hardware-monitoring", "system-analysis", "performance-metrics", "node-information", "ssh-monitoring", "remote-hardware", "mcp", "llm-integration", "infrastructure-monitoring", "distributed-systems"]}
@@ -19,6 +19,8 @@ import MCPDetail from '@site/src/components/MCPDetail';
 >
 
 {/* clio-kit:usage:start */}
+
+MCP tools return plain structured JSON with `operation`, `success`, `data`, `summary`, `metadata`, `insights` and `hostname`. Read hardware fields such as `data.partitions` directly; no nested JSON decoding or emoji-key matching is needed.
 
 ### 1. Local Hardware Overview
 ```

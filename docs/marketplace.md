@@ -188,7 +188,7 @@ universal compatibility or scientific correctness for arbitrary inputs.
 | Clio Coder 0.4.8 | Discovered and activated the adapted debugging skill without an upstream audit-hash collision. Generated diagnostics still require evidence review; a causal explanation needed correction. |
 | Native Materio on Clio Coder 0.4.8 | Its executor and read-only verifier completed a protocol-preparation task within their write boundaries. No physical measurements were performed. |
 
-The root suite passed 348 tests at that follow-up (it has grown since; use the current CI result). Materio's earlier offline helper suite passed
+Use the current CI result for the root test suite. Materio's earlier offline helper suite passed
 92 tests and its generated Claude export passed strict validation. One native
 Clio model run exceeded the test timeout; resuming that interrupted session
 returned an upstream tool-history error. A fresh bounded run completed. Drafting and

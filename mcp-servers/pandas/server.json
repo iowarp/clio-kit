@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/pandas-mcp",
   "title": "CLIO Pandas",
   "description": "Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations",
-  "version": "2.2.6",
+  "version": "2.3.0",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -59,7 +59,7 @@
     },
     {
       "name": "groupby_operations",
-      "description": "Group data by columns and apply aggregations (sum, mean, count, min, max, std, median) with optional pre-filter. Writes <input>_grouped.csv beside the input, overwriting any previous one."
+      "description": "Group data by columns and apply aggregations with optional pre-filter. Writes output_file or <input>_grouped.csv. Existing output is refused unless overwrite=true; the input cannot be replaced."
     },
     {
       "name": "merge_datasets",

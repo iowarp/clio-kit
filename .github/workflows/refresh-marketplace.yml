@@ -2,7 +2,7 @@ name: Sync marketplace catalogues
 
 on:
   push:
-    branches: [main, feat/360-meta-marketplace]
+    branches: [main]
     paths:
       - 'plugins/**'
       - 'skills/**'

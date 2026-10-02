@@ -3,7 +3,7 @@ name: Marketplace acceptance
 on:
   pull_request:
   push:
-    branches: [main, feat/360-meta-marketplace]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -59,6 +59,8 @@ jobs:
           uv run --frozen --directory mcp-servers/parquet pytest -q tests/test_filter_operations.py tests/test_filter_protocol.py
           uv run --frozen --directory mcp-servers/slurm pytest -q tests/test_protocol_stdout.py
           uv run --frozen --directory mcp-servers/web pytest -q tests/test_tasks.py
+      - name: Launcher and imported helper lint
+        run: uv run --frozen ruff check scripts src tests evals skills/clio-coder-skills
       - name: Root regressions
         run: uv run --frozen pytest -q tests --junitxml=/tmp/clio-root-tests.xml
       - name: Selective downloads from an empty component cache
