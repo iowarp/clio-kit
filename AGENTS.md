@@ -15,7 +15,7 @@ MCP server, skill or hook. Detailed contribution rules are in
 - `community/entries/`: external plugin and marketplace TOML entries.
 - `.claude-plugin/`: generated marketplace and federation snapshot.
 - `docs/`: documentation source shared by GitHub and Docusaurus.
-- `clio-kit-website/`: website configuration, components and static assets.
+- `website/`: website configuration, components and static assets.
 - `clio-agentic-search/`: standalone retrieval service, not an MCP server.
 
 ## Choose the contribution route
@@ -75,10 +75,10 @@ These acceptance scripts create temporary client configurations and evidence.
 Check [acceptance boundaries](docs/marketplace.md#scientific-acceptance-boundaries)
 before interpreting a successful connection as scientific workflow validation.
 
-For documentation changes, run `npm --prefix clio-kit-website run build` after
-`npm --prefix clio-kit-website ci` if dependencies are absent. Server references
+For documentation changes, run `npm --prefix website run build` after
+`npm --prefix website ci` if dependencies are absent. Server references
 and catalogue data regenerate with
-`uv run python scripts/generate_docs.py mcp-servers clio-kit-website`.
+`uv run python scripts/generate_docs.py mcp-servers website`.
 Keep reviewed usage inside the generator's existing usage markers.
 
 Preserve upstream provenance and hashes when updating imported skills; use

@@ -80,7 +80,7 @@ clio-kit/
 ├── community/                 # External plugin and marketplace entries
 ├── .claude-plugin/            # Generated marketplace index
 ├── docs/                     # Shared human documentation
-├── clio-kit-website/          # Website configuration and UI
+├── website/          # Website configuration and UI
 ├── AGENTS.md                 # Agent contribution entry point
 ├── .github/workflows/         # CI/CD automation
 └── pyproject.toml             # Root configuration
@@ -524,7 +524,7 @@ Add the server's version, description and category to
 `mcp-server-versions.toml`, following an existing entry. From the repository
 root, generate manifests with `uv run python scripts/generate_server_json.py`
 and website references with
-`uv run python scripts/generate_docs.py mcp-servers clio-kit-website`.
+`uv run python scripts/generate_docs.py mcp-servers website`.
 Review the generated plugin and registry metadata, and add an installed-server
 check to CI. For Node and Go, follow [Contributing a Server in Another Language](#contributing-a-server-in-another-language).
 

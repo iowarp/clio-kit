@@ -42,6 +42,23 @@ def adapt_references(text: str, names: set[str]) -> str:
     )
 
 
+def evaluation_scenarios(text: str) -> str:
+    """Keep reusable scenarios; upstream retains historical run narratives."""
+    sections = re.split(r"(?=^## )", text, flags=re.MULTILINE)
+    return (
+        "".join(
+            section
+            for section in sections
+            if not re.match(
+                r"## (?:Smoke record|Battletest record|Empirical Battletest|"
+                r"Instruction correction|Observed|Live interactive confirmation)\b",
+                section,
+            )
+        ).rstrip()
+        + "\n"
+    )
+
+
 def hashes(root: Path) -> dict[str, str]:
     result = {}
     for path in sorted(root.rglob("*")):
@@ -220,7 +237,10 @@ def generate(
                     + "."
                 )
             scenarios = (target / "evals.md").exists()
-            if not scenarios:
+            if scenarios:
+                evaluations = target / "evals.md"
+                evaluations.write_text(evaluation_scenarios(evaluations.read_text()))
+            else:
                 (target / "evals.md").write_text(
                     f"# {name} acceptance scenarios\n\n"
                     "These are pending CLIO Kit evaluations, not recorded passes.\n\n"
@@ -312,6 +332,7 @@ def generate(
                 "Clarified handoff redaction applies to saved documents and final responses",
                 "Preserved explicit worktree destinations ahead of branch-derived defaults",
                 "Recorded CLIO Kit evaluation status independently of upstream status",
+                "Retained evaluation scenarios; historical run narratives remain in the pinned upstream source",
             ],
             "skills": records,
             "files": hashes(staging),

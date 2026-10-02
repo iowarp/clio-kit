@@ -142,7 +142,7 @@ def test_local_hooks_are_discovered_without_executing_them(tmp_path, config):
 
 
 def test_generated_catalogue_is_current_and_deterministic():
-    actual = json.loads((ROOT / "clio-kit-website/src/data/catalogue.json").read_text())
+    actual = json.loads((ROOT / "website/src/data/catalogue.json").read_text())
     assert actual == catalogue.generate(ROOT) == catalogue.generate(ROOT)
 
 
@@ -161,7 +161,7 @@ def test_website_commands_match_client_installer_and_missing_feature_is_safe():
     if not node:
         pytest.skip("Node.js is required to execute the website command renderer")
     data = catalogue.generate(ROOT)
-    module = (ROOT / "clio-kit-website/src/components/Marketplace/data.js").read_text()
+    module = (ROOT / "website/src/components/Marketplace/data.js").read_text()
     module = module.replace(
         "import catalogue from '@site/src/data/catalogue.json';",
         "const catalogue = " + json.dumps(data) + ";",
@@ -231,7 +231,7 @@ def test_maintained_icon_coverage_cannot_silently_fall_back(tmp_path):
 
 
 def test_retired_showcase_has_no_remaining_website_consumers():
-    for path in (ROOT / "clio-kit-website/src").rglob("*.js"):
+    for path in (ROOT / "website/src").rglob("*.js"):
         assert "mcpData" not in path.read_text(), path
         assert "MCPShowcase" not in path.read_text(), path
 
@@ -243,7 +243,7 @@ def test_catalogue_routes_keep_every_component_out_of_docs():
     node = shutil.which("node")
     if not node:
         pytest.skip("Node.js is required to check catalogue routes")
-    site = ROOT / "clio-kit-website"
+    site = ROOT / "website"
     script = f"""
 const plugin = require({json.dumps(str(site / "plugins/catalogue-routes.cjs"))})({{siteDir: {json.dumps(str(site))}}});
 (async () => {{

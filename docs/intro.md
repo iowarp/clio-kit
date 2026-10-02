@@ -257,7 +257,7 @@ clio-kit/
 ├── src/clio_kit/            # Launcher, authoring, discovery and cache management
 ├── tests/fixtures/         # Runtime acceptance fixtures
 ├── docs/                   # Shared human documentation
-├── clio-kit-website/        # Website configuration and UI
+├── website/        # Website configuration and UI
 └── AGENTS.md               # Agent contribution entry point
 ```
 

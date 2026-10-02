@@ -24,7 +24,7 @@ clio-kit skill install data-clean --target .claude/skills
 clio-kit skill install results-summary --target .claude/skills
 ```
 
-[![Terminal showing installation of Pandas, Plot, data-clean and results-summary](../../clio-kit-website/static/img/tutorials/clean-install.png)](../../clio-kit-website/static/img/tutorials/clean-install.png)
+[![Terminal showing installation of Pandas, Plot, data-clean and results-summary](../../website/static/img/tutorials/clean-install.png)](../../website/static/img/tutorials/clean-install.png)
 
 ## 2. Supply a bounded repair
 
@@ -59,7 +59,7 @@ Review requests to create or copy the output files. The captured run also asked
 to remove its intermediate `sensor_imputed.csv`; the source and final cleaned
 file were retained.
 
-[![Claude loads data-clean and profiles the five-row sensor CSV through the Pandas MCP](../../clio-kit-website/static/img/tutorials/clean-skill.png)](../../clio-kit-website/static/img/tutorials/clean-skill.png)
+[![Claude loads data-clean and profiles the five-row sensor CSV through the Pandas MCP](../../website/static/img/tutorials/clean-skill.png)](../../website/static/img/tutorials/clean-skill.png)
 
 ## 3. Inspect the transformation
 
@@ -67,7 +67,7 @@ The Pandas operation uses `strategy="impute"`, `method="interpolate"` and
 `columns=["signal_mV"]`. It reported two actual fills. The second skill tells
 Claude to plot the **cleaned file**, not the original input.
 
-[![Claude Code reports two interpolated values, unchanged timestamps and the saved plot and report](../../clio-kit-website/static/img/tutorials/clean-result.png)](../../clio-kit-website/static/img/tutorials/clean-result.png)
+[![Claude Code reports two interpolated values, unchanged timestamps and the saved plot and report](../../website/static/img/tutorials/clean-result.png)](../../website/static/img/tutorials/clean-result.png)
 
 ```bash
 cat sensor.csv
@@ -82,7 +82,7 @@ checked these values and source preservation after the recorded session.
 
 ## 4. Open the figure
 
-[![Actual Plot MCP output showing the cleaned signal from 1 to 5 millivolts over 0 to 4 seconds](../../clio-kit-website/static/img/tutorials/signal-chart.png)](../../clio-kit-website/static/img/tutorials/signal-chart.png)
+[![Actual Plot MCP output showing the cleaned signal from 1 to 5 millivolts over 0 to 4 seconds](../../website/static/img/tutorials/signal-chart.png)](../../website/static/img/tutorials/signal-chart.png)
 
 This is the generated `signal.png`. A smooth line does not prove a repair is
 scientifically justified: check the values, chosen method and measurement process.

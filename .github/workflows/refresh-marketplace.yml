@@ -52,7 +52,7 @@ jobs:
       - run: claude plugin validate . --strict
       - name: Commit generated catalogues and manifests
         run: |
-          git add .claude-plugin/marketplace.json .claude-plugin/federation.lock.json .claude-plugin/federated-marketplaces.json clio-kit-website/src/data/catalogue.json src/clio_kit/_federated_marketplaces.json
+          git add .claude-plugin/marketplace.json .claude-plugin/federation.lock.json .claude-plugin/federated-marketplaces.json website/src/data/catalogue.json src/clio_kit/_federated_marketplaces.json
           git add 'plugins/*/.claude-plugin/plugin.json' 'skills/*/.claude-plugin/plugin.json'
           if git diff --cached --quiet; then exit 0; fi
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'chore(marketplace): sync generated catalogues'

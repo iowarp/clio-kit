@@ -51,7 +51,7 @@ Start `codex`, trust the project, check `/mcp`, and paste:
 Approve the intended operations in this disposable directory. The two compression
 calls below are actual MCP tools, not shell substitutes:
 
-[![Codex calls compress_file_tool and decompress_file_tool, checks byte equality, then opens the restored HDF5 file](../../clio-kit-website/static/img/tutorials/archive-tools.png)](../../clio-kit-website/static/img/tutorials/archive-tools.png)
+[![Codex calls compress_file_tool and decompress_file_tool, checks byte equality, then opens the restored HDF5 file](../../website/static/img/tutorials/archive-tools.png)](../../website/static/img/tutorials/archive-tools.png)
 
 ## 3. Check coverage, not just the mean
 
@@ -59,7 +59,7 @@ The skill directs the agent to inspect size and use a server-side reduction.
 For this fixture, the server reported **FULL DATA**, covering **100,000 of 100,000**
 elements. The original and restored files matched byte-for-byte.
 
-[![Codex reports full coverage, byte equality and pressure statistics from the restored file](../../clio-kit-website/static/img/tutorials/archive-result.png)](../../clio-kit-website/static/img/tutorials/archive-result.png)
+[![Codex reports full coverage, byte equality and pressure statistics from the restored file](../../website/static/img/tutorials/archive-result.png)](../../website/static/img/tutorials/archive-result.png)
 
 ```bash
 cmp pressure.h5 restored/pressure.h5

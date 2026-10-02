@@ -13,7 +13,7 @@ def test_overview_logo_scroll_path_and_reduced_motion():
         pytest.skip("Node is required for website checks")
     source = (
         Path(__file__).resolve().parents[1]
-        / "clio-kit-website/src/components/Marketplace/overviewMotion.js"
+        / "website/src/components/Marketplace/overviewMotion.js"
     )
     subprocess.run(
         [node, "--input-type=module", "-", str(source)],

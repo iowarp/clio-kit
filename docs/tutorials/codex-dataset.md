@@ -32,7 +32,7 @@ and four MCP entries to `.codex/config.toml`: HDF5, ADIOS, Parquet and Compressi
 This is the plugin's portable component installation; it does not install a
 Claude-native plugin into Codex. This tutorial exercises HDF5.
 
-[![Terminal output showing the scientific I/O plugin's three installed skills and four configured MCP servers](../../clio-kit-website/static/img/tutorials/codex-install.png)](../../clio-kit-website/static/img/tutorials/codex-install.png)
+[![Terminal output showing the scientific I/O plugin's three installed skills and four configured MCP servers](../../website/static/img/tutorials/codex-install.png)](../../website/static/img/tutorials/codex-install.png)
 
 ## 2. Create a file you can check
 
@@ -73,13 +73,13 @@ Codex read the installed skill, opened the file, and called the HDF5 tools for
 shapes, types and attributes before requesting a small slice. The skill's useful
 part here is the order: inspect structure and units **before** reading values.
 
-[![Actual Codex terminal showing HDF5 shape, dtype, attribute and partial-read tool calls](../../clio-kit-website/static/img/tutorials/codex-working.png)](../../clio-kit-website/static/img/tutorials/codex-working.png)
+[![Actual Codex terminal showing HDF5 shape, dtype, attribute and partial-read tool calls](../../website/static/img/tutorials/codex-working.png)](../../website/static/img/tutorials/codex-working.png)
 
 The sample request uses `start="0,0,0"` and `count="1,1,3"`. It does not pull the
 whole temperature array into the conversation. Codex then closes the file and
 writes its notes.
 
-[![Codex closes the HDF5 file and reports dataset shapes, units and three sampled temperatures](../../clio-kit-website/static/img/tutorials/codex-result.png)](../../clio-kit-website/static/img/tutorials/codex-result.png)
+[![Codex closes the HDF5 file and reports dataset shapes, units and three sampled temperatures](../../website/static/img/tutorials/codex-result.png)](../../website/static/img/tutorials/codex-result.png)
 
 *Select any screenshot to open it at full size. These are terminal captures,
 not recreated conversations.*

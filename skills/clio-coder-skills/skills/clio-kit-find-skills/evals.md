@@ -52,14 +52,3 @@ Expected:
   host's files without a request for that host.
 - Treats directory existence or package enablement as recipe availability.
 - Recommends a web result without source evidence or a usable operator action.
-
-## Instruction correction (2026-09-10)
-
-Version 0.2.1 corrects scope defaults, managed package locations, operator
-installation authority and vendor-format review. Scenarios recorded; no new
-model eval is claimed for this edit.
-
-## Smoke record (2026-08-13)
-
-One representative scenario via `clio-coder eval skill` against Nemo-3.5-Lightning
-(30B local, llamacpp on mini), full-auto sandbox. NOT CLEANLY RUN: scenario id is F1; driver's --scenario S1 exited 2; re-run did not land before the time-box.

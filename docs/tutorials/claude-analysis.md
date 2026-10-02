@@ -30,7 +30,7 @@ The two MCP entries go in `.mcp.json`; the skill goes in
 `.claude/skills/results-summary/`. The skill explains how to pass transformed
 data between these tools. It does not configure either MCP by itself.
 
-[![Real terminal installation of the Pandas and Plot MCPs and the results-summary skill](../../clio-kit-website/static/img/tutorials/claude-install.png)](../../clio-kit-website/static/img/tutorials/claude-install.png)
+[![Real terminal installation of the Pandas and Plot MCPs and the results-summary skill](../../website/static/img/tutorials/claude-install.png)](../../website/static/img/tutorials/claude-install.png)
 
 ## 2. Add the experiment results
 
@@ -70,7 +70,7 @@ Check `/mcp` before continuing. Then ask:
 Approve the intended tool calls and output files in the demo directory. Claude
 loads the skill before working with the table:
 
-[![Claude Code terminal showing the user's analysis request and successful loading of results-summary](../../clio-kit-website/static/img/tutorials/claude-working.png)](../../clio-kit-website/static/img/tutorials/claude-working.png)
+[![Claude Code terminal showing the user's analysis request and successful loading of results-summary](../../website/static/img/tutorials/claude-working.png)](../../website/static/img/tutorials/claude-working.png)
 
 ## 4. Watch the handoff between tools
 
@@ -78,7 +78,7 @@ In this run, Pandas checked missing values and grouped the rows by configuration
 The result was saved as `runs_grouped.csv`. Claude passed **that file** to Plot's
 `bar_plot`, as shown in the expanded tool call:
 
-[![Claude Code's expanded Plot MCP call uses runs_grouped.csv and writes a bar chart](../../clio-kit-website/static/img/tutorials/claude-tools.png)](../../clio-kit-website/static/img/tutorials/claude-tools.png)
+[![Claude Code's expanded Plot MCP call uses runs_grouped.csv and writes a bar chart](../../website/static/img/tutorials/claude-tools.png)](../../website/static/img/tutorials/claude-tools.png)
 
 This is why the skill matters: the plotting server reads a file, not an in-memory
 Pandas result. Plotting the original CSV would skip the aggregation you asked for.
@@ -106,13 +106,13 @@ MCP output.
 
 Here is the actual image produced by the Plot MCP:
 
-[![Generated bar chart showing baseline mean runtime of 12.5 seconds and tuned mean runtime of 9.5 seconds](../../clio-kit-website/static/img/tutorials/runtime-chart.png)](../../clio-kit-website/static/img/tutorials/runtime-chart.png)
+[![Generated bar chart showing baseline mean runtime of 12.5 seconds and tuned mean runtime of 9.5 seconds](../../website/static/img/tutorials/runtime-chart.png)](../../website/static/img/tutorials/runtime-chart.png)
 
 The captured session saved it as `mean_runtime_by_configuration.png`. Your agent
 may choose a different name; open the path it actually reports. Check the units,
 categories and heights, not only whether the image exists.
 
-[![Claude Code's completed analysis lists both means, the grouped CSV, chart and report paths](../../clio-kit-website/static/img/tutorials/claude-result.png)](../../clio-kit-website/static/img/tutorials/claude-result.png)
+[![Claude Code's completed analysis lists both means, the grouped CSV, chart and report paths](../../website/static/img/tutorials/claude-result.png)](../../website/static/img/tutorials/claude-result.png)
 
 *Select screenshots to enlarge them. These are captures of the actual terminal
 session; the chart is its generated artifact.*

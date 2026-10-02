@@ -36,7 +36,7 @@ to JSON. Legacy elicitation remains available when the argument is omitted.
 
 Website builds now use a committed npm lock, updated Docusaurus dependencies
 and a format check for the remaining unpatched image-size advisory. That
-workaround is documented in `clio-kit-website/README.md`; it does not produce
+workaround is documented in `website/README.md`; it does not produce
 a clean npm audit. No public release has been published by this preparation.
 
 ## 2.10.5

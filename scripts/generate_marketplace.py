@@ -76,7 +76,7 @@ if __name__ == "__main__":
     if args.website:
         from generate_website_catalogue import generate as website_catalogue
 
-        output = args.root / "clio-kit-website/src/data/catalogue.json"
+        output = args.root / "website/src/data/catalogue.json"
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(
             json.dumps(website_catalogue(args.root), indent=2, ensure_ascii=False)

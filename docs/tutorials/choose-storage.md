@@ -21,7 +21,7 @@ claude plugin marketplace add /path/to/clio-kit
 claude plugin install clio-scientific-io@clio-kit --scope project
 ```
 
-[![Claude Code installs clio-scientific-io and its five dependency packages](../../clio-kit-website/static/img/tutorials/native-install.png)](../../clio-kit-website/static/img/tutorials/native-install.png)
+[![Claude Code installs clio-scientific-io and its five dependency packages](../../website/static/img/tutorials/native-install.png)](../../website/static/img/tutorials/native-install.png)
 
 The workflow includes the scientific I/O skill package. It also configures MCPs,
 but **this discussion uses no MCP tools**. If you only want the skill, install
@@ -44,7 +44,7 @@ Start a fresh `claude` session and ask:
 Claude loaded `clio-scientific-io-skills:storage-format`. That is the client’s
 native plugin prefix; the portable skill is named `storage-format`.
 
-[![Claude loads the native storage-format skill and writes the initial plan, before the review corrections below](../../clio-kit-website/static/img/tutorials/storage-skill.png)](../../clio-kit-website/static/img/tutorials/storage-skill.png)
+[![Claude loads the native storage-format skill and writes the initial plan, before the review corrections below](../../website/static/img/tutorials/storage-skill.png)](../../website/static/img/tutorials/storage-skill.png)
 
 ## 3. Review the recommendation
 
@@ -65,7 +65,7 @@ physical I/O operations. We asked for an explicit correction:
 > the number of chunks does not establish a measured I/O count. Keep the candidate
 > layouts and arithmetic, with no claimed measurements.
 
-[![Claude revises the storage plan to distinguish assumptions and chunk accesses from measured physical I/O](../../clio-kit-website/static/img/tutorials/storage-review.png)](../../clio-kit-website/static/img/tutorials/storage-review.png)
+[![Claude revises the storage plan to distinguish assumptions and chunk accesses from measured physical I/O](../../website/static/img/tutorials/storage-review.png)](../../website/static/img/tutorials/storage-review.png)
 
 ## 4. Keep the plan separate from evidence
 

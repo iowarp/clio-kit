@@ -99,4 +99,4 @@ ignore:
   - "**/tests/"
   - "**/.venv"
   - "**/htmlcov"
-  - "clio-kit-website/"
+  - "website/"

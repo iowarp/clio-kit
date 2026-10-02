@@ -98,7 +98,7 @@ Approve the intended plugin MCP calls. Ask:
 Claude loaded `lab-checks:check-runtime-table` and called the plugin's Pandas MCP.
 The namespaced prefix identifies where the tool comes from.
 
-[![Claude Code completes the contributed plugin's runtime-table check and reports verified means](../../clio-kit-website/static/img/tutorials/contrib-claude.png)](../../clio-kit-website/static/img/tutorials/contrib-claude.png)
+[![Claude Code completes the contributed plugin's runtime-table check and reports verified means](../../website/static/img/tutorials/contrib-claude.png)](../../website/static/img/tutorials/contrib-claude.png)
 
 ## 5. Install the same components in Codex
 
@@ -110,13 +110,13 @@ clio-kit plugin install lab-checks \
 codex
 ```
 
-[![CLIO Kit validates lab-checks and installs its skill and MCP configuration for Codex](../../clio-kit-website/static/img/tutorials/contrib-install.png)](../../clio-kit-website/static/img/tutorials/contrib-install.png)
+[![CLIO Kit validates lab-checks and installs its skill and MCP configuration for Codex](../../website/static/img/tutorials/contrib-install.png)](../../website/static/img/tutorials/contrib-install.png)
 
 Use the same request, or explicitly invoke `$check-runtime-table`. Codex reads the
 portable skill and uses the configured Pandas MCP; this is not a native Claude
 plugin installation inside Codex.
 
-[![Codex completes the same contributed skill and MCP workflow with matching means](../../clio-kit-website/static/img/tutorials/contrib-codex.png)](../../clio-kit-website/static/img/tutorials/contrib-codex.png)
+[![Codex completes the same contributed skill and MCP workflow with matching means](../../website/static/img/tutorials/contrib-codex.png)](../../website/static/img/tutorials/contrib-codex.png)
 
 ## 6. Check both outputs
 

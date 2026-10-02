@@ -101,6 +101,16 @@ def test_refresh_preserves_local_changes_and_checks_source_revision(tmp_path):
     )
     (skill / "references").mkdir()
     (skill / "references/input.md").write_text("Retain input identity.\n")
+    scenarios = (
+        "# Evaluation\n\n## S1 — Inspect inputs\nKeep source data unchanged.\n\n"
+    )
+    later_scenario = "## S2 — Missing input\nReport the missing file.\n"
+    (skill / "evals.md").write_text(
+        scenarios
+        + "## Smoke record (2026-09-03)\nLocal run in /home/researcher/eval-temp.\n\n"
+        + later_scenario
+        + "\n## Battletest record (2026-09-03)\nHistorical model results.\n"
+    )
     subprocess.run(["git", "init", "-q", str(source)], check=True)
     subprocess.run(["git", "add", "."], cwd=source, check=True)
     subprocess.run(
@@ -124,6 +134,9 @@ def test_refresh_preserves_local_changes_and_checks_source_revision(tmp_path):
     with pytest.raises(ValueError, match="Expected"):
         importer.generate(source, target, "wrong-revision")
     first = importer.generate(source, target, revision)
+    assert (target / "skills/clio-kit-example/evals.md").read_text() == (
+        scenarios + later_scenario
+    )
     assert importer.generate(source, target, revision) == first
     copied = target / "skills/clio-kit-example/references/input.md"
     copied.write_text("Local adaptation")

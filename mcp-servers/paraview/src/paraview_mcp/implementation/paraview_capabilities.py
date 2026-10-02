@@ -1763,7 +1763,6 @@ class VisualizationEngine:
 
             # Check common ParaView build directories
             possible_build_paths = [
-                "/home/shazzadul/Illinois_Tech/Summer25/paraview_build",
                 os.path.expanduser("~/paraview_build"),
                 os.path.expanduser("~/ParaView/build"),
                 "/usr/local/paraview/build",

@@ -42,11 +42,6 @@ Expected:
 - Claims smoke tests run against source (they run against `dist/`).
 - Invents a hot-reload feature that reloads a running session's code.
 
-## Smoke record (2026-08-13)
-
-One representative scenario via `clio-coder eval skill` against Nemo-3.5-Lightning
-(30B local, llamacpp on mini), full-auto sandbox. NOT CLEANLY RUN: scenario id is T1; driver's --scenario S1 exited 2; re-run did not land before the time-box.
-
 ## T5 — current application gates
 Prompt: "The web API changed. Which checks belong to this release?"
 Expected:

@@ -40,7 +40,7 @@ def check_images(root: Path) -> list[str]:
 
 
 def main() -> int:
-    root = Path(__file__).resolve().parents[1] / "clio-kit-website"
+    root = Path(__file__).resolve().parents[1] / "website"
     failures = check_images(root) + check_images(root.parent / "docs")
     if failures:
         print("Unsupported website image containers:", file=sys.stderr)

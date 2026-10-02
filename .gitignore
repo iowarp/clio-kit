@@ -247,7 +247,7 @@ rework/
 /tests/fixtures/mcp-servers/go/bin/
 
 # Commit the website lock used by npm ci and dependency audits.
-!clio-kit-website/package-lock.json
+!website/package-lock.json
 
 # Local agent sessions are not release artifacts.
 .clio-coder/

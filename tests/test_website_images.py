@@ -40,7 +40,7 @@ def test_supported_png_and_text_pass(tmp_path):
 
 
 def test_build_guard_checks_shared_docs_outside_website(tmp_path, monkeypatch):
-    (tmp_path / "clio-kit-website").mkdir()
+    (tmp_path / "website").mkdir()
     docs = tmp_path / "docs"
     docs.mkdir()
     (docs / "misleading.png").write_bytes(b"icns" + bytes(28))

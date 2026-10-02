@@ -99,7 +99,7 @@ This prompt will:
 - Load and validate trace using `load_darshan_log`
 - Generate complete report using `generate_io_summary_report`
 - Add timeline analysis using `get_timeline_analysis`
-- Provide production-ready performance assessment with actionable insights
+- Summarize I/O metrics and suggest optimizations to validate against the workload
 
 ### Native backend configuration
 

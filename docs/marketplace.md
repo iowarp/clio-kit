@@ -436,7 +436,7 @@ Dependency advisory scans are separate from installation tests. Locally built
 packages and Git-hosted dependencies may not be covered by PyPI matching.
 The website build has an unpatched upstream image-parser advisory with a
 pre-build format restriction; see the
-[website maintenance notes](https://github.com/iowarp/clio-kit/blob/main/clio-kit-website/README.md#image-parser-advisory).
+[website maintenance notes](https://github.com/iowarp/clio-kit/blob/main/website/README.md#image-parser-advisory).
 This is a disclosed build dependency limitation, not a clean npm audit.
 
 Use the GitHub Actions results for the exact commit being reviewed. Public

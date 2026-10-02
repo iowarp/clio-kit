@@ -535,7 +535,7 @@ if __name__ == "__main__":
     parser.add_argument("--root", type=Path, default=ROOT)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    output = args.root / "clio-kit-website/src/data/catalogue.json"
+    output = args.root / "website/src/data/catalogue.json"
     rendered = json.dumps(generate(args.root), indent=2, ensure_ascii=False) + "\n"
     if args.check:
         if not output.is_file() or output.read_text() != rendered:

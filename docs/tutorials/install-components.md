@@ -62,7 +62,7 @@ clio-kit skill install storage-format --target .agents/skills
 clio-kit skill install storage-format --target .claude/skills
 ```
 
-[![Actual Codex CLI registration of Compression and installation of the portable storage-format skill](../../clio-kit-website/static/img/tutorials/individual-install.png)](../../clio-kit-website/static/img/tutorials/individual-install.png)
+[![Actual Codex CLI registration of Compression and installation of the portable storage-format skill](../../website/static/img/tutorials/individual-install.png)](../../website/static/img/tutorials/individual-install.png)
 
 Start a fresh session. Request `$storage-format` in Codex or `/storage-format`
 in Claude Code. Inspect the skill load/read. This skill gives guidance without
@@ -78,7 +78,7 @@ clio-kit plugin install clio-scientific-io \
 This writes project-local MCP configuration and copies the three scientific I/O
 skills. Add `--dry-run` first to inspect the plan.
 
-[![Actual Codex component installation lists its three skills and four MCP servers](../../clio-kit-website/static/img/tutorials/codex-install.png)](../../clio-kit-website/static/img/tutorials/codex-install.png)
+[![Actual Codex component installation lists its three skills and four MCP servers](../../website/static/img/tutorials/codex-install.png)](../../website/static/img/tutorials/codex-install.png)
 
 The same project installer accepts `--client claude-code`. This route installs
 portable components; it does not translate native agents and hooks into every
@@ -92,7 +92,7 @@ claude plugin install clio-scientific-io@clio-kit --scope project
 claude mcp list
 ```
 
-[![Actual native Claude plugin installation, including its dependencies](../../clio-kit-website/static/img/tutorials/native-install.png)](../../clio-kit-website/static/img/tutorials/native-install.png)
+[![Actual native Claude plugin installation, including its dependencies](../../website/static/img/tutorials/native-install.png)](../../website/static/img/tutorials/native-install.png)
 
 Keep the launcher installed: a manifest starts `clio-kit`; it does not contain
 all the runtime dependencies itself. Restart the session, inspect the connected

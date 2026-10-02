@@ -48,9 +48,7 @@ def test_sync_discovers_updates_and_removes_folder_without_manual_generators(tmp
         result = runner.invoke(marketplace_group, ["sync", "--root", str(tmp_path)])
         assert result.exit_code == 0, result.output
         native = json.loads((tmp_path / ".claude-plugin/marketplace.json").read_text())
-        website = json.loads(
-            (tmp_path / "clio-kit-website/src/data/catalogue.json").read_text()
-        )
+        website = json.loads((tmp_path / "website/src/data/catalogue.json").read_text())
         assert any(e["name"] == "lab-sync" for e in native["plugins"]) is present
         assert any(e["id"] == "hook/lab-sync" for e in website["items"]) is present
 

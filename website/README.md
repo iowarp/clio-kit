@@ -17,7 +17,7 @@ agents and community marketplace. The live site at
 ├── marketplace.md          # Components, contribution and acceptance
 ├── agentic-search.md       # Standalone retrieval service
 └── mcps/                   # Server reference pages
-clio-kit-website/
+website/
 ├── src/components/         # Documentation and catalogue UI
 ├── src/data/               # Generated server catalogue
 ├── src/pages/              # Overview, catalogue, component and publisher routes
@@ -99,7 +99,7 @@ that directory directly; public `/docs/...` URLs stay the same. From the
 repository root, regenerate server pages with:
 
 ```bash
-uv run python scripts/generate_docs.py mcp-servers clio-kit-website
+uv run python scripts/generate_docs.py mcp-servers website
 ```
 
 `scripts/generate_docs.py` regenerates contract metadata and the showcase from

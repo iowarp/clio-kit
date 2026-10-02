@@ -42,4 +42,4 @@ For agents, start with
 [AGENTS.md](https://github.com/iowarp/clio-kit/blob/main/AGENTS.md).
 
 These files are the documentation source for both GitHub and the website.
-Website code lives separately in `clio-kit-website/`.
+Website code lives separately in `website/`.
