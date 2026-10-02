@@ -12,6 +12,7 @@ import yaml
 
 from clio_kit.hooks import hook_components
 from clio_kit.client_install import CLIENTS, server_settings
+from clio_kit.client_adapters import plan_native, native_components
 
 try:
     import tomllib
@@ -132,6 +133,26 @@ def classify_records(records: list[dict], entries: dict, root: Path) -> None:
         return result
 
     # Resolve before mutating kinds, so dependency order cannot affect results.
+    def native_records(name: str, seen: set[str] | None = None) -> dict:
+        seen = set() if seen is None else seen
+        if name in seen:
+            return {}
+        seen.add(name)
+        source = entries[name]["source"]
+        if not isinstance(source, str):
+            return {}
+        directory = root / source
+        manifest = json.loads((directory / ".claude-plugin/plugin.json").read_text())
+        packages = {
+            name: {
+                "installed": directory,
+                "native": native_components(directory, manifest),
+            }
+        }
+        for dependency in manifest.get("dependencies", []):
+            packages.update(native_records(dependency, seen))
+        return packages
+
     for record in records:
         component_types(record)
     for record in records:
@@ -165,13 +186,23 @@ def classify_records(records: list[dict], entries: dict, root: Path) -> None:
                 record["role"] = "Component collection"
         if previous == "plugin" and record["origin"] != "Indexed":
             record["docs"] = "/docs/plugins"
-        if previous in {"plugin", "workflow"} and record["origin"] != "Indexed":
-            if resolved[record["id"]] & {"mcp", "skill"}:
+        if previous in {"plugin", "workflow"}:
+            record["projectInstall"] = True
+            if record["origin"] == "Indexed":
+                record["clients"] = list(CLIENTS)
+                record["clientSupport"] = {client: None for client in CLIENTS}
+            else:
+                packages = native_records(record["name"])
+                record["clientSupport"] = {
+                    client: not plan_native(packages, client)["unsupported"]
+                    for client in CLIENTS
+                }
+                portable = bool(resolved[record["id"]] & {"mcp", "skill"})
                 record["clients"] = [
-                    "claude-code",
-                    *[c for c in CLIENTS if c != "claude-code"],
+                    client
+                    for client in CLIENTS
+                    if record["clientSupport"][client] or portable
                 ]
-                record["projectInstall"] = True
 
 
 def generate(root: Path) -> dict:

@@ -111,16 +111,15 @@ once is enough, and replacing it affects both clients.
 Existing unrelated configuration is preserved. Conflicting names stop installation;
 review before using `--replace`. Changed configurations get a recovery backup;
 TOML comments remain in that backup. OpenCode JSONC and remote/host-specific MCP
-options require manual configuration. This installer supports maintained local or released
-packages; indexed external packages retain their publisher's installation route.
+options require manual configuration. Maintained packages and indexed GitHub, Git URL,
+Git subdirectory and npm packages use the same installer, including federated entries.
 
-**Agents and hooks:** native CLIO packages currently use Claude's formats. Other
-clients also have extension mechanisms—this is an adapter gap, not a claim that
-they lack plugins or hooks. The installer stops if a package contains native
-agents, hooks or commands. Only use `--components-only` when you deliberately
-want just its skills and MCPs; Dataset Report then lacks its automatic hook and
-native reviewer. Skill instructions are copied unchanged, so any host-specific
-steps still need adaptation. Full native package adapters remain separate work.
+**Agents and hooks:** Codex, Claude Code and OpenCode have adapters for the
+scientific agents and Dataset Report hooks. Other native components need their
+own supported adapter; installation refuses to silently omit them. Use
+`--components-only` only when you deliberately want skills and MCPs without the
+other components. Review Codex hooks through `/hooks` before use. See the
+[client support table](clients.md#component-support).
 
 Reload your client and verify skills and MCP connections. Codex project settings
 require a trusted project. For Antigravity CLI, first open the project using
@@ -210,9 +209,9 @@ For Antigravity CLI, start the first session from your project with
 `agy --new-project` so its local skills and MCP configuration are loaded.
 Reopen it with `agy --project <project-name-or-id>`.
 
-CLIO's native `.claude-plugin` bundles and agent definitions currently target
-Claude Code. Other clients have their own plugin systems; the portable routes
-above install CLIO skills and tools without claiming native plugin compatibility.
+The `.claude-plugin` export remains available for Claude's native marketplace.
+Kit's project installer adapts shared packages for the selected client; see
+[component support](clients.md#component-support) for agents and hooks.
 Claude Desktop's MCP configuration installs only servers.
 For another local stdio client, use command `clio-kit` with arguments
 `["mcp-server", "SERVER_NAME"]` in its documented schema. Remote-only clients

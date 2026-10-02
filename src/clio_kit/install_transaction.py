@@ -14,6 +14,7 @@ class Replacement:
     staging: Path
     previous: Path
     installed: bool = False
+    remove: bool = False
 
 
 class InstallTransaction:
@@ -55,13 +56,18 @@ class InstallTransaction:
         staging.write_bytes(content)
         staging.chmod(target.stat().st_mode & 0o777 if target.exists() else 0o600)
 
+    def remove(self, target: Path) -> None:
+        self._stage(target)
+        self.changes[-1].remove = True
+
     def commit(self) -> None:
         try:
             for change in self.changes:
                 if change.target.exists():
                     change.target.rename(change.previous)
-                change.staging.replace(change.target)
-                change.installed = True
+                if not change.remove:
+                    change.staging.replace(change.target)
+                    change.installed = True
         except BaseException:
             failures = []
             for change in reversed(self.changes):

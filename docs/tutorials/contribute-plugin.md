@@ -234,8 +234,9 @@ claude plugin update lab-checks@clio-kit
 ```
 
 Reload the plugin after updating. These are native Claude Code installation
-commands; a community listing does not translate agents or hooks for other
-clients. For Codex, follow the local component installation in step 5 using the
+commands. Kit also installs indexed packages through the
+[shared project installer](../clients.md#component-support); agents and hooks
+need an adapter for the selected host. For Codex, follow the local component installation in step 5 using the
 tutorial's local index, or provide your own client-specific instructions.
 
 ### Contribute a whole marketplace

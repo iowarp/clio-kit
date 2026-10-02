@@ -83,7 +83,9 @@ class SkillReport:
         return not self.problems
 
 
-def read_skill_frontmatter(skill_dir: Path) -> dict[str, str]:
+def read_skill_frontmatter(
+    skill_dir: Path, *, check_directory_name: bool = True
+) -> dict[str, str]:
     """Return one SKILL.md's frontmatter fields, or raise if it is unloadable.
 
     Parse YAML scalar fields and the supported CLIO metadata fields.
@@ -125,7 +127,7 @@ def read_skill_frontmatter(skill_dir: Path) -> dict[str, str]:
     for required in ("name", "description"):
         if not fields.get(required):
             raise SkillProblem(f"{skill_md} frontmatter needs a {required}")
-    if fields["name"] != skill_dir.name:
+    if check_directory_name and fields["name"] != skill_dir.name:
         raise SkillProblem(
             f"{skill_md} declares name {fields['name']!r} "
             f"but lives in {skill_dir.name!r}"

@@ -88,7 +88,7 @@ def test_install_bundle_and_reinstall_preserving_unrelated_settings(tmp_path, cl
 
 def test_native_features_require_explicit_partial_install(tmp_path):
     with pytest.raises(ValueError, match="--components-only"):
-        install_for_client(ROOT, "clio-dataset-report", "codex", tmp_path)
+        install_for_client(ROOT, "clio-dataset-report", "cursor", tmp_path)
     assert list(tmp_path.iterdir()) == []
     result = install_for_client(
         ROOT, "clio-dataset-report", "codex", tmp_path, components_only=True
@@ -137,7 +137,7 @@ def test_host_specific_options_are_not_silently_dropped():
         server_settings({"command": "test", "env": {"TOKEN": "${TOKEN}"}}, "cursor")
 
 
-def test_cli_exposes_plan_and_external_boundary(tmp_path):
+def test_cli_exposes_plan_and_external_boundary(tmp_path, monkeypatch):
     args = [
         "install",
         "clio-scientific-io",
@@ -152,10 +152,11 @@ def test_cli_exposes_plan_and_external_boundary(tmp_path):
     result = CliRunner().invoke(plugin_group, args)
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)["client"] == "opencode"
+    monkeypatch.setenv("CLIO_KIT_OFFLINE", "1")
     args[1] = "scientific-debugging"
     result = CliRunner().invoke(plugin_group, args)
     assert result.exit_code != 0
-    assert "indexed externally" in result.output
+    assert "Offline" in result.output
 
 
 @pytest.mark.parametrize("existing", [False, True])

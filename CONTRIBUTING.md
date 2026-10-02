@@ -358,7 +358,9 @@ what we review.
 For Claude Code event hooks, add `--hook` to `plugin init`. It creates a read-only
 `SessionStart` example requiring `python3`. The validator checks default, custom-file
 and inline hook definitions without executing them; still run the client's strict
-validation. See the [hook guide](community/README.md#hooks) for runtime tests and host limits.
+validation. Codex and OpenCode use explicit
+[client hook adapters](docs/authoring.md#client-specific-hooks). See the
+[hook guide](community/README.md#hooks) for runtime tests and host limits.
 
 ## Running Tests
 

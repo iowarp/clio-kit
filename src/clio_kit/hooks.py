@@ -20,6 +20,10 @@ HOOK_EVENTS = frozenset(
     "DirectoryAdded FileChanged WorktreeCreate WorktreeRemove PreCompact PostCompact "
     "PreModelSwitch PostModelSwitch Elicitation ElicitationResult SessionEnd".split()
 )
+CODEX_HOOK_EVENTS = frozenset(
+    "SessionStart SessionEnd PreToolUse PostToolUse PermissionRequest UserPromptSubmit "
+    "PreCompact PostCompact SubagentStart SubagentStop Stop Interrupt".split()
+)
 REQUIRED_FIELDS = {
     "command": ("command",),
     "http": ("url",),
@@ -62,7 +66,11 @@ def _missing_files(handler: dict[str, Any], directory: Path) -> list[str]:
 
 
 def _event_problems(
-    events: Any, label: str, directory: Path | None = None
+    events: Any,
+    label: str,
+    directory: Path | None = None,
+    *,
+    allowed_events: frozenset = HOOK_EVENTS,
 ) -> tuple[bool, list[str]]:
     if not isinstance(events, dict):
         return False, [f"{label} must be a hook event object"]
@@ -70,7 +78,7 @@ def _event_problems(
     active = False
     for event, groups in events.items():
         where = f"{label}.{event}"
-        if event not in HOOK_EVENTS:
+        if event not in allowed_events:
             problems.append(f"{where}: unknown hook event")
         if not isinstance(groups, list):
             problems.append(f"{where} must be an array of matcher groups")
@@ -129,15 +137,34 @@ def hook_components(
     directory: Path, manifest: dict[str, Any]
 ) -> tuple[bool, list[str]]:
     """Validate default/file/inline hooks and report whether any handlers exist."""
-    active = False
+    active = (directory / "hooks/opencode.js").is_file()
     problems: list[str] = []
     paths: list[str] = []
     default = directory / "hooks/hooks.json"
     if default.exists() or default.is_symlink():
         paths.append("./hooks/hooks.json")
+    codex = directory / "hooks/codex.json"
+    if codex.is_file():
+        try:
+            events = json.loads(codex.read_text()).get("hooks")
+            present, found = _event_problems(
+                events, "hooks/codex.json", directory, allowed_events=CODEX_HOOK_EVENTS
+            )
+            active |= present
+            problems.extend(found)
+            if not found and any(
+                handler["type"] != "command"
+                for groups in events.values()
+                for group in groups
+                for handler in group["hooks"]
+            ):
+                problems.append("hooks/codex.json supports command handlers only")
+        except (OSError, ValueError, AttributeError) as exc:
+            problems.append(f"hooks/codex.json: {exc}")
     value = manifest.get("hooks")
     if isinstance(value, dict):
-        active, inline_problems = _event_problems(value, "hooks", directory)
+        present, inline_problems = _event_problems(value, "hooks", directory)
+        active |= present
         problems.extend(inline_problems)
     elif isinstance(value, str):
         paths.append(value)

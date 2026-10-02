@@ -41,10 +41,53 @@ when running elsewhere. Add `--dry-run` to preview changes first.
 | Antigravity | `.agents/mcp_config.json` | `.agents/skills` |
 | VS Code / GitHub Copilot | `.vscode/mcp.json` | `.github/skills` |
 
-These are Kit's current adapters, not a promise that every client's native plugin
-format is interchangeable. Native agents, hooks and commands in Kit's Claude
-packages require that host. For another client, `--components-only` explicitly
-installs just skills and MCP configuration; the omitted parts do not run.
+### Component support
+
+One catalogue and contribution route serve all six project adapters. Indexed
+GitHub, Git URL, Git subdirectory and npm packages, including entries imported
+from another marketplace, use the same `clio-kit plugin install` command.
+Only the selected package and its dependencies are fetched.
+
+| Component | Codex | Claude Code | OpenCode | Cursor / Antigravity / VS Code |
+| --- | --- | --- | --- | --- |
+| Skills and stdio MCPs | Yes | Yes | Yes | Yes |
+| Scientific planner/reviewer | Read-only agent export and explicit invocation | Native agent | Read-only subagent | Explicitly omit |
+| Hooks | `hooks/codex.json` | `hooks/hooks.json` | `hooks/opencode.js` | Explicitly omit |
+| Claude slash commands | Unsupported | Native command | Unsupported | Unsupported |
+
+The installer refuses unsupported components before changing the project.
+`--components-only` deliberately installs only skills and MCPs. This is project
+installation, not a claim that native plugin manifests are interchangeable.
+The agent adapter accepts only the Read/Glob/Grep subset: OpenCode receives
+explicit permissions; Codex receives a read-only sandbox and disables the
+package's MCPs for that role. Other inherited client tools remain subject to the
+client's policy. Claude model/effort overrides are not copied to other hosts.
+
+Codex receives named agent definitions with complete, disabled MCP transport
+entries. Native reviewer delegation has been exercised in Codex CLI. If your
+client cannot discover the exported agent, invoke its installed instructions explicitly:
+
+```bash
+clio-kit plugin run-agent scientific-evidence-reviewer --client codex --project /path/to/project --prompt "Review these results: ..."
+```
+
+This starts a separate Codex session with the installed instructions, read-only
+sandbox and package MCPs disabled. It does not silently fall back to a general
+agent. Reading files still requires a working Codex sandbox on the machine.
+OpenCode's free model endpoint may reject custom subagents; use a provider/model
+that supports them and check the actual task result.
+
+For a complete supported workflow:
+
+```bash
+clio-kit plugin install clio-dataset-report --client codex --project /path/to/project
+```
+
+Replace `codex` with `claude-code` or `opencode`. In Codex, trust the project and
+review new or changed hooks through `/hooks`; installation does not grant hook
+trust. OpenCode must run with plugins enabled (not `--pure`). Older clients may
+need an upgrade. See the [authoring contract](authoring.md#client-specific-hooks).
+
 
 ### Codex CLI and IDE extension
 
@@ -241,9 +284,14 @@ including individual tools, portable skills, native plugins and a contributed pa
   `--replace`. [Release installations](installation.md) have their own artifact path.
 - **Remove a native Claude plugin:** `claude plugin uninstall <name>@clio-kit`.
   Shared dependencies may remain; inspect the client's installed components.
-- **Remove a project installation:** Kit has no project-uninstall command. Review
-  and remove only its selected skill directories and named MCP entries, preserving
-  your other configuration. Codex and Antigravity can share `.agents/skills`.
+- **Update an indexed package:** repeat `plugin install` with `--update --replace`
+  after reviewing the publisher. Otherwise the project reuses its recorded revision
+  and verifies its content. Existing payloads also support offline reinstall.
+- **Remove a project installation:** `clio-kit plugin uninstall <name> --client
+  <client> --project /path/to/project`. Add `--dry-run` to preview. Receipts preserve
+  shared components and unrelated settings; edited components stop removal.
+  Publisher payloads and locks remain for other clients and offline reuse.
+  Installations made before receipts were introduced still require manual removal.
 - **Command not found:** the agent process needs the launcher on its PATH. Remote
   workspaces/containers need the launcher where the subprocess actually runs.
 - **Server enabled but disconnected:** inspect startup logs and `doctor --connect`;

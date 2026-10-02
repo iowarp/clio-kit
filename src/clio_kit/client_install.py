@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+from contextlib import ExitStack
 from pathlib import Path
+import tempfile
 import uuid
 from typing import Any
 
@@ -32,20 +34,43 @@ CLIENTS = {
 }
 
 
-def collect_components(root: Path, name: str) -> dict[str, Any]:
+def collect_components(
+    root: Path | None,
+    name: str,
+    *,
+    stack: ExitStack | None = None,
+    project: Path | None = None,
+    update: bool = False,
+) -> dict[str, Any]:
     """Resolve local packages and dependencies without running their code."""
     from clio_kit.local_plugins import discover_local_plugins
     from clio_kit.plugins import validate_plugin
 
-    marketplace = json.loads((root / ".claude-plugin/marketplace.json").read_text())
-    entries = marketplace["plugins"]
-    # New handwritten folders are usable even before a catalogue build.
-    entries = entries + discover_local_plugins(root, entries)
+    from clio_kit.catalogue import read_catalogue
+    from clio_kit.external_plugins import fetch_source
+    from clio_kit.client_adapters import native_components
+
+    release = None
+    artifacts: set[str] = set()
+    if root is None:
+        from clio_kit.component_store import catalogue, artifact_path
+        from clio_kit.release_components import validate_index
+
+        release = catalogue()
+        validate_index(release)
+        entries = list(release.get("external_entries", []))
+        entries += [{"name": n, "source": None} for n in release["packages"]]
+    else:
+        entries = read_catalogue(root)["packages"]
+        entries = entries + discover_local_plugins(root, entries)
     index = {entry["name"]: entry for entry in entries}
     skills: dict[str, Path] = {}
     servers: dict[str, dict] = {}
     unsupported: list[str] = []
     visited: set[str] = set()
+    packages: dict[str, dict] = {}
+    payloads: dict[Path, Path] = {}
+    provenance: dict[str, dict] = {}
 
     def visit(package: str, trail: set[str]) -> None:
         if package in trail:
@@ -55,17 +80,123 @@ def collect_components(root: Path, name: str) -> dict[str, Any]:
         entry = index.get(package)
         if not entry:
             raise ValueError(f"Unknown package: {package}")
+        if release is not None and package in release["packages"]:
+            from clio_kit.client_adapters import expand
+
+            record = release["packages"][package]
+            manifest = record["manifest"]
+            if manifest.get("skills"):
+                raise ValueError(
+                    f"{package}: this installer requires skills/*/SKILL.md layout"
+                )
+            if "native" not in record and record["unsupported"]:
+                raise ValueError(
+                    f"{package}: release lacks native adapter metadata; upgrade the launcher"
+                )
+            installed = artifact_path(record["artifact"], release)
+            native = record.get("native", {"agents": {}, "commands": {}, "hooks": {}})
+            packages[package] = {"installed": installed, "native": native}
+            if any(native.values()):
+                artifacts.add(record["artifact"])
+            unsupported.extend(f"{package}: {field}" for field in record["unsupported"])
+            for dependency in manifest.get("dependencies", []):
+                visit(dependency, trail | {package})
+            for skill in record["skills"]:
+                key = release["skills"][skill]["artifact"]
+                path = artifact_path(key, release)
+                if skill in skills and skills[skill] != path:
+                    raise ValueError(f"Duplicate skill: {skill}")
+                skills[skill] = path
+                artifacts.add(key)
+            for server, settings in record["servers"].items():
+                converted = expand(settings, installed)
+                if converted != settings:
+                    artifacts.add(record["artifact"])
+                if server in servers and servers[server] != converted:
+                    raise ValueError(f"Conflicting MCP definitions: {server}")
+                servers[server] = converted
+            visited.add(package)
+            return
+        import re
+
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", package):
+            raise ValueError(f"Invalid package name: {package}")
         source = entry["source"]
-        if not isinstance(source, str):
-            raise ValueError(
-                f"{package} is indexed externally; use its publisher's client installation route"
+        external = not isinstance(source, str)
+        if external:
+            if stack is None or project is None:
+                raise ValueError(
+                    f"{package} is indexed externally; use plugin install to resolve it"
+                )
+            from clio_kit.external_plugins import package_digest
+
+            lock = safe_destination(project, f".clio-kit/sources/{package}.json")
+            pinned = (
+                json.loads(lock.read_text()) if lock.is_file() and not update else None
             )
-        directory = (root / source).resolve()
-        if not directory.is_relative_to(root):
+            if pinned is not None and pinned["source"] == source:
+                digest = pinned["sha256"]
+                if (
+                    not isinstance(digest, str)
+                    or len(digest) != 64
+                    or any(c not in "0123456789abcdef" for c in digest)
+                ):
+                    raise ValueError("Invalid publisher package digest")
+                installed = safe_destination(
+                    project, f".clio-kit/packages/{package}/{digest}"
+                )
+                if package_digest(installed) != digest:
+                    raise ValueError(
+                        f"Modified publisher payload: {package}; use --update to fetch it again"
+                    )
+                directory, provenance[package] = installed, pinned
+            else:
+                temporary = Path(
+                    stack.enter_context(
+                        tempfile.TemporaryDirectory(prefix="clio-publisher-")
+                    )
+                )
+                directory, provenance[package] = fetch_source(source, temporary)
+                installed = safe_destination(
+                    project,
+                    f".clio-kit/packages/{package}/{provenance[package]['sha256']}",
+                )
+                payloads[installed] = directory
+        else:
+            directory = (root / source).resolve()
+            installed = directory
+        if not external and root is not None and not directory.is_relative_to(root):
             raise ValueError(f"Package leaves checkout: {package}")
-        manifest, problems = validate_plugin(directory, allow_reserved=True)
+        problems: list[str]
+        standalone = (
+            external and not (directory / ".claude-plugin/plugin.json").exists()
+        )
+        if standalone:
+            if any(
+                (directory / field).exists()
+                for field in ("agents", "commands", "hooks", ".mcp.json")
+            ):
+                raise ValueError(f"{package}: native components require a manifest")
+            manifest, problems = (
+                {"name": package, "description": entry.get("description", "")},
+                [],
+            )
+        else:
+            manifest, problems = validate_plugin(
+                directory, allow_reserved=True, skill_policy=not external
+            )
         if problems:
             raise ValueError("; ".join(problems))
+        if manifest["name"] != package:
+            raise ValueError(
+                f"Publisher package name differs from catalogue: {package}"
+            )
+        packages[package] = {
+            "directory": directory,
+            "installed": installed,
+            "manifest": manifest,
+            "native": native_components(directory, manifest),
+        }
         for dependency in manifest.get("dependencies", []):
             visit(dependency, trail | {package})
         for field in ("agents", "commands"):
@@ -78,11 +209,35 @@ def collect_components(root: Path, name: str) -> dict[str, Any]:
             raise ValueError(
                 f"{package}: this installer requires skills/*/SKILL.md layout"
             )
-        for path in directory.glob("skills/*/SKILL.md"):
-            skill = read_skill_frontmatter(path.parent)["name"]
+        skill_files = (
+            [directory / "SKILL.md"]
+            if standalone and (directory / "SKILL.md").is_file()
+            else list(directory.glob("skills/*/SKILL.md"))
+        )
+        if standalone and not skill_files:
+            raise ValueError(f"{package}: no skill or plugin manifest")
+        for path in skill_files:
+            skill = read_skill_frontmatter(
+                path.parent, check_directory_name=not standalone
+            )["name"]
             if skill in skills and skills[skill] != path.parent:
                 raise ValueError(f"Duplicate skill: {skill}")
-            skills[skill] = path.parent
+            if standalone and path.parent.name != skill:
+                import shutil
+                import re
+
+                if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", skill):
+                    raise ValueError(f"Invalid skill name: {skill}")
+                assert stack is not None
+                parent = Path(
+                    stack.enter_context(
+                        tempfile.TemporaryDirectory(prefix="clio-skill-")
+                    )
+                )
+                shutil.copytree(path.parent, parent / skill)
+                skills[skill] = parent / skill
+            else:
+                skills[skill] = path.parent
         configurations = []
         if (directory / ".mcp.json").is_file():
             configurations.append(json.loads((directory / ".mcp.json").read_text()))
@@ -95,24 +250,34 @@ def collect_components(root: Path, name: str) -> dict[str, Any]:
             for server, settings in configuration.get(
                 "mcpServers", configuration
             ).items():
-                # A source checkout must remain available for local server scripts.
-                def expand(value):
-                    if isinstance(value, str):
-                        return value.replace("${CLAUDE_PLUGIN_ROOT}", str(directory))
-                    if isinstance(value, list):
-                        return [expand(item) for item in value]
-                    if isinstance(value, dict):
-                        return {key: expand(item) for key, item in value.items()}
-                    return value
+                from clio_kit.client_adapters import expand
 
-                settings = expand(settings)
+                settings = expand(settings, installed)
+                if external:
+                    # Python imports must not mutate the retained, hash-verified
+                    # publisher payload with __pycache__ files on first use.
+                    settings = {
+                        **settings,
+                        "env": {
+                            "PYTHONDONTWRITEBYTECODE": "1",
+                            **settings.get("env", {}),
+                        },
+                    }
                 if server in servers and servers[server] != settings:
                     raise ValueError(f"Conflicting MCP definitions: {server}")
                 servers[server] = settings
         visited.add(package)
 
     visit(name, set())
-    return {"skills": skills, "servers": servers, "unsupported": unsupported}
+    return {
+        "skills": skills,
+        "servers": servers,
+        "unsupported": unsupported,
+        "packages": packages,
+        "payloads": payloads,
+        "provenance": provenance,
+        "artifacts": sorted(artifacts),
+    }
 
 
 def server_settings(settings: dict, client: str) -> dict:
@@ -146,6 +311,8 @@ def server_settings(settings: dict, client: str) -> dict:
 
 
 def safe_destination(project: Path, relative: str) -> Path:
+    if Path(relative).is_absolute() or ".." in Path(relative).parts:
+        raise ValueError(f"Installation destination leaves project: {relative}")
     path = project / relative
     for part in (path, *path.parents):
         if part == project:
@@ -165,22 +332,56 @@ def install_for_client(
     components_only: bool = False,
     replace: bool = False,
     dry_run: bool = False,
+    update: bool = False,
 ) -> dict:
-    project = project.resolve()
-    if root is None:
-        from clio_kit.release_components import release_components
+    with ExitStack() as stack:
+        return _install(
+            root,
+            name,
+            client,
+            project,
+            components_only=components_only,
+            replace=replace,
+            dry_run=dry_run,
+            stack=stack,
+            update=update,
+        )
 
-        components = release_components(name)
-    else:
-        components = collect_components(root.resolve(), name)
-    if components["unsupported"] and not components_only:
+
+def _install(
+    root, name, client, project, *, components_only, replace, dry_run, stack, update
+):
+    from clio_kit.client_adapters import plan_native, merge_configuration
+
+    from clio_kit.install_receipts import Receipt
+
+    project = project.resolve()
+    receipt = Receipt(project, client, name)
+    components = collect_components(
+        root.resolve() if root else None,
+        name,
+        stack=stack,
+        project=project,
+        update=update,
+    )
+    native = plan_native(components.get("packages", {}), client, components["servers"])
+    unsupported = (
+        native["unsupported"]
+        if components.get("packages")
+        else components["unsupported"]
+    )
+    if unsupported and not components_only:
         raise ValueError(
             "This package also needs native client adapters for "
-            + ", ".join(components["unsupported"])
+            + ", ".join(unsupported)
             + ". Use the native Claude package, or explicitly select --components-only "
             "to install just skills and MCPs."
         )
-    if not components["skills"] and not components["servers"]:
+    if (
+        not components["skills"]
+        and not components["servers"]
+        and (components_only or not components.get("packages"))
+    ):
         raise ValueError("No portable skills or stdio MCPs to install")
     skill_path, config_path, key = CLIENTS[client]
     target = safe_destination(project, skill_path)
@@ -201,23 +402,63 @@ def install_for_client(
     )
     if not isinstance(data, dict) or not isinstance(data.get(key, {}), dict):
         raise ValueError(f"Expected an object/table in {config}: {key}")
+    owned = {} if components_only else native["configuration"]
+    if components["servers"]:
+        owned[key] = {
+            server: server_settings(settings, client)
+            for server, settings in components["servers"].items()
+        }
+    receipt.configuration(config_path, data, owned)
     configured = data.setdefault(key, {})
-    for server, settings in components["servers"].items():
-        converted = server_settings(settings, client)
-        if server in configured and configured[server] != converted and not replace:
+    for server, settings in owned.get(key, {}).items():
+        if server in configured and configured[server] != settings and not replace:
             raise ValueError(
                 f"{server} has different configuration; review before using --replace"
             )
-        configured[server] = converted
+    merge_configuration(data, owned, replace=replace)
     result = {
         "client": client,
         "package": name,
         "skills": sorted(components["skills"]),
         "servers": sorted(components["servers"]),
         "skill_directory": str(target),
-        "config": str(config) if components["servers"] else None,
-        "not_installed": components["unsupported"],
+        "config": str(config)
+        if components["servers"] or native["configuration"]
+        else None,
+        "not_installed": components["unsupported"] if components_only else unsupported,
+        "agents": [] if components_only else native["agents"],
+        "warnings": [] if components_only else native["warnings"],
+        "sources": components.get("provenance", {}),
     }
+    native_files = {} if components_only else native["files"]
+    if not components_only and native["claude_hooks"]:
+        settings = safe_destination(project, ".claude/settings.json")
+        settings_data = json.loads(settings.read_text()) if settings.exists() else {}
+        receipt.configuration(
+            ".claude/settings.json", settings_data, {"hooks": native["claude_hooks"]}
+        )
+        merge_configuration(
+            settings_data, {"hooks": native["claude_hooks"]}, replace=replace
+        )
+        native_files[".claude/settings.json"] = (
+            json.dumps(settings_data, indent=2) + "\n"
+        ).encode()
+    for package, source in components.get("provenance", {}).items():
+        native_files[f".clio-kit/sources/{package}.json"] = (
+            json.dumps(source, indent=2) + "\n"
+        ).encode()
+    for relative, content in native_files.items():
+        path = safe_destination(project, relative)
+        if (
+            path.exists()
+            and path.read_bytes() != content
+            and not replace
+            and relative != ".claude/settings.json"
+            and not relative.startswith(".clio-kit/sources/")
+        ):
+            raise ValueError(
+                f"{relative} contains different content; review before using --replace"
+            )
     if dry_run:
         return result
     if root is None:
@@ -226,11 +467,28 @@ def install_for_client(
         for artifact_key in components["artifacts"]:
             fetch(artifact_key)
     with InstallTransaction() as transaction:
-        if root is None and components["servers"]:
+        for payload_target, source in components.get("payloads", {}).items():
+            safe_destination(project, str(payload_target.relative_to(project)))
+            transaction.directory(payload_target, source)
+        for relative, content in native_files.items():
+            if relative not in receipt.data["configs"] and not relative.startswith(
+                ".clio-kit/sources/"
+            ):
+                receipt.file(relative, content)
+            transaction.file(safe_destination(project, relative), content)
+        if root is None and components["artifacts"]:
             register_project(config, components["artifacts"], transaction)
         if components["skills"]:
-            stage_skills(components["skills"], target, replace, transaction)
-        if components["servers"]:
+            for skill, source in components["skills"].items():
+                receipt.file(f"{skill_path}/{skill}", source)
+            stage_skills(
+                components["skills"], target, replace, transaction, skill_policy=False
+            )
+        if (
+            components["servers"]
+            or (not components_only and native["configuration"])
+            or receipt.old.get("configs", {}).get(config_path, {}).get("owned")
+        ):
             rendered = (
                 tomli_w.dumps(data)
                 if client == "codex"
@@ -244,5 +502,6 @@ def install_for_client(
                     transaction.file(backup, original)
                     result["backup"] = str(backup)
                 transaction.file(config, rendered)
+        receipt.stage(transaction)
         transaction.commit()
     return result

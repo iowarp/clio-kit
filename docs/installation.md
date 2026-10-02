@@ -38,7 +38,17 @@ No clone is required. The project installer also accepts `opencode`, `cursor`,
 `antigravity`, `vscode` and `claude-code`. It preserves unrelated settings and
 backs up changed configuration; conflicts require review and `--replace`.
 Native agents, hooks and commands still require supported host adapters. Explicit
-`--components-only` selects just the skills and MCP configuration.
+`--components-only` selects just the skills and MCP configuration. Codex, Claude
+Code and OpenCode can install the scientific agents and Dataset Report hooks;
+see [component support](clients.md#component-support).
+
+Indexed external packages use this command too. The first installation records a
+revision and content hash under `.clio-kit/sources/`; later installs verify and
+reuse that payload. Use `--update --replace` for a reviewed publisher update.
+`--dry-run` may fetch external metadata/content into a temporary directory but
+writes nothing to the project. It never executes package lifecycle scripts.
+Remove managed project components with `clio-kit plugin uninstall NAME --client
+CLIENT --project /path/to/project`; edited content blocks removal.
 
 Optional verification tools are installed with `uv tool install 'clio-kit[verification]'`.
 The verification extra is not required to launch an MCP.

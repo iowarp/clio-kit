@@ -36,11 +36,11 @@ of installed packages or unique executables.
 
 This follows the host's distinction between
 [standalone components and distributable plugin packages](https://code.claude.com/docs/en/plugins#when-to-use-plugins-vs-standalone-configuration).
-Native manifests, agents and hooks currently target Claude Code; other clients
-can install shared skills and MCPs together with the
-[project installer](intro.md#install-a-workflow-for-your-client). This does not
-convert native agents or hooks. Install the launcher
-first using [Getting Started](intro.md).
+The [project installer](clients.md#component-support) resolves maintained and
+indexed packages for six clients. Codex, Claude Code and OpenCode also receive
+supported agent and hook adapters. Unsupported components require an explicit
+partial installation; native manifest formats remain host-specific. Install the
+launcher first using [Getting Started](intro.md).
 
 ## Primary bundles
 
@@ -102,9 +102,10 @@ The skill and helper can also be downloaded independently:
 clio-kit skill install dataset-report --target .agents/skills
 ```
 
-Configure HDF5/Pandas/Plot MCPs separately outside the native Claude plugin
-route. Other hosts need explicit verification and their own review integration;
-installing portable instructions does not install Claude hooks or agents.
+Installing that skill alone does not configure tools or hooks. Use
+`clio-kit plugin install clio-dataset-report --client CLIENT --project /path/to/project`
+for the complete supported package in Claude Code, Codex or OpenCode. See
+[client support](clients.md#component-support) for hook trust and agent invocation.
 
 Run the installed workflow and native hook acceptance check:
 

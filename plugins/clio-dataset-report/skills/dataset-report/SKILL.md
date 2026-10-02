@@ -47,17 +47,27 @@ retries. Hashing reads the source file; it is intentionally limited to 64 MiB.
    units; mean/median/min/max retain the measurement units. State observed
    patterns separately from models. CV/skewness alone cannot establish growth;
    no fit, mechanism or extrapolation is established by this workflow.
+   Derive any reported interval or rate from the actual ordered time/value pairs
+   and show the calculation; otherwise omit it.
 6. Run the helper's `check /absolute/new-report/clio-dataset-report.json`.
    Fix concrete failures without changing the original baseline. The native
-   plugin's PostToolUse hook runs the same read-only check after Write/Edit of
+   package's client hook runs the same read-only check after native write/edit of
    the manifest or report. Shell/MCP writes do not trigger this hook, so the
    explicit final check remains required. A hook message is feedback, not a
    prevention mechanism or a scientific certification.
-7. In Claude Code, use the installed `clio-agents:scientific-evidence-reviewer`
-   with the raw data, report and helper output. Outside that host, review the
-   same evidence explicitly; mark independent agent review unavailable if so.
-   Treat reviewer corrections as claims requiring evidence, not authority.
+7. Give the raw data, report and helper output to the installed
+   `scientific-evidence-reviewer`. Claude's native marketplace names it
+   `clio-agents:scientific-evidence-reviewer`; project installations use its
+   unqualified name. In OpenCode, request that named subagent. In Codex, use
+   the named agent when discovered, or run
+   `clio-kit plugin run-agent scientific-evidence-reviewer --client codex --project /absolute/project --prompt "Review these observed results: ..."`.
+   Supply actual evidence in the prompt; do not invent a review response.
+   If discovery, sandbox access or the provider blocks review, report independent
+   review as unavailable. Treat reviewer corrections as claims requiring
+   evidence, not authority.
 
-Report output paths and the final check status. A PASS establishes CSV numeric
+Keep the final response to verified project-relative output paths, the five checked
+statistics, check/review status and limitations. Do not introduce numerical claims absent from the reviewed
+report. A PASS establishes CSV numeric
 checks, source integrity and output presence; it does not establish HDF5→CSV
 fidelity, plot semantics, the truth of prose or a fitted scientific model.

@@ -5,8 +5,23 @@ other compatible agents with `clio-kit skill install --target DIRECTORY`.
 See [Agent integrations](../README.md#agent-integrations) for Codex, Claude Code,
 Cursor, VS Code / GitHub Copilot, Antigravity, and Claude Desktop.
 `clio-kit skill validate DIRECTORY` checks standalone skill contributions.
-The plugin entries and marketplace federation described below currently use
-Claude Code's native `.claude-plugin` format; they are not universal manifests.
+The entries below retain Claude-compatible manifest metadata. Kit's shared
+catalogue installs those packages for Codex, Claude Code, OpenCode, Cursor,
+Antigravity and VS Code through the same command:
+
+```bash
+clio-kit plugin install PACKAGE --client codex --project /path/to/project
+```
+
+Use the selected client's name. GitHub, Git URL, Git subdirectory, npm and
+federated entries follow this route. Skills and stdio MCPs are shared; agents
+and hooks need [supported adapters](../docs/clients.md#component-support).
+Unsupported components stop installation unless explicitly omitted with
+`--components-only`. This does not translate arbitrary native plugin formats.
+Publisher revisions are locked per project; use `--update --replace` after
+reviewing updates, and `plugin uninstall` with the same client/project to remove
+managed components. Keep `.clio-kit/packages`, `sources` and `installed` state
+out of version control.
 
 MCPs, skills, agents and hooks are components; workflow plugins bundle them.
 A native wrapper makes an individual component installable without turning it

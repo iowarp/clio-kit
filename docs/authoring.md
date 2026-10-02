@@ -298,8 +298,8 @@ Maintained and community plugins use the same hook validation. A hook can be
 packaged with other components or in its own plugin. Adding a community entry
 only lists the plugin; the supported client installs and executes its hooks.
 
-Hooks are host-specific executable behavior. Our native manifests target Claude
-Code; portable skills do not make these hooks portable to every agent. Validate
+Hooks are host-specific executable behavior. The native marketplace uses Claude
+Code conventions; other clients use the explicit adapters described below. Validate
 with the target client's rules, review commands before installation, and test
 multiple enabled plugins together for duplicated actions or conflicting effects.
 Do not rely on an execution order between independent plugins.
@@ -317,6 +317,45 @@ Use a new output directory for each run.
 This establishes those command-hook paths, not every event or handler type.
 See the [hook reference](https://github.com/iowarp/clio-kit/blob/main/community/README.md#hooks)
 for supported configuration forms and isolated client trials.
+
+## Client-specific hooks
+
+A package can ship a hook for each supported host alongside the shared skills,
+MCP configuration and agent instructions:
+
+| File | Host |
+| --- | --- |
+| `hooks/hooks.json` | Claude Code event configuration |
+| `hooks/codex.json` | Codex event configuration (command handlers) |
+| `hooks/opencode.js` | OpenCode plugin with a default exported async function |
+
+The project installer selects only the requested host's adapter. JSON hooks may
+reference `${CLAUDE_PLUGIN_ROOT}` or `${CLIO_PLUGIN_ROOT}`; OpenCode adapters
+receive a `CLIO_PLUGIN_ROOT` constant pointing to the retained package. Handlers
+must stay inside the package and shared helpers should be reused. Installation
+validates declarations without executing them; client execution is a separate
+trust decision. Codex requires `/hooks` review. OpenCode `--pure` disables these
+plugins. Missing adapters produce an installation error, unless the user opts
+into `--components-only`.
+
+Dataset Report demonstrates all three adapters reusing the same verifier. They
+watch each host's native write/edit operations, not arbitrary shell writes. The
+Codex adapter extracts file paths from an apply_patch payload; OpenCode adds the
+verifier's feedback to the completed tool output. This feedback is evidence
+review, not a sandbox or a guarantee that every file mutation was observed.
+
+Keep native custom agent options and slash commands in their supported client.
+The shared agent adapter accepts only Read/Glob/Grep declarations; model overrides
+remain host-specific. Test the installed role and permissions in the actual client.
+
+To exercise all external routes with the project installers and real MCP queries:
+
+```bash
+uv run --frozen python scripts/verify_client_marketplace.py --output /tmp/clio-client-marketplace
+```
+
+This uses temporary Git/registry fixtures and makes no public submissions.
+It verifies configuration and actual stdio calls, not model-driven skill use.
 
 ## Index an external contribution
 

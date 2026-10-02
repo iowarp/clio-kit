@@ -34,6 +34,8 @@ from clio_kit.doctor import doctor_command
 from clio_kit.hooks import hook_components, write_hook
 from clio_kit.skill_cli import skill_group
 from clio_kit.client_install import CLIENTS, install_for_client
+from clio_kit.client_agent import run_agent
+from clio_kit.catalogue import CATALOGUE_PATH
 
 from clio_kit.community import (
     COMMUNITY_KINDS,
@@ -150,7 +152,7 @@ def _check_mcp_servers(plugin_dir: Path, problems: list[str]) -> None:
 
 
 def validate_plugin(
-    plugin_dir: Path, *, allow_reserved: bool = False
+    plugin_dir: Path, *, allow_reserved: bool = False, skill_policy: bool = True
 ) -> tuple[dict[str, Any], list[str]]:
     """Return a plugin's manifest and every problem found in its directory."""
     problems: list[str] = []
@@ -189,8 +191,12 @@ def validate_plugin(
     # a skill's description is carried in every session whether or not it
     # fires, so a vague one is a permanent cost this is the only chance to
     # catch. Advisories are surfaced by the CLI rather than blocking here.
-    for report in _skill_reports(plugin_dir, manifest):
-        problems.extend(report.problems)
+    if skill_policy:
+        for report in _skill_reports(plugin_dir, manifest):
+            problems.extend(report.problems)
+    else:
+        for path in plugin_dir.glob("skills/*/SKILL.md"):
+            read_skill_frontmatter(path.parent)
 
     has_components = (
         any(
@@ -298,6 +304,9 @@ def plugin_group() -> None:
     """Author, install, check and submit CLIO Kit component packages."""
 
 
+plugin_group.add_command(run_agent)
+
+
 @plugin_group.command("install")
 @click.argument("name")
 @click.option("--client", required=True, type=click.Choice(sorted(CLIENTS)))
@@ -322,17 +331,30 @@ def plugin_group() -> None:
 @click.option(
     "--dry-run", is_flag=True, help="Show the component plan without writing files."
 )
-def install_plugin(name, client, project, root, components_only, replace, dry_run):
+@click.option(
+    "--update",
+    is_flag=True,
+    help="Resolve publisher revisions again instead of reusing the project lock.",
+)
+def install_plugin(
+    name, client, project, root, components_only, replace, dry_run, update
+):
     """Install selected release skills and MCP settings, or use --root CHECKOUT."""
     from clio_kit import MODULE_DIR
     from clio_kit.component_store import INDEX_FILE
     from clio_kit.skills import SkillProblem
 
-    if root is None and (Path.cwd() / ".claude-plugin/marketplace.json").is_file():
+    if root is None and any(
+        (Path.cwd() / path).is_file()
+        for path in (CATALOGUE_PATH, ".claude-plugin/marketplace.json")
+    ):
         root = Path.cwd()
     if root is None and not INDEX_FILE.is_file():
         checkout = MODULE_DIR.parent.parent
-        if (checkout / ".claude-plugin/marketplace.json").is_file():
+        if any(
+            (checkout / path).is_file()
+            for path in (CATALOGUE_PATH, ".claude-plugin/marketplace.json")
+        ):
             root = checkout
     try:
         result = install_for_client(
@@ -343,14 +365,39 @@ def install_plugin(name, client, project, root, components_only, replace, dry_ru
             components_only=components_only,
             replace=replace,
             dry_run=dry_run,
+            update=update,
         )
-    except (ValueError, OSError, SkillProblem, PluginProblem) as exc:
+    except (
+        ValueError,
+        OSError,
+        SkillProblem,
+        PluginProblem,
+        subprocess.SubprocessError,
+    ) as exc:
         raise click.ClickException(str(exc)) from exc
     click.echo(json.dumps(result, indent=2))
     if not dry_run:
         click.echo(
             "Reload the client, trust the project when prompted, and verify MCP connections. This installs project components, not a native client plugin."
         )
+
+
+@plugin_group.command("uninstall")
+@click.argument("name")
+@click.option("--client", required=True, type=click.Choice(sorted(CLIENTS)))
+@click.option(
+    "--project", required=True, type=click.Path(file_okay=False, path_type=Path)
+)
+@click.option("--dry-run", is_flag=True)
+def uninstall_plugin(name, client, project, dry_run):
+    """Remove unchanged project components, preserving unrelated settings."""
+    from clio_kit.install_receipts import uninstall_for_client
+
+    try:
+        result = uninstall_for_client(name, client, project, dry_run=dry_run)
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(json.dumps(result, indent=2))
 
 
 @plugin_group.command("init")

@@ -46,9 +46,10 @@ clio-kit skill install --bundle clio-scientific-io --target /path/to/project/.ag
 
 Use `.agents/skills` for a Codex project, or another agent's documented discovery
 directory. Required MCP servers are configured separately through the client's
-stdio MCP settings. The existing `.claude-plugin` marketplace, dependency bundles
-and two agent definitions currently target Claude Code. Portable skill support
-does not imply that other clients accept those native manifests.
+stdio MCP settings. The shared project installer resolves the same maintained,
+external and federated packages for each supported client. Claude retains its
+native marketplace export; Codex and OpenCode have explicit agent/hook adapters.
+See [component support](clients.md#component-support) for the limits.
 
 See [Agent integrations](./intro.md#agent-integrations) for Codex, Claude Code,
 Cursor, VS Code / GitHub Copilot, Antigravity, and Claude Desktop.

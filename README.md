@@ -234,7 +234,7 @@ claude plugin install clio-skills@clio-kit
 claude plugin install clio-agents@clio-kit
 ```
 
-Native plugins and agent definitions currently target Claude Code. Portable skills work with compatible agents.
+The shared installer supports Codex, Claude Code, OpenCode, Cursor, Antigravity and VS Code. Codex, Claude Code and OpenCode also have adapters for the scientific agents and Dataset Report hooks. See [client support](docs/clients.md#component-support).
 
 Add the optional Clio Coder coding and research skills, including Materio procedures:
 
@@ -387,8 +387,9 @@ Install the workflow skills from your project:
 clio-kit skill install --bundle clio-scientific-io --target .agents/skills
 ```
 
-Check `/mcp` and `/skills` in Codex. CLIO's native plugins target Claude Code;
-use the MCP and skill commands above for Codex.
+Check `/mcp` and `/skills` in Codex. To install a complete supported workflow, use
+`clio-kit plugin install clio-dataset-report --client codex --project .`; review
+its hooks with `/hooks` before running it.
 See [Codex MCP docs](https://developers.openai.com/codex/mcp) and
 [skills docs](https://developers.openai.com/codex/skills).
 

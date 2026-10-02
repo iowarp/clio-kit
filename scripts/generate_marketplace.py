@@ -13,6 +13,7 @@ from clio_kit.community import (
     read_federated_marketplaces,
     write_shipped_marketplaces,
 )
+from clio_kit.catalogue import write_catalogue
 from clio_kit.federation import LOCK_NAME, refresh_marketplace, read_snapshot
 from clio_kit.marketplace_assets import imported_skill_entries, write_extra_plugins
 from clio_kit.local_plugins import discover_local_plugins
@@ -65,6 +66,7 @@ def generate(root: Path, *, refresh: bool = False) -> None:
     write_shipped_marketplaces(
         root / "src" / "clio_kit", read_federated_marketplaces(root)
     )
+    write_catalogue(root, json.loads(path.read_text()))
     print(f"Generated {len(entries)} entries without modifying MCP server files.")
 
 

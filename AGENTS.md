@@ -11,9 +11,10 @@ MCP server, skill or hook. Detailed contribution rules are in
 - `src/clio_kit/`: launcher, runtime isolation, skills and marketplace commands.
 - `mcp-servers/<name>/`: independent server packages, descriptors, locks and tests.
 - `skills/`: portable skill collections, including adapted Clio Coder skills.
-- `plugins/`: native Claude Code plugins and workflow bundles.
+- `plugins/`: workflow packages, shared components and native client adapters.
 - `community/entries/`: external plugin and marketplace TOML entries.
-- `.claude-plugin/`: generated marketplace and federation snapshot.
+- `.clio-kit/catalogue.json`: generated shared package catalogue.
+- `.claude-plugin/`: native Claude export and federation snapshot.
 - `docs/`: documentation source shared by GitHub and Docusaurus.
 - `website/`: website configuration, components and static assets.
 

@@ -27,6 +27,7 @@ from clio_kit.plugins import validate_plugin
 ROOT = Path(__file__).resolve().parents[1]
 NAME = "coder-external-check"
 SERVER = """import json, sys
+from numerics import weighted_mean
 for line in sys.stdin:
     request = json.loads(line)
     if "id" not in request:
@@ -37,9 +38,8 @@ for line in sys.stdin:
     elif method == "tools/list":
         result = {"tools": [{"name": "weighted_mean", "description": "Compute a weighted mean", "inputSchema": {"type": "object", "properties": {"values": {"type": "array", "items": {"type": "number"}}, "weights": {"type": "array", "items": {"type": "number"}}}, "required": ["values", "weights"]}}]}
     elif method == "tools/call":
-        import math
         args = request["params"]["arguments"]
-        value = math.fsum(v * w for v, w in zip(args["values"], args["weights"])) / math.fsum(args["weights"])
+        value = weighted_mean(args["values"], args["weights"])
         result = {"content": [{"type": "text", "text": json.dumps({"mean": value})}]}
     else:
         result = {}
@@ -97,6 +97,9 @@ class Acceptance:
         source = ROOT / "skills/clio-coder-skills/skills/clio-kit-scientific-debugging"
         shutil.copytree(source, plugin / "skills/clio-kit-scientific-debugging")
         (plugin / "server.py").write_text(SERVER)
+        (plugin / "numerics.py").write_text(
+            "import math\ndef weighted_mean(values, weights):\n    return math.fsum(v * w for v, w in zip(values, weights)) / math.fsum(weights)\n"
+        )
         (plugin / ".mcp.json").write_text(
             json.dumps(
                 {
@@ -114,7 +117,13 @@ class Acceptance:
                 {
                     "name": NAME,
                     "version": "1.0.0",
-                    "files": [".claude-plugin", ".mcp.json", "skills", "server.py"],
+                    "files": [
+                        ".claude-plugin",
+                        ".mcp.json",
+                        "skills",
+                        "server.py",
+                        "numerics.py",
+                    ],
                 }
             )
         )
@@ -186,7 +195,9 @@ class Acceptance:
             for arg in config["args"]
         ]
         async with Client(
-            StdioServerParameters(command=config["command"], args=arguments),
+            StdioServerParameters(
+                command=config["command"], args=arguments, env=config.get("env")
+            ),
             mode="legacy",
         ) as client:
             tools = await client.list_tools()
@@ -203,7 +214,7 @@ class Acceptance:
                 mean=5.5,
             )
 
-    def route(self, route: str, source: dict, kind: str = "plugin"):
+    def prepare_catalogue(self, route: str, source: dict, kind: str = "plugin"):
         project = self.output / route
         (project / "community/entries").mkdir(parents=True)
         entry = {
@@ -238,6 +249,10 @@ class Acceptance:
                 ],
                 ROOT,
             )
+        return project
+
+    def route(self, route: str, source: dict, kind: str = "plugin"):
+        project = self.prepare_catalogue(route, source, kind)
         env = {**self.env, "CLAUDE_CONFIG_DIR": str(project / "profile")}
         if source.get("type") == "npm":
             # The loopback fixture is this isolated client's default registry.

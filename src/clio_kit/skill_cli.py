@@ -124,14 +124,21 @@ def stage_skills(
     target: Path,
     replace: bool,
     transaction: InstallTransaction,
+    *,
+    skill_policy: bool = True,
 ) -> None:
     """Validate all conflicts, then stage only changed complete skill folders."""
     for name, source in skills.items():
         if target.resolve().is_relative_to(source.resolve()):
             raise SkillProblem(f"Target cannot be inside a source skill: {source}")
-        report = check_skill(source)
-        if report.problems:
-            raise SkillProblem("; ".join(report.problems))
+        if skill_policy:
+            report = check_skill(source)
+            if report.problems:
+                raise SkillProblem("; ".join(report.problems))
+        else:
+            from clio_kit.skills import read_skill_frontmatter
+
+            read_skill_frontmatter(source)
         source_files = _contents(source)
         destination = target / name
         if destination.is_symlink() or (

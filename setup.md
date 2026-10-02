@@ -159,9 +159,14 @@ MCP tool inventory too: configuration registration alone does not prove a live
 connection. Other MCP clients should configure command `clio-kit` with arguments
 `["mcp-server", "NAME"]` using their own configuration schema.
 
-The `.claude-plugin` catalogue, dependency bundles and `clio-agents` definitions
-currently target Claude Code. They are not universal plugin/agent manifests;
-Codex and other agents use the portable skill and MCP route above.
+The shared installer also resolves indexed external packages and dependencies.
+Codex, Claude Code and OpenCode have adapters for the scientific agents and
+Dataset Report hooks. Native formats remain client-specific; see the
+[capability table](docs/clients.md#component-support). In Codex, use `/hooks` to
+review and trust hooks before checking their effects. In OpenCode, do not use
+`--pure` when testing plugins. Reinstall indexed packages with `--update --replace`
+only after reviewing the publisher's changes. Use `plugin uninstall` with the same
+`--client` and `--project` to remove an installation managed by a receipt.
 
 ### Claude Code native marketplace
 

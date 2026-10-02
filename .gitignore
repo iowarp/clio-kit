@@ -254,3 +254,8 @@ rework/
 
 # Local standalone project; excluded from this repository and release.
 /clio-agentic-search/
+
+# Project installation state; the generated shared catalogue remains tracked.
+/.clio-kit/packages/
+/.clio-kit/sources/
+/.clio-kit/installed/

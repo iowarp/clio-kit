@@ -1,0 +1,12 @@
+{
+  "hooks": {
+    "PostToolUse": [{
+      "matcher": "apply_patch",
+      "hooks": [{
+        "type": "command",
+        "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/hooks/codex_report.py\"",
+        "timeout": 30
+      }]
+    }]
+  }
+}

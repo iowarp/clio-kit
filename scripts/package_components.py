@@ -12,6 +12,7 @@ import io
 import json
 import os
 import re
+import runpy
 from pathlib import Path
 import subprocess
 import tarfile
@@ -101,6 +102,11 @@ PREREQUISITE_LISTS = (
 
 
 def build_components(root: Path, output: Path) -> dict:
+    # Load the stdlib-only reader without importing the launcher's dependencies
+    # inside Hatch's isolated build environment. Runtime and wheel metadata agree.
+    native_components = runpy.run_path(
+        str(Path(__file__).resolve().parents[1] / "src/clio_kit/client_adapters.py")
+    )["native_components"]
     version = tomllib.loads((root / "pyproject.toml").read_text())["project"]["version"]
     inventory_path = root / "mcp-server-versions.toml"
     prerequisites = (
@@ -300,6 +306,7 @@ def build_components(root: Path, output: Path) -> dict:
             ]
             index["packages"][name] = {
                 "manifest": manifest,
+                "native": native_components(directory, manifest),
                 "skills": skill_names,
                 "servers": servers,
                 "unsupported": unsupported,
@@ -309,6 +316,15 @@ def build_components(root: Path, output: Path) -> dict:
     index["external"] = (
         [
             entry["name"]
+            for entry in json.loads(marketplace.read_text())["plugins"]
+            if not isinstance(entry["source"], str)
+        ]
+        if marketplace.exists()
+        else []
+    )
+    index["external_entries"] = (
+        [
+            entry
             for entry in json.loads(marketplace.read_text())["plugins"]
             if not isinstance(entry["source"], str)
         ]

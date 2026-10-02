@@ -265,8 +265,18 @@ def refresh_marketplace(root: Path) -> dict[str, Any]:
     # one unit, just as a fetch or validation failure leaves them unchanged.
     live_path = manifest_path.with_name("federated-marketplaces.json")
     live = {"schema": "clio-kit.federated-marketplaces.v1", "marketplaces": referrals}
+    from clio_kit.catalogue import CATALOGUE_PATH
+
     with InstallTransaction() as transaction:
         for path, content in (
+            (
+                root / CATALOGUE_PATH,
+                {
+                    "schema": 1,
+                    "name": marketplace["name"],
+                    "packages": marketplace["plugins"],
+                },
+            ),
             (manifest_path, marketplace),
             (lock_path, lock),
             (live_path, live),

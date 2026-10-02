@@ -10,6 +10,9 @@
 - Unrelated Write: hook produces no report-check message or file changes.
 - Reviewer must distinguish observed doubling from a fitted growth model;
   reviewer correctness is assessed independently of tool success.
+- If a time interval is reported for the known table, show successive timestamp
+  differences (1 second). The final answer must not introduce a different rate
+  or infer a temporal trend from CV/skewness.
 
 Run deterministic fixtures and the native client's hook runtime. A scripted
 model proves client integration, not live scientific reasoning. Record live

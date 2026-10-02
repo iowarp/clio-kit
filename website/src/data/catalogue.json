@@ -2268,7 +2268,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "MIT",
       "docs": "/docs/marketplace",
@@ -2277,7 +2282,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "archify",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/architecture",
@@ -2295,7 +2309,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -2304,7 +2323,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "architecture",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/arxiv-literature",
@@ -2322,7 +2350,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -2331,7 +2364,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "arxiv-literature",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/ast-grep",
@@ -2349,7 +2391,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -2358,7 +2405,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "ast-grep",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/backlog",
@@ -2376,7 +2432,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -2385,7 +2446,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "backlog",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/branch-closeout",
@@ -2403,7 +2473,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -2412,7 +2487,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "branch-closeout",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/clio-agents",
@@ -2433,6 +2517,8 @@
       "servers": [],
       "tags": [],
       "clients": [
+        "codex",
+        "opencode",
         "claude-code"
       ],
       "license": "See source licence",
@@ -2443,7 +2529,16 @@
       ],
       "installation": "native-package",
       "nativePackage": "clio-agents",
-      "role": "Component collection"
+      "role": "Component collection",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": false,
+        "antigravity": false,
+        "claude-code": true,
+        "vscode": false
+      }
     },
     {
       "id": "plugin/clio-analysis-skills",
@@ -2466,11 +2561,11 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -2482,7 +2577,15 @@
       "installation": "native-package",
       "nativePackage": "clio-analysis-skills",
       "role": "Component collection",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "plugin/clio-coder-dev",
@@ -2500,7 +2603,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -2509,7 +2617,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "clio-coder-dev",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/clio-coder-skills",
@@ -2567,11 +2684,11 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "See source licence",
@@ -2583,7 +2700,15 @@
       "installation": "native-package",
       "nativePackage": "clio-coder-skills",
       "role": "Component collection",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "plugin/clio-coder-test",
@@ -2601,7 +2726,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -2610,7 +2740,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "clio-coder-test",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/clio-geoscience-skills",
@@ -2632,11 +2771,11 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -2648,7 +2787,15 @@
       "installation": "native-package",
       "nativePackage": "clio-geoscience-skills",
       "role": "Component collection",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "plugin/clio-hpc-skills",
@@ -2670,11 +2817,11 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -2686,7 +2833,15 @@
       "installation": "native-package",
       "nativePackage": "clio-hpc-skills",
       "role": "Component collection",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "plugin/clio-performance-skills",
@@ -2709,11 +2864,11 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -2725,7 +2880,15 @@
       "installation": "native-package",
       "nativePackage": "clio-performance-skills",
       "role": "Component collection",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "plugin/clio-research-skills",
@@ -2747,11 +2910,11 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -2763,7 +2926,15 @@
       "installation": "native-package",
       "nativePackage": "clio-research-skills",
       "role": "Component collection",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "plugin/clio-scientific-io-skills",
@@ -2785,11 +2956,11 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -2801,7 +2972,15 @@
       "installation": "native-package",
       "nativePackage": "clio-scientific-io-skills",
       "role": "Component collection",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "plugin/clio-skills",
@@ -2826,11 +3005,11 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "See source licence",
@@ -2842,7 +3021,15 @@
       "installation": "native-package",
       "nativePackage": "clio-skills",
       "role": "Component collection",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "plugin/coding-standards",
@@ -2860,7 +3047,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -2869,7 +3061,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "coding-standards",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/context-handoff",
@@ -2887,7 +3088,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -2896,7 +3102,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "context-handoff",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/context-prime",
@@ -2914,7 +3129,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -2923,7 +3143,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "context-prime",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/credentials",
@@ -2941,7 +3170,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -2950,7 +3184,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "credentials",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/cut-it",
@@ -2968,7 +3211,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -2977,7 +3225,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "cut-it",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/design-council",
@@ -2995,7 +3252,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3004,7 +3266,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "design-council",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/experiment-protocol",
@@ -3022,7 +3293,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3031,7 +3307,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "experiment-protocol",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/file-ticket",
@@ -3049,7 +3334,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3058,7 +3348,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "file-ticket",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/find-skills",
@@ -3076,7 +3375,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3085,7 +3389,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "find-skills",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/fix-issue",
@@ -3103,7 +3416,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3112,7 +3430,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "fix-issue",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/grill-me",
@@ -3130,7 +3457,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3139,7 +3471,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "grill-me",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/herdr",
@@ -3157,7 +3498,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3166,7 +3512,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "herdr",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/materio",
@@ -3184,7 +3539,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "See source licence",
       "docs": "/docs/marketplace",
@@ -3193,7 +3553,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "materio",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/prd",
@@ -3211,7 +3580,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3220,7 +3594,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "prd",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/product-intent",
@@ -3238,7 +3621,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3247,7 +3635,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "product-intent",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/prototype",
@@ -3265,7 +3662,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3274,7 +3676,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "prototype",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/resolve-merge-conflicts",
@@ -3292,7 +3703,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3301,7 +3717,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "resolve-merge-conflicts",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/scientific-debugging",
@@ -3319,7 +3744,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3328,7 +3758,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "scientific-debugging",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/scientific-modernization",
@@ -3346,7 +3785,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3355,7 +3799,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "scientific-modernization",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/ship",
@@ -3373,7 +3826,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3382,7 +3840,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "ship",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/skill-craft",
@@ -3400,7 +3867,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3409,7 +3881,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "skill-craft",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/tdd",
@@ -3427,7 +3908,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3436,7 +3922,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "tdd",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/tech-spec",
@@ -3454,7 +3949,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3463,7 +3963,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "tech-spec",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/workflow-distiller",
@@ -3481,7 +3990,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3490,7 +4004,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "workflow-distiller",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/worktree-create",
@@ -3508,7 +4031,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3517,7 +4045,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "worktree-create",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "plugin/worktree-merge",
@@ -3535,7 +4072,12 @@
       "servers": [],
       "tags": [],
       "clients": [
-        "claude-code"
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
       ],
       "license": "Apache-2.0",
       "docs": "/docs/marketplace",
@@ -3544,7 +4086,16 @@
       "componentTypes": [],
       "installation": "native-package",
       "nativePackage": "worktree-merge",
-      "role": "External package"
+      "role": "External package",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": null,
+        "opencode": null,
+        "cursor": null,
+        "antigravity": null,
+        "claude-code": null,
+        "vscode": null
+      }
     },
     {
       "id": "skill/bibliography",
@@ -5731,11 +6282,11 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -5749,7 +6300,15 @@
       "installation": "native-package",
       "nativePackage": "clio-analysis",
       "role": "Workflow plugin",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "workflow/clio-dataset-report",
@@ -5778,11 +6337,11 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -5797,7 +6356,15 @@
       "installation": "native-package",
       "nativePackage": "clio-dataset-report",
       "role": "Workflow plugin",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": false,
+        "antigravity": false,
+        "claude-code": true,
+        "vscode": false
+      }
     },
     {
       "id": "workflow/clio-geoscience",
@@ -5826,11 +6393,11 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -5844,7 +6411,15 @@
       "installation": "native-package",
       "nativePackage": "clio-geoscience",
       "role": "Workflow plugin",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "workflow/clio-hpc",
@@ -5877,11 +6452,11 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -5895,7 +6470,15 @@
       "installation": "native-package",
       "nativePackage": "clio-hpc",
       "role": "Workflow plugin",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "workflow/clio-performance",
@@ -5925,11 +6508,11 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -5943,7 +6526,15 @@
       "installation": "native-package",
       "nativePackage": "clio-performance",
       "role": "Workflow plugin",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "workflow/clio-research",
@@ -5974,11 +6565,11 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -5992,7 +6583,15 @@
       "installation": "native-package",
       "nativePackage": "clio-research",
       "role": "Workflow plugin",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     },
     {
       "id": "workflow/clio-scientific-io",
@@ -6023,11 +6622,11 @@
       ],
       "tags": [],
       "clients": [
-        "claude-code",
         "codex",
         "opencode",
         "cursor",
         "antigravity",
+        "claude-code",
         "vscode"
       ],
       "license": "BSD-3-Clause",
@@ -6041,7 +6640,15 @@
       "installation": "native-package",
       "nativePackage": "clio-scientific-io",
       "role": "Workflow plugin",
-      "projectInstall": true
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      }
     }
   ]
 }

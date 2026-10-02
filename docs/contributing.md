@@ -87,7 +87,8 @@ is not code certification or a promise about future upstream releases.
 
 ## Agents and hooks need host-specific checks
 
-Kit's maintained native agent/hook packages target Claude Code. Other clients may
+Kit supplies explicit agent/hook adapters for Codex, Claude Code and OpenCode
+([support matrix](clients.md#component-support)). Other clients may
 have their own formats; portable skill installation does not translate those
 formats. Review hook commands without executing them first, then test in an
 isolated supported client and verify what changed. See [hook authoring](authoring.md#add-a-hook).

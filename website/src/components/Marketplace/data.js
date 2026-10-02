@@ -77,15 +77,13 @@ export function installation(item, client) {
   }
   const plugin = item.nativePackage || item.plugin || item.name;
   if (item.projectInstall && client !== 'claude-code') {
-    const partial = item.componentTypes.some(
-      (type) => !['skill', 'mcp'].includes(type),
-    );
+    const partial = item.clientSupport?.[client] === false;
     return {
       label: 'Install selected components',
       code: `clio-kit plugin install ${plugin} --client ${client} --project /path/to/project${partial ? ' --components-only' : ''}`,
       note: partial
-        ? 'Installs only the skills and MCP configuration. Native agents, hooks and commands are not adapted; this is a partial workflow installation.'
-        : 'Installs the included skills and MCP configuration in your project. Reload the client, trust the project when prompted, and verify connections. This is project setup, not a native client plugin installation.',
+        ? 'Installs only skills and MCP configuration. This package contains components without an adapter for the selected client.'
+        : 'Installs supported package components in your project. External content is checked during installation; unsupported components stop the install. Reload your client and verify tools and hooks. Codex hooks need /hooks review.',
     };
   }
   return {

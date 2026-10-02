@@ -213,6 +213,38 @@ async def verify(output: Path) -> None:
             cwd=output,
         )
         expect(keys)
+        for client in ("codex", "claude-code", "opencode"):
+            project = output / ("complete-" + client)
+            command(
+                "complete-" + client,
+                "plugin",
+                "install",
+                "clio-dataset-report",
+                "--client",
+                client,
+                "--project",
+                str(project),
+            )
+            receipt = json.loads(
+                (
+                    project / f".clio-kit/installed/{client}/clio-dataset-report.json"
+                ).read_text()
+            )
+            assert receipt["files"], "Native components and skills must be installed"
+            command(
+                "remove-" + client,
+                "plugin",
+                "uninstall",
+                "clio-dataset-report",
+                "--client",
+                client,
+                "--project",
+                str(project),
+            )
+            assert not (
+                project / f".clio-kit/installed/{client}/clio-dataset-report.json"
+            ).exists()
+        expect(keys)
         summary = {
             "wheel_bytes": wheel.stat().st_size,
             "sdist_bytes": next(dist.glob("clio_kit-*.tar.gz")).stat().st_size,
