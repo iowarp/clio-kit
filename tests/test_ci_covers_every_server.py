@@ -95,7 +95,3 @@ def test_ci_python_lanes_match_package_requirements() -> None:
         'uv sync --frozen --all-extras --dev --python "${{ inputs.python-version }}"'
         in setup
     )
-    assert (
-        jobs["agentic-search-test"]["env"]["UV_PYTHON"]
-        == "${{ matrix.python-version }}"
-    )

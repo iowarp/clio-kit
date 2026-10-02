@@ -142,8 +142,6 @@ def classify_records(records: list[dict], entries: dict, root: Path) -> None:
             if previous == "skill"
             else "launcher"
             if previous == "mcp"
-            else "service"
-            if previous == "service"
             else "native-package"
         )
         if previous == "mcp":
@@ -487,17 +485,6 @@ def generate(root: Path) -> dict:
                 evidence="Configuration present",
             )
 
-    add(
-        "service",
-        "agentic-search",
-        title="Agentic Search",
-        description="Hybrid retrieval across scientific document collections: lexical, vector, graph and metadata search.",
-        category="Research & discovery",
-        clients=[],
-        docs="/docs/agentic-search",
-        path="clio-agentic-search",
-        evidence="Standalone service",
-    )
     ids = {r["id"] for r in records}
     if len(ids) != len(records):
         raise ValueError("Duplicate catalogue ids")

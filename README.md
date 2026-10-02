@@ -69,11 +69,10 @@ Install workflow bundles, use skills to guide your agent, and discover community
 - ✅ **"Find papers on neural networks from ArXiv"** - ArXiv MCP searches
 - ✅ **"Plot the results from this CSV file"** - Plot MCP visualizes
 - ✅ **"Optimize memory usage for this pandas DataFrame"** - Pandas MCP optimizes
-- ✅ **"Find all documents where pressure exceeds 200 kPa"** - Agentic Search retrieves
 - ✅ **Workflow guidance** - Skills explain tool sequences; optional agents help plan and review results
 - ✅ **Community contributions** - Discover external plugins and marketplace collections
 
-**MCP servers · Skills · Plugins · Agents · Hooks · Community marketplaces · Hybrid search**
+**MCP servers · Skills · Plugins · Agents · Hooks · Community marketplaces**
 
 CLIO Kit is part of the IoWarp platform's tooling ecosystem for AI agents. Its meta-marketplace brings tools and reusable workflows together for scientific computing—from exploring HDF5 datasets and managing Slurm jobs to analyzing results and finding research papers. Built by researchers, for researchers, at Illinois Institute of Technology with NSF support.
 
@@ -178,10 +177,6 @@ clio-kit mcp-servers
 clio-kit mcp-server hdf5
 clio-kit mcp-server pandas
 clio-kit mcp-server slurm
-
-# Agentic search for scientific corpora
-clio-kit search serve
-clio-kit search query --namespace local_fs --q "pressure > 200 kPa"
 ```
 
 To install the published release instead, use `uv tool install clio-kit`.
@@ -473,26 +468,6 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 
 </div>
 
-### Agentic Search
-
-Hybrid retrieval engine for scientific corpora — combines lexical (BM25), vector, graph, and scientific search (numeric range, unit matching, formula targeting) over namespaced document collections. DuckDB storage, FastAPI, async job queue, OpenTelemetry tracing, Prometheus metrics.
-
-```bash
-# Start the search API server
-clio-kit search serve
-
-# Index documents from a namespace
-clio-kit search index --namespace local_fs
-
-# Query with scientific operators
-clio-kit search query --namespace local_fs --q "pressure between 190 and 360 kPa"
-
-# List indexed documents
-clio-kit search list --namespace local_fs
-```
-
-**API endpoints**: `/query`, `/jobs/index`, `/documents`, `/health`, `/metrics` — [full docs](clio-agentic-search/README.md)
-
 ---
 
 ## 📖 Usage Examples
@@ -536,14 +511,6 @@ clio-kit search list --namespace local_fs
 ```
 
 **Tools used:** `line_plot`, `data_info`
-
-### Agentic Search: Scientific Retrieval
-
-```
-"Find all chunks mentioning pressure above 200 kPa in the local_fs namespace."
-```
-
-**CLI:** `clio-kit search query --namespace local_fs --q "pressure > 200 kPa"`
 
 ---
 

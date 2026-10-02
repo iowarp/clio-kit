@@ -67,9 +67,7 @@ export function DetailContent({item}) {
               </select>
             </label>
           ) : (
-            <span>
-              {item.kind === 'service' ? 'Standalone service' : 'Claude Code'}
-            </span>
+            <span>Claude Code</span>
           )}
         </div>
         <CodeBlock language="bash">{install.code}</CodeBlock>

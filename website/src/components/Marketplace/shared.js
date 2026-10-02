@@ -58,11 +58,6 @@ export function Icon({name = 'all', size = 20, ...props}) {
       </>
     ),
     hook: <path d="m13 2-9 12h7l-1 8 10-13h-7l1-7Z" />,
-    service: (
-      <>
-        <path d="M2 12h5l3-8 4 16 3-8h5" />
-      </>
-    ),
     search: (
       <>
         <circle cx="10.5" cy="10.5" r="6.5" />

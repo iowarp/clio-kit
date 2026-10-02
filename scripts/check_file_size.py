@@ -12,7 +12,7 @@ baseline entry must be an EXACT mirror of reality at all times.
 
 Walks every package's ``src/`` tree -- the root ``clio_kit`` package plus one
 per ``mcp-servers/<name>`` (any directory with a ``pyproject.toml``)
-plus ``clio-agentic-search`` -- and enforces a per-file line-count ratchet:
+-- and enforces a per-file line-count ratchet:
 
 * A file **not** in :data:`RATCHET_BASELINE` may not exceed
   :data:`DEFAULT_MAX_LINES` -- a brand-new god-file fails the check.
@@ -126,12 +126,10 @@ RATCHET_BASELINE: dict[str, int] = {
 MCP_SERVERS_ROOT = "mcp-servers"
 
 # Additional package roots outside mcp-servers, checked for a `src/`
-# tree the same way. clio-agentic-search is a standalone service (not an MCP
-# server) but is still a first-class package in this repo's code-health
-# scope; the repository root itself ships the `clio_kit` launcher package
+# tree the same way. The repository root ships the `clio_kit` launcher package
 # (its own `pyproject.toml` + `src/clio_kit/`) and was previously the one
 # first-class package this scan silently skipped (PR #364 review finding 5).
-EXTRA_PACKAGE_ROOTS = (".", "clio-agentic-search")
+EXTRA_PACKAGE_ROOTS = (".",)
 
 
 class Failure(NamedTuple):

@@ -39,31 +39,26 @@ def test_external_actions_are_immutable_commit_pins() -> None:
 
 
 def test_release_workflow_triggers_on_every_shipped_lock() -> None:
-    """Root and embedded search lock drift must run release validation."""
+    """Root and server lock drift must run release validation."""
     pull_request_paths = WORKFLOW[
         WORKFLOW.index("  pull_request:") : WORKFLOW.index("  push:")
     ]
     push_paths = WORKFLOW[WORKFLOW.index("  push:") : WORKFLOW.index("permissions:")]
     for paths in (pull_request_paths, push_paths):
         assert "- 'uv.lock'" in paths
-        assert "- 'clio-agentic-search/uv.lock'" in paths
+        assert "- 'mcp-servers/**'" in paths
         assert "- 'mcp-server-versions.toml'" in paths
         for kind in ("plugins", "skills", "agents", "hooks"):
             assert f"- '{kind}/**'" in paths
 
     quality_block = WORKFLOW[WORKFLOW.index("  quality:") : WORKFLOW.index("  build:")]
     assert "uv lock --check\n" in quality_block
-    assert "uv lock --check --directory clio-agentic-search" in quality_block
 
 
 def test_release_security_audits_unmatrixed_shipped_environments() -> None:
     """Release validation audits shipped environments outside the MCP matrix."""
     quality_block = WORKFLOW[WORKFLOW.index("  quality:") : WORKFLOW.index("  build:")]
     assert "uv run --with 'pip-audit==2.10.1' pip-audit" in quality_block
-    assert (
-        "uv run --directory clio-agentic-search \\\n"
-        "          --with 'pip-audit==2.10.1' pip-audit" in quality_block
-    )
     assert (
         "uv run --directory mcp-servers/chronolog \\\n"
         "          --with 'pip-audit==2.10.1' pip-audit" in quality_block
@@ -478,19 +473,15 @@ def test_quality_matrix_is_required_and_lock_sensitive() -> None:
     ]
     assert "uv\\.lock$" in infrastructure_check
     assert "mcp-server-versions\\.toml$" in infrastructure_check
-    assert "clio-agentic-search/uv\\.lock$" in infrastructure_check
     # 3.13 added to both matrices to guard the numpy<2-ceiling defect class
     # (mcp-servers/pandas, /plot) on any Python-3.13-only host.
     assert 'python-version: ["3.10", "3.11", "3.12", "3.13"]' in QUALITY_WORKFLOW
-    assert 'python-version: ["3.11", "3.12", "3.13"]' in QUALITY_WORKFLOW
-    assert "uv lock --check" in QUALITY_WORKFLOW
-    assert QUALITY_WORKFLOW.count("uv sync --locked --dev") == 3
 
 
 def test_quality_junit_reports_reject_skipped_tests() -> None:
-    """Upgraded MCPs, Windows containment, and search reject test skips."""
-    assert QUALITY_WORKFLOW.count("--junitxml=") == 3
-    assert QUALITY_WORKFLOW.count("scripts/assert_no_skipped_tests.py") == 3
+    """Upgraded MCPs and Windows containment reject test skips."""
+    assert QUALITY_WORKFLOW.count("--junitxml=") == 2
+    assert QUALITY_WORKFLOW.count("scripts/assert_no_skipped_tests.py") == 2
     assert 'case "${{ matrix.mcp }}" in' in QUALITY_WORKFLOW
     assert "jarvis|slurm|spack)" in QUALITY_WORKFLOW
 

@@ -15,7 +15,6 @@ agents and community marketplace. The live site at
 ├── tutorials/              # Runnable tool, skill and plugin walkthroughs
 ├── authoring.md            # Plugins, MCPs, skills and hooks
 ├── marketplace.md          # Components, contribution and acceptance
-├── agentic-search.md       # Standalone retrieval service
 └── mcps/                   # Server reference pages
 website/
 ├── src/components/         # Documentation and catalogue UI

@@ -134,17 +134,6 @@ def _is_servers_root(path: Path) -> bool:
     return is_servers_root(path)
 
 
-def get_search_path():
-    """Get the path to the clio-agentic-search directory (dev or installed)"""
-    dev_path = MODULE_DIR.parent.parent / "clio-agentic-search"
-    if dev_path.exists():
-        return dev_path
-
-    from clio_kit.component_store import catalogue, fetch
-
-    return fetch(catalogue()["search"])
-
-
 def auto_discover_mcps():
     """Auto-discover MCP servers from the mcp-servers directory."""
     from clio_kit.component_store import INDEX_FILE, catalogue
@@ -403,20 +392,14 @@ def _locked_server_environment_path(
 def main(ctx):
     """clio-kit: Unified launcher for MCP servers and AI prompts"""
     if ctx.invoked_subcommand is None:
-        click.echo(
-            "clio-kit: Unified launcher for MCP servers, AI prompts, and services"
-        )
+        click.echo("clio-kit: Unified launcher for MCP servers and AI prompts")
         click.echo("\nAvailable commands:")
         click.echo("  mcp-server   Run an MCP server")
         click.echo("  mcp-servers  List all available MCP servers")
-        click.echo(
-            "  search       Run agentic search (query, index, serve, list, seed)"
-        )
         click.echo("  prompt       Print a prompt to stdout")
         click.echo("  prompts      List all available prompts")
         click.echo("\nUsage:")
         click.echo("  clio-kit mcp-server <server-name>")
-        click.echo("  clio-kit search <subcommand>")
         click.echo("  clio-kit prompt <prompt-name>")
         click.echo("\nFor more help: clio-kit <command> --help")
 
@@ -650,57 +633,6 @@ def show_mcp_contract(contract_id: str) -> None:
     """Print one verified locked-server user contract as machine-readable JSON."""
     artifact = load_mcp_user_contract(contract_id)
     click.echo(json.dumps(artifact, separators=(",", ":"), sort_keys=True))
-
-
-@main.command(
-    "search",
-    context_settings=dict(
-        ignore_unknown_options=True,
-        allow_extra_args=True,
-    ),
-)
-@click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def search(args):
-    """Run agentic search commands (query, index, serve, list, seed)."""
-
-    if not args:
-        click.echo("clio-kit search: Hybrid retrieval engine for scientific corpora")
-        click.echo("\nSubcommands:")
-        click.echo("  query   Run retrieval queries")
-        click.echo("  index   Index documents into a namespace")
-        click.echo("  serve   Start the FastAPI server")
-        click.echo("  list    List indexed documents")
-        click.echo("  seed    Seed sample data")
-        click.echo("\nUsage: clio-kit search <subcommand> [options]")
-        click.echo("\nExamples:")
-        click.echo(
-            '  clio-kit search query --namespace local_fs --q "pressure > 200 kPa"'
-        )
-        click.echo("  clio-kit search index --namespace local_fs")
-        click.echo("  clio-kit search serve --port 8080")
-        return
-
-    try:
-        search_path = get_search_path()
-    except (ValueError, OSError) as exc:
-        raise click.ClickException(str(exc)) from exc
-    if not search_path.exists():
-        click.echo(f"Error: clio-agentic-search not found at {search_path}")
-        click.echo("Install from: https://github.com/iowarp/clio-kit")
-        sys.exit(1)
-
-    cmd = [uvx_command(), "--from", str(search_path), "clio"]
-    cmd.extend(args)
-
-    try:
-        subprocess.run(cmd, check=True, env=subprocess_env_with_github_https_rewrite())
-    except subprocess.CalledProcessError as e:
-        sys.exit(e.returncode)
-    except FileNotFoundError:
-        click.echo(
-            "Error: uvx not found. Please install uv: https://github.com/astral-sh/uv"
-        )
-        sys.exit(1)
 
 
 # Registered rather than defined here: the launcher is held at a fixed size

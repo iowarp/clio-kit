@@ -16,7 +16,6 @@ jobs:
       mcps: ${{ steps.discover.outputs.mcps }}
       any_mcp_changed: ${{ steps.discover.outputs.any_mcp_changed }}
       containment_changed: ${{ steps.discover.outputs.containment_changed }}
-      search_changed: ${{ steps.discover.outputs.search_changed }}
     steps:
     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       with:
@@ -46,7 +45,7 @@ jobs:
         echo "$CHANGED"
 
         # ── Check for infrastructure changes (triggers full run) ──
-        if [ "$RUN_ALL" = "false" ] && echo "$CHANGED" | grep -qE '^(scripts/|\.github/|\.codecov\.yml$|pyproject\.toml$|uv\.lock$|mcp-server-versions\.toml$|clio-agentic-search/uv\.lock$)'; then
+        if [ "$RUN_ALL" = "false" ] && echo "$CHANGED" | grep -qE '^(scripts/|\.github/|\.codecov\.yml$|pyproject\.toml$|uv\.lock$|mcp-server-versions\.toml$)'; then
           RUN_ALL=true
         fi
         echo "Run all: $RUN_ALL"
@@ -81,13 +80,6 @@ jobs:
           echo "containment_changed=true" >> $GITHUB_OUTPUT
         else
           echo "containment_changed=false" >> $GITHUB_OUTPUT
-        fi
-
-        # ── Determine if agentic-search needs testing ──
-        if [ "$RUN_ALL" = "true" ] || echo "$CHANGED" | grep -q "^clio-agentic-search/"; then
-          echo "search_changed=true" >> $GITHUB_OUTPUT
-        else
-          echo "search_changed=false" >> $GITHUB_OUTPUT
         fi
 
   file-size-ratchet:
@@ -445,78 +437,3 @@ jobs:
         fi
 
         echo "PASS: server.json is in sync for ${{ matrix.mcp }}"
-
-  # ── clio-agentic-search (standalone service, not an MCP server) ──
-
-  agentic-search-ruff:
-    name: Ruff - clio-agentic-search
-    runs-on: ubuntu-latest
-    needs: discover-mcps
-    if: needs.discover-mcps.outputs.search_changed == 'true'
-    steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-    - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      with:
-        version: "latest"
-    - run: uv python install 3.12
-    - name: Install dependencies
-      run: |
-        cd clio-agentic-search
-        uv sync --locked --dev
-    - name: Ruff lint
-      run: |
-        cd clio-agentic-search
-        uv run ruff check --output-format=github .
-    - name: Ruff format check
-      run: |
-        cd clio-agentic-search
-        uv run ruff format --check .
-
-  agentic-search-mypy:
-    name: MyPy - clio-agentic-search
-    runs-on: ubuntu-latest
-    needs: discover-mcps
-    if: needs.discover-mcps.outputs.search_changed == 'true'
-    steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-    - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      with:
-        version: "latest"
-    - run: uv python install 3.12
-    - name: Install dependencies
-      run: |
-        cd clio-agentic-search
-        uv lock --check
-        uv sync --locked --dev
-    - name: Run MyPy
-      run: |
-        cd clio-agentic-search
-        uv run mypy src/ --ignore-missing-imports --show-error-codes --no-error-summary
-
-  agentic-search-test:
-    name: Test - clio-agentic-search (py${{ matrix.python-version }})
-    runs-on: ubuntu-latest
-    needs: discover-mcps
-    if: needs.discover-mcps.outputs.search_changed == 'true'
-    env:
-      UV_PYTHON: ${{ matrix.python-version }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
-    steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-    - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      with:
-        version: "latest"
-    - run: uv python install ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        cd clio-agentic-search
-        uv sync --locked --dev
-    - name: Run tests
-      run: |
-        cd clio-agentic-search
-        uv run pytest --ignore=tests/benchmarks -v --tb=short \
-          --junitxml=junit.xml -o junit_family=legacy
-        python ../scripts/assert_no_skipped_tests.py junit.xml

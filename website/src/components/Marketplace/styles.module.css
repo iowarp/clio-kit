@@ -161,12 +161,8 @@
   background: #fff3de;
   color: #a98028;
 }
-.service {
-  background: #eaf3fb;
-  color: #487caa;
-}
 :global([data-theme='dark'])
-  :is(.skill, .plugin, .agent, .hook, .service, .mcp) {
+  :is(.skill, .plugin, .agent, .hook, .mcp) {
   background: var(--market-tint);
   color: var(--brand-teal-light);
 }

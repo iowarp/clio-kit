@@ -13,7 +13,6 @@ export const kinds = [
   ['hook', 'Hooks'],
   ['collection', 'Component collections'],
   ['package', 'External packages'],
-  ['service', 'Services'],
 ];
 export const clientNames = {
   'claude-code': 'Claude Code',
@@ -76,12 +75,6 @@ export function installation(item, client) {
       note: 'Install the launcher first. Restart or reload your client and verify the MCP connection. System backends may require additional setup.',
     };
   }
-  if (item.kind === 'service')
-    return {
-      label: 'Start the search service',
-      code: 'clio-kit search serve',
-      note: 'This is a standalone retrieval service, not an MCP server. Configure and index your document collection using the service guide.',
-    };
   const plugin = item.nativePackage || item.plugin || item.name;
   if (item.projectInstall && client !== 'claude-code') {
     const partial = item.componentTypes.some(

@@ -3525,28 +3525,6 @@
       "role": "External package"
     },
     {
-      "id": "service/agentic-search",
-      "kind": "service",
-      "name": "agentic-search",
-      "title": "Agentic Search",
-      "description": "Hybrid retrieval across scientific document collections: lexical, vector, graph and metadata search.",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "",
-      "category": "Research & discovery",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "clio-agentic-search",
-      "members": [],
-      "servers": [],
-      "tags": [],
-      "clients": [],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/agentic-search",
-      "evidence": "Standalone service",
-      "componentTypes": [],
-      "installation": "service"
-    },
-    {
       "id": "skill/bibliography",
       "kind": "skill",
       "name": "bibliography",

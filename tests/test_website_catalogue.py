@@ -47,14 +47,13 @@ def test_upstream_and_adapted_skills_have_distinct_identity_and_provenance():
     assert all("verified" not in r["evidence"].lower() for r in items.values())
 
 
-def test_workflow_members_resolve_and_service_is_not_an_mcp():
+def test_workflow_members_resolve():
     items = {item["id"]: item for item in catalogue.generate(ROOT)["items"]}
     workflow = items["workflow/clio-scientific-io"]
     assert "mcp/hdf5" in workflow["members"]
     assert "skill/dataset-explore" in workflow["members"]
     assert all(member in items for member in workflow["members"])
-    assert items["service/agentic-search"]["clients"] == []
-    assert "mcp/agentic-search" not in items
+    assert all(item["kind"] != "service" for item in items.values())
 
 
 def test_product_types_do_not_count_installation_wrappers_as_workflow_plugins():

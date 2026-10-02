@@ -15,9 +15,6 @@ on:
       - 'pyproject.toml'
       - 'uv.lock'
       - 'mcp-servers/**'
-      - 'clio-agentic-search/src/**'
-      - 'clio-agentic-search/pyproject.toml'
-      - 'clio-agentic-search/uv.lock'
       - 'prompts/**'
       # The root suite validates these, and an outside contribution is
       # a change to community/ and nothing else -- without these it
@@ -40,9 +37,6 @@ on:
       - 'pyproject.toml'
       - 'uv.lock'
       - 'mcp-servers/**'
-      - 'clio-agentic-search/src/**'
-      - 'clio-agentic-search/pyproject.toml'
-      - 'clio-agentic-search/uv.lock'
       - 'prompts/**'
       # The root suite validates these, and an outside contribution is
       # a change to community/ and nothing else -- without these it
@@ -87,7 +81,6 @@ jobs:
       shell: bash
       run: |
         uv lock --check
-        uv lock --check --directory clio-agentic-search
         uv run --with ruff ruff check scripts src tests evals
         uv run --with ruff ruff format --check scripts src tests evals
         uv run --with mypy mypy scripts/generate_server_json.py \
@@ -100,8 +93,6 @@ jobs:
         uv run pytest -q tests --junitxml="$RUNNER_TEMP/root-junit.xml"
         python scripts/assert_no_skipped_tests.py "$RUNNER_TEMP/root-junit.xml"
         uv run --with 'pip-audit==2.10.1' pip-audit
-        uv run --directory clio-agentic-search \
-          --with 'pip-audit==2.10.1' pip-audit
         for server in jarvis scientific-catalog slurm spack; do
           uv lock --check --directory "mcp-servers/$server"
           uv run --directory "mcp-servers/$server" ruff check .

@@ -253,7 +253,7 @@ def test_multiple_scan_roots_are_all_checked(tmp_path: Path) -> None:
     assert offending == ["pkg_a/src/big.py", "pkg_b/src/also_big.py"]
 
 
-def test_discover_package_src_roots_finds_repo_root_pyproject_packages_and_agentic_search(
+def test_discover_package_src_roots_finds_root_and_server_packages(
     tmp_path: Path,
 ) -> None:
     """PR #364 review finding 5: the repo root's own `src/` (the `clio_kit`
@@ -272,18 +272,13 @@ def test_discover_package_src_roots_finds_repo_root_pyproject_packages_and_agent
         parents=True, exist_ok=True
     )
     (servers / "no_src_pkg" / "pyproject.toml").write_text("", encoding="utf-8")
-    (tmp_path / "clio-agentic-search" / "src").mkdir(parents=True)
-    (tmp_path / "clio-agentic-search" / "pyproject.toml").write_text(
-        "", encoding="utf-8"
-    )
 
     roots = discover_package_src_roots(tmp_path)
 
     assert (tmp_path / "src") in roots
     assert (servers / "jarvis" / "src") in roots
-    assert (tmp_path / "clio-agentic-search" / "src") in roots
     assert (servers / "not_a_package" / "src") not in roots
-    assert len(roots) == 3
+    assert len(roots) == 2
 
 
 def test_discover_package_src_roots_skips_repo_root_without_pyproject(

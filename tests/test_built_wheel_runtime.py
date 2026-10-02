@@ -144,6 +144,8 @@ def test_launcher_distributions_contain_metadata_not_component_payloads(
     assert result["assets"] > 22
     with zipfile.ZipFile(built_root_wheel) as wheel:
         catalogue = json.loads(wheel.read("clio_kit/_components.json"))
+        assert "search" not in catalogue
+        assert not any(key.startswith("service/") for key in catalogue["artifacts"])
         assert "hdf5" in catalogue["servers"]
         assert catalogue["servers"]["web"]["scope"] == "general"
         assert "dataset-report" in catalogue["skills"]

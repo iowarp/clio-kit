@@ -34,7 +34,6 @@ agent definitions and community contributions into one meta-marketplace.
 ## Reference
 
 - [Marketplace guide](marketplace.md): external contributions, Clio Coder integration and tested coverage.
-- [Agentic Search](agentic-search.md): the standalone scientific retrieval service.
 
 Server references are in [`mcps/`](https://github.com/iowarp/clio-kit/tree/main/docs/mcps)
 and the [website catalogue](https://toolkit.iowarp.ai/catalogue).

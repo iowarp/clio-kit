@@ -306,9 +306,6 @@ def build_components(root: Path, output: Path) -> dict:
         if marketplace.exists()
         else []
     )
-    search = root / "clio-agentic-search"
-    if (search / "pyproject.toml").exists():
-        index["search"] = archive("service/agentic-search", search, {"dist", "build"})
     for path in sorted((root / "prompts").rglob("*.md")):
         name = path.relative_to(root / "prompts").with_suffix("").as_posix()
         index["prompts"][name] = archive(f"prompt/{name}", path.parent, selected=[path])

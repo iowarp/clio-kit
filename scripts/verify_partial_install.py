@@ -26,6 +26,8 @@ async def verify(output: Path) -> None:
     acceptance.install()
     dist = output / "dist"
     index = json.loads((dist / "components/index.json").read_text())
+    assert "search" not in index
+    assert not any(key.startswith("service/") for key in index["artifacts"])
     wheel = next(dist.glob("*.whl"))
     with zipfile.ZipFile(wheel) as archive:
         assert not any(

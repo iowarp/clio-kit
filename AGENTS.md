@@ -16,7 +16,6 @@ MCP server, skill or hook. Detailed contribution rules are in
 - `.claude-plugin/`: generated marketplace and federation snapshot.
 - `docs/`: documentation source shared by GitHub and Docusaurus.
 - `website/`: website configuration, components and static assets.
-- `clio-agentic-search/`: standalone retrieval service, not an MCP server.
 
 ## Choose the contribution route
 

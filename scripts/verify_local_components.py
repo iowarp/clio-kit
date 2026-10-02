@@ -54,7 +54,7 @@ def verify(output: Path) -> None:
         checkout / "scripts/package_components.py",
     )
     # Empty unrelated shared-data trees keep this fixture build focused on skills.
-    for name in ("mcp-servers", "clio-agentic-search", "prompts"):
+    for name in ("mcp-servers", "prompts"):
         (checkout / name).mkdir()
     # This fixture deliberately omits maintained server payloads, so it must not
     # ship their prerequisite records as if those servers were present.

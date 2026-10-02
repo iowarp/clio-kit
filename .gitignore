@@ -251,3 +251,6 @@ rework/
 
 # Local agent sessions are not release artifacts.
 .clio-coder/
+
+# Local standalone project; excluded from this repository and release.
+/clio-agentic-search/
