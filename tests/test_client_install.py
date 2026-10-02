@@ -71,6 +71,9 @@ def test_install_bundle_and_reinstall_preserving_unrelated_settings(tmp_path, cl
     assert data[key]["clio-hdf5"]["command"] == (
         ["clio-kit", "mcp-server", "hdf5"] if client == "opencode" else "clio-kit"
     )
+    if client == "codex":
+        assert data[key]["clio-hdf5"]["startup_timeout_sec"] == 300
+        assert "default_tools_approval_mode" not in data[key]["clio-hdf5"]
     before = config.read_bytes()
     install_for_client(ROOT, "clio-scientific-io", client, tmp_path)
     assert config.read_bytes() == before

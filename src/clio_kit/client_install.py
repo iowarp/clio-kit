@@ -139,6 +139,9 @@ def server_settings(settings: dict, client: str) -> dict:
             result["environment"] = settings["env"]
     elif client in {"vscode", "claude-code"}:
         result["type"] = "stdio"
+    elif client == "codex":
+        # First use builds the server's locked environment; Codex defaults to 10s.
+        result["startup_timeout_sec"] = 300
     return result
 
 

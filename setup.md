@@ -306,6 +306,9 @@ and multi-language runtime instructions.
 
 - **Unknown plugin:** verify the marketplace source and the README name, then
   update the checkout and refresh the registered marketplace.
+- **Codex cannot call tools:** allow the initial dependency build to finish and
+  check connection status. For unattended runs, mark needed servers as required
+  and configure tool approvals. See [headless Codex setup](docs/clients.md#codex-cli-and-ide-extension).
 - **Executable not found:** check `command -v clio-kit` in the client's environment.
 - **Connection failure:** run `clio-kit doctor --server NAME --connect` for the
   specific server; check network access and backend prerequisites. A directly

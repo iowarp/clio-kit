@@ -187,7 +187,8 @@
           "args": [
             "mcp-server",
             "adios"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -282,7 +283,8 @@
           "args": [
             "mcp-server",
             "arxiv"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -377,7 +379,8 @@
           "args": [
             "mcp-server",
             "chronolog"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -472,7 +475,8 @@
           "args": [
             "mcp-server",
             "compression"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -567,7 +571,8 @@
           "args": [
             "mcp-server",
             "darshan"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -662,7 +667,8 @@
           "args": [
             "mcp-server",
             "geo"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -757,7 +763,8 @@
           "args": [
             "mcp-server",
             "hdf5"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -851,7 +858,8 @@
           "args": [
             "mcp-server",
             "jarvis"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -946,7 +954,8 @@
           "args": [
             "mcp-server",
             "lmod"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -1041,7 +1050,8 @@
           "args": [
             "mcp-server",
             "ndp"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -1135,7 +1145,8 @@
           "args": [
             "mcp-server",
             "node-hardware"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -1230,7 +1241,8 @@
           "args": [
             "mcp-server",
             "pandas"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -1325,7 +1337,8 @@
           "args": [
             "mcp-server",
             "parallel-sort"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -1420,7 +1433,8 @@
           "args": [
             "mcp-server",
             "paraview"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -1515,7 +1529,8 @@
           "args": [
             "mcp-server",
             "parquet"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -1610,7 +1625,8 @@
           "args": [
             "mcp-server",
             "plot"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -1704,7 +1720,8 @@
           "args": [
             "mcp-server",
             "scientific-catalog"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -1800,7 +1817,8 @@
           "args": [
             "mcp-server",
             "seismology"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -1895,7 +1913,8 @@
           "args": [
             "mcp-server",
             "slurm"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -1989,7 +2008,8 @@
           "args": [
             "mcp-server",
             "spack"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -2084,7 +2104,8 @@
           "args": [
             "mcp-server",
             "terrain"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",
@@ -2179,7 +2200,8 @@
           "args": [
             "mcp-server",
             "web"
-          ]
+          ],
+          "startup_timeout_sec": 300
         },
         "opencode": {
           "type": "local",

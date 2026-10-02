@@ -58,6 +58,22 @@ Open/trust the project and start a fresh session. Inspect MCP status in the
 client, and explicitly request a skill such as `$dataset-explore` for a first
 check. The CLI and IDE extension share Codex configuration conventions.
 
+The installer allows up to five minutes for a server's first locked dependency
+build. For unattended `codex exec` runs, mark the server needed by the task as
+required so the run fails if it cannot initialize. For a trusted server in a
+disposable test project, authorize only the intended tools:
+
+```bash
+codex exec -c 'mcp_servers.clio-hdf5.required=true' \
+  -c 'mcp_servers.clio-hdf5.enabled_tools=["open_file","list_keys","get_shape","close_file"]' \
+  -c 'mcp_servers.clio-hdf5.default_tools_approval_mode="approve"' \
+  'Inspect the names and shapes in sample.h5 using MCP, then close the file.'
+```
+
+These overrides apply only to this invocation. Use the actual configured server
+name. Interactive sessions retain the client's normal approval policy. See the
+[Codex MCP configuration](https://developers.openai.com/codex/config-reference).
+
 For **one MCP and one skill** instead of a workflow:
 
 ```bash
