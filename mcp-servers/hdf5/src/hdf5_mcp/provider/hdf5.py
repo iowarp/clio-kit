@@ -23,16 +23,12 @@ from h5grove.utils import (
     get_entity_from_file,
     get_filters,
     hdf_path_join,
-    parse_slice,
 )
 
 from .protocol import Description, ErrorCode, Node, NodeKind, Payload, ProviderError
+from .selection import Index, element_bytes, kept_axes, parse_selection
 
 HDF5_SIGNATURE = b"\x89HDF\r\n\x1a\n"
-
-# Variable-length elements have no fixed size; this is the per-element guess
-# used when sizing a read against the payload cap.
-VLEN_ELEMENT_BYTES = 64
 
 _LAYOUTS = {
     h5py.h5d.COMPACT: "compact",
@@ -224,7 +220,7 @@ class HDF5Provider:
         except FileNotFoundError as e:
             raise ProviderError("not_found", f"No such file: {path}", locator) from e
         except OSError as e:
-            raise ProviderError(_open_error_code(e), str(e), locator) from e
+            raise ProviderError(open_error_code(e), str(e), locator) from e
 
         try:
             with f:
@@ -401,37 +397,20 @@ class HDF5Provider:
     @staticmethod
     def _parse_selection(
         dataset: h5py.Dataset, selection: str | None, locator: str
-    ) -> tuple[slice | int, ...]:
-        if selection is None or selection.strip() == "":
-            return ()
+    ) -> Index:
         try:
-            # h5grove's parser chokes on whitespace before an empty slice
-            # member (" ::2"), so strip it first.
-            index = parse_slice("".join(selection.split()))
-        except (ValueError, TypeError) as e:
-            raise ProviderError(
-                "unsupported", f"Invalid selection {selection!r}: {e}", locator
-            ) from e
-        if len(index) > dataset.ndim:
-            raise ProviderError(
-                "unsupported",
-                f"Selection {selection!r} has {len(index)} members "
-                f"for a {dataset.ndim}-D dataset",
-                locator,
-            )
-        return index
+            return parse_selection(selection, dataset.ndim)
+        except ValueError as e:
+            raise ProviderError("unsupported", str(e), locator) from e
 
     def _cap_selection(
-        self, dataset: h5py.Dataset, index: tuple[slice | int, ...], locator: str
-    ) -> tuple[tuple[slice | int, ...], bool]:
+        self, dataset: h5py.Dataset, index: Index, locator: str
+    ) -> tuple[Index, bool]:
         """Trim `index` along its leading axes so the result fits `read_max_bytes`."""
         if dataset.ndim == 0:
             return (), False
 
-        full = list(index) + [slice(None)] * (dataset.ndim - len(index))
-        item_bytes = (
-            VLEN_ELEMENT_BYTES if dataset.dtype.kind == "O" else dataset.dtype.itemsize
-        )
+        item_bytes = element_bytes(dataset.dtype)
         if item_bytes > self.read_max_bytes:
             raise ProviderError(
                 "too_large",
@@ -441,16 +420,10 @@ class HDF5Provider:
             )
         budget = self.read_max_bytes // item_bytes
 
-        # (axis, start, step, count) for each axis kept in the result.
-        kept: list[tuple[int, int, int, int]] = []
-        for axis, member in enumerate(full):
-            if isinstance(member, slice):
-                start, stop, step = member.indices(dataset.shape[axis])
-                kept.append((axis, start, step, len(range(start, stop, step))))
-
+        kept = kept_axes(dataset.shape, index)
         counts = [count for _, _, _, count in kept]
         if math.prod(counts) <= budget:
-            return tuple(index), False
+            return index, False
 
         for i in range(len(counts)):
             rest = math.prod(counts[i + 1 :])
@@ -458,6 +431,7 @@ class HDF5Provider:
             if math.prod(counts) <= budget:
                 break
 
+        full = list(index) + [slice(None)] * (dataset.ndim - len(index))
         for (axis, start, step, _), count in zip(kept, counts):
             full[axis] = slice(start, start + count * step, step)
         return tuple(full), True
@@ -466,7 +440,8 @@ class HDF5Provider:
 # -- module helpers ------------------------------------------------------
 
 
-def _open_error_code(error: OSError) -> ErrorCode:
+def open_error_code(error: OSError) -> ErrorCode:
+    """Provider error code for an OSError raised while opening a file."""
     message = str(error).lower()
     if "lock" in message:
         return "locked"

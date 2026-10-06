@@ -38,6 +38,7 @@ Repository = "https://github.com/iowarp/clio-kit"
 
 [dependency-groups]
 dev = [
+    "httpx>=0.27",
     "mypy>=1.18.2",
     "pip>=26.1.2",
     "pip-audit>=2.10.0",
@@ -49,6 +50,11 @@ dev = [
 
 [project.scripts]
 hdf5-mcp = "hdf5_mcp.server:main"
+
+[project.optional-dependencies]
+data-routes = [
+    "fastapi>=0.115",
+]
 
 [build-system]
 requires = ["hatchling"]
