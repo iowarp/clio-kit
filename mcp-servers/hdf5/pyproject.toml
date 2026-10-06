@@ -29,6 +29,7 @@ dependencies = [
   "urllib3>=2.8.0",
   "msgpack>=1.2.1",
   "requests>=2.33.0",
+  "h5grove>=4.0.0,<5",
 ]
 
 [project.urls]
