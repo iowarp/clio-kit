@@ -151,7 +151,8 @@ def test_file_parameter_is_required(client):
 
 
 def test_async_resolver_and_auth_dependency(data_dir):
-    async def resolve(file_id: str):
+    async def resolve(file_id: str, request):
+        assert request.url.path.startswith("/h5grove/")
         if file_id != "abc123":
             raise FileNotFoundError(file_id)
         return data_dir / "sample.h5"
@@ -179,6 +180,27 @@ def test_async_resolver_and_auth_dependency(data_dir):
         params={**params, "file": "other"},
         headers={"Authorization": "Bearer good"},
     )
+    assert r.status_code == 404
+
+
+def test_resolver_sees_prefix_path_params(data_dir):
+    """CLIO mounts the router per workspace; the resolver reads the id."""
+    roots = {"ws1": data_dir}
+
+    def resolve(file: str, request):
+        root = roots.get(request.path_params["wid"])
+        if root is None:
+            raise FileNotFoundError(file)
+        return base_dir_resolver(root)(file, request)
+
+    app = FastAPI()
+    app.include_router(create_router(resolve), prefix="/v1/workspaces/{wid}/h5grove")
+    client = TestClient(app)
+    params = {"file": "sample.h5", "path": "/entry/I", "selection": "0:2"}
+
+    r = client.get("/v1/workspaces/ws1/h5grove/data", params=params)
+    assert r.json() == [0.0, 1.0]
+    r = client.get("/v1/workspaces/ws2/h5grove/data", params=params)
     assert r.status_code == 404
 
 

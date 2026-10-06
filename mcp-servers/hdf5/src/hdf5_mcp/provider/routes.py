@@ -49,11 +49,13 @@ from h5grove.utils import (
 from .hdf5 import open_error_code
 from .selection import Index, parse_selection, selection_bytes
 
-FileResolver = Callable[[str], Path | Awaitable[Path]]
+FileResolver = Callable[[str, Request], Path | Awaitable[Path]]
 """Maps the `file` query parameter to a path on disk.
 
-Raises FileNotFoundError for an unknown id and PermissionError for one the
-caller may not read. May be async.
+Called with the parameter and the request, so a host can use path parameters
+(a workspace id in the mount prefix) or the authenticated caller. Raises
+FileNotFoundError for an unknown id and PermissionError for one the caller
+may not read. May be async.
 """
 
 _STATUS = {"not_found": 404, "unsupported": 422, "locked": 423, "io": 500}
@@ -86,7 +88,7 @@ class _ErrorRoute(APIRoute):
         return route_handler
 
 
-def base_dir_resolver(base_dir: str | Path) -> Callable[[str], Path]:
+def base_dir_resolver(base_dir: str | Path) -> FileResolver:
     """A resolver serving files under `base_dir` only, by relative path.
 
     For standalone use and tests; inside CLIO the file API supplies the
@@ -94,7 +96,7 @@ def base_dir_resolver(base_dir: str | Path) -> Callable[[str], Path]:
     """
     base = Path(base_dir).resolve()
 
-    def resolve(file: str) -> Path:
+    def resolve(file: str, request: Request) -> Path:
         candidate = (base / file).resolve()
         if not candidate.is_relative_to(base):
             raise PermissionError(file)
@@ -121,9 +123,9 @@ def create_router(
     """
     router = APIRouter(route_class=_ErrorRoute)
 
-    async def file_path(file: str = Query(...)) -> Path:
+    async def file_path(request: Request, file: str = Query(...)) -> Path:
         try:
-            resolved = resolve_file(file)
+            resolved = resolve_file(file, request)
             if inspect.isawaitable(resolved):
                 resolved = await resolved
         except FileNotFoundError as e:
