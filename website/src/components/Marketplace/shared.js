@@ -1,7 +1,10 @@
 import React from 'react';
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
-import {itemsById, itemUrl, publisherFor, kindLabel, summary} from './data';
+import Head from '@docusaurus/Head';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import {useLocation} from '@docusaurus/router';
+import {itemsById, itemUrl, publisherFor, kindName} from './data';
 import styles from './styles.module.css';
 
 export function Icon({name = 'all', size = 20, ...props}) {
@@ -108,13 +111,80 @@ export function Icon({name = 'all', size = 20, ...props}) {
   );
 }
 
-export function Frame({title, children}) {
+const DEFAULT_DESCRIPTION =
+  'Discover scientific MCP servers, skills, workflow plugins and agent tools in the IOWarp meta-marketplace.';
+
+// Clip at a word boundary so search snippets do not end mid-word.
+export const metaDescription = (text, max = 160) => {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, clean.lastIndexOf(' ', max - 1))}…`;
+};
+
+/**
+ * Page shell with per-page metadata. `crumbs` lists the trail between the
+ * home page and this page; `entities` adds JSON-LD for the page's subject.
+ */
+export function Frame({
+  title,
+  description = DEFAULT_DESCRIPTION,
+  crumbs = [],
+  entities = [],
+  canonical,
+  noindex = false,
+  children,
+}) {
+  const {siteConfig} = useDocusaurusContext();
+  const {pathname} = useLocation();
+  const origin = siteConfig.url;
+  const url = `${origin}${pathname}`;
+  const graph = [
+    {
+      '@type': 'WebPage',
+      '@id': `${url}#page`,
+      name: title,
+      description,
+      url,
+      isPartOf: {'@id': `${origin}/#site`},
+      inLanguage: 'en',
+      ...(pathname !== '/' && {breadcrumb: {'@id': `${url}#breadcrumbs`}}),
+    },
+    ...entities,
+  ];
+  if (pathname !== '/') {
+    const trail = [{name: 'CLIO Kit', path: '/'}, ...crumbs, {name: title, path: pathname}];
+    graph.push({
+      '@type': 'BreadcrumbList',
+      '@id': `${url}#breadcrumbs`,
+      itemListElement: trail.map((crumb, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: crumb.name,
+        item: `${origin}${crumb.path}`,
+      })),
+    });
+  }
   return (
     <Layout
       title={title}
-      description="Discover scientific MCP servers, skills, workflow plugins and agent tools in the IoWarp meta-marketplace."
+      description={description}
       wrapperClassName={styles.shell}
     >
+      <Head>
+        <meta property="og:type" content="website" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta
+          property="og:image:alt"
+          content="CLIO Kit. Scientific tools in your agent."
+        />
+        {noindex && <meta name="robots" content="noindex" />}
+        {canonical && <link rel="canonical" href={`${origin}${canonical}`} />}
+        {canonical && <meta property="og:url" content={`${origin}${canonical}`} />}
+        <script type="application/ld+json">
+          {JSON.stringify({'@context': 'https://schema.org', '@graph': graph})}
+        </script>
+      </Head>
       <main className={styles.page}>{children}</main>
     </Layout>
   );
@@ -138,35 +208,25 @@ export function Glyph({kind, name, large = false}) {
   );
 }
 
-export function Card({item, featured = false}) {
+export function Card({item}) {
   const publisher = publisherFor(item);
   return (
-    <article
-      className={`${styles.card} ${featured ? styles.featuredCard : ''}`}
-      data-kind={item.kind}
-    >
-      <div className={styles.cardTop}>
-        <Glyph kind={item.kind} name={item.name} />
-        <span className={styles.typeLabel}>{kindLabel(item.kind)}</span>
-        <Icon name="arrow" size={17} />
+    <article className={styles.card} data-kind={item.kind}>
+      <div className={styles.cardMeta}>
+        <span>{kindName(item.kind)}</span>
+        <span className={styles.tag}>{item.origin}</span>
       </div>
       <h3>
         <Link to={itemUrl(item)} className={styles.cardLink}>
           {item.title}
         </Link>
       </h3>
-      <p className={styles.cardDescription}>{summary(item.description)}</p>
-      {featured && (
-        <div className={styles.memberChips}>
-          {item.servers.slice(0, 4).map((name) => (
-            <span key={name}>{name.replace('clio-', '')}</span>
-          ))}
-          {item.servers.length > 4 && <span>+{item.servers.length - 4}</span>}
-        </div>
-      )}
+      <p className={styles.cardDescription}>
+        {item.summary}
+      </p>
       <div className={styles.cardFoot}>
         <span>{publisher?.name}</span>
-        <span className={styles.origin}>{item.origin}</span>
+        <span aria-hidden="true">→</span>
       </div>
     </article>
   );

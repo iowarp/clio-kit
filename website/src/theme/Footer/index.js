@@ -10,16 +10,16 @@ export default function Footer() {
         <div className="kit-footer-top">
           <Link className="kit-footer-brand" to="/">
             <img src="/img/iowarp_logo.png" width="32" height="32" alt="" />
-            CLIO Kit
+            <span className="kit-brand-name">
+              CLIO <span>Kit</span>
+            </span>
           </Link>
-          <p>A meta-marketplace for scientific tools and knowledge.</p>
+          <p>The meta-marketplace for scientific MCP servers, skills and plugins.</p>
         </div>
         <div className="kit-footer-bottom">
           <span>{siteConfig.themeConfig.footer.copyright}</span>
           <nav aria-label="Footer">
-            <a href="https://grc.iit.edu/">
-              Developed by Gnosis Research Center
-            </a>
+            <a href="https://grc.iit.edu/">Developed by Gnosis Research Center</a>
             <a href="https://github.com/iowarp/clio-kit/blob/main/LICENSE">
               BSD-3-Clause
             </a>

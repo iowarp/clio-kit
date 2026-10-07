@@ -8,8 +8,7 @@ import {
   itemUrl,
   publisherUrl,
   publisherFor,
-  kindLabel,
-  summary,
+  kindName,
   installation,
 } from './data';
 import {Frame, Glyph, Icon} from './shared';
@@ -35,11 +34,11 @@ export function DetailContent({item}) {
         <Glyph kind={item.kind} name={item.name} large />
         <div>
           <p className={styles.detailMeta}>
-            {kindLabel(item.kind)} · {item.origin}
+            {kindName(item.kind)} · {item.origin}
             {item.version && ` · v${item.version}`}
           </p>
           <h1>{item.title}</h1>
-          <p>{summary(item.description)}</p>
+          <p>{item.summary}</p>
           <div className={styles.linkRow}>
             <Link to={publisherUrl(item.publisher)}>{publisher?.name}</Link>
             <a href={item.source}>Source ↗</a>
@@ -88,7 +87,7 @@ export function DetailContent({item}) {
                 <Glyph kind={member.kind} name={member.name} />
                 <div>
                   <strong>{member.title}</strong>
-                  <span>{kindLabel(member.kind)}</span>
+                  <span>{kindName(member.kind)}</span>
                 </div>
                 <Icon name="arrow" size={17} />
               </Link>
@@ -131,7 +130,7 @@ export function ComponentPage() {
   const item = itemsById.get(id);
   if (item) return <Redirect to={itemUrl(item) + location.hash} />;
   return (
-    <Frame title="Component details">
+    <Frame title="Component details" noindex>
       <div className={styles.detailPage}>
         <div className={styles.empty}>
           <h1>{id ? 'Component not found' : 'Choose a component'}</h1>

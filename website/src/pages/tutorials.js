@@ -14,16 +14,22 @@ const tutorials = [install, storage, codex, archive, clean, claude, contribute];
 
 export default function Tutorials() {
   return (
-    <Frame title="Tutorials — Learn to use CLIO Kit">
+    <Frame
+      title="Tutorials"
+      description="Practical CLIO Kit guides: install a component, follow a real session in Claude Code, Codex, Clio Coder or OpenCode, and check the result against the supplied data."
+    >
       <div className={`${s.home} ${s.page}`}>
         <header className={s.tutorialIntro}>
-          <p className={s.eyebrow}>CLIO KIT / TUTORIALS</p>
-          <h1>Get a feel for CLIO Kit.</h1>
+          <p className={s.eyebrow}>CLIO Kit / Tutorials</p>
+          <h1>Tutorials with real sessions and sample data.</h1>
           <p className={s.lede}>
             Practical guides to scientific tools and skills. Install a
             component, follow a real terminal session, and check the result with
             the supplied data.
           </p>
+          <Link className={s.textLink} to="/demos">
+            Watch demos from an older CLIO Kit <span>→</span>
+          </Link>
         </header>
         <div className={s.tutorialGrid}>
           {tutorials.map((doc) => (
@@ -31,7 +37,10 @@ export default function Tutorials() {
               <Link to={doc.permalink} tabIndex={-1} aria-hidden="true">
                 <img src={doc.frontMatter.image} alt="" loading="lazy" />
               </Link>
-              <p className={s.eyebrow}>{doc.frontMatter.tutorial_category}</p>
+              <p className={s.eyebrow}>
+                <span>{doc.frontMatter.tutorial_category}</span> /{' '}
+                {doc.frontMatter.tutorial_time}
+              </p>
               <h2>
                 <Link to={doc.permalink}>{doc.title}</Link>
               </h2>
@@ -41,7 +50,7 @@ export default function Tutorials() {
                 to={doc.permalink}
                 aria-label={`Read tutorial: ${doc.title}`}
               >
-                Read the tutorial <span>→</span>
+                Read the tutorial <span>↗</span>
               </Link>
             </article>
           ))}

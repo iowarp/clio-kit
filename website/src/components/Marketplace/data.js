@@ -28,13 +28,20 @@ export const publisherUrl = (id) =>
   `/publishers?publisher=${encodeURIComponent(id)}`;
 export const publisherFor = (item) =>
   catalogue.publishers.find((p) => p.id === item.publisher);
-export const kindLabel = (kind) =>
-  kinds.find(([key]) => key === kind)?.[1] || kind;
-export const summary = (text) =>
-  text
-    .replace(/^Use when this workflow is requested:\s*/i, '')
-    .replace(/^Use when\s+/i, '')
-    .split(' Triggers on')[0];
+// Singular labels keep same-named entries (a skill and its native package) distinct.
+export const kindNames = {
+  mcp: 'MCP server',
+  skill: 'Skill',
+  plugin: 'Workflow plugin',
+  agent: 'Agent',
+  hook: 'Hook',
+  collection: 'Component collection',
+  package: 'Package',
+};
+export const kindName = (kind) => kindNames[kind] || kind;
+// An indexed upstream package whose skill CLIO Kit also ships as an adaptation.
+export const hasAdaptedCopy = (item) =>
+  item.kind === 'package' && itemsById.has(`skill/clio-kit-${item.name}`);
 
 export function installation(item, client) {
   if (item.installation === 'portable-skill') {

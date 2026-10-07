@@ -34,6 +34,10 @@ assert.equal(at(2300).x, 300);
 assert.equal(at(3300).x, 1000);
 assert.equal(at(1800).size, 140);
 assert.equal(at(3800), null);
+// A 4K-tall viewport starts on the hero, not part-way to the first chapter.
+const tall = logoPosition({...geometry, height: 2160}, 0, true);
+assert.equal(tall.x, 1000);
+assert.equal(tall.size, 440);
 // Adjacent scroll positions must not jump when entering/leaving a bridge.
 for (let focus = 950; focus < 3500; focus++) {
   const a = at(focus), b = at(focus + 1);

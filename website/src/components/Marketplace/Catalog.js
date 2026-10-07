@@ -2,9 +2,11 @@ import React, {useEffect, useMemo, useState} from 'react';
 import Link from '@docusaurus/Link';
 import Heading from '@theme/Heading';
 import {useHistory, useLocation} from '@docusaurus/router';
-import {catalogue, kinds, publisherFor} from './data';
+import {catalogue, hasAdaptedCopy, kinds, publisherFor} from './data';
 import {Icon, Card} from './shared';
 import styles from './styles.module.css';
+
+const kindOrder = kinds.map(([key]) => key);
 
 export function Catalog({fixedPublisher}) {
   const location = useLocation();
@@ -31,7 +33,8 @@ export function Catalog({fixedPublisher}) {
       base
         .filter(
           (item) =>
-            (type === 'all' || item.kind === type) &&
+            // "All" lists an adapted skill once; its upstream stays under Packages.
+            (type === 'all' ? !hasAdaptedCopy(item) : item.kind === type) &&
             (origin === 'all' || item.origin === origin) &&
             (domain === 'all' || item.category === domain) &&
             [
@@ -46,7 +49,12 @@ export function Catalog({fixedPublisher}) {
               .toLowerCase()
               .includes(query.toLowerCase().trim()),
         )
-        .sort((a, b) => a.title.localeCompare(b.title)),
+        // Workflow plugins first, then components, then indexed packages.
+        .sort(
+          (a, b) =>
+            kindOrder.indexOf(a.kind) - kindOrder.indexOf(b.kind) ||
+            a.title.localeCompare(b.title),
+        ),
     [base, type, origin, domain, query],
   );
   useEffect(() => setLimit(12), [location.search, fixedPublisher]);
@@ -70,30 +78,19 @@ export function Catalog({fixedPublisher}) {
     });
   return (
     <section className={styles.catalogue} aria-labelledby="catalogue">
-      <div className={styles.sectionHeading}>
-        <div>
-          <span className={styles.eyebrow}>FIND YOUR NEXT CAPABILITY</span>
-          <Heading as="h2" id="catalogue">
-            Explore the catalogue
-          </Heading>
-          <p>
-            Choose a plugin for a workflow, or individual MCPs, skills, agents
-            and hooks.
-          </p>
-        </div>
-        {!fixedPublisher && (
-          <Link to="/publishers" className={styles.textLink}>
-            <Icon name="people" size={17} /> Meet the publishers{' '}
-            <Icon name="arrow" size={16} />
-          </Link>
-        )}
-      </div>
+      <Heading
+        as="h2"
+        id="catalogue"
+        className={fixedPublisher ? styles.catalogueHeading : styles.visuallyHidden}
+      >
+        {fixedPublisher ? 'Published entries' : 'Catalogue entries'}
+      </Heading>
       <div className={styles.catalogueLayout}>
         <aside
           className={`${styles.filters} ${moreFilters ? styles.filtersExpanded : ''}`}
           aria-label="Catalogue filters"
         >
-          <span className={styles.filterLabel}>BROWSE BY TYPE</span>
+          <span className={styles.filterLabel}>Type</span>
           <div className={styles.kindFilters}>
             {kinds.map(([key, label]) => (
               <button
@@ -103,11 +100,10 @@ export function Catalog({fixedPublisher}) {
                 aria-pressed={type === key}
                 onClick={() => update('type', key)}
               >
-                <Icon name={key} size={17} />
                 <span>{label}</span>
                 <span className={styles.count}>
                   {key === 'all'
-                    ? base.length
+                    ? base.filter((r) => !hasAdaptedCopy(r)).length
                     : base.filter((r) => r.kind === key).length}
                 </span>
               </button>
@@ -121,7 +117,7 @@ export function Catalog({fixedPublisher}) {
             {moreFilters ? 'Fewer filters −' : 'More filters +'}
           </button>
           <label className={styles.filterLabel} htmlFor="domain-filter">
-            RESEARCH AREA
+            Research area
           </label>
           <select
             id="domain-filter"
@@ -135,7 +131,7 @@ export function Catalog({fixedPublisher}) {
             ))}
           </select>
           <label className={styles.filterLabel} htmlFor="origin-filter">
-            SOURCE
+            Source
           </label>
           <select
             id="origin-filter"
@@ -151,7 +147,7 @@ export function Catalog({fixedPublisher}) {
           {!fixedPublisher && (
             <>
               <label className={styles.filterLabel} htmlFor="publisher-filter">
-                PUBLISHER
+                Publisher
               </label>
               <select
                 id="publisher-filter"
@@ -168,15 +164,6 @@ export function Catalog({fixedPublisher}) {
               </select>
             </>
           )}
-          <div className={styles.filterHelp}>
-            <Icon name="plugin" size={20} />
-            <strong>New to CLIO Kit?</strong>
-            <p>
-              A plugin bundles the components a workflow needs. You can also
-              choose components individually.
-            </p>
-            <Link to="/docs/intro">Installation guide ↗</Link>
-          </div>
         </aside>
         <div className={styles.resultArea}>
           <div className={styles.searchBox}>
@@ -192,7 +179,6 @@ export function Catalog({fixedPublisher}) {
                 ×
               </button>
             )}
-            <span className={styles.searchHint}>EXPLORE</span>
           </div>
           <div className={styles.resultsMeta}>
             <span role="status" aria-live="polite">
@@ -209,7 +195,7 @@ export function Catalog({fixedPublisher}) {
                 Clear filters
               </button>
             ) : (
-              <span>Sorted A–Z</span>
+              <span>Plugins first, then A–Z</span>
             )}
           </div>
           {results.length ? (
@@ -236,7 +222,7 @@ export function Catalog({fixedPublisher}) {
               <Icon name={type === 'hook' ? 'hook' : 'search'} size={32} />
               <h3>
                 {type === 'hook' && !query
-                  ? 'Ready for your first hook'
+                  ? 'No hook packages listed yet'
                   : 'No matching entries'}
               </h3>
               <p>

@@ -15,6 +15,11 @@ export function PublishersPage() {
       title={
         publisher ? `${publisher.name} · Publisher` : 'Meet the publishers'
       }
+      description={
+        publisher
+          ? publisher.description
+          : 'The maintainers and communities behind the scientific MCP servers, skills and plugins listed in CLIO Kit.'
+      }
     >
       <div className={styles.container}>
         <Link
@@ -50,10 +55,11 @@ export function PublishersPage() {
         ) : (
           <>
             <header className={styles.publisherIntro}>
-              <span className={styles.eyebrow}>EXPERTISE, SHARED</span>
+              <p className={styles.kicker}>CLIO Kit / Publishers</p>
               <h1>Meet the publishers.</h1>
               <p>
-                Discover the people and projects behind your scientific toolkit.
+                Each publisher maintains its own code and releases. CLIO Kit
+                indexes them.
               </p>
             </header>
             <div className={styles.publisherGrid}>

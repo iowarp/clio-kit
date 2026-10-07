@@ -1,12 +1,7 @@
-/* Clio Coder's editorial proportions, using CLIO Kit's existing brand tokens. */
+/* Clio Coder's landing page, with CLIO Kit's content and mark. */
 .home {
-  --chapter-color: var(--brand-teal-ink);
-  font:
-    1rem / 1.65 'IBM Plex Sans',
-    sans-serif;
-}
-:global([data-theme='dark']) .home {
-  --chapter-color: var(--brand-orange);
+  --chapter-color: var(--secondary);
+  font: 1rem / 1.65 var(--font-ui);
 }
 .page {
   width: min(1248px, calc(100% - 6rem));
@@ -33,14 +28,17 @@
   margin: 0;
 }
 .home p {
-  color: var(--market-muted);
+  color: var(--ink-soft);
   text-wrap: pretty;
 }
 .home em {
-  font-family: 'Newsreader', Georgia, serif;
+  font-family: var(--font-display);
   font-style: italic;
   font-weight: 480;
-  color: var(--market-accent);
+  color: var(--ink-soft);
+}
+.home .heroHeading h1 em {
+  color: var(--accent);
 }
 .home .eyebrow {
   font:
@@ -82,10 +80,10 @@
   gap: 1.75rem;
   min-height: 3rem;
   padding: 0.7rem 1.2rem;
-  background: var(--brand-orange);
-  color: #111827;
-  border: 1px solid var(--brand-orange);
-  border-radius: 0.35rem;
+  background: var(--cta);
+  color: var(--on-cta);
+  border: 1px solid var(--cta);
+  border-radius: var(--radius-sm);
   font-size: 0.9rem;
   font-weight: 500;
   text-decoration: none;
@@ -122,14 +120,26 @@
 .topline {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: wrap;
   gap: 1rem;
 }
-.topline > a {
-  font:
-    0.7rem 'IBM Plex Mono',
-    monospace;
-  color: var(--market-muted);
+.home .release {
+  display: inline-flex;
+  gap: 0.7rem;
+  color: var(--muted);
+  font: 0.7rem var(--font-mono);
+}
+.home .release:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+.tag {
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.45rem;
+  color: var(--muted);
+  font: 0.7rem var(--font-mono);
+  white-space: nowrap;
 }
 .heroHeading {
   display: grid;
@@ -141,34 +151,102 @@
 .home .heroHeading h1 {
   font-size: clamp(3.4rem, 6.5vw, 6rem);
 }
-.heroIntro {
-  padding-bottom: 0.2rem;
+.home .heroHeading .lede {
+  max-width: 34ch;
+  margin-block: 2rem 1rem;
+  color: var(--ink);
+  font: 500 clamp(1.5rem, 2.5vw, 2rem) / 1.3 var(--font-display);
 }
-.home .heroIntro .lede {
-  font-size: 1.35rem;
-  line-height: 1.5;
-  color: var(--market-text);
-  margin-bottom: 1rem;
+.heroTry {
+  max-width: 36rem;
+  margin-top: 2.5rem;
 }
-.heroIntro > p {
-  max-width: 44ch;
+.heroTry .eyebrow {
+  margin-bottom: 0.75rem;
 }
-.heroIntro .actions {
-  margin-top: 1.8rem;
+.heroTry .command {
+  margin-block: 0;
 }
-.factStrip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+.home .installNote {
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.installNote code {
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+.heroLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  margin-top: 1.25rem;
+}
+/* One command box with Clio Coder's Copy control. */
+.command {
+  display: flex;
+  align-items: center;
   gap: 1rem;
-  text-align: center;
-  padding-block: 1.75rem 2rem;
-  color: var(--market-muted);
-  font:
-    0.7rem 'IBM Plex Mono',
-    monospace;
+  margin-block: 1rem;
+  padding: 0.4rem 0.4rem 0.4rem 1rem;
+  border: 1px solid var(--code-border);
+  border-radius: var(--radius-sm);
+  background: var(--code);
+  color: var(--code-ink);
 }
-.factStrip span + span {
-  border-left: 1px solid var(--market-line);
+.command code {
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: 0.8rem / 1.6 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.commandPrompt {
+  margin-right: 0.75ch;
+  color: var(--code-muted);
+  user-select: none;
+}
+.copy {
+  flex-shrink: 0;
+  min-width: 4rem;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--code-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--code-muted);
+  font: 0.7rem var(--font-mono);
+  cursor: pointer;
+}
+.copy:hover,
+.copy[data-state='copied'] {
+  border-color: var(--code-accent);
+  color: var(--code-accent);
+}
+.copy[data-state='copied'] {
+  background: var(--code-accent-soft);
+}
+.chapterNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 1.5rem;
+  padding-block: 0.75rem 1.25rem;
+  border-top: 1px solid var(--line);
+}
+.chapterNav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.chapterNav a:is(:hover, :focus-visible) {
+  color: var(--accent);
+  text-decoration: none;
 }
 .workflowSteps {
   list-style: none;
@@ -213,6 +291,9 @@
 .firstRequest > a {
   grid-column: 2;
 }
+.coderPromo {
+  margin-top: 2.5rem;
+}
 .interfaceGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -221,48 +302,76 @@
 .interfaceGrid article {
   min-width: 0;
 }
-.componentExample {
-  min-height: 250px;
+/* Stacked like Clio Coder's interface chapter, so commands keep one line. */
+.story .interfaceGrid {
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  margin-top: 2.5rem;
+}
+.interfaceTitle {
   display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: start;
+  align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  padding: 2.5rem;
-  border: 1px solid var(--market-line);
-  border-radius: 0.35rem;
-  background: var(--market-bg);
-  margin-bottom: 1.5rem;
-}
-.home .componentExample h3 {
-  font-family: 'Newsreader', Georgia, serif;
-  font-weight: 500;
-  font-size: clamp(1.8rem, 3vw, 2.5rem);
-  line-height: 1.1;
-}
-.interfaceGrid article > h3 {
-  margin-bottom: 1rem;
+  margin-bottom: 0.9rem;
 }
 .interfaceGrid article > p {
   font-size: 0.95rem;
-  min-height: 5rem;
-  margin-bottom: 1rem;
 }
+/* A real session, framed as on Clio Coder's overview. */
+.home .capture {
+  margin: 3rem 0;
+}
+.stageLabel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.1rem 0.3rem 1rem;
+  color: var(--muted);
+  font: 0.7rem / 1.5 var(--font-mono);
+}
+.stageLabel > span:first-child {
+  color: var(--ink);
+}
+/* The label row is mono; the Clio Coder button keeps the UI font of the other buttons. */
+.home .stageLabel .primary {
+  font-family: var(--font-ui);
+  white-space: nowrap;
+}
+.capture img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--motion-fast) var(--motion-ease);
+}
+.capture a:hover img {
+  border-color: var(--accent);
+}
+.capture figcaption {
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font: 0.7rem / 1.5 var(--font-mono);
+}
+
 .interfaceGrid pre {
   font-size: 0.73rem;
 }
 .agentRoutes > div {
-  border-top: 1px solid var(--market-line);
+  border-top: 1px solid var(--line-control);
   padding-block: 1.6rem;
 }
 .agentRoutes dt {
-  font-size: 1.3rem;
-  font-weight: 500;
+  font: 500 1.65rem / 1.2 var(--font-display);
+  letter-spacing: -0.02em;
   margin-bottom: 0.6rem;
 }
 .agentRoutes dd {
   font-size: 0.95rem;
-  color: var(--market-text);
+  color: var(--ink-soft);
 }
 .agentRoutes dd:last-child {
   font-size: 0.8rem;
@@ -314,8 +423,11 @@
 .installSteps > div + div {
   margin-top: 2rem;
 }
-.installSteps pre {
+/* Space the whole code block; a margin on pre would collapse past the label band. */
+.installSteps :global(.theme-code-block) {
   margin-block: 0.75rem;
+}
+.installSteps pre {
   font-size: 0.73rem;
 }
 .installSteps p {
@@ -323,7 +435,7 @@
 }
 .faq details {
   border: 0;
-  border-top: 1px solid var(--market-line);
+  border-top: 1px solid var(--line-control);
   border-radius: 0;
   box-shadow: none;
   padding: 1.1rem 0;
@@ -331,9 +443,27 @@
   background: none;
 }
 .faq summary {
+  position: relative;
+  list-style: none;
+  padding-right: 2.5rem;
+  color: var(--ink);
   font-size: 1.05rem;
   font-weight: 500;
-  padding-right: 1.5rem;
+}
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+.faq summary::after {
+  content: '+';
+  position: absolute;
+  top: 0;
+  right: 0.25rem;
+  color: var(--accent);
+  font: 1.2rem var(--font-mono);
+  transition: rotate var(--motion-fast) var(--motion-ease);
+}
+.faq details[open] summary::after {
+  rotate: 45deg;
 }
 .faq details p {
   font-size: 0.95rem;
@@ -360,8 +490,28 @@
 .project p:not(.eyebrow) {
   max-width: 58ch;
 }
+.project .credit {
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--market-muted);
+}
 .project .actions {
   margin-top: 1.5rem;
+}
+.finale {
+  text-align: center;
+  padding-block: 5rem 4rem;
+}
+.home .finale h2 {
+  font-size: clamp(3rem, 5.5vw, 5rem);
+  margin-block: 1rem 2.5rem;
+}
+.finaleActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem 2rem;
 }
 .tutorialIntro {
   padding-block: 4rem 3rem;
@@ -373,6 +523,9 @@
 .tutorialIntro .lede {
   max-width: 58ch;
   font-size: 1.15rem;
+}
+.tutorialIntro > .textLink {
+  margin-top: 1.5rem;
 }
 .tutorialGrid {
   display: grid;
@@ -389,7 +542,7 @@
   aspect-ratio: 1.8;
   object-fit: contain;
   background: #000;
-  border: 1px solid var(--market-line);
+  border: 1px solid var(--line-control);
   padding: 1rem;
   border-radius: 0.35rem;
 }
@@ -442,9 +595,6 @@
   .heroHeading {
     gap: 2.5rem;
   }
-  .home .heroIntro .lede {
-    font-size: 1.15rem;
-  }
   .workflowSteps,
   .interfaceGrid {
     gap: 2rem;
@@ -463,9 +613,6 @@
   .home .heroHeading h1 {
     font-size: clamp(3.5rem, 8vw, 5rem);
   }
-  .heroIntro > p {
-    max-width: 60ch;
-  }
   .headingSplit {
     display: block;
   }
@@ -479,9 +626,6 @@
   .featureList a > span:last-child {
     grid-column: 3;
     grid-row: 1;
-  }
-  .componentExample {
-    padding: 1.5rem;
   }
 }
 @media (max-width: 600px) {
@@ -502,15 +646,6 @@
   }
   .home .heroHeading h1 {
     font-size: clamp(3rem, 10vw, 4rem);
-  }
-  .factStrip {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-    font-size: 0.6rem;
-    padding-block: 1.5rem;
-  }
-  .factStrip span + span {
-    border: 0;
   }
   .section {
     padding-block: 3.5rem;
@@ -535,12 +670,6 @@
   .firstRequest > a {
     grid-column: 1;
   }
-  .componentExample {
-    min-height: 220px;
-  }
-  .interfaceGrid article > p {
-    min-height: auto;
-  }
   .projectMark {
     place-items: start;
   }
@@ -556,9 +685,6 @@
 .heroHeading {
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   align-items: center;
-}
-.heroIntro {
-  margin-top: 2rem;
 }
 .heroVisual {
   text-align: center;

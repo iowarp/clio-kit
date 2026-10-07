@@ -44,7 +44,10 @@ export function logoPosition(
       opacity: ease((visible / slot.height - 0.35) / 0.4),
     };
   }
-  const focus = Math.max(scrollY + height * 0.45, hero.y);
+  // On tall screens the reading line starts below the hero; offset it so the
+  // journey begins at the hero instead of part-way to the first chapter.
+  const start = Math.max(0, height * 0.45 - hero.y);
+  const focus = Math.max(scrollY + height * 0.45 - start, hero.y);
   if (focus >= chapters.at(-1).bottom) return null;
   const first = chapters[0];
   const introduction = ease(

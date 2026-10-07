@@ -2,10 +2,85 @@ import React, {useEffect, useRef} from 'react';
 import Link from '@docusaurus/Link';
 import CodeBlock from '@theme/CodeBlock';
 import Heading from '@theme/Heading';
+import TabItem from '@theme/TabItem';
+import Tabs from '@theme/Tabs';
 import {Frame} from './shared';
+import {catalogue} from './data';
+import CopyCommand from './CopyCommand';
 import LogoMark from './LogoMark';
 import {attachLogoJourney} from './overviewMotion';
 import s from './overview.module.css';
+
+// The README's install routes, each as one line.
+const installOptions = [
+  ['release', 'Release', "uv tool install 'clio-kit>=2.11.0'"],
+  [
+    'once',
+    'Run once',
+    "uvx --from 'clio-kit>=2.11.0' clio-kit mcp-servers",
+    'Runs the launcher without installing it.',
+  ],
+  [
+    'npx',
+    'npx',
+    'npx skills@1.5.25 add iowarp/clio-kit --skill dataset-explore --agent codex --copy',
+    <>
+      Skills only, with Node.js 22.20 or newer. Use <code>--skill '*'</code> for
+      every skill.
+    </>,
+  ],
+  [
+    'source',
+    'Source',
+    'git clone https://github.com/iowarp/clio-kit.git && cd clio-kit && uv tool install --editable .',
+  ],
+  [
+    'agent',
+    'Agent',
+    'git clone https://github.com/iowarp/clio-kit.git && cd clio-kit',
+    'Then ask your agent: “Read setup.md and set up CLIO Kit for me.”',
+  ],
+];
+
+// Every component type, so the install steps cover more than MCP servers.
+const componentOptions = [
+  [
+    'plugin',
+    'Plugin',
+    'clio-kit plugin install clio-scientific-io --client codex --project .',
+    <>
+      A workflow plugin writes its MCP configuration and copies its skills. For
+      other agents, use <code>--client</code> with claude-code, opencode,
+      cursor, antigravity or vscode.
+    </>,
+  ],
+  [
+    'mcp',
+    'MCP server',
+    'clio-kit mcp-servers\nclio-kit mcp-server hdf5',
+    <>
+      List the servers, then add the <code>clio-kit mcp-server</code> command to
+      your agent’s MCP settings. The first start builds the server’s
+      environment; some servers need system software or site access.
+    </>,
+  ],
+  [
+    'skill',
+    'Skill',
+    'clio-kit skill list\nclio-kit skill install dataset-explore --target .agents/skills',
+    <>
+      Use your agent’s skill folder, such as <code>.claude/skills</code> for
+      Claude Code. Give <code>--bundle clio-scientific-io</code> instead of a
+      name to install a workflow’s skills.
+    </>,
+  ],
+  [
+    'claude',
+    'Claude Code',
+    'clio-kit plugin fetch clio-dataset-report --target ./clio-selected\nclaude plugin marketplace add "$PWD/clio-selected"\nclaude plugin install clio-dataset-report@clio-kit',
+    'Native Claude Code plugins can also include agents and hooks.',
+  ],
+];
 
 const capabilities = [
   [
@@ -45,7 +120,7 @@ const capabilities = [
   ],
   [
     'Workflow plugins',
-    'Bring related MCPs, skills and supported agents or hooks together for a task.',
+    'Bring related MCP servers, skills and supported agents or hooks together for a task.',
     '/docs/plugins',
   ],
   [
@@ -125,7 +200,20 @@ export function Overview() {
     };
   }, []);
   return (
-    <Frame title="Scientific tools for your AI agent">
+    <Frame
+      title="Scientific tools for your AI agent"
+      description="CLIO Kit is the meta-marketplace for scientific computing: one catalogue of MCP servers, skills and workflow plugins from CLIO Kit and other publishers, for Claude Code, Codex, Clio Coder, OpenCode and other agents."
+      entities={[
+        {
+          '@type': 'SoftwareSourceCode',
+          name: 'CLIO Kit',
+          codeRepository: 'https://github.com/iowarp/clio-kit',
+          programmingLanguage: 'Python',
+          license: 'https://github.com/iowarp/clio-kit/blob/main/LICENSE',
+          publisher: {'@id': 'https://toolkit.iowarp.ai/#org'},
+        },
+      ]}
+    >
       <div className={s.home} ref={page}>
         <img
           ref={travellingLogo}
@@ -139,12 +227,11 @@ export function Overview() {
         />
         <header className={`${s.page} ${s.hero}`}>
           <div className={s.topline}>
-            <p className={s.eyebrow}>
-              <span className={s.dot} /> A CLIO TOOL FOR SCIENTIFIC COMPUTING
-            </p>
-            <a href="https://github.com/iowarp/clio-kit">
-              Open source / BSD-3-Clause ↗
+            <a className={s.release} href="https://github.com/iowarp/clio-kit">
+              Open source <span aria-hidden="true">/</span> v{catalogue.version}{' '}
+              <span aria-hidden="true">↗</span>
             </a>
+            <span className={s.tag}>New: meta-marketplace</span>
           </div>
           <div className={s.heroHeading}>
             <div>
@@ -153,21 +240,40 @@ export function Overview() {
                 <br />
                 <em>In your agent.</em>
               </h1>
-              <div className={s.heroIntro}>
-                <p className={s.lede}>
-                  Meet CLIO Kit. A meta-marketplace for scientific computing.
+              <p className={s.lede}>
+                CLIO Kit is the meta-marketplace for scientific computing. Add
+                one MCP server, a skill or a whole workflow to Claude Code,
+                Codex, Clio Coder or OpenCode, then check the results against
+                your data.
+              </p>
+              <div className={s.heroTry}>
+                <p className={s.eyebrow}>Install in one line</p>
+                <Tabs>
+                  {installOptions.map(([value, label, command, note]) => (
+                    <TabItem
+                      key={value}
+                      value={value}
+                      label={label}
+                      default={value === 'release'}
+                    >
+                      <CopyCommand
+                        command={command}
+                        label={`Copy the ${label.toLowerCase()} command`}
+                      />
+                      {note && <p className={s.installNote}>{note}</p>}
+                    </TabItem>
+                  ))}
+                </Tabs>
+                <p className={s.installNote}>
+                  Need uv?{' '}
+                  <code>curl -LsSf https://astral.sh/uv/install.sh | sh</code>
                 </p>
-                <p>
-                  Connect your AI agent to HPC resources, scientific data
-                  formats and research datasets. Choose the tools, add the
-                  skills, and work with your own data.
-                </p>
-                <div className={s.actions}>
-                  <a className={s.primary} href="#start">
-                    Start using CLIO Kit <span>↗</span>
-                  </a>
-                  <Link className={s.textLink} to="/catalogue">
-                    Take a quick tour <span>→</span>
+                <div className={s.heroLinks}>
+                  <Link className={s.textLink} to="/docs/installation">
+                    Other ways to install <span>→</span>
+                  </Link>
+                  <Link className={s.textLink} to="/tutorials">
+                    Watch the tutorials <span>→</span>
                   </Link>
                 </div>
               </div>
@@ -176,21 +282,28 @@ export function Overview() {
               <LogoMark hero />
             </div>
           </div>
-          <div className={s.factStrip}>
-            <span>Scientific MCP servers</span>
-            <span>Portable skills</span>
-            <span>Workflow plugins</span>
-            <span>Community contributions</span>
-          </div>
+          <nav className={s.chapterNav} aria-label="Sections">
+            <a href="#workflow">Workflow</a>
+            <a href="#components">Components</a>
+            <a href="#agents">Agents</a>
+            <a href="#toolkit">Toolkit</a>
+            <a href="#start">Install</a>
+            <Link to="/catalogue">Catalogue ↗</Link>
+          </nav>
         </header>
 
-        <StorySection aria-labelledby="workflow-title">
+        <StorySection id="workflow" aria-labelledby="workflow-title">
           <div className={s.sectionHeading}>
             <Chapter number="01">From a question to a checked result</Chapter>
-            <h2 id="workflow-title">Work across your research workflow.</h2>
+            <h2 id="workflow-title">
+              Ask a scientific question.
+              <br />
+              <em>Check what comes back.</em>
+            </h2>
             <p>
               CLIO Kit gives your agent scientific tools and the procedures for
-              using them. You choose what to connect and check what comes back.
+              using them. You choose what to connect, and every tool call stays
+              visible for review.
             </p>
           </div>
           <ol className={s.workflowSteps}>
@@ -220,6 +333,34 @@ export function Overview() {
               </p>
             </li>
           </ol>
+          <figure className={s.capture}>
+            <div className={s.stageLabel}>
+              <span>
+                <span className={s.dot} aria-hidden="true" /> CLIO Kit in Clio
+                Coder / clio-hdf5
+              </span>
+              <a className={s.primary} href="https://coder.iowarp.ai">
+                Try Clio Coder <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+            <a
+              href="/img/tutorials/hdf5-clio-tools.png"
+              aria-label="Open the full-size Clio Coder session screenshot"
+            >
+              <img
+                src="/img/tutorials/hdf5-clio-tools.png"
+                width="2872"
+                height="1380"
+                loading="lazy"
+                alt="Clio Coder loads the dataset-explore skill and calls clio-hdf5 open_file, visit, get_shape, get_dtype, list_attributes, read_partial_dataset and close_file"
+              />
+            </a>
+            <figcaption>
+              A real session in Clio Coder, IOWarp’s open-source coding agent:
+              the HDF5 tutorial’s skill checks structure and units before
+              reading three values.
+            </figcaption>
+          </figure>
           <div className={s.firstRequest}>
             <span className={s.eyebrow}>Try a first request</span>
             <p>
@@ -232,91 +373,62 @@ export function Overview() {
           </div>
         </StorySection>
 
-        <StorySection aria-labelledby="components-title">
-          <div>
-            <div className={s.sectionHeading}>
-              <Chapter number="02">Two ways to build your toolkit</Chapter>
-              <h2 id="components-title">
-                Start with one component.
-                <br />
-                <em>Bring a workflow together.</em>
-              </h2>
+        <StorySection id="components" aria-labelledby="components-title">
+          <div className={s.sectionHeading}>
+            <Chapter number="02">Two ways to build your toolkit</Chapter>
+            <h2 id="components-title">
+              Start with one component.
+              <br />
+              <em>Bring a workflow together.</em>
+            </h2>
+            <p>
+              Choose a single capability or install a plugin for the task. The
+              same launcher runs every MCP server.
+            </p>
+          </div>
+          <div className={s.interfaceGrid}>
+            <article>
+              <div className={s.interfaceTitle}>
+                <h3>One component</h3>
+                <span className={s.tag}>MCP · skill</span>
+              </div>
               <p>
-                Choose a single capability or install a plugin for the task. The
-                same launcher runs the MCP servers.
+                Connect an MCP server, then copy a skill into your agent’s skill
+                folder. Skills supply instructions; MCP servers supply tools.
               </p>
-            </div>
-            <div className={s.interfaceGrid}>
-              <article>
-                <div className={s.componentExample}>
-                  <span className={s.eyebrow}>Individual components</span>
-                  <h3>One capability at a time</h3>
-                  <p>
-                    Choose an MCP, skill, agent or hook for the task and client
-                    you use.
-                  </p>
-                  <Link className={s.textLink} to="/catalogue">
-                    Explore components ↗
-                  </Link>
-                </div>
-                <h3>Choose each piece</h3>
-                <p>
-                  Connect an MCP server, then install a skill in your agent’s
-                  discovery directory. Skills supply instructions; MCPs supply
-                  executable tools.
-                </p>
-                <CodeBlock language="bash">
-                  {'clio-kit mcp-servers\nclio-kit skill list'}
-                </CodeBlock>
-                <Link
-                  className={s.textLink}
-                  to="/docs/tutorials/install-components"
-                >
-                  Install individual components →
-                </Link>
-              </article>
-              <article>
-                <div className={s.componentExample}>
-                  <span className={s.eyebrow}>Workflow plugins</span>
-                  <h3>A complete workflow</h3>
-                  <p>
-                    Bring tools and procedures together for analysis, cluster
-                    work, geoscience or research discovery.
-                  </p>
-                  <Link className={s.textLink} to="/catalogue?type=plugin">
-                    Explore workflow plugins ↗
-                  </Link>
-                </div>
-                <h3>Install a working collection</h3>
-                <p>
-                  A workflow plugin groups the tools and procedures a task
-                  needs. Native agents and hooks use the supported host’s
-                  format.
-                </p>
-                <CodeBlock language="bash">
-                  {
-                    '# Example: analysis tools and skills for Codex\nclio-kit plugin install clio-analysis --client codex --project .'
-                  }
-                </CodeBlock>
-                <Link className={s.textLink} to="/docs/plugins">
-                  Choose a workflow →
-                </Link>
-              </article>
-            </div>
+              <CopyCommand command="clio-kit skill install dataset-explore --target .agents/skills" />
+              <Link className={s.textLink} to="/docs/tutorials/install-components">
+                Install individual components <span>→</span>
+              </Link>
+            </article>
+            <article>
+              <div className={s.interfaceTitle}>
+                <h3>A workflow plugin</h3>
+                <span className={s.tag}>Bundle</span>
+              </div>
+              <p>
+                A workflow plugin groups the servers and skills a task needs. One
+                command writes the MCP configuration and copies the skills.
+              </p>
+              <CopyCommand command="clio-kit plugin install clio-scientific-io --client codex --project ." />
+              <Link className={s.textLink} to="/catalogue?type=plugin">
+                Choose a workflow <span>→</span>
+              </Link>
+            </article>
           </div>
         </StorySection>
 
-        <StorySection aria-labelledby="agent-title">
+        <StorySection id="agents" aria-labelledby="agent-title">
           <div className={s.sectionHeading}>
             <Chapter number="03">Your agent, your environment</Chapter>
             <h2 id="agent-title">
-              Run where
+              Use the agent
               <br />
-              <em>your work belongs.</em>
+              <em>you already have.</em>
             </h2>
             <p>
-              Keep using your preferred agent. Connect tools to your local
-              project or configure them for your research environment.
+              Components install into your project in each client’s own format.
+              Every hands-on tutorial is recorded in four of them.
             </p>
             <Link className={s.textLink} to="/docs/clients">
               Connect your agent <span>→</span>
@@ -325,13 +437,13 @@ export function Overview() {
           <dl className={s.agentRoutes}>
             <div>
               <dt>In the terminal</dt>
-              <dd>Codex · Claude Code · OpenCode · Clio Coder</dd>
-              <dd>Project configuration, skills and real tool calls</dd>
+              <dd>Claude Code · Codex · Clio Coder · OpenCode</dd>
+              <dd>Project MCP configuration, skills and visible tool calls</dd>
             </div>
             <div>
               <dt>In your editor</dt>
               <dd>Cursor · Antigravity · VS Code</dd>
-              <dd>Use your client’s MCP configuration and skill support</dd>
+              <dd>Your client’s MCP configuration and skill support</dd>
             </div>
             <div>
               <dt>Through a native marketplace</dt>
@@ -339,19 +451,30 @@ export function Overview() {
               <dd>Supported plugin dependencies, agents and hooks</dd>
             </div>
           </dl>
+          <div className={`${s.firstRequest} ${s.coderPromo}`}>
+            <span className={s.eyebrow}>Also from IOWarp</span>
+            <p>
+              Need an agent? Clio Coder is IOWarp’s open-source coding agent for
+              scientific software. Every tutorial here includes a Clio Coder
+              session.
+            </p>
+            <a className={s.textLink} href="https://coder.iowarp.ai">
+              Try Clio Coder <span>↗</span>
+            </a>
+          </div>
         </StorySection>
 
-        <StorySection aria-labelledby="tools-title">
-          <div className={`${s.sectionHeading} ${s.headingSplit}`}>
-            <div>
-              <Chapter number="04">
-                Tools and knowledge for your research
-              </Chapter>
-              <h2 id="tools-title">A scientific working toolkit.</h2>
-            </div>
+        <StorySection id="toolkit" aria-labelledby="tools-title">
+          <div className={s.sectionHeading}>
+            <Chapter number="04">Tools and knowledge for your research</Chapter>
+            <h2 id="tools-title">
+              A scientific
+              <br />
+              <em>working toolkit.</em>
+            </h2>
             <p>
-              From literature and datasets to simulations, figures and
-              performance analysis.
+              Servers and skills for papers, datasets, cluster jobs, figures and
+              I/O analysis.
             </p>
           </div>
           <div className={s.featureList}>
@@ -371,47 +494,68 @@ export function Overview() {
 
         <StorySection aria-labelledby="start">
           <div className={s.sectionHeading}>
-            <Chapter number="05">From installation to a first result</Chapter>
+            <Chapter number="05">Install</Chapter>
             <Heading as="h2" id="start">
-              Bring your research.
+              Install CLIO Kit
               <br />
-              <em>Start with one tool.</em>
+              <em>and add what you need.</em>
             </Heading>
             <p>
-              You’ll need uv and an agent that supports MCP. Start from a CLIO
-              Kit checkout, then connect the components you need.
+              You need uv and an agent. Add a workflow plugin, a single MCP
+              server or a skill; each downloads only what it needs.
             </p>
-            <Link className={s.textLink} to="/docs/clients">
-              Installation & client setup <span>→</span>
-            </Link>
+            <div className={s.heroLinks}>
+              <Link className={s.textLink} to="/docs/installation">
+                Release and selective install <span>→</span>
+              </Link>
+              <Link className={s.textLink} to="/docs/clients">
+                Client setup <span>→</span>
+              </Link>
+            </div>
           </div>
           <div className={s.installSteps}>
             <div>
               <span>1 / Get CLIO Kit</span>
-              <CodeBlock language="bash">
-                {
-                  'git clone https://github.com/iowarp/clio-kit.git\ncd clio-kit\nuv tool install --force --reinstall --editable ".[verification]"'
-                }
-              </CodeBlock>
+              <Tabs>
+                <TabItem value="release" label="Release" default>
+                  <CodeBlock language="bash">
+                    {"uv tool install 'clio-kit>=2.11.0'"}
+                  </CodeBlock>
+                </TabItem>
+                <TabItem value="source" label="From source">
+                  <CodeBlock language="bash">
+                    {
+                      'git clone https://github.com/iowarp/clio-kit.git\ncd clio-kit\nuv tool install --force --reinstall --editable ".[verification]"'
+                    }
+                  </CodeBlock>
+                </TabItem>
+              </Tabs>
             </div>
             <div>
-              <span>2 / Choose your tools</span>
-              <CodeBlock language="bash">{'clio-kit mcp-servers'}</CodeBlock>
+              <span>2 / Add a component</span>
+              <Tabs>
+                {componentOptions.map(([value, label, command, note]) => (
+                  <TabItem
+                    key={value}
+                    value={value}
+                    label={label}
+                    default={value === 'plugin'}
+                  >
+                    <CodeBlock language="bash">{command}</CodeBlock>
+                    <p>{note}</p>
+                  </TabItem>
+                ))}
+              </Tabs>
               <p>
-                Choose a server from the{' '}
-                <Link to="/catalogue?type=mcp">catalogue</Link> and follow its
-                setup and connection check. First starts build its environment;
-                some tools need system software or site access.
+                Find names in the <Link to="/catalogue">catalogue</Link>.
               </p>
             </div>
             <div>
-              <span>3 / Connect your workspace</span>
+              <span>3 / Connect your agent</span>
               <p>
                 Follow your <Link to="/docs/clients">agent’s setup guide</Link>,
                 then try a{' '}
-                <Link to="/tutorials">tutorial with sample data</Link>. For
-                released packages, see{' '}
-                <Link to="/docs/installation">selective installation</Link>.
+                <Link to="/tutorials">tutorial with sample data</Link>.
               </p>
             </div>
           </div>
@@ -419,35 +563,44 @@ export function Overview() {
 
         <StorySection aria-labelledby="faq-title">
           <div className={s.sectionHeading}>
-            <Chapter number="06">Before you begin</Chapter>
-            <h2 id="faq-title">A few practical details.</h2>
+            <Chapter number="06">Questions</Chapter>
+            <h2 id="faq-title">Common questions.</h2>
           </div>
           <div className={s.faq}>
             <details>
               <summary>Do I need every server?</summary>
               <p>
                 No. Choose individual components or a workflow. Released
-                distributions support selective component downloads. A source
-                checkout contains the repository.{' '}
+                distributions download only the components you select.{' '}
                 <Link to="/docs/installation">See installation options.</Link>
               </p>
             </details>
             <details>
               <summary>Can I keep using my current agent?</summary>
               <p>
-                Yes, if it supports the component you want to use. MCPs and
-                portable skills have several client routes. Native plugin agents
-                and hooks depend on the host.{' '}
+                Yes, if it supports the component you want to use. MCP servers
+                and portable skills work in Claude Code, Codex, Clio Coder,
+                OpenCode and other clients. Native plugin agents and hooks depend
+                on the host.{' '}
                 <Link to="/docs/clients">Check your client’s setup.</Link>
+              </p>
+            </details>
+            <details>
+              <summary>What does a meta-marketplace index?</summary>
+              <p>
+                CLIO Kit’s own components and plugins from other publishers’
+                repositories and marketplaces, in one catalogue. Indexed code and
+                releases stay with their authors.{' '}
+                <Link to="/publishers">Meet the publishers.</Link>
               </p>
             </details>
             <details>
               <summary>Can I contribute my own tools?</summary>
               <p>
                 Add a component or plugin here, or index a package you maintain
-                elsewhere. External code and releases stay with their authors.{' '}
-                <Link to="/docs/contributing">
-                  Choose a contribution route.
+                elsewhere.{' '}
+                <Link to="/docs/tutorials/contribute-plugin">
+                  Build, test and contribute a plugin.
                 </Link>
               </p>
             </details>
@@ -479,31 +632,45 @@ export function Overview() {
           </div>
           <div>
             <p className={s.eyebrow}>Part of the IOWarp platform</p>
-            <h2 id="project-title">
-              Built by researchers,
-              <br />
-              <em>for researchers.</em>
-            </h2>
-            <p>
-              CLIO Kit brings AI assistance to scientific computing—from
-              research discovery and data analysis to visualization and HPC.
-              Developed at Illinois Institute of Technology’s Gnosis Research
-              Center, with support in part from the National Science Foundation.
+            <h2 id="project-title">Meet the CLIO team.</h2>
+            <p>Try a workflow on data you know and inspect the result.</p>
+            <p className={s.credit}>
+              Built by researchers, for researchers, at Illinois Institute of
+              Technology with NSF support.
             </p>
             <div className={s.actions}>
-              <a
-                className={s.textLink}
-                href="https://github.com/iowarp/clio-kit"
-              >
-                Explore the source ↗
+              <a className={s.textLink} href="https://github.com/iowarp/clio-kit">
+                Explore the source <span>↗</span>
               </a>
               <Link className={s.textLink} to="/tutorials">
-                Browse tutorials ↗
+                Browse tutorials <span>↗</span>
               </Link>
+              <a className={s.textLink} href="https://coder.iowarp.ai">
+                Try Clio Coder <span>↗</span>
+              </a>
               <a className={s.textLink} href="https://iowarp.ai">
-                Part of IOWarp ↗
+                Part of IOWarp <span>↗</span>
               </a>
             </div>
+          </div>
+        </section>
+
+        <section
+          className={`${s.section} ${s.page} ${s.finale}`}
+          aria-labelledby="finale-title"
+        >
+          <h2 id="finale-title">
+            Try it on a dataset
+            <br />
+            <em>you already know.</em>
+          </h2>
+          <div className={s.finaleActions}>
+            <a className={s.primary} href="#start">
+              Install CLIO Kit <span aria-hidden="true">↗</span>
+            </a>
+            <Link className={s.textLink} to="/catalogue">
+              Browse the catalogue <span>→</span>
+            </Link>
           </div>
         </section>
       </div>

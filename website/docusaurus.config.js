@@ -10,9 +10,46 @@ import {themes as prismThemes} from 'prism-react-renderer';
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'CLIO Kit - Gnosis Research Center',
-  tagline: 'A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions. Part of the IoWarp platform.',
+  title: 'CLIO Kit',
+  titleDelimiter: '—',
+  tagline: 'A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions. Part of the IOWarp platform.',
   favicon: 'img/iowarp_logo.png',
+
+  // Site-wide structured data; pages add their own entities through <Head>.
+  headTags: [
+    {
+      tagName: 'script',
+      attributes: {type: 'application/ld+json'},
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'WebSite',
+            '@id': 'https://toolkit.iowarp.ai/#site',
+            name: 'CLIO Kit',
+            url: 'https://toolkit.iowarp.ai/',
+            publisher: {'@id': 'https://toolkit.iowarp.ai/#org'},
+            inLanguage: 'en',
+          },
+          {
+            '@type': 'Organization',
+            '@id': 'https://toolkit.iowarp.ai/#org',
+            name: 'Gnosis Research Center',
+            url: 'https://grc.iit.edu/',
+            logo: 'https://toolkit.iowarp.ai/img/iowarp_logo.png',
+            parentOrganization: {
+              '@type': 'CollegeOrUniversity',
+              name: 'Illinois Institute of Technology',
+            },
+          },
+        ],
+      }),
+    },
+    {
+      tagName: 'link',
+      attributes: {rel: 'apple-touch-icon', href: '/img/iowarp_logo.png'},
+    },
+  ],
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -43,7 +80,7 @@ const config = {
     locales: ['en'],
   },
 
-  plugins: ['./plugins/catalogue-routes.cjs'],
+  plugins: ['./plugins/catalogue-routes.cjs', './plugins/doc-search.cjs'],
 
   presets: [
     [
@@ -59,6 +96,8 @@ const config = {
           editUrl:
             'https://github.com/iowarp/clio-kit/tree/main/docs/',
         },
+        blog: false,
+        sitemap: {ignorePatterns: ['/component']},
         theme: {
           customCss: ['./src/css/custom.css', './src/css/editorial.css'],
         },
@@ -69,18 +108,16 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      // Enhanced metadata for social sharing
+      // Titles, descriptions and og:url are set per page; these are fallbacks.
       metadata: [
-        {name: 'description', content: 'CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions'},
-        {name: 'keywords', content: 'CLIO Kit, meta-marketplace, AI agents, tools, skills, plugins, agents, community contributions, MCP, Model Context Protocol, scientific computing, HPC, HDF5, Slurm, Pandas, ADIOS, Parquet, FastMCP, research computing, IoWarp platform, Gnosis Research Center, Illinois Tech, NSF'},
-        {property: 'og:title', content: 'CLIO Kit - Scientific AI Meta-Marketplace | IoWarp Platform | Gnosis Research Center'},
-        {property: 'og:description', content: 'CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions'},
+        {name: 'description', content: 'CLIO Kit is a meta-marketplace for scientific MCP servers, skills, workflow plugins, agents and hooks. Part of the IOWarp platform.'},
+        {name: 'theme-color', content: '#000000'},
+        {name: 'color-scheme', content: 'dark light'},
+        {property: 'og:site_name', content: 'CLIO Kit'},
         {name: 'twitter:card', content: 'summary_large_image'},
-        {name: 'twitter:title', content: 'CLIO Kit - Scientific AI Meta-Marketplace | IoWarp Platform'},
-        {name: 'twitter:description', content: 'CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions'},
       ],
-      // Social card for link previews
-      image: 'img/iowarp_logo.png',
+      // Social card for link previews; source is website/social-card.html.
+      image: 'img/social-card.png',
       navbar: {
         title: 'CLIO Kit',
         logo: {
@@ -112,17 +149,18 @@ const config = {
             label: 'Tutorials',
             activeBaseRegex: '^/(tutorials|docs/tutorials)',
           },
+          // Install steps live on the overview, so the header button opens the demos.
           {
-            to: '/#start',
+            to: '/demos',
             position: 'right',
-            label: 'Install CLIO Kit ↗',
-            className: 'kit-install-link',
+            label: 'Demos',
+            className: 'kit-cta-link',
           },
           {
             href: 'https://github.com/iowarp/clio-kit',
-            label: 'GitHub',
+            label: 'GitHub ↗',
             position: 'right',
-            className: 'navbar__icon-link navbar__icon-link--github',
+            className: 'kit-side-link',
           },
         ],
       },
@@ -131,16 +169,18 @@ const config = {
         links: [
           {label: 'Docs', to: '/docs/intro'},
           {label: 'Tutorials', to: '/tutorials'},
+          {label: 'Demos', to: '/demos'},
           {label: 'Catalogue', to: '/catalogue'},
           {label: 'GitHub', href: 'https://github.com/iowarp/clio-kit'},
           {label: 'BSD-3-Clause', href: 'https://github.com/iowarp/clio-kit/blob/main/LICENSE'},
           {label: 'Gnosis Research Center', href: 'https://grc.iit.edu/'},
         ],
-        copyright: `CLIO Kit · Part of the IoWarp Platform · © ${new Date().getFullYear()}`,
+        copyright: `Copyright ${new Date().getFullYear()} iowarp.ai`,
       },
       prism: {
-        theme: prismThemes.github,
-        darkTheme: prismThemes.dracula,
+        // Code blocks are dark navy in both themes.
+        theme: prismThemes.nightOwl,
+        darkTheme: prismThemes.nightOwl,
       },
       colorMode: {
         defaultMode: 'dark',

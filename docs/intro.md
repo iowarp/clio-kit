@@ -275,7 +275,7 @@ The marketplace guide explains what each command validates and publishes.
 
 CLIO Kit is developed by the [Gnosis Research Center](https://grc.iit.edu/) at
 [Illinois Institute of Technology](https://www.iit.edu/) as part of
-[IoWarp](https://iowarp.ai), with National Science Foundation support.
+[IOWarp](https://iowarp.ai), with National Science Foundation support.
 The repository is licensed under BSD-3-Clause.
 
 Report issues on [GitHub](https://github.com/iowarp/clio-kit/issues) or join the
