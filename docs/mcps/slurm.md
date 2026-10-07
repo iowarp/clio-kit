@@ -1,6 +1,6 @@
 ---
 title: Slurm MCP
-description: "MCP server for Slurm workload management and HPC job scheduling"
+description: "Submit, list, inspect and cancel Slurm jobs, and describe the cluster."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -9,7 +9,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   name="Slurm"
   icon="🖥️"
   category="System Management"
-  description="MCP server for Slurm workload management and HPC job scheduling"
+  description="Submit, list, inspect and cancel Slurm jobs, and describe the cluster."
   version="3.0.2"
   actions={["slurm_submit", "slurm_list", "slurm_describe", "slurm_cluster", "slurm_cancel"]}
   platforms={["claude", "cursor", "vscode"]}

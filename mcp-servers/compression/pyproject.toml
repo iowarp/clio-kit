@@ -1,7 +1,7 @@
 [project]
 name = "compression-mcp"
 version = "1.0.0"
-description = "Compression MCP server implementation using Model Context Protocol"
+description = "Compress and decompress files with gzip and report the compression ratio."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"

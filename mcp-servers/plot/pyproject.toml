@@ -1,7 +1,7 @@
 [project]
 name = "plot-mcp"
 version = "1.0.0"
-description = "MCP server for advanced data visualization and plotting operations"
+description = "Draw line, bar, scatter, histogram, heatmap and time-series plots from tabular data."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"

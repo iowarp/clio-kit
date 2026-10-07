@@ -1,6 +1,6 @@
 {
   "name": "clio-chronolog",
-  "description": "ChronoLog MCP server implementation using Model Context Protocol",
+  "description": "Record and retrieve agent interactions in a ChronoLog log store.",
   "version": "2.0.3",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",

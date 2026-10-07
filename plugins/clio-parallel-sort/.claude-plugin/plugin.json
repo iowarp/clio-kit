@@ -1,6 +1,6 @@
 {
   "name": "clio-parallel-sort",
-  "description": "Parallel Sort MCP - High-Performance Log File Processing for LLMs with advanced sorting and analysis",
+  "description": "Sort, filter and summarize large log files by timestamp, level or keyword.",
   "version": "2.3.0",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",

@@ -1,6 +1,6 @@
 ---
 title: Parquet MCP
-description: "MCP server for Apache Parquet files"
+description: "Summarize Parquet files, preview columns, read row slices and aggregate values."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -9,7 +9,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   name="Parquet"
   icon="📋"
   category="Data Processing"
-  description="MCP server for Apache Parquet files"
+  description="Summarize Parquet files, preview columns, read row slices and aggregate values."
   version="2.2.5"
   actions={["summarize_tool", "read_slice_tool", "get_column_preview_tool", "aggregate_column_tool"]}
   platforms={["claude", "cursor", "vscode"]}

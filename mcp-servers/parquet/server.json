@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.iowarp/parquet-mcp",
   "title": "CLIO Parquet",
-  "description": "MCP server for Apache Parquet files",
+  "description": "Summarize Parquet files, preview columns, read row slices and aggregate values.",
   "version": "2.2.5",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",

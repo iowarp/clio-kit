@@ -1,7 +1,7 @@
 [project]
 name = "lmod-mcp"
 version = "1.0.0"
-description = "Lmod MCP - Environment Module Management for LLMs with comprehensive module operations"
+description = "List, search and inspect Lmod environment modules, and save or restore module collections."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"

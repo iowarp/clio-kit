@@ -86,7 +86,8 @@
       "componentTypes": [
         "agent"
       ],
-      "installation": "native-package"
+      "installation": "native-package",
+      "summary": "Check scientific tool outputs for numerical correctness, reproducibility and unsupported claims."
     },
     {
       "id": "agent/clio-agents/scientific-workflow-planner",
@@ -113,7 +114,8 @@
       "componentTypes": [
         "agent"
       ],
-      "installation": "native-package"
+      "installation": "native-package",
+      "summary": "Plan a scientific workflow from verified tool capabilities, flagging missing steps before running it."
     },
     {
       "id": "hook/clio-dataset-report",
@@ -124,7 +126,7 @@
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "",
-      "category": "Automation",
+      "category": "Scientific data",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-dataset-report/.claude-plugin/plugin.json",
       "members": [],
@@ -140,7 +142,8 @@
       "componentTypes": [
         "hook"
       ],
-      "installation": "native-package"
+      "installation": "native-package",
+      "summary": "Event hooks included with clio-dataset-report."
     },
     {
       "id": "mcp/adios",
@@ -181,6 +184,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-adios",
+      "summary": "Fetch and analyze BP5 data files using ADIOS2.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -244,7 +248,7 @@
       "kind": "mcp",
       "name": "arxiv",
       "title": "arXiv",
-      "description": "ArXiv MCP server implementation using Model Context Protocol",
+      "description": "Search arXiv by topic, author, title or date, read paper details, and export BibTeX or PDFs.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "2.2.5",
@@ -277,6 +281,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-arxiv",
+      "summary": "Search arXiv by topic, author, title or date, read paper details, and export BibTeX or PDFs.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -340,7 +345,7 @@
       "kind": "mcp",
       "name": "chronolog",
       "title": "Chronolog",
-      "description": "ChronoLog MCP server implementation using Model Context Protocol",
+      "description": "Record and retrieve agent interactions in a ChronoLog log store.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "2.0.3",
@@ -373,6 +378,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-chronolog",
+      "summary": "Record and retrieve agent interactions in a ChronoLog log store.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -436,7 +442,7 @@
       "kind": "mcp",
       "name": "compression",
       "title": "Compression",
-      "description": "Compression MCP server implementation using Model Context Protocol",
+      "description": "Compress and decompress files with gzip and report the compression ratio.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "2.2.5",
@@ -469,6 +475,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-compression",
+      "summary": "Compress and decompress files with gzip and report the compression ratio.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -565,6 +572,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-darshan",
+      "summary": "Darshan I/O profiler MCP server for analyzing I/O trace files",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -661,6 +669,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-geo",
+      "summary": "MCP server for rendering GeoJSON vector layers into map images with basemaps",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -724,7 +733,7 @@
       "kind": "mcp",
       "name": "hdf5",
       "title": "HDF5",
-      "description": "HDF5 FastMCP - Scientific Data Access for AI Agents | CLIO Kit MCP Server",
+      "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "2.2.6",
@@ -757,6 +766,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-hdf5",
+      "summary": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -852,6 +862,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-jarvis",
+      "summary": "JARVIS-CD MCP with a compact user pipeline contract and explicit admin compatibility profiles",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -915,7 +926,7 @@
       "kind": "mcp",
       "name": "lmod",
       "title": "Lmod",
-      "description": "Lmod MCP - Environment Module Management for LLMs with comprehensive module operations",
+      "description": "List, search and inspect Lmod environment modules, and save or restore module collections.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "3.0.1",
@@ -948,6 +959,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-lmod",
+      "summary": "List, search and inspect Lmod environment modules, and save or restore module collections.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -1044,6 +1056,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-ndp",
+      "summary": "National Data Platform (NDP) MCP server for searching and discovering datasets across multiple CKAN instances",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -1107,7 +1120,7 @@
       "kind": "mcp",
       "name": "node-hardware",
       "title": "Node Hardware",
-      "description": "Node Hardware MCP - Comprehensive Hardware Monitoring and System Analysis for LLMs with real-time performance metrics",
+      "description": "Report CPU, memory, disk, network, GPU and process information for local or remote nodes.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "2.3.0",
@@ -1139,6 +1152,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-node-hardware",
+      "summary": "Report CPU, memory, disk, network, GPU and process information for local or remote nodes.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -1202,7 +1216,7 @@
       "kind": "mcp",
       "name": "pandas",
       "title": "Pandas",
-      "description": "Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations",
+      "description": "Load tabular data, then clean, filter, group, merge and summarize it with pandas.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "2.3.0",
@@ -1235,6 +1249,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-pandas",
+      "summary": "Load tabular data, then clean, filter, group, merge and summarize it with pandas.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -1298,7 +1313,7 @@
       "kind": "mcp",
       "name": "parallel-sort",
       "title": "Parallel Sort",
-      "description": "Parallel Sort MCP - High-Performance Log File Processing for LLMs with advanced sorting and analysis",
+      "description": "Sort, filter and summarize large log files by timestamp, level or keyword.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "2.3.0",
@@ -1331,6 +1346,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-parallel-sort",
+      "summary": "Sort, filter and summarize large log files by timestamp, level or keyword.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -1394,7 +1410,7 @@
       "kind": "mcp",
       "name": "paraview",
       "title": "Paraview",
-      "description": "MCP server for ParaView scientific visualization",
+      "description": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "2.2.5",
@@ -1427,6 +1443,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-paraview",
+      "summary": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -1490,7 +1507,7 @@
       "kind": "mcp",
       "name": "parquet",
       "title": "Parquet",
-      "description": "MCP server for Apache Parquet files",
+      "description": "Summarize Parquet files, preview columns, read row slices and aggregate values.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "2.2.5",
@@ -1523,6 +1540,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-parquet",
+      "summary": "Summarize Parquet files, preview columns, read row slices and aggregate values.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -1586,7 +1604,7 @@
       "kind": "mcp",
       "name": "plot",
       "title": "Plot",
-      "description": "MCP server for advanced data visualization and plotting operations",
+      "description": "Draw line, bar, scatter, histogram, heatmap and time-series plots from tabular data.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "2.2.5",
@@ -1619,6 +1637,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-plot",
+      "summary": "Draw line, bar, scatter, histogram, heatmap and time-series plots from tabular data.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -1714,6 +1733,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-scientific-catalog",
+      "summary": "Operator-owned scientific dataset discovery for remote agents",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -1811,6 +1831,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-seismology",
+      "summary": "Inspect SAC seismic waveforms and archives, compute per-trace statistics and plot traces.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -1874,7 +1895,7 @@
       "kind": "mcp",
       "name": "slurm",
       "title": "Slurm",
-      "description": "MCP server for Slurm workload management and HPC job scheduling",
+      "description": "Submit, list, inspect and cancel Slurm jobs, and describe the cluster.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "3.0.2",
@@ -1907,6 +1928,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-slurm",
+      "summary": "Submit, list, inspect and cancel Slurm jobs, and describe the cluster.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -2002,6 +2024,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-spack",
+      "summary": "Structured Spack discovery and installation tools for scientific agents",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -2098,6 +2121,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-terrain",
+      "summary": "MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -2194,6 +2218,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-web",
+      "summary": "Provider-fixed web search plus transparent URL, DOI, and document fetching",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -2261,7 +2286,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.1.0",
-      "category": "Planning",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/planning/archify",
       "path": "",
       "members": [],
@@ -2291,7 +2316,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Build interactive system maps and diagrams as standalone HTML from a typed JSON spec."
     },
     {
       "id": "plugin/architecture",
@@ -2302,7 +2328,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.4.1",
-      "category": "Planning",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/planning/architecture",
       "path": "",
       "members": [],
@@ -2332,7 +2358,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Decide an engineering approach with the user: compare options, recommend one and record the decision."
     },
     {
       "id": "plugin/arxiv-literature",
@@ -2343,7 +2370,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.5.1",
-      "category": "Research",
+      "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/research/arxiv-literature",
       "path": "",
       "members": [],
@@ -2373,7 +2400,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Search arXiv, compare papers and build a short literature survey with linked citations."
     },
     {
       "id": "plugin/ast-grep",
@@ -2414,7 +2442,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Structural code search with ast-grep rules: finds code by shape when grep on text is too noisy, and never rewrites it."
     },
     {
       "id": "plugin/backlog",
@@ -2425,7 +2454,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.4.1",
-      "category": "Planning",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/planning/backlog",
       "path": "",
       "members": [],
@@ -2455,7 +2484,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Turn a finished PRD or architecture doc into a backlog of small, testable tickets."
     },
     {
       "id": "plugin/branch-closeout",
@@ -2496,7 +2526,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Confirm merged work landed, then safely remove its worktrees and local branches."
     },
     {
       "id": "plugin/clio-agents",
@@ -2507,7 +2538,7 @@
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.2",
-      "category": "Agents",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./plugins/clio-agents",
       "members": [
@@ -2538,7 +2569,8 @@
         "antigravity": false,
         "claude-code": true,
         "vscode": false
-      }
+      },
+      "summary": "Scientific workflow planning and independent evidence review agents."
     },
     {
       "id": "plugin/clio-analysis-skills",
@@ -2549,7 +2581,7 @@
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.7",
-      "category": "Skills",
+      "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-analysis-skills",
       "members": [
@@ -2585,7 +2617,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Skills for the clio-analysis workflow: turn a dataset into summary statistics and a figure."
     },
     {
       "id": "plugin/clio-coder-dev",
@@ -2596,7 +2629,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.4.0",
-      "category": "Meta",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/meta/clio-coder-dev",
       "path": "",
       "members": [],
@@ -2626,7 +2659,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Governs changes to Clio Coder's own source and harness (TUI, skills, agents, tools, prompts, domains)."
     },
     {
       "id": "plugin/clio-coder-skills",
@@ -2637,7 +2671,7 @@
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.1.2",
-      "category": "Skills",
+      "category": "Coding",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-coder-skills",
       "members": [
@@ -2708,7 +2742,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Optional Clio Coder coding and research skills, including Materio procedures."
     },
     {
       "id": "plugin/clio-coder-test",
@@ -2719,7 +2754,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.3.1",
-      "category": "Meta",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/meta/clio-coder-test",
       "path": "",
       "members": [],
@@ -2749,7 +2784,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Verify a Clio Coder source change against its contract, smoke, boundary and application tests."
     },
     {
       "id": "plugin/clio-geoscience-skills",
@@ -2760,7 +2796,7 @@
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.2",
-      "category": "Skills",
+      "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-geoscience-skills",
       "members": [
@@ -2795,7 +2831,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Skills for the clio-geoscience workflow: inspect and map geospatial features, terrain models, and waveform archives."
     },
     {
       "id": "plugin/clio-hpc-skills",
@@ -2806,7 +2843,7 @@
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.2",
-      "category": "Skills",
+      "category": "HPC & infrastructure",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-hpc-skills",
       "members": [
@@ -2841,7 +2878,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Skills for the clio-hpc workflow: install a code, wrap it in a pipeline, submit it, and follow it on a cluster."
     },
     {
       "id": "plugin/clio-performance-skills",
@@ -2852,7 +2890,7 @@
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.3",
-      "category": "Skills",
+      "category": "Performance",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-performance-skills",
       "members": [
@@ -2888,7 +2926,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Skills for the clio-performance workflow: work out why a finished job was slower than it should have been."
     },
     {
       "id": "plugin/clio-research-skills",
@@ -2899,7 +2938,7 @@
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.4",
-      "category": "Skills",
+      "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-research-skills",
       "members": [
@@ -2934,7 +2973,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Skills for the clio-research workflow: find papers on a topic and the datasets behind them."
     },
     {
       "id": "plugin/clio-scientific-io-skills",
@@ -2945,7 +2985,7 @@
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.6",
-      "category": "Skills",
+      "category": "Scientific data",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-scientific-io-skills",
       "members": [
@@ -2980,7 +3020,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Skills for the clio-scientific-io workflow: open a scientific data file, see its structure, and read part of it."
     },
     {
       "id": "plugin/clio-skills",
@@ -2991,7 +3032,7 @@
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.0",
-      "category": "Skills",
+      "category": "Scientific computing",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./plugins/clio-skills",
       "members": [
@@ -3029,7 +3070,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Skills for primary scientific workflows, without MCP servers."
     },
     {
       "id": "plugin/coding-standards",
@@ -3070,7 +3112,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Strict TypeScript rules for writing or refactoring code when a project has no standards of its own."
     },
     {
       "id": "plugin/context-handoff",
@@ -3081,7 +3124,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.5.1",
-      "category": "Context",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/context/context-handoff",
       "path": "",
       "members": [],
@@ -3111,7 +3154,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Write a redacted handoff document so the next session or agent can continue the work."
     },
     {
       "id": "plugin/context-prime",
@@ -3122,7 +3166,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.4.1",
-      "category": "Context",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/context/context-prime",
       "path": "",
       "members": [],
@@ -3152,7 +3196,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Orient a new session in a repository from the last handoff, git state and active work."
     },
     {
       "id": "plugin/credentials",
@@ -3163,7 +3208,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.2.0",
-      "category": "Meta",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/meta/credentials",
       "path": "",
       "members": [],
@@ -3193,7 +3238,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Handle API keys, tokens and facility credentials safely, including after an auth error or a leak."
     },
     {
       "id": "plugin/cut-it",
@@ -3204,7 +3250,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.4.1",
-      "category": "Workflow",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/workflow/cut-it",
       "path": "",
       "members": [],
@@ -3234,7 +3280,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Slice a plan or PRD into a sprint of small, ordered tasks, each with a done-when check."
     },
     {
       "id": "plugin/design-council",
@@ -3245,7 +3292,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.6.0",
-      "category": "Workflow",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/workflow/design-council",
       "path": "",
       "members": [],
@@ -3275,7 +3322,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Have several expert perspectives debate a design decision before code is written."
     },
     {
       "id": "plugin/experiment-protocol",
@@ -3286,7 +3334,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.3.1",
-      "category": "Research",
+      "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/research/experiment-protocol",
       "path": "",
       "members": [],
@@ -3316,7 +3364,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Pre-register a benchmark or numerical study, locking thresholds and pass conditions before measuring."
     },
     {
       "id": "plugin/file-ticket",
@@ -3357,7 +3406,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Turns something noticed mid-session into a tracker issue."
     },
     {
       "id": "plugin/find-skills",
@@ -3368,7 +3418,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.2.1",
-      "category": "Meta",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/meta/find-skills",
       "path": "",
       "members": [],
@@ -3398,7 +3448,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Find published skills for a capability and prepare them for installation."
     },
     {
       "id": "plugin/fix-issue",
@@ -3439,7 +3490,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Resolves a tracker issue end to end."
     },
     {
       "id": "plugin/grill-me",
@@ -3450,7 +3502,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.5.1",
-      "category": "Workflow",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/workflow/grill-me",
       "path": "",
       "members": [],
@@ -3480,7 +3532,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Stress-test a plan or design through a one-question-at-a-time interview, ending in a decision log."
     },
     {
       "id": "plugin/herdr",
@@ -3491,7 +3544,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.2.0",
-      "category": "Meta",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/meta/herdr",
       "path": "",
       "members": [],
@@ -3521,7 +3574,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Launch, drive or inspect another agent or command in a Herdr pane, tab or workspace."
     },
     {
       "id": "plugin/materio",
@@ -3532,7 +3586,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.1.0",
-      "category": "Plugin collection",
+      "category": "Scientific computing",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/plugins/materio",
       "path": "",
       "members": [],
@@ -3562,7 +3616,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Materials research procedures: interviews, corpus synthesis, lab feasibility and verified paper handoff."
     },
     {
       "id": "plugin/prd",
@@ -3573,7 +3628,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.4.1",
-      "category": "Planning",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/planning/prd",
       "path": "",
       "members": [],
@@ -3603,7 +3658,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Turn an idea into a product requirements document through a staged interview."
     },
     {
       "id": "plugin/product-intent",
@@ -3614,7 +3670,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.4.1",
-      "category": "Planning",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/planning/product-intent",
       "path": "",
       "members": [],
@@ -3644,7 +3700,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Write a problem-first product document for a new effort, with no engineering decisions yet."
     },
     {
       "id": "plugin/prototype",
@@ -3685,7 +3742,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Answer a design question with throwaway, runnable code, keeping the verdict and discarding the code."
     },
     {
       "id": "plugin/resolve-merge-conflicts",
@@ -3726,7 +3784,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Resolve merge, rebase or cherry-pick conflicts by reconstructing both sides' intent, then check the result."
     },
     {
       "id": "plugin/scientific-debugging",
@@ -3737,7 +3796,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.3.1",
-      "category": "Research",
+      "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/research/scientific-debugging",
       "path": "",
       "members": [],
@@ -3767,7 +3826,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Diagnose wrong, NaN, nondeterministic or slow scientific results by testing hypotheses before fixing."
     },
     {
       "id": "plugin/scientific-modernization",
@@ -3778,7 +3838,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.4.1",
-      "category": "Research",
+      "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/research/scientific-modernization",
       "path": "",
       "members": [],
@@ -3808,7 +3868,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Port, rewrite or package established scientific software in stages validated against a trusted reference."
     },
     {
       "id": "plugin/ship",
@@ -3849,7 +3910,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Ship finished work as one reviewed commit, or push a contributor branch and open a PR on request."
     },
     {
       "id": "plugin/skill-craft",
@@ -3860,7 +3922,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.3.1",
-      "category": "Meta",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/meta/skill-craft",
       "path": "",
       "members": [],
@@ -3890,7 +3952,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Writes, reviews, or prunes a SKILL.md, judging whether its description, body, and length earn their cost."
     },
     {
       "id": "plugin/tdd",
@@ -3931,7 +3994,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Builds a feature or fix test-first, red to green at pre-agreed public seams, one vertical slice at a time."
     },
     {
       "id": "plugin/tech-spec",
@@ -3942,7 +4006,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.3.1",
-      "category": "Planning",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/planning/tech-spec",
       "path": "",
       "members": [],
@@ -3972,7 +4036,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Write an implementation-ready architecture handoff with typed contracts and execution flows."
     },
     {
       "id": "plugin/workflow-distiller",
@@ -3983,7 +4048,7 @@
       "publisher": "clio-coder",
       "origin": "Indexed",
       "version": "0.4.2",
-      "category": "Workflow",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/workflow/workflow-distiller",
       "path": "",
       "members": [],
@@ -4013,7 +4078,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Packages a workflow that just happened into a reusable SKILL.md."
     },
     {
       "id": "plugin/worktree-create",
@@ -4054,7 +4120,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Set up git worktrees for parallel work, each on its own branch with dependencies installed and checked."
     },
     {
       "id": "plugin/worktree-merge",
@@ -4095,7 +4162,8 @@
         "antigravity": null,
         "claude-code": null,
         "vscode": null
-      }
+      },
+      "summary": "Merge finished worktree branches through a throwaway integration branch, testing after each merge."
     },
     {
       "id": "skill/bibliography",
@@ -4116,8 +4184,7 @@
         "clio-web"
       ],
       "tags": [
-        "clio-research",
-        "Scientific workflow"
+        "clio-research"
       ],
       "clients": [
         "codex",
@@ -4134,7 +4201,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Assemble verified citations, BibTeX records and research reading lists."
     },
     {
       "id": "skill/chart-select",
@@ -4151,8 +4219,7 @@
       "members": [],
       "servers": [],
       "tags": [
-        "clio-analysis",
-        "Scientific workflow"
+        "clio-analysis"
       ],
       "clients": [
         "codex",
@@ -4169,7 +4236,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Choose a chart type, axes, bins and color scale that suit scientific data."
     },
     {
       "id": "skill/clio-kit-archify",
@@ -4180,14 +4248,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/planning/archify",
       "path": "skills/clio-coder-skills/skills/clio-kit-archify/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4204,7 +4271,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Build interactive system maps and diagrams as standalone HTML from a typed JSON spec."
     },
     {
       "id": "skill/clio-kit-architecture",
@@ -4215,14 +4283,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/planning/architecture",
       "path": "skills/clio-coder-skills/skills/clio-kit-architecture/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4239,7 +4306,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Decide an engineering approach with the user: compare options, recommend one and record the decision."
     },
     {
       "id": "skill/clio-kit-arxiv-literature",
@@ -4250,14 +4318,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/research/arxiv-literature",
       "path": "skills/clio-coder-skills/skills/clio-kit-arxiv-literature/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4274,7 +4341,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Search arXiv, compare papers and build a short literature survey with linked citations."
     },
     {
       "id": "skill/clio-kit-ast-grep",
@@ -4285,14 +4353,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Coding",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/coding/ast-grep",
       "path": "skills/clio-coder-skills/skills/clio-kit-ast-grep/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4309,7 +4376,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Structural code search with ast-grep rules: finds code by shape when grep on text is too noisy, and never rewrites it."
     },
     {
       "id": "skill/clio-kit-backlog",
@@ -4320,14 +4388,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/planning/backlog",
       "path": "skills/clio-coder-skills/skills/clio-kit-backlog/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4344,7 +4411,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Turn a finished PRD or architecture doc into a backlog of small, testable tickets."
     },
     {
       "id": "skill/clio-kit-branch-closeout",
@@ -4355,14 +4423,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Git",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/git/branch-closeout",
       "path": "skills/clio-coder-skills/skills/clio-kit-branch-closeout/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4379,7 +4446,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Confirm merged work landed, then safely remove its worktrees and local branches."
     },
     {
       "id": "skill/clio-kit-clio-coder-dev",
@@ -4390,14 +4458,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/meta/clio-coder-dev",
       "path": "skills/clio-coder-skills/skills/clio-kit-clio-coder-dev/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4414,7 +4481,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Governs changes to Clio Coder's own source and harness (TUI, skills, agents, tools, prompts, domains)."
     },
     {
       "id": "skill/clio-kit-clio-coder-test",
@@ -4425,14 +4493,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/meta/clio-coder-test",
       "path": "skills/clio-coder-skills/skills/clio-kit-clio-coder-test/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4449,7 +4516,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Verify a Clio Coder source change against its contract, smoke, boundary and application tests."
     },
     {
       "id": "skill/clio-kit-coding-standards",
@@ -4460,14 +4528,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Coding",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/coding/coding-standards",
       "path": "skills/clio-coder-skills/skills/clio-kit-coding-standards/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4484,7 +4551,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Strict TypeScript rules for writing or refactoring code when a project has no standards of its own."
     },
     {
       "id": "skill/clio-kit-context-handoff",
@@ -4495,14 +4563,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/context/context-handoff",
       "path": "skills/clio-coder-skills/skills/clio-kit-context-handoff/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4519,7 +4586,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Write a redacted handoff document so the next session or agent can continue the work."
     },
     {
       "id": "skill/clio-kit-context-prime",
@@ -4530,14 +4598,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/context/context-prime",
       "path": "skills/clio-coder-skills/skills/clio-kit-context-prime/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4554,7 +4621,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Orient a new session in a repository from the last handoff, git state and active work."
     },
     {
       "id": "skill/clio-kit-credentials",
@@ -4565,14 +4633,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/meta/credentials",
       "path": "skills/clio-coder-skills/skills/clio-kit-credentials/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4589,7 +4656,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Handle API keys, tokens and facility credentials safely, including after an auth error or a leak."
     },
     {
       "id": "skill/clio-kit-cut-it",
@@ -4600,14 +4668,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/workflow/cut-it",
       "path": "skills/clio-coder-skills/skills/clio-kit-cut-it/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4624,7 +4691,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Slice a plan or PRD into a sprint of small, ordered tasks, each with a done-when check."
     },
     {
       "id": "skill/clio-kit-design-council",
@@ -4635,14 +4703,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/workflow/design-council",
       "path": "skills/clio-coder-skills/skills/clio-kit-design-council/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4659,7 +4726,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Have several expert perspectives debate a design decision before code is written."
     },
     {
       "id": "skill/clio-kit-experiment-protocol",
@@ -4670,14 +4738,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/research/experiment-protocol",
       "path": "skills/clio-coder-skills/skills/clio-kit-experiment-protocol/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4694,7 +4761,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Pre-register a benchmark or numerical study, locking thresholds and pass conditions before measuring."
     },
     {
       "id": "skill/clio-kit-file-ticket",
@@ -4705,14 +4773,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Git",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/git/file-ticket",
       "path": "skills/clio-coder-skills/skills/clio-kit-file-ticket/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4729,7 +4796,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Turns something noticed mid-session into a tracker issue."
     },
     {
       "id": "skill/clio-kit-find-skills",
@@ -4740,14 +4808,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/meta/find-skills",
       "path": "skills/clio-coder-skills/skills/clio-kit-find-skills/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4764,7 +4831,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Find published skills for a capability and prepare them for installation."
     },
     {
       "id": "skill/clio-kit-fix-issue",
@@ -4775,14 +4843,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Git",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/git/fix-issue",
       "path": "skills/clio-coder-skills/skills/clio-kit-fix-issue/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4799,7 +4866,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Resolves a tracker issue end to end."
     },
     {
       "id": "skill/clio-kit-grill-me",
@@ -4810,14 +4878,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/workflow/grill-me",
       "path": "skills/clio-coder-skills/skills/clio-kit-grill-me/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4834,7 +4901,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Stress-test a plan or design through a one-question-at-a-time interview, ending in a decision log."
     },
     {
       "id": "skill/clio-kit-herdr",
@@ -4845,14 +4913,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/meta/herdr",
       "path": "skills/clio-coder-skills/skills/clio-kit-herdr/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4869,7 +4936,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Launch, drive or inspect another agent or command in a Herdr pane, tab or workspace."
     },
     {
       "id": "skill/clio-kit-materio-lab-definer",
@@ -4880,14 +4948,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Coding",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/plugins/materio/skills/materio-lab-definer",
       "path": "skills/clio-coder-skills/skills/clio-kit-materio-lab-definer/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4904,7 +4971,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Structure resource interviews into a feasibility map with gaps and alternatives."
     },
     {
       "id": "skill/clio-kit-materio-literature-reviewer",
@@ -4915,14 +4983,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Coding",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/plugins/materio/skills/materio-literature-reviewer",
       "path": "skills/clio-coder-skills/skills/clio-kit-materio-literature-reviewer/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4939,7 +5006,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Review supplied materials and provided URLs with citation provenance and explicit gaps."
     },
     {
       "id": "skill/clio-kit-materio-research-explorer",
@@ -4950,14 +5018,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Coding",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/plugins/materio/skills/materio-research-explorer",
       "path": "skills/clio-coder-skills/skills/clio-kit-materio-research-explorer/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -4974,7 +5041,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Synthesize candidate materials-science questions and write researcher-confirmed identity."
     },
     {
       "id": "skill/clio-kit-materio-task-executor",
@@ -4985,14 +5053,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Coding",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/plugins/materio/skills/materio-task-executor",
       "path": "skills/clio-coder-skills/skills/clio-kit-materio-task-executor/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5009,7 +5076,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Produce type-specific artifacts for one approved materials-science task and verify the files."
     },
     {
       "id": "skill/clio-kit-materio-task-verifier",
@@ -5020,14 +5088,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Coding",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/plugins/materio/skills/materio-task-verifier",
       "path": "skills/clio-coder-skills/skills/clio-kit-materio-task-verifier/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5044,7 +5111,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Independently inspect research task outputs against their approved assumptions, artifacts, and evidence."
     },
     {
       "id": "skill/clio-kit-materio-workflow-planner",
@@ -5055,14 +5123,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Coding",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/plugins/materio/skills/materio-workflow-planner",
       "path": "skills/clio-coder-skills/skills/clio-kit-materio-workflow-planner/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5079,7 +5146,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Build a resource-aware dependency plan with researcher assumptions and tagged defaults."
     },
     {
       "id": "skill/clio-kit-prd",
@@ -5090,14 +5158,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/planning/prd",
       "path": "skills/clio-coder-skills/skills/clio-kit-prd/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5114,7 +5181,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Turn an idea into a product requirements document through a staged interview."
     },
     {
       "id": "skill/clio-kit-product-intent",
@@ -5125,14 +5193,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/planning/product-intent",
       "path": "skills/clio-coder-skills/skills/clio-kit-product-intent/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5149,7 +5216,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Write a problem-first product document for a new effort, with no engineering decisions yet."
     },
     {
       "id": "skill/clio-kit-prototype",
@@ -5160,14 +5228,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Coding",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/coding/prototype",
       "path": "skills/clio-coder-skills/skills/clio-kit-prototype/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5184,7 +5251,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Answer a design question with throwaway, runnable code, keeping the verdict and discarding the code."
     },
     {
       "id": "skill/clio-kit-resolve-merge-conflicts",
@@ -5195,14 +5263,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Git",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/git/resolve-merge-conflicts",
       "path": "skills/clio-coder-skills/skills/clio-kit-resolve-merge-conflicts/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5219,7 +5286,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Resolve merge, rebase or cherry-pick conflicts by reconstructing both sides' intent, then check the result."
     },
     {
       "id": "skill/clio-kit-scientific-debugging",
@@ -5230,14 +5298,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/research/scientific-debugging",
       "path": "skills/clio-coder-skills/skills/clio-kit-scientific-debugging/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5254,7 +5321,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Diagnose wrong, NaN, nondeterministic or slow scientific results by testing hypotheses before fixing."
     },
     {
       "id": "skill/clio-kit-scientific-modernization",
@@ -5265,14 +5333,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/research/scientific-modernization",
       "path": "skills/clio-coder-skills/skills/clio-kit-scientific-modernization/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5289,7 +5356,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Port, rewrite or package established scientific software in stages validated against a trusted reference."
     },
     {
       "id": "skill/clio-kit-ship",
@@ -5300,14 +5368,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Git",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/git/ship",
       "path": "skills/clio-coder-skills/skills/clio-kit-ship/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5324,7 +5391,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Ship finished work as one reviewed commit, or push a contributor branch and open a PR on request."
     },
     {
       "id": "skill/clio-kit-skill-craft",
@@ -5335,14 +5403,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Agent tooling",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/meta/skill-craft",
       "path": "skills/clio-coder-skills/skills/clio-kit-skill-craft/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5359,7 +5426,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Writes, reviews, or prunes a SKILL.md, judging whether its description, body, and length earn their cost."
     },
     {
       "id": "skill/clio-kit-tdd",
@@ -5370,14 +5438,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Coding",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/coding/tdd",
       "path": "skills/clio-coder-skills/skills/clio-kit-tdd/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5394,7 +5461,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Builds a feature or fix test-first, red to green at pre-agreed public seams, one vertical slice at a time."
     },
     {
       "id": "skill/clio-kit-tech-spec",
@@ -5405,14 +5473,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/planning/tech-spec",
       "path": "skills/clio-coder-skills/skills/clio-kit-tech-spec/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5429,7 +5496,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Write an implementation-ready architecture handoff with typed contracts and execution flows."
     },
     {
       "id": "skill/clio-kit-workflow-distiller",
@@ -5440,14 +5508,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Planning & review",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/workflow/workflow-distiller",
       "path": "skills/clio-coder-skills/skills/clio-kit-workflow-distiller/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5464,7 +5531,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Packages a workflow that just happened into a reusable SKILL.md."
     },
     {
       "id": "skill/clio-kit-worktree-create",
@@ -5475,14 +5543,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Git",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/git/worktree-create",
       "path": "skills/clio-coder-skills/skills/clio-kit-worktree-create/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5499,7 +5566,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Set up git worktrees for parallel work, each on its own branch with dependencies installed and checked."
     },
     {
       "id": "skill/clio-kit-worktree-merge",
@@ -5510,14 +5578,13 @@
       "publisher": "clio-kit",
       "origin": "Adapted",
       "version": "1.1.2",
-      "category": "Coding & research",
+      "category": "Git",
       "source": "https://github.com/iowarp/clio-coder/tree/c841a46101d6d9df5fd3bcb1d337e59d92fb660d/library/skills/git/worktree-merge",
       "path": "skills/clio-coder-skills/skills/clio-kit-worktree-merge/SKILL.md",
       "members": [],
       "servers": [],
       "tags": [
-        "clio-coder",
-        "Clio Coder"
+        "clio-coder"
       ],
       "clients": [
         "codex",
@@ -5534,7 +5601,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Merge finished worktree branches through a throwaway integration branch, testing after each merge."
     },
     {
       "id": "skill/cluster-run",
@@ -5557,8 +5625,7 @@
         "clio-node-hardware"
       ],
       "tags": [
-        "clio-hpc",
-        "Scientific workflow"
+        "clio-hpc"
       ],
       "clients": [
         "codex",
@@ -5575,7 +5642,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Resolve software with Spack, configure a JARVIS pipeline and follow its execution."
     },
     {
       "id": "skill/coordinate-systems",
@@ -5592,8 +5660,7 @@
       "members": [],
       "servers": [],
       "tags": [
-        "clio-geoscience",
-        "Scientific workflow"
+        "clio-geoscience"
       ],
       "clients": [
         "codex",
@@ -5610,7 +5677,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Interpret axis order, map projections, distance units and vertical datums correctly."
     },
     {
       "id": "skill/data-clean",
@@ -5629,8 +5697,7 @@
         "clio-pandas"
       ],
       "tags": [
-        "clio-analysis",
-        "Scientific workflow"
+        "clio-analysis"
       ],
       "clients": [
         "codex",
@@ -5647,7 +5714,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Profile missing values, duplicates and outliers, and set validation rules before analysis."
     },
     {
       "id": "skill/dataset-explore",
@@ -5669,8 +5737,7 @@
         "clio-compression"
       ],
       "tags": [
-        "clio-scientific-io",
-        "Scientific workflow"
+        "clio-scientific-io"
       ],
       "clients": [
         "codex",
@@ -5687,7 +5754,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Inspect the structure, shapes, types and units of HDF5, BP5, Parquet and compressed files."
     },
     {
       "id": "skill/dataset-report",
@@ -5698,7 +5766,7 @@
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.0",
-      "category": "Coding & research",
+      "category": "Coding",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-dataset-report/skills/dataset-report/SKILL.md",
       "members": [],
@@ -5708,8 +5776,7 @@
         "clio-plot"
       ],
       "tags": [
-        "clio-dataset-report",
-        "Scientific workflow"
+        "clio-dataset-report"
       ],
       "clients": [
         "codex",
@@ -5726,7 +5793,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Turn a small numeric HDF5 dataset into a report with a CSV, statistics and a figure."
     },
     {
       "id": "skill/dataset-stage",
@@ -5747,8 +5815,7 @@
         "clio-web"
       ],
       "tags": [
-        "clio-research",
-        "Scientific workflow"
+        "clio-research"
       ],
       "clients": [
         "codex",
@@ -5765,7 +5832,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Find dataset metadata and download a supported resource to a verified local path."
     },
     {
       "id": "skill/geospatial-map",
@@ -5785,8 +5853,7 @@
         "clio-terrain"
       ],
       "tags": [
-        "clio-geoscience",
-        "Scientific workflow"
+        "clio-geoscience"
       ],
       "clients": [
         "codex",
@@ -5803,7 +5870,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Validate GeoJSON, query spatial relationships, map features and analyze terrain grids."
     },
     {
       "id": "skill/io-performance",
@@ -5820,8 +5888,7 @@
       "members": [],
       "servers": [],
       "tags": [
-        "clio-performance",
-        "Scientific workflow"
+        "clio-performance"
       ],
       "clients": [
         "codex",
@@ -5838,7 +5905,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Interpret bandwidth, IOPS, request sizes and MPI-IO counters from existing measurements."
     },
     {
       "id": "skill/job-diagnose",
@@ -5858,8 +5926,7 @@
         "clio-parallel-sort"
       ],
       "tags": [
-        "clio-performance",
-        "Scientific workflow"
+        "clio-performance"
       ],
       "clients": [
         "codex",
@@ -5876,7 +5943,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Investigate I/O bottlenecks from a real Darshan profile and the application's logs."
     },
     {
       "id": "skill/large-data-read",
@@ -5897,8 +5965,7 @@
         "clio-adios"
       ],
       "tags": [
-        "clio-scientific-io",
-        "Scientific workflow"
+        "clio-scientific-io"
       ],
       "clients": [
         "codex",
@@ -5915,7 +5982,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Plan bounded reads of large data and tell sampled summaries apart from exact statistics."
     },
     {
       "id": "skill/log-search",
@@ -5934,8 +6002,7 @@
         "clio-parallel-sort"
       ],
       "tags": [
-        "clio-performance",
-        "Scientific workflow"
+        "clio-performance"
       ],
       "clients": [
         "codex",
@@ -5952,7 +6019,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Narrow large application logs by timestamp, level, keyword or error pattern."
     },
     {
       "id": "skill/research-survey",
@@ -5974,8 +6042,7 @@
         "clio-web"
       ],
       "tags": [
-        "clio-research",
-        "Scientific workflow"
+        "clio-research"
       ],
       "clients": [
         "codex",
@@ -5992,7 +6059,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Search prior work and find the datasets behind research claims."
     },
     {
       "id": "skill/results-summary",
@@ -6012,8 +6080,7 @@
         "clio-plot"
       ],
       "tags": [
-        "clio-analysis",
-        "Scientific workflow"
+        "clio-analysis"
       ],
       "clients": [
         "codex",
@@ -6030,7 +6097,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Calculate tabular summaries and plot transformed CSV or Excel data."
     },
     {
       "id": "skill/seismic-analysis",
@@ -6049,8 +6117,7 @@
         "clio-seismology"
       ],
       "tags": [
-        "clio-geoscience",
-        "Scientific workflow"
+        "clio-geoscience"
       ],
       "clients": [
         "codex",
@@ -6067,7 +6134,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Inspect SAC waveforms and evaluate a saved earthquake event catalogue."
     },
     {
       "id": "skill/session-record",
@@ -6086,8 +6154,7 @@
         "clio-chronolog"
       ],
       "tags": [
-        "clio-performance",
-        "Scientific workflow"
+        "clio-performance"
       ],
       "clients": [
         "codex",
@@ -6104,7 +6171,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Record or retrieve a research decision trail with ChronoLog."
     },
     {
       "id": "skill/simulation-visualize",
@@ -6123,8 +6191,7 @@
         "clio-paraview"
       ],
       "tags": [
-        "clio-analysis",
-        "Scientific workflow"
+        "clio-analysis"
       ],
       "clients": [
         "codex",
@@ -6141,7 +6208,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Inspect and render simulation fields with ParaView."
     },
     {
       "id": "skill/slurm-script",
@@ -6161,8 +6229,7 @@
         "clio-node-hardware"
       ],
       "tags": [
-        "clio-hpc",
-        "Scientific workflow"
+        "clio-hpc"
       ],
       "clients": [
         "codex",
@@ -6179,7 +6246,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Prepare Slurm resource requests, job arrays and dependencies, and diagnose pending jobs."
     },
     {
       "id": "skill/software-environment",
@@ -6199,8 +6267,7 @@
         "clio-spack"
       ],
       "tags": [
-        "clio-hpc",
-        "Scientific workflow"
+        "clio-hpc"
       ],
       "clients": [
         "codex",
@@ -6217,7 +6284,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Check installed Spack packages and available or saved module environments."
     },
     {
       "id": "skill/storage-format",
@@ -6234,8 +6302,7 @@
       "members": [],
       "servers": [],
       "tags": [
-        "clio-scientific-io",
-        "Scientific workflow"
+        "clio-scientific-io"
       ],
       "clients": [
         "codex",
@@ -6252,7 +6319,8 @@
       "componentTypes": [
         "skill"
       ],
-      "installation": "portable-skill"
+      "installation": "portable-skill",
+      "summary": "Choose scientific file formats, chunk layouts and compression for an access pattern."
     },
     {
       "id": "workflow/clio-analysis",
@@ -6308,7 +6376,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Turn a dataset into summary statistics and a figure."
     },
     {
       "id": "workflow/clio-dataset-report",
@@ -6364,7 +6433,8 @@
         "antigravity": false,
         "claude-code": true,
         "vscode": false
-      }
+      },
+      "summary": "Turn a small HDF5 dataset into a report with a CSV, figure, checked statistics and evidence review."
     },
     {
       "id": "workflow/clio-geoscience",
@@ -6419,7 +6489,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Inspect and map geospatial features, terrain models, and waveform archives."
     },
     {
       "id": "workflow/clio-hpc",
@@ -6478,7 +6549,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Install a code, wrap it in a pipeline, submit it, and follow it on a cluster."
     },
     {
       "id": "workflow/clio-performance",
@@ -6534,7 +6606,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Work out why a finished job was slower than it should have been."
     },
     {
       "id": "workflow/clio-research",
@@ -6591,7 +6664,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Find papers on a topic and the datasets behind them."
     },
     {
       "id": "workflow/clio-scientific-io",
@@ -6648,7 +6722,8 @@
         "antigravity": true,
         "claude-code": true,
         "vscode": true
-      }
+      },
+      "summary": "Open a scientific data file, see its structure, and read part of it."
     }
   ]
 }

@@ -1,6 +1,6 @@
 ---
 title: Chronolog MCP
-description: "ChronoLog MCP server implementation using Model Context Protocol"
+description: "Record and retrieve agent interactions in a ChronoLog log store."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -9,7 +9,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   name="Chronolog"
   icon="⏰"
   category="Data Processing"
-  description="ChronoLog MCP server implementation using Model Context Protocol"
+  description="Record and retrieve agent interactions in a ChronoLog log store."
   version="2.0.3"
   actions={["start_chronolog", "record_interaction", "stop_chronolog", "retrieve_interaction"]}
   platforms={["claude", "cursor", "vscode"]}

@@ -1,6 +1,6 @@
 ---
 title: Hdf5 MCP
-description: "HDF5 FastMCP - Scientific Data Access for AI Agents | CLIO Kit MCP Server"
+description: "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -9,7 +9,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   name="Hdf5"
   icon="🗂️"
   category="Data Processing"
-  description="HDF5 FastMCP - Scientific Data Access for AI Agents | CLIO Kit MCP Server"
+  description="Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks."
   version="2.2.6"
   actions={["open_file", "close_file", "get_filename", "get_mode", "get_by_path", "list_keys", "visit", "read_full_dataset", "read_partial_dataset", "get_shape", "get_dtype", "get_size", "get_chunks", "read_attribute", "list_attributes", "hdf5_parallel_scan", "hdf5_batch_read", "hdf5_stream_data", "hdf5_aggregate_stats", "analyze_dataset_structure", "find_similar_datasets", "suggest_next_exploration", "identify_io_bottlenecks", "optimize_access_pattern", "refresh_hdf5_resources", "list_available_hdf5_files", "export_dataset"]}
   platforms={["claude", "cursor", "vscode"]}

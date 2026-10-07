@@ -1,6 +1,6 @@
 {
   "name": "clio-arxiv",
-  "description": "ArXiv MCP server implementation using Model Context Protocol",
+  "description": "Search arXiv by topic, author, title or date, read paper details, and export BibTeX or PDFs.",
   "version": "2.2.5",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",

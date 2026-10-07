@@ -1,6 +1,6 @@
 ---
 title: Plot MCP
-description: "MCP server for advanced data visualization and plotting operations"
+description: "Draw line, bar, scatter, histogram, heatmap and time-series plots from tabular data."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -9,7 +9,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   name="Plot"
   icon="📈"
   category="Data Processing"
-  description="MCP server for advanced data visualization and plotting operations"
+  description="Draw line, bar, scatter, histogram, heatmap and time-series plots from tabular data."
   version="2.2.5"
   actions={["line_plot", "bar_plot", "scatter_plot", "histogram_plot", "heatmap_plot", "plot_timeseries", "data_info"]}
   platforms={["claude", "cursor", "vscode"]}

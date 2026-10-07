@@ -268,3 +268,20 @@ const plugin = require({json.dumps(str(site / "plugins/catalogue-routes.cjs"))})
     ]
     assert len(references) == sum(i["installation"] == "launcher" for i in items)
     assert all(Path(reference).is_file() for reference in references)
+
+
+def test_catalogue_page_titles_are_unique():
+    # Entry pages are titled "<title> · <kind>"; search engines need them distinct.
+    pairs = [(i["title"], i["kind"]) for i in catalogue.generate(ROOT)["items"]]
+    assert len(pairs) == len(set(pairs))
+
+
+def test_public_summaries_are_one_plain_sentence():
+    # Descriptions are tuned for agent triggering; cards and search snippets
+    # show the summary, so it must read as plain prose.
+    for item in catalogue.generate(ROOT)["items"]:
+        summary = item["summary"]
+        assert summary and len(summary.split()) <= catalogue.SUMMARY_WORDS, item["id"]
+        assert len(summary) <= catalogue.SUMMARY_CHARS, item["id"]
+        assert not summary.lower().startswith("use when"), item["id"]
+        assert "Triggers on" not in summary and " | " not in summary, item["id"]

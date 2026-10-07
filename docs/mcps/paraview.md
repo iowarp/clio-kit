@@ -1,6 +1,6 @@
 ---
 title: Paraview MCP
-description: "MCP server for ParaView scientific visualization"
+description: "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -9,7 +9,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   name="Paraview"
   icon="🧊"
   category="Analysis & Visualization"
-  description="MCP server for ParaView scientific visualization"
+  description="Visualize simulation results in ParaView: load fields, then slice, contour, color and render them."
   version="2.2.5"
   actions={["load_scientific_data", "save_contour_as_stl", "create_geometric_shape", "generate_isosurface", "create_data_slice", "configure_volume_display", "toggle_visibility", "set_active_source", "get_active_source_names_by_type", "edit_volume_opacity", "set_color_map", "apply_field_coloring", "compute_surface_area", "set_color_map_preset", "set_representation_type", "get_pipeline", "get_available_arrays", "get_histogram", "generate_flow_streamlines", "take_viewport_screenshot", "show_screenshot_preview", "rotate_camera", "reset_camera", "plot_over_line", "warp_by_vector", "list_commands"]}
   platforms={["claude", "cursor", "vscode"]}

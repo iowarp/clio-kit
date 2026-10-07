@@ -1,6 +1,6 @@
 {
   "name": "clio-pandas",
-  "description": "Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations",
+  "description": "Load tabular data, then clean, filter, group, merge and summarize it with pandas.",
   "version": "2.3.0",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",

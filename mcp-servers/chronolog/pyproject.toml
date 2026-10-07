@@ -1,7 +1,7 @@
 [project]
 name = "chronolog-mcp"
 version = "1.0.0"
-description = "ChronoLog MCP server implementation using Model Context Protocol"
+description = "Record and retrieve agent interactions in a ChronoLog log store."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"

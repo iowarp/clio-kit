@@ -1,7 +1,7 @@
 [project]
 name = "parquet-mcp"
 version = "1.0.0"
-description = "MCP server for Apache Parquet files"
+description = "Summarize Parquet files, preview columns, read row slices and aggregate values."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"

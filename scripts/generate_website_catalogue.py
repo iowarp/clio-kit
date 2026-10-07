@@ -53,6 +53,89 @@ WORKFLOWS = {
         "Papers and datasets, with guidance for discovery and staging.",
     ),
 }
+# Public one-line summaries where the agent-facing description reads as trigger
+# text. Keyed by skill or package name; adapted skills share their upstream name.
+SUMMARIES = {
+    "bibliography": "Assemble verified citations, BibTeX records and research reading lists.",
+    "chart-select": "Choose a chart type, axes, bins and color scale that suit scientific data.",
+    "cluster-run": "Resolve software with Spack, configure a JARVIS pipeline and follow its execution.",
+    "coordinate-systems": "Interpret axis order, map projections, distance units and vertical datums correctly.",
+    "data-clean": "Profile missing values, duplicates and outliers, and set validation rules before analysis.",
+    "dataset-explore": "Inspect the structure, shapes, types and units of HDF5, BP5, Parquet and compressed files.",
+    "dataset-report": "Turn a small numeric HDF5 dataset into a report with a CSV, statistics and a figure.",
+    "dataset-stage": "Find dataset metadata and download a supported resource to a verified local path.",
+    "geospatial-map": "Validate GeoJSON, query spatial relationships, map features and analyze terrain grids.",
+    "io-performance": "Interpret bandwidth, IOPS, request sizes and MPI-IO counters from existing measurements.",
+    "job-diagnose": "Investigate I/O bottlenecks from a real Darshan profile and the application's logs.",
+    "large-data-read": "Plan bounded reads of large data and tell sampled summaries apart from exact statistics.",
+    "log-search": "Narrow large application logs by timestamp, level, keyword or error pattern.",
+    "research-survey": "Search prior work and find the datasets behind research claims.",
+    "results-summary": "Calculate tabular summaries and plot transformed CSV or Excel data.",
+    "seismic-analysis": "Inspect SAC waveforms and evaluate a saved earthquake event catalogue.",
+    "session-record": "Record or retrieve a research decision trail with ChronoLog.",
+    "simulation-visualize": "Inspect and render simulation fields with ParaView.",
+    "slurm-script": "Prepare Slurm resource requests, job arrays and dependencies, and diagnose pending jobs.",
+    "software-environment": "Check installed Spack packages and available or saved module environments.",
+    "storage-format": "Choose scientific file formats, chunk layouts and compression for an access pattern.",
+    "archify": "Build interactive system maps and diagrams as standalone HTML from a typed JSON spec.",
+    "architecture": "Decide an engineering approach with the user: compare options, recommend one and record the decision.",
+    "arxiv-literature": "Search arXiv, compare papers and build a short literature survey with linked citations.",
+    "backlog": "Turn a finished PRD or architecture doc into a backlog of small, testable tickets.",
+    "coding-standards": "Strict TypeScript rules for writing or refactoring code when a project has no standards of its own.",
+    "context-handoff": "Write a redacted handoff document so the next session or agent can continue the work.",
+    "credentials": "Handle API keys, tokens and facility credentials safely, including after an auth error or a leak.",
+    "cut-it": "Slice a plan or PRD into a sprint of small, ordered tasks, each with a done-when check.",
+    "scientific-debugging": "Diagnose wrong, NaN, nondeterministic or slow scientific results by testing hypotheses before fixing.",
+    "scientific-modernization": "Port, rewrite or package established scientific software in stages validated against a trusted reference.",
+    "ship": "Ship finished work as one reviewed commit, or push a contributor branch and open a PR on request.",
+    "worktree-create": "Set up git worktrees for parallel work, each on its own branch with dependencies installed and checked.",
+    "worktree-merge": "Merge finished worktree branches through a throwaway integration branch, testing after each merge.",
+    "experiment-protocol": "Pre-register a benchmark or numerical study, locking thresholds and pass conditions before measuring.",
+    "resolve-merge-conflicts": "Resolve merge, rebase or cherry-pick conflicts by reconstructing both sides' intent, then check the result.",
+    "clio-coder-test": "Verify a Clio Coder source change against its contract, smoke, boundary and application tests.",
+    "branch-closeout": "Confirm merged work landed, then safely remove its worktrees and local branches.",
+    "product-intent": "Write a problem-first product document for a new effort, with no engineering decisions yet.",
+    "prd": "Turn an idea into a product requirements document through a staged interview.",
+    "scientific-evidence-reviewer": "Check scientific tool outputs for numerical correctness, reproducibility and unsupported claims.",
+    "design-council": "Have several expert perspectives debate a design decision before code is written.",
+    "herdr": "Launch, drive or inspect another agent or command in a Herdr pane, tab or workspace.",
+    "prototype": "Answer a design question with throwaway, runnable code, keeping the verdict and discarding the code.",
+    "context-prime": "Orient a new session in a repository from the last handoff, git state and active work.",
+    "grill-me": "Stress-test a plan or design through a one-question-at-a-time interview, ending in a decision log.",
+    "find-skills": "Find published skills for a capability and prepare them for installation.",
+    "tech-spec": "Write an implementation-ready architecture handoff with typed contracts and execution flows.",
+    "seismology": "Inspect SAC seismic waveforms and archives, compute per-trace statistics and plot traces.",
+    "scientific-workflow-planner": "Plan a scientific workflow from verified tool capabilities, flagging missing steps before running it.",
+    "materio": "Materials research procedures: interviews, corpus synthesis, lab feasibility and verified paper handoff.",
+}
+SUMMARY_WORDS = 25
+SUMMARY_CHARS = 125
+# Upstream categories overlap; fold them into one research-area list.
+CATEGORY_ALIASES = {
+    "Planning": "Planning & review",
+    "Workflow": "Planning & review",
+    "Research": "Research & discovery",
+    "Coding & research": "Coding",
+    "Meta": "Agent tooling",
+    "Context": "Agent tooling",
+    "Automation": "Scientific data",
+    "Agents": "Planning & review",
+    "Skills": "Scientific computing",
+    "Plugin collection": "Scientific computing",
+}
+
+
+def public_summary(name: str, description: str) -> str:
+    """One plain sentence for people; the description stays tuned for agents."""
+    if name.removeprefix("clio-kit-") in SUMMARIES:
+        return SUMMARIES[name.removeprefix("clio-kit-")]
+    text = re.sub(r"^Use when this workflow is requested:\s*", "", description.strip())
+    text = re.split(r"\s+Triggers on\b", text)[0].split(" | ")[0]
+    match = re.match(r".*?[.!?](?=\s|$)", text)
+    sentence = match.group(0) if match else text
+    if len(sentence.split()) > SUMMARY_WORDS:
+        sentence = re.split(r"[:;]\s", sentence)[0].rstrip(".") + "."
+    return sentence
 
 
 def frontmatter(path: Path) -> tuple[dict, str]:
@@ -297,11 +380,8 @@ def generate(root: Path) -> dict:
                 for s in metadata.get("servers", "").split(",")
                 if s.strip() not in ("", "none")
             ],
-            tags=[
-                tag
-                for tag in (bundle, "Clio Coder" if adapted else "Scientific workflow")
-                if tag
-            ],
+            # Origin already says "Adapted"; the bundle tag links workflow members.
+            tags=[bundle] if bundle else [],
             clients=["claude-code", "codex", "antigravity", "other"],
             license=meta.get("license", "BSD-3-Clause"),
             evidence="Scenarios recorded"
@@ -527,6 +607,22 @@ def generate(root: Path) -> dict:
         if set(record["members"]) - ids:
             raise ValueError(f"Unresolved members in {record['id']}")
     classify_records(records, entries, root)
+    upstream = {r["name"]: r["category"] for r in records if r["origin"] == "Indexed"}
+    for record in records:
+        if record["origin"] == "Adapted":
+            name = record["name"].removeprefix("clio-kit-")
+            record["category"] = upstream.get(name, record["category"])
+        if record["kind"] == "collection":
+            bundle = record["name"].removesuffix("-skills")
+            fallback = "Coding" if bundle == "clio-coder" else record["category"]
+            record["category"] = WORKFLOWS.get(bundle, ("", fallback, ""))[1]
+        record["category"] = CATEGORY_ALIASES.get(
+            record["category"], record["category"]
+        )
+        record["tags"] = list(
+            dict.fromkeys(t.lower().replace(" ", "-") for t in record["tags"])
+        )
+        record["summary"] = public_summary(record["name"], record["description"])
     for record in records:
         if record["installation"] == "launcher":
             settings = {"command": "clio-kit", "args": ["mcp-server", record["name"]]}

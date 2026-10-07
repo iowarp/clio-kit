@@ -1,6 +1,6 @@
 ---
 title: Lmod MCP
-description: "Lmod MCP - Environment Module Management for LLMs with comprehensive module operations"
+description: "List, search and inspect Lmod environment modules, and save or restore module collections."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -9,7 +9,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   name="Lmod"
   icon="📦"
   category="System Management"
-  description="Lmod MCP - Environment Module Management for LLMs with comprehensive module operations"
+  description="List, search and inspect Lmod environment modules, and save or restore module collections."
   version="3.0.1"
   actions={["module_list", "module_avail", "module_show", "module_spider", "module_save", "module_restore", "module_savelist"]}
   platforms={["claude", "cursor", "vscode"]}

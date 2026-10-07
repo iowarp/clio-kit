@@ -1,7 +1,7 @@
 [project]
 name = "pandas-mcp"
 version = "1.0.0"
-description = "Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations"
+description = "Load tabular data, then clean, filter, group, merge and summarize it with pandas."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"

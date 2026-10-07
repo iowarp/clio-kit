@@ -1,6 +1,6 @@
 {
   "name": "clio-node-hardware",
-  "description": "Node Hardware MCP - Comprehensive Hardware Monitoring and System Analysis for LLMs with real-time performance metrics",
+  "description": "Report CPU, memory, disk, network, GPU and process information for local or remote nodes.",
   "version": "2.3.0",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",

@@ -1,7 +1,7 @@
 [project]
 name = "slurm-mcp"
 version = "1.0.0"
-description = "MCP server for Slurm workload management and HPC job scheduling"
+description = "Submit, list, inspect and cancel Slurm jobs, and describe the cluster."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"

@@ -21,7 +21,7 @@
     {
       "name": "clio-arxiv",
       "source": "./plugins/clio-arxiv",
-      "description": "ArXiv MCP server implementation using Model Context Protocol",
+      "description": "Search arXiv by topic, author, title or date, read paper details, and export BibTeX or PDFs.",
       "version": "2.2.5",
       "category": "scientific",
       "keywords": [
@@ -36,7 +36,7 @@
     {
       "name": "clio-chronolog",
       "source": "./plugins/clio-chronolog",
-      "description": "ChronoLog MCP server implementation using Model Context Protocol",
+      "description": "Record and retrieve agent interactions in a ChronoLog log store.",
       "version": "2.0.3",
       "category": "scientific",
       "keywords": [
@@ -51,7 +51,7 @@
     {
       "name": "clio-compression",
       "source": "./plugins/clio-compression",
-      "description": "Compression MCP server implementation using Model Context Protocol",
+      "description": "Compress and decompress files with gzip and report the compression ratio.",
       "version": "2.2.5",
       "category": "general",
       "keywords": [
@@ -96,7 +96,7 @@
     {
       "name": "clio-hdf5",
       "source": "./plugins/clio-hdf5",
-      "description": "HDF5 FastMCP - Scientific Data Access for AI Agents | CLIO Kit MCP Server",
+      "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks.",
       "version": "2.2.6",
       "category": "scientific",
       "keywords": [
@@ -125,7 +125,7 @@
     {
       "name": "clio-lmod",
       "source": "./plugins/clio-lmod",
-      "description": "Lmod MCP - Environment Module Management for LLMs with comprehensive module operations",
+      "description": "List, search and inspect Lmod environment modules, and save or restore module collections.",
       "version": "3.0.1",
       "category": "scientific",
       "keywords": [
@@ -155,7 +155,7 @@
     {
       "name": "clio-node-hardware",
       "source": "./plugins/clio-node-hardware",
-      "description": "Node Hardware MCP - Comprehensive Hardware Monitoring and System Analysis for LLMs with real-time performance metrics",
+      "description": "Report CPU, memory, disk, network, GPU and process information for local or remote nodes.",
       "version": "2.3.0",
       "category": "scientific",
       "keywords": [
@@ -169,7 +169,7 @@
     {
       "name": "clio-pandas",
       "source": "./plugins/clio-pandas",
-      "description": "Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations",
+      "description": "Load tabular data, then clean, filter, group, merge and summarize it with pandas.",
       "version": "2.3.0",
       "category": "scientific",
       "keywords": [
@@ -184,7 +184,7 @@
     {
       "name": "clio-parallel-sort",
       "source": "./plugins/clio-parallel-sort",
-      "description": "Parallel Sort MCP - High-Performance Log File Processing for LLMs with advanced sorting and analysis",
+      "description": "Sort, filter and summarize large log files by timestamp, level or keyword.",
       "version": "2.3.0",
       "category": "scientific",
       "keywords": [
@@ -199,7 +199,7 @@
     {
       "name": "clio-paraview",
       "source": "./plugins/clio-paraview",
-      "description": "MCP server for ParaView scientific visualization",
+      "description": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
       "version": "2.2.5",
       "category": "scientific",
       "keywords": [
@@ -214,7 +214,7 @@
     {
       "name": "clio-parquet",
       "source": "./plugins/clio-parquet",
-      "description": "MCP server for Apache Parquet files",
+      "description": "Summarize Parquet files, preview columns, read row slices and aggregate values.",
       "version": "2.2.5",
       "category": "scientific",
       "keywords": [
@@ -229,7 +229,7 @@
     {
       "name": "clio-plot",
       "source": "./plugins/clio-plot",
-      "description": "MCP server for advanced data visualization and plotting operations",
+      "description": "Draw line, bar, scatter, histogram, heatmap and time-series plots from tabular data.",
       "version": "2.2.5",
       "category": "scientific",
       "keywords": [
@@ -274,7 +274,7 @@
     {
       "name": "clio-slurm",
       "source": "./plugins/clio-slurm",
-      "description": "MCP server for Slurm workload management and HPC job scheduling",
+      "description": "Submit, list, inspect and cancel Slurm jobs, and describe the cluster.",
       "version": "3.0.2",
       "category": "scientific",
       "keywords": [

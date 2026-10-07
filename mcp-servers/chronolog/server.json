@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.iowarp/chronolog-mcp",
   "title": "CLIO Chronolog",
-  "description": "ChronoLog MCP server implementation using Model Context Protocol",
+  "description": "Record and retrieve agent interactions in a ChronoLog log store.",
   "version": "2.0.3",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",

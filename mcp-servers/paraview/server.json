@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.iowarp/paraview-mcp",
   "title": "CLIO Paraview",
-  "description": "MCP server for ParaView scientific visualization",
+  "description": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
   "version": "2.2.5",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",

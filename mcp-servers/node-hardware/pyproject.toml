@@ -1,7 +1,7 @@
 [project]
 name = "node-hardware-mcp"
 version = "1.0.0"
-description = "Node Hardware MCP - Comprehensive Hardware Monitoring and System Analysis for LLMs with real-time performance metrics"
+description = "Report CPU, memory, disk, network, GPU and process information for local or remote nodes."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"

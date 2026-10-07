@@ -1,7 +1,7 @@
 [project]
 name = "parallel-sort-mcp"
 version = "1.0.0"
-description = "Parallel Sort MCP - High-Performance Log File Processing for LLMs with advanced sorting and analysis"
+description = "Sort, filter and summarize large log files by timestamp, level or keyword."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"

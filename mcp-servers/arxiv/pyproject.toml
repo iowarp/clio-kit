@@ -1,7 +1,7 @@
 [project]
 name = "arxiv-mcp"
 version = "1.0.0"
-description = "ArXiv MCP server implementation using Model Context Protocol"
+description = "Search arXiv by topic, author, title or date, read paper details, and export BibTeX or PDFs."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"

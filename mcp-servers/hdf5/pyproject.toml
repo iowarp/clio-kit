@@ -1,7 +1,7 @@
 [project]
 name = "hdf5-mcp"
 version = "1.0.0"
-description = "HDF5 FastMCP - Scientific Data Access for AI Agents | CLIO Kit MCP Server"
+description = "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"

@@ -1,6 +1,6 @@
 ---
 title: Compression MCP
-description: "Compression MCP server implementation using Model Context Protocol"
+description: "Compress and decompress files with gzip and report the compression ratio."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -9,7 +9,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   name="Compression"
   icon="🗜️"
   category="Utilities"
-  description="Compression MCP server implementation using Model Context Protocol"
+  description="Compress and decompress files with gzip and report the compression ratio."
   version="2.2.5"
   actions={["compress_file_tool", "decompress_file_tool"]}
   platforms={["claude", "cursor", "vscode"]}

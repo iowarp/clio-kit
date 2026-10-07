@@ -1,6 +1,6 @@
 {
   "name": "clio-lmod",
-  "description": "Lmod MCP - Environment Module Management for LLMs with comprehensive module operations",
+  "description": "List, search and inspect Lmod environment modules, and save or restore module collections.",
   "version": "3.0.1",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",

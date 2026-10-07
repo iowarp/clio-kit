@@ -1,6 +1,6 @@
 {
   "name": "clio-slurm",
-  "description": "MCP server for Slurm workload management and HPC job scheduling",
+  "description": "Submit, list, inspect and cancel Slurm jobs, and describe the cluster.",
   "version": "3.0.2",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",

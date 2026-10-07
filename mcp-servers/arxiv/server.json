@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.iowarp/arxiv-mcp",
   "title": "CLIO Arxiv",
-  "description": "ArXiv MCP server implementation using Model Context Protocol",
+  "description": "Search arXiv by topic, author, title or date, read paper details, and export BibTeX or PDFs.",
   "version": "2.2.5",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",

@@ -1,6 +1,6 @@
 ---
 title: Pandas MCP
-description: "Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations"
+description: "Load tabular data, then clean, filter, group, merge and summarize it with pandas."
 ---
 
 import MCPDetail from '@site/src/components/MCPDetail';
@@ -9,7 +9,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   name="Pandas"
   icon="🐼"
   category="Data Processing"
-  description="Pandas MCP - Advanced Data Analysis for LLMs with comprehensive pandas operations"
+  description="Load tabular data, then clean, filter, group, merge and summarize it with pandas."
   version="2.3.0"
   actions={["load_data", "save_data", "statistical_summary", "correlation_analysis", "hypothesis_testing", "handle_missing_data", "clean_data", "groupby_operations", "merge_datasets", "pivot_table", "time_series_operations", "validate_data", "filter_data", "optimize_memory", "profile_data", "profile_csv"]}
   platforms={["claude", "cursor", "vscode"]}

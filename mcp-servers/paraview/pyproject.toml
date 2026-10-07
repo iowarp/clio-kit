@@ -1,7 +1,7 @@
 [project]
 name = "paraview-mcp"
 version = "1.0.0"
-description = "MCP server for ParaView scientific visualization"
+description = "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"

@@ -1,6 +1,6 @@
 {
   "name": "clio-parquet",
-  "description": "MCP server for Apache Parquet files",
+  "description": "Summarize Parquet files, preview columns, read row slices and aggregate values.",
   "version": "2.2.5",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",

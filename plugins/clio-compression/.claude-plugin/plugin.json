@@ -1,6 +1,6 @@
 {
   "name": "clio-compression",
-  "description": "Compression MCP server implementation using Model Context Protocol",
+  "description": "Compress and decompress files with gzip and report the compression ratio.",
   "version": "2.2.5",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
