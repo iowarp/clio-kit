@@ -1,15 +1,33 @@
 ---
 title: Build, test and contribute a plugin
-description: Package a skill with an MCP, test it in Claude Code and Codex, and share it through the community catalogue.
-image: /img/tutorials/contrib-codex.png
-tutorial_category: Contribute · Community
+description: Package a skill with an MCP, test it in Claude Code, Codex, Clio Coder and OpenCode, and share it through the community catalogue.
 tutorial_group: Contribute
+image: /img/tutorials/cover-contrib.png
+tutorial_category: Contribute
+tutorial_time: 6 min
+written_for: CLIO Kit 2.11
+works_in: Claude Code · Codex · Clio Coder · OpenCode
+basis: Recorded sessions · 7 Oct 2026
+cover: /img/tutorials/cover-contrib.png
+cover_alt: "Claude Code loads the contributed skill and calls its Pandas MCP."
+cover_caption: "Claude Code loads the contributed skill and calls its Pandas MCP."
+cover_tag: Claude Code · 2.1.293
+hide_title: true
+displayed_sidebar: null
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import TutorialHeader from '@site/src/components/TutorialHeader';
+
+<TutorialHeader />
+
 This walkthrough packages a small **check-runtime-table** skill with the
-**Pandas MCP**. It shows the same package used as a native Claude plugin and as
-portable components in Codex. Both sessions were run for this guide; they produced
-checked group means from the same input.
+**Pandas MCP**. It shows the same package used as a native Claude Code plugin and
+as portable components in Codex, Clio Coder and OpenCode. All four sessions were
+run for this guide with the versions listed in
+[Explore an HDF5 file](./codex-dataset.md); they produced the same checked group
+means from the same input.
 
 ## 1. Start with the tested package
 
@@ -76,33 +94,43 @@ claude plugin validate plugins/lab-checks --strict
 Both validators passed for the downloaded package. They check structure, not
 whether its procedure produces a scientifically correct result.
 
-Create two fresh test projects outside `contribution-demo`. Put a copy of
-[runs.csv](./runs.csv) in each. Keep an untouched copy for comparison.
+Create a fresh test project outside `contribution-demo` for each client you
+try. Put a copy of [runs.csv](./runs.csv) in it and keep an untouched copy for
+comparison.
 
-## 4. Run it natively in Claude Code
+## 4. Run it in your client
 
-From the first test project:
+Use `/absolute/path/to/contribution-demo` for the folder you unzipped.
+
+<Tabs groupId="client" queryString>
+<TabItem value="claude" label="Claude Code" default>
+
+Load the package as a native plugin for one session:
 
 ```bash
 claude --plugin-dir /absolute/path/to/contribution-demo/plugins/lab-checks
 ```
 
-Approve the intended plugin MCP calls. Ask:
+Enable the plugin's MCP server, then ask:
 
 > Use the check-runtime-table skill from lab-checks to check runs.csv. Runtime
 > values are in seconds. Read the skill and call its Pandas MCP, check coverage
-> and missingness, compute group means and verify one independently. Preserve the
-> original. Save runtime-check.md and report output paths. Work only in this
+> and missingness, compute group means and verify one independently. Preserve
+> the original. Save runtime-check.md and report output paths. Work only in this
 > temporary project, no network or delegation.
 
-Claude loaded `lab-checks:check-runtime-table` and called the plugin's Pandas MCP.
-The namespaced prefix identifies where the tool comes from.
+Claude loads `lab-checks:check-runtime-table`; the namespaced prefix shows the
+skill comes from the plugin. It then calls the plugin's Pandas MCP:
 
-[![Claude Code completes the contributed plugin's runtime-table check and reports verified means](../../website/static/img/tutorials/contrib-claude.png)](../../website/static/img/tutorials/contrib-claude.png)
+[![Claude Code loads lab-checks:check-runtime-table, hashes runs.csv, and calls the plugin's clio-pandas profile and groupby_operations tools](../../website/static/img/tutorials/contrib-claude-tools.png)](../../website/static/img/tutorials/contrib-claude-tools.png)
 
-## 5. Install the same components in Codex
+[![Claude Code reports full coverage, no missing values, means of 12.5 and 9.5 seconds, an unchanged input hash and the output paths](../../website/static/img/tutorials/contrib-claude-result.png)](../../website/static/img/tutorials/contrib-claude-result.png)
 
-From the second test project:
+</TabItem>
+<TabItem value="codex" label="Codex">
+
+Install the package's portable components; this is not a native Claude plugin
+inside Codex:
 
 ```bash
 clio-kit plugin install lab-checks \
@@ -112,30 +140,100 @@ codex
 
 [![CLIO Kit validates lab-checks and installs its skill and MCP configuration for Codex](../../website/static/img/tutorials/contrib-install.png)](../../website/static/img/tutorials/contrib-install.png)
 
-Use the same request, or explicitly invoke `$check-runtime-table`. Codex reads the
-portable skill and uses the configured Pandas MCP; this is not a native Claude
-plugin installation inside Codex.
+Ask:
 
-[![Codex completes the same contributed skill and MCP workflow with matching means](../../website/static/img/tutorials/contrib-codex.png)](../../website/static/img/tutorials/contrib-codex.png)
+> Use $check-runtime-table to check runs.csv. Runtime values are in seconds.
+> Read the skill and call its Pandas MCP, check coverage and missingness, compute
+> group means and verify one independently. Preserve the original. Save
+> runtime-check.md and report output paths. Work only in this temporary project,
+> no network or delegation.
 
-## 6. Check both outputs
+[![Codex reads the contributed skill and calls clio-pandas profile_csv, load_data and groupby_operations](../../website/static/img/tutorials/contrib-codex-tools.png)](../../website/static/img/tutorials/contrib-codex-tools.png)
+
+[![Codex reports the same means and the saved report and grouped CSV](../../website/static/img/tutorials/contrib-codex-result.png)](../../website/static/img/tutorials/contrib-codex-result.png)
+
+</TabItem>
+<TabItem value="clio" label="Clio Coder">
+
+Copy the skill folder into the project's loose skills and declare the Pandas
+server in `.clio-coder/mcp.yaml`:
+
+```bash
+mkdir -p .clio-coder/skills
+cp -r /absolute/path/to/contribution-demo/plugins/lab-checks/skills/check-runtime-table .clio-coder/skills/
+```
+
+```yaml
+version: 1
+servers:
+  - id: clio-pandas
+    command: clio-kit
+    args: [mcp-server, pandas]
+    timeoutMs: 120000
+```
+
+```bash
+clio-coder mcp trust clio-pandas
+clio-coder
+```
+
+Ask:
+
+> /skill check-runtime-table Check runs.csv. Runtime values are in seconds. Read
+> the skill and call its Pandas MCP, check coverage and missingness, compute
+> group means and verify one independently. Preserve the original. Save
+> runtime-check.md and report output paths. Work only in this temporary project,
+> no network or delegation.
+
+[![Clio Coder loads check-runtime-table and calls clio-pandas profile_csv and groupby_operations through its gateway](../../website/static/img/tutorials/contrib-clio-tools.png)](../../website/static/img/tutorials/contrib-clio-tools.png)
+
+[![Clio Coder reports complete data and the two group means](../../website/static/img/tutorials/contrib-clio-result.png)](../../website/static/img/tutorials/contrib-clio-result.png)
+
+</TabItem>
+<TabItem value="opencode" label="OpenCode">
+
+```bash
+clio-kit plugin install lab-checks \
+  --root /absolute/path/to/contribution-demo --client opencode --project "$PWD"
+opencode
+```
+
+Ask:
+
+> Use the check-runtime-table skill to check runs.csv. Runtime values are in
+> seconds. Read the skill and call its Pandas MCP, check coverage and
+> missingness, compute group means and verify one independently. Preserve the
+> original. Save runtime-check.md and report output paths. Work only in this
+> temporary project, no network or delegation.
+
+[![OpenCode loads check-runtime-table and calls clio-pandas load_data, profile_csv and groupby_operations](../../website/static/img/tutorials/contrib-opencode-tools.png)](../../website/static/img/tutorials/contrib-opencode-tools.png)
+
+[![OpenCode reports all 8 rows checked, no missing values and the two means](../../website/static/img/tutorials/contrib-opencode-result.png)](../../website/static/img/tutorials/contrib-opencode-result.png)
+
+</TabItem>
+</Tabs>
+
+## 5. Check the outputs
 
 In each project:
 
 ```bash
 cat runtime-check.md
-cat runs_grouped.csv
+ls *.csv
 ```
 
-Both recorded sessions found 8 rows, no missing values, and means of **12.5 seconds**
-for baseline and **9.5 seconds** for tuned. We independently checked the grouped
-CSVs and that the original inputs were unchanged. The report should state units
-and coverage without claiming a real performance improvement from this fixture.
+All four sessions found 8 rows, no missing values, and means of **12.5 seconds**
+for baseline and **9.5 seconds** for tuned. The grouped file is
+`runs_grouped.csv` in the Codex, Clio Coder and OpenCode runs and
+`runtime_means_by_configuration.csv` in the Claude Code run; open the path your
+agent reports. We checked each grouped CSV and confirmed every original
+`runs.csv` was unchanged. The report should state units and coverage without
+claiming a real performance improvement from this fixture.
 
 The included missing-column scenario is an additional test to run when adapting
-the package; the two screenshots above demonstrate the complete-input case.
+the package; the screenshots above demonstrate the complete-input case.
 
-## 7. Choose a contribution route
+## 6. Choose a contribution route
 
 **Maintained here:** put your reviewed package in `plugins/<name>/` in the CLIO Kit
 checkout and open a repository PR. Website builds and CI discover valid folders
@@ -145,7 +243,7 @@ folders; see [contribution routes](../contributing.md).
 **Maintained in your own repository:** follow the community steps below. CLIO Kit
 indexes one entry; your implementation, dependencies and releases stay with you.
 
-## 8. Prepare a community entry
+## 7. Prepare a community entry
 
 Publish the contents of `plugins/lab-checks/` in your own repository, with
 `.claude-plugin/plugin.json` at its root. Include the `.mcp.json` and `skills/`
@@ -187,7 +285,7 @@ See the [community source formats](https://github.com/iowarp/clio-kit/blob/main/
 for npm plugin packages, Git URLs and revision pinning. An npm MCP executable
 alone needs a plugin wrapper with `.mcp.json` before it can use this route.
 
-## 9. Submit the entry for review
+## 8. Submit the entry for review
 
 In your CLIO Kit fork, add the reviewed file as
 `community/entries/lab-checks.toml` and open a PR against `iowarp/clio-kit`.
@@ -211,7 +309,7 @@ limitations in your PR. Keep model credentials and local session directories out
 of the contribution. Review covers the entry and a minimal installation/usage
 check; indexing does not certify every external command or future release.
 
-## 10. Install the accepted contribution
+## 9. Install the accepted contribution
 
 After your entry is merged and available in the catalogue, Claude Code users
 register the marketplace once, then install your plugin:

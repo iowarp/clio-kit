@@ -252,9 +252,29 @@ clio-coder library pin clio-coder-skills --project
 
 Run these from the intended project, then start a fresh Clio Coder session. Read
 [Clio Coder integration](marketplace.md#clio-coder-integration) for provenance,
-names, compatibility and complete native plugin packages. Configure local MCPs
-through Clio Coder's own MCP settings; Kit has no `--client clio-coder` adapter.
-See [Clio Coder's guides](https://coder.iowarp.ai/docs.html).
+names, compatibility and complete native plugin packages.
+
+Kit has no `--client clio-coder` adapter. Declare MCP servers in the project's
+`.clio-coder/mcp.yaml`, trust each one, and install portable skills into
+`.clio-coder/skills`:
+
+```yaml
+version: 1
+servers:
+  - id: clio-hdf5
+    command: clio-kit
+    args: [mcp-server, hdf5]
+    timeoutMs: 120000
+```
+
+```bash
+clio-coder mcp trust clio-hdf5
+clio-kit skill install dataset-explore --target .clio-coder/skills
+```
+
+A project server does not launch until it is trusted, and editing its declaration
+makes the trust stale. Invoke a skill with `/skill <name>`; it activates one skill
+per turn. See [Clio Coder's guides](https://coder.iowarp.ai/docs.html).
 
 ### Another MCP or Agent Skills client
 
@@ -269,8 +289,8 @@ conversion of agent definitions, commands or hooks between hosts.
 clio-kit doctor --server compression --connect
 ```
 
-Then follow [HDF5 exploration in Codex](tutorials/codex-dataset.md) or
-[CSV analysis in Claude Code](tutorials/claude-analysis.md). Inspect the skill
+Then follow [HDF5 exploration](tutorials/codex-dataset.md) or
+[CSV analysis](tutorials/claude-analysis.md); each tutorial has a tab for your client. Inspect the skill
 invocation, MCP calls and saved outputs, and compare with the supplied inputs.
 
 Kit's six project adapters were exercised in fresh directories for this guide.

@@ -63,7 +63,7 @@ a runtime is separate from having every backend installed on a contributor's mac
 
 ## Keep your code in your own repository
 
-Follow the [community contribution tutorial](tutorials/contribute-plugin.md#8-prepare-a-community-entry)
+Follow the [community contribution tutorial](tutorials/contribute-plugin.md#7-prepare-a-community-entry)
 to prepare an entry, open a PR and install an accepted contribution.
 
 Create and validate the plugin there, then render the entry:

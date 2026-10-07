@@ -1,5 +1,6 @@
 ---
 title: Documentation
+sidebar_label: CLIO Kit docs
 slug: /
 ---
 
@@ -18,12 +19,12 @@ agent definitions and community contributions into one meta-marketplace.
 
 - [Install components](tutorials/install-components.md): choose individual MCPs, portable skills or a native workflow plugin.
 
-- [Explore HDF5 with Codex](tutorials/codex-dataset.md): install a workflow, invoke its skill and inspect a scientific file through MCP.
-- [Summarize and plot with Claude Code](tutorials/claude-analysis.md): use Pandas, Plot and a skill to produce checked means and a chart.
-- [Archive and summarize](tutorials/archive-and-summarize.md): combine Compression, HDF5 and bounded statistics in Codex.
-- [Clean and plot](tutorials/clean-and-plot.md): chain two skills with Pandas and Plot in Claude Code.
+- [Explore an HDF5 file](tutorials/codex-dataset.md): install a workflow, invoke its skill and inspect a scientific file through MCP in Claude Code, Codex, Clio Coder or OpenCode.
+- [Summarize and plot experiment results](tutorials/claude-analysis.md): use Pandas, Plot and a skill to produce checked means and a chart.
+- [Archive and summarize](tutorials/archive-and-summarize.md): combine Compression, HDF5 and bounded statistics.
+- [Clean and plot](tutorials/clean-and-plot.md): chain two skills with Pandas and Plot.
 - [Choose a storage layout](tutorials/choose-storage.md): use a domain skill and review its assumptions.
-- [Build, test and contribute a plugin](tutorials/contribute-plugin.md): run it in Claude Code and Codex, submit a community entry, and install it after acceptance.
+- [Build, test and contribute a plugin](tutorials/contribute-plugin.md): run it in Claude Code, Codex, Clio Coder and OpenCode, submit a community entry, and install it after acceptance.
 
 ## Contribute and extend
 
