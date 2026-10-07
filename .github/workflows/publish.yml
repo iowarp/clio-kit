@@ -14,11 +14,16 @@ on:
       - 'mcp-server-versions.toml'
       - 'pyproject.toml'
       - 'uv.lock'
-      - 'clio-kit-mcp-servers/**'
-      - 'clio-agentic-search/src/**'
-      - 'clio-agentic-search/pyproject.toml'
-      - 'clio-agentic-search/uv.lock'
+      - 'mcp-servers/**'
       - 'prompts/**'
+      # The root suite validates these, and an outside contribution is
+      # a change to community/ and nothing else -- without these it
+      # reached review with no check having run at all.
+      - 'community/**'
+      - 'skills/**'
+      - 'plugins/**'
+      - 'agents/**'
+      - 'hooks/**'
   push:
     branches:
       - main  # Validate release artifacts on main commits
@@ -31,11 +36,16 @@ on:
       - 'mcp-server-versions.toml'
       - 'pyproject.toml'
       - 'uv.lock'
-      - 'clio-kit-mcp-servers/**'
-      - 'clio-agentic-search/src/**'
-      - 'clio-agentic-search/pyproject.toml'
-      - 'clio-agentic-search/uv.lock'
+      - 'mcp-servers/**'
       - 'prompts/**'
+      # The root suite validates these, and an outside contribution is
+      # a change to community/ and nothing else -- without these it
+      # reached review with no check having run at all.
+      - 'community/**'
+      - 'skills/**'
+      - 'plugins/**'
+      - 'agents/**'
+      - 'hooks/**'
     tags:
       - 'v*.*.*'  # Publish releases to PyPI on version tags (paths don't apply to tags)
   workflow_dispatch:  # Allow manual triggering
@@ -71,9 +81,8 @@ jobs:
       shell: bash
       run: |
         uv lock --check
-        uv lock --check --directory clio-agentic-search
-        uv run --with ruff ruff check scripts src tests
-        uv run --with ruff ruff format --check scripts src tests
+        uv run --with ruff ruff check scripts src tests evals
+        uv run --with ruff ruff format --check scripts src tests evals
         uv run --with mypy mypy scripts/generate_server_json.py \
           scripts/generate_mcp_user_contracts.py \
           scripts/extract_mcp_metadata.py scripts/verify_pypi_release.py \
@@ -84,37 +93,35 @@ jobs:
         uv run pytest -q tests --junitxml="$RUNNER_TEMP/root-junit.xml"
         python scripts/assert_no_skipped_tests.py "$RUNNER_TEMP/root-junit.xml"
         uv run --with 'pip-audit==2.10.1' pip-audit
-        uv run --directory clio-agentic-search \
-          --with 'pip-audit==2.10.1' pip-audit
         for server in jarvis scientific-catalog slurm spack; do
-          uv lock --check --directory "clio-kit-mcp-servers/$server"
-          uv run --directory "clio-kit-mcp-servers/$server" ruff check .
-          uv run --directory "clio-kit-mcp-servers/$server" ruff format --check .
-          uv run --directory "clio-kit-mcp-servers/$server" mypy src
-          uv run --directory "clio-kit-mcp-servers/$server" pytest -q \
+          uv lock --check --directory "mcp-servers/$server"
+          uv run --directory "mcp-servers/$server" ruff check .
+          uv run --directory "mcp-servers/$server" ruff format --check .
+          uv run --directory "mcp-servers/$server" mypy src
+          uv run --directory "mcp-servers/$server" pytest -q \
             --junitxml="$RUNNER_TEMP/$server-junit.xml"
           python scripts/assert_no_skipped_tests.py \
             "$RUNNER_TEMP/$server-junit.xml"
-          uv run --directory "clio-kit-mcp-servers/$server" \
+          uv run --directory "mcp-servers/$server" \
             --with 'pip-audit==2.10.1' pip-audit
         done
-        uv run --directory clio-kit-mcp-servers/chronolog \
+        uv run --directory mcp-servers/chronolog \
           ruff check src tests/test_lazy_client.py
-        uv run --directory clio-kit-mcp-servers/chronolog \
+        uv run --directory mcp-servers/chronolog \
           ruff format --check src tests/test_lazy_client.py
-        uv run --directory clio-kit-mcp-servers/chronolog \
+        uv run --directory mcp-servers/chronolog \
           pytest -q tests/test_lazy_client.py \
           --junitxml="$RUNNER_TEMP/chronolog-junit.xml"
         python scripts/assert_no_skipped_tests.py \
           "$RUNNER_TEMP/chronolog-junit.xml"
-        uv run --directory clio-kit-mcp-servers/chronolog \
+        uv run --directory mcp-servers/chronolog \
           --with 'pip-audit==2.10.1' pip-audit
-        uv lock --check --directory clio-kit-mcp-servers/adios
-        uv run --directory clio-kit-mcp-servers/adios \
+        uv lock --check --directory mcp-servers/adios
+        uv run --directory mcp-servers/adios \
           ruff check src tests/test_lazy_import.py
-        uv run --directory clio-kit-mcp-servers/adios \
+        uv run --directory mcp-servers/adios \
           ruff format --check src tests/test_lazy_import.py
-        uv run --directory clio-kit-mcp-servers/adios \
+        uv run --directory mcp-servers/adios \
           pytest -q tests/test_lazy_import.py tests/test_mcp_handlers.py tests/test_server.py \
           --junitxml="$RUNNER_TEMP/adios-junit.xml"
         python scripts/assert_no_skipped_tests.py \
@@ -125,7 +132,7 @@ jobs:
       run: |
         generation_log="$(mktemp)"
         trap 'rm -f "$generation_log"' EXIT
-        uv run python scripts/generate_server_json.py clio-kit-mcp-servers | tee "$generation_log"
+        uv run python scripts/generate_server_json.py mcp-servers | tee "$generation_log"
         if grep -Eq 'Warning:|Skipped server\.json|^Failed:' "$generation_log"; then
           echo "::error::Every published MCP server must support live metadata extraction"
           exit 1
@@ -133,8 +140,7 @@ jobs:
         git diff --exit-code -- \
           .claude-plugin/marketplace.json \
           claude_desktop_config.json \
-          gemini-extension.json \
-          clio-kit-mcp-servers \
+          mcp-servers \
           src/clio_kit/_mcp_contracts
 
     - name: Build every root-wheel server package
@@ -145,7 +151,7 @@ jobs:
         server_dist="$(mktemp -d)"
         trap 'rm -rf "$server_dist"' EXIT
         server_count=0
-        for server_dir in clio-kit-mcp-servers/*/; do
+        for server_dir in mcp-servers/*/; do
           if [ ! -f "$server_dir/pyproject.toml" ]; then
             continue
           fi
@@ -241,7 +247,8 @@ jobs:
         UV_BUILD_CONSTRAINT: ${{ github.workspace }}/build-constraints.txt
       run: |
         uv build
-        uvx --from 'twine==6.2.0' twine check dist/*
+        python scripts/verify_component_release.py --dist dist
+        uvx --from 'twine==6.2.0' twine check dist/*.whl dist/clio_kit-*.tar.gz
 
     - name: Smoke installed root wheel and shipped server discovery
       shell: bash
@@ -251,6 +258,7 @@ jobs:
         tool_bin="$(mktemp -d)"
         trap 'rm -rf "$child_cache" "$tool_dir" "$tool_bin"' EXIT
         export CLIO_KIT_CACHE_DIR="$child_cache"
+        export CLIO_KIT_COMPONENT_BASE_URL="file://$(realpath dist/components)"
         export UV_TOOL_DIR="$tool_dir"
         export UV_TOOL_BIN_DIR="$tool_bin"
         mapfile -t wheels < <(find dist -maxdepth 1 -type f -name '*.whl' -print | sort)
@@ -275,6 +283,7 @@ jobs:
         grep -Fq 'clio-kit-scientific-catalog-user-v1.1' <<< "$listed_contracts"
         grep -Fq 'clio-kit-scientific-catalog-user-v1' <<< "$listed_contracts"
         grep -Fq 'clio-kit-slurm-user-v3' <<< "$listed_contracts"
+        grep -Fq 'clio-kit-spack-user-v2.2' <<< "$listed_contracts"
         grep -Fq 'clio-kit-spack-user-v2.1' <<< "$listed_contracts"
         grep -Fq 'clio-kit-spack-user-v2' <<< "$listed_contracts"
         jarvis_contract="$("$clio_kit" \
@@ -330,15 +339,19 @@ jobs:
         python -c 'import json,sys; value=json.load(sys.stdin); assert value["contract_id"] == "clio-kit-slurm-user-v3"' \
           <<< "$slurm_contract"
         spack_contract="$("$clio_kit" \
+          mcp-contract clio-kit-spack-user-v2.2)"
+        python -c 'import json,sys; value=json.load(sys.stdin); assert value["contract_id"] == "clio-kit-spack-user-v2.2"; assert {tool["name"] for tool in value["tools"]} == {"spack_find", "spack_install", "spack_locate", "spack_search", "spack_info"}' \
+          <<< "$spack_contract"
+        historical_spack_contract_v21="$("$clio_kit" \
           mcp-contract clio-kit-spack-user-v2.1)"
         python -c 'import json,sys; value=json.load(sys.stdin); assert value["contract_id"] == "clio-kit-spack-user-v2.1"' \
-          <<< "$spack_contract"
+          <<< "$historical_spack_contract_v21"
         historical_spack_contract_v2="$("$clio_kit" \
           mcp-contract clio-kit-spack-user-v2)"
         python -c 'import json,sys; value=json.load(sys.stdin); assert value["contract_id"] == "clio-kit-spack-user-v2"' \
           <<< "$historical_spack_contract_v2"
         server_count=0
-        for server_dir in clio-kit-mcp-servers/*/; do
+        for server_dir in mcp-servers/*/; do
           if [ ! -f "$server_dir/pyproject.toml" ]; then
             continue
           fi
@@ -359,7 +372,8 @@ jobs:
             locked_server_project_identity,
         )
 
-        server = get_servers_path() / "spack"
+        from clio_kit.component_store import server_project
+        server = server_project("spack", get_servers_path())
         identity = locked_server_project_identity(server)
         environment = locked_server_environment(server)
         assert identity["schema_version"] == LOCKED_SERVER_LAUNCH_SCHEMA
@@ -381,7 +395,7 @@ jobs:
         reused_child_help="$("$clio_kit" mcp-server spack -- --help)"
         grep -Fq 'Spack MCP Server' <<< "$reused_child_help"
         reused_spack_environment="$("$tool_python" -c \
-          'from clio_kit import get_servers_path,locked_server_environment; print(locked_server_environment(get_servers_path() / "spack"))')"
+          'from clio_kit import get_servers_path,locked_server_environment; from clio_kit.component_store import server_project; print(locked_server_environment(server_project("spack", get_servers_path())))')"
         test "$reused_spack_environment" = "$spack_environment"
         second_child_identity="$(python - "$spack_environment/bin/python" <<'PY'
         import os
@@ -402,7 +416,8 @@ jobs:
         expected_url = "https://github.com/grc-iit/jarvis-cd/releases/download/v1.8.1/jarvis_cd-1.8.1-py3-none-any.whl"
         expected_digest = "ed891233e4b3767e949c6b5217bb03d4175b7d39334969c17ec83beb3c0c02d0"
         expected_requirement = f"jarvis-cd @ {expected_url}#sha256={expected_digest}"
-        server = get_servers_path() / "jarvis"
+        from clio_kit.component_store import server_project
+        server = server_project("jarvis", get_servers_path())
         project = tomllib.loads(
             (server / "pyproject.toml").read_text(encoding="utf-8")
         )
@@ -525,6 +540,7 @@ jobs:
         subject-path: |
           dist/*.whl
           dist/*.tar.gz
+          dist/components/clio-component-*.tar.gz
     
     - name: Store the distribution packages
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -533,6 +549,7 @@ jobs:
         path: |
           dist/*.whl
           dist/*.tar.gz
+          dist/components/clio-component-*.tar.gz
         if-no-files-found: error
         include-hidden-files: false
 
@@ -541,6 +558,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')  # Only publish on tag pushes
     needs:
     - build
+    - github-release
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -561,6 +579,9 @@ jobs:
       with:
         name: python-package-distributions
         path: dist/
+
+    - name: Remove non-Python assets from the PyPI upload directory
+      run: rm -r dist/components
 
     - name: Stage immutable copies for post-publish verification
       shell: bash
@@ -609,19 +630,37 @@ jobs:
   github-release:
     name: Create GitHub Release
     needs:
-    - publish-to-pypi
+    - build
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: write  # Mandatory for creating releases
       attestations: write  # Immutable publication creates a release attestation
 
     steps:
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      with:
+        persist-credentials: false
     - name: Download all the dists
       uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
       with:
         name: python-package-distributions
         path: dist/
+
+    - name: Require authorization before component publication
+      env:
+        RELEASE_AUTHORIZATION: ${{ secrets.CLIO_KIT_RELEASE_AUTHORIZATION }}
+        REPOSITORY: ${{ github.repository }}
+        TAG_NAME: ${{ github.ref_name }}
+      run: |
+        printf '%s\n' "$RELEASE_AUTHORIZATION" | python3 scripts/release_authorization.py --repository "$REPOSITORY" --tag "$TAG_NAME" --commit "$GITHUB_SHA" --max-age-seconds 3600 >/dev/null
+    - name: Stage component release assets
+      run: |
+        test -d dist/components
+        mv dist/components/clio-component-*.tar.gz dist/
+        rmdir dist/components
 
     - name: Verify and publish immutable GitHub release
       env:
@@ -648,7 +687,7 @@ jobs:
         test "$(resolve_remote_tag)" = "$GITHUB_SHA"
 
         mapfile -t artifacts < <(find dist -maxdepth 1 -type f -printf '%f\n' | sort)
-        test "${#artifacts[@]}" -eq 2
+        test "${#artifacts[@]}" -gt 2
         declare -A expected_sha=()
         for name in "${artifacts[@]}"; do
           [[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._+-]*$ ]]
@@ -903,6 +942,7 @@ jobs:
     name: Publish to MCP Registry
     needs:
     - github-release
+    - publish-to-pypi
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     permissions:
@@ -951,7 +991,7 @@ jobs:
           exit 0
         fi
         for server_name in "${release_servers[@]}"; do
-          server_dir="clio-kit-mcp-servers/$server_name"
+          server_dir="mcp-servers/$server_name"
           test -f "$server_dir/server.json"
           echo "Publishing $server_name to MCP registry..."
           if OUTPUT=$(cd "$server_dir" && ../../mcp-publisher publish 2>&1); then

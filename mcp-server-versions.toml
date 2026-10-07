@@ -1,45 +1,175 @@
 schema-version = 1
 
-# Only list a server here when ITS registry contract (tool names/schemas
-# under [servers] below) actually changed this release. Republishing an
-# unchanged contract under the same version is a duplicate the Registry
-# rejects; bumping the version just to re-point the pypi wheel coordinate
-# is version churn with no semantic change. When a server's contract does
-# change, add it here WITH a real version bump under [servers] in the same
-# PR, then remove it again once published.
+# Publish new immutable server releases when schemas, runtime behavior or locked
+# dependencies change. A dependency security update warrants a patch release even
+# when the tool schema is unchanged. Never reuse an already-published version.
+# All 22 servers receive stable FastMCP 4 / MCP SDK v2 runtime updates in
+# the 2.11.0 candidate wheel; publish their coordinated Registry versions.
 [mcp-registry-release]
-publish = []
+publish = ["adios", "arxiv", "chronolog", "compression", "darshan", "geo", "hdf5", "jarvis", "lmod", "ndp", "node-hardware", "pandas", "parallel-sort", "paraview", "parquet", "plot", "scientific-catalog", "seismology", "slurm", "spack", "terrain", "web"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
 [documentation]
-updated = "2026-08-18"
+updated = "2026-09-17"
 
-# MCP Registry server versions describe each agent-facing contract. They are
+# Workflow bundles. Each one generates a plugin whose entire content is a
+# dependency list naming its member server plugins -- no server code and no
+# skill text is copied, so a bundle cannot drift from what it bundles. The
+# grouping is by the work someone sits down to do, not by subject area, which
+# is why parallel-sort's log filtering sits with the profilers rather than
+# with the file-format readers.
+#
+# Every name under `servers` must exist under [servers] below, and every
+# server under [servers] must appear in exactly one primary bundle. Generation fails
+# on an unknown name, a duplicate, or a server left unplaced, so a new server
+# cannot quietly ship outside the catalogue.
+#
+# Bundle versions are their own line, independent of both the PyPI wheel and
+# the per-server contract versions: re-cutting a bundle's membership is a
+# bundle change, not a server change.
+# Optional [workflows.*] plugins may reuse components across these bundles.
+# See docs/plugins.md; only [bundles.*] participates in the partition rule.
+[bundles.clio-hpc]
+version = "1.0.2"
+description = "Install a code, wrap it in a pipeline, submit it, and follow it on a cluster."
+servers = ["jarvis", "lmod", "node-hardware", "slurm", "spack"]
+
+[bundles.clio-performance]
+version = "1.0.3"
+description = "Work out why a finished job was slower than it should have been."
+servers = ["chronolog", "darshan", "parallel-sort"]
+
+[bundles.clio-scientific-io]
+version = "1.0.6"
+description = "Open a scientific data file, see its structure, and read part of it."
+servers = ["adios", "compression", "hdf5", "parquet"]
+
+[bundles.clio-analysis]
+version = "1.0.7"
+description = "Turn a dataset into summary statistics and a figure."
+servers = ["pandas", "paraview", "plot"]
+
+[bundles.clio-geoscience]
+version = "1.0.2"
+description = "Inspect and map geospatial features, terrain models, and waveform archives."
+servers = ["geo", "seismology", "terrain"]
+
+[bundles.clio-research]
+version = "1.0.4"
+description = "Find papers on a topic and the datasets behind them."
+servers = ["arxiv", "ndp", "scientific-catalog", "web"]
+
+# Optional task plugins. Definitions use version, description and dependencies
+# (existing maintained plugin names), not a second server ownership list.
+# Task workflows and their verification limits are documented in docs/plugins.md.
+[workflows]
+
+# Agent-facing scope of each server. Servers are "scientific" unless listed
+# here, so this table records only the general-purpose exceptions. It is the
+# single source for the published marketplace category and for the launcher's
+# `clio-kit mcp-servers` grouping; every name must exist under [servers] below,
+# so a rename or removal fails generation instead of silently misclassifying.
+[classification]
+general = ["compression", "web"]
+
+# MCP Registry server versions identify contract and runtime releases. They are
 # intentionally independent of the clio-kit PyPI distribution version, which
 # only identifies the wheel containing the server implementations.
 [servers]
-adios = "2.2.3"
-arxiv = "2.2.3"
-chronolog = "2.0.1"
-compression = "2.2.3"
-darshan = "2.2.3"
-geo = "2.2.3"
-geojson = "2.2.3"
-hdf5 = "2.2.3"
-jarvis = "3.7.2"
-lmod = "2.2.3"
-ndp = "2.2.3"
-node-hardware = "2.2.3"
-pandas = "2.2.3"
-parallel-sort = "2.2.3"
-paraview = "2.2.3"
-parquet = "2.2.3"
-plot = "2.2.3"
-sac = "2.2.3"
-scientific-catalog = "1.1.2"
-seismic = "2.2.3"
-slurm = "3.0.0"
-spack = "2.1.0"
-terrain = "2.2.3"
-web = "2.1.0"
+adios = "2.2.5"
+arxiv = "2.2.5"
+chronolog = "2.0.3"
+compression = "2.2.5"
+darshan = "2.2.5"
+geo = "2.3.1"
+hdf5 = "2.2.6"
+jarvis = "3.7.4"
+lmod = "3.0.1"
+ndp = "2.2.5"
+node-hardware = "2.3.0"
+pandas = "2.3.0"
+parallel-sort = "2.3.0"
+paraview = "2.2.5"
+parquet = "2.2.5"
+plot = "2.2.5"
+scientific-catalog = "1.1.4"
+seismology = "2.3.1"
+slurm = "3.0.2"
+spack = "2.3.1"
+terrain = "2.2.5"
+web = "2.1.3"
+
+[workflows.clio-dataset-report]
+version = "1.0.0"
+description = "Turn a small HDF5 dataset into a report with a CSV, figure, checked statistics and evidence review."
+dependencies = ["clio-hdf5", "clio-pandas", "clio-plot", "clio-agents"]
+
+# Presentation metadata shared by both documentation generators.
+[icons]
+adios = "📊"
+arxiv = "📄"
+hdf5 = "🗂️"
+pandas = "🐼"
+parquet = "📋"
+plot = "📈"
+darshan = "⚡"
+slurm = "🖥️"
+lmod = "📦"
+node-hardware = "💻"
+compression = "🗜️"
+parallel-sort = "🔄"
+jarvis = "🤖"
+chronolog = "⏰"
+geo = "🌍"
+ndp = "🔎"
+paraview = "🧊"
+scientific-catalog = "🗃️"
+seismology = "〰️"
+spack = "🛠️"
+terrain = "⛰️"
+web = "🌐"
+
+# Declarative doctor checks; these do not execute server code.
+
+# `executables` are searched on PATH, then in `executable-paths`. A set
+# `executable-environment` variable replaces that search, as it does in the
+# server. `environment-files` variables must name an existing path.
+
+[prerequisites.spack]
+executables = ["spack"]
+executable-environment = ["SPACK_MCP_COMMAND"]
+executable-paths = ["$SPACK_ROOT/bin/spack", "~/.local/spack/bin/spack", "/opt/spack/bin/spack"]
+
+[prerequisites.slurm]
+executables = ["sbatch"]
+
+[prerequisites.lmod]
+executables = ["lmod"]
+executable-environment = ["LMOD_CMD"]
+executable-paths = ["/usr/share/lmod/lmod/libexec/lmod", "/usr/local/lmod/lmod/libexec/lmod"]
+
+[prerequisites.scientific-catalog]
+environment-files = ["SCIENTIFIC_CATALOG_FILE"]
+
+[prerequisites.paraview]
+note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
+
+[prerequisites.chronolog]
+note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
+
+[prerequisites.darshan]
+executables = ["darshan-parser"]
+note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
+
+[prerequisites.jarvis]
+note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
+
+# Special aggregate packages; their descriptions and versions live in their
+# manifests. Ordinary component folders are discovered without an entry here.
+[collections.clio-skills]
+category = "skills"
+primary-skills = true
+
+[collections.clio-agents]
+category = "agents"

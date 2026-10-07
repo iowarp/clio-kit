@@ -1,0 +1,69 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/chronolog-mcp",
+  "title": "CLIO Chronolog",
+  "description": "Record and retrieve agent interactions in a ChronoLog log store.",
+  "version": "2.0.3",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.11.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "chronolog"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "start_chronolog",
+      "description": "Connect to ChronoLog, create a chronicle, and acquire a story handle."
+    },
+    {
+      "name": "record_interaction",
+      "description": "Log a user message and LLM response to the active ChronoLog story."
+    },
+    {
+      "name": "stop_chronolog",
+      "description": "Release the story handle and disconnect from ChronoLog."
+    },
+    {
+      "name": "retrieve_interaction",
+      "description": "Retrieve logged records from a chronicle and story, with optional time filtering.\n\nWrites the records to a new text file in the server's working directory and\nreturns that file's absolute path, or \"No records found.\"."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "chronolog://status",
+      "name": "chronolog_status",
+      "description": "Current ChronoLog system status."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "logging_workflow",
+      "description": "Guided workflow for querying and analyzing ChronoLog entries."
+    }
+  ],
+  "tags": [
+    "logging",
+    "distributed-systems",
+    "hpc",
+    "time-series"
+  ],
+  "scope": "scientific"
+}

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/plot-mcp",
+  "title": "CLIO Plot",
+  "description": "Draw line, bar, scatter, histogram, heatmap and time-series plots from tabular data.",
+  "version": "2.2.5",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.11.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "plot"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "line_plot",
+      "description": "Create a line plot from CSV or Excel data with customizable styling."
+    },
+    {
+      "name": "bar_plot",
+      "description": "Create a bar chart from CSV or Excel data, one bar per x value. Rows that share an x value are averaged (mean of y; the result reports aggregated=true and the y axis is labelled 'mean <y>'), keeping the 20 largest means; a file with one row per x value is plotted as-is (aggregated=false). For any other statistic, aggregate first and plot that file."
+    },
+    {
+      "name": "scatter_plot",
+      "description": "Create a scatter plot from CSV or Excel data for correlation analysis."
+    },
+    {
+      "name": "histogram_plot",
+      "description": "Create a histogram from CSV or Excel data showing value distribution."
+    },
+    {
+      "name": "heatmap_plot",
+      "description": "Create a correlation heatmap from numeric columns in CSV or Excel data."
+    },
+    {
+      "name": "plot_timeseries",
+      "description": "Create a multi-series line chart PNG from one or more y columns of a CSV or Excel file, auto-detecting a time, numeric, or categorical x axis."
+    },
+    {
+      "name": "data_info",
+      "description": "Get schema, column types, and summary statistics for a CSV or Excel file."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "plot://styles",
+      "name": "available_styles",
+      "description": "Available matplotlib plot styles and color palettes."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "create_visualization",
+      "description": "Guided workflow for creating a data visualization."
+    }
+  ],
+  "tags": [
+    "data-visualization",
+    "matplotlib",
+    "plotting",
+    "charts"
+  ],
+  "scope": "scientific"
+}

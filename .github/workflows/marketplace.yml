@@ -1,0 +1,116 @@
+name: Marketplace acceptance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installed-marketplace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        protocol: ["2026-07-28", "legacy"]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
+        with:
+          version: '0.11.28'
+          python-version: '3.13'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version: '1.25.0'
+          cache-dependency-path: tests/fixtures/mcp-servers/go/go.sum
+      - name: Install test tools
+        run: |
+          uv sync --frozen --dev --extra verification
+          npm install --global @anthropic-ai/claude-code@2.1.266 @openai/codex@0.154.0 skills@1.5.25
+      - name: Optional skills CLI compatibility
+        if: matrix.protocol == '2026-07-28'
+        run: uv run --frozen python scripts/verify_skills_cli.py
+      - name: Discover contributed folders and sync catalogues
+        run: uv run --frozen clio-kit marketplace sync
+      - name: Check TypeScript fixture source matches compiled JavaScript
+        working-directory: tests/fixtures/mcp-servers/typescript
+        run: |
+          npm ci
+          npm run build
+          git diff --exit-code -- bundle/
+      - name: Check Go module and compile
+        working-directory: tests/fixtures/mcp-servers/go
+        run: |
+          go mod verify
+          go vet ./...
+          go test ./...
+      - name: Scientific calculation regressions
+        run: |
+          uv run --frozen --directory mcp-servers/pandas pytest -q tests/test_data_cleaning.py
+          uv run --frozen --directory mcp-servers/hdf5 python -m pytest -q tests/test_statistics.py tests/test_export_protocol.py tests/test_error_protocol.py
+          uv run --frozen --directory mcp-servers/parallel-sort pytest -q tests/test_bracketed_levels.py tests/test_chunk_integrity.py
+          uv run --frozen --directory mcp-servers/parquet pytest -q tests/test_filter_operations.py tests/test_filter_protocol.py
+          uv run --frozen --directory mcp-servers/slurm pytest -q tests/test_protocol_stdout.py
+          uv run --frozen --directory mcp-servers/web pytest -q tests/test_tasks.py
+      - name: Launcher and imported helper lint
+        run: uv run --frozen ruff check scripts src tests evals skills/clio-coder-skills
+      - name: Root regressions
+        run: uv run --frozen pytest -q tests --junitxml=/tmp/clio-root-tests.xml
+      - name: Selective downloads from an empty component cache
+        if: matrix.protocol == '2026-07-28'
+        run: uv run --frozen python scripts/verify_partial_install.py --output /tmp/clio-partial-install
+      - name: Folder-based component contributions
+        if: matrix.protocol == '2026-07-28'
+        run: uv run --frozen python scripts/verify_local_components.py --output /tmp/clio-local-components
+      - name: External plugin transports and actual MCP use
+        if: matrix.protocol == '2026-07-28'
+        run: uv run --frozen python scripts/verify_external_contributions.py --output /tmp/clio-external-acceptance
+      - name: Installed plugin hook execution and blocking
+        if: matrix.protocol == '2026-07-28'
+        run: uv run --frozen python scripts/verify_plugin_hooks.py --output /tmp/clio-hook-acceptance
+      - name: Install built wheel and exercise real client and tools
+        run: uv run --frozen python scripts/verify_marketplace_install.py --output /tmp/clio-acceptance --codex --all-servers --protocol-mode ${{ matrix.protocol }}
+      - name: Dataset-report workflow and native verification hook
+        if: matrix.protocol == '2026-07-28'
+        run: |
+          uv run --frozen python scripts/verify_dataset_report.py --output /tmp/clio-dataset-report --installed /tmp/clio-acceptance/installed
+          uv run --frozen python scripts/verify_dataset_report.py --output /tmp/clio-external-report --installed /tmp/clio-acceptance/installed --external
+      - name: Python 3.10 installed compatibility
+        run: |
+          uv venv --python 3.10 /tmp/clio-python310
+          uv pip install --python /tmp/clio-python310/bin/python /tmp/clio-acceptance/dist/*.whl
+          /tmp/clio-python310/bin/clio-kit mcp-servers
+          /tmp/clio-python310/bin/clio-kit plugin --help
+          /tmp/clio-python310/bin/clio-kit skill list
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: marketplace-acceptance-${{ matrix.protocol }}
+          path: |
+            /tmp/clio-root-tests.xml
+            /tmp/clio-partial-install/*.log
+            /tmp/clio-partial-install/*.json
+            /tmp/clio-local-components/*.log
+            /tmp/clio-local-components/results.json
+            /tmp/clio-local-components/mcp-result.json
+            /tmp/clio-dataset-report/*.log
+            /tmp/clio-dataset-report/results.json
+            /tmp/clio-external-report/*.log
+            /tmp/clio-external-report/results.json
+            /tmp/clio-external-acceptance/*.log
+            /tmp/clio-external-acceptance/results.json
+            /tmp/clio-hook-acceptance/*.log
+            /tmp/clio-hook-acceptance/results.json
+            /tmp/clio-hook-acceptance/project/hook-events.jsonl
+            /tmp/clio-acceptance/*.log
+            /tmp/clio-acceptance/*.stderr
+            /tmp/clio-acceptance/results.json
+            /tmp/clio-acceptance/codex-skills.json
+            /tmp/clio-acceptance/data/

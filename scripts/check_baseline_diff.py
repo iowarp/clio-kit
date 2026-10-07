@@ -20,7 +20,8 @@ Neither is visible to a script that only ever reads one tree. This module
 closes both by comparing the embedded ``RATCHET_BASELINE`` dict between two
 versions of ``check_file_size.py`` -- in CI, the PR head and the merge-base
 with the target branch -- and reporting a violation for any entry that
-increased, or any brand-new entry above the cap. Decreases and removals are
+increased, or any brand-new entry above the cap. Git-verified renames retain
+their original limits, so changing a path cannot hide growth. Decreases and removals are
 never violations (a file leaving the baseline, or shrinking, is exactly what
 the ratchet wants).
 
@@ -55,6 +56,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -122,7 +124,11 @@ def extract_default_max_lines(source: str) -> int:
 
 
 def diff_baselines(
-    base: dict[str, int], head: dict[str, int], *, cap: int
+    base: dict[str, int],
+    head: dict[str, int],
+    *,
+    cap: int,
+    renames: dict[str, str] | None = None,
 ) -> list[BaselineViolation]:
     """Compare two baseline dicts and report every same-commit-inflation violation.
 
@@ -132,6 +138,8 @@ def diff_baselines(
         cap: The line-count cap a brand-new entry must stay at or under. Callers
             must derive this from the BASE side (see :func:`extract_default_max_lines`),
             never from head -- there is no safe default here on purpose.
+        renames: Git-verified destination-to-source paths. Only removed baseline
+            paths can transfer a limit to a new destination, never copies.
 
     Returns:
         One :class:`BaselineViolation` per offending entry, sorted by path.
@@ -142,6 +150,9 @@ def diff_baselines(
     for rel in sorted(head):
         head_value = head[rel]
         base_value = base.get(rel)
+        original = (renames or {}).get(rel)
+        if base_value is None and original is not None and original not in head:
+            base_value = base.get(original)
         if base_value is None:
             if head_value > cap:
                 violations.append(
@@ -153,6 +164,33 @@ def diff_baselines(
                 BaselineViolation(rel, "increased", base_value, head_value)
             )
     return violations
+
+
+def git_renames(base_ref: str) -> dict[str, str]:
+    """Read renames from Git history to the current tracked working tree."""
+    result = subprocess.run(
+        [
+            "git",
+            "diff",
+            "--name-status",
+            "-z",
+            "--find-renames",
+            "--diff-filter=R",
+            base_ref,
+            "--",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    fields = result.stdout.split("\0")
+    renames = {}
+    for index in range(0, len(fields) - 1, 3):
+        status, source, destination = fields[index : index + 3]
+        if not status.startswith("R"):
+            raise ValueError(f"Expected a Git rename, got {status!r}")
+        renames[destination] = source
+    return renames
 
 
 def _print_report(violations: list[BaselineViolation], cap: int) -> None:
@@ -180,7 +218,7 @@ def _print_report(violations: list[BaselineViolation], cap: int) -> None:
                 f"  {violation.rel}: new RATCHET_BASELINE entry at "
                 f"{violation.head_value} lines, above the cap ({cap}). If this "
                 "path is a rename of a file that was already baselined, that "
-                "history is invisible to this diff -- split the file (or lower "
+                "history must be verified with --base-ref; otherwise split the file (or lower "
                 f"this entry to <= {cap} and drop it) instead of re-baselining "
                 "it under a new name."
             )
@@ -194,6 +232,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "head_file", type=Path, help="check_file_size.py content at the PR head"
+    )
+    parser.add_argument(
+        "--base-ref",
+        help="Git merge-base used to verify renames and preserve their old limits",
     )
     parser.add_argument(
         "--cap",
@@ -213,7 +255,8 @@ def main(argv: list[str] | None = None) -> int:
     base = extract_baseline(base_source)
     head = extract_baseline(head_source)
     cap = args.cap if args.cap is not None else extract_default_max_lines(base_source)
-    violations = diff_baselines(base, head, cap=cap)
+    renames = git_renames(args.base_ref) if args.base_ref else None
+    violations = diff_baselines(base, head, cap=cap, renames=renames)
     _print_report(violations, cap)
     return 1 if violations else 0
 

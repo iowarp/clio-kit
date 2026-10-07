@@ -2,7 +2,7 @@
 """Extract MCP server metadata via FastMCP 3.0 async API.
 
 Run from within a server directory:
-    cd clio-kit-mcp-servers/compression && uv run python ../../scripts/extract_mcp_metadata.py
+    cd mcp-servers/compression && uv run python ../../scripts/extract_mcp_metadata.py
 
 Outputs JSON to stdout with tools, resources, prompts, annotations, and tags.
 """
@@ -64,7 +64,9 @@ async def extract(module_path: str) -> dict[str, Any]:
             {
                 "name": t.name,
                 "description": t.description or "",
-                "annotations": t.annotations.model_dump() if t.annotations else {},
+                "annotations": t.annotations.model_dump(by_alias=True)
+                if t.annotations
+                else {},
                 "tags": sorted(t.tags) if hasattr(t, "tags") and t.tags else [],
             }
             for t in tools

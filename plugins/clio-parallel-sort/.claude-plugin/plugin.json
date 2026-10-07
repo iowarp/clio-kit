@@ -1,0 +1,13 @@
+{
+  "name": "clio-parallel-sort",
+  "description": "Sort, filter and summarize large log files by timestamp, level or keyword.",
+  "version": "2.3.0",
+  "author": {
+    "name": "IoWarp Team - Gnosis Research Center",
+    "email": "grc@illinoistech.edu",
+    "url": "https://github.com/iowarp/clio-kit"
+  },
+  "homepage": "https://github.com/iowarp/clio-kit",
+  "repository": "https://github.com/iowarp/clio-kit",
+  "license": "BSD-3-Clause"
+}

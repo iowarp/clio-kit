@@ -27,6 +27,11 @@ def _load_generator() -> ModuleType:
 
 GENERATOR = _load_generator()
 
+# Community entries live in the launcher package so the same reader backs both
+# manifest generation and contributor-facing validation.
+from clio_kit.community import read_community_entries  # noqa: E402
+from clio_kit.plugins import PluginProblem, read_skill_frontmatter  # noqa: E402
+
 
 def test_json_writer_requests_platform_independent_newlines(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
@@ -55,6 +60,7 @@ def test_pypi_manifest_uses_standard_fixed_package_arguments() -> None:
         {"tools": []},
         server_version="2.0.0",
         pypi_version="2.3.0",
+        scope="scientific",
     )
 
     assert manifest["version"] == "2.0.0"
@@ -75,8 +81,11 @@ def test_pypi_manifest_uses_standard_fixed_package_arguments() -> None:
 def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> None:
     """Every registry record selects its exact server from the shared wheel."""
     repository_root = Path(__file__).resolve().parents[1]
-    servers_root = repository_root / "clio-kit-mcp-servers"
+    servers_root = repository_root / "mcp-servers"
     projects = sorted(path.parent for path in servers_root.glob("*/pyproject.toml"))
+    all_projects = sorted(
+        path for path in servers_root.iterdir() if GENERATOR.is_server_dir(path)
+    )
     manifests = sorted(servers_root.glob("*/server.json"))
     expected_version = GENERATOR.read_root_version(repository_root)
     expected_server_versions = GENERATOR.read_server_versions(repository_root)
@@ -86,28 +95,134 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
             encoding="utf-8"
         )
     )
+
+    # Every plugin manifest lives under plugins/, servers and bundles alike,
+    # because a plugin's source is copied wholesale on install and neither kind
+    # ships code. That means source no longer separates them: a bundle is one
+    # declared in [bundles.*], and everything else under plugins/ is a
+    # per-server manifest. They stay keyed differently -- a server entry drops
+    # the clio- prefix to match its directory name, a bundle's name IS its
+    # identity -- so each set is checkable against its own inventory.
+    # An indexed outside contribution carries a *table* as its source (a repo,
+    # a subdirectory, an npm package), not a repository-relative path string.
+    # Only our own generated entries are path-sourced, so every source test has
+    # to narrow to strings before it can match a prefix.
+    def local_source(plugin: dict, prefix: str) -> bool:
+        source = plugin["source"]
+        return isinstance(source, str) and source.startswith(prefix)
+
+    expected_bundles = GENERATOR.read_bundles(repository_root)
+    plugin_sourced = [
+        plugin
+        for plugin in marketplace["plugins"]
+        if local_source(plugin, "./plugins/")
+    ]
     marketplace_plugins = {
         plugin["name"].removeprefix("clio-"): plugin
-        for plugin in marketplace["plugins"]
+        for plugin in plugin_sourced
+        if plugin["name"].removeprefix("clio-") in expected_server_versions
     }
-    gemini_extension = json.loads(
-        (repository_root / "gemini-extension.json").read_text(encoding="utf-8")
+    bundle_plugins = {
+        plugin["name"]: plugin
+        for plugin in plugin_sourced
+        if plugin["name"] in expected_bundles
+    }
+    skill_plugins = {
+        plugin["name"]: plugin
+        for plugin in marketplace["plugins"]
+        if local_source(plugin, "./skills/")
+    }
+    expected_skill_plugins = {
+        f"{bundle_name}-skills"
+        for bundle_name in expected_bundles
+        if (repository_root / "skills" / f"{bundle_name}-skills").is_dir()
+    }
+    from clio_kit.marketplace_assets import imported_skill_entries
+
+    expected_skill_plugins.update(
+        entry["name"] for entry in imported_skill_entries(repository_root)
+    )
+    from clio_kit.local_plugins import discover_local_plugins
+
+    workflow_names = set(
+        tomllib.loads((repository_root / "mcp-server-versions.toml").read_text()).get(
+            "workflows", {}
+        )
+    )
+    generated_names = (
+        {f"clio-{name}" for name in expected_server_versions}
+        | set(expected_bundles)
+        | expected_skill_plugins
+        | workflow_names
+        | {"clio-skills", "clio-agents"}
+    )
+    local_entries = discover_local_plugins(
+        repository_root,
+        [
+            entry
+            for entry in marketplace["plugins"]
+            if entry["name"] in generated_names or isinstance(entry["source"], dict)
+        ],
+    )
+    expected_skill_plugins.update(
+        entry["name"]
+        for entry in local_entries
+        if entry["source"].startswith("./skills/")
     )
     readme = (repository_root / "README.md").read_text(encoding="utf-8")
 
     assert projects
-    assert manifests == [project / "server.json" for project in projects]
+    # Every runtime: a hosted Node or Go server publishes a manifest too.
+    assert manifests == [project / "server.json" for project in all_projects]
     assert list(expected_server_versions) == sorted(expected_server_versions)
-    assert set(expected_server_versions) == {project.name for project in projects}
-    assert publish_servers == ()
+    assert set(expected_server_versions) == {project.name for project in all_projects}
+    # Every server has a patched HTTP runtime in this coordinated release.
+    assert publish_servers == tuple(sorted(expected_server_versions))
     assert marketplace["metadata"]["version"] == expected_version
     assert set(marketplace_plugins) == set(expected_server_versions)
-    assert gemini_extension["version"] == expected_version
+    assert set(bundle_plugins) == set(expected_bundles)
+    assert set(skill_plugins) == expected_skill_plugins
+    # Outside contributions are the fourth kind: indexed rather than generated,
+    # so their source names a repository we do not own instead of a path we do.
+    # They must still reconcile against community/entries/, or an entry could
+    # reach the catalogue without a file in this repository accounting for it.
+    community_plugins = {
+        plugin["name"]: plugin
+        for plugin in marketplace["plugins"]
+        if not isinstance(plugin["source"], str)
+    }
+    from clio_kit.federation import read_snapshot
+
+    assert set(community_plugins) == {
+        entry["name"]
+        for entry in read_community_entries(repository_root)
+        + read_snapshot(repository_root)
+    }
+    assert all(
+        plugin["metadata"]["indexed"] is True
+        for plugin in community_plugins.values()
+        if "metadata" in plugin
+    )
+
+    expected_names = (
+        generated_names | set(community_plugins) | {e["name"] for e in local_entries}
+    )
+    assert expected_names == {e["name"] for e in marketplace["plugins"]}
+    assert len(expected_names) == len(marketplace["plugins"])
     for path in manifests:
         server_name = path.parent.name
         manifest = json.loads(path.read_text(encoding="utf-8"))
+        # The plugin manifest no longer sits beside the server it launches:
+        # it lives under plugins/ so installing it copies a manifest rather
+        # than the server's whole source tree.
         plugin = json.loads(
-            (path.parent / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+            (
+                path.parent.parent.parent
+                / "plugins"
+                / f"clio-{server_name}"
+                / ".claude-plugin"
+                / "plugin.json"
+            ).read_text(encoding="utf-8")
         )
         assert manifest["version"] == expected_server_versions[server_name]
         assert plugin["version"] == expected_server_versions[server_name]
@@ -137,7 +252,7 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
 def test_jarvis_current_contract_matches_registry_package_and_capability() -> None:
     """JARVIS contract revisions advance every independently versioned surface."""
     repository_root = Path(__file__).resolve().parents[1]
-    jarvis_root = repository_root / "clio-kit-mcp-servers" / "jarvis"
+    jarvis_root = repository_root / "mcp-servers" / "jarvis"
     contract_index = json.loads(
         (
             repository_root / "src" / "clio_kit" / "_mcp_contracts" / "index.json"
@@ -206,17 +321,6 @@ def test_persistent_configs_use_the_installed_tool() -> None:
             }
         }
     }
-    extension = GENERATOR.build_gemini_extension(
-        ["jarvis"],
-        pypi_version="2.3.0",
-    )
-    assert extension["version"] == "2.3.0"
-    assert extension["mcpServers"] == {
-        "clio-jarvis": {
-            "command": "clio-kit",
-            "args": ["mcp-server", "jarvis"],
-        }
-    }
 
 
 def test_plugin_versions_distinguish_contracts_from_the_root_wheel(
@@ -227,10 +331,13 @@ def test_plugin_versions_distinguish_contracts_from_the_root_wheel(
         tmp_path,
         "spack",
         {"description": "Spack MCP", "version": "9.9.9"},
+        repo_root=tmp_path,
         server_version="2.0.0",
     )
     plugin = json.loads(
-        (tmp_path / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+        (
+            tmp_path / "plugins" / "clio-spack" / ".claude-plugin" / "plugin.json"
+        ).read_text(encoding="utf-8")
     )
     marketplace = GENERATOR.build_marketplace_json(
         [{"name": "clio-spack", "version": "2.0.0"}],
@@ -240,3 +347,695 @@ def test_plugin_versions_distinguish_contracts_from_the_root_wheel(
     assert plugin["version"] == "2.0.0"
     assert marketplace["metadata"]["version"] == "2.3.0"
     assert marketplace["plugins"][0]["version"] == "2.0.0"
+
+
+def test_bundle_membership_must_partition_the_shipped_servers() -> None:
+    """A bundle catalogue that is not a partition is a catalogue with holes."""
+    shipped = {"spack", "slurm", "hdf5"}
+
+    # Exactly one bundle per server: the only accepted shape.
+    GENERATOR.assert_bundles_partition_servers(
+        {
+            "clio-hpc": {"servers": ["slurm", "spack"]},
+            "clio-scientific-io": {"servers": ["hdf5"]},
+        },
+        shipped,
+    )
+
+    # A server named by no bundle would publish outside the catalogue,
+    # reachable only by someone who already knew it existed.
+    with pytest.raises(ValueError, match=r"unplaced=\['hdf5'\]"):
+        GENERATOR.assert_bundles_partition_servers(
+            {"clio-hpc": {"servers": ["slurm", "spack"]}}, shipped
+        )
+
+    # A membership list naming a server that no longer ships is stale, and
+    # would generate a bundle whose install resolves nothing.
+    with pytest.raises(ValueError, match=r"unknown=\['geojson'\]"):
+        GENERATOR.assert_bundles_partition_servers(
+            {
+                "clio-hpc": {"servers": ["slurm", "spack"]},
+                "clio-geoscience": {"servers": ["geojson", "hdf5"]},
+            },
+            shipped,
+        )
+
+    # One server in two bundles makes "which workflow owns this" unanswerable.
+    with pytest.raises(ValueError, match=r"duplicated=\['spack in clio-hpc"):
+        GENERATOR.assert_bundles_partition_servers(
+            {
+                "clio-hpc": {"servers": ["slurm", "spack"]},
+                "clio-scientific-io": {"servers": ["hdf5", "spack"]},
+            },
+            shipped,
+        )
+
+
+def test_bundles_depend_on_members_without_copying_them(tmp_path: Path) -> None:
+    """A bundle carries a dependency list and nothing else executable."""
+    entry = GENERATOR.write_bundle_plugin(
+        tmp_path,
+        "clio-hpc",
+        {
+            "version": "1.0.0",
+            "description": "Run work on a cluster.",
+            "servers": ["slurm", "spack"],
+        },
+    )
+    manifest = json.loads(
+        (
+            tmp_path / "plugins" / "clio-hpc" / ".claude-plugin" / "plugin.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert manifest["dependencies"] == ["clio-slurm", "clio-spack"]
+    # Bare names, not {"name": ..., "version": ...}: a constrained dependency
+    # resolves against a `{plugin-name}--v{version}` git tag, which would mean
+    # tagging every server plugin on every release for a pin nothing needs.
+    assert all(isinstance(dep, str) for dep in manifest["dependencies"])
+    # No components of its own -- the bundle must not restate what it bundles.
+    assert not {"mcpServers", "skills", "commands", "agents", "hooks"} & set(manifest)
+    assert entry["source"] == "./plugins/clio-hpc"
+
+
+def test_shipped_bundle_catalogue_partitions_the_shipped_servers() -> None:
+    """The committed bundle tables must cover this repository, not a fixture."""
+    repo_root = Path(__file__).resolve().parents[1]
+    bundles = GENERATOR.read_bundles(repo_root)
+    shipped = {
+        server_dir.name
+        for server_dir in (repo_root / "mcp-servers").iterdir()
+        if GENERATOR.is_server_dir(server_dir)
+    }
+
+    GENERATOR.assert_bundles_partition_servers(bundles, shipped)
+
+
+def test_skill_name_must_match_its_directory(tmp_path: Path) -> None:
+    """A skill is namespaced by its directory but referred to by its name."""
+    skill_dir = tmp_path / "cluster-run"
+    skill_dir.mkdir()
+    frontmatter = (
+        "---\nname: {name}\ndescription: Does a thing. Use when asked.\n---\n\nBody.\n"
+    )
+
+    (skill_dir / "SKILL.md").write_text(
+        frontmatter.format(name="cluster-run"), encoding="utf-8"
+    )
+    assert read_skill_frontmatter(skill_dir)["name"] == "cluster-run"
+
+    # Disagreeing is a reference that resolves nowhere, so it must not ship.
+    (skill_dir / "SKILL.md").write_text(
+        frontmatter.format(name="running-on-a-cluster"), encoding="utf-8"
+    )
+    with pytest.raises(PluginProblem, match="but lives in"):
+        read_skill_frontmatter(skill_dir)["name"]
+
+    # A description is what decides whether the skill fires at all; without
+    # one the skill costs tokens in every session and never triggers.
+    (skill_dir / "SKILL.md").write_text(
+        "---\nname: cluster-run\n---\n\nBody.\n", encoding="utf-8"
+    )
+    with pytest.raises(PluginProblem, match="needs a description"):
+        read_skill_frontmatter(skill_dir)
+
+
+def test_bundle_depends_on_its_skills_only_once_they_exist(tmp_path: Path) -> None:
+    """Skills join a bundle by dependency, and only when actually written."""
+    spec = {
+        "version": "1.0.0",
+        "description": "Run work on a cluster.",
+        "servers": ["slurm", "spack"],
+    }
+
+    # No skills authored yet: the bundle still ships, servers only.
+    assert GENERATOR.write_skills_plugin(tmp_path, "clio-hpc", spec) is None
+    manifest_path = tmp_path / "plugins" / "clio-hpc" / ".claude-plugin" / "plugin.json"
+    GENERATOR.write_bundle_plugin(tmp_path, "clio-hpc", spec)
+    before = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert before["dependencies"] == ["clio-slurm", "clio-spack"]
+
+    skill_dir = tmp_path / "skills" / "clio-hpc-skills" / "skills" / "sizing-a-request"
+    skill_dir.mkdir(parents=True)
+    (skill_dir / "SKILL.md").write_text(
+        "---\nname: sizing-a-request\ndescription: Sizes a request. Use when asked.\n---\n\nBody.\n",
+        encoding="utf-8",
+    )
+
+    # A skill with no recorded scenarios is untested by definition, so it must
+    # not ship: it would cost tokens in every session with nothing showing it
+    # earns them.
+    with pytest.raises(ValueError, match="ships no evals.md"):
+        GENERATOR.write_skills_plugin(tmp_path, "clio-hpc", spec)
+    (skill_dir / "evals.md").write_text("# Evals\n\n## S1\n", encoding="utf-8")
+
+    entry = GENERATOR.write_skills_plugin(tmp_path, "clio-hpc", spec)
+    GENERATOR.write_bundle_plugin(tmp_path, "clio-hpc", spec)
+    after = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    assert entry is not None
+    assert entry["source"] == "./skills/clio-hpc-skills"
+    assert after["dependencies"] == ["clio-slurm", "clio-spack", "clio-hpc-skills"]
+    # The skills are a dependency, never a path: a plugin's component paths
+    # cannot leave its own directory, so a bundle pointing at a shared skills
+    # folder would resolve to nothing once installed.
+    assert "skills" not in after
+
+
+def test_shipped_skills_load_and_are_reachable_from_a_bundle() -> None:
+    """Every committed skill parses, and its plugin is depended on."""
+    repo_root = Path(__file__).resolve().parents[1]
+    skills_root = repo_root / "skills"
+    if not skills_root.is_dir():
+        pytest.skip("no skills shipped yet")
+
+    for plugin_dir in sorted(skills_root.iterdir()):
+        if not plugin_dir.is_dir():
+            continue
+        if (plugin_dir / "import-lock.json").exists():
+            catalogue = json.loads(
+                (repo_root / ".claude-plugin" / "marketplace.json").read_text()
+            )
+            assert any(
+                entry["source"] == f"./skills/{plugin_dir.name}"
+                for entry in catalogue["plugins"]
+            )
+            for skill in (plugin_dir / "skills").iterdir():
+                assert read_skill_frontmatter(skill)["name"] == skill.name
+            continue
+        bundle_name = plugin_dir.name.removesuffix("-skills")
+        if bundle_name not in GENERATOR.read_bundles(repo_root):
+            # A folder-discovered package, validated by local discovery instead.
+            continue
+        bundle_manifest = json.loads(
+            (
+                repo_root / "plugins" / bundle_name / ".claude-plugin" / "plugin.json"
+            ).read_text(encoding="utf-8")
+        )
+        assert plugin_dir.name in bundle_manifest["dependencies"]
+        shipped = sorted(
+            path for path in (plugin_dir / "skills").iterdir() if path.is_dir()
+        )
+        assert shipped, f"{plugin_dir} ships no skills"
+        for skill_dir in shipped:
+            assert read_skill_frontmatter(skill_dir)["name"] == skill_dir.name
+            assert (skill_dir / "evals.md").is_file(), (
+                f"{skill_dir} ships without recorded scenarios"
+            )
+
+
+def _write_community_entry(repo_root: Path, name: str, body: str) -> Path:
+    entries = repo_root / "community" / "entries"
+    entries.mkdir(parents=True, exist_ok=True)
+    path = entries / f"{name}.toml"
+    path.write_text(body, encoding="utf-8")
+    return path
+
+
+def test_community_entries_index_outside_repositories(tmp_path: Path) -> None:
+    """An outside contribution is a pointer, not a copy of anything."""
+    _write_community_entry(
+        tmp_path,
+        "materials-lab",
+        'name = "materials-lab"\n'
+        'description = "Crystal structure skills."\n'
+        'category = "materials-science"\n'
+        'maintainer = "some-lab"\n'
+        'keywords = ["materials"]\n'
+        "\n[source]\n"
+        'type = "github"\n'
+        'repo = "some-lab/materials-agent-skills"\n'
+        'ref = "v1.2.0"\n',
+    )
+    # npm is what lets a TypeScript or Go plugin be listed without living here.
+    _write_community_entry(
+        tmp_path,
+        "crystal-mcp",
+        'name = "crystal-mcp"\n'
+        'description = "A TypeScript MCP server."\n'
+        "\n[source]\n"
+        'type = "npm"\n'
+        'package = "@acme/crystal-mcp"\n'
+        'version = "^2.0.0"\n',
+    )
+
+    entries = read_community_entries(tmp_path)
+    by_name = {entry["name"]: entry for entry in entries}
+
+    assert by_name["materials-lab"]["source"] == {
+        "source": "github",
+        "repo": "some-lab/materials-agent-skills",
+        "ref": "v1.2.0",
+    }
+    assert by_name["crystal-mcp"]["source"] == {
+        "source": "npm",
+        "package": "@acme/crystal-mcp",
+        "version": "^2.0.0",
+    }
+    # A user should be able to see which entries are maintained here and which
+    # are only pointed at.
+    assert by_name["materials-lab"]["metadata"] == {
+        "maintainer": "some-lab",
+        "indexed": True,
+    }
+
+
+def test_community_entries_reject_shapes_that_would_publish_broken(
+    tmp_path: Path,
+) -> None:
+    """The content is not ours, so the shape is checked hard."""
+    entries_dir = tmp_path / "community" / "entries"
+
+    # A name that disagrees with its filename makes the entry unfindable by
+    # the file someone would edit to fix it.
+    _write_community_entry(
+        tmp_path,
+        "materials-lab",
+        'name = "materials"\ndescription = "x"\n\n[source]\ntype = "github"\nrepo = "a/b"\n',
+    )
+    with pytest.raises(ValueError, match="rename the file to match"):
+        read_community_entries(tmp_path)
+
+    # clio- is generated from this repository's own servers, bundles and
+    # skills; an outside entry claiming it would shadow one of ours.
+    _write_community_entry(
+        tmp_path,
+        "clio-materials",
+        'name = "clio-materials"\ndescription = "x"\n\n[source]\ntype = "github"\nrepo = "a/b"\n',
+    )
+    (entries_dir / "materials-lab.toml").unlink()
+    with pytest.raises(ValueError, match="may not claim the clio- prefix"):
+        read_community_entries(tmp_path)
+    (entries_dir / "clio-materials.toml").unlink()
+
+    # A github source without a repo resolves to nothing at install time.
+    _write_community_entry(
+        tmp_path,
+        "incomplete",
+        'name = "incomplete"\ndescription = "x"\n\n[source]\ntype = "github"\n',
+    )
+    with pytest.raises(ValueError, match=r"needs \['repo'\]"):
+        read_community_entries(tmp_path)
+
+    # A field the source type does not use is a silent typo, not a no-op.
+    _write_community_entry(
+        tmp_path,
+        "incomplete",
+        'name = "incomplete"\ndescription = "x"\n\n[source]\ntype = "npm"\n'
+        'package = "@a/b"\nrepo = "a/b"\n',
+    )
+    with pytest.raises(ValueError, match=r"unexpected fields: \['repo'\]"):
+        read_community_entries(tmp_path)
+
+    # A description is what a user reads before installing something we did
+    # not write.
+    _write_community_entry(
+        tmp_path,
+        "incomplete",
+        'name = "incomplete"\n\n[source]\ntype = "github"\nrepo = "a/b"\n',
+    )
+    with pytest.raises(ValueError, match="needs a description"):
+        read_community_entries(tmp_path)
+
+
+def test_no_community_entries_is_a_valid_state(tmp_path: Path) -> None:
+    """An empty index generates a marketplace of just our own plugins."""
+    assert read_community_entries(tmp_path) == []
+    (tmp_path / "community" / "entries").mkdir(parents=True)
+    assert read_community_entries(tmp_path) == []
+
+
+def test_every_shipped_server_resolves_to_exactly_one_published_scope() -> None:
+    """Scope is total over the server inventory and defaults to scientific."""
+    repo_root = Path(__file__).resolve().parents[1]
+    versions = GENERATOR.read_server_versions(repo_root)
+    scopes = GENERATOR.read_server_classification(repo_root, versions)
+
+    assert set(scopes) == set(versions)
+    assert set(scopes.values()) <= {"scientific", "general"}
+    assert scopes["web"] == "general"
+    assert scopes["hdf5"] == "scientific"
+
+
+def test_classifying_an_unknown_server_fails_generation(tmp_path: Path) -> None:
+    """A renamed or removed server cannot be left silently misclassified."""
+    versions_file = tmp_path / GENERATOR.SERVER_VERSIONS_FILE
+    versions_file.write_text(
+        'schema-version = 1\n\n[classification]\ngeneral = ["ghost"]\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="unknown servers: ghost"):
+        GENERATOR.read_server_classification(tmp_path, {"web": "1.0.0"})
+
+
+def test_general_classification_inventory_must_be_sorted(tmp_path: Path) -> None:
+    """Deterministic manifests need a deterministic classification order."""
+    versions_file = tmp_path / GENERATOR.SERVER_VERSIONS_FILE
+    versions_file.write_text(
+        'schema-version = 1\n\n[classification]\ngeneral = ["web", "compression"]\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="must be sorted"):
+        GENERATOR.read_server_classification(
+            tmp_path, {"compression": "1.0.0", "web": "1.0.0"}
+        )
+
+
+def test_published_marketplace_categories_carry_real_scope() -> None:
+    """The marketplace category distinguishes servers instead of a fixed literal."""
+    repo_root = Path(__file__).resolve().parents[1]
+    marketplace = json.loads(
+        (repo_root / ".claude-plugin" / "marketplace.json").read_text(encoding="utf-8")
+    )
+    # The catalogue now also publishes workflow bundles and skill plugins, and
+    # a scope classifies a SERVER. Split on source so this still checks what it
+    # was written to check: that a server's category is its real scope rather
+    # than one fixed literal for everything.
+    server_entries = [
+        plugin
+        for plugin in marketplace["plugins"]
+        if isinstance(plugin["source"], str)
+        and plugin["source"].startswith("./plugins/")
+        and plugin["name"].removeprefix("clio-")
+        in GENERATOR.read_server_versions(repo_root)
+    ]
+    categories = {plugin["category"] for plugin in server_entries}
+
+    assert categories == {"scientific", "general"}
+    assert all(plugin["keywords"] for plugin in server_entries)
+
+
+def _documented_bundle_servers(lines: list[str], name: str) -> list[str]:
+    """Read membership by table heading, independent of presentation order."""
+    headers: list[str] = []
+    for line in lines:
+        if not line.startswith("|"):
+            headers = []
+            continue
+        cells = [cell.strip().strip("`") for cell in line.strip("|").split("|")]
+        if "Bundle" in cells and "MCP servers" in cells:
+            headers = cells
+        elif headers and cells[headers.index("Bundle")] == name:
+            return sorted(
+                cell.strip() for cell in cells[headers.index("MCP servers")].split(",")
+            )
+    raise AssertionError(f"README has no bundle table row for {name}")
+
+
+@pytest.mark.parametrize(
+    "columns",
+    [
+        ("Bundle | Purpose | MCP servers", "`clio-analysis` | Analyze | pandas, plot"),
+        ("MCP servers | Bundle | Purpose", "pandas, plot | `clio-analysis` | Analyze"),
+    ],
+)
+def test_bundle_table_reader_follows_headings(columns: tuple[str, str]) -> None:
+    header, row = columns
+    assert _documented_bundle_servers(
+        [f"| {header} |", f"| {row} |"], "clio-analysis"
+    ) == ["pandas", "plot"]
+    # A changed membership must remain visible, even after a column reorder.
+    assert _documented_bundle_servers(
+        [f"| {header} |", f"| {row.replace('plot', 'hdf5')} |"], "clio-analysis"
+    ) != ["pandas", "plot"]
+
+
+def test_readme_bundle_table_matches_the_generated_manifests() -> None:
+    """Documented bundle membership must be the membership that ships.
+
+    This table has drifted twice already, both times because it was written
+    from the design rather than from the manifests, and once because a server
+    merge changed membership underneath it. A reader has no way to tell a stale
+    row from a current one, so it is checked rather than trusted.
+    """
+    repo_root = Path(__file__).resolve().parents[1]
+    readme = (repo_root / "README.md").read_text(encoding="utf-8").splitlines()
+
+    # plugins/ holds a manifest per server as well as per bundle; only the
+    # bundles carry a dependency list and appear in the README table.
+    bundle_names = GENERATOR.read_bundles(repo_root)
+    for bundle_dir in sorted((repo_root / "plugins").iterdir()):
+        if bundle_dir.name not in bundle_names:
+            continue
+        manifest = json.loads(
+            (bundle_dir / ".claude-plugin" / "plugin.json").read_text(encoding="utf-8")
+        )
+        name = manifest["name"]
+        shipped = sorted(
+            dependency.removeprefix("clio-")
+            for dependency in manifest["dependencies"]
+            if not dependency.endswith("-skills")
+        )
+        documented = _documented_bundle_servers(readme, name)
+        assert documented == shipped, (
+            f"{name}: README says {documented}, ships {shipped}"
+        )
+
+
+def test_readme_server_count_matches_the_shipped_inventory() -> None:
+    """A count in prose is the first thing to go stale after a server merge."""
+    repo_root = Path(__file__).resolve().parents[1]
+    readme = (repo_root / "README.md").read_text(encoding="utf-8")
+    shipped = sum(
+        GENERATOR.is_server_dir(path) for path in (repo_root / "mcp-servers").iterdir()
+    )
+
+    for claim in re.findall(r"(\d+) (?:available )?MCP servers", readme):
+        assert int(claim) == shipped, f"README claims {claim} servers, {shipped} ship"
+
+
+# --- a server the generator cannot describe ---------------------------------
+#
+# Discovery keyed on pyproject.toml, so a node or go server was passed over as
+# though it were not there: no descriptor, no plugin manifest, no marketplace
+# row, and nothing said why. Every one of those is now either produced or
+# refused by name.
+
+
+def _node_server(root: Path, *, descriptor: str | None) -> Path:
+    server = root / "crystal"
+    server.mkdir(parents=True)
+    (server / "package.json").write_text('{"name": "crystal"}', encoding="utf-8")
+    (server / "package-lock.json").write_text("{}", encoding="utf-8")
+    if descriptor is not None:
+        (server / "clio-server.toml").write_text(descriptor, encoding="utf-8")
+    return server
+
+
+def test_a_node_server_is_a_server(tmp_path: Path) -> None:
+    """It has no pyproject.toml, which is exactly why it used to be invisible."""
+    server = _node_server(tmp_path, descriptor=None)
+
+    assert GENERATOR.is_server_dir(server)
+
+
+def test_a_node_server_is_described_by_its_descriptor(tmp_path: Path) -> None:
+    server = _node_server(
+        tmp_path,
+        descriptor=(
+            'name = "crystal"\nruntime = "node"\nversion = "1.2.0"\n'
+            'entry = "bundle/server.js"\ndescription = "Crystallography tools."\n'
+        ),
+    )
+
+    assert GENERATOR.server_runtime(server) == "node"
+    project = GENERATOR.read_project_metadata(server, "node")
+    assert project["description"] == "Crystallography tools."
+    assert project["version"] == "1.2.0"
+    assert "bundle/server.js" in project["scripts"]
+
+
+def test_a_server_that_cannot_be_described_is_refused_by_name(tmp_path: Path) -> None:
+    """The silent skip this replaced produced no output and no explanation."""
+    server = _node_server(tmp_path, descriptor=None)
+
+    with pytest.raises(ValueError, match="clio-server.toml"):
+        GENERATOR.server_runtime(server)
+
+
+def test_a_described_server_still_needs_a_description(tmp_path: Path) -> None:
+    """It is what a user reads in the marketplace before installing."""
+    server = _node_server(
+        tmp_path,
+        descriptor='name = "crystal"\nruntime = "node"\nentry = "bundle/server.js"\n',
+    )
+
+    with pytest.raises(ValueError, match="needs a description"):
+        GENERATOR.read_project_metadata(server, "node")
+
+
+def test_a_python_servers_descriptor_is_still_generated(tmp_path: Path) -> None:
+    """The non-Python path must not stop Python descriptors being written."""
+    server = tmp_path / "hdf5"
+    server.mkdir()
+    GENERATOR.write_server_descriptor(
+        server,
+        "hdf5",
+        {"scripts": {"hdf5-mcp": ""}},
+        runtime="python",
+        server_version="2.2.3",
+    )
+
+    written = (server / "clio-server.toml").read_text(encoding="utf-8")
+    assert 'runtime = "python"' in written
+    assert 'entry = "hdf5-mcp"' in written
+    assert 'version = "2.2.3"' in written
+
+
+def test_a_non_python_descriptor_is_never_overwritten(tmp_path: Path) -> None:
+    """It is the source, not a derived copy: there is nothing to regenerate from."""
+    original = (
+        'name = "crystal"\nruntime = "node"\nentry = "bundle/server.js"\n'
+        'description = "Crystallography tools."\n'
+    )
+    server = _node_server(tmp_path, descriptor=original)
+
+    GENERATOR.write_server_descriptor(
+        server, "crystal", {}, runtime="node", server_version="9.9.9"
+    )
+
+    assert (server / "clio-server.toml").read_text(encoding="utf-8") == original
+
+
+def _publishing_repository(root: Path, runtime: str, *, publish: bool) -> Path:
+    server = root / "mcp-servers" / "crystal"
+    server.mkdir(parents=True)
+    (root / "src" / "clio_kit").mkdir(parents=True)
+    (root / "pyproject.toml").write_text('[project]\nversion = "1.0.0"\n')
+    (root / "mcp-server-versions.toml").write_text(
+        'schema-version = 1\n[servers]\ncrystal = "1.0.0"\n'
+        f"[mcp-registry-release]\npublish = {json.dumps(['crystal'] if publish else [])}\n"
+        "[classification]\ngeneral = []\n[bundles.clio-science]\n"
+        'version = "1.0.0"\ndescription = "Scientific tools."\nservers = ["crystal"]\n'
+    )
+    (server / "clio-server.toml").write_text(
+        f'name = "crystal"\nruntime = "{runtime}"\nentry = "server"\n'
+        'description = "Crystallography tools."\n'
+    )
+    if runtime == "python":
+        (server / "pyproject.toml").write_text(
+            '[project]\nname = "crystal"\ndescription = "Crystallography tools."\n'
+        )
+    return server
+
+
+@pytest.mark.parametrize("runtime", ["node", "go"])
+def test_marketplace_only_generation_passes_the_ci_log_gate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    runtime: str,
+) -> None:
+    server = _publishing_repository(tmp_path, runtime, publish=False)
+    descriptor = (server / "clio-server.toml").read_bytes()
+    monkeypatch.setattr(GENERATOR, "generate_user_contract_artifacts", lambda root: [])
+
+    GENERATOR.generate_all(str(server.parent))
+
+    log = capsys.readouterr().out
+    workflow = (
+        Path(__file__).resolve().parents[1] / ".github/workflows/publish.yml"
+    ).read_text()
+    gate = re.search(r"if grep -Eq '([^']+)'", workflow)
+    assert gate is not None
+    assert not re.search(gate[1], log, re.M), log
+    marketplace = json.loads((tmp_path / ".claude-plugin/marketplace.json").read_text())
+    entry = next(p for p in marketplace["plugins"] if p["name"] == "clio-crystal")
+    assert entry["description"] == "Crystallography tools."
+    assert (tmp_path / "plugins/clio-crystal/.mcp.json").is_file()
+    assert not (server / "server.json").exists()
+    assert (server / "clio-server.toml").read_bytes() == descriptor
+
+
+@pytest.mark.parametrize("runtime", ["node", "go"])
+def test_registry_selection_refuses_failed_live_metadata_before_writing(
+    tmp_path: Path,
+    runtime: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    server = _publishing_repository(tmp_path, runtime, publish=True)
+    monkeypatch.setattr(GENERATOR, "extract_metadata", lambda server: None)
+
+    with pytest.raises(ValueError, match="live MCP metadata extraction failed"):
+        GENERATOR.generate_all(str(server.parent))
+
+    assert not (tmp_path / "plugins").exists()
+    assert not (tmp_path / ".claude-plugin").exists()
+
+
+def test_python_metadata_failure_still_trips_the_ci_log_gate(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    server = _publishing_repository(tmp_path, "python", publish=False)
+    monkeypatch.setattr(GENERATOR, "generate_user_contract_artifacts", lambda root: [])
+    monkeypatch.setattr(GENERATOR, "extract_metadata", lambda server: None)
+
+    GENERATOR.generate_all(str(server.parent))
+
+    log = capsys.readouterr().out
+    workflow = (
+        Path(__file__).resolve().parents[1] / ".github/workflows/publish.yml"
+    ).read_text()
+    gate = re.search(r"if grep -Eq '([^']+)'", workflow)
+    assert gate is not None
+    assert re.search(gate[1], log, re.M)
+
+
+def test_generation_includes_tasks_without_changing_primary_partition(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    server = _publishing_repository(tmp_path, "node", publish=False)
+    with (tmp_path / "mcp-server-versions.toml").open("a") as stream:
+        for name in ("clio-inspect", "clio-analyze"):
+            stream.write(
+                f'\n[workflows.{name}]\nversion = "1.0.0"\n'
+                'description = "A task using an existing server."\n'
+                'dependencies = ["clio-crystal"]\n'
+            )
+    monkeypatch.setattr(GENERATOR, "generate_user_contract_artifacts", lambda root: [])
+    GENERATOR.generate_all(str(server.parent))
+    marketplace = json.loads((tmp_path / ".claude-plugin/marketplace.json").read_text())
+    entries = {entry["name"]: entry for entry in marketplace["plugins"]}
+    for name in ("clio-inspect", "clio-analyze"):
+        assert entries[name]["category"] == "workflow"
+        manifest = json.loads(
+            (tmp_path / "plugins" / name / ".claude-plugin/plugin.json").read_text()
+        )
+        assert manifest["dependencies"] == ["clio-crystal"]
+    GENERATOR.assert_bundles_partition_servers(
+        GENERATOR.read_bundles(tmp_path), {"crystal"}
+    )
+
+
+def test_full_generator_discovers_standalone_hook_package(tmp_path, monkeypatch):
+    server = _publishing_repository(tmp_path, "node", publish=False)
+    folder = tmp_path / "hooks/lab-notice"
+    (folder / ".claude-plugin").mkdir(parents=True)
+    manifest = folder / ".claude-plugin/plugin.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "name": "lab-notice",
+                "version": "1.0.0",
+                "description": "Lab session context.",
+                "hooks": {
+                    "SessionStart": [
+                        {"hooks": [{"type": "command", "command": "echo lab"}]}
+                    ]
+                },
+            }
+        )
+    )
+    original = manifest.read_bytes()
+    monkeypatch.setattr(GENERATOR, "generate_user_contract_artifacts", lambda root: [])
+    GENERATOR.generate_all(str(server.parent))
+    marketplace = json.loads((tmp_path / ".claude-plugin/marketplace.json").read_text())
+    assert (
+        next(e for e in marketplace["plugins"] if e["name"] == "lab-notice")["source"]
+        == "./hooks/lab-notice"
+    )
+    assert manifest.read_bytes() == original

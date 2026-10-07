@@ -14,6 +14,7 @@ brand-new over-cap entry and have the guard bless it.
 from __future__ import annotations
 
 import importlib.util
+import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -59,6 +60,52 @@ def test_no_changes_is_clean() -> None:
     base = {"pkg/a.py": 1000}
     head = {"pkg/a.py": 1000}
     assert diff_baselines(base, head, cap=800) == []
+
+
+@pytest.mark.parametrize("size,failed", [(900, False), (1000, False), (1001, True)])
+def test_git_rename_preserves_limit_and_still_rejects_growth(
+    tmp_path, monkeypatch, size, failed
+):
+    monkeypatch.chdir(tmp_path)
+
+    def git(*args):
+        return subprocess.run(
+            ["git", *args], check=True, capture_output=True, text=True
+        )
+
+    git("init", "-q")
+    original = tmp_path / "old.py"
+    original.write_text("".join(f"# line {i}\n" for i in range(1000)))
+    git("add", "old.py")
+    git(
+        "-c",
+        "user.name=Test",
+        "-c",
+        "user.email=test@example.invalid",
+        "commit",
+        "-qm",
+        "base",
+    )
+    original.rename(tmp_path / "new.py")
+    (tmp_path / "new.py").write_text("".join(f"# line {i}\n" for i in range(size)))
+    git("add", "-A")
+    renames = _GUARD.git_renames("HEAD")
+    assert renames == {"new.py": "old.py"}
+    violations = diff_baselines(
+        {"old.py": 1000}, {"new.py": size}, cap=800, renames=renames
+    )
+    assert bool(violations) is failed
+    if failed:
+        assert violations == [BaselineViolation("new.py", "increased", 1000, size)]
+
+
+def test_copy_cannot_inherit_limit_from_existing_baseline_path():
+    assert diff_baselines(
+        {"old.py": 1000},
+        {"old.py": 1000, "new.py": 1000},
+        cap=800,
+        renames={"new.py": "old.py"},
+    ) == [BaselineViolation("new.py", "new_over_cap", None, 1000)]
 
 
 def test_increased_entry_is_a_violation() -> None:

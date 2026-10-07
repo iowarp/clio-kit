@@ -13,7 +13,6 @@ import json
 import os
 import shutil
 import subprocess
-import tempfile
 import threading
 import time
 from collections import deque
@@ -21,6 +20,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, BinaryIO, Final, Sequence, cast
+
+from .contract_storage import write_atomic as _write_atomic
 
 JSON = dict[str, Any]
 
@@ -147,13 +148,21 @@ USER_CONTRACT_SPECS: Final = (
         ),
     ),
     UserContractSpec(
-        contract_id="clio-kit-spack-user-v2.1",
-        artifact_name="spack-user-v2.1.json",
+        contract_id="clio-kit-spack-user-v2.3",
+        artifact_name="spack-user-v2.3.json",
         server_name="spack",
         distribution_name="spack-mcp",
         entry_command="spack-mcp",
         profile_environment="SPACK_MCP_PROFILE",
-        expected_tools=frozenset({"spack_find", "spack_install", "spack_locate"}),
+        expected_tools=frozenset(
+            {
+                "spack_find",
+                "spack_install",
+                "spack_locate",
+                "spack_search",
+                "spack_info",
+            }
+        ),
     ),
     UserContractSpec(
         contract_id="clio-kit-scientific-catalog-user-v1.1",
@@ -182,6 +191,8 @@ HISTORICAL_USER_CONTRACT_ARTIFACTS: Final = (
     "jarvis-user-v3.7.1.json",
     "scientific-catalog-user-v1.json",
     "spack-user-v2.json",
+    "spack-user-v2.1.json",
+    "spack-user-v2.2.json",
 )
 
 
@@ -257,9 +268,9 @@ def probe_user_contract(
     timeout_seconds: float = 180.0,
 ) -> JSON:
     """Capture one locked server's actual user ``tools/list`` stdio response."""
-    server_directory = (
-        repository_root / "clio-kit-mcp-servers" / spec.server_name
-    ).resolve(strict=True)
+    server_directory = (repository_root / "mcp-servers" / spec.server_name).resolve(
+        strict=True
+    )
     uv = shutil.which("uv")
     if uv is None:
         raise ContractGenerationError("uv is required to probe MCP user contracts")
@@ -864,24 +875,6 @@ def _formatted_json_bytes(value: object) -> bytes:
         ).encode("utf-8")
     except (TypeError, ValueError) as exc:
         raise ContractGenerationError("MCP contract contains non-JSON data") from exc
-
-
-def _write_atomic(path: Path, payload: bytes) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        dir=path.parent,
-        prefix=f".{path.name}.",
-        suffix=".tmp",
-    )
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(descriptor, "wb") as stream:
-            stream.write(payload)
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
 
 
 def _contract_data_directory() -> Path:
