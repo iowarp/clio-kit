@@ -38,6 +38,11 @@ CASES = [
         facts=(r"(?i)parquet", r"(?i)chunk", r"(?i)timestep|time.step"),
     ),
     case(
+        "hdf5",
+        "I need HDF5 2.x built from source with MPI parallel I/O. Give the configure and build commands, and say how to confirm parallel support is enabled.",
+        facts=(r"(?i)cmake", r"HDF5_ENABLE_PARALLEL"),
+    ),
+    case(
         "results-summary",
         "Use runs.csv to calculate mean runtime by machine and create runtime.png plotting runtime versus size. Explain duplicate runs and missing values, and preserve the source.",
         servers=("pandas", "plot"),

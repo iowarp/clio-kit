@@ -5874,6 +5874,43 @@
       "summary": "Validate GeoJSON, query spatial relationships, map features and analyze terrain grids."
     },
     {
+      "id": "skill/hdf5",
+      "kind": "skill",
+      "name": "hdf5",
+      "title": "HDF5",
+      "description": "Use when working with HDF5 or formats built on it (netCDF-4, NeXus, NWB, .h5ad) on conventions, h5py, chunking, cloud access, parallel I/O or clio-core ingest. Triggers on \"NeXus file\", \"h5py\", \"chunk cache\", \"ROS3\", \"SWMR\", \"parallel HDF5\", \"virtual dataset\". Not for choosing between file formats; use storage-format.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "2.2.6",
+      "category": "Scientific data",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "plugins/clio-hdf5/skills/hdf5/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-hdf5"
+      ],
+      "tags": [
+        "clio-scientific-io"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Identify an HDF5 file's convention and main data, and tune h5py, chunking, cloud and parallel access."
+    },
+    {
       "id": "skill/io-performance",
       "kind": "skill",
       "name": "io-performance",
@@ -6684,6 +6721,7 @@
         "mcp/compression",
         "mcp/hdf5",
         "mcp/parquet",
+        "skill/hdf5",
         "skill/dataset-explore",
         "skill/large-data-read",
         "skill/storage-format"

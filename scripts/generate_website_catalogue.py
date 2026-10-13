@@ -55,6 +55,7 @@ WORKFLOWS = {
 }
 # Public one-line summaries where the agent-facing description reads as trigger
 # text. Keyed by skill or package name; adapted skills share their upstream name.
+# A catalogue id (`skill/hdf5`) wins over a name two items share.
 SUMMARIES = {
     "bibliography": "Assemble verified citations, BibTeX records and research reading lists.",
     "chart-select": "Choose a chart type, axes, bins and color scale that suit scientific data.",
@@ -65,6 +66,7 @@ SUMMARIES = {
     "dataset-report": "Turn a small numeric HDF5 dataset into a report with a CSV, statistics and a figure.",
     "dataset-stage": "Find dataset metadata and download a supported resource to a verified local path.",
     "geospatial-map": "Validate GeoJSON, query spatial relationships, map features and analyze terrain grids.",
+    "skill/hdf5": "Identify an HDF5 file's convention and main data, and tune h5py, chunking, cloud and parallel access.",
     "io-performance": "Interpret bandwidth, IOPS, request sizes and MPI-IO counters from existing measurements.",
     "job-diagnose": "Investigate I/O bottlenecks from a real Darshan profile and the application's logs.",
     "large-data-read": "Plan bounded reads of large data and tell sampled summaries apart from exact statistics.",
@@ -125,8 +127,10 @@ CATEGORY_ALIASES = {
 }
 
 
-def public_summary(name: str, description: str) -> str:
+def public_summary(name: str, description: str, item_id: str = "") -> str:
     """One plain sentence for people; the description stays tuned for agents."""
+    if item_id in SUMMARIES:
+        return SUMMARIES[item_id]
     if name.removeprefix("clio-kit-") in SUMMARIES:
         return SUMMARIES[name.removeprefix("clio-kit-")]
     text = re.sub(r"^Use when this workflow is requested:\s*", "", description.strip())
@@ -622,7 +626,9 @@ def generate(root: Path) -> dict:
         record["tags"] = list(
             dict.fromkeys(t.lower().replace(" ", "-") for t in record["tags"])
         )
-        record["summary"] = public_summary(record["name"], record["description"])
+        record["summary"] = public_summary(
+            record["name"], record["description"], record["id"]
+        )
     for record in records:
         if record["installation"] == "launcher":
             settings = {"command": "clio-kit", "args": ["mcp-server", record["name"]]}
