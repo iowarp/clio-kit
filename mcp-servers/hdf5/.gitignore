@@ -86,3 +86,6 @@ test_*.py
 # Allow test files in tests/ directory
 !tests/test_*.py
 !tests/*_test.py
+
+# Convention fixtures are real files written by each library
+!tests/fixtures/conventions/*

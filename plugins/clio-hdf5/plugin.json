@@ -1,0 +1,27 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "clio-hdf5",
+  "version": "2.2.6",
+  "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks.",
+  "author": {
+    "name": "IoWarp Team - Gnosis Research Center",
+    "email": "grc@illinoistech.edu",
+    "url": "https://github.com/iowarp/clio-kit"
+  },
+  "homepage": "https://github.com/iowarp/clio-kit",
+  "repository": "https://github.com/iowarp/clio-kit",
+  "license": "BSD-3-Clause",
+  "keywords": ["hdf5", "netcdf", "nexus", "scientific-data"],
+  "extensions": {
+    "ai.iowarp.clio": {
+      "structured_files": [
+        {
+          "provider": "hdf5_mcp.provider:HDF5Provider",
+          "viewer": "./ai.iowarp.clio/viewer/index.html",
+          "data_routes": "hdf5_mcp.provider.routes:router",
+          "conventions": "./ai.iowarp.clio/conventions/*.yaml"
+        }
+      ]
+    }
+  }
+}

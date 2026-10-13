@@ -1,0 +1,15 @@
+# openPMD: particle-in-cell, plasma and accelerator simulations.
+# Verified against a file written by openPMD-api 0.17.1. The root `basePath`
+# is a template (/data/%T/) with one group per iteration, and with
+# file-based iteration encoding each file holds one iteration.
+id: openpmd
+container: hdf5
+version_hint: attr:/@openPMD
+detect:
+  - attr: /@openPMD
+  - attr: /@basePath
+locate_primary:
+  - path: /data
+schema:
+  kind: openpmd-standard
+  source: https://github.com/openPMD/openPMD-standard

@@ -1,0 +1,10 @@
+# pandas HDFStore, layered on PyTables. Each group carrying `pandas_type`
+# is one DataFrame or Series. A store also matches pytables.
+# Verified against a file written by pandas with PyTables 3.11.1.
+id: pandas
+container: hdf5
+extends: pytables
+detect:
+  - attr: pandas_type
+locate_primary:
+  - find: {attr: pandas_type}

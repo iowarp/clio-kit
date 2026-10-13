@@ -240,6 +240,35 @@ def create_router(
     return router
 
 
+RESOLVER_STATE_KEY = "clio_file_resolver"
+"""The `app.state` attribute `router` reads its `FileResolver` from."""
+
+
+def app_state_resolver(file: str, request: Request) -> Path | Awaitable[Path]:
+    """Delegate to the resolver the host application put on `app.state`.
+
+    Until the host sets one, every request fails with 503 rather than
+    falling back to some directory.
+    """
+    resolve = getattr(request.app.state, RESOLVER_STATE_KEY, None)
+    if resolve is None:
+        raise DataRouteError(503, "No file resolver is configured for this route")
+    return resolve(file, request)
+
+
+router = create_router(app_state_resolver)
+"""The plugin's `data_routes` entry (`hdf5_mcp.provider.routes:router`).
+
+The RFC's manifest names a router object, but only the host knows how a file
+id maps to a path and who may read it, so the host supplies that at startup::
+
+    app.state.clio_file_resolver = resolve  # a FileResolver
+    app.include_router(router, prefix=...)
+
+Hosts that can call a factory should prefer `create_router(resolve)`.
+"""
+
+
 @contextmanager
 def _open(file: Path) -> Iterator[h5py.File]:
     try:

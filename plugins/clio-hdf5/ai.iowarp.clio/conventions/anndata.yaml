@@ -1,0 +1,14 @@
+# AnnData (.h5ad): single-cell genomics.
+# Verified against a file written by anndata 0.13.4. The primary data is the
+# matrix X; obs and var are the row and column annotation tables.
+id: anndata
+container: hdf5
+version_hint: attr:/@encoding-version
+detect:
+  - attr: /@encoding-type
+    equals: anndata
+locate_primary:
+  - path: /X
+schema:
+  kind: anndata-on-disk
+  source: https://anndata.readthedocs.io/en/stable/fileformat-prose.html
