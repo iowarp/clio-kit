@@ -13,6 +13,7 @@ from fastmcp.prompts import Message
 from pydantic import BaseModel, Field
 from typing_extensions import NotRequired, TypedDict
 
+from ndp_mcp.http_budget import _request_budget_s, budgeted_request
 from ndp_mcp.staging_utils import _clean_max_bytes, _parse_resource_size_bytes, _safe_filename
 
 # Environment setup
@@ -244,54 +245,36 @@ class StageResourceResult(TypedDict):
 
 
 class NDPClient:
-    """Client for interacting with NDP API with retry logic and error handling."""
+    """Client for the NDP API: one bounded request budget, typed failures."""
 
     def __init__(self, base_url: str | None = None):
         # NDP_API_URL overrides the default public NDP endpoint.
         base_url = base_url or os.getenv("NDP_API_URL") or "http://155.101.6.191:8003"
         self.base_url = base_url.rstrip("/")
-        self.timeout = httpx.Timeout(30.0)
+        # Every attempt draws on one total budget, so the tool fails with a typed
+        # error well inside a caller's own ceiling (clio-agent's is 180 s) instead
+        # of silently retrying past it (#351).
+        self.request_budget_s = _request_budget_s()
         self.max_retries = 3
         self.retry_delay = 1.0
 
-    async def _make_request(  # type: ignore[return]
+    async def _make_request(
         self,
         method: str,
         endpoint: str,
         params: dict[str, Any] | None = None,
         json_data: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Make HTTP request with retry logic."""
-        url = f"{self.base_url}{endpoint}"
-
-        for attempt in range(self.max_retries):
-            try:
-                async with httpx.AsyncClient(timeout=self.timeout) as client:
-                    if method.upper() == "GET":
-                        response = await client.get(url, params=params)
-                    elif method.upper() == "POST":
-                        response = await client.post(url, params=params, json=json_data)
-                    else:
-                        raise ValueError(f"Unsupported HTTP method: {method}")
-
-                    response.raise_for_status()
-                    return response.json()  # type: ignore[no-any-return]
-
-            except httpx.TimeoutException:
-                if attempt < self.max_retries - 1:
-                    await asyncio.sleep(self.retry_delay * (2**attempt))
-                    continue
-                raise Exception(f"Request timed out after {self.max_retries} attempts") from None
-            except httpx.HTTPStatusError as e:
-                if e.response.status_code >= 500 and attempt < self.max_retries - 1:
-                    await asyncio.sleep(self.retry_delay * (2**attempt))
-                    continue
-                raise Exception(f"HTTP {e.response.status_code}: {e.response.text}") from e
-            except Exception as e:
-                if attempt < self.max_retries - 1:
-                    await asyncio.sleep(self.retry_delay * (2**attempt))
-                    continue
-                raise Exception(f"Request failed: {str(e)}") from e
+        """One NDP request inside ``request_budget_s`` (see :func:`budgeted_request`)."""
+        return await budgeted_request(
+            method,
+            f"{self.base_url}{endpoint}",
+            params,
+            json_data,
+            budget_s=self.request_budget_s,
+            max_retries=self.max_retries,
+            retry_delay=self.retry_delay,
+        )
 
     async def list_organizations(
         self, name_filter: str | None = None, server: str = "global"
