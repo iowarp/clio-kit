@@ -119,6 +119,7 @@ class TimeseriesPlotResult(TypedDict):
     y_columns: list[str]
     title: str
     data_points: int
+    truncated: bool
 
 
 class DataInfoResult(TypedDict):
@@ -431,14 +432,16 @@ async def plot_timeseries(
             comma-separated string (each column must exist in the dataset)
         output_path: Absolute path where the plot image will be saved (supports PNG, PDF, SVG)
         title: Custom title for the plot (defaults to the file name)
-        max_rows: Maximum number of leading rows to read and plot
+        max_rows: Maximum number of leading rows to read and plot; rows past
+            it are never parsed, so the cap also bounds the cost on large files
 
     Returns:
         A result carrying both a rendered PNG preview (bounded to ~800px
         wide) and a structured dict: status, plot_type, output_path (the
         full-resolution file on disk), x_column, the inferred x_axis (kind,
-        label, parse_success_ratio), the resolved y_columns, title, and
-        data_points.
+        label, parse_success_ratio), the resolved y_columns, title,
+        data_points, and truncated (true when the file has more rows than
+        max_rows, so the plot covers only its first max_rows rows).
     """
     logger.info(f"Creating timeseries plot from {data_path}")
     result = create_timeseries_plot(
