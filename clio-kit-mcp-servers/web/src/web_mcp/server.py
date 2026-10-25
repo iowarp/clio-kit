@@ -64,14 +64,25 @@ async def fetch(
     ] = None,
     max_bytes: Annotated[
         int | None,
-        Field(description="Override the configured response size cap in bytes."),
+        Field(
+            description=(
+                "Maximum raw bytes for ordinary HTML/text downloads, before extraction. "
+                "This is not an output, character, or token limit; large HTML can yield short text. "
+                "Omit to use the configured download cap. Extracted results are paged separately "
+                "by the client. Documents/binary downloads use a separate configured cap. "
+                "to_file does not change download caps."
+            )
+        ),
     ] = None,
     timeout: Annotated[
         float | None,
         Field(description="Override the configured per-request read timeout in seconds."),
     ] = None,
 ) -> dict[str, Any]:
-    """Fetch a URL or DOI as a queryable, cancellable MCP task."""
+    """Fetch a URL or DOI as a queryable, cancellable MCP task.
+
+    max_bytes limits the raw download before extraction, independently of result paging.
+    """
 
     return await fetch_target(
         settings,

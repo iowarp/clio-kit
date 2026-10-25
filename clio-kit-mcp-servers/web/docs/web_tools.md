@@ -17,6 +17,21 @@ policy. Empty HTML extraction reports
 `js_render_required_browser_unavailable`; unsupported binary content reports
 `binary_content_not_inlined` unless `to_file=True`.
 
+`max_bytes` limits **raw HTTP response bytes during download, before extraction**.
+It is not a limit on returned Markdown, characters, tokens or a result page. A
+large HTML page can yield a short extract. Omit it to use the configured download
+cap (5 MiB by default for ordinary HTTP resources); supported convertible documents
+use a separate configured document-download cap, independent of this override.
+`to_file` changes where content is delivered, not these download caps.
+When the download exceeds the cap, extraction has not completed. Choose a narrower
+source or intentionally increase the download cap rather than treating the error
+as evidence that the website is unavailable.
+
+Client result projection is independent. CLIO's bounded tool-result preview can
+return a durable result reference and continuation cursor; collect its pages to
+inspect the complete extracted source. A result cursor cannot continue a download
+that failed its byte cap, and raising `max_bytes` does not enlarge a result page.
+
 ## `fetch_events`
 
 `fetch_events(conversion_id, after_sequence=0, limit=100)` retrieves a cursor
