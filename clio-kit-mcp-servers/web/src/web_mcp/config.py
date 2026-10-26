@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +15,7 @@ class Settings(BaseSettings):
 
     search_provider: Literal["ddg", "searxng", "brave", "tavily"] = "ddg"
     searxng_base_url: str | None = None
+    searxng_default_engines: list[str] = Field(default_factory=list)
     document_service_url: str | None = None
     remote_url: str | None = None
     remote_token: str | None = None

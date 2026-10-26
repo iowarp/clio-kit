@@ -43,6 +43,10 @@ an actionable remediation without exposing raw third-party exception text.
 `search(query, count=5)` remains synchronous because ordinary web search is a
 bounded request-response operation. SearXNG installations additionally expose
 `category`, `engines`, `language`, `time_range`, `pageno`, and `safesearch`.
+Set `WEB_SEARXNG_DEFAULT_ENGINES` to a JSON array such as `["arxiv", "crossref"]`
+to choose the engines used when a call supplies neither `engines` nor `category`.
+Explicit call selectors take precedence; without installation defaults the
+SearXNG deployment retains its own defaults. This setting only affects SearXNG.
 There is intentionally no `deep_search` tool: multi-step research is agent
 semantics, not a backend tool semantic.
 

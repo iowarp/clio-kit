@@ -57,6 +57,9 @@ async def search_searxng_provider(
     if not text:
         raise ToolError("A non-empty query is required.")
     effective_count = min(count if count and count > 0 else 5, _MAX_SEARCH_COUNT)
+    selected_engines = engines
+    if engines is None and category is None:
+        selected_engines = configured.searxng_default_engines
     results, engines_answered, unresponsive_engines = await search_searxng(
         text,
         effective_count,
@@ -64,7 +67,7 @@ async def search_searxng_provider(
         connect_timeout_s=configured.connect_timeout_s,
         read_timeout_s=configured.read_timeout_s,
         category=category,
-        engines=engines,
+        engines=selected_engines,
         language=language,
         time_range=time_range,
         pageno=pageno,
