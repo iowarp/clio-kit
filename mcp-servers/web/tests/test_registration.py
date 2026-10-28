@@ -58,6 +58,6 @@ async def test_server_info_and_remote_prerequisite_are_stated() -> None:
     """serverInfo carries the release version; remote-only features say so."""
     async with Client(mcp) as client:
         tools = {tool.name: tool for tool in await client.list_tools()}
-        assert client.server_info.version == "2.1.3"
+        assert client.server_info.version == "2.1.4"
     assert "--remote-url" in (tools["fetch"].description or "")
     assert "--remote-url" in (tools["fetch_events"].description or "")

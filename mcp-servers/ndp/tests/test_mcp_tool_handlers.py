@@ -540,4 +540,4 @@ class TestReleaseRegressions:
         from fastmcp import Client
 
         async with Client(server.mcp) as client:
-            assert client.server_info.version == "2.2.5"
+            assert client.server_info.version == "2.2.6"

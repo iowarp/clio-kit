@@ -108,6 +108,6 @@ async def test_missing_darshan_parser_is_named_by_every_tool(tmp_path):
 async def test_server_info_version_and_glob_description():
     async with Client(mcp) as client:
         tools = {tool.name: tool for tool in await client.list_tools()}
-        assert client.server_info.version == "2.2.5"
+        assert client.server_info.version == "2.2.6"
     schema = tools["analyze_file_access_patterns"].inputSchema
     assert "glob" in schema["properties"]["file_pattern"]["description"]

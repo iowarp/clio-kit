@@ -95,4 +95,4 @@ async def test_download_tools_are_not_read_only_and_version_is_release():
     for name in ("download_paper_pdf", "download_multiple_pdfs"):
         assert tools[name].annotations.readOnlyHint is False
     assert tools["get_pdf_url"].annotations.readOnlyHint is True
-    assert version == "2.2.5"
+    assert version == "2.2.6"

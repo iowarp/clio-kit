@@ -47,7 +47,7 @@ def test_server_version_matches_release():
     async def exercise(client):
         return client.server_info.version
 
-    assert run(None, exercise) == "2.2.6"
+    assert run(None, exercise) == "2.2.7"
 
 
 def test_prompts_render(source):

@@ -80,4 +80,4 @@ async def test_retrieve_returns_an_absolute_path(tmp_path, monkeypatch):
 @pytest.mark.asyncio
 async def test_server_info_reports_release_version():
     async with Client(server.mcp) as mcp_client:
-        assert mcp_client.server_info.version == "2.0.3"
+        assert mcp_client.server_info.version == "2.0.4"
