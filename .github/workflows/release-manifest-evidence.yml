@@ -36,7 +36,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          export UV_NO_SYNC=1
           uv run --frozen python scripts/generate_server_json.py mcp-servers | tee "$RUNNER_TEMP/generation.log"
           if grep -Eq 'Warning:|Skipped server\.json|^Failed:' "$RUNNER_TEMP/generation.log"; then
             exit 1
