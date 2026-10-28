@@ -1,7 +1,7 @@
 {
   "name": "clio-plot",
   "description": "Draw line, bar, scatter, histogram, heatmap and time-series plots from tabular data.",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

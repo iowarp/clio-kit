@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/lmod-mcp",
   "title": "CLIO Lmod",
   "description": "List, search and inspect Lmod environment modules, and save or restore module collections.",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.11.0",
+      "version": "2.11.1",
       "transport": {
         "type": "stdio"
       },

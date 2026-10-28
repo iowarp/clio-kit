@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="💻"
   category="Analysis & Visualization"
   description="Report CPU, memory, disk, network, GPU and process information for local or remote nodes."
-  version="2.3.0"
+  version="2.3.1"
   actions={["get_cpu_info", "get_memory_info", "get_system_info", "get_disk_info", "get_network_info", "get_gpu_info", "get_sensor_info", "get_process_info", "get_performance_info", "get_remote_node_info", "health_check"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["hardware-monitoring", "system-analysis", "performance-metrics", "node-information", "ssh-monitoring", "remote-hardware", "mcp", "llm-integration", "infrastructure-monitoring", "distributed-systems"]}

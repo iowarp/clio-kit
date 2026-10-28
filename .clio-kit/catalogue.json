@@ -6,7 +6,7 @@
       "name": "clio-adios",
       "source": "./plugins/clio-adios",
       "description": "Fetch and analyze BP5 data files using ADIOS2. Access scientific data, metadata, and attributes for research and analysis purposes.",
-      "version": "2.2.5",
+      "version": "2.2.6",
       "category": "scientific",
       "keywords": [
         "scientific-computing",
@@ -22,7 +22,7 @@
       "name": "clio-arxiv",
       "source": "./plugins/clio-arxiv",
       "description": "Search arXiv by topic, author, title or date, read paper details, and export BibTeX or PDFs.",
-      "version": "2.2.5",
+      "version": "2.2.6",
       "category": "scientific",
       "keywords": [
         "research",
@@ -37,7 +37,7 @@
       "name": "clio-chronolog",
       "source": "./plugins/clio-chronolog",
       "description": "Record and retrieve agent interactions in a ChronoLog log store.",
-      "version": "2.0.3",
+      "version": "2.0.4",
       "category": "scientific",
       "keywords": [
         "logging",
@@ -52,7 +52,7 @@
       "name": "clio-compression",
       "source": "./plugins/clio-compression",
       "description": "Compress and decompress files with gzip and report the compression ratio.",
-      "version": "2.2.5",
+      "version": "2.2.6",
       "category": "general",
       "keywords": [
         "compression",
@@ -67,7 +67,7 @@
       "name": "clio-darshan",
       "source": "./plugins/clio-darshan",
       "description": "Darshan I/O profiler MCP server for analyzing I/O trace files",
-      "version": "2.2.5",
+      "version": "2.2.6",
       "category": "scientific",
       "keywords": [
         "io-profiling",
@@ -82,7 +82,7 @@
       "name": "clio-geo",
       "source": "./plugins/clio-geo",
       "description": "MCP server for rendering GeoJSON vector layers into map images with basemaps",
-      "version": "2.3.1",
+      "version": "2.3.2",
       "category": "scientific",
       "keywords": [
         "geospatial",
@@ -97,7 +97,7 @@
       "name": "clio-hdf5",
       "source": "./plugins/clio-hdf5",
       "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks.",
-      "version": "2.2.6",
+      "version": "2.2.7",
       "category": "scientific",
       "keywords": [
         "scientific-computing",
@@ -112,7 +112,7 @@
       "name": "clio-jarvis",
       "source": "./plugins/clio-jarvis",
       "description": "JARVIS-CD MCP with a compact user pipeline contract and explicit admin compatibility profiles",
-      "version": "3.7.4",
+      "version": "3.7.5",
       "category": "scientific",
       "keywords": [
         "pipeline-management",
@@ -126,7 +126,7 @@
       "name": "clio-lmod",
       "source": "./plugins/clio-lmod",
       "description": "List, search and inspect Lmod environment modules, and save or restore module collections.",
-      "version": "3.0.1",
+      "version": "3.0.2",
       "category": "scientific",
       "keywords": [
         "environment-modules",
@@ -141,7 +141,7 @@
       "name": "clio-ndp",
       "source": "./plugins/clio-ndp",
       "description": "National Data Platform (NDP) MCP server for searching and discovering datasets across multiple CKAN instances",
-      "version": "2.2.5",
+      "version": "2.2.6",
       "category": "scientific",
       "keywords": [
         "datasets",
@@ -156,7 +156,7 @@
       "name": "clio-node-hardware",
       "source": "./plugins/clio-node-hardware",
       "description": "Report CPU, memory, disk, network, GPU and process information for local or remote nodes.",
-      "version": "2.3.0",
+      "version": "2.3.1",
       "category": "scientific",
       "keywords": [
         "hardware-monitoring",
@@ -170,7 +170,7 @@
       "name": "clio-pandas",
       "source": "./plugins/clio-pandas",
       "description": "Load tabular data, then clean, filter, group, merge and summarize it with pandas.",
-      "version": "2.3.0",
+      "version": "2.3.1",
       "category": "scientific",
       "keywords": [
         "data-analysis",
@@ -185,7 +185,7 @@
       "name": "clio-parallel-sort",
       "source": "./plugins/clio-parallel-sort",
       "description": "Sort, filter and summarize large log files by timestamp, level or keyword.",
-      "version": "2.3.0",
+      "version": "2.3.1",
       "category": "scientific",
       "keywords": [
         "log-processing",
@@ -200,7 +200,7 @@
       "name": "clio-paraview",
       "source": "./plugins/clio-paraview",
       "description": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
-      "version": "2.2.5",
+      "version": "2.2.6",
       "category": "scientific",
       "keywords": [
         "scientific-visualization",
@@ -215,7 +215,7 @@
       "name": "clio-parquet",
       "source": "./plugins/clio-parquet",
       "description": "Summarize Parquet files, preview columns, read row slices and aggregate values.",
-      "version": "2.2.5",
+      "version": "2.2.6",
       "category": "scientific",
       "keywords": [
         "parquet",
@@ -230,7 +230,7 @@
       "name": "clio-plot",
       "source": "./plugins/clio-plot",
       "description": "Draw line, bar, scatter, histogram, heatmap and time-series plots from tabular data.",
-      "version": "2.2.5",
+      "version": "2.2.6",
       "category": "scientific",
       "keywords": [
         "data-visualization",
@@ -245,7 +245,7 @@
       "name": "clio-scientific-catalog",
       "source": "./plugins/clio-scientific-catalog",
       "description": "Operator-owned scientific dataset discovery for remote agents",
-      "version": "1.1.4",
+      "version": "1.1.5",
       "category": "scientific",
       "keywords": [
         "dataset-catalog",
@@ -259,7 +259,7 @@
       "name": "clio-seismology",
       "source": "./plugins/clio-seismology",
       "description": "MCP server for analyzing SAC seismic-waveform files and TAR archives: inspect members, compute per-trace statistics, and plot traces",
-      "version": "2.3.1",
+      "version": "2.3.2",
       "category": "scientific",
       "keywords": [
         "seismology",
@@ -275,7 +275,7 @@
       "name": "clio-slurm",
       "source": "./plugins/clio-slurm",
       "description": "Submit, list, inspect and cancel Slurm jobs, and describe the cluster.",
-      "version": "3.0.2",
+      "version": "3.0.3",
       "category": "scientific",
       "keywords": [
         "hpc",
@@ -290,7 +290,7 @@
       "name": "clio-spack",
       "source": "./plugins/clio-spack",
       "description": "Structured Spack discovery and installation tools for scientific agents",
-      "version": "2.3.1",
+      "version": "2.3.2",
       "category": "scientific",
       "keywords": [
         "package-management",
@@ -304,7 +304,7 @@
       "name": "clio-terrain",
       "source": "./plugins/clio-terrain",
       "description": "MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding",
-      "version": "2.2.5",
+      "version": "2.2.6",
       "category": "scientific",
       "keywords": [
         "terrain",
@@ -319,7 +319,7 @@
       "name": "clio-web",
       "source": "./plugins/clio-web",
       "description": "Provider-fixed web search plus transparent URL, DOI, and document fetching",
-      "version": "2.1.3",
+      "version": "2.1.4",
       "category": "general",
       "keywords": [
         "web",

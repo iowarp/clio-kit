@@ -1,7 +1,7 @@
 {
   "name": "clio-parquet",
   "description": "Summarize Parquet files, preview columns, read row slices and aggregate values.",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

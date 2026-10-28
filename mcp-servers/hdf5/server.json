@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/hdf5-mcp",
   "title": "CLIO Hdf5",
   "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in...",
-  "version": "2.2.6",
+  "version": "2.2.7",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.11.0",
+      "version": "2.11.1",
       "transport": {
         "type": "stdio"
       },
@@ -35,15 +35,15 @@
     },
     {
       "name": "close_file",
-      "description": "Close the current HDF5 file.\n\nReturns:\n    Status message"
+      "description": "Close the current HDF5 file."
     },
     {
       "name": "get_filename",
-      "description": "Get the current file's path.\n\nReturns:\n    File path"
+      "description": "Get the current file's path."
     },
     {
       "name": "get_mode",
-      "description": "Get the current file's access mode.\n\nReturns:\n    File mode"
+      "description": "Get the current file's access mode."
     },
     {
       "name": "get_by_path",
@@ -127,11 +127,11 @@
     },
     {
       "name": "refresh_hdf5_resources",
-      "description": "Re-scan configured discovery directories; explicit paths can be opened separately.\n\nFastMCP automatically sends notifications/resources/list_changed to clients.\n\nReturns:\n    Summary of refreshed resources"
+      "description": "Re-scan configured discovery directories; explicit paths can be opened separately.\n\nFastMCP automatically sends notifications/resources/list_changed to clients."
     },
     {
       "name": "list_available_hdf5_files",
-      "description": "List discovered HDF5 files; open_file(path) also accepts unlisted explicit paths.\n\nReturns:\n    List of available files with resource URIs"
+      "description": "List discovered HDF5 files; open_file(path) also accepts unlisted explicit paths."
     },
     {
       "name": "export_dataset",

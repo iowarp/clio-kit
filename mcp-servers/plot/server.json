@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/plot-mcp",
   "title": "CLIO Plot",
   "description": "Draw line, bar, scatter, histogram, heatmap and time-series plots from tabular data.",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.11.0",
+      "version": "2.11.1",
       "transport": {
         "type": "stdio"
       },

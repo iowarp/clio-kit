@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="📦"
   category="System Management"
   description="List, search and inspect Lmod environment modules, and save or restore module collections."
-  version="3.0.1"
+  version="3.0.2"
   actions={["module_list", "module_avail", "module_show", "module_spider", "module_save", "module_restore", "module_savelist"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["lmod", "environment-modules", "module-management", "hpc", "scientific-computing", "supercomputing", "cluster-computing", "module-system"]}

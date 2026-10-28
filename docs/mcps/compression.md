@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🗜️"
   category="Utilities"
   description="Compress and decompress files with gzip and report the compression ratio."
-  version="2.2.5"
+  version="2.2.6"
   actions={["compress_file_tool", "decompress_file_tool"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["compression", "gzip", "storage", "archival", "backup", "analytics", "statistics"]}

@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="📈"
   category="Data Processing"
   description="Draw line, bar, scatter, histogram, heatmap and time-series plots from tabular data."
-  version="2.2.5"
+  version="2.2.6"
   actions={["line_plot", "bar_plot", "scatter_plot", "histogram_plot", "heatmap_plot", "plot_timeseries", "data_info"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["MCP", "plotting", "visualization", "analytics", "matplotlib", "seaborn", "data-science"]}
