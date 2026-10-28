@@ -89,6 +89,7 @@ source = { editable = "." }
 dependencies = [
     { name = "duckdb" },
     { name = "fastapi" },
+    { name = "filelock" },
     { name = "tenacity" },
     { name = "uvicorn" },
 ]
@@ -124,6 +125,7 @@ dev = [
 requires-dist = [
     { name = "duckdb", specifier = ">=1.1.0,<2.0.0" },
     { name = "fastapi", specifier = ">=0.139.0,<1.0.0" },
+    { name = "filelock", specifier = ">=4.2.4,<5.0.0" },
     { name = "hnswlib", marker = "extra == 'ann'", specifier = ">=0.8.0" },
     { name = "numpy", marker = "extra == 'ann'", specifier = ">=1.26.0" },
     { name = "opentelemetry-api", marker = "extra == 'telemetry'", specifier = ">=1.20.0" },

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
 import threading
 from pathlib import Path
 
@@ -75,6 +77,34 @@ def test_lock_file_created_on_write(tmp_path: Path) -> None:
         assert lock_path.exists()
     finally:
         storage.teardown()
+
+
+def test_write_lock_excludes_another_process_and_releases_it(tmp_path: Path) -> None:
+    """The native fence must work even where fcntl is unavailable."""
+    storage = DuckDBStorage(tmp_path / "exclusive.duckdb")
+    lock_path = tmp_path / "exclusive.lock"
+    code = """import sys
+from filelock import FileLock, Timeout
+try:
+    with FileLock(sys.argv[1], timeout=0.1, preserve_lock_file=True):
+        print('acquired')
+except Timeout:
+    print('blocked')
+"""
+
+    def probe() -> str:
+        result = subprocess.run(
+            [sys.executable, "-c", code, str(lock_path)],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=15,
+        )
+        return result.stdout.strip()
+
+    with storage._write_lock():
+        assert probe() == "blocked"
+    assert probe() == "acquired"
 
 
 def test_lexical_postings_query_orders_by_overlap(tmp_path: Path) -> None:

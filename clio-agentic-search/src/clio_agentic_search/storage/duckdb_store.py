@@ -11,13 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import duckdb
-
-try:
-    import fcntl
-
-    _HAS_FCNTL = True
-except ImportError:
-    _HAS_FCNTL = False
+from filelock import FileLock
 
 from clio_agentic_search.indexing.scientific import decode_measurements
 from clio_agentic_search.indexing.text_features import tokenize
@@ -39,17 +33,9 @@ class DuckDBStorage:
 
     @contextlib.contextmanager
     def _write_lock(self) -> Iterator[None]:
-        if not _HAS_FCNTL:
-            yield
-            return
         lock_path = self._database_path.with_suffix(".lock")
-        lock_file = lock_path.open("w")
-        try:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        with FileLock(str(lock_path), preserve_lock_file=True):
             yield
-        finally:
-            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
-            lock_file.close()
 
     def connect(self) -> None:
         with self._connection_lock:
