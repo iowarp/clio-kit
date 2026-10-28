@@ -510,6 +510,10 @@ def color_by(field: str, component: int = -1) -> str:
 
 @mcp.tool(
     title="Compute Surface Area",
+    description=(
+        "Compute the surface area of the active dataset (must be a surface mesh).\n\n"
+        "Returns:\n    Status message with area value."
+    ),
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,
@@ -579,6 +583,10 @@ def set_representation_type(rep_type: str) -> str:
 
 @mcp.tool(
     title="Get Pipeline",
+    description=(
+        "Get the current visualization pipeline structure.\n\n"
+        "Returns:\n    Description of the current pipeline."
+    ),
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,
@@ -600,6 +608,10 @@ def get_pipeline() -> str:
 
 @mcp.tool(
     title="List Arrays",
+    description=(
+        "List available data arrays in the active source.\n\n"
+        "Returns:\n    List of available arrays."
+    ),
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,
@@ -848,6 +860,9 @@ def rotate_camera(azimuth: float = 30.0, elevation: float = 0.0) -> str:
 
 @mcp.tool(
     title="Reset Camera",
+    description=(
+        "Reset the camera to show all data in the viewport.\n\nReturns:\n    Status message."
+    ),
     annotations={
         "readOnlyHint": False,
         "destructiveHint": False,
@@ -947,6 +962,10 @@ def warp_by_vector(
 
 @mcp.tool(
     title="List Commands",
+    description=(
+        "List all available commands in this ParaView MCP server.\n\n"
+        "Returns:\n    List of available commands."
+    ),
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,

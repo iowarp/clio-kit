@@ -266,6 +266,7 @@ async def open_file(path: str, mode: str = "r") -> str:
 
 @mcp.tool(
     title="Close File",
+    description="Close the current HDF5 file.\n\nReturns:\n    Status message",
     tags={"file", "core"},
     annotations={
         "title": "Close HDF5 File",
@@ -295,6 +296,7 @@ async def close_file() -> str:
 
 @mcp.tool(
     title="Get Filename",
+    description="Get the current file's path.\n\nReturns:\n    File path",
     tags={"file", "info"},
     annotations={
         "title": "Get Current Filename",
@@ -319,6 +321,7 @@ async def get_filename() -> str:
 
 @mcp.tool(
     title="Get Mode",
+    description="Get the current file's access mode.\n\nReturns:\n    File mode",
     tags={"file", "info"},
     annotations={
         "title": "Get File Access Mode",
@@ -1774,6 +1777,11 @@ async def optimize_access_pattern(
 
 @mcp.tool(
     title="Refresh Files",
+    description=(
+        "Re-scan client roots and update available HDF5 resources.\n\n"
+        "FastMCP automatically sends notifications/resources/list_changed to clients.\n\n"
+        "Returns:\n    Summary of refreshed resources"
+    ),
     tags={"admin", "discovery"},
     annotations={
         "title": "Refresh HDF5 Resources",
@@ -1814,6 +1822,10 @@ async def refresh_hdf5_resources(ctx: Optional[Context] = None) -> str:
 
 @mcp.tool(
     title="List Files",
+    description=(
+        "List all registered HDF5 files with resource URIs for Claude Code @ mentions.\n\n"
+        "Returns:\n    List of available files with resource URIs"
+    ),
     tags={"discovery", "helper"},
     annotations={
         "title": "List Available HDF5 Files",
