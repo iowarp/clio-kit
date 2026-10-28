@@ -1,0 +1,58 @@
+name: Generate release manifest evidence
+
+on:
+  push:
+    branches: [codex/release-kit-2.11.1-main]
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11'
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
+        with:
+          version: '0.13.4'
+          enable-cache: false
+      - name: Prepare frozen environments
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv sync --frozen --all-extras --dev
+          for project in mcp-servers/*; do
+            if [ -f "$project/uv.lock" ]; then
+              uv sync --directory "$project" --frozen --dev
+            fi
+          done
+      - name: Generate real manifests and capture the source diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          export UV_NO_SYNC=1
+          uv run --frozen python scripts/generate_server_json.py mcp-servers | tee "$RUNNER_TEMP/generation.log"
+          if grep -Eq 'Warning:|Skipped server\.json|^Failed:' "$RUNNER_TEMP/generation.log"; then
+            exit 1
+          fi
+          uv run --frozen python scripts/generate_docs.py mcp-servers website
+          uv run --frozen clio-kit marketplace sync --root .
+          git diff --binary > "$RUNNER_TEMP/generated-manifests.patch"
+          git status --short > "$RUNNER_TEMP/generated-status.txt"
+          printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/source-commit.txt"
+          test -s "$RUNNER_TEMP/generated-manifests.patch"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: generated-release-manifests
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/generated-manifests.patch
+            ${{ runner.temp }}/generated-status.txt
+            ${{ runner.temp }}/source-commit.txt
+            ${{ runner.temp }}/generation.log

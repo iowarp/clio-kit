@@ -1,7 +1,7 @@
 {
   "name": "clio-arxiv",
   "description": "Search arXiv by topic, author, title or date, read paper details, and export BibTeX or PDFs.",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

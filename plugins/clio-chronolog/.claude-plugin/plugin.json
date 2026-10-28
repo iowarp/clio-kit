@@ -1,7 +1,7 @@
 {
   "name": "clio-chronolog",
   "description": "Record and retrieve agent interactions in a ChronoLog log store.",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

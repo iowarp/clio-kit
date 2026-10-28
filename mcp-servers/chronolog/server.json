@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/chronolog-mcp",
   "title": "CLIO Chronolog",
   "description": "Record and retrieve agent interactions in a ChronoLog log store.",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.11.0",
+      "version": "2.11.1",
       "transport": {
         "type": "stdio"
       },
