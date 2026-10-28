@@ -84,8 +84,9 @@ def test_testpypi_advisory_publish_path_is_removed() -> None:
 
 def test_release_pytest_reports_reject_skipped_tests() -> None:
     """Every release JUnit report is followed by the zero-skip assertion."""
-    assert WORKFLOW.count("--junitxml=") == 4
-    assert WORKFLOW.count("scripts/assert_no_skipped_tests.py") == 4
+    assert WORKFLOW.count("--junitxml=") == 5
+    assert WORKFLOW.count("scripts/assert_no_skipped_tests.py") == 5
+    assert '"$RUNNER_TEMP/agentic-search-junit.xml"' in WORKFLOW
 
 
 def test_admin_release_authorization_gates_pypi() -> None:

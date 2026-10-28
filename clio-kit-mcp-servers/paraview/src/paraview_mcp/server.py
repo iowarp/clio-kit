@@ -510,6 +510,10 @@ def color_by(field: str, component: int = -1) -> str:
 
 @mcp.tool(
     title="Compute Surface Area",
+    description=(
+        "Compute the surface area of the active dataset (must be a surface mesh).\n\n"
+        "Returns:\n    Status message with area value."
+    ),
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,
@@ -518,11 +522,7 @@ def color_by(field: str, component: int = -1) -> str:
     tags={"paraview", "visualization"},
 )
 def compute_surface_area() -> str:
-    """Compute the surface area of the active dataset (must be a surface mesh).
-
-    Returns:
-        Status message with area value.
-    """
+    """Compute the surface area of the active dataset (must be a surface mesh)."""
     success, message, area_value = get_pv_manager().compute_surface_area()
     if not success:
         raise ToolError(message)
@@ -579,6 +579,10 @@ def set_representation_type(rep_type: str) -> str:
 
 @mcp.tool(
     title="Get Pipeline",
+    description=(
+        "Get the current visualization pipeline structure.\n\n"
+        "Returns:\n    Description of the current pipeline."
+    ),
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,
@@ -587,11 +591,7 @@ def set_representation_type(rep_type: str) -> str:
     tags={"paraview", "pipeline"},
 )
 def get_pipeline() -> str:
-    """Get the current visualization pipeline structure.
-
-    Returns:
-        Description of the current pipeline.
-    """
+    """Get the current visualization pipeline structure."""
     success, message = get_pv_manager().get_pipeline()
     if not success:
         raise ToolError(message)
@@ -600,6 +600,10 @@ def get_pipeline() -> str:
 
 @mcp.tool(
     title="List Arrays",
+    description=(
+        "List available data arrays in the active source.\n\n"
+        "Returns:\n    List of available arrays."
+    ),
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,
@@ -608,11 +612,7 @@ def get_pipeline() -> str:
     tags={"paraview", "visualization"},
 )
 def get_available_arrays() -> str:
-    """List available data arrays in the active source.
-
-    Returns:
-        List of available arrays.
-    """
+    """List available data arrays in the active source."""
     success, message = get_pv_manager().get_available_arrays()
     if not success:
         raise ToolError(message)
@@ -848,6 +848,9 @@ def rotate_camera(azimuth: float = 30.0, elevation: float = 0.0) -> str:
 
 @mcp.tool(
     title="Reset Camera",
+    description=(
+        "Reset the camera to show all data in the viewport.\n\nReturns:\n    Status message."
+    ),
     annotations={
         "readOnlyHint": False,
         "destructiveHint": False,
@@ -856,11 +859,7 @@ def rotate_camera(azimuth: float = 30.0, elevation: float = 0.0) -> str:
     tags={"paraview", "rendering"},
 )
 def reset_camera() -> str:
-    """Reset the camera to show all data in the viewport.
-
-    Returns:
-        Status message.
-    """
+    """Reset the camera to show all data in the viewport."""
     success, message = get_pv_manager().reset_camera()
     if not success:
         raise ToolError(message)
@@ -947,6 +946,10 @@ def warp_by_vector(
 
 @mcp.tool(
     title="List Commands",
+    description=(
+        "List all available commands in this ParaView MCP server.\n\n"
+        "Returns:\n    List of available commands."
+    ),
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,
@@ -955,11 +958,7 @@ def warp_by_vector(
     tags={"paraview", "visualization"},
 )
 def list_commands() -> str:
-    """List all available commands in this ParaView MCP server.
-
-    Returns:
-        List of available commands.
-    """
+    """List all available commands in this ParaView MCP server."""
     commands = [
         "load_scientific_data: Load scientific datasets from various file formats (VTK, EXODUS, CSV, RAW, BP5, etc.)",
         "create_geometric_shape: Create geometric sources (Sphere, Cone, etc.)",

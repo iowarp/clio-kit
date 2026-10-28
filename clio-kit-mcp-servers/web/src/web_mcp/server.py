@@ -67,7 +67,8 @@ async def fetch(
         Field(
             description=(
                 "Maximum raw bytes for ordinary HTML/text downloads, before extraction. "
-                "This is not an output, character, or token limit; large HTML can yield short text. "
+                "This is not an output, character, or token limit; "
+                "large HTML can yield short text. "
                 "Omit to use the configured download cap. Extracted results are paged separately "
                 "by the client. Documents/binary downloads use a separate configured cap. "
                 "to_file does not change download caps."

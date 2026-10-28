@@ -86,6 +86,9 @@ jobs:
         uv run --with 'pip-audit==2.10.1' pip-audit
         uv run --directory clio-agentic-search \
           --with 'pip-audit==2.10.1' pip-audit
+        uv run --directory clio-agentic-search pytest -q tests \
+          --ignore=tests/benchmarks --junitxml="$RUNNER_TEMP/agentic-search-junit.xml"
+        python scripts/assert_no_skipped_tests.py "$RUNNER_TEMP/agentic-search-junit.xml"
         for server in jarvis scientific-catalog slurm spack; do
           uv lock --check --directory "clio-kit-mcp-servers/$server"
           uv run --directory "clio-kit-mcp-servers/$server" ruff check .
