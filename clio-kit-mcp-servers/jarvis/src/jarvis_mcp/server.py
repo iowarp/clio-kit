@@ -1098,7 +1098,7 @@ async def destroy_pipeline_tool(pipeline_id: str) -> dict:
 )
 def jm_create_config(
     config_dir: str, private_dir: str, shared_dir: Optional[str] = None
-) -> list:
+) -> list[object]:
     """Initialize manager directories and persist configuration."""
     try:
         with _protocol_stdout_to_stderr():
@@ -1121,7 +1121,7 @@ def jm_create_config(
     },
     tags={"jarvis", "management"},
 )
-def jm_load_config() -> list:
+def jm_load_config() -> list[object]:
     """Load manager configuration from saved state."""
     try:
         manager = get_manager()
@@ -1142,7 +1142,7 @@ def jm_load_config() -> list:
     },
     tags={"jarvis", "management"},
 )
-def jm_save_config() -> list:
+def jm_save_config() -> list[object]:
     """Save current configuration state to disk."""
     try:
         manager = get_manager()
@@ -1163,7 +1163,7 @@ def jm_save_config() -> list:
     },
     tags={"jarvis", "management"},
 )
-def jm_set_hostfile(path: str) -> list:
+def jm_set_hostfile(path: str) -> list[object]:
     """Set and save the path to the hostfile for deployments."""
     try:
         manager = get_manager()
@@ -1185,7 +1185,7 @@ def jm_set_hostfile(path: str) -> list:
     },
     tags={"jarvis", "management"},
 )
-def jm_bootstrap_from(machine: str) -> list:
+def jm_bootstrap_from(machine: str) -> list[object]:
     """Bootstrap configuration based on a predefined machine template."""
     try:
         manager = get_manager()
@@ -1206,7 +1206,7 @@ def jm_bootstrap_from(machine: str) -> list:
     },
     tags={"jarvis", "management"},
 )
-def jm_bootstrap_list() -> list:
+def jm_bootstrap_list() -> list[object]:
     """List all bootstrap templates available."""
     try:
         manager = get_manager()
@@ -1226,7 +1226,7 @@ def jm_bootstrap_list() -> list:
     },
     tags={"jarvis", "management"},
 )
-def jm_reset() -> list:
+def jm_reset() -> list[object]:
     """Reset manager to a clean state by destroying all pipelines and config."""
     try:
         manager = get_manager()
@@ -1268,7 +1268,7 @@ async def jm_list_pipelines() -> dict[str, Any]:
     },
     tags={"jarvis", "management"},
 )
-def jm_cd(pipeline_id: str) -> list:
+def jm_cd(pipeline_id: str) -> list[object]:
     """Set the working pipeline context."""
     try:
         manager = get_manager()
@@ -1311,7 +1311,7 @@ async def jm_list_repos() -> dict[str, Any]:
     },
     tags={"jarvis", "management"},
 )
-def jm_add_repo(path: str, force: bool = False) -> list:
+def jm_add_repo(path: str, force: bool = False) -> list[object]:
     """Add a repository path to the manager."""
     try:
         manager = get_manager()
@@ -1333,7 +1333,7 @@ def jm_add_repo(path: str, force: bool = False) -> list:
     },
     tags={"jarvis", "management"},
 )
-def jm_remove_repo(repo_name: str) -> list:
+def jm_remove_repo(repo_name: str) -> list[object]:
     """Remove a repository from configuration."""
     try:
         manager = get_manager()
@@ -1355,7 +1355,7 @@ def jm_remove_repo(repo_name: str) -> list:
     },
     tags={"jarvis", "management"},
 )
-def jm_promote_repo(repo_name: str) -> list:
+def jm_promote_repo(repo_name: str) -> list[object]:
     """Promote a repository to higher priority."""
     try:
         manager = get_manager()
@@ -1398,7 +1398,7 @@ async def jm_get_repo(repo_name: str) -> dict[str, Any]:
     },
     tags={"jarvis", "pipeline"},
 )
-def jm_construct_pkg(pkg_type: str) -> list:
+def jm_construct_pkg(pkg_type: str) -> list[object]:
     """Generate a new package skeleton by type."""
     try:
         manager = get_manager()
@@ -1419,7 +1419,7 @@ def jm_construct_pkg(pkg_type: str) -> list:
     },
     tags={"jarvis", "monitoring"},
 )
-def jm_graph_show() -> list:
+def jm_graph_show() -> list[object]:
     """Print the resource graph to the console."""
     try:
         manager = get_manager()
@@ -1440,7 +1440,7 @@ def jm_graph_show() -> list:
     },
     tags={"jarvis", "pipeline"},
 )
-def jm_graph_build(net_sleep: float) -> list:
+def jm_graph_build(net_sleep: float) -> list[object]:
     """Construct or rebuild the graph with a given sleep delay."""
     try:
         manager = get_manager()
@@ -1461,7 +1461,7 @@ def jm_graph_build(net_sleep: float) -> list:
     },
     tags={"jarvis", "pipeline"},
 )
-def jm_graph_modify(net_sleep: float) -> list:
+def jm_graph_modify(net_sleep: float) -> list[object]:
     """Modify the current resource graph with a delay between operations."""
     try:
         manager = get_manager()
