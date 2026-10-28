@@ -103,12 +103,12 @@ RATCHET_BASELINE: dict[str, int] = {
     "clio-kit-mcp-servers/jarvis/src/jarvis_mcp/capabilities/jarvis_handler.py": 3659,
     # #362: NOT split this wave -- out of wave-1 scope (jarvis-only). Flat
     # FastMCP function surface, no god-class; still needs an owner-module cut.
-    "clio-kit-mcp-servers/hdf5/src/hdf5_mcp/server.py": 2415,
+    "clio-kit-mcp-servers/hdf5/src/hdf5_mcp/server.py": 2405,
     # #362: NOT split this wave -- out of wave-1 scope. Single
     # VisualizationEngine god-class.
     "clio-kit-mcp-servers/paraview/src/paraview_mcp/implementation/paraview_capabilities.py": 2202,
     "clio-kit-mcp-servers/pandas/src/pandas_mcp/server.py": 1274,
-    "clio-kit-mcp-servers/paraview/src/paraview_mcp/server.py": 1091,
+    "clio-kit-mcp-servers/paraview/src/paraview_mcp/server.py": 1090,
     "clio-kit-mcp-servers/spack/src/spack_mcp/backend.py": 890,
     # #362 (PR #364 review finding 5): discovery previously excluded the root
     # `clio_kit` package (the `clio-kit` launcher CLI itself) entirely --
