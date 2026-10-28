@@ -14,7 +14,9 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSIONS = tomllib.loads((ROOT / "mcp-server-versions.toml").read_text())["servers"]
+VERSIONS = tomllib.loads(
+    (ROOT / "mcp-server-versions.toml").read_text(encoding="utf-8")
+)["servers"]
 
 
 def reported_versions(server: str) -> list[object]:

@@ -68,7 +68,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "slurm",
-    version="3.0.2",
+    version="3.0.3",
     instructions=(
         "Manages HPC jobs via the Slurm workload manager. "
         "Submit jobs, monitor queue status, cancel jobs, and manage node allocations."

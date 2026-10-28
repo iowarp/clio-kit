@@ -541,7 +541,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "pandas",
-    version="2.3.0",  # keep equal to clio-server.toml (tests/test_release_regressions.py)
+    version="2.3.1",  # keep equal to clio-server.toml (tests/test_release_regressions.py)
     instructions=(
         "Performs data analysis operations using pandas DataFrames. "
         "Load CSV/Excel files, compute statistics, filter data, group and aggregate, "

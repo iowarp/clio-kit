@@ -35,7 +35,7 @@ def _new_mcp() -> FastMCP:
 
     return FastMCP(
         "web",
-        version="2.1.3",
+        version="2.1.4",
         instructions=(
             "Use search to discover sources and fetch to read HTTP(S), DOI, HTML, text, "
             "PDF, and structured-document targets. Fetch supports durable tasks; query them for "

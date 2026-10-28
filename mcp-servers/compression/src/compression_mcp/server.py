@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 mcp: FastMCP = FastMCP(
     "compression",
-    version="2.2.5",
+    version="2.2.6",
     instructions=(
         "Provides gzip file compression and decompression. "
         "Use compress_file to reduce file size, decompress_file to restore originals."
