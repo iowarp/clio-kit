@@ -25,7 +25,7 @@ load_dotenv()
 # Initialize MCP server
 mcp: FastMCP = FastMCP(
     "darshan",
-    version="2.2.5",
+    version="2.2.6",
     instructions=(
         "Analyzes I/O performance logs from Darshan profiler. "
         "Open log files, examine module data, analyze counters, and generate performance insights."

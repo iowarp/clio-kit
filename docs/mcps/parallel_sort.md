@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🔄"
   category="Data Processing"
   description="Sort, filter and summarize large log files by timestamp, level or keyword."
-  version="2.3.0"
+  version="2.3.1"
   actions={["sort_log_by_timestamp", "parallel_sort_large_file", "analyze_log_statistics", "detect_log_patterns", "filter_logs", "filter_by_time_range", "filter_by_log_level", "filter_by_keyword", "apply_filter_preset", "export_to_json", "export_to_csv", "export_to_text", "generate_summary_report"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["parallel-sorting", "log-processing", "log-analysis", "high-performance", "timestamp-sorting", "pattern-detection", "log-filtering", "data-export"]}

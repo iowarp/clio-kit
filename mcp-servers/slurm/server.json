@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/slurm-mcp",
   "title": "CLIO Slurm",
   "description": "Submit, list, inspect and cancel Slurm jobs, and describe the cluster.",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.11.0",
+      "version": "2.11.1",
       "transport": {
         "type": "stdio"
       },

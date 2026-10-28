@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/paraview-mcp",
   "title": "CLIO Paraview",
   "description": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.11.0",
+      "version": "2.11.1",
       "transport": {
         "type": "stdio"
       },
@@ -79,7 +79,7 @@
     },
     {
       "name": "compute_surface_area",
-      "description": "Compute the surface area of the active dataset (must be a surface mesh).\n\nReturns:\n    Status message with area value."
+      "description": "Compute the surface area of the active dataset (must be a surface mesh)."
     },
     {
       "name": "set_color_map_preset",
@@ -91,11 +91,11 @@
     },
     {
       "name": "get_pipeline",
-      "description": "Get the current visualization pipeline structure.\n\nReturns:\n    Description of the current pipeline."
+      "description": "Get the current visualization pipeline structure."
     },
     {
       "name": "get_available_arrays",
-      "description": "List available data arrays in the active source.\n\nReturns:\n    List of available arrays."
+      "description": "List available data arrays in the active source."
     },
     {
       "name": "get_histogram",
@@ -119,7 +119,7 @@
     },
     {
       "name": "reset_camera",
-      "description": "Reset the camera to show all data in the viewport.\n\nReturns:\n    Status message."
+      "description": "Reset the camera to show all data in the viewport."
     },
     {
       "name": "plot_over_line",
@@ -131,7 +131,7 @@
     },
     {
       "name": "list_commands",
-      "description": "List all available commands in this ParaView MCP server.\n\nReturns:\n    List of available commands."
+      "description": "List all available commands in this ParaView MCP server."
     }
   ],
   "resources": [

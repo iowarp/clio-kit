@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="⏰"
   category="Data Processing"
   description="Record and retrieve agent interactions in a ChronoLog log store."
-  version="2.0.3"
+  version="2.0.4"
   actions={["start_chronolog", "record_interaction", "stop_chronolog", "retrieve_interaction"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["distributed logging", "chronolog", "event logging", "session management", "context sharing", "real-time", "model context protocol", "scientific data", "conversational ai", "high-performance", "shared log", "multi-client", "historical retrieval", "enterprise logging"]}

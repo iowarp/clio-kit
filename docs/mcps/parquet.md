@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="📋"
   category="Data Processing"
   description="Summarize Parquet files, preview columns, read row slices and aggregate values."
-  version="2.2.5"
+  version="2.2.6"
   actions={["summarize_tool", "read_slice_tool", "get_column_preview_tool", "aggregate_column_tool"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["parquet", "columnar-data", "data-analysis", "scientific-computing", "mcp", "llm-integration", "apache-arrow"]}

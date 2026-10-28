@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "node-hardware",
-    version="2.3.0",
+    version="2.3.1",
     instructions=(
         "Monitors system hardware including CPU, memory, disk, network, and GPU. "
         "Use individual tools for specific metrics or get a full system overview."

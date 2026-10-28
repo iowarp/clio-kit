@@ -14,7 +14,7 @@ from . import mcp_handlers
 # Initialize FastMCP server
 mcp: FastMCP = FastMCP(
     "adios",
-    version="2.2.5",
+    version="2.2.6",
     instructions=(
         "Reads and inspects ADIOS2 BP files for scientific I/O. "
         "Use list_variables to see available data, read_variable to extract values, "

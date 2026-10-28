@@ -24,7 +24,7 @@ load_dotenv()
 # Initialize MCP server
 mcp: FastMCP = FastMCP(
     "parallel-sort",
-    version="2.3.0",
+    version="2.3.1",
     instructions=(
         "Sorts large files using parallel algorithms. "
         "Configure sort parameters, execute sorts with progress tracking, and verify results."

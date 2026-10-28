@@ -63,7 +63,7 @@ def get_client() -> Any:
 # MCP server instance
 mcp: FastMCP = FastMCP(
     "chronolog",
-    version="2.0.3",
+    version="2.0.4",
     instructions=(
         "Manages ChronoLog distributed logging system. "
         "Record events, query logs by time range, and monitor log status."

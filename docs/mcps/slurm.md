@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🖥️"
   category="System Management"
   description="Submit, list, inspect and cancel Slurm jobs, and describe the cluster."
-  version="3.0.2"
+  version="3.0.3"
   actions={["slurm_submit", "slurm_list", "slurm_describe", "slurm_cluster", "slurm_cancel"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["MCP", "Slurm", "HPC", "job-management", "cluster-monitoring", "workload-management", "scientific-computing", "high-performance-computing"]}

@@ -145,9 +145,9 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     from clio_kit.local_plugins import discover_local_plugins
 
     workflow_names = set(
-        tomllib.loads((repository_root / "mcp-server-versions.toml").read_text()).get(
-            "workflows", {}
-        )
+        tomllib.loads(
+            (repository_root / "mcp-server-versions.toml").read_text(encoding="utf-8")
+        ).get("workflows", {})
     )
     generated_names = (
         {f"clio-{name}" for name in expected_server_versions}
@@ -514,7 +514,9 @@ def test_shipped_skills_load_and_are_reachable_from_a_bundle() -> None:
             continue
         if (plugin_dir / "import-lock.json").exists():
             catalogue = json.loads(
-                (repo_root / ".claude-plugin" / "marketplace.json").read_text()
+                (repo_root / ".claude-plugin" / "marketplace.json").read_text(
+                    encoding="utf-8"
+                )
             )
             assert any(
                 entry["source"] == f"./skills/{plugin_dir.name}"
@@ -937,11 +939,13 @@ def test_marketplace_only_generation_passes_the_ci_log_gate(
     log = capsys.readouterr().out
     workflow = (
         Path(__file__).resolve().parents[1] / ".github/workflows/publish.yml"
-    ).read_text()
+    ).read_text(encoding="utf-8")
     gate = re.search(r"if grep -Eq '([^']+)'", workflow)
     assert gate is not None
     assert not re.search(gate[1], log, re.M), log
-    marketplace = json.loads((tmp_path / ".claude-plugin/marketplace.json").read_text())
+    marketplace = json.loads(
+        (tmp_path / ".claude-plugin/marketplace.json").read_text(encoding="utf-8")
+    )
     entry = next(p for p in marketplace["plugins"] if p["name"] == "clio-crystal")
     assert entry["description"] == "Crystallography tools."
     assert (tmp_path / "plugins/clio-crystal/.mcp.json").is_file()
@@ -979,7 +983,7 @@ def test_python_metadata_failure_still_trips_the_ci_log_gate(
     log = capsys.readouterr().out
     workflow = (
         Path(__file__).resolve().parents[1] / ".github/workflows/publish.yml"
-    ).read_text()
+    ).read_text(encoding="utf-8")
     gate = re.search(r"if grep -Eq '([^']+)'", workflow)
     assert gate is not None
     assert re.search(gate[1], log, re.M)
@@ -998,12 +1002,16 @@ def test_generation_includes_tasks_without_changing_primary_partition(
             )
     monkeypatch.setattr(GENERATOR, "generate_user_contract_artifacts", lambda root: [])
     GENERATOR.generate_all(str(server.parent))
-    marketplace = json.loads((tmp_path / ".claude-plugin/marketplace.json").read_text())
+    marketplace = json.loads(
+        (tmp_path / ".claude-plugin/marketplace.json").read_text(encoding="utf-8")
+    )
     entries = {entry["name"]: entry for entry in marketplace["plugins"]}
     for name in ("clio-inspect", "clio-analyze"):
         assert entries[name]["category"] == "workflow"
         manifest = json.loads(
-            (tmp_path / "plugins" / name / ".claude-plugin/plugin.json").read_text()
+            (tmp_path / "plugins" / name / ".claude-plugin/plugin.json").read_text(
+                encoding="utf-8"
+            )
         )
         assert manifest["dependencies"] == ["clio-crystal"]
     GENERATOR.assert_bundles_partition_servers(
@@ -1033,7 +1041,9 @@ def test_full_generator_discovers_standalone_hook_package(tmp_path, monkeypatch)
     original = manifest.read_bytes()
     monkeypatch.setattr(GENERATOR, "generate_user_contract_artifacts", lambda root: [])
     GENERATOR.generate_all(str(server.parent))
-    marketplace = json.loads((tmp_path / ".claude-plugin/marketplace.json").read_text())
+    marketplace = json.loads(
+        (tmp_path / ".claude-plugin/marketplace.json").read_text(encoding="utf-8")
+    )
     assert (
         next(e for e in marketplace["plugins"] if e["name"] == "lab-notice")["source"]
         == "./hooks/lab-notice"

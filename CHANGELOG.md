@@ -2,6 +2,13 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
+## 2.11.1 - 2026-10-28
+
+Update audited runtime dependencies for the launcher verification environment
+and maintained MCP servers, including patched FastMCP and OpenTelemetry API.
+Each affected server receives a new immutable patch version. Tool schemas and
+the selective-installation layout remain the ones published in 2.11.0.
+
 ## 2.11.0
 
 CLIO Kit now provides a meta-marketplace with 22 MCP servers, six workflow

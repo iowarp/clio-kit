@@ -8,7 +8,7 @@ Author: IoWarp Team - Gnosis Research Center
 License: BSD-3-Clause
 """
 
-__version__ = "3.7.4"
+__version__ = "3.7.5"
 __author__ = "IoWarp Team - Gnosis Research Center"
 __email__ = "grc@illinoistech.edu"
 __license__ = "BSD-3-Clause"

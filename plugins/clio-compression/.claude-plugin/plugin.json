@@ -1,7 +1,7 @@
 {
   "name": "clio-compression",
   "description": "Compress and decompress files with gzip and report the compression ratio.",
-  "version": "2.2.5",
+  "version": "2.2.6",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",
