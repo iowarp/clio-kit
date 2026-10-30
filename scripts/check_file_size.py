@@ -74,7 +74,9 @@ RATCHET_BASELINE: dict[str, int] = {
     # #376 (v3.7.2 mint): jarvis_add_step_tool and append_pkg_tool both gain
     # the `target` parameter (interceptor target-binding) plus its Field
     # description; 1582 -> 1605 (real count via `wc -l`).
-    "mcp-servers/jarvis/src/jarvis_mcp/server.py": 1602,
+    # #385: the step tools' config-key guard lives in step_settings.py, and
+    # jarvis_edit_step's config checks moved there with it; 1602 -> 1599.
+    "mcp-servers/jarvis/src/jarvis_mcp/server.py": 1599,
     # #362 wave 1: NOT split this wave (deferred -- see the wave-1 PR
     # description). Still the 6-class monolith measured at campaign kickoff.
     # Next wave: split into owner modules by concern (pipeline lifecycle,
