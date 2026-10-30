@@ -90,18 +90,19 @@ class TestNDPClientEdgeCases:
             assert "HTTP 404" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_make_request_timeout_all_retries(self, client):
-        """Test timeout on all retry attempts."""
+    async def test_make_request_timeout_fails_fast(self, client):
+        """A timeout is not retried: it already spent the request budget (#351)."""
         with patch("httpx.AsyncClient") as mock_client:
-            mock_client.return_value.__aenter__.return_value.get.side_effect = (
-                httpx.TimeoutException("Timeout")
-            )
+            get = mock_client.return_value.__aenter__.return_value.get
+            get.side_effect = httpx.TimeoutException("Timeout")
 
             with patch("asyncio.sleep", new=AsyncMock()):
                 with pytest.raises(Exception) as exc_info:
                     await client._make_request("GET", "/test")
 
-                assert "Request timed out after 3 attempts" in str(exc_info.value)
+            assert "remote_timeout" in str(exc_info.value)
+            assert "attempts=1" in str(exc_info.value)
+            assert get.call_count == 1
 
     @pytest.mark.asyncio
     async def test_make_request_post_with_json(self, client):
