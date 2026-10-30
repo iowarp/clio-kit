@@ -5881,7 +5881,7 @@
       "description": "Use when working with HDF5 or formats built on it (netCDF-4, NeXus, NWB, .h5ad) on conventions, h5py, chunking, cloud access, parallel I/O or clio-core ingest. Triggers on \"NeXus file\", \"h5py\", \"chunk cache\", \"ROS3\", \"SWMR\", \"parallel HDF5\", \"virtual dataset\". Not for choosing between file formats; use storage-format.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.2.6",
+      "version": "2.2.7",
       "category": "Scientific data",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-hdf5/skills/hdf5/SKILL.md",

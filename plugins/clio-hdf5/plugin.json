@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "clio-hdf5",
-  "version": "2.2.6",
+  "version": "2.2.7",
   "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks.",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
