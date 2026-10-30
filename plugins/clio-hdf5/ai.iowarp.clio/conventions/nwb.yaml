@@ -1,0 +1,16 @@
+# Neurodata Without Borders: neurophysiology.
+# Verified against a file written by pynwb 4.2.0. NWB stores its own schema
+# inside the file, under /specifications (the root `.specloc` points to it).
+id: nwb
+container: hdf5
+version_hint: attr:/@nwb_version
+detect:
+  - attr: /@neurodata_type
+    equals: NWBFile
+locate_primary:
+  # Raw data is under /acquisition, derived data under /processing; each
+  # object is typed by its `neurodata_type`.
+  - path: /acquisition
+schema:
+  kind: nwb-spec
+  source: in_file:/specifications

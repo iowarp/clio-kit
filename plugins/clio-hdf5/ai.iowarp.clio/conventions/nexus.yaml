@@ -1,0 +1,19 @@
+# NeXus: synchrotron, neutron and muon science.
+# Verified against a file written by nexusformat 2.1.0, which sets no root
+# `default`; the `find` step covers files like that.
+id: nexus
+container: hdf5
+version_hint: attr:/@NeXus_version
+detect:
+  - attr: NX_class
+locate_primary:
+  - follow_attr: /@default
+  - follow_attr: "@default"
+  - find: {attr: NX_class, equals: NXdata}
+  - signal: "@signal"
+  - axes: "@axes"
+  - units: "@units"
+schema:
+  kind: nxdl
+  source: https://github.com/nexusformat/definitions
+render_hint_from: signal_rank

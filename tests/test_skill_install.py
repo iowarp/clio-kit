@@ -13,7 +13,7 @@ from clio_kit.skill_cli import (
     skill_group,
     skill_inventory,
 )
-from clio_kit.skills import SkillProblem
+from clio_kit.skills import SkillProblem, read_skill_frontmatter
 
 
 def test_shipped_skills_use_standard_metadata():
@@ -51,9 +51,14 @@ def test_selection_and_cli_errors(tmp_path):
     )
     assert result.exit_code == 0, result.output
     root = Path(__file__).resolve().parents[1]
-    bundle = root / "skills/clio-scientific-io-skills/skills"
+    declared = [
+        *root.glob("skills/*/skills/*/SKILL.md"),
+        *root.glob("plugins/*/skills/*/SKILL.md"),
+    ]
     assert {record["name"] for record in json.loads(result.output)} == {
-        path.parent.name for path in bundle.glob("*/SKILL.md")
+        path.parent.name
+        for path in declared
+        if read_skill_frontmatter(path.parent).get("bundle") == "clio-scientific-io"
     }
     result = runner.invoke(
         skill_group, ["install", "unknown-skill", "--target", str(tmp_path / "target")]
