@@ -1,0 +1,31 @@
+<!doctype html>
+<!-- Source of static/img/social-card.png (1200x630). Re-render from website/:
+     google-chrome --headless --hide-scrollbars --window-size=1200,630 \
+       --screenshot=static/img/social-card.png social-card.html -->
+<html lang="en"><head><meta charset="utf-8"><title>CLIO Kit social preview</title>
+<style>
+@font-face{font-family:'Newsreader';font-weight:500;src:url('static/fonts/news-normal-500.woff2')}
+@font-face{font-family:'Newsreader';font-style:italic;font-weight:480;src:url('static/fonts/news-italic-480.woff2')}
+@font-face{font-family:'Plex';font-weight:100 700;src:url('static/fonts/plex-sans.woff2')}
+@font-face{font-family:'Plex Mono';src:url('static/fonts/plex-400.woff2')}
+*{box-sizing:border-box;margin:0}
+body{width:1200px;height:630px;overflow:hidden;background:#000;color:#faf8f5;font-family:'Plex',sans-serif;display:grid;grid-template-columns:1fr 360px;gap:56px;padding:64px 72px}
+.brand{display:flex;align-items:center;gap:14px;font-size:26px;font-weight:600}
+.brand small{font:400 15px 'Plex Mono',monospace;color:#6bc2e4;letter-spacing:.08em;margin-left:6px}
+.kicker{margin-top:58px;font:400 16px 'Plex Mono',monospace;letter-spacing:.14em;color:#ec7c26}
+h1{margin-top:18px;font:500 76px/1.02 'Newsreader',serif;letter-spacing:-.02em}
+h1 em{font-style:italic;font-weight:480;color:#6bc2e4}
+.promise{margin-top:26px;font-size:24px;line-height:1.4;color:#c9d1dc}
+footer{position:absolute;left:72px;right:72px;bottom:48px;display:flex;justify-content:space-between;font:400 16px 'Plex Mono',monospace;color:#a4afbf;border-top:1px solid rgba(107,194,228,.25);padding-top:18px}
+aside{align-self:start;margin-top:8px;display:flex;flex-direction:column;align-items:center;gap:26px}
+aside ul{list-style:none;padding:0;width:100%;border-top:1px solid rgba(107,194,228,.25)}
+aside li{padding:13px 0;border-bottom:1px solid rgba(107,194,228,.25);font-size:20px;display:flex;justify-content:space-between}
+aside li span{font:400 14px 'Plex Mono',monospace;color:#6bc2e4;letter-spacing:.08em}
+</style></head>
+<body><main><div class="brand"><img src="static/img/iowarp_logo.png" width="44" height="44" alt="">CLIO Kit<small>IOWARP</small></div>
+<p class="kicker">A META-MARKETPLACE FOR SCIENTIFIC COMPUTING</p>
+<h1>Scientific tools.<br><em>In your agent.</em></h1>
+<p class="promise">MCP servers, skills and workflow plugins<br>for HPC, scientific data and research.</p></main>
+<aside><img src="static/img/iowarp_logo.png" width="170" height="170" alt="">
+<ul><li>MCP servers<span>DATA · HPC</span></li><li>Skills<span>PORTABLE</span></li><li>Workflow plugins<span>BUNDLED</span></li><li>Agents &amp; hooks<span>NATIVE</span></li></ul></aside>
+<footer><span>Open source · BSD-3-Clause</span><span>toolkit.iowarp.ai</span></footer></body></html>

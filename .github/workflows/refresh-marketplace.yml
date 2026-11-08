@@ -1,0 +1,59 @@
+name: Sync marketplace catalogues
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'plugins/**'
+      - 'skills/**'
+      - 'agents/**'
+      - 'hooks/**'
+      - 'community/**'
+      - 'mcp-server-versions.toml'
+      - 'scripts/generate_*.py'
+      - 'src/clio_kit/**'
+      - '.github/workflows/refresh-marketplace.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '23 7 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: marketplace-refresh-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    # PRs are validated by read-only acceptance jobs. Only trusted branch pushes
+    # and scheduled/manual runs may persist generated output.
+    if: github.repository == 'iowarp/clio-kit' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86
+        with:
+          version: '0.11.28'
+          python-version: '3.13'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - run: uv sync --frozen
+      - name: Refresh upstream packages only on schedule or manual request
+        if: github.event_name != 'push'
+        run: uv run --frozen clio-kit marketplace refresh --root .
+      - name: Discover local folders and update both catalogues
+        run: uv run --frozen clio-kit marketplace sync
+      - run: npm install --global @anthropic-ai/claude-code@2.1.266
+      - run: claude plugin validate . --strict
+      - name: Commit generated catalogues and manifests
+        run: |
+          git add .claude-plugin/marketplace.json .claude-plugin/federation.lock.json .claude-plugin/federated-marketplaces.json website/src/data/catalogue.json src/clio_kit/_federated_marketplaces.json
+          git add 'plugins/*/.claude-plugin/plugin.json' 'skills/*/.claude-plugin/plugin.json'
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'chore(marketplace): sync generated catalogues'
+          git push

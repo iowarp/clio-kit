@@ -11,8 +11,8 @@ headroom with zero build signal. This version does not tolerate that gap: a
 baseline entry must be an EXACT mirror of reality at all times.
 
 Walks every package's ``src/`` tree -- the root ``clio_kit`` package plus one
-per ``clio-kit-mcp-servers/<name>`` (any directory with a ``pyproject.toml``)
-plus ``clio-agentic-search`` -- and enforces a per-file line-count ratchet:
+per ``mcp-servers/<name>`` (any directory with a ``pyproject.toml``)
+-- and enforces a per-file line-count ratchet:
 
 * A file **not** in :data:`RATCHET_BASELINE` may not exceed
   :data:`DEFAULT_MAX_LINES` -- a brand-new god-file fails the check.
@@ -60,6 +60,7 @@ DEFAULT_MAX_LINES = 800
 # either direction (see the module docstring). Paths are relative to the
 # repository root and use forward slashes.
 RATCHET_BASELINE: dict[str, int] = {
+    "mcp-servers/jarvis/src/jarvis_mcp/artifacts.py": 846,
     # #362 wave 1: server.py's 44 model classes + package-discovery/search
     # helpers moved to owner modules (jarvis_mcp/models/*, package_discovery.py),
     # 3109 -> 1323, then +259 (PR #364 review findings 1/3: the contract pins'
@@ -73,7 +74,7 @@ RATCHET_BASELINE: dict[str, int] = {
     # #376 (v3.7.2 mint): jarvis_add_step_tool and append_pkg_tool both gain
     # the `target` parameter (interceptor target-binding) plus its Field
     # description; 1582 -> 1605 (real count via `wc -l`).
-    "clio-kit-mcp-servers/jarvis/src/jarvis_mcp/server.py": 1605,
+    "mcp-servers/jarvis/src/jarvis_mcp/server.py": 1602,
     # #362 wave 1: NOT split this wave (deferred -- see the wave-1 PR
     # description). Still the 6-class monolith measured at campaign kickoff.
     # Next wave: split into owner modules by concern (pipeline lifecycle,
@@ -84,37 +85,26 @@ RATCHET_BASELINE: dict[str, int] = {
     # NEW owner module (artifact_content.py), not here; this file only grew
     # by the trivial call-site wiring inside get_execution() that has to live
     # where get_execution() itself lives, 3521 -> 3529.
-    # release/2.10.2 (#252 + v3.7.1 mint): terminal execution-output
-    # declaration wiring merged in alongside the content-read call site above
-    # -- both land in get_execution()'s call site, 3529 -> 3548 (real count,
-    # not guessed -- verified via `wc -l` against the merged tree, after
-    # de-duplicating the execution_root_from_record collision below).
-    # #376 (v3.7.2 mint): interceptor target-binding -- append_pkg gains the
-    # `target` parameter plus two new helpers (_is_interceptor_step,
-    # _bind_interceptor_target) that thread it to JARVIS-CD's native
-    # interceptors-list mechanism, and defer an interceptor's
-    # configure_package() call (the find_library ordering defect) to when
-    # JARVIS-CD itself needs it -- never, per Pipeline.start(). Kept in this
-    # file rather than a new owner module: the logic is tightly coupled to
-    # (and sits directly beside) _get_package/_package_config/
-    # _kwargs_to_config_args, the same abstraction level as
-    # _normalize_package_config_request just below it. 3548 -> 3659 (real
-    # count via `wc -l`).
-    "clio-kit-mcp-servers/jarvis/src/jarvis_mcp/capabilities/jarvis_handler.py": 3659,
+    "mcp-servers/jarvis/src/jarvis_mcp/capabilities/jarvis_handler.py": 3658,
     # #362: NOT split this wave -- out of wave-1 scope (jarvis-only). Flat
     # FastMCP function surface, no god-class; still needs an owner-module cut.
-    "clio-kit-mcp-servers/hdf5/src/hdf5_mcp/server.py": 2415,
+    "mcp-servers/hdf5/src/hdf5_mcp/server.py": 2305,
     # #362: NOT split this wave -- out of wave-1 scope. Single
     # VisualizationEngine god-class.
-    "clio-kit-mcp-servers/paraview/src/paraview_mcp/implementation/paraview_capabilities.py": 2202,
-    "clio-kit-mcp-servers/pandas/src/pandas_mcp/server.py": 1274,
-    "clio-kit-mcp-servers/paraview/src/paraview_mcp/server.py": 1091,
-    "clio-kit-mcp-servers/spack/src/spack_mcp/backend.py": 925,
+    "mcp-servers/paraview/src/paraview_mcp/implementation/paraview_capabilities.py": 2191,
+    "mcp-servers/pandas/src/pandas_mcp/server.py": 1251,
+    "mcp-servers/paraview/src/paraview_mcp/server.py": 1016,
+    # clio-kit#370: SpackInstallResult + install_spec moved to a new owner
+    # module (provisioning.py, real installs with a full on-disk build log
+    # and typed recipe_not_found/build_failure/timed_out errors), shedding
+    # this file to 890 lines. Not fully split below the cap this wave --
+    # still the `find`/`locate`/`environment` backend plus the bounded
+    # subprocess/Windows-job primitives every owner module composes with.
+    "mcp-servers/spack/src/spack_mcp/backend.py": 890,
     # #362 (PR #364 review finding 5): discovery previously excluded the root
     # `clio_kit` package (the `clio-kit` launcher CLI itself) entirely --
     # these three were never scanned. Baselined at their measured counts, not
     # split this wave.
-    "src/clio_kit/__init__.py": 958,
     # clio-kit#370: spack contract spec bumped to v2.2 (search/info tools
     # added to the curated surface) and a new historical-artifact entry
     # (spack-user-v2.1.json) recorded, 921 -> 930 (ruff-formatted). Fix round
@@ -124,46 +114,22 @@ RATCHET_BASELINE: dict[str, int] = {
     # gating fix (2026-08-12): jarvis contract spec bumped v3.6 -> v3.7
     # (jarvis_get_execution's artifacts filter gained content_max_bytes, a
     # deliberate wire-visible additive change); one more historical-artifact
-    # entry (jarvis-user-v3.6.json) recorded on the develop line this
-    # cherry-picked from, 931 -> 932.
-    # release/2.10.2: cherry-picked the v3.7 mint onto release/2.10.2 (built
-    # off main, not full develop -- the unrelated spack/scheduler commits
-    # ahead of it on develop were deliberately left out of this release), then
-    # v3.7.1 mint (execution-output declarations, #252) added one more
-    # historical-artifact entry (jarvis-user-v3.7.json). Real count on THIS
-    # tree verified via `wc -l`, not carried over from develop's number: 923.
-    # #376 (v3.7.2 mint): one more historical-artifact entry
-    # (jarvis-user-v3.7.1.json) as v3.7.1 retires to historical; 923 -> 924.
-    "src/clio_kit/mcp_contracts.py": 924,
-    # release/2.10.2: merging fix/execution-output-artifacts (#252 --
-    # execution_output_artifact_events/_hash_regular_file, terminal
-    # execution-output declarations) alongside the v3.7 content-read mint's
-    # own inline wiring in artifact_query_page/_validate_query_filters (the
-    # substantial content-read LOGIC lives in artifact_content.py, imported
-    # here, not duplicated) push this past the default new-file threshold for
-    # the first time. Both branches had independently defined
-    # execution_root_from_record (artifact_content.py's grounded-in-jarvis-cd
-    # version vs. this file's script_path-fallback version) -- consolidated
-    # to one definition owned by artifact_content.py (extended with the
-    # script_path fallback) so the two call sites in jarvis_handler.py no
-    # longer silently resolve to whichever import happened to shadow the
-    # other. Real count verified via `wc -l`: 846.
-    "clio-kit-mcp-servers/jarvis/src/jarvis_mcp/artifacts.py": 846,
-    "clio-kit-mcp-servers/darshan/src/darshan_mcp/capabilities/darshan_parser.py": 857,
-    "clio-kit-mcp-servers/parquet/src/parquet_mcp/capabilities/parquet_handler.py": 839,
-    "clio-kit-mcp-servers/node-hardware/src/node_hardware_mcp/mcp_handlers.py": 819,
+    # entry (jarvis-user-v3.6.json) recorded, 931 -> 932.
+    "src/clio_kit/mcp_contracts.py": 917,
+    "src/clio_kit/env_cache.py": 712,
+    "mcp-servers/darshan/src/darshan_mcp/capabilities/darshan_parser.py": 828,
+    "mcp-servers/parquet/src/parquet_mcp/capabilities/parquet_handler.py": 818,
+    "mcp-servers/node-hardware/src/node_hardware_mcp/mcp_handlers.py": 819,
 }
 
 # Directory holding every MCP server package (one subdirectory per server).
-MCP_SERVERS_ROOT = "clio-kit-mcp-servers"
+MCP_SERVERS_ROOT = "mcp-servers"
 
-# Additional package roots outside clio-kit-mcp-servers, checked for a `src/`
-# tree the same way. clio-agentic-search is a standalone service (not an MCP
-# server) but is still a first-class package in this repo's code-health
-# scope; the repository root itself ships the `clio_kit` launcher package
+# Additional package roots outside mcp-servers, checked for a `src/`
+# tree the same way. The repository root ships the `clio_kit` launcher package
 # (its own `pyproject.toml` + `src/clio_kit/`) and was previously the one
 # first-class package this scan silently skipped (PR #364 review finding 5).
-EXTRA_PACKAGE_ROOTS = (".", "clio-agentic-search")
+EXTRA_PACKAGE_ROOTS = (".",)
 
 
 class Failure(NamedTuple):
@@ -199,7 +165,7 @@ def discover_package_src_roots(repo_root: Path) -> list[Path]:
 
     The repository root's own ``src/`` (the ``clio_kit`` launcher package,
     if ``repo_root/pyproject.toml`` exists), one per
-    ``clio-kit-mcp-servers/<name>`` directory that has a ``pyproject.toml``
+    ``mcp-servers/<name>`` directory that has a ``pyproject.toml``
     (mirroring ``.github/workflows/quality_control.yml``'s ``discover-mcps``
     step, minus its Chronolog exclusion -- this is a code-health scan, not a
     release gate, and Chronolog can grow a god-file same as any other

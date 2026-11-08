@@ -1,0 +1,114 @@
+---
+name: simulation-visualize
+description: Use when inspecting and rendering simulation fields with ParaView. Triggers on "isosurface", "slice this volume", "render the field". Not for tabular charts; use results-summary.
+metadata:
+  bundle: clio-analysis
+  servers: clio-paraview
+  provenance: designed
+  eval-status: scenarios-recorded
+---
+
+# Simulation Visualization
+
+ParaView is a pipeline with an **active source**. Almost every tool acts on
+whichever object is active, not on one you name. Losing track of that is how you
+end up colouring the wrong object or screenshotting an empty view.
+
+## The active source is state you must track
+
+Every filter you create becomes the new active source. So a slice of an
+isosurface of the data is what you get if you build them in that order without
+resetting.
+
+- `clio-paraview:get_pipeline` — what exists and how it is connected
+- `clio-paraview:get_active_source_names_by_type` — the names you can select
+- `clio-paraview:set_active_source` — go back to a named object
+
+When a filter produces nothing, check what was active before assuming the filter
+failed.
+
+## Steps
+
+**1. Load.** `clio-paraview:load_scientific_data` — VTK, EXODUS, CSV, RAW, BP5,
+with format detection. This call also checks the configured server's backend.
+The MCP server has its own Python environment: a failed `import paraview` in
+the agent's shell does not establish that the server is unavailable. Use the
+MCP call's actual result and report its error if it fails.
+
+**2. Find out what fields exist.** `clio-paraview:get_available_arrays`. Do this
+before choosing a filter. Array names are exact; guessing one is the most common
+failure, and the shape matters — an isosurface needs a scalar, streamlines need a
+vector.
+
+**3. Find a value worth contouring.** `clio-paraview:get_histogram` on the field.
+An isovalue picked without looking is usually outside the data range, and
+produces an empty surface with no error.
+Histogram bin centers are not the field's exact minimum and maximum. Report
+them as bin centers; obtain actual extrema before claiming an exact range.
+
+**4. Apply the filter that matches the question.**
+
+| Want | Tool | Needs |
+|---|---|---|
+| Surface at a constant value | `generate_isosurface` | scalar field + isovalue |
+| Cut plane through the volume | `create_data_slice` | plane position |
+| Flow paths | `generate_flow_streamlines` | vector field |
+| Values along a line | `plot_over_line` | two points |
+| Displacement by a vector | `warp_by_vector` | vector field |
+| Whole volume | `configure_volume_display` | + opacity function |
+
+**5. Select the display, then colour it.** A histogram can leave its table as
+active source. Use `set_active_source` to restore the intended dataset/filter,
+and `set_representation_type` to choose Surface or Volume before field coloring;
+Outline cannot be field-colored. Then use `clio-paraview:apply_field_coloring`, followed by
+`clio-paraview:set_color_map_preset` for a named preset such as Viridis, or
+`set_color_map` / `edit_volume_opacity` for a custom transfer function.
+
+Preset choice is not decoration. A rainbow map invents banding that is not in the
+data; a perceptually uniform map does not. See `chart-select`.
+
+**6. Frame it.** `clio-paraview:reset_camera` to fit everything, then
+`clio-paraview:rotate_camera` by azimuth and elevation. Reset first — rotating
+from an unknown camera is guesswork.
+
+**7. Capture.** `clio-paraview:take_viewport_screenshot` writes a timestamped
+PNG. `clio-paraview:show_screenshot_preview` gives an inline look, which is what
+you want while iterating.
+
+Preview while adjusting, save when it is right.
+
+## Surfaces and geometry
+
+`clio-paraview:compute_surface_area` requires the active source to be a **surface
+mesh** — an isosurface or extracted surface, not a volume. On a volume it fails
+rather than approximating.
+
+`clio-paraview:set_representation_type` switches between Surface, Wireframe and
+Points. Points on a large mesh renders when Surface is too slow to iterate on.
+
+`clio-paraview:save_contour_as_stl` exports the active contour for use elsewhere.
+
+## When ParaView is the wrong tool
+
+If the data is a table, this is the wrong server — `clio-plot` reads CSV and
+Excel directly and needs none of this. See `results-summary`.
+
+## What not to do
+
+- Do not apply a filter without checking what is active.
+- Do not guess array names; list them.
+- Do not pick an isovalue without looking at the histogram.
+- Do not use a rainbow colour map for continuous scalar data.
+- Do not screenshot before resetting the camera.
+- Do not compute surface area on a volume.
+
+## Tool discovery across agents
+
+Names such as `clio-hdf5:open_file` identify a server and its tool in this
+guide. Your agent may expose a different prefix. Match the server and tool
+against its live MCP inventory, then use the advertised name and input schema.
+If a required server is unavailable, report it before attempting the workflow.
+
+## Completion check
+
+Verify loading and rendering through the configured MCP tools; a connection alone is insufficient. Report source, timestep, active filter, field association (point/cell), units, color range and output image. Inspect the image before declaring rendering complete; do not infer its colors from the preset name alone.

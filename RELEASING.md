@@ -1,7 +1,7 @@
 # Release procedure
 
 CLIO Kit publishes from version tags on `main`. The workflow validates every
-embedded lock including the agentic-search lock, runs the root, JARVIS, SLURM,
+embedded server lock, runs the root, JARVIS, SLURM,
 Spack, ChronoLog, and ADIOS release suites with zero skipped tests, builds every
 server package, tests an isolated installed root wheel, attests the root
 distributions, publishes to PyPI, and creates a verified immutable GitHub
@@ -10,9 +10,9 @@ but do not publish advisory development packages to TestPyPI; only a qualifying
 production tag publishes package bytes.
 
 The quality workflow treats MyPy and every supported Python test lane as
-required. Changes to the root lock, agentic-search lock, server-version map, or
+required. Changes to the root lock, server-version map, or
 workflow infrastructure trigger the full applicable matrix. JARVIS, SLURM,
-Spack, agentic-search, and the explicit release suites reject any skipped test.
+Spack and the explicit release suites reject any skipped test.
 Legacy 2.x servers still run their complete existing suites as required jobs,
 but their pre-existing conditional skips are not claimed as release evidence;
 eliminating those skips is part of each server's future contract upgrade.

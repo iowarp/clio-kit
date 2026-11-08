@@ -1,0 +1,94 @@
+[
+  {
+    "prompt": "Plot mean runtime by machine from this CSV.",
+    "expect": "results-summary"
+  },
+  {
+    "prompt": "Why is reading this HDF5 file so slow?",
+    "expect": "storage-format"
+  },
+  {
+    "prompt": "My collective MPI-IO shows 12 MB/s with 4KB writes. Good or bad?",
+    "expect": "io-performance"
+  },
+  {
+    "prompt": "This file is huge, what is in it? It is app.log from last night.",
+    "expect": "log-search"
+  },
+  {
+    "prompt": "What MPI versions does this machine have?",
+    "expect": "software-environment"
+  },
+  {
+    "prompt": "Why has my sbatch job been pending for an hour?",
+    "expect": "slurm-script"
+  },
+  {
+    "prompt": "Compute the mean of a 16GB dataset without loading it.",
+    "expect": "large-data-read"
+  },
+  {
+    "prompt": "My points are landing in the ocean off Africa.",
+    "expect": "coordinate-systems"
+  },
+  {
+    "prompt": "Validate this GeoJSON and render a map of the monitors.",
+    "expect": "geospatial-map"
+  },
+  {
+    "prompt": "Find recent papers on speculative decoding and the datasets behind them.",
+    "expect": "research-survey"
+  },
+  {
+    "prompt": "Give me BibTeX for these three arXiv IDs.",
+    "expect": "bibliography"
+  },
+  {
+    "prompt": "There are missing values and duplicates in this table.",
+    "expect": "data-clean"
+  },
+  {
+    "prompt": "What is the capital of France?",
+    "expect": ""
+  },
+  {
+    "prompt": "Install ior with spack and run it on the cluster, tell me when it finishes.",
+    "expect": "cluster-run"
+  },
+  {
+    "prompt": "Record this session so I can look back at what we decided.",
+    "expect": "session-record"
+  },
+  {
+    "prompt": "Make an isosurface of the density field in this VTK file and screenshot it.",
+    "expect": "simulation-visualize"
+  },
+  {
+    "prompt": "What is the b-value for this earthquake catalog?",
+    "expect": "seismic-analysis"
+  },
+  {
+    "prompt": "I need to download the air quality dataset before I can analyse it.",
+    "expect": "dataset-stage"
+  },
+  {
+    "prompt": "Write me a haiku about the sea.",
+    "expect": ""
+  },
+  {
+    "prompt": "Refactor this Python function to be faster.",
+    "expect": ""
+  },
+  {
+    "prompt": "This job took 3 hours when it normally takes 40 minutes. What happened?",
+    "expect": "job-diagnose"
+  },
+  {
+    "prompt": "Someone handed me results.h5 and I have no idea what is in it.",
+    "expect": "dataset-explore"
+  },
+  {
+    "prompt": "Which chart should I use to compare four filesystems?",
+    "expect": "chart-select"
+  }
+]

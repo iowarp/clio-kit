@@ -1,0 +1,17 @@
+{
+  "name": "clio-dataset-report",
+  "version": "1.0.0",
+  "description": "Turn a small HDF5 dataset into a report with a CSV, figure, checked statistics and evidence review.",
+  "dependencies": [
+    "clio-hdf5",
+    "clio-pandas",
+    "clio-plot",
+    "clio-agents"
+  ],
+  "author": {
+    "name": "IoWarp Team - Gnosis Research Center",
+    "email": "grc@illinoistech.edu",
+    "url": "https://github.com/iowarp/clio-kit"
+  },
+  "license": "BSD-3-Clause"
+}

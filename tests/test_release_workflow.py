@@ -39,19 +39,20 @@ def test_external_actions_are_immutable_commit_pins() -> None:
 
 
 def test_release_workflow_triggers_on_every_shipped_lock() -> None:
-    """Root and embedded search lock drift must run release validation."""
+    """Root and server lock drift must run release validation."""
     pull_request_paths = WORKFLOW[
         WORKFLOW.index("  pull_request:") : WORKFLOW.index("  push:")
     ]
     push_paths = WORKFLOW[WORKFLOW.index("  push:") : WORKFLOW.index("permissions:")]
     for paths in (pull_request_paths, push_paths):
         assert "- 'uv.lock'" in paths
-        assert "- 'clio-agentic-search/uv.lock'" in paths
+        assert "- 'mcp-servers/**'" in paths
         assert "- 'mcp-server-versions.toml'" in paths
+        for kind in ("plugins", "skills", "agents", "hooks"):
+            assert f"- '{kind}/**'" in paths
 
     quality_block = WORKFLOW[WORKFLOW.index("  quality:") : WORKFLOW.index("  build:")]
     assert "uv lock --check\n" in quality_block
-    assert "uv lock --check --directory clio-agentic-search" in quality_block
 
 
 def test_release_security_audits_unmatrixed_shipped_environments() -> None:
@@ -59,15 +60,11 @@ def test_release_security_audits_unmatrixed_shipped_environments() -> None:
     quality_block = WORKFLOW[WORKFLOW.index("  quality:") : WORKFLOW.index("  build:")]
     assert "uv run --with 'pip-audit==2.10.1' pip-audit" in quality_block
     assert (
-        "uv run --directory clio-agentic-search \\\n"
+        "uv run --directory mcp-servers/chronolog \\\n"
         "          --with 'pip-audit==2.10.1' pip-audit" in quality_block
     )
     assert (
-        "uv run --directory clio-kit-mcp-servers/chronolog \\\n"
-        "          --with 'pip-audit==2.10.1' pip-audit" in quality_block
-    )
-    assert (
-        'uv run --directory "clio-kit-mcp-servers/$server" \\\n'
+        'uv run --directory "mcp-servers/$server" \\\n'
         "            --with 'pip-audit==2.10.1' pip-audit" in quality_block
     )
 
@@ -229,7 +226,7 @@ def test_registry_publishes_only_contracts_versioned_for_this_release() -> None:
     assert 'Path("mcp-server-versions.toml")' in registry_block
     assert 'data["mcp-registry-release"]["publish"]' in registry_block
     assert 'for server_name in "${release_servers[@]}"' in registry_block
-    assert "clio-kit-mcp-servers/*/" not in registry_block
+    assert "mcp-servers/*/" not in registry_block
 
 
 def test_wheel_smoke_exercises_persistent_uv_tool_installation() -> None:
@@ -263,7 +260,7 @@ def test_ares_probe_exercises_persistent_uv_tool_installation() -> None:
     """Live Ares acceptance must use the same supported persistent tool path."""
     probe = (
         REPOSITORY_ROOT
-        / "clio-kit-mcp-servers"
+        / "mcp-servers"
         / "jarvis"
         / "scripts"
         / "live_ares_semantic_mcp_probe.py"
@@ -271,7 +268,7 @@ def test_ares_probe_exercises_persistent_uv_tool_installation() -> None:
     probe_module = runpy.run_path(
         str(
             REPOSITORY_ROOT
-            / "clio-kit-mcp-servers"
+            / "mcp-servers"
             / "jarvis"
             / "scripts"
             / "live_ares_semantic_mcp_probe.py"
@@ -315,7 +312,7 @@ def test_ares_probe_validates_explicit_spack_command(tmp_path: Path) -> None:
     probe_module = runpy.run_path(
         str(
             REPOSITORY_ROOT
-            / "clio-kit-mcp-servers"
+            / "mcp-servers"
             / "jarvis"
             / "scripts"
             / "live_ares_semantic_mcp_probe.py"
@@ -334,9 +331,9 @@ def test_ares_probe_validates_explicit_spack_command(tmp_path: Path) -> None:
 def test_wheel_smoke_binds_jarvis_artifacts_to_exact_release_wheel() -> None:
     """The installed JARVIS child must expose artifacts from the locked release."""
     jarvis_project = tomllib.loads(
-        (
-            REPOSITORY_ROOT / "clio-kit-mcp-servers" / "jarvis" / "pyproject.toml"
-        ).read_text(encoding="utf-8")
+        (REPOSITORY_ROOT / "mcp-servers" / "jarvis" / "pyproject.toml").read_text(
+            encoding="utf-8"
+        )
     )
     dependency = next(
         value
@@ -353,7 +350,7 @@ def test_wheel_smoke_binds_jarvis_artifacts_to_exact_release_wheel() -> None:
     assert match is not None
     expected_url, expected_digest = match.groups()
     jarvis_lock = tomllib.loads(
-        (REPOSITORY_ROOT / "clio-kit-mcp-servers" / "jarvis" / "uv.lock").read_text(
+        (REPOSITORY_ROOT / "mcp-servers" / "jarvis" / "uv.lock").read_text(
             encoding="utf-8"
         )
     )
@@ -383,7 +380,7 @@ def test_wheel_smoke_binds_jarvis_artifacts_to_exact_release_wheel() -> None:
     assert '"jarvis_get_execution"' in smoke_block
     assert '"jarvis_get_execution_progress"' not in smoke_block
     assert '"jarvis_get_execution_artifacts"' not in smoke_block
-    assert 'get_servers_path() / "jarvis"' in smoke_block
+    assert 'server_project("jarvis", get_servers_path())' in smoke_block
     assert 'distribution("jarvis-cd")' in smoke_block
     assert 'installed.version == "1.8.1"' in smoke_block
     assert expected_url in smoke_block
@@ -455,6 +452,7 @@ def test_release_regenerates_and_smokes_shipped_user_contracts() -> None:
     assert "mcp-contract clio-kit-scientific-catalog-user-v1.1" in smoke_block
     assert "mcp-contract clio-kit-scientific-catalog-user-v1" in smoke_block
     assert "mcp-contract clio-kit-slurm-user-v3" in smoke_block
+    assert "mcp-contract clio-kit-spack-user-v2.2" in smoke_block
     assert "mcp-contract clio-kit-spack-user-v2.1" in smoke_block
     assert "mcp-contract clio-kit-spack-user-v2" in smoke_block
     assert "clio-kit-jarvis-user-v3.7.2" in smoke_block
@@ -475,18 +473,43 @@ def test_quality_matrix_is_required_and_lock_sensitive() -> None:
     ]
     assert "uv\\.lock$" in infrastructure_check
     assert "mcp-server-versions\\.toml$" in infrastructure_check
-    assert "clio-agentic-search/uv\\.lock$" in infrastructure_check
     # 3.13 added to both matrices to guard the numpy<2-ceiling defect class
-    # (clio-kit-mcp-servers/pandas, /plot) on any Python-3.13-only host.
+    # (mcp-servers/pandas, /plot) on any Python-3.13-only host.
     assert 'python-version: ["3.10", "3.11", "3.12", "3.13"]' in QUALITY_WORKFLOW
-    assert 'python-version: ["3.11", "3.12", "3.13"]' in QUALITY_WORKFLOW
-    assert "uv lock --check" in QUALITY_WORKFLOW
-    assert QUALITY_WORKFLOW.count("uv sync --locked --dev") == 3
 
 
 def test_quality_junit_reports_reject_skipped_tests() -> None:
-    """Upgraded MCPs, Windows containment, and search reject test skips."""
-    assert QUALITY_WORKFLOW.count("--junitxml=") == 3
-    assert QUALITY_WORKFLOW.count("scripts/assert_no_skipped_tests.py") == 3
+    """Upgraded MCPs and Windows containment reject test skips."""
+    assert QUALITY_WORKFLOW.count("--junitxml=") == 2
+    assert QUALITY_WORKFLOW.count("scripts/assert_no_skipped_tests.py") == 2
     assert 'case "${{ matrix.mcp }}" in' in QUALITY_WORKFLOW
     assert "jarvis|slurm|spack)" in QUALITY_WORKFLOW
+
+
+def test_components_publish_before_launcher_and_never_enter_pypi_upload() -> None:
+    import yaml
+
+    jobs = yaml.safe_load(WORKFLOW)["jobs"]
+    assert "github-release" in jobs["publish-to-pypi"]["needs"]
+    assert jobs["github-release"]["needs"] == ["build"]
+    assert jobs["github-release"]["environment"]["name"] == "pypi"
+    build_steps = jobs["build"]["steps"]
+    assert any(
+        "verify_component_release.py" in step.get("run", "") for step in build_steps
+    )
+    attest = next(
+        step
+        for step in build_steps
+        if step.get("name") == "Attest release distributions"
+    )
+    assert "dist/components/clio-component-*.tar.gz" in attest["with"]["subject-path"]
+    steps = jobs["publish-to-pypi"]["steps"]
+    remove = next(
+        i for i, step in enumerate(steps) if step.get("run") == "rm -r dist/components"
+    )
+    publish = next(
+        i
+        for i, step in enumerate(steps)
+        if step.get("uses", "").startswith("pypa/gh-action-pypi-publish@")
+    )
+    assert remove < publish

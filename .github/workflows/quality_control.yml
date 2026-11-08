@@ -1,8 +1,8 @@
 name: Quality Control
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ main, dev, develop ]
   pull_request:
     branches: [ main, dev, develop ]
 
@@ -16,7 +16,6 @@ jobs:
       mcps: ${{ steps.discover.outputs.mcps }}
       any_mcp_changed: ${{ steps.discover.outputs.any_mcp_changed }}
       containment_changed: ${{ steps.discover.outputs.containment_changed }}
-      search_changed: ${{ steps.discover.outputs.search_changed }}
     steps:
     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       with:
@@ -27,8 +26,8 @@ jobs:
       run: |
         # ── Build list of all MCP directories (excluding Chronolog) ──
         blacklisted_mcps="chronolog|Chronolog"
-        all_mcps=$(find clio-kit-mcp-servers -maxdepth 1 -type d -exec test -f {}/pyproject.toml \; -print \
-          | sed 's|clio-kit-mcp-servers/||' | grep -v -E "^($blacklisted_mcps)$" | sort)
+        all_mcps=$(find mcp-servers -maxdepth 1 -type d -exec test -f {}/pyproject.toml \; -print \
+          | sed 's|mcp-servers/||' | grep -v -E "^($blacklisted_mcps)$" | sort)
 
         # ── Detect changed files ──
         RUN_ALL=false
@@ -46,7 +45,7 @@ jobs:
         echo "$CHANGED"
 
         # ── Check for infrastructure changes (triggers full run) ──
-        if [ "$RUN_ALL" = "false" ] && echo "$CHANGED" | grep -qE '^(scripts/|\.github/|\.codecov\.yml$|pyproject\.toml$|uv\.lock$|mcp-server-versions\.toml$|clio-agentic-search/uv\.lock$)'; then
+        if [ "$RUN_ALL" = "false" ] && echo "$CHANGED" | grep -qE '^(scripts/|\.github/|\.codecov\.yml$|pyproject\.toml$|uv\.lock$|mcp-server-versions\.toml$)'; then
           RUN_ALL=true
         fi
         echo "Run all: $RUN_ALL"
@@ -57,7 +56,7 @@ jobs:
         else
           mcps_list=""
           for mcp in $all_mcps; do
-            if echo "$CHANGED" | grep -q "^clio-kit-mcp-servers/$mcp/"; then
+            if echo "$CHANGED" | grep -q "^mcp-servers/$mcp/"; then
               mcps_list="${mcps_list:+$mcps_list$'\n'}$mcp"
             fi
           done
@@ -83,13 +82,6 @@ jobs:
           echo "containment_changed=false" >> $GITHUB_OUTPUT
         fi
 
-        # ── Determine if agentic-search needs testing ──
-        if [ "$RUN_ALL" = "true" ] || echo "$CHANGED" | grep -q "^clio-agentic-search/"; then
-          echo "search_changed=true" >> $GITHUB_OUTPUT
-        else
-          echo "search_changed=false" >> $GITHUB_OUTPUT
-        fi
-
   file-size-ratchet:
     name: File size ratchet
     runs-on: ubuntu-latest
@@ -102,6 +94,36 @@ jobs:
 
     - name: Check per-file size ratchet (campaign #362)
       run: python scripts/check_file_size.py
+
+  plugin-manifests:
+    name: Plugin manifests (strict)
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: '22'
+
+    - name: Install the Claude Code CLI
+      run: npm install -g @anthropic-ai/claude-code
+
+    - name: Validate the marketplace and every plugin manifest
+      shell: bash
+      run: |
+        # `claude plugin validate` is a local manifest check -- no credentials
+        # needed, so it runs unauthenticated in CI. --strict turns the warnings
+        # the runtime tolerates (missing author, unrecognised fields) into
+        # failures, which is what keeps generated manifests publishable.
+        claude plugin validate .claude-plugin/marketplace.json --strict
+        status=0
+        while IFS= read -r manifest; do
+          plugin_dir="$(dirname "$(dirname "$manifest")")"
+          echo "::group::$plugin_dir"
+          claude plugin validate "$plugin_dir" --strict || status=1
+          echo "::endgroup::"
+        done < <(git ls-files '*/.claude-plugin/plugin.json')
+        exit "$status"
 
   ratchet-baseline-diff-guard:
     name: Ratchet baseline diff guard (PR)
@@ -128,7 +150,7 @@ jobs:
         merge_base="$(git merge-base HEAD "origin/${{ github.base_ref }}")"
         echo "merge-base: $merge_base"
         if git show "$merge_base:scripts/check_file_size.py" > /tmp/base_check_file_size.py 2>/dev/null; then
-          python scripts/check_baseline_diff.py /tmp/base_check_file_size.py scripts/check_file_size.py
+          python scripts/check_baseline_diff.py /tmp/base_check_file_size.py scripts/check_file_size.py --base-ref "$merge_base"
         else
           echo "OK: scripts/check_file_size.py did not exist at the merge-base ($merge_base) -- nothing to diff, guard inactive for this PR."
         fi
@@ -155,12 +177,12 @@ jobs:
 
     - name: Run Ruff linter on ${{ matrix.mcp }}
       run: |
-        cd clio-kit-mcp-servers/${{ matrix.mcp }}
+        cd mcp-servers/${{ matrix.mcp }}
         uv run ruff check --output-format=github .
 
     - name: Run Ruff formatter check on ${{ matrix.mcp }}
       run: |
-        cd clio-kit-mcp-servers/${{ matrix.mcp }}
+        cd mcp-servers/${{ matrix.mcp }}
         uv run ruff format --check .
 
   mypy:
@@ -185,7 +207,7 @@ jobs:
 
     - name: Run MyPy on ${{ matrix.mcp }}
       run: |
-        cd clio-kit-mcp-servers/${{ matrix.mcp }}
+        cd mcp-servers/${{ matrix.mcp }}
         if [ -d src ]; then
           uv run mypy src/ --ignore-missing-imports --show-error-codes --no-error-summary
         else
@@ -205,6 +227,10 @@ jobs:
         exclude:
           - mcp: jarvis
             python-version: "3.10"
+          - mcp: scientific-catalog
+            python-version: "3.10"
+          - mcp: web
+            python-version: "3.10"
       max-parallel: 20
     steps:
     - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -219,7 +245,7 @@ jobs:
 
     - name: Run tests for ${{ matrix.mcp }}
       run: |
-        cd clio-kit-mcp-servers/${{ matrix.mcp }}
+        cd mcp-servers/${{ matrix.mcp }}
         if [ -d tests ]; then
           uv run pytest tests/ -v --tb=short \
             --cov=src --cov-report=xml --cov-report=html --cov-report=term \
@@ -237,7 +263,7 @@ jobs:
       if: matrix.python-version == '3.12'
       uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
       with:
-        file: clio-kit-mcp-servers/${{ matrix.mcp }}/coverage.xml
+        file: mcp-servers/${{ matrix.mcp }}/coverage.xml
         flags: ${{ matrix.mcp }}
         name: codecov-${{ matrix.mcp }}
         fail_ci_if_error: false
@@ -247,7 +273,7 @@ jobs:
       if: matrix.python-version == '3.12' && !cancelled()
       uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1
       with:
-        file: clio-kit-mcp-servers/${{ matrix.mcp }}/junit.xml
+        file: mcp-servers/${{ matrix.mcp }}/junit.xml
         token: ${{ secrets.CODECOV_TOKEN }}
 
     - name: Upload coverage HTML report
@@ -255,7 +281,7 @@ jobs:
       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
       with:
         name: coverage-html-${{ matrix.mcp }}
-        path: clio-kit-mcp-servers/${{ matrix.mcp }}/htmlcov/
+        path: mcp-servers/${{ matrix.mcp }}/htmlcov/
         if-no-files-found: ignore
 
   windows-containment:
@@ -282,19 +308,19 @@ jobs:
     - name: Run real Windows process-containment tests for ${{ matrix.mcp }}
       shell: pwsh
       run: |
-        uv run --directory "clio-kit-mcp-servers/${{ matrix.mcp }}" `
+        uv run --directory "mcp-servers/${{ matrix.mcp }}" `
           python -c "import os; assert os.name == 'nt', os.name"
-        uv run --directory "clio-kit-mcp-servers/${{ matrix.mcp }}" `
+        uv run --directory "mcp-servers/${{ matrix.mcp }}" `
           pytest tests/ -v --tb=short `
           --cov=src --cov-report=xml --cov-report=html --cov-report=term `
           --junitxml=junit-windows.xml -o junit_family=legacy
         python scripts/assert_no_skipped_tests.py `
-          "clio-kit-mcp-servers/${{ matrix.mcp }}/junit-windows.xml"
+          "mcp-servers/${{ matrix.mcp }}/junit-windows.xml"
 
     - name: Upload Windows coverage to Codecov
       uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
       with:
-        file: clio-kit-mcp-servers/${{ matrix.mcp }}/coverage.xml
+        file: mcp-servers/${{ matrix.mcp }}/coverage.xml
         flags: ${{ matrix.mcp }}
         name: codecov-${{ matrix.mcp }}-windows-py${{ matrix.python-version }}
         fail_ci_if_error: false
@@ -306,9 +332,9 @@ jobs:
       with:
         name: windows-containment-${{ matrix.mcp }}-py${{ matrix.python-version }}-evidence
         path: |
-          clio-kit-mcp-servers/${{ matrix.mcp }}/coverage.xml
-          clio-kit-mcp-servers/${{ matrix.mcp }}/htmlcov/
-          clio-kit-mcp-servers/${{ matrix.mcp }}/junit-windows.xml
+          mcp-servers/${{ matrix.mcp }}/coverage.xml
+          mcp-servers/${{ matrix.mcp }}/htmlcov/
+          mcp-servers/${{ matrix.mcp }}/junit-windows.xml
         if-no-files-found: warn
 
   security:
@@ -333,7 +359,7 @@ jobs:
 
     - name: Run security audit for ${{ matrix.mcp }}
       run: |
-        cd clio-kit-mcp-servers/${{ matrix.mcp }}
+        cd mcp-servers/${{ matrix.mcp }}
         uv run pip-audit
 
   validate-fastmcp:
@@ -355,9 +381,9 @@ jobs:
       with:
         mcp: ${{ matrix.mcp }}
 
-    - name: Validate FastMCP 3.0 compliance for ${{ matrix.mcp }}
+    - name: Validate FastMCP 4 compliance for ${{ matrix.mcp }}
       run: |
-        cd clio-kit-mcp-servers/${{ matrix.mcp }}
+        cd mcp-servers/${{ matrix.mcp }}
         uv run python ../../scripts/validate_fastmcp.py
 
   validate-server-json:
@@ -381,7 +407,7 @@ jobs:
 
     - name: Regenerate and diff server.json for ${{ matrix.mcp }}
       run: |
-        cd clio-kit-mcp-servers/${{ matrix.mcp }}
+        cd mcp-servers/${{ matrix.mcp }}
         # Extract live metadata
         LIVE=$(uv run python ../../scripts/extract_mcp_metadata.py)
 
@@ -411,76 +437,3 @@ jobs:
         fi
 
         echo "PASS: server.json is in sync for ${{ matrix.mcp }}"
-
-  # ── clio-agentic-search (standalone service, not an MCP server) ──
-
-  agentic-search-ruff:
-    name: Ruff - clio-agentic-search
-    runs-on: ubuntu-latest
-    needs: discover-mcps
-    if: needs.discover-mcps.outputs.search_changed == 'true'
-    steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-    - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      with:
-        version: "latest"
-    - run: uv python install 3.12
-    - name: Install dependencies
-      run: |
-        cd clio-agentic-search
-        uv sync --locked --dev
-    - name: Ruff lint
-      run: |
-        cd clio-agentic-search
-        uv run ruff check --output-format=github .
-    - name: Ruff format check
-      run: |
-        cd clio-agentic-search
-        uv run ruff format --check .
-
-  agentic-search-mypy:
-    name: MyPy - clio-agentic-search
-    runs-on: ubuntu-latest
-    needs: discover-mcps
-    if: needs.discover-mcps.outputs.search_changed == 'true'
-    steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-    - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      with:
-        version: "latest"
-    - run: uv python install 3.12
-    - name: Install dependencies
-      run: |
-        cd clio-agentic-search
-        uv lock --check
-        uv sync --locked --dev
-    - name: Run MyPy
-      run: |
-        cd clio-agentic-search
-        uv run mypy src/ --ignore-missing-imports --show-error-codes --no-error-summary
-
-  agentic-search-test:
-    name: Test - clio-agentic-search (py${{ matrix.python-version }})
-    runs-on: ubuntu-latest
-    needs: discover-mcps
-    if: needs.discover-mcps.outputs.search_changed == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.11", "3.12", "3.13"]
-    steps:
-    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-    - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
-      with:
-        version: "latest"
-    - run: uv python install ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        cd clio-agentic-search
-        uv sync --locked --dev
-    - name: Run tests
-      run: |
-        cd clio-agentic-search
-        uv run pytest --ignore=tests/benchmarks -v --tb=short \
-          --junitxml=junit.xml -o junit_family=legacy
-        python ../scripts/assert_no_skipped_tests.py junit.xml

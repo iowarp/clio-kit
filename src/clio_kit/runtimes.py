@@ -1,0 +1,188 @@
+"""How each supported runtime pins, builds and starts an embedded MCP server.
+
+The locked-runtime guarantee is the same in every language: a server's source
+and its lock file are hashed into an environment identity, the environment is
+built from that lock without resolving anything, and the server starts from the
+built environment. What differs per runtime is only which files carry the pin
+and which commands realise it, which is what this table holds.
+
+``npm ci`` against ``package-lock.json`` is a genuine equivalent of
+``uv sync --frozen``: it installs exactly the locked tree and fails rather than
+resolving when the lock disagrees with the manifest. Go uses ``go.mod`` versions and ``go.sum`` checksums with read-only module
+resolution; the toolchain remains an explicit system prerequisite.
+
+Released launchers fetch selected source-and-lock component artifacts. All
+runtimes may download dependencies on first build; offline execution requires
+a prewarmed cache.
+Go servers are compiled on first build and then run as binaries.
+"""
+
+from __future__ import annotations
+
+import shutil
+from pathlib import Path
+
+
+class UnsupportedRuntime(Exception):
+    """A descriptor names a runtime this launcher cannot start."""
+
+
+# Per runtime: the manifest and lock that must both be present for a project to
+# be launchable, and the generated directory that must never be hashed into the
+# environment identity. Hashing a build output would give every rebuild a new
+# identity, so the cache would never hit.
+RUNTIME_PROJECT_FILES: dict[str, tuple[str, str]] = {
+    "python": ("pyproject.toml", "uv.lock"),
+    "node": ("package.json", "package-lock.json"),
+    "go": ("go.mod", "go.sum"),
+}
+
+# What each runtime *generates* and must therefore not hash or copy. This is
+# per-runtime precisely because the same directory name means opposite things:
+# `dist/` is throwaway build output for Python (wheels and sdists) but is the
+# shipped, executed artifact for a TypeScript server, whose entry point is
+# `dist/server.js`. Excluding it globally made every node server unlaunchable
+# with MODULE_NOT_FOUND, because the one file the launcher was about to run was
+# the one file it declined to copy.
+RUNTIME_GENERATED_DIRECTORIES: dict[str, frozenset[str]] = {
+    "python": frozenset({"dist"}),
+    "node": frozenset({"node_modules"}),
+    "go": frozenset({"bin"}),
+}
+
+# The executable each runtime needs on PATH, and where to point someone when it
+# is missing. A server that cannot start because a toolchain is absent should
+# say which toolchain.
+RUNTIME_TOOLCHAIN: dict[str, tuple[str, str]] = {
+    "python": ("uv", "https://github.com/astral-sh/uv"),
+    "node": ("npm", "https://nodejs.org"),
+    "go": ("go", "https://go.dev/dl/"),
+}
+
+
+def supported_runtimes() -> tuple[str, ...]:
+    """Return every runtime this launcher can build and start, name-sorted."""
+    return tuple(sorted(RUNTIME_PROJECT_FILES))
+
+
+def go_binary(project: Path) -> Path:
+    """Where a go server's compiled binary lives inside its built project.
+
+    Named once because the build writes it and the start command runs it, and
+    the two disagreeing is a MODULE_NOT_FOUND-shaped failure at launch.
+    """
+    return project / "bin" / "server"
+
+
+def require_runtime(runtime: str) -> None:
+    """Fail with the runtime's own name when it is not one we can start."""
+    if runtime not in RUNTIME_PROJECT_FILES:
+        raise UnsupportedRuntime(
+            f"runtime {runtime!r} is not startable by this launcher; "
+            f"expected one of {sorted(RUNTIME_PROJECT_FILES)}"
+        )
+
+
+def runtime_executable(runtime: str) -> str:
+    """Resolve a runtime's toolchain, preferring an explicit user install.
+
+    Mirrors how the Python path resolves ``uv``: a login shell that never
+    sourced a version manager's profile still has the tool under ``~/.local``,
+    and failing to find it there turns a working machine into a broken one.
+    """
+    require_runtime(runtime)
+    executable, documentation = RUNTIME_TOOLCHAIN[runtime]
+    found = shutil.which(executable)
+    if found is not None:
+        return found
+    local = Path.home() / ".local" / "bin" / executable
+    if local.exists():
+        return str(local)
+    raise UnsupportedRuntime(
+        f"{executable!r} is required to start a {runtime} MCP server "
+        f"and was not found on PATH -- see {documentation}"
+    )
+
+
+def required_project_files(runtime: str) -> tuple[str, str]:
+    """Return the manifest and lock a launchable project of this runtime needs."""
+    require_runtime(runtime)
+    return RUNTIME_PROJECT_FILES[runtime]
+
+
+def generated_directories(runtime: str) -> frozenset[str]:
+    """Return directories this runtime generates, which must not be hashed."""
+    require_runtime(runtime)
+    return RUNTIME_GENERATED_DIRECTORIES[runtime]
+
+
+def lock_file_name(runtime: str) -> str:
+    """Return the lock file whose bytes pin this runtime's dependency closure."""
+    return required_project_files(runtime)[1]
+
+
+def build_command(
+    runtime: str, project: Path, entry: str, *, executable: str
+) -> list[str]:
+    """Return the command that realises a project's lock into a built state.
+
+    Every one of these installs or compiles from the lock alone and fails
+    rather than resolving, which is what makes the built environment a function
+    of the hashed inputs rather than of when it happened to run.
+
+    ``entry`` means the same thing in every runtime -- the thing that runs --
+    but only go needs it at build time, because go compiles that one package
+    into the binary the start command then executes.
+    """
+    require_runtime(runtime)
+    if runtime == "python":
+        return [
+            executable,
+            "sync",
+            "--frozen",
+            "--no-dev",
+            "--no-editable",
+            "--project",
+            str(project),
+        ]
+    if runtime == "node":
+        # npm resolves --prefix inconsistently across versions, so the project
+        # is selected by working directory instead; the caller runs it there.
+        return [executable, "ci", "--omit=dev"]
+    # Build the package `entry` names, not `./...`. Go refuses to write more
+    # than one package to a non-directory -- `cannot write multiple packages to
+    # non-directory bin/server` -- so `./...` builds only for a module with
+    # exactly one package, which no real server is.
+    return [executable, "build", "-mod=readonly", "-o", str(go_binary(project)), entry]
+
+
+def start_command(
+    runtime: str, project: Path, entry: str, *, executable: str
+) -> list[str]:
+    """Return the command that starts the server from its built environment."""
+    require_runtime(runtime)
+    if runtime == "python":
+        # The frozen, non-editable sync completed before launch. A second sync
+        # here could mutate files while another client is importing this package.
+        return [
+            executable,
+            "run",
+            "--no-dev",
+            "--no-editable",
+            "--no-sync",
+            "--frozen",
+            "--project",
+            str(project),
+            entry,
+        ]
+    if runtime == "node":
+        return ["node", str(project / entry)]
+    # Go compiled `entry` to this fixed path above, so the binary is addressed
+    # by where the build put it rather than by the package path it came from.
+    return [str(go_binary(project))]
+
+
+def build_runs_in_project(runtime: str) -> bool:
+    """Whether the build command must run with the project as its directory."""
+    require_runtime(runtime)
+    return runtime in {"node", "go"}

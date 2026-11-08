@@ -6,7 +6,7 @@ inputs:
     description: Python version to install
     default: "3.12"
   mcp:
-    description: MCP server directory name (under clio-kit-mcp-servers/)
+    description: MCP server directory name (under mcp-servers/)
     required: true
   dev-packages:
     description: Space-separated extra dev packages to install
@@ -29,8 +29,8 @@ runs:
       shell: bash
       run: |
         git config --global url.https://github.com/.insteadOf git@github.com:
-        cd clio-kit-mcp-servers/${{ inputs.mcp }}
-        uv sync --frozen --all-extras --dev
+        cd mcp-servers/${{ inputs.mcp }}
+        uv sync --frozen --all-extras --dev --python "${{ inputs.python-version }}"
         if [ -n "${{ inputs.dev-packages }}" ]; then
           uv pip install ${{ inputs.dev-packages }}
         fi

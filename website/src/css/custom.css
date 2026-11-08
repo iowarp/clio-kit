@@ -1,0 +1,267 @@
+/*
+ * CLIO Kit keeps its own colors from the IOWarp mark (teal, sky, orange, cream,
+ * navy) inside the layout it shares with coder.iowarp.ai.
+ */
+:root {
+  --kit-teal: #217ca3;
+  --kit-sky: #6bc2e4;
+  --kit-orange: #ec7c26;
+  --kit-cream: #faf8f5;
+  --kit-navy: #0f1f35;
+  --kit-midnight: #050d1a;
+
+  --font-ui: 'IBM Plex Sans', sans-serif;
+  --font-display: 'Newsreader', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --page: 1248px;
+  --measure: 70ch;
+  --radius-sm: 2px;
+  --radius: 4px;
+  --motion-fast: 160ms;
+  --motion-base: 240ms;
+  --motion-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* The primary action is orange with dark text (6.3:1) in both themes. */
+  --cta: var(--kit-orange);
+  --on-cta: #111827;
+
+  /* Code stays dark navy in both themes. */
+  --code: #0a1520;
+  --code-ink: #e5e7eb;
+  --code-muted: #9ca3af;
+  --code-border: #1f3a52;
+  --code-sunk: var(--kit-midnight);
+  --code-accent: var(--kit-sky);
+  --code-accent-soft: #142b43;
+}
+
+/* Text colors are darkened from the brand teal and orange to pass 4.5:1 on cream. */
+html[data-theme='light'] {
+  --paper: var(--kit-cream);
+  --paper-raised: #ffffff;
+  --chrome: #ffffff;
+  --ink: #111827;
+  --ink-soft: #374151;
+  --muted: #6b7280;
+  --line: #e2ddd5;
+  --line-control: #6b7280;
+  --accent: #1b6c90;
+  --accent-soft: #e6f1f6;
+  --on-accent: #ffffff;
+  --secondary: #a9520f;
+}
+
+html[data-theme='dark'] {
+  --paper: #000000;
+  --paper-raised: var(--kit-navy);
+  --chrome: var(--kit-midnight);
+  --ink: #e5e7eb;
+  --ink-soft: #d1d5db;
+  --muted: #9ca3af;
+  --line: rgba(107, 194, 228, 0.25);
+  --line-control: #4a7f96;
+  --accent: var(--kit-sky);
+  --accent-soft: #142b43;
+  --on-accent: var(--kit-midnight);
+  --secondary: var(--kit-orange);
+}
+
+/* Docusaurus (Infima) and the names Kit's components already use. */
+html[data-theme] {
+  --ifm-background-color: var(--paper);
+  --ifm-background-surface-color: var(--paper-raised);
+  --ifm-font-color-base: var(--ink);
+  --ifm-font-color-secondary: var(--muted);
+  --ifm-heading-color: var(--ink);
+  --ifm-color-primary: var(--accent);
+  --ifm-link-color: var(--accent);
+  --ifm-link-hover-color: var(--ink);
+  --ifm-link-hover-decoration: underline;
+  --ifm-navbar-background-color: color-mix(in srgb, var(--chrome) 94%, transparent);
+  --ifm-navbar-link-color: var(--muted);
+  --ifm-navbar-link-hover-color: var(--ink);
+  --ifm-footer-background-color: var(--chrome);
+  --ifm-toc-border-color: var(--line);
+  --ifm-table-border-color: var(--line);
+  --ifm-table-stripe-background: transparent;
+  --ifm-table-head-background: var(--paper-raised);
+  --ifm-hr-background-color: var(--line);
+  --ifm-color-emphasis-100: var(--paper-raised);
+  --ifm-color-emphasis-200: var(--line);
+  --ifm-color-emphasis-300: var(--line);
+  --ifm-menu-color: var(--ink-soft);
+  --ifm-menu-color-active: var(--ink);
+  --ifm-menu-color-background-active: var(--accent-soft);
+  --ifm-menu-color-background-hover: var(--paper-raised);
+  --ifm-hover-overlay: var(--paper-raised);
+  --ifm-code-background: var(--paper-raised);
+  --ifm-code-border-radius: var(--radius-sm);
+  --ifm-blockquote-border-color: var(--accent);
+  --ifm-blockquote-color: var(--ink-soft);
+  --ifm-font-family-base: var(--font-ui);
+  --ifm-heading-font-family: var(--font-display);
+  --ifm-font-family-monospace: var(--font-mono);
+  --ifm-global-radius: var(--radius);
+  --ifm-tabs-color-active: var(--ink);
+  --ifm-tabs-color-active-border: var(--accent);
+  --docusaurus-highlighted-code-line-bg: color-mix(in srgb, var(--code-accent) 14%, transparent);
+
+  --brand-teal: var(--accent);
+  --brand-teal-light: var(--accent);
+  --brand-teal-ink: var(--accent);
+  --brand-orange: var(--secondary);
+  --brand-cream: var(--paper);
+  --color-bg: var(--paper);
+  --color-surface: var(--paper-raised);
+  --color-text: var(--ink);
+  --color-text-muted: var(--muted);
+  --color-border: var(--line);
+  --color-teal: var(--accent);
+  --color-orange: var(--secondary);
+  --color-blue: var(--accent);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font: 1rem / 1.65 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition:
+    background-color var(--motion-base) var(--motion-ease),
+    color var(--motion-base) var(--motion-ease);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Labelled code blocks: a band with the language and a visible Copy control. */
+.theme-code-block {
+  --prism-background-color: var(--code) !important;
+  position: relative;
+  border: 1px solid var(--code-border);
+  border-radius: var(--radius);
+  box-shadow: none;
+  background: var(--code);
+}
+.theme-code-block::before {
+  display: flex;
+  align-items: center;
+  min-height: 3rem;
+  padding-inline: 1rem;
+  background: var(--code-sunk);
+  border-bottom: 1px solid var(--code-border);
+  border-radius: var(--radius) var(--radius) 0 0;
+  color: var(--code-muted);
+  font: 0.7rem / 1.5 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  content: 'Code';
+}
+.theme-code-block:is(.language-bash, .language-sh, .language-shell, .language-console, .language-zsh)::before {
+  content: 'Shell';
+}
+.theme-code-block.language-yaml::before {
+  content: 'YAML';
+}
+.theme-code-block.language-toml::before {
+  content: 'TOML';
+}
+.theme-code-block.language-json::before {
+  content: 'JSON';
+}
+.theme-code-block.language-csv::before {
+  content: 'CSV';
+}
+.theme-code-block:is(.language-text, .language-txt, .language-plaintext)::before {
+  content: 'Text';
+}
+.theme-code-block:is(.language-python, .language-py)::before {
+  content: 'Python';
+}
+.theme-code-block pre,
+.theme-code-block pre code {
+  background: var(--code) !important;
+  color: var(--code-ink);
+}
+.theme-code-block pre {
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+.theme-code-block pre code {
+  font: 0.8rem / 1.8 var(--font-mono);
+  padding: 1.1rem 1.25rem;
+}
+/* Docusaurus anchors the buttons to the code body; lift them into the label band. */
+.theme-code-block [class*='buttonGroup'] {
+  top: calc(-2.5rem - 1px);
+  right: 0.5rem;
+}
+.theme-code-block [class*='buttonGroup'] button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  white-space: nowrap;
+  opacity: 1 !important;
+  min-width: 4rem;
+  min-height: 2rem;
+  padding: 0.35rem 0.6rem;
+  background: transparent;
+  border: 1px solid var(--code-border);
+  border-radius: var(--radius-sm);
+  color: var(--code-muted);
+}
+.theme-code-block [class*='buttonGroup'] button:hover {
+  color: var(--code-accent);
+  border-color: var(--code-accent);
+}
+.theme-code-block [class*='copyButton'] svg {
+  display: none;
+}
+.theme-code-block [class*='copyButton']::before {
+  content: 'Copy';
+  font: 0.7rem var(--font-mono);
+}
+.theme-code-block [class*='copyButtonCopied']::before {
+  content: 'Copied';
+  color: var(--code-accent);
+}
+
+/* Inline code. */
+:not(pre) > code {
+  border: 1px solid var(--line);
+  padding: 0.05rem 0.3rem;
+  font-size: 0.86em;
+}
+
+/* Tables and quotations follow Clio Coder's documentation. */
+.markdown table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.markdown :is(th, td) {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 0.65rem 0.75rem;
+  text-align: start;
+  vertical-align: top;
+}
+.markdown th {
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--paper-raised);
+}
+.markdown tr {
+  background: transparent;
+  border: 0;
+}
+.markdown blockquote {
+  border-left: 2px solid var(--accent);
+  padding: 0 0 0 1.25rem;
+  margin: 1.5rem 0;
+  color: var(--ink-soft);
+}

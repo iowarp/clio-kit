@@ -1,5 +1,0 @@
-{
-  "name": "clio-slurm",
-  "description": "MCP server for Slurm workload management and HPC job scheduling",
-  "version": "3.0.0"
-}

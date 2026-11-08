@@ -1,0 +1,233 @@
+import React from 'react';
+import Link from '@docusaurus/Link';
+import Layout from '@theme/Layout';
+import Head from '@docusaurus/Head';
+import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
+import {useLocation} from '@docusaurus/router';
+import {itemsById, itemUrl, publisherFor, kindName} from './data';
+import styles from './styles.module.css';
+
+export function Icon({name = 'all', size = 20, ...props}) {
+  const paths = {
+    all: (
+      <>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
+      </>
+    ),
+    workflow: (
+      <>
+        <rect x="3" y="3" width="7" height="6" rx="2" />
+        <rect x="14" y="15" width="7" height="6" rx="2" />
+        <path d="M6.5 9v6a3 3 0 0 0 3 3H14M17 15V9a3 3 0 0 0-3-3h-4" />
+      </>
+    ),
+    skill: (
+      <>
+        <path d="M12 5C9 3 5 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-2-1-6-1-9 1Zm0 0v15" />
+        <path d="m6 8 3 1m6 0 3-1" />
+      </>
+    ),
+    mcp: (
+      <>
+        <rect x="3" y="3" width="18" height="7" rx="2" />
+        <rect x="3" y="14" width="18" height="7" rx="2" />
+        <path d="M7 6.5h.01M7 17.5h.01M12 7h5m-5 10h5" />
+      </>
+    ),
+    plugin: (
+      <>
+        <path d="m12 3 9 5-9 5-9-5 9-5Zm-9 5v10l9 5 9-5V8M12 13v10M7 5.8l10 5.4" />
+      </>
+    ),
+    collection: (
+      <>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <path d="M3 15h18M3 20h18" />
+      </>
+    ),
+    package: (
+      <>
+        <path d="M12 3H3v18h18v-9M15 3h6v6m0-6-10 10" />
+      </>
+    ),
+    agent: (
+      <>
+        <path d="m12 2 2.8 7.2L22 12l-7.2 2.8L12 22l-2.8-7.2L2 12l7.2-2.8L12 2Z" />
+        <path d="m20 2 .5 1.5L22 4l-1.5.5L20 6l-.5-1.5L18 4l1.5-.5Z" />
+      </>
+    ),
+    hook: <path d="m13 2-9 12h7l-1 8 10-13h-7l1-7Z" />,
+    search: (
+      <>
+        <circle cx="10.5" cy="10.5" r="6.5" />
+        <path d="m16 16 5 5" />
+      </>
+    ),
+    arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
+    external: (
+      <>
+        <path d="M14 3h7v7m0-7L10 14M10 4H4v16h16v-6" />
+      </>
+    ),
+    copy: (
+      <>
+        <rect x="8" y="8" width="12" height="13" rx="2" />
+        <path d="M15 8V3H3v12h5" />
+      </>
+    ),
+    check: <path d="m5 12 4 4L19 6" />,
+    people: (
+      <>
+        <circle cx="9" cy="7" r="3" />
+        <path d="M3 21v-3a6 6 0 0 1 12 0v3m2-18a3 3 0 0 1 0 6m1 5a5 5 0 0 1 3 5v2" />
+      </>
+    ),
+    terminal: (
+      <>
+        <rect x="2" y="4" width="20" height="16" rx="3" />
+        <path d="m6 9 3 3-3 3m7 0h4" />
+      </>
+    ),
+  };
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.65"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      {paths[name] || paths.all}
+    </svg>
+  );
+}
+
+const DEFAULT_DESCRIPTION =
+  'Discover scientific MCP servers, skills, workflow plugins and agent tools in the IOWarp meta-marketplace.';
+
+// Clip at a word boundary so search snippets do not end mid-word.
+export const metaDescription = (text, max = 160) => {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, clean.lastIndexOf(' ', max - 1))}…`;
+};
+
+/**
+ * Page shell with per-page metadata. `crumbs` lists the trail between the
+ * home page and this page; `entities` adds JSON-LD for the page's subject.
+ */
+export function Frame({
+  title,
+  description = DEFAULT_DESCRIPTION,
+  crumbs = [],
+  entities = [],
+  canonical,
+  noindex = false,
+  children,
+}) {
+  const {siteConfig} = useDocusaurusContext();
+  const {pathname} = useLocation();
+  const origin = siteConfig.url;
+  const url = `${origin}${pathname}`;
+  const graph = [
+    {
+      '@type': 'WebPage',
+      '@id': `${url}#page`,
+      name: title,
+      description,
+      url,
+      isPartOf: {'@id': `${origin}/#site`},
+      inLanguage: 'en',
+      ...(pathname !== '/' && {breadcrumb: {'@id': `${url}#breadcrumbs`}}),
+    },
+    ...entities,
+  ];
+  if (pathname !== '/') {
+    const trail = [{name: 'CLIO Kit', path: '/'}, ...crumbs, {name: title, path: pathname}];
+    graph.push({
+      '@type': 'BreadcrumbList',
+      '@id': `${url}#breadcrumbs`,
+      itemListElement: trail.map((crumb, i) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        name: crumb.name,
+        item: `${origin}${crumb.path}`,
+      })),
+    });
+  }
+  return (
+    <Layout
+      title={title}
+      description={description}
+      wrapperClassName={styles.shell}
+    >
+      <Head>
+        <meta property="og:type" content="website" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta
+          property="og:image:alt"
+          content="CLIO Kit. Scientific tools in your agent."
+        />
+        {noindex && <meta name="robots" content="noindex" />}
+        {canonical && <link rel="canonical" href={`${origin}${canonical}`} />}
+        {canonical && <meta property="og:url" content={`${origin}${canonical}`} />}
+        <script type="application/ld+json">
+          {JSON.stringify({'@context': 'https://schema.org', '@graph': graph})}
+        </script>
+      </Head>
+      <main className={styles.page}>{children}</main>
+    </Layout>
+  );
+}
+
+export function Glyph({kind, name, large = false}) {
+  const serverIcon =
+    kind === 'mcp' ? itemsById.get(`mcp/${name}`)?.icon : null;
+  return (
+    <span
+      className={`${styles.glyph} ${styles[kind] || ''} ${large ? styles.largeGlyph : ''}`}
+    >
+      {serverIcon ? (
+        <span className={styles.serverIcon} aria-hidden="true">
+          {serverIcon}
+        </span>
+      ) : (
+        <Icon name={kind} size={large ? 30 : 21} />
+      )}
+    </span>
+  );
+}
+
+export function Card({item}) {
+  const publisher = publisherFor(item);
+  return (
+    <article className={styles.card} data-kind={item.kind}>
+      <div className={styles.cardMeta}>
+        <span>{kindName(item.kind)}</span>
+        <span className={styles.tag}>{item.origin}</span>
+      </div>
+      <h3>
+        <Link to={itemUrl(item)} className={styles.cardLink}>
+          {item.title}
+        </Link>
+      </h3>
+      <p className={styles.cardDescription}>
+        {item.summary}
+      </p>
+      <div className={styles.cardFoot}>
+        <span>{publisher?.name}</span>
+        <span aria-hidden="true">→</span>
+      </div>
+    </article>
+  );
+}

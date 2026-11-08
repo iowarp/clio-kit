@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 """Generate publishing manifests for MCP registries and client integrations.
 
-Iterates each server in clio-kit-mcp-servers/, extracts live FastMCP metadata via
+Iterates each server in mcp-servers/, extracts live FastMCP metadata via
 extract_mcp_metadata.py, reads pyproject.toml for version/description, and writes:
-  - clio-kit-mcp-servers/{name}/server.json              (MCP registry manifest)
-  - clio-kit-mcp-servers/{name}/.claude-plugin/plugin.json (Claude Code plugin)
-  - clio-kit-mcp-servers/{name}/.mcp.json                (Claude Code MCP config)
+  - mcp-servers/{name}/server.json              (MCP registry manifest)
+  - mcp-servers/{name}/.claude-plugin/plugin.json (Claude Code plugin)
+  - mcp-servers/{name}/.mcp.json                (Claude Code MCP config)
   - .claude-plugin/marketplace.json                      (Claude Code marketplace)
   - claude_desktop_config.json                           (Claude Desktop config)
-  - gemini-extension.json                                (Gemini CLI extension)
 
 Usage:
-    python scripts/generate_server_json.py [clio-kit-mcp-servers]
+    python scripts/generate_server_json.py [mcp-servers]
 """
 
+import asyncio
 import json
 import re
 import subprocess
@@ -21,7 +21,21 @@ import sys
 from pathlib import Path
 from typing import Any, cast
 
+from clio_kit.community import (
+    read_community_entries,
+    read_federated_marketplaces,
+    write_live_marketplaces,
+    write_shipped_marketplaces,
+)
+from clio_kit.discovery import DESCRIPTOR_NAME, read_server_descriptor
+from clio_kit.plugins import read_skill_frontmatter
+from clio_kit.marketplace_assets import write_extra_plugins
+from clio_kit.federation import read_snapshot
+from clio_kit.registry import registry_package
+from clio_kit.runtimes import required_project_files, supported_runtimes
 from clio_kit.mcp_contracts import generate_user_contract_artifacts
+from clio_kit.workflow_plugins import write_workflow_plugins
+from clio_kit.local_plugins import discover_local_plugins
 
 try:
     import tomllib
@@ -29,6 +43,14 @@ except ImportError:
     import tomli as tomllib  # type: ignore[import-not-found,no-redef]
 
 REPO_URL = "https://github.com/iowarp/clio-kit"
+# Attribution carried by every generated plugin manifest. Without it
+# `claude plugin validate --strict` warns once per plugin, which is what keeps
+# CI from gating on strict mode.
+PLUGIN_AUTHOR: dict[str, str] = {
+    "name": "IoWarp Team - Gnosis Research Center",
+    "email": "grc@illinoistech.edu",
+    "url": REPO_URL,
+}
 MAX_DESCRIPTION_LENGTH = 100
 SERVER_VERSIONS_FILE = "mcp-server-versions.toml"
 STABLE_VERSION_PATTERN = re.compile(r"[1-9][0-9]*\.[0-9]+\.[0-9]+")
@@ -52,6 +74,11 @@ SERVER_TAGS: dict[str, list[str]] = {
     "plot": ["data-visualization", "matplotlib", "plotting", "charts"],
     "slurm": ["hpc", "slurm", "job-scheduling", "cluster-management"],
     "spack": ["package-management", "hpc", "scientific-computing"],
+    "geo": ["geospatial", "mapping", "geojson", "visualization"],
+    "scientific-catalog": ["dataset-catalog", "scientific-computing", "discovery"],
+    "seismology": ["seismology", "earthquake", "waveform", "sac", "catalog"],
+    "terrain": ["terrain", "dem", "point-cloud", "geospatial"],
+    "web": ["web", "fetch", "search", "agentic-web"],
 }
 
 
@@ -93,14 +120,11 @@ def read_server_versions(repo_root: Path) -> dict[str, str]:
 
 
 def read_registry_publish_servers(repo_root: Path) -> tuple[str, ...]:
-    """Read the MCP servers whose contract versions this release publishes.
+    """Read the servers receiving new immutable Registry releases.
 
-    An empty list is valid and expected: it means no server's registry
-    contract (tool names/schemas under [servers]) changed this release, so
-    there is nothing to republish. A server is only listed here alongside a
-    real version bump under [servers], in the same PR that changes its
-    contract; it is removed again once published so the next release does
-    not collide with an already-published version.
+    Schema, runtime behavior and dependency fixes require a fresh server version.
+    An empty list means no server release is needed. Remove published entries
+    before the next release; never republish changed metadata under an old ID.
     """
     versions_path = repo_root / SERVER_VERSIONS_FILE
     with open(versions_path, "rb") as f:
@@ -121,6 +145,288 @@ def read_registry_publish_servers(repo_root: Path) -> tuple[str, ...]:
     return servers
 
 
+def read_server_classification(
+    repo_root: Path,
+    server_versions: dict[str, str],
+) -> dict[str, str]:
+    """Resolve every server's published scope from the version map.
+
+    Servers are scientific unless [classification] lists them as general, so the
+    table records only the exceptions. Every listed name must exist under
+    [servers]: a rename or removal then fails generation loudly instead of
+    leaving a server silently misclassified in the published manifests.
+    """
+    versions_path = repo_root / SERVER_VERSIONS_FILE
+    with open(versions_path, "rb") as f:
+        data = tomllib.load(f)
+    classification = data.get("classification")
+    raw_general = (
+        classification.get("general") if isinstance(classification, dict) else None
+    )
+    if not isinstance(raw_general, list):
+        raise ValueError(
+            f"{versions_path} must define classification.general as a list"
+        )
+    if not all(isinstance(server, str) and server for server in raw_general):
+        raise ValueError(f"{versions_path} has an invalid general server")
+    general = tuple(cast(str, server) for server in raw_general)
+    if len(set(general)) != len(general):
+        raise ValueError(f"{versions_path} has duplicate general servers")
+    if general != tuple(sorted(general)):
+        raise ValueError(f"{versions_path} general inventory must be sorted")
+    unknown = sorted(set(general) - set(server_versions))
+    if unknown:
+        raise ValueError(
+            f"{versions_path} classifies unknown servers: {', '.join(unknown)}"
+        )
+    return {
+        name: ("general" if name in set(general) else "scientific")
+        for name in server_versions
+    }
+
+
+def read_bundles(repo_root: Path) -> dict[str, dict[str, Any]]:
+    """Read the workflow bundle definitions, in declaration order.
+
+    Declaration order is preserved so the generated marketplace lists bundles
+    the way the file reads rather than alphabetically, which puts the entry
+    workflow first instead of burying it.
+    """
+    versions_path = repo_root / SERVER_VERSIONS_FILE
+    with open(versions_path, "rb") as f:
+        data = tomllib.load(f)
+    raw_bundles = data.get("bundles")
+    if not isinstance(raw_bundles, dict) or not raw_bundles:
+        raise ValueError(f"{versions_path} must define at least one [bundles.*] table")
+
+    bundles: dict[str, dict[str, Any]] = {}
+    for name, spec in raw_bundles.items():
+        if not isinstance(spec, dict):
+            raise ValueError(f"{versions_path} bundle {name!r} must be a table")
+        servers = spec.get("servers")
+        version = spec.get("version")
+        description = spec.get("description")
+        if not isinstance(servers, list) or not servers:
+            raise ValueError(f"{versions_path} bundle {name!r} needs a servers list")
+        if not all(isinstance(server, str) and server for server in servers):
+            raise ValueError(f"{versions_path} bundle {name!r} has an invalid server")
+        if servers != sorted(servers):
+            raise ValueError(f"{versions_path} bundle {name!r} servers must be sorted")
+        if len(set(servers)) != len(servers):
+            raise ValueError(f"{versions_path} bundle {name!r} has duplicate servers")
+        if not isinstance(version, str) or not version:
+            raise ValueError(f"{versions_path} bundle {name!r} needs a version")
+        if not isinstance(description, str) or not description:
+            raise ValueError(f"{versions_path} bundle {name!r} needs a description")
+        bundles[name] = {
+            "version": version,
+            "description": description,
+            "servers": [cast(str, server) for server in servers],
+        }
+    return bundles
+
+
+def assert_bundles_partition_servers(
+    bundles: dict[str, dict[str, Any]],
+    discovered_servers: set[str],
+) -> None:
+    """Fail unless every shipped server sits in exactly one primary bundle.
+
+    Optional [workflows.*] plugins compose existing components separately;
+    their overlapping dependencies do not participate in this partition.
+
+    Both directions matter. A bundle naming a server that does not exist is a
+    stale membership list; a shipped server named by no bundle is one that
+    would publish outside the catalogue, reachable only by someone who already
+    knows it exists.
+    """
+    placements: dict[str, list[str]] = {}
+    for bundle_name, spec in bundles.items():
+        for server in spec["servers"]:
+            placements.setdefault(server, []).append(bundle_name)
+
+    unknown = sorted(set(placements) - discovered_servers)
+    unplaced = sorted(discovered_servers - set(placements))
+    duplicated = sorted(
+        f"{server} in {', '.join(names)}"
+        for server, names in placements.items()
+        if len(names) > 1
+    )
+    if unknown or unplaced or duplicated:
+        raise ValueError(
+            "Bundle membership must partition the shipped servers: "
+            f"unknown={unknown}, unplaced={unplaced}, duplicated={duplicated}"
+        )
+
+
+def write_bundle_plugin(
+    repo_root: Path,
+    bundle_name: str,
+    spec: dict[str, Any],
+) -> dict[str, Any]:
+    """Write one bundle manifest and return its marketplace entry.
+
+    The manifest carries no components of its own -- only the dependency list.
+    Dependencies are bare names rather than version constraints because a
+    constrained dependency resolves against a git tag named
+    ``{plugin-name}--v{version}``, which would mean tagging every server plugin
+    on every release for a pin nothing yet needs.
+    """
+    dependencies = [f"clio-{server}" for server in spec["servers"]]
+    if (repo_root / "skills" / f"{bundle_name}-skills").is_dir():
+        dependencies.append(f"{bundle_name}-skills")
+    plugin_json = {
+        "name": bundle_name,
+        "description": spec["description"],
+        "version": spec["version"],
+        "author": PLUGIN_AUTHOR,
+        "homepage": REPO_URL,
+        "repository": REPO_URL,
+        "license": "BSD-3-Clause",
+        "dependencies": dependencies,
+    }
+    _write_json(
+        repo_root / "plugins" / bundle_name / ".claude-plugin" / "plugin.json",
+        plugin_json,
+    )
+    return {
+        "name": bundle_name,
+        "source": f"./plugins/{bundle_name}",
+        "description": spec["description"],
+        "version": spec["version"],
+        "category": "workflow",
+        "keywords": sorted(
+            {tag for s in spec["servers"] for tag in SERVER_TAGS.get(s, [])}
+        ),
+        "license": "BSD-3-Clause",
+        "repository": REPO_URL,
+    }
+
+
+def write_skills_plugin(
+    repo_root: Path,
+    bundle_name: str,
+    spec: dict[str, Any],
+) -> dict[str, Any] | None:
+    """Write one bundle's skill plugin, or None when it has no skills yet.
+
+    Skills are their own plugin rather than a path on the bundle because a
+    plugin's component paths cannot traverse outside its own directory --
+    anything beyond the plugin root is not copied to the cache on install, so
+    a bundle pointing at a shared ``skills/`` folder would resolve to nothing.
+    Making them a plugin means the bundle refers to them exactly as it refers
+    to a server, and someone who wants the guidance without the servers can
+    install the skill plugin on its own.
+    """
+    plugin_name = f"{bundle_name}-skills"
+    plugin_dir = repo_root / "skills" / plugin_name
+    if not plugin_dir.is_dir():
+        return None
+
+    skill_dirs = sorted(
+        path for path in (plugin_dir / "skills").iterdir() if path.is_dir()
+    )
+    if not skill_dirs:
+        raise ValueError(f"{plugin_dir} exists but ships no skills")
+    skill_names = []
+    for skill_dir in skill_dirs:
+        skill_names.append(read_skill_frontmatter(skill_dir)["name"])
+        # A skill with no recorded scenarios is untested by definition, and an
+        # untested skill costs tokens in every session while nothing shows it
+        # earns them. Recording the RED-GREEN scenarios is the minimum bar to
+        # ship; running them is a separate step.
+        if not (skill_dir / "evals.md").is_file():
+            raise ValueError(
+                f"{skill_dir} ships no evals.md; record the scenarios that "
+                "distinguish this skill's behaviour from the baseline first"
+            )
+
+    workflow = spec["description"].rstrip(".")
+    description = (
+        f"Skills for the {bundle_name} workflow: {workflow[0].lower()}{workflow[1:]}."
+    )
+    plugin_json = {
+        "name": plugin_name,
+        "description": description,
+        "version": spec["version"],
+        "author": PLUGIN_AUTHOR,
+        "homepage": REPO_URL,
+        "repository": REPO_URL,
+        "license": "BSD-3-Clause",
+    }
+    _write_json(plugin_dir / ".claude-plugin" / "plugin.json", plugin_json)
+    return {
+        "name": plugin_name,
+        "source": f"./skills/{plugin_name}",
+        "description": description,
+        "version": spec["version"],
+        "category": "skills",
+        "keywords": skill_names,
+        "license": "BSD-3-Clause",
+        "repository": REPO_URL,
+    }
+
+
+def server_runtime(server_dir: Path) -> str:
+    """Return the runtime that starts this server, or raise saying why not.
+
+    A server this cannot describe used to be skipped in silence, so it reached
+    neither server.json nor the marketplace and nothing said why. Every skip
+    here is now an error naming the file that would fix it.
+    """
+    if (server_dir / "pyproject.toml").is_file():
+        return "python"
+    descriptor = read_server_descriptor(server_dir)
+    if descriptor is None:
+        raise ValueError(
+            f"{server_dir} has no pyproject.toml and no {DESCRIPTOR_NAME}, so "
+            "nothing states what it is or how to start it; a server in another "
+            f"language is described by committing a {DESCRIPTOR_NAME}"
+        )
+    return cast(str, descriptor["runtime"])
+
+
+def is_server_dir(server_dir: Path) -> bool:
+    """Whether a directory under the servers root is a server at all.
+
+    Keyed on every runtime's manifest rather than on ``pyproject.toml``, so a
+    node or go server is seen and then described -- or refused by name --
+    instead of being passed over as though it were not there.
+    """
+    if not server_dir.is_dir() or server_dir.name.startswith("."):
+        return False
+    if (server_dir / DESCRIPTOR_NAME).is_file():
+        return True
+    return any(
+        (server_dir / required_project_files(runtime)[0]).is_file()
+        for runtime in supported_runtimes()
+    )
+
+
+def read_project_metadata(server_dir: Path, runtime: str) -> dict[str, Any]:
+    """Return the `[project]`-shaped facts every generated manifest needs.
+
+    Python reads them from ``pyproject.toml``; every other runtime states them
+    in its descriptor, because there is no second file this generator could
+    agree with go about.
+    """
+    if runtime == "python":
+        return read_pyproject(server_dir)
+    descriptor = read_server_descriptor(server_dir)
+    assert descriptor is not None  # server_runtime() established this
+    if not descriptor.get("description"):
+        raise ValueError(
+            f"{server_dir / DESCRIPTOR_NAME} needs a description; it is what a "
+            "user reads in the marketplace before installing the server"
+        )
+    return {
+        "description": descriptor["description"],
+        "version": descriptor.get("version", ""),
+        "scripts": {descriptor["entry"]: ""},
+        "registry": descriptor.get("registry"),
+    }
+
+
 def read_pyproject(server_dir: Path) -> dict[str, Any]:
     """Read pyproject.toml and return the [project] table."""
     pyproject_path = server_dir / "pyproject.toml"
@@ -131,6 +437,25 @@ def read_pyproject(server_dir: Path) -> dict[str, Any]:
 
 def extract_metadata(server_dir: Path) -> dict[str, Any] | None:
     """Run extract_mcp_metadata.py in the server's environment."""
+    if server_runtime(server_dir) != "python":
+        from clio_kit.protocol_probe import inspect_stdio
+
+        try:
+            return asyncio.run(
+                inspect_stdio(
+                    sys.executable,
+                    [
+                        "-c",
+                        "from clio_kit import cli; cli()",
+                        "server",
+                        "run",
+                        str(server_dir.resolve()),
+                    ],
+                )
+            )
+        except Exception as exc:
+            print(f"  Warning: protocol metadata extraction failed: {exc}")
+            return None
     script_path = Path(__file__).parent / "extract_mcp_metadata.py"
     try:
         result = subprocess.run(
@@ -169,6 +494,7 @@ def build_server_json(
     *,
     server_version: str,
     pypi_version: str,
+    scope: str,
 ) -> dict[str, Any]:
     """Build a registry manifest with independent server and wheel versions."""
     description = project.get("description", "")
@@ -220,6 +546,9 @@ def build_server_json(
         "tools": tools,
     }
 
+    if project.get("registry"):
+        server_json["packages"] = [registry_package(project["registry"])]
+
     if resources:
         server_json["resources"] = resources
     if resource_templates:
@@ -228,6 +557,9 @@ def build_server_json(
         server_json["prompts"] = prompts
 
     server_json["tags"] = SERVER_TAGS.get(server_name, [])
+    # Shipped beside each server so the launcher can group its listing without
+    # the version map, which the wheel's shared-data does not carry.
+    server_json["scope"] = scope
     return server_json
 
 
@@ -240,6 +572,7 @@ def write_claude_plugin_files(
     project: dict[str, Any],
     *,
     server_version: str,
+    repo_root: Path,
 ) -> None:
     """Write one contract-versioned plugin and its persistent MCP config."""
     description = project.get("description", "")
@@ -248,8 +581,24 @@ def write_claude_plugin_files(
         "name": f"clio-{server_name}",
         "description": description,
         "version": server_version,
+        "author": PLUGIN_AUTHOR,
+        "homepage": REPO_URL,
+        "repository": REPO_URL,
+        "license": "BSD-3-Clause",
     }
-    _write_json(server_dir / ".claude-plugin" / "plugin.json", plugin_json)
+    # The plugin is written to its own directory under plugins/, NOT into the
+    # server directory. A plugin's `source` is copied wholesale by the client
+    # on install, and the server directory holds src/, tests/ and (in a working
+    # clone) a built .venv -- none of which the plugin executes, because
+    # .mcp.json invokes the separately installed `clio-kit` launcher. Pointing
+    # `source` at the server directory copied ~180 MB per server and about a
+    # gigabyte for a six-server bundle, all of it code that never runs.
+    #
+    # Users install by name (`clio-adios@clio-kit`), never by path, so moving
+    # the manifest changes no user-facing coordinate. The registry coordinate
+    # in server.json and the launcher's own discovery path are untouched.
+    plugin_dir = repo_root / "plugins" / f"clio-{server_name}"
+    _write_json(plugin_dir / ".claude-plugin" / "plugin.json", plugin_json)
 
     mcp_json = {
         f"clio-{server_name}": {
@@ -257,7 +606,45 @@ def write_claude_plugin_files(
             "args": ["mcp-server", server_name],
         }
     }
-    _write_json(server_dir / ".mcp.json", mcp_json)
+    _write_json(plugin_dir / ".mcp.json", mcp_json)
+
+
+def write_server_descriptor(
+    server_dir: Path,
+    server_name: str,
+    project: dict[str, Any],
+    *,
+    runtime: str,
+    server_version: str,
+) -> None:
+    """Write the descriptor that states what a server is and how to start it.
+
+    Generated for Python, where every fact already exists in pyproject.toml and
+    a hand-written copy would drift from it. For every other runtime the
+    descriptor *is* the source -- there is no second file to derive it from --
+    so a committed one is left exactly as it is.
+    """
+    if runtime != "python":
+        return
+
+    entry_point = next(
+        (name for name in project.get("scripts", {}) if name.endswith("-mcp")),
+        f"{server_name}-mcp",
+    )
+    descriptor = "\n".join(
+        [
+            "# Generated by scripts/generate_server_json.py -- do not edit.",
+            f'name = "{server_name}"',
+            'runtime = "python"',
+            f'version = "{server_version}"',
+            'lock = "uv.lock"',
+            f'entry = "{entry_point}"',
+            "",
+        ]
+    )
+    (server_dir / DESCRIPTOR_NAME).write_text(
+        descriptor, encoding="utf-8", newline="\n"
+    )
 
 
 def build_marketplace_json(
@@ -273,9 +660,8 @@ def build_marketplace_json(
             "email": "grc@illinoistech.edu",
         },
         "metadata": {
-            "description": "CLIO Kit - MCP Servers for Scientific Computing and HPC",
+            "description": "CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions",
             "version": pypi_version,
-            "pluginRoot": "./clio-kit-mcp-servers",
         },
         "plugins": server_entries,
     }
@@ -295,28 +681,6 @@ def build_claude_desktop_config(server_names: list[str]) -> dict[str, Any]:
     return {"mcpServers": servers}
 
 
-# --- Gemini CLI Extension ---
-
-
-def build_gemini_extension(
-    server_names: list[str],
-    *,
-    pypi_version: str,
-) -> dict[str, Any]:
-    """Build the root-versioned Gemini extension bundling all servers."""
-    mcp_servers: dict[str, Any] = {}
-    for name in sorted(server_names):
-        mcp_servers[f"clio-{name}"] = {
-            "command": "clio-kit",
-            "args": ["mcp-server", name],
-        }
-    return {
-        "name": "clio-kit",
-        "version": pypi_version,
-        "mcpServers": mcp_servers,
-    }
-
-
 # --- Main Generation ---
 
 
@@ -331,17 +695,14 @@ def generate_all(mcps_dir: str) -> None:
     pypi_version = read_root_version(repo_root)
     server_versions = read_server_versions(repo_root)
     registry_publish_servers = read_registry_publish_servers(repo_root)
+    server_scopes = read_server_classification(repo_root, server_versions)
     print(f"Root PyPI version: {pypi_version}")
     generated: list[str] = []
     failed: list[str] = []
     marketplace_plugins: list[dict[str, Any]] = []
 
     server_dirs = sorted(
-        server_dir
-        for server_dir in mcps_path.iterdir()
-        if server_dir.is_dir()
-        and not server_dir.name.startswith(".")
-        and (server_dir / "pyproject.toml").exists()
+        server_dir for server_dir in mcps_path.iterdir() if is_server_dir(server_dir)
     )
     discovered_servers = {server_dir.name for server_dir in server_dirs}
     configured_servers = set(server_versions)
@@ -358,29 +719,36 @@ def generate_all(mcps_dir: str) -> None:
             "MCP Registry release inventory contains unknown projects: "
             f"{sorted(unknown_publish_servers)}"
         )
+    runtimes = {server.name: server_runtime(server) for server in server_dirs}
+    bundles = read_bundles(repo_root)
+    assert_bundles_partition_servers(bundles, discovered_servers)
 
     for server_dir in server_dirs:
-        if not server_dir.is_dir() or server_dir.name.startswith("."):
-            continue
-
-        pyproject_file = server_dir / "pyproject.toml"
-        if not pyproject_file.exists():
-            continue
-
         server_name = server_dir.name
-        print(f"Processing {server_name}...")
+        runtime = runtimes[server_name]
+        print(f"Processing {server_name} ({runtime})...")
 
-        project = read_pyproject(server_dir)
+        project = read_project_metadata(server_dir, runtime)
 
-        # server.json: only update if metadata extraction succeeds
-        metadata = extract_metadata(server_dir)
-        if metadata is not None:
+        # Publication requires successful live protocol extraction in any runtime.
+        selected = server_name in registry_publish_servers
+        metadata = (
+            extract_metadata(server_dir) if runtime == "python" or selected else None
+        )
+        if selected and metadata is None:
+            raise ValueError(
+                f"Cannot publish {server_name}: live MCP metadata extraction failed"
+            )
+        if runtime != "python" and not selected:
+            print(f"  Marketplace only ({runtime}; not selected for MCP Registry)")
+        elif metadata is not None:
             server_json = build_server_json(
                 server_name,
                 project,
                 metadata,
                 server_version=server_versions[server_name],
                 pypi_version=pypi_version,
+                scope=server_scopes[server_name],
             )
             _write_json(server_dir / "server.json", server_json)
             tool_count = len(server_json.get("tools", []))
@@ -392,24 +760,33 @@ def generate_all(mcps_dir: str) -> None:
         else:
             print("  Skipped server.json (using existing, extraction failed)")
 
+        write_server_descriptor(
+            server_dir,
+            server_name,
+            project,
+            runtime=runtime,
+            server_version=server_versions[server_name],
+        )
+
         # Claude Code plugin files: always write (no metadata needed)
         write_claude_plugin_files(
             server_dir,
             server_name,
             project,
             server_version=server_versions[server_name],
+            repo_root=repo_root,
         )
-        print("  Wrote .claude-plugin/plugin.json + .mcp.json")
+        print(f"  Wrote plugins/clio-{server_name} (manifest only, no source)")
 
         # Collect marketplace entry
         description = project.get("description", "")
         marketplace_plugins.append(
             {
                 "name": f"clio-{server_name}",
-                "source": f"./clio-kit-mcp-servers/{server_name}",
+                "source": f"./plugins/clio-{server_name}",
                 "description": description,
                 "version": server_versions[server_name],
-                "category": "development",
+                "category": server_scopes[server_name],
                 "keywords": SERVER_TAGS.get(server_name, []),
                 "license": "BSD-3-Clause",
                 "repository": REPO_URL,
@@ -417,6 +794,64 @@ def generate_all(mcps_dir: str) -> None:
         )
 
         generated.append(server_name)
+
+    # Workflow bundles: dependency-only plugins over the servers just
+    # generated, plus each bundle's skill plugin where one exists yet.
+    for bundle_name, spec in bundles.items():
+        skills_entry = write_skills_plugin(repo_root, bundle_name, spec)
+        if skills_entry is not None:
+            marketplace_plugins.append(skills_entry)
+            skill_count = len(skills_entry["keywords"])
+            print(f"Wrote skills/{skills_entry['name']} ({skill_count} skills)")
+        marketplace_plugins.append(write_bundle_plugin(repo_root, bundle_name, spec))
+        member_count = len(spec["servers"])
+        suffix = " + skills" if skills_entry is not None else ""
+        print(f"Wrote plugins/{bundle_name} ({member_count} servers{suffix})")
+
+    marketplace_plugins.extend(
+        write_extra_plugins(
+            repo_root,
+            [e["name"] for e in marketplace_plugins if e["name"].endswith("-skills")],
+        )
+    )
+
+    # Outside contributions, indexed rather than vendored. They land in the
+    # same catalogue as ours so both are found the same way.
+    community_entries = read_community_entries(repo_root)
+    generated_names = {entry["name"] for entry in marketplace_plugins}
+    colliding = sorted(
+        entry["name"] for entry in community_entries if entry["name"] in generated_names
+    )
+    if colliding:
+        raise ValueError(
+            f"community entries collide with generated plugins: {colliding}"
+        )
+    from clio_kit.marketplace_assets import imported_skill_entries
+
+    marketplace_plugins.extend(imported_skill_entries(repo_root))
+    marketplace_plugins.extend(community_entries)
+    marketplace_plugins.extend(read_snapshot(repo_root))
+    marketplace_plugins.extend(
+        write_workflow_plugins(repo_root, marketplace_plugins, author=PLUGIN_AUTHOR)
+    )
+    marketplace_plugins.extend(discover_local_plugins(repo_root, marketplace_plugins))
+    if community_entries:
+        print(f"Merged {len(community_entries)} community entries")
+
+    # Federated marketplaces cannot ride in `plugins`: Claude Code has no
+    # nested-marketplace concept and reports an unrecognised entry as an
+    # unknown field it ignores. Nor can they ride under the manifest's own
+    # `metadata`, which fails strict validation the same way.
+    #
+    # So they are published twice. The copy beside marketplace.json travels
+    # with the marketplace and refreshes on `marketplace update`, so indexing a
+    # new catalogue does not require a clio-kit release. The copy inside the
+    # package is the fallback for an installation that never added the
+    # marketplace.
+    federated = read_federated_marketplaces(repo_root)
+    write_live_marketplaces(repo_root, federated)
+    write_shipped_marketplaces(repo_root / "src" / "clio_kit", federated)
+    print(f"Wrote {len(federated)} federated marketplace referral(s), live + baked")
 
     # Claude Code marketplace manifest
     marketplace = build_marketplace_json(
@@ -432,11 +867,6 @@ def generate_all(mcps_dir: str) -> None:
     claude_config = build_claude_desktop_config(generated)
     _write_json(repo_root / "claude_desktop_config.json", claude_config)
     print(f"Wrote claude_desktop_config.json ({len(generated)} servers)")
-
-    # Gemini CLI extension manifest
-    gemini_ext = build_gemini_extension(generated, pypi_version=pypi_version)
-    _write_json(repo_root / "gemini-extension.json", gemini_ext)
-    print(f"Wrote gemini-extension.json ({len(generated)} servers)")
 
     # The registry manifest intentionally carries only abbreviated tool metadata.
     # Bind the full locked JARVIS, SLURM, and Spack user schemas from actual stdio
@@ -455,7 +885,7 @@ def generate_all(mcps_dir: str) -> None:
 
 
 def main() -> None:
-    mcps_dir = sys.argv[1] if len(sys.argv) > 1 else "clio-kit-mcp-servers"
+    mcps_dir = sys.argv[1] if len(sys.argv) > 1 else "mcp-servers"
     generate_all(mcps_dir)
 
 

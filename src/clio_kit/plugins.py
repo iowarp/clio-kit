@@ -1,0 +1,693 @@
+"""Author, check and submit a plugin for the CLIO Kit marketplace.
+
+These commands support contributors working in their own repositories and
+packages maintained here. Outside plugins are indexed through one-file entries
+(see :mod:`clio_kit.community`). Repository-owned folders are discovered during
+generation (see :mod:`clio_kit.local_plugins`). Both use the same structural
+validator; native client and real usage checks remain separate.
+
+The skill rules themselves live in :mod:`clio_kit.skills`, so this validator,
+the manifest generator and a contributor checking their own directory all get
+the same answer. A second implementation would drift from the first.
+"""
+
+from __future__ import annotations
+
+import importlib.metadata
+import json
+import subprocess
+from pathlib import Path
+from typing import Any
+
+import click
+import tomli_w
+
+from clio_kit.plugin_components import (
+    component_problems,
+    mcp_problems,
+    write_agent,
+    write_mcp_wrapper,
+)
+from clio_kit.marketplace_cli import marketplace_group
+from clio_kit.server_cli import server_group
+from clio_kit.doctor import doctor_command
+from clio_kit.hooks import hook_components, write_hook
+from clio_kit.skill_cli import skill_group
+from clio_kit.client_install import CLIENTS, install_for_client
+from clio_kit.client_agent import run_agent
+from clio_kit.catalogue import CATALOGUE_PATH
+
+from clio_kit.community import (
+    COMMUNITY_KINDS,
+    live_marketplace_file,
+    read_live_marketplaces,
+    read_shipped_marketplaces,
+)
+from clio_kit.skills import (
+    SkillProblem,
+    always_on_cost,
+    check_skill_collection,
+)
+from clio_kit.skills import read_skill_frontmatter as _read_skill_frontmatter
+
+# A plugin name is used to namespace its components (``plugin-name:skill-name``)
+# and appears in install commands, so it has to survive being typed.
+NAME_PATTERN = "abcdefghijklmnopqrstuvwxyz0123456789-"
+
+# Generated from this repository's own servers, bundles and skills. An outside
+# plugin claiming the prefix would shadow one of ours in the same catalogue.
+RESERVED_PREFIX = "clio-"
+
+# What `plugin init` writes for the author to replace. Publishing them would
+# index a plugin that describes nothing and belongs to nobody.
+PLACEHOLDER_DESCRIPTION = "One sentence on what this plugin is for."
+PLACEHOLDER_AUTHOR = "Your name"
+
+
+class PluginProblem(Exception):
+    """One reason a plugin directory would not publish correctly."""
+
+
+# Skill knowledge lives in skills.py so one set of rules backs manifest
+# generation, `plugin validate` and a contributor checking their own directory.
+# Re-exported here because the generator and the tests have always reached for
+# it through this module.
+def read_skill_frontmatter(skill_dir: Path) -> dict[str, str]:
+    """Return one SKILL.md's frontmatter fields, or raise if it is unloadable."""
+    try:
+        return _read_skill_frontmatter(skill_dir)
+    except SkillProblem as exc:
+        raise PluginProblem(str(exc)) from exc
+
+
+def _check_name(
+    name: Any, problems: list[str], *, allow_reserved: bool = False
+) -> None:
+    """Collect every reason a plugin name would not work as an identifier."""
+    if not isinstance(name, str) or not name:
+        problems.append("plugin.json needs a name")
+        return
+    if name.startswith(RESERVED_PREFIX) and not allow_reserved:
+        problems.append(
+            f"name {name!r} claims the reserved {RESERVED_PREFIX!r} prefix, which is "
+            "generated from CLIO Kit's own servers, bundles and skills"
+        )
+    if any(character not in NAME_PATTERN for character in name):
+        problems.append(
+            f"name {name!r} must be lower-case kebab-case; it namespaces this "
+            "plugin's components and appears in install commands"
+        )
+
+
+def _check_component_paths(manifest: dict[str, Any], problems: list[str]) -> None:
+    """Reject paths that will not survive installation.
+
+    A plugin is copied into a cache directory on install, and nothing outside
+    its own root is copied with it. A path that escapes resolves to nothing on
+    the user's machine while working perfectly in the author's checkout, which
+    is the worst shape a bug can take.
+    """
+    path_fields = (
+        "skills",
+        "commands",
+        "agents",
+        "workflows",
+        "hooks",
+        "mcpServers",
+        "outputStyles",
+        "lspServers",
+    )
+    for field in path_fields:
+        value = manifest.get(field)
+        if value is None or isinstance(value, dict):
+            continue
+        if not isinstance(value, (str, list)):
+            problems.append(
+                f"{field} must be a path, an array of paths, or a configuration object"
+            )
+            continue
+        for entry in [value] if isinstance(value, str) else value:
+            if not isinstance(entry, str):
+                continue
+            if entry.startswith("/") or ".." in Path(entry).parts:
+                problems.append(
+                    f"{field} path {entry!r} leaves the plugin directory; nothing "
+                    "outside the plugin root is copied to the cache on install"
+                )
+            elif entry != "." and not entry.startswith("./"):
+                problems.append(f"{field} path {entry!r} must start with './'")
+
+
+def _check_mcp_servers(plugin_dir: Path, problems: list[str]) -> None:
+    """Check the default MCP config, when there is one."""
+    mcp_json = plugin_dir / ".mcp.json"
+    if not mcp_json.is_file():
+        return
+    try:
+        config = json.loads(mcp_json.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        problems.append(f".mcp.json is not valid JSON: {exc}")
+        return
+    problems.extend(mcp_problems(config, ".mcp.json"))
+
+
+def validate_plugin(
+    plugin_dir: Path, *, allow_reserved: bool = False, skill_policy: bool = True
+) -> tuple[dict[str, Any], list[str]]:
+    """Return a plugin's manifest and every problem found in its directory."""
+    problems: list[str] = []
+    manifest_path = plugin_dir / ".claude-plugin" / "plugin.json"
+    if not manifest_path.is_file():
+        raise PluginProblem(
+            f"{plugin_dir} has no .claude-plugin/plugin.json; "
+            "run `clio-kit plugin init` to scaffold one"
+        )
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise PluginProblem(f"{manifest_path} is not valid JSON: {exc}") from exc
+    if not isinstance(manifest, dict):
+        raise PluginProblem(f"{manifest_path} must contain an object")
+
+    _check_name(manifest.get("name"), problems, allow_reserved=allow_reserved)
+    if not manifest.get("description"):
+        problems.append(
+            "plugin.json has no description; it is what a user reads before "
+            "installing something you wrote"
+        )
+    _check_component_paths(manifest, problems)
+    _check_mcp_servers(plugin_dir, problems)
+    problems.extend(component_problems(plugin_dir, manifest))
+    has_hooks, hook_problems = hook_components(plugin_dir, manifest)
+    problems.extend(hook_problems)
+    # Installation copies regular files only; a link resolves in the author's
+    # checkout and to nothing (or to something else) on the user's machine.
+    for path in sorted(plugin_dir.rglob("*")):
+        relative = path.relative_to(plugin_dir)
+        if path.is_symlink() and not {".git", "node_modules"} & set(relative.parts):
+            problems.append(f"{relative} is a link; linked content is not supported")
+
+    # Every skill is checked against the published rules, not merely parsed:
+    # a skill's description is carried in every session whether or not it
+    # fires, so a vague one is a permanent cost this is the only chance to
+    # catch. Advisories are surfaced by the CLI rather than blocking here.
+    if skill_policy:
+        for report in _skill_reports(plugin_dir, manifest):
+            problems.extend(report.problems)
+    else:
+        for path in plugin_dir.glob("skills/*/SKILL.md"):
+            read_skill_frontmatter(path.parent)
+
+    has_components = (
+        any(
+            any(plugin_dir.glob(pattern))
+            for pattern in ("skills/*/SKILL.md", "commands/*.md", "agents/*.md")
+        )
+        or any(manifest.get(field) for field in ("skills", "commands", "agents"))
+        or (plugin_dir / ".mcp.json").is_file()
+        or bool(manifest.get("mcpServers"))
+        or has_hooks
+    )
+    if not has_components and not manifest.get("dependencies"):
+        problems.append(
+            "plugin ships no skills, commands, agents, hooks or MCP servers, and "
+            "declares no dependencies -- installing it would do nothing"
+        )
+    return manifest, problems
+
+
+def _skill_reports(plugin_dir: Path, manifest: dict[str, Any]) -> list[Any]:
+    """Check a package's skills; a `clio-` package also owes maintained metadata."""
+    maintained = str(manifest.get("name", "")).startswith(RESERVED_PREFIX)
+    return check_skill_collection(plugin_dir / "skills", maintained=maintained)
+
+
+def validate_marketplace(marketplace_dir: Path) -> dict[str, Any]:
+    """Return the manifest of a marketplace we would refer users to.
+
+    A federated entry points at somebody else's whole catalogue, so what is
+    checked is that the catalogue exists and is loadable -- not its plugins,
+    which are theirs to validate and ours only to point at.
+    """
+    manifest_path = marketplace_dir / ".claude-plugin" / "marketplace.json"
+    if not manifest_path.is_file():
+        raise PluginProblem(
+            f"{marketplace_dir} has no .claude-plugin/marketplace.json, so it "
+            "is not a marketplace; submit it as a plugin instead, or point "
+            "--kind marketplace at the repository root of your catalogue"
+        )
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise PluginProblem(f"{manifest_path} is not valid JSON: {exc}") from exc
+    if not isinstance(manifest, dict):
+        raise PluginProblem(f"{manifest_path} must contain an object")
+    problems: list[str] = []
+    _check_name(manifest.get("name"), problems)
+    if problems:
+        raise PluginProblem(f"{manifest_path}: {'; '.join(problems)}")
+    if not isinstance(manifest.get("plugins"), list) or not manifest["plugins"]:
+        raise PluginProblem(
+            f"{manifest_path} lists no plugins; an empty catalogue gives a "
+            "user nothing to install once they add it"
+        )
+
+    # A marketplace describes itself under `metadata` and names its owner under
+    # `owner`, where a plugin uses `description` and `author`. Normalising here
+    # means one entry renderer rather than two, and catches the missing
+    # description now -- an entry without one is refused when the pull request
+    # is merged, which is far too late to be useful.
+    metadata = manifest.get("metadata")
+    metadata = metadata if isinstance(metadata, dict) else {}
+    description = metadata.get("description")
+    if not description:
+        raise PluginProblem(
+            f"{manifest_path} has no metadata.description; it is what a user "
+            "reads before adding your catalogue, and an entry without one is "
+            "rejected when we merge it"
+        )
+    owner = manifest.get("owner")
+    return {
+        "name": manifest["name"],
+        "description": description,
+        "author": owner if isinstance(owner, dict) else {"name": owner},
+        "keywords": metadata.get("keywords") or [],
+        "category": metadata.get("category", "community"),
+    }
+
+
+def build_community_entry(
+    manifest: dict[str, Any], repo: str, *, kind: str = "plugin"
+) -> str:
+    """Render the marketplace entry that indexes a plugin we do not own."""
+    from clio_kit.community import validate_source_location
+
+    validate_source_location({"source": "github", "repo": repo})
+    author = manifest.get("author") or {}
+    maintainer = author.get("name") if isinstance(author, dict) else author
+    entry = {
+        "name": manifest["name"],
+        "description": manifest["description"],
+        "category": manifest.get("category", "community"),
+        "keywords": manifest.get("keywords") or [],
+        "source": {"type": "github", "repo": repo},
+    }
+    if kind != "plugin":
+        entry["kind"] = kind
+    if maintainer:
+        entry["maintainer"] = maintainer
+    return tomli_w.dumps(entry)
+
+
+@click.group("plugin")
+def plugin_group() -> None:
+    """Author, install, check and submit CLIO Kit component packages."""
+
+
+plugin_group.add_command(run_agent)
+
+
+@plugin_group.command("install")
+@click.argument("name")
+@click.option("--client", required=True, type=click.Choice(sorted(CLIENTS)))
+@click.option(
+    "--project", required=True, type=click.Path(file_okay=False, path_type=Path)
+)
+@click.option(
+    "--root",
+    default=None,
+    type=click.Path(exists=True, file_okay=False, path_type=Path),
+)
+@click.option(
+    "--components-only",
+    is_flag=True,
+    help="Explicitly omit native agents, hooks and commands.",
+)
+@click.option(
+    "--replace",
+    is_flag=True,
+    help="Replace conflicting skills and named MCP settings after review.",
+)
+@click.option(
+    "--dry-run", is_flag=True, help="Show the component plan without writing files."
+)
+@click.option(
+    "--update",
+    is_flag=True,
+    help="Resolve publisher revisions again instead of reusing the project lock.",
+)
+def install_plugin(
+    name, client, project, root, components_only, replace, dry_run, update
+):
+    """Install selected release skills and MCP settings, or use --root CHECKOUT."""
+    from clio_kit import MODULE_DIR
+    from clio_kit.component_store import INDEX_FILE
+    from clio_kit.skills import SkillProblem
+
+    if root is None and any(
+        (Path.cwd() / path).is_file()
+        for path in (CATALOGUE_PATH, ".claude-plugin/marketplace.json")
+    ):
+        root = Path.cwd()
+    if root is None and not INDEX_FILE.is_file():
+        checkout = MODULE_DIR.parent.parent
+        if any(
+            (checkout / path).is_file()
+            for path in (CATALOGUE_PATH, ".claude-plugin/marketplace.json")
+        ):
+            root = checkout
+    try:
+        result = install_for_client(
+            root,
+            name,
+            client,
+            project,
+            components_only=components_only,
+            replace=replace,
+            dry_run=dry_run,
+            update=update,
+        )
+    except (
+        ValueError,
+        OSError,
+        SkillProblem,
+        PluginProblem,
+        subprocess.SubprocessError,
+    ) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(json.dumps(result, indent=2))
+    if not dry_run:
+        click.echo(
+            "Reload the client, trust the project when prompted, and verify MCP connections. This installs project components, not a native client plugin."
+        )
+
+
+@plugin_group.command("uninstall")
+@click.argument("name")
+@click.option("--client", required=True, type=click.Choice(sorted(CLIENTS)))
+@click.option(
+    "--project", required=True, type=click.Path(file_okay=False, path_type=Path)
+)
+@click.option("--dry-run", is_flag=True)
+def uninstall_plugin(name, client, project, dry_run):
+    """Remove unchanged project components, preserving unrelated settings."""
+    from clio_kit.install_receipts import uninstall_for_client
+
+    try:
+        result = uninstall_for_client(name, client, project, dry_run=dry_run)
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(json.dumps(result, indent=2))
+
+
+@plugin_group.command("init")
+@click.argument("directory", type=click.Path(path_type=Path))
+@click.option("--name", default=None, help="Plugin name (defaults to the directory).")
+@click.option(
+    "--agent", is_flag=True, help="Include a read-only workflow reviewer agent."
+)
+@click.option("--mcp-command", help="Executable of an actual MCP server to wrap.")
+@click.option(
+    "--hook",
+    is_flag=True,
+    help="Include a read-only Claude SessionStart hook (requires python3).",
+)
+@click.option("--mcp-arg", multiple=True, help="Server argument; repeat as needed.")
+@click.option(
+    "--maintained",
+    is_flag=True,
+    help="Allow reserved names for packages maintained inside CLIO Kit.",
+)
+def plugin_init(
+    directory: Path,
+    name: str | None,
+    agent: bool,
+    mcp_command: str | None,
+    mcp_arg: tuple[str, ...],
+    hook: bool,
+    maintained: bool = False,
+) -> None:
+    """Scaffold skills with optional agents, hooks and a real MCP wrapper."""
+    plugin_name = name or directory.name
+    problems: list[str] = []
+    _check_name(plugin_name, problems, allow_reserved=maintained)
+    if problems:
+        raise click.ClickException("\n".join(problems))
+    if (directory / ".claude-plugin" / "plugin.json").exists():
+        raise click.ClickException(f"{directory} already contains a plugin manifest")
+
+    # Named after the plugin: portable skill names are global, so two
+    # scaffolds sharing one sample name could not be indexed together.
+    skill_name = f"{plugin_name}-workflow"
+    skill_dir = directory / "skills" / skill_name
+    skill_dir.mkdir(parents=True, exist_ok=True)
+    if hook:
+        write_hook(directory)
+    (directory / ".claude-plugin").mkdir(parents=True, exist_ok=True)
+
+    # No component path fields: the conventional layout is picked up on its own,
+    # and every path field is one more thing that can point somewhere that does
+    # not survive installation.
+    manifest = {
+        "name": plugin_name,
+        "description": PLACEHOLDER_DESCRIPTION,
+        "version": "0.1.0",
+        "author": {"name": PLACEHOLDER_AUTHOR, "url": "https://example.org"},
+        "keywords": [],
+    }
+    (directory / ".claude-plugin" / "plugin.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
+    if mcp_command:
+        write_mcp_wrapper(directory, plugin_name, mcp_command, mcp_arg)
+    if agent:
+        write_agent(directory)
+    # The scaffold satisfies the skill rules the moment it is written. A
+    # starting point that fails validation teaches a contributor that the
+    # checks are noise to be silenced rather than the bar to be met, so the
+    # placeholder demonstrates the required shape instead of describing it.
+    (skill_dir / "SKILL.md").write_text(
+        "---\n"
+        f"name: {skill_name}\n"
+        "description: Use when the agent must run this plugin's tools in a "
+        "particular order, or would otherwise reach for the wrong one. "
+        'Triggers on "example workflow", "replace this phrase". '
+        "Not for work another skill already covers; use that skill.\n"
+        "metadata:\n"
+        f"  bundle: {plugin_name}\n"
+        "  servers: none\n"
+        "  provenance: designed\n"
+        "  eval-status: untested\n"
+        "---\n"
+        "\n"
+        "# Example workflow\n"
+        "\n"
+        "Replace this with the sequence an agent gets wrong without it.\n",
+        encoding="utf-8",
+    )
+    (skill_dir / "evals.md").write_text(
+        f"# Evals - {skill_name}\n"
+        "\n"
+        "Run each scenario WITHOUT the skill to capture the gap, then WITH it to\n"
+        "confirm the gap closes. Rubric is pass/fail per bullet.\n"
+        "\n"
+        "## S1 - the case this skill exists for\n"
+        "\n"
+        'Setup: Prompt: "replace this with what a user would actually type."\n'
+        "\n"
+        "Expected:\n"
+        "\n"
+        "- Replace this with the behaviour that is wrong without the skill.\n",
+        encoding="utf-8",
+    )
+    click.echo(f"Scaffolded {plugin_name} in {directory}")
+    click.echo("Next: edit the manifest and the skill, then `clio-kit plugin validate`")
+
+
+@plugin_group.command("fetch")
+@click.argument("names", nargs=-1, required=True)
+@click.option("--target", required=True, type=click.Path(path_type=Path))
+def plugin_fetch(names: tuple[str, ...], target: Path) -> None:
+    """Download a selected native plugin and dependencies into a local marketplace."""
+    from clio_kit.release_components import fetch_native_package
+
+    try:
+        result = fetch_native_package(names, target)
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(json.dumps(result, indent=2))
+    click.echo(
+        "Register this directory with claude plugin marketplace add, then install the named plugin."
+    )
+
+
+@plugin_group.command("validate")
+@click.argument("directory", type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--maintained",
+    is_flag=True,
+    help="Allow reserved names for packages maintained inside CLIO Kit.",
+)
+def plugin_validate(directory: Path, maintained: bool = False) -> None:
+    """Check a plugin directory against the rules the marketplace enforces."""
+    try:
+        manifest, problems = validate_plugin(directory, allow_reserved=maintained)
+    except PluginProblem as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    # Reported whether or not the plugin passes: a contributor fixing a hard
+    # failure should see the judgement calls in the same run rather than
+    # discovering them after a second submission.
+    reports = _skill_reports(directory, manifest)
+    advisories = [advisory for report in reports for advisory in report.advisories]
+
+    if problems:
+        for problem in problems:
+            click.echo(f"  - {problem}")
+        for advisory in advisories:
+            click.echo(f"  ? {advisory}")
+        raise click.ClickException(f"{len(problems)} problem(s) in {directory}")
+
+    click.echo(f"OK: {manifest['name']} passes structural validation")
+    if reports:
+        click.echo(
+            f"{len(reports)} skill(s), {always_on_cost(reports)} description characters. "
+            "Full instructions load when invoked; client token estimates vary."
+        )
+    for advisory in advisories:
+        click.echo(f"  ? {advisory}")
+    click.echo(
+        "Note: this checks the shape the marketplace requires. Run "
+        "`claude plugin validate --strict` as well for the client's own rules."
+    )
+
+
+@plugin_group.command("submit")
+@click.argument("directory", type=click.Path(exists=True, path_type=Path))
+@click.option("--repo", required=True, help="Your plugin's repository, as owner/name.")
+@click.option(
+    "--kind",
+    type=click.Choice(COMMUNITY_KINDS),
+    default="plugin",
+    help="Submit one installable plugin, or refer users to your whole marketplace.",
+)
+@click.option(
+    "--output",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Write the entry here instead of printing it.",
+)
+@click.option(
+    "--open-pr",
+    is_flag=True,
+    help="Create a GitHub fork branch and open the contribution PR (requires gh login).",
+)
+def plugin_submit(
+    directory: Path, repo: str, kind: str, output: Path | None, open_pr: bool
+) -> None:
+    """Render the marketplace entry that would index this plugin."""
+    try:
+        if kind == "marketplace":
+            manifest = validate_marketplace(directory)
+            problems: list[str] = []
+        else:
+            manifest, problems = validate_plugin(directory)
+    except PluginProblem as exc:
+        raise click.ClickException(str(exc)) from exc
+    if problems:
+        raise click.ClickException(
+            "Fix these before submitting -- run `clio-kit plugin validate`:\n  - "
+            + "\n  - ".join(problems)
+        )
+    if repo.count("/") != 1 or repo.startswith("/") or repo.endswith("/"):
+        raise click.ClickException(f"--repo {repo!r} must be in owner/name form")
+
+    try:
+        entry = build_community_entry(manifest, repo, kind=kind)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    author = manifest.get("author")
+    author = author.get("name") if isinstance(author, dict) else author
+    if manifest.get("description") == PLACEHOLDER_DESCRIPTION:
+        problems.append("plugin.json still has the scaffold's placeholder description")
+    if author == PLACEHOLDER_AUTHOR:
+        problems.append("plugin.json still has the scaffold's placeholder author name")
+    if problems:
+        raise click.ClickException(
+            "Edit the manifest before submitting:\n  - " + "\n  - ".join(problems)
+        )
+    if open_pr:
+        from clio_kit.submissions import open_submission
+
+        try:
+            click.echo(open_submission(manifest["name"], entry))
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            raise click.ClickException(
+                f"Could not open contribution PR: {exc}"
+            ) from exc
+        return
+    if output is not None:
+        output.write_text(entry, encoding="utf-8")
+        click.echo(f"Wrote {output}", err=True)
+    else:
+        click.echo(entry, nl=False)
+    # Guidance goes to stderr so redirected stdout is exactly the TOML entry.
+    click.echo(
+        f"\nAdd this as community/entries/{manifest['name']}.toml in a pull "
+        "request against iowarp/clio-kit. Your code stays in your repository; "
+        "the entry is the only thing we merge.",
+        err=True,
+    )
+    if kind == "marketplace":
+        click.echo(
+            "Run `clio-kit marketplace refresh` in the catalogue checkout to merge the external collection.",
+            err=True,
+        )
+
+
+@click.command("marketplaces")
+def marketplaces_command() -> None:
+    """List original external collections and optional direct-add commands.
+
+    Use `marketplace refresh` to compile their plugins into the CLIO catalogue.
+    """
+    # Prefer the copy inside the added marketplace: it refreshes on
+    # `claude plugin marketplace update`, so a newly indexed catalogue reaches
+    # a user without waiting for a clio-kit release. The baked snapshot is what
+    # an installation that has never added the marketplace has to work from,
+    # and it is only as current as the installed version.
+    federated = read_live_marketplaces()
+    source = "the marketplace, as of its last update"
+    if not federated and live_marketplace_file() is None:
+        federated = read_shipped_marketplaces()
+        source = f"clio-kit {_installed_version()}, which may be behind the marketplace"
+
+    if not federated:
+        click.echo("No federated marketplaces are indexed.")
+        return
+    for entry in federated:
+        maintainer = (entry.get("metadata") or {}).get("maintainer", "unknown")
+        click.echo(f"{entry['name']} -- {entry['description']}")
+        click.echo(
+            f"  maintained by {maintainer}, indexed here; implementation maintained by its publisher"
+        )
+        click.echo(f"  {entry['add_command']}")
+    click.echo(f"\nRead from {source}.")
+
+
+def _installed_version() -> str:
+    """Return this installation's version, for saying how stale a fallback is."""
+    try:
+        return importlib.metadata.version("clio-kit")
+    except importlib.metadata.PackageNotFoundError:  # pragma: no cover - dev tree
+        return "unknown"
+
+
+PLUGIN_COMMANDS = (
+    plugin_group,
+    marketplaces_command,
+    marketplace_group,
+    server_group,
+    doctor_command,
+    skill_group,
+)
