@@ -1219,7 +1219,7 @@
       "description": "Load tabular data, then clean, filter, group, merge and summarize it with pandas.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.3.1",
+      "version": "2.4.0",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/pandas",

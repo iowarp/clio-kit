@@ -9,6 +9,26 @@ from typing import Optional, Dict, Any
 import traceback
 
 
+def _outliers(values: pd.Series) -> Dict[str, Any]:
+    """Tukey fences plus the rows furthest from the median (0-based data rows)."""
+    q1, q3 = values.quantile(0.25), values.quantile(0.75)
+    iqr = q3 - q1
+    lower, upper = q1 - 1.5 * iqr, q3 + 1.5 * iqr
+    distance = (values - values.median()).abs()
+    most_extreme = [
+        {"row": int(row), "value": float(values[row])}
+        for row in distance.sort_values(ascending=False, kind="stable").index[:5]
+    ]
+    return {
+        "lower_fence": float(lower),
+        "upper_fence": float(upper),
+        "below_fence": int((values < lower).sum()),
+        "above_fence": int((values > upper).sum()),
+        "beyond_3_iqr": int(((values < q1 - 3 * iqr) | (values > q3 + 3 * iqr)).sum()),
+        "most_extreme": most_extreme,
+    }
+
+
 def profile_data(
     file_path: str,
     include_correlations: bool = False,
@@ -62,7 +82,7 @@ def profile_data(
         }
 
         # Column analysis
-        column_analysis = {}
+        column_analysis: Dict[str, Dict[str, Any]] = {}
 
         # Numeric columns
         numeric_cols = df.select_dtypes(include=[np.number]).columns
@@ -84,6 +104,7 @@ def profile_data(
                     "negative_count": int((col_data < 0).sum()),
                     "skewness": float(col_data.skew()),
                     "kurtosis": float(col_data.kurtosis()),
+                    "outliers": _outliers(col_data),
                 }
 
         # Categorical columns
@@ -137,6 +158,11 @@ def profile_data(
                 col for col in df.columns if df[col].nunique() > 0.9 * len(df)
             ],
             "mixed_type_columns": [],
+            "extreme_outlier_columns": [
+                col
+                for col, info in column_analysis.items()
+                if info.get("outliers", {}).get("beyond_3_iqr", 0) > 0
+            ],
         }
 
         # Check for mixed types in object columns

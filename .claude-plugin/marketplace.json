@@ -177,7 +177,7 @@
       "name": "clio-pandas",
       "source": "./plugins/clio-pandas",
       "description": "Load tabular data, then clean, filter, group, merge and summarize it with pandas.",
-      "version": "2.3.1",
+      "version": "2.4.0",
       "category": "scientific",
       "keywords": [
         "data-analysis",

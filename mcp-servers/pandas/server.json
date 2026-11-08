@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/pandas-mcp",
   "title": "CLIO Pandas",
   "description": "Load tabular data, then clean, filter, group, merge and summarize it with pandas.",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -59,7 +59,11 @@
     },
     {
       "name": "groupby_operations",
-      "description": "Group data by columns and apply aggregations with optional pre-filter. Writes output_file or <input>_grouped.csv. Existing output is refused unless overwrite=true; the input cannot be replaced."
+      "description": "Group data by columns and apply aggregations with optional pre-filter. Writes output_file or <input>_grouped.csv. Existing output is refused unless overwrite=true; the input cannot be replaced. Use aggregate for a read-only inline result."
+    },
+    {
+      "name": "aggregate",
+      "description": "Read-only grouped aggregation returned inline; writes no file. Group keys are columns or 'column:period' (year, quarter, month, week, day, hour) for date buckets. Optional duplicate-row removal and pandas query filter, several operations per column, sorting, at most max_groups rows."
     },
     {
       "name": "merge_datasets",
@@ -75,7 +79,7 @@
     },
     {
       "name": "validate_data",
-      "description": "Validate columns against rules for min/max range, data type, nullability, uniqueness, and regex patterns."
+      "description": "Validate columns against rules for min/max range, data type, nullability, uniqueness, and regex patterns. Each violation lists up to 10 offending rows (0-based data row and value), worst first."
     },
     {
       "name": "filter_data",
@@ -87,7 +91,7 @@
     },
     {
       "name": "profile_data",
-      "description": "Generate a full dataset profile: shape, types, missing values, distributions, quality checks, and optional correlations."
+      "description": "Generate a full dataset profile: shape, types, missing values, distributions, quality checks, and optional correlations. Numeric columns include IQR outlier counts and the 5 rows furthest from the median."
     },
     {
       "name": "profile_csv",

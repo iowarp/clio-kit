@@ -41,6 +41,7 @@ from .implementation.time_series import time_series_operations
 from .implementation.memory_optimization import optimize_memory_usage
 from .implementation.filtering import filter_data
 from .implementation.validation import validate_data, hypothesis_testing
+from .implementation.aggregate import aggregate
 
 
 # --- Structured result shapes (drive real MCP outputSchema declarations) ----
@@ -541,11 +542,16 @@ logger = logging.getLogger(__name__)
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "pandas",
-    version="2.3.1",  # keep equal to clio-server.toml (tests/test_release_regressions.py)
+    version="2.4.0",  # keep equal to clio-server.toml (tests/test_release_regressions.py)
     instructions=(
         "Performs data analysis operations using pandas DataFrames. "
         "Load CSV/Excel files, compute statistics, filter data, group and aggregate, "
-        "and run hypothesis tests."
+        "and run hypothesis tests. For read-only questions start with profile_data "
+        "(missing values, duplicates, outliers with row numbers) and use aggregate "
+        "for grouped totals: it returns the table inline, buckets dates with "
+        "'column:month' style keys, can drop duplicate rows and writes nothing. "
+        "groupby_operations, pivot_table, filter_data and time_series_operations "
+        "write CSV files beside the input."
     ),
 )
 
@@ -847,7 +853,7 @@ async def clean_data_tool(
 @mcp.tool(
     name="groupby_operations",
     title="Group Data",
-    description="Group data by columns and apply aggregations with optional pre-filter. Writes output_file or <input>_grouped.csv. Existing output is refused unless overwrite=true; the input cannot be replaced.",
+    description="Group data by columns and apply aggregations with optional pre-filter. Writes output_file or <input>_grouped.csv. Existing output is refused unless overwrite=true; the input cannot be replaced. Use aggregate for a read-only inline result.",
     annotations={
         "readOnlyHint": False,
         "destructiveHint": True,
@@ -892,6 +898,92 @@ async def groupby_operations_tool(
     except Exception as e:
         logger.error(f"Groupby operations error: {e}")
         raise ToolError(f"Groupby operations error: {e}") from e
+
+
+class AggregateResult(TypedDict):
+    """Structured result for a read-only grouped aggregation."""
+
+    success: Literal[True]
+    file_path: str
+    group_by: list[str]
+    columns: list[str]
+    rows_read: int
+    duplicates_dropped: int
+    rows_filtered_out: int
+    rows_aggregated: int
+    number_of_groups: int
+    truncated: bool
+    results: list[dict[str, Any]]
+    message: str
+    notes: NotRequired[list[str]]
+
+
+@mcp.tool(
+    name="aggregate",
+    title="Aggregate Data",
+    description=(
+        "Read-only grouped aggregation returned inline; writes no file. Group keys "
+        "are columns or 'column:period' (year, quarter, month, week, day, hour) for "
+        "date buckets. Optional duplicate-row removal and pandas query filter, "
+        "several operations per column, sorting, at most max_groups rows."
+    ),
+    annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+    },
+    tags={"data-analysis", "aggregation"},
+)
+async def aggregate_tool(
+    file_path: Annotated[str, Field(description="Path to the CSV file")],
+    group_by: Annotated[
+        List[str],
+        Field(
+            description="Group keys, e.g. ['region', 'date:month']; missing keys form their own group"
+        ),
+    ],
+    operations: Annotated[
+        Dict[str, str],
+        Field(
+            description="Column to operation or comma-separated operations, e.g. {'revenue': 'sum,mean'}. Operations: sum, mean, median, min, max, count, std, var, nunique, first, last. Output columns are <column>_<operation> plus rows."
+        ),
+    ],
+    filter_condition: Annotated[
+        Optional[str],
+        Field(
+            description="Optional pandas query applied after duplicate removal, e.g. 'revenue < 50000 and units > 0'"
+        ),
+    ] = None,
+    drop_duplicates: Annotated[
+        bool, Field(description="Drop fully duplicated rows before filtering")
+    ] = False,
+    sort_by: Annotated[
+        Optional[str],
+        Field(description="Output column to sort by; default sorts by group keys"),
+    ] = None,
+    descending: Annotated[bool, Field(description="Sort descending")] = False,
+    max_groups: Annotated[
+        int, Field(description="Most result rows to return (1 to 10000)")
+    ] = 1000,
+) -> AggregateResult:
+    """Group and aggregate a CSV without writing any file."""
+    try:
+        return _checked(
+            aggregate(
+                file_path,
+                group_by,
+                operations,
+                filter_condition,
+                drop_duplicates,
+                sort_by,
+                descending,
+                max_groups,
+            )
+        )
+    except ToolError:
+        raise
+    except Exception as e:
+        raise ToolError(f"Aggregation error: {e}") from e
 
 
 @mcp.tool(
@@ -1018,7 +1110,7 @@ async def time_series_operations_tool(
 @mcp.tool(
     name="validate_data",
     title="Validate Data",
-    description="Validate columns against rules for min/max range, data type, nullability, uniqueness, and regex patterns.",
+    description="Validate columns against rules for min/max range, data type, nullability, uniqueness, and regex patterns. Each violation lists up to 10 offending rows (0-based data row and value), worst first.",
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,
@@ -1127,7 +1219,7 @@ async def optimize_memory_tool(
 @mcp.tool(
     name="profile_data",
     title="Profile Data",
-    description="Generate a full dataset profile: shape, types, missing values, distributions, quality checks, and optional correlations.",
+    description="Generate a full dataset profile: shape, types, missing values, distributions, quality checks, and optional correlations. Numeric columns include IQR outlier counts and the 5 rows furthest from the median.",
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,

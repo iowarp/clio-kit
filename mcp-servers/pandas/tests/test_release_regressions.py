@@ -200,3 +200,111 @@ def test_side_file_never_overwrites_a_non_csv_input(tmp_path):
         )
         assert source.read_text() == content
     assert (tmp_path / "t_grouped.csv").read_text() == "g,y\nA,2.0\nB,5.0\n"
+
+
+@pytest.fixture
+def orders(tmp_path):
+    path = tmp_path / "orders.csv"
+    pd.DataFrame(
+        {
+            "date": ["2026-01-05", "2026-01-20", "2026-02-03", "2026-02-03", "oops"],
+            "region": ["east", "east", "east", "east", None],
+            "revenue": [10.0, 30.0, 99999.0, 99999.0, 5.0],
+        }
+    ).to_csv(path, index=False)
+    return str(path)
+
+
+def test_aggregate_is_read_only_and_buckets_dedupes_and_filters(orders, tmp_path):
+    before = sorted(p.name for p in tmp_path.iterdir())
+    result = call(
+        "aggregate",
+        {
+            "file_path": orders,
+            "group_by": ["region", "date:month"],
+            "operations": {"revenue": "sum,count"},
+            "drop_duplicates": True,
+        },
+    )
+    assert not result.is_error, result
+    data = result.structured_content
+    assert data["duplicates_dropped"] == 1
+    assert data["results"] == [
+        {
+            "region": "east",
+            "date_month": "2026-01",
+            "rows": 2,
+            "revenue_sum": 40.0,
+            "revenue_count": 2,
+        },
+        {
+            "region": "east",
+            "date_month": "2026-02",
+            "rows": 1,
+            "revenue_sum": 99999.0,
+            "revenue_count": 1,
+        },
+        {
+            "region": None,
+            "date_month": None,
+            "rows": 1,
+            "revenue_sum": 5.0,
+            "revenue_count": 1,
+        },
+    ]
+    assert data["notes"] == ["1 'date' values are not dates; grouped as null"]
+    filtered = call(
+        "aggregate",
+        {
+            "file_path": orders,
+            "group_by": ["region"],
+            "operations": {"revenue": "max"},
+            "filter_condition": "revenue < 50000",
+            "sort_by": "revenue_max",
+            "descending": True,
+        },
+    ).structured_content
+    assert filtered["rows_filtered_out"] == 2
+    assert [row["revenue_max"] for row in filtered["results"]] == [30.0, 5.0]
+    assert sorted(p.name for p in tmp_path.iterdir()) == before
+
+    async def annotations():
+        async with Client(mcp) as client:
+            tools = {tool.name: tool for tool in await client.list_tools()}
+            return tools["aggregate"].annotations
+
+    assert asyncio.run(annotations()).read_only_hint is True
+
+
+@pytest.mark.parametrize(
+    "arguments,message",
+    [
+        ({"group_by": ["date:fortnight"]}, "Unknown period 'fortnight'"),
+        ({"operations": {"revenue": "total"}}, "Unknown operation(s) ['total']"),
+        ({"sort_by": "revenue"}, "not an output column"),
+    ],
+)
+def test_aggregate_rejects_bad_arguments_with_the_fix(orders, arguments, message):
+    base = {
+        "file_path": orders,
+        "group_by": ["region"],
+        "operations": {"revenue": "sum"},
+    }
+    result = call("aggregate", {**base, **arguments})
+    assert result.is_error and message in result.content[0].text
+
+
+def test_profile_and_validation_point_at_offending_rows(orders):
+    profile = call("profile_data", {"file_path": orders}).structured_content
+    outliers = profile["column_analysis"]["revenue"]["outliers"]
+    assert [item["row"] for item in outliers["most_extreme"][:2]] == [2, 3]
+    validation = call(
+        "validate_data",
+        {"file_path": orders, "validation_rules": {"revenue": {"max_value": 25}}},
+    ).structured_content
+    violation = validation["validation_results"]["revenue"]["violations"][0]
+    assert violation["examples"] == [
+        {"row": 2, "value": 99999.0},
+        {"row": 3, "value": 99999.0},
+        {"row": 1, "value": 30.0},
+    ]

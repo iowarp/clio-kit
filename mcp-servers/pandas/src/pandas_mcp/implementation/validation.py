@@ -11,6 +11,22 @@ from typing import Optional, Any, Dict
 import traceback
 
 
+MAX_EXAMPLES = 10
+
+
+def _examples(values: pd.Series, mask: pd.Series, key=None) -> list:
+    """Offending rows as {"row": 0-based data row, "value": v}, worst first."""
+    hits = values[mask.fillna(False).astype(bool)]
+    if key is not None:
+        hits = hits.loc[key(hits).sort_values(ascending=False, kind="stable").index]
+    out = []
+    for row, value in hits.head(MAX_EXAMPLES).items():
+        if hasattr(value, "item"):
+            value = value.item()
+        out.append({"row": int(row), "value": value})
+    return out
+
+
 def validate_data(
     file_path: str, validation_rules: Dict[str, Dict[str, Any]]
 ) -> Dict[str, Any]:
@@ -67,6 +83,11 @@ def validate_data(
                             "violation_percentage": round(
                                 violation_count / len(col_data) * 100, 2
                             ),
+                            "examples": _examples(
+                                col_data,
+                                min_violations,
+                                key=lambda hits: rules["min_value"] - hits,
+                            ),
                         }
                     )
                     column_results["valid"] = False
@@ -82,6 +103,11 @@ def validate_data(
                             "violation_count": int(violation_count),
                             "violation_percentage": round(
                                 violation_count / len(col_data) * 100, 2
+                            ),
+                            "examples": _examples(
+                                col_data,
+                                max_violations,
+                                key=lambda hits: hits - rules["max_value"],
                             ),
                         }
                     )
@@ -138,6 +164,7 @@ def validate_data(
                             "duplicate_percentage": round(
                                 duplicate_count / len(col_data) * 100, 2
                             ),
+                            "examples": _examples(col_data, col_data.duplicated()),
                         }
                     )
                     column_results["valid"] = False
@@ -158,6 +185,7 @@ def validate_data(
                                 "violation_percentage": round(
                                     violation_count / len(col_data) * 100, 2
                                 ),
+                                "examples": _examples(col_data, pattern_violations),
                             }
                         )
                         column_results["valid"] = False

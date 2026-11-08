@@ -465,7 +465,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`lmod`** | 3.0.2 | Environment | Environment module management | `clio-kit mcp-server lmod` |
 | **`ndp`** | 2.2.6 | Data Protocol | Search and discover datasets across CKAN instances | `clio-kit mcp-server ndp` |
 | **`node-hardware`** | 2.3.1 | System | System hardware information | `clio-kit mcp-server node-hardware` |
-| **`pandas`** | 2.3.1 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
+| **`pandas`** | 2.4.0 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
 | **`parallel-sort`** | 2.3.1 | Computing | Large file sorting | `clio-kit mcp-server parallel-sort` |
 | **`paraview`** | 2.2.6 | Visualization | Scientific 3D visualization and analysis | `clio-kit mcp-server paraview` |
 | **`parquet`** | 2.3.0 | Data I/O | Read Parquet file columns | `clio-kit mcp-server parquet` |
