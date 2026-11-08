@@ -226,7 +226,12 @@ def create_mcp(configured: Settings | None = None) -> FastMCP:
             "deployment (--remote-url); without one a DOI fails with a clear error and "
             "binary documents are only saved with to_file=True."
         ),
-        annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True},
+        annotations={
+            "readOnlyHint": False,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": True,
+        },
         tags={"web", "fetch", "http", "documents"},
         task=TaskConfig(mode="optional", poll_interval=timedelta(seconds=1)),
     )(fetch)
@@ -237,7 +242,12 @@ def create_mcp(configured: Settings | None = None) -> FastMCP:
             "Query the full ordered backend event log for a document fetch conversion. "
             "Requires a CLIO Web Search deployment (--remote-url)."
         ),
-        annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": True,
+            "openWorldHint": True,
+        },
         tags={"web", "fetch", "documents", "progress"},
         task=TaskConfig(mode="forbidden"),
     )(fetch_events)
@@ -253,7 +263,12 @@ def create_mcp(configured: Settings | None = None) -> FastMCP:
         name="search",
         title="Search Web",
         description=search_description,
-        annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": False},
+        annotations={
+            "readOnlyHint": True,
+            "destructiveHint": False,
+            "idempotentHint": False,
+            "openWorldHint": True,
+        },
         tags={"web", "search"},
         task=TaskConfig(mode="forbidden"),
     )(search_function)

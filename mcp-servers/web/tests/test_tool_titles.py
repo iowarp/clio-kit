@@ -26,3 +26,13 @@ async def test_titles_have_no_parentheses() -> None:
 
     with_parens = [tool.name for tool in tools if tool.title and "(" in tool.title]
     assert not with_parens, f"Tools with parens in title: {with_parens}"
+
+
+@pytest.mark.asyncio
+async def test_all_tools_declare_they_reach_the_open_world() -> None:
+    async with Client(mcp) as client:
+        tools = await client.list_tools()
+
+    for tool in tools:
+        assert tool.annotations is not None, tool.name
+        assert tool.annotations.openWorldHint is True, tool.name
