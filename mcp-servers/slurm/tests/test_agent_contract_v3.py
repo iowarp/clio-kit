@@ -900,7 +900,7 @@ def test_submit_names_available_partitions_when_sbatch_rejects_one(
         ),
         patch.object(agent_contract, "get_slurm_info", return_value=partitions),
     ):
-        with pytest.raises(ToolError, match="array submission failed.*Available"):
+        with pytest.raises(ToolError, match="(?s)array submission failed.*\nAvailable"):
             submit(str(script), partition="gpu", array="1-2")
 
 

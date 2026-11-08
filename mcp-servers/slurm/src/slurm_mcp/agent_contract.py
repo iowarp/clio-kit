@@ -376,9 +376,7 @@ def _partition_hint(error: str) -> str:
     ]
     if not names:
         return ""
-    return (
-        f" Available partitions: {', '.join(names)}. Omit partition to use the default."
-    )
+    return f"\nAvailable partitions: {', '.join(names)}. Omit partition to use the default."
 
 
 def submit(
@@ -414,7 +412,7 @@ def submit(
             )
         except RuntimeError as exc:
             raise ToolError(
-                f"Slurm submission failed: {exc}{_partition_hint(str(exc))}"
+                f"Slurm submission failed: {str(exc).rstrip()}{_partition_hint(str(exc))}"
             ) from exc
         native_id = result.get("job_id")
         kind: Literal["job", "array"] = "job"
@@ -430,7 +428,7 @@ def submit(
         )
         if result.get("error"):
             raise ToolError(
-                f"Slurm array submission failed: {result['error']}"
+                f"Slurm array submission failed: {str(result['error']).rstrip()}"
                 f"{_partition_hint(str(result['error']))}"
             )
         native_id = result.get("array_job_id") or result.get("job_id")
