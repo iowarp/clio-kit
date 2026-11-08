@@ -47,7 +47,7 @@ class TestListBp5Files:
 
             result = await list_bp5_files()
 
-            mock_list_bp5.assert_called_once_with("data")
+            mock_list_bp5.assert_called_once_with(".")
             assert result == {"files": mock_files}
 
     @pytest.mark.asyncio

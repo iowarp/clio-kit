@@ -47,7 +47,7 @@ class TestServerToolFunctions:
 
             result = await list_bp5_tool()
 
-            mock_handler.assert_called_once_with("data/")
+            mock_handler.assert_called_once_with(".")
             assert result == {"files": []}
 
     @pytest.mark.asyncio

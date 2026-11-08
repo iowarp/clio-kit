@@ -26,7 +26,7 @@ class TestInspectAttributes:
         assert len(result) == 2
         assert result["global_attr1"]["value"] == 42
         assert result["global_attr1"]["Type"] == "int32"
-        assert result["global_attr2"]["value"] == ["test_string"]
+        assert result["global_attr2"]["value"] == "test_string"
         assert result["global_attr2"]["Type"] == "string"
 
     @patch("adios_mcp.implementation.bp5_attributes.FileReader")

@@ -49,6 +49,8 @@ def inspect_attributes(
                 val = np.array(raw).item()
             else:
                 val = np.array(raw).flatten().tolist()
+                if meta.get("Type") == "string" and len(val) == 1:
+                    val = val[0]
 
             # Combine value with metadata Params
             entry: Dict[str, Any] = {"value": val}

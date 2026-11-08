@@ -35,6 +35,9 @@ bp5_attributes = _LazyImplementation(
 bp5_read_variable_at_step = _LazyImplementation(
     "adios_mcp.implementation.bp5_read_variable_at_step", "read_variable_at_step"
 )
+bp5_variable_stats = _LazyImplementation(
+    "adios_mcp.implementation.bp5_variable_stats", "variable_stats"
+)
 bp5_inspect_variables_at_step = _LazyImplementation(
     "adios_mcp.implementation.bp5_inspect_variables_at_step",
     "inspect_variables_at_step",
@@ -52,7 +55,7 @@ class UnknownToolError(Exception):
     pass
 
 
-async def list_bp5_files(directory: str = "data") -> Dict[str, Any]:
+async def list_bp5_files(directory: str = ".") -> Dict[str, Any]:
     """List all BP5 files in a specified directory.
 
     Args:
@@ -122,12 +125,22 @@ async def inspect_attributes_handler(
 
 
 async def read_variable_at_step_handler(
-    filename: str, variable_name: str, target_step: int
+    filename: str, variable_name: str, target_step: int, **selection: Any
 ) -> Dict[str, Any]:
-    """Async handler for 'read_variable_at_step' tool."""
+    """Async handler for 'read_variable_at_step' tool; selection holds start/count/max_elements."""
     try:
         return bp5_read_variable_at_step.read_variable_at_step(
-            filename, variable_name, target_step
+            filename, variable_name, target_step, **selection
         )
+    except Exception as e:
+        raise _tool_error(e) from e
+
+
+async def variable_stats_handler(
+    filename: str, variable_name: str, **options: Any
+) -> Dict[str, Any]:
+    """Async handler for 'variable_stats' tool."""
+    try:
+        return bp5_variable_stats.variable_stats(filename, variable_name, **options)
     except Exception as e:
         raise _tool_error(e) from e

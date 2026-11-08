@@ -13,7 +13,7 @@
       "name": "clio-adios",
       "source": "./plugins/clio-adios",
       "description": "Fetch and analyze BP5 data files using ADIOS2. Access scientific data, metadata, and attributes for research and analysis purposes.",
-      "version": "2.2.6",
+      "version": "2.3.0",
       "category": "scientific",
       "keywords": [
         "scientific-computing",

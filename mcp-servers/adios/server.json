@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/adios-mcp",
   "title": "CLIO Adios",
   "description": "Fetch and analyze BP5 data files using ADIOS2. Access scientific data, metadata, and attributes...",
-  "version": "2.2.6",
+  "version": "2.3.0",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -31,7 +31,7 @@
   "tools": [
     {
       "name": "list_bp5",
-      "description": "Lists all BP5 files in a given directory. The 'directory' parameter must be an absolute path."
+      "description": "Lists the BP4/BP5 files (.bp, .bp5) in a directory, by default the server's working directory."
     },
     {
       "name": "inspect_variables",
@@ -47,7 +47,11 @@
     },
     {
       "name": "read_variable_at_step",
-      "description": "Reads a named variable at a specific step from a BP5 file. All parameters are required."
+      "description": "Reads a variable at one step as a flattened row-major list with its shape. Pass start/count (one value per dimension) to read a slice; reads above max_elements (default 10000) are refused, so use variable_stats for summaries."
+    },
+    {
+      "name": "variable_stats",
+      "description": "Per-step min, max, mean and std of a variable over a step range, with the (i, j, k, ...) index of each step's min and max and the overall extremes. Optionally restricted to a start/count slice."
     }
   ],
   "resources": [
