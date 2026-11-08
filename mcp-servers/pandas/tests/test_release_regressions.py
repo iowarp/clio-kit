@@ -129,12 +129,14 @@ def test_tools_that_write_side_files_say_so():
     tools = asyncio.run(listing())
     for name, suffix in WRITERS.items():
         assert tools[name].annotations.read_only_hint is False, name
+        assert tools[name].annotations.destructive_hint is True, name
         assert suffix in tools[name].description, name
         if name == "groupby_operations":
             assert "unless overwrite=true" in tools[name].description
-            assert tools[name].annotations.destructive_hint is True
         else:
             assert "overwriting" in tools[name].description, name
+    for name in ("save_data", "handle_missing_data"):
+        assert tools[name].annotations.destructive_hint is True, name
 
 
 def test_optimize_memory_column_shares_sum_to_100(csv):

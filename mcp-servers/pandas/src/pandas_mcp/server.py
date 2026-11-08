@@ -622,7 +622,7 @@ async def load_data_tool(
     description="Save data to CSV, Excel, JSON, Parquet, or HDF5 with auto-detected format and optional index inclusion.",
     annotations={
         "readOnlyHint": False,
-        "destructiveHint": False,
+        "destructiveHint": True,
         "idempotentHint": True,
     },
     tags={"data-analysis", "io"},
@@ -773,7 +773,7 @@ async def hypothesis_testing_tool(
     description="Detect, impute, or remove missing values using strategies like mean/median/mode fill, forward/backward fill, or interpolation.",
     annotations={
         "readOnlyHint": False,
-        "destructiveHint": False,
+        "destructiveHint": True,
         "idempotentHint": True,
     },
     tags={"data-analysis", "cleaning"},
@@ -811,7 +811,7 @@ async def handle_missing_data_tool(
     description="Remove duplicates, detect outliers via IQR/Z-score, and optimize data types in a single pass. Writes <input>_cleaned.csv beside the input, overwriting any previous one.",
     annotations={
         "readOnlyHint": False,
-        "destructiveHint": False,
+        "destructiveHint": True,
         "idempotentHint": True,
     },
     tags={"data-analysis", "cleaning"},
@@ -900,7 +900,7 @@ async def groupby_operations_tool(
     description="Join two datasets using inner, outer, left, or right joins on specified key columns. Writes <left_file>_merged.csv beside the left file, overwriting any previous one.",
     annotations={
         "readOnlyHint": False,
-        "destructiveHint": False,
+        "destructiveHint": True,
         "idempotentHint": True,
     },
     tags={"data-analysis", "transformation"},
@@ -938,7 +938,7 @@ async def merge_datasets_tool(
     description="Create pivot tables with configurable row index, column headers, value columns, and aggregation function. Writes <input>_pivot.csv beside the input, overwriting any previous one.",
     annotations={
         "readOnlyHint": False,
-        "destructiveHint": False,
+        "destructiveHint": True,
         "idempotentHint": True,
     },
     tags={"data-analysis", "transformation"},
@@ -978,7 +978,7 @@ async def pivot_table_tool(
     description="Resample, compute rolling statistics, create lag features, or difference a time series. Writes <input>_<operation>.csv beside the input, overwriting any previous one.",
     annotations={
         "readOnlyHint": False,
-        "destructiveHint": False,
+        "destructiveHint": True,
         "idempotentHint": True,
     },
     tags={"data-analysis", "time-series"},
@@ -1055,7 +1055,7 @@ async def validate_data_tool(
     description="Filter rows using comparison, membership, pattern-matching, and null-check operators across multiple columns. Writes <input>_filtered.csv beside the input (or output_file), overwriting any previous one.",
     annotations={
         "readOnlyHint": False,
-        "destructiveHint": False,
+        "destructiveHint": True,
         "idempotentHint": True,
     },
     tags={"data-analysis", "filtering"},
@@ -1094,7 +1094,7 @@ async def filter_data_tool(
     description="Analyze and reduce DataFrame memory usage through automatic dtype optimization and chunked-processing recommendations. Writes <input>_optimized.csv beside the input, overwriting any previous one.",
     annotations={
         "readOnlyHint": False,
-        "destructiveHint": False,
+        "destructiveHint": True,
         "idempotentHint": True,
     },
     tags={"data-analysis", "optimization"},
