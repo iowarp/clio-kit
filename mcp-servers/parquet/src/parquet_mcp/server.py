@@ -26,7 +26,7 @@ def _check_error(result: str) -> str:
 
 mcp = FastMCP(
     "parquet",
-    version="2.2.6",
+    version="2.3.0",
     instructions=(
         "Reads and analyzes Apache Parquet files. "
         "Use summarize_tool for file overview, read_slice_tool for row access, "
@@ -37,7 +37,7 @@ mcp = FastMCP(
 
 @mcp.tool(
     title="Summarize",
-    description="Return Parquet schema, row count, and file size.",
+    description="Return Parquet schema (with per-column null counts), row count, and file size.",
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,
@@ -126,7 +126,7 @@ async def get_column_preview_tool(
 
 @mcp.tool(
     title="Aggregate Column",
-    description="Compute aggregate statistics (min, max, mean, etc.) on a Parquet column.",
+    description="Compute one or more aggregates (min, max, mean, ...) on a Parquet column, optionally per group of another column.",
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,
@@ -142,24 +142,28 @@ async def aggregate_column_tool(
     filter_json: Optional[str] = None,
     start_row: Optional[Union[int, float]] = None,
     end_row: Optional[Union[int, float]] = None,
+    group_by: Optional[str] = None,
 ) -> str:
     """Compute aggregate statistics on a column with optional filtering and range bounds.
 
     Args:
         file_path: Path to the Parquet file
         column_name: Name of the column to aggregate
-        operation: Aggregation operation (min, max, mean, sum, count, std, count_distinct)
+        operation: Aggregation operation, or a comma-separated list such as
+                   "mean,max,count" (min, max, mean, sum, count, std, count_distinct)
         filter_json: Optional JSON string with filter specification
                      Example: '{"column": "batch_id", "op": "equal", "value": 1}'
         start_row: Optional starting row index for range constraint
         end_row: Optional ending row index for range constraint
+        group_by: Optional column; returns one result per distinct value
+                  (sorted, at most 1000 groups) instead of a single result
 
     Returns:
-        JSON string with aggregation result and metadata
+        JSON string with aggregation result (or groups) and metadata
     """
     return _check_error(
         await aggregate_column(
-            file_path, column_name, operation, filter_json, start_row, end_row
+            file_path, column_name, operation, filter_json, start_row, end_row, group_by
         )
     )
 

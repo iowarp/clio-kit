@@ -468,7 +468,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`pandas`** | 2.3.1 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
 | **`parallel-sort`** | 2.3.1 | Computing | Large file sorting | `clio-kit mcp-server parallel-sort` |
 | **`paraview`** | 2.2.6 | Visualization | Scientific 3D visualization and analysis | `clio-kit mcp-server paraview` |
-| **`parquet`** | 2.2.6 | Data I/O | Read Parquet file columns | `clio-kit mcp-server parquet` |
+| **`parquet`** | 2.3.0 | Data I/O | Read Parquet file columns | `clio-kit mcp-server parquet` |
 | **`plot`** | 2.2.6 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |
 | **`seismology`** | 2.3.2 | Seismology | Analyze SAC waveforms and archives | `clio-kit mcp-server seismology` |
 | **`scientific-catalog`** | 1.1.5 | Discovery | Operator-owned scientific dataset discovery | `clio-kit mcp-server scientific-catalog` |

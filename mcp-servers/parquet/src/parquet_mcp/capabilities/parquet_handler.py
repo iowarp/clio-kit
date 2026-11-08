@@ -129,6 +129,98 @@ def _filter_columns(spec: Dict[str, Any]) -> set[str]:
     return set().union(*(_filter_columns(item) for item in next(iter(spec.values()))))
 
 
+MAX_GROUPS = 1000
+_ARROW_HASH_AGGREGATES = {
+    "min": "min",
+    "max": "max",
+    "mean": "mean",
+    "sum": "sum",
+    "count": "count",
+    "std": "stddev",
+    "count_distinct": "count_distinct",
+}
+
+
+def _needed_columns(
+    names: List[str], wanted: set[str], filter_dict: Optional[Dict[str, Any]]
+) -> Optional[List[str]]:
+    """Columns to read for an aggregate; None reads all so bad filters still report."""
+    columns = set(wanted)
+    if filter_dict is not None:
+        try:
+            columns |= _filter_columns(filter_dict)
+        except Exception:
+            return None
+    return [name for name in names if name in columns]
+
+
+def _aggregate(column: Any, operation: str) -> Any:
+    if operation == "min":
+        return pc.min(column).as_py()
+    if operation == "max":
+        return pc.max(column).as_py()
+    if operation == "mean":
+        return pc.mean(column).as_py()
+    if operation == "sum":
+        return pc.sum(column).as_py()
+    if operation == "count":
+        return pc.count(column).as_py()
+    if operation == "std":
+        return pc.stddev(column, ddof=0).as_py()
+    return len(pc.unique(column))
+
+
+def _grouped_aggregate(
+    table: pa.Table, column_name: str, group_by: str, operations: List[str]
+) -> Dict[str, Any]:
+    """Per-group results sorted by key, capped at MAX_GROUPS groups."""
+    keys = table[group_by]
+    if pa.types.is_dictionary(keys.type):
+        keys = keys.cast(keys.type.value_type)
+    frame = pa.table({"key": keys, "value": table[column_name]})
+    aggregates: List[Any] = [
+        ("value", _ARROW_HASH_AGGREGATES[operation]) for operation in operations
+    ]
+    aggregates.append(("key", "count", pc.CountOptions(mode="all")))
+    grouped = frame.group_by("key").aggregate(aggregates).sort_by("key")
+    rows = grouped.to_pylist()
+    groups = []
+    for row in rows[:MAX_GROUPS]:
+        values = {
+            operation: row[f"value_{_ARROW_HASH_AGGREGATES[operation]}"]
+            for operation in operations
+        }
+        groups.append(
+            {
+                "key": row["key"],
+                "rows": row["key_count"],
+                "result": values[operations[0]] if len(operations) == 1 else values,
+            }
+        )
+    return {
+        "groups": groups,
+        "group_count": len(rows),
+        "groups_truncated": len(rows) > MAX_GROUPS,
+    }
+
+
+def _column_null_counts(metadata: Any) -> Dict[str, int]:
+    """Null counts from row-group statistics, only for columns every group reports."""
+    totals: Dict[str, int] = {}
+    missing: set[str] = set()
+    for group_index in range(metadata.num_row_groups):
+        group = metadata.row_group(group_index)
+        for column_index in range(group.num_columns):
+            chunk = group.column(column_index)
+            name = chunk.path_in_schema
+            stats = chunk.statistics
+            if stats is None or not stats.has_null_count:
+                missing.add(name)
+                continue
+            totals[name] = totals.get(name, 0) + stats.null_count
+    return {name: count for name, count in totals.items() if name not in missing}
+
+
 async def summarize(file_path: str) -> str:
     """
     Return a summary of the Parquet file's structure.
@@ -142,11 +234,13 @@ async def summarize(file_path: str) -> str:
         - num_rows: Total number of rows
         - num_row_groups: Number of row groups
         - file_size_bytes: Total file size
+        - null_count per column when every row group records it
     """
     try:
         pq_file = pq.ParquetFile(file_path)
         schema = pq_file.schema_arrow
         metadata = pq_file.metadata
+        null_counts = _column_null_counts(metadata)
 
         summary = {
             "status": "success",
@@ -157,6 +251,11 @@ async def summarize(file_path: str) -> str:
                         "name": field.name,
                         "type": str(field.type),
                         "nullable": field.nullable,
+                        **(
+                            {"null_count": null_counts[field.name]}
+                            if field.name in null_counts
+                            else {}
+                        ),
                     }
                     for field in schema
                 ],
@@ -612,6 +711,7 @@ async def aggregate_column(
     filter_json: Optional[str] = None,
     start_row: Optional[int] = None,
     end_row: Optional[int] = None,
+    group_by: Optional[str] = None,
 ) -> str:
     """
     Compute aggregate statistics on a column with optional filtering and range bounds.
@@ -619,7 +719,9 @@ async def aggregate_column(
     Args:
         file_path: Path to the Parquet file
         column_name: Name of the column to aggregate
-        operation: Aggregation operation (min, max, mean, sum, count, std, count_distinct)
+        operation: One operation or a comma-separated list
+            (min, max, mean, sum, count, std, count_distinct)
+        group_by: Optional column whose distinct values each get their own result
         filter_json: Optional JSON string with filter specification
         start_row: Optional starting row index for range constraint
         end_row: Optional ending row index for range constraint
@@ -655,11 +757,13 @@ async def aggregate_column(
             "std",
             "count_distinct",
         ]
-        if operation not in valid_operations:
+        operations = [item.strip() for item in operation.split(",") if item.strip()]
+        invalid = [item for item in operations if item not in valid_operations]
+        if not operations or invalid:
             return json.dumps(
                 {
                     "status": "error",
-                    "message": f"Invalid operation: {operation}",
+                    "message": f"Invalid operation: {', '.join(invalid) or operation!r}",
                     "valid_operations": valid_operations,
                     "suggestion": "Use one of the supported aggregation operations",
                 }
@@ -710,7 +814,21 @@ async def aggregate_column(
                     }
                 )
 
+        if group_by is not None and group_by not in available_columns:
+            return json.dumps(
+                {
+                    "status": "error",
+                    "message": f"group_by column not found: {group_by}",
+                    "available_columns": sorted(available_columns),
+                }
+            )
+
         filter_dict = _parse_filter(filter_json)
+        read_columns = _needed_columns(
+            schema.names,
+            {column_name} | ({group_by} if group_by else set()),
+            filter_dict,
+        )
 
         # Read table (full or range)
         if start_row is not None and end_row is not None:
@@ -722,10 +840,10 @@ async def aggregate_column(
                         "suggestion": f"Use 0 <= start_row < end_row <= {total_rows}",
                     }
                 )
-            table = pq.read_table(file_path)
+            table = pq.read_table(file_path, columns=read_columns)
             table = table.slice(offset=start_row, length=end_row - start_row)
         else:
-            table = pq.read_table(file_path)
+            table = pq.read_table(file_path, columns=read_columns)
 
         rows_before_filter = len(table)
 
@@ -750,21 +868,15 @@ async def aggregate_column(
         column = table[column_name]
 
         # Compute aggregation
+        grouped: Optional[Dict[str, Any]] = None
+        result: Any = None
         try:
-            if operation == "min":
-                result = pc.min(column).as_py()
-            elif operation == "max":
-                result = pc.max(column).as_py()
-            elif operation == "mean":
-                result = pc.mean(column).as_py()
-            elif operation == "sum":
-                result = pc.sum(column).as_py()
-            elif operation == "count":
-                result = pc.count(column).as_py()
-            elif operation == "std":
-                result = pc.stddev(column, ddof=0).as_py()
-            else:  # count_distinct; operation was validated above
-                result = len(pc.unique(column))
+            if group_by is not None:
+                grouped = _grouped_aggregate(table, column_name, group_by, operations)
+            elif len(operations) == 1:
+                result = _aggregate(column, operations[0])
+            else:
+                result = {item: _aggregate(column, item) for item in operations}
 
         except Exception as e:
             return json.dumps(
@@ -785,7 +897,8 @@ async def aggregate_column(
             "file_path": file_path,
             "column_name": column_name,
             "operation": operation,
-            "result": result,
+            **({"group_by": group_by, **grouped} if grouped is not None else {}),
+            **({"result": result} if grouped is None else {}),
             "metadata": {
                 "rows_processed": rows_after_filter,
                 "rows_before_filter": rows_before_filter,
@@ -795,7 +908,7 @@ async def aggregate_column(
             },
         }
 
-        if operation == "std":
+        if "std" in operations:
             response["metadata"]["std_type"] = "population (ddof=0)"
         if filter_dict is not None:
             response["metadata"]["filter_spec"] = filter_dict
@@ -806,7 +919,7 @@ async def aggregate_column(
                 "end_row": end_row,
             }
 
-        return json.dumps(response, indent=2)
+        return json.dumps(response, indent=2, default=str)
 
     except FileNotFoundError:
         return json.dumps(

@@ -52,3 +52,21 @@ async def test_summarize_schema_structure(test_parquet_file):
     assert isinstance(col["name"], str)
     assert isinstance(col["type"], str)
     assert isinstance(col["nullable"], bool)
+
+
+@pytest.mark.asyncio
+async def test_summarize_reports_null_counts_across_row_groups(tmp_path):
+    """Null counts come from row-group statistics so no data scan is needed."""
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    path = tmp_path / "nulls.parquet"
+    table = pa.table({"x": [1, None, 3, None, None, 6], "y": list("abcdef")})
+    pq.write_table(table, path, row_group_size=2)
+
+    data = json.loads(await summarize(str(path)))
+    columns = {c["name"]: c for c in data["schema"]["columns"]}
+
+    assert data["num_row_groups"] == 3
+    assert columns["x"]["null_count"] == 3
+    assert columns["y"]["null_count"] == 0

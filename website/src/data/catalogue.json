@@ -1510,7 +1510,7 @@
       "description": "Summarize Parquet files, preview columns, read row slices and aggregate values.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.2.6",
+      "version": "2.3.0",
       "category": "Scientific data",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/parquet",

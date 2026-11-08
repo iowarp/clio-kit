@@ -222,7 +222,7 @@
       "name": "clio-parquet",
       "source": "./plugins/clio-parquet",
       "description": "Summarize Parquet files, preview columns, read row slices and aggregate values.",
-      "version": "2.2.6",
+      "version": "2.3.0",
       "category": "scientific",
       "keywords": [
         "parquet",

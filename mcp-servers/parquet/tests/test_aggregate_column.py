@@ -354,3 +354,97 @@ class TestAggregateMetadata:
         assert result["status"] == "success"
         assert result["metadata"]["rows_processed"] == 10
         assert result["metadata"]["rows_before_filter"] == 10
+
+
+@pytest.mark.asyncio
+class TestAggregateGroupsAndMultipleOperations:
+    """One call answers per-group and multi-statistic questions."""
+
+    async def test_multiple_operations_return_a_mapping(self, aggregate_test_file):
+        from parquet_mcp.capabilities.parquet_handler import aggregate_column
+
+        result = json.loads(
+            await aggregate_column(aggregate_test_file, "null_col", "mean, max,count")
+        )
+
+        assert result["status"] == "success"
+        assert result["result"] == {"mean": 5.0, "max": 9, "count": 5}
+
+    async def test_group_by_reports_each_group_sorted(self, aggregate_test_file):
+        from parquet_mcp.capabilities.parquet_handler import aggregate_column
+
+        result = json.loads(
+            await aggregate_column(
+                aggregate_test_file, "null_col", "count,sum", group_by="str_col"
+            )
+        )
+
+        assert result["status"] == "success"
+        assert result["group_by"] == "str_col"
+        assert result["group_count"] == 2
+        assert result["groups_truncated"] is False
+        assert result["groups"] == [
+            {"key": "a", "rows": 5, "result": {"count": 5, "sum": 25}},
+            {"key": "b", "rows": 5, "result": {"count": 0, "sum": None}},
+        ]
+        assert "result" not in result
+
+    async def test_group_by_respects_filter_and_dictionary_keys(self, tmp_path):
+        from parquet_mcp.capabilities.parquet_handler import aggregate_column
+
+        path = tmp_path / "dict.parquet"
+        table = pa.table(
+            {
+                "station": pa.array(["s2", "s1", "s2", "s1"]).dictionary_encode(),
+                "energy": [4.0, 1.0, 8.0, 3.0],
+                "ok": [True, True, True, False],
+            }
+        )
+        pq.write_table(table, path)
+
+        result = json.loads(
+            await aggregate_column(
+                str(path),
+                "energy",
+                "mean",
+                filter_json='{"column": "ok", "op": "equal", "value": true}',
+                group_by="station",
+            )
+        )
+
+        assert [(g["key"], g["result"]) for g in result["groups"]] == [
+            ("s1", 1.0),
+            ("s2", 6.0),
+        ]
+
+    async def test_group_by_caps_group_count(self, tmp_path, monkeypatch):
+        from parquet_mcp.capabilities import parquet_handler
+
+        path = tmp_path / "many.parquet"
+        pq.write_table(pa.table({"k": list(range(5)), "v": list(range(5))}), path)
+        monkeypatch.setattr(parquet_handler, "MAX_GROUPS", 3)
+
+        result = json.loads(
+            await parquet_handler.aggregate_column(str(path), "v", "sum", group_by="k")
+        )
+
+        assert result["group_count"] == 5
+        assert result["groups_truncated"] is True
+        assert [g["key"] for g in result["groups"]] == [0, 1, 2]
+
+    async def test_unknown_group_by_and_operation_are_rejected(
+        self, aggregate_test_file
+    ):
+        from parquet_mcp.capabilities.parquet_handler import aggregate_column
+
+        missing = json.loads(
+            await aggregate_column(aggregate_test_file, "int_col", "sum", group_by="x")
+        )
+        bad = json.loads(
+            await aggregate_column(aggregate_test_file, "int_col", "mean,median")
+        )
+
+        assert missing["status"] == "error"
+        assert "group_by column not found" in missing["message"]
+        assert bad["status"] == "error"
+        assert "median" in bad["message"]

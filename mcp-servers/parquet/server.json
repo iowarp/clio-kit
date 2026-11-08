@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/parquet-mcp",
   "title": "CLIO Parquet",
   "description": "Summarize Parquet files, preview columns, read row slices and aggregate values.",
-  "version": "2.2.6",
+  "version": "2.3.0",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -31,7 +31,7 @@
   "tools": [
     {
       "name": "summarize_tool",
-      "description": "Return Parquet schema, row count, and file size."
+      "description": "Return Parquet schema (with per-column null counts), row count, and file size."
     },
     {
       "name": "read_slice_tool",
@@ -43,7 +43,7 @@
     },
     {
       "name": "aggregate_column_tool",
-      "description": "Compute aggregate statistics (min, max, mean, etc.) on a Parquet column."
+      "description": "Compute one or more aggregates (min, max, mean, ...) on a Parquet column, optionally per group of another column."
     }
   ],
   "resources": [
