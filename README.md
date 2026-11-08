@@ -460,7 +460,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`compression`** | 2.2.6 | Utilities | File compression with gzip | `clio-kit mcp-server compression` |
 | **`darshan`** | 2.2.6 | Performance | I/O performance trace analysis | `clio-kit mcp-server darshan` |
 | **`geo`** | 2.3.2 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
-| **`hdf5`** | 2.2.7 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
+| **`hdf5`** | 2.3.0 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
 | **`jarvis`** | 3.7.5 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |
 | **`lmod`** | 3.0.2 | Environment | Environment module management | `clio-kit mcp-server lmod` |
 | **`ndp`** | 2.2.6 | Data Protocol | Search and discover datasets across CKAN instances | `clio-kit mcp-server ndp` |

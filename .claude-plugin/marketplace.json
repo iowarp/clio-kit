@@ -104,7 +104,7 @@
       "name": "clio-hdf5",
       "source": "./plugins/clio-hdf5",
       "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks.",
-      "version": "2.2.7",
+      "version": "2.3.0",
       "category": "scientific",
       "keywords": [
         "scientific-computing",

@@ -55,7 +55,7 @@ import os
 import time
 import json
 from pathlib import Path
-from typing import Any, Callable, Optional, List, Literal
+from typing import Any, Callable, Optional, List, Literal, Union
 from functools import wraps
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import asynccontextmanager
@@ -66,9 +66,11 @@ import numpy as np
 from fastmcp import FastMCP, Context
 from fastmcp.exceptions import ToolError, ResourceError
 
-from .exports import format_values, json_safe, select_export_format
+from .exports import format_values, json_safe, select_export_format, summarize_attrs
 from .statistics import (
+    compute_axis_profile as _compute_axis_profile,
     compute_dataset_stats as _compute_dataset_stats,
+    format_axis_profiles,
     format_statistics,
 )
 from .config import get_config
@@ -151,7 +153,7 @@ async def lifespan(app):
 # Create FastMCP server with lifespan and instructions
 mcp = FastMCP(
     name="hdf5",
-    version="2.2.7",
+    version="2.3.0",
     instructions="""
         HDF5 FastMCP provides comprehensive HDF5 file operations with AI intelligence.
 
@@ -183,6 +185,17 @@ mcp = FastMCP(
 # =========================================================================
 # Performance & Error Decorators
 # =========================================================================
+
+
+def _parse_indices(value: Union[str, list[int]], name: str) -> tuple[int, ...]:
+    """Accept [1, 2], "1,2" or "[1, 2]" as per-axis integer indices."""
+    parts = value if isinstance(value, list) else value.strip().strip("[]()").split(",")
+    try:
+        return tuple(int(str(part).strip()) for part in parts if str(part).strip())
+    except ValueError:
+        raise ToolError(
+            f'{name} must be integers per axis, e.g. [0, 0, 0] or "0,0,0"; got {value!r}'
+        ) from None
 
 
 def with_performance_tracking(func):
@@ -238,9 +251,9 @@ def with_error_handling(func):
     tags={"file", "core"},
     annotations={
         "title": "Open HDF5 File",
-        "readOnlyHint": False,
+        "readOnlyHint": True,
         "destructiveHint": False,
-        "idempotentHint": False,
+        "idempotentHint": True,
         "openWorldHint": False,
     },
 )
@@ -280,7 +293,7 @@ async def open_file(path: str, mode: str = "r") -> str:
     tags={"file", "core"},
     annotations={
         "title": "Close HDF5 File",
-        "readOnlyHint": False,
+        "readOnlyHint": True,
         "destructiveHint": False,
         "idempotentHint": False,
         "openWorldHint": False,
@@ -439,14 +452,15 @@ async def list_keys(path: str = "/") -> str:
 )
 @with_error_handling
 @with_performance_tracking
-async def visit(callback_fn: str = "collect_paths") -> str:
-    """Visit all nodes recursively.
+async def visit(path: str = "/", callback_fn: str = "collect_paths") -> str:
+    """Visit all nodes recursively, with dataset shape, dtype, storage and attributes.
 
     Args:
+        path: Group to walk (default: root); names are relative to the file root
         callback_fn: Callback function name (currently collects all paths)
 
     Returns:
-        JSON array of all paths and types
+        JSON array of nodes; datasets carry shape, dtype, chunks, compression and attrs
     """
     if not current_file:
         raise ToolError("No file currently open. Use open_file first.")
@@ -454,11 +468,29 @@ async def visit(callback_fn: str = "collect_paths") -> str:
     paths = []
 
     def collect_paths(name, obj):
-        paths.append({"name": name, "type": type(obj).__name__})
+        node: dict[str, Any] = {"name": name, "type": type(obj).__name__}
+        if isinstance(obj, h5py.Dataset):
+            node["shape"] = list(obj.shape)
+            node["dtype"] = str(obj.dtype)
+            node["chunks"] = list(obj.chunks) if obj.chunks else None
+            node["compression"] = obj.compression
+        attrs = summarize_attrs(obj.attrs)
+        if attrs:
+            node["attrs"] = attrs
+        paths.append(node)
         return None
 
-    current_file.file.visititems(collect_paths)
-    return json.dumps(paths, indent=2)
+    try:
+        root = current_file.file if path in ("", "/") else current_file[path]
+    except KeyError:
+        raise ToolError(f"Path not found: {path}")
+    if not isinstance(root, h5py.Group):
+        raise ToolError(f"{path} is not a group")
+    prefix = root.name.strip("/")
+    root.visititems(
+        lambda name, obj: collect_paths(f"{prefix}/{name}" if prefix else name, obj)
+    )
+    return "[\n" + ",\n".join(json.dumps(node) for node in paths) + "\n]"
 
 
 # =========================================================================
@@ -520,14 +552,16 @@ async def read_full_dataset(path: str) -> str:
 @with_error_handling
 @with_performance_tracking
 async def read_partial_dataset(
-    path: str, start: Optional[str] = None, count: Optional[str] = None
+    path: str,
+    start: Optional[Union[str, list[int]]] = None,
+    count: Optional[Union[str, list[int]]] = None,
 ) -> str:
     """Read a portion of a dataset with slicing.
 
     Args:
         path: Path to dataset within file
-        start: Starting indices as comma-separated string (e.g., "0,0,0")
-        count: Number of elements as comma-separated string (e.g., "10,10,10")
+        start: Starting indices, a list or comma-separated string (e.g., [0,0,0] or "0,0,0")
+        count: Element counts per axis, a list or comma-separated string (e.g., [10,10,10])
 
     Returns:
         Partial dataset description and values (at most 1000; truncation is stated)
@@ -545,7 +579,7 @@ async def read_partial_dataset(
 
     # Parse start and count
     if start:
-        start_tuple = tuple(int(x.strip()) for x in start.split(","))
+        start_tuple = _parse_indices(start, "start")
         if len(start_tuple) > dataset.ndim or any(
             not 0 <= s < dim for s, dim in zip(start_tuple, dataset.shape)
         ):
@@ -556,7 +590,7 @@ async def read_partial_dataset(
         start_tuple = tuple(0 for _ in dataset.shape)
 
     if count:
-        count_tuple = tuple(int(x.strip()) for x in count.split(","))
+        count_tuple = _parse_indices(count, "count")
     else:
         count_tuple = dataset.shape
 
@@ -716,13 +750,18 @@ async def get_chunks(path: str) -> str:
 
     chunks = dataset.chunks
     if chunks is None:
-        return "Dataset is not chunked (contiguous storage)"
+        return "Dataset is not chunked (contiguous storage, no compression)"
 
     chunk_size_kb = np.prod(chunks) * dataset.dtype.itemsize / 1024
+    compression = dataset.compression or "none"
+    if dataset.compression_opts is not None:
+        compression += f" (level {dataset.compression_opts})"
     return (
         f"Chunk configuration:\n"
         f"Chunk shape: {chunks}\n"
-        f"Chunk size: {chunk_size_kb:.2f} KB"
+        f"Chunk size: {chunk_size_kb:.2f} KB\n"
+        f"Compression: {compression}\n"
+        f"Shuffle: {dataset.shuffle}"
     )
 
 
@@ -1115,15 +1154,22 @@ async def hdf5_stream_data(
 @with_error_handling
 @with_performance_tracking
 async def hdf5_aggregate_stats(
-    paths: str, stats: Optional[str] = None, ctx: Optional[Context] = None
+    paths: str,
+    stats: Optional[str] = None,
+    axis: Optional[int] = None,
+    ctx: Optional[Context] = None,
 ) -> str:
     """Parallel statistics, with explicit sampling coverage above 500 MiB.
 
     Sample statistics describe only the selected values, not full-dataset totals.
+    Set axis for per-index statistics along that axis (for example per-timestep
+    min/max on axis 0), reduced over every other axis from the full data.
 
     Args:
         paths: Comma-separated dataset paths or JSON array
-        stats: Comma-separated stats to compute (default: mean,std,min,max,sum,count)
+        stats: Comma-separated stats to compute (default: mean,std,min,max,sum,count;
+            with axis: mean,std,min,max, and sum or median on request)
+        axis: Optional axis for a per-index profile (at most 1000 indices)
         ctx: Context for progress reporting
 
     Returns:
@@ -1147,6 +1193,21 @@ async def hdf5_aggregate_stats(
     if ctx:
         logger.info(f"Computing statistics for {len(path_list)} datasets")
         await ctx.report_progress(0, len(path_list), "Starting statistics computation")
+
+    if axis is not None:
+        profiles: dict[str, dict] = {}
+        for path in path_list:
+            try:
+                profiles[path] = _compute_axis_profile(
+                    current_file, path, axis, stats_list if stats else []
+                )
+            except KeyError:
+                profiles[path] = {"error": f"Dataset not found: {path}"}
+            except ValueError as exc:
+                profiles[path] = {"error": str(exc)}
+        if all("error" in result for result in profiles.values()):
+            raise ToolError(format_axis_profiles(profiles).strip())
+        return format_axis_profiles(profiles)
 
     # Parallel statistics computation
     results = {}

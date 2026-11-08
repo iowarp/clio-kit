@@ -75,3 +75,23 @@ async def select_export_format(
             export_format = "json"
 
     return export_format
+
+
+def summarize_attrs(attrs: Any, max_items: int = 16) -> dict[str, Any]:
+    """Small JSON-safe attribute summary; large arrays are described, not copied."""
+    summary: dict[str, Any] = {}
+    for index, key in enumerate(attrs):
+        if index >= max_items:
+            summary["..."] = f"{len(attrs) - max_items} more attributes"
+            break
+        value = attrs[key]
+        if isinstance(value, bytes):
+            value = value.decode("utf-8", "replace")
+        elif isinstance(value, np.ndarray) and value.size > 8:
+            value = f"<array shape={value.shape} dtype={value.dtype}>"
+        else:
+            value = json_safe(value)
+        if isinstance(value, str) and len(value) > 200:
+            value = value[:200] + "..."
+        summary[key] = value
+    return summary

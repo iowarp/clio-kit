@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/hdf5-mcp",
   "title": "CLIO Hdf5",
   "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in...",
-  "version": "2.2.7",
+  "version": "2.3.0",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -55,7 +55,7 @@
     },
     {
       "name": "visit",
-      "description": "Visit all nodes recursively."
+      "description": "Visit all nodes recursively, with dataset shape, dtype, storage and attributes."
     },
     {
       "name": "read_full_dataset",
@@ -103,7 +103,7 @@
     },
     {
       "name": "hdf5_aggregate_stats",
-      "description": "Parallel statistics, with explicit sampling coverage above 500 MiB.\n\nSample statistics describe only the selected values, not full-dataset totals."
+      "description": "Parallel statistics, with explicit sampling coverage above 500 MiB.\n\nSample statistics describe only the selected values, not full-dataset totals.\nSet axis for per-index statistics along that axis (for example per-timestep\nmin/max on axis 0), reduced over every other axis from the full data."
     },
     {
       "name": "analyze_dataset_structure",

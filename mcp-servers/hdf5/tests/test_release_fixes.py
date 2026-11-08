@@ -47,7 +47,7 @@ def test_server_version_matches_release():
     async def exercise(client):
         return client.server_info.version
 
-    assert run(None, exercise) == "2.2.7"
+    assert run(None, exercise) == "2.3.0"
 
 
 def test_prompts_render(source):
@@ -151,3 +151,108 @@ def test_low_severity_truthfulness(source):
         )
 
     run(source, exercise)
+
+
+def test_axis_profile_reports_per_index_stats_and_peak(tmp_path):
+    path = tmp_path / "profile.h5"
+    data = np.full((6, 4, 5), 10.0)
+    data[4, 1, 2] = 99.0
+    with h5py.File(path, "w") as file:
+        file.create_dataset("field", data=data, chunks=(1, 4, 5))
+        file.create_dataset("line", data=np.arange(5.0))
+
+    async def exercise(client):
+        profile = await text(
+            client,
+            "hdf5_aggregate_stats",
+            {"paths": "field,line", "stats": "max,mean", "axis": 0},
+        )
+        assert "axis 0 profile over 6 indices" in profile
+        assert "Largest max: 99 at index 4" in profile
+        rows = [line.split() for line in profile.splitlines() if line[:7].strip()]
+        assert ["4", "99", f"{(10.0 * 19 + 99.0) / 20:.6g}"] in rows
+        assert (
+            "line: axis profiles need a dataset with at least 2 dimensions" in profile
+        )
+        failed = await text(
+            client, "hdf5_aggregate_stats", {"paths": "line", "axis": 0}, error=True
+        )
+        assert "at least 2 dimensions" in failed
+
+    run(path, exercise)
+
+
+def test_visit_and_chunks_describe_storage_in_one_call(tmp_path):
+    path = tmp_path / "storage.h5"
+    with h5py.File(path, "w") as file:
+        group = file.create_group("run")
+        group.attrs["dt"] = 0.5
+        dataset = group.create_dataset(
+            "temperature",
+            data=np.zeros((4, 8), dtype="f4"),
+            chunks=(1, 8),
+            compression="gzip",
+        )
+        dataset.attrs["units"] = "K"
+        dataset.attrs["big"] = np.arange(100)
+
+    async def exercise(client):
+        nodes = {
+            node["name"]: node for node in json.loads(await text(client, "visit", {}))
+        }
+        assert nodes["run"]["attrs"] == {"dt": 0.5}
+        field = nodes["run/temperature"]
+        assert field["shape"] == [4, 8]
+        assert field["dtype"] == "float32"
+        assert field["chunks"] == [1, 8]
+        assert field["compression"] == "gzip"
+        assert field["attrs"]["units"] == "K"
+        assert field["attrs"]["big"].startswith("<array shape=(100,)")
+        chunks = await text(client, "get_chunks", {"path": "run/temperature"})
+        assert "Compression: gzip" in chunks
+
+    run(path, exercise)
+
+
+def test_open_and_close_are_read_only_to_clients():
+    async def exercise(client):
+        return {tool.name: tool.annotations for tool in await client.list_tools()}
+
+    annotations = run(None, exercise)
+    for name in ("open_file", "close_file"):
+        assert annotations[name].readOnlyHint is True
+        assert annotations[name].destructiveHint is False
+
+
+def test_visit_scopes_to_a_group_and_partial_reads_take_lists(source, tmp_path):
+    path = tmp_path / "nested.h5"
+    with h5py.File(path, "w") as file:
+        file.create_dataset("top", data=np.arange(3))
+        file.create_dataset("run/inner/values", data=np.arange(24).reshape(4, 6))
+
+    async def exercise(client):
+        nodes = json.loads(await text(client, "visit", {"path": "/run"}))
+        assert [node["name"] for node in nodes] == ["run/inner", "run/inner/values"]
+        missing = await text(client, "visit", {"path": "nope"}, error=True)
+        assert "Path not found" in missing
+        listed = await text(
+            client,
+            "read_partial_dataset",
+            {"path": "run/inner/values", "start": [1, 2], "count": [1, 2]},
+        )
+        assert "Values: [[8, 9]]" in listed
+        bracketed = await text(
+            client,
+            "read_partial_dataset",
+            {"path": "run/inner/values", "start": "[1, 2]", "count": "1,2"},
+        )
+        assert "Values: [[8, 9]]" in bracketed
+        bad = await text(
+            client,
+            "read_partial_dataset",
+            {"path": "run/inner/values", "start": "1:3"},
+            error=True,
+        )
+        assert "start must be integers per axis" in bad
+
+    run(path, exercise)

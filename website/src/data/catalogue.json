@@ -736,7 +736,7 @@
       "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.2.7",
+      "version": "2.3.0",
       "category": "Scientific data",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/hdf5",

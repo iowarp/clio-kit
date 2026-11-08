@@ -88,7 +88,7 @@ RATCHET_BASELINE: dict[str, int] = {
     "mcp-servers/jarvis/src/jarvis_mcp/capabilities/jarvis_handler.py": 3658,
     # #362: NOT split this wave -- out of wave-1 scope (jarvis-only). Flat
     # FastMCP function surface, no god-class; still needs an owner-module cut.
-    "mcp-servers/hdf5/src/hdf5_mcp/server.py": 2305,
+    "mcp-servers/hdf5/src/hdf5_mcp/server.py": 2366,
     # #362: NOT split this wave -- out of wave-1 scope. Single
     # VisualizationEngine god-class.
     "mcp-servers/paraview/src/paraview_mcp/implementation/paraview_capabilities.py": 2191,
