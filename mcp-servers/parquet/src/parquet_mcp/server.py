@@ -42,6 +42,7 @@ mcp = FastMCP(
         "readOnlyHint": True,
         "destructiveHint": False,
         "idempotentHint": True,
+        "openWorldHint": False,
     },
     tags={"parquet", "data-analysis"},
 )
@@ -64,6 +65,7 @@ async def summarize_tool(file_path: str) -> str:
         "readOnlyHint": True,
         "destructiveHint": False,
         "idempotentHint": True,
+        "openWorldHint": False,
     },
     tags={"parquet", "data-analysis"},
 )
@@ -99,6 +101,7 @@ async def read_slice_tool(
         "readOnlyHint": True,
         "destructiveHint": False,
         "idempotentHint": True,
+        "openWorldHint": False,
     },
     tags={"parquet", "data-analysis"},
 )
@@ -128,6 +131,7 @@ async def get_column_preview_tool(
         "readOnlyHint": True,
         "destructiveHint": False,
         "idempotentHint": True,
+        "openWorldHint": False,
     },
     tags={"parquet", "data-analysis", "statistics"},
 )
