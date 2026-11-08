@@ -2,6 +2,47 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
+## 2.12.0 - unreleased
+
+Five servers gain tool behavior found by running them through a coding agent
+(Clio Coder) on planted scientific datasets. Every other server takes a patch
+release for the joserfc 1.7.7 and pyasn1 0.6.5 lock updates (#398).
+
+- **adios 2.3.0**: new `variable_stats` gives per-step min, max, mean and std
+  with the index of each extreme in one call. `read_variable_at_step` reads
+  `start`/`count` slices and refuses reads above `max_elements` (default
+  10000) with a hint instead of returning 55k values. `list_bp5` defaults to
+  the working directory, single string attributes come back as strings, and
+  the instructions name the real tools.
+- **hdf5 2.3.0**: `hdf5_aggregate_stats` takes `axis` for per-index profiles,
+  `visit` returns shape, dtype, chunks, compression and attributes per node
+  from an optional group path, `get_chunks` reports compression, and
+  `read_partial_dataset` accepts list or bracketed `start`/`count`.
+  `open_file` and `close_file` are annotated read-only.
+- **pandas 2.4.0**: new read-only `aggregate` returns grouped results inline
+  without writing a file, with `column:month` style date buckets, duplicate
+  removal, a query filter and several operations per column. `profile_data`
+  reports IQR outlier counts and the rows furthest from the median, and each
+  `validate_data` violation lists up to 10 offending rows. Tools that write
+  side files are annotated destructive.
+- **parquet 2.3.0**: `aggregate_column` takes `group_by` and comma-separated
+  operations and reads only the needed columns; `summarize` reports per-column
+  null counts. Local-file tools declare `openWorldHint: false`.
+- **slurm 3.1.0** (contract `clio-kit-slurm-user-v3.1`; v3 stays available):
+  the default partition is flagged and node counts are reported, existing
+  jobs report the scheduler's reason instead of "Job not found", an invalid
+  partition error lists the valid ones, and array jobs no longer write banner
+  lines into user stdout.
+- **web 2.1.5**: `fetch`, `fetch_events` and `search` declare `openWorldHint`.
+- Patch releases for the lock updates: arxiv 2.2.7, chronolog 2.0.5,
+  compression 2.2.7, darshan 2.2.7, geo 2.3.3, jarvis 3.7.6, lmod 3.0.3,
+  ndp 2.2.7, node-hardware 2.3.2, parallel-sort 2.3.2, paraview 2.2.7,
+  plot 2.2.7, scientific-catalog 1.1.6, seismology 2.3.3, spack 2.3.3,
+  terrain 2.2.7.
+
+The clio-agentic-search CI jobs and documentation removed in #389 are restored,
+and `clio-converter/` and `handoffs/` are no longer tracked.
+
 ## 2.11.1 - 2026-10-28
 
 Update audited runtime dependencies for the launcher verification environment

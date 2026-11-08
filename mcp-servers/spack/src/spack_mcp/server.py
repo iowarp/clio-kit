@@ -34,7 +34,7 @@ from spack_mcp.provisioning import SpackInstallResult, install_spec
 
 mcp: FastMCP = FastMCP(
     "spack",
-    version="2.3.2",
+    version="2.3.3",
     instructions=(
         "Discover, locate, search, describe, and install Spack packages using "
         "structured results. A find with no installed matches succeeds with "

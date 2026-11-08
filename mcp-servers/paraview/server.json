@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/paraview-mcp",
   "title": "CLIO Paraview",
   "description": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
-  "version": "2.2.6",
+  "version": "2.2.7",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.11.1",
+      "version": "2.12.0",
       "transport": {
         "type": "stdio"
       },
