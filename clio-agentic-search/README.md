@@ -11,14 +11,16 @@ Part of [**CLIO Kit**](https://github.com/iowarp/clio-kit) — the IoWarp platfo
 
 ---
 
-Hybrid retrieval engine for scientific computing corpora. Indexes documents into namespace-specific backends and supports lexical (BM25), vector, graph, metadata, and scientific-operator retrieval in one pipeline. DuckDB storage, FastAPI server, async job queue, OpenTelemetry tracing, Prometheus metrics.
+Hybrid retrieval engine for AI agents. Indexes documents into namespace-specific backends and supports lexical (token-overlap), vector, graph, and metadata retrieval in one pipeline, with structure-aware chunking and table-cell citations. DuckDB storage, FastAPI server, async job queue, OpenTelemetry tracing, Prometheus metrics.
+
+> Scientific units, measurements, formula matching and the scientific quality gate moved to [`clio-converter`](../clio-converter/README.md). Search no longer accepts `scientific_operators` (API returns 422) or `--numeric-range` / `--unit-match` / `--formula` (CLI).
 
 ## Quick start
 
 ```bash
 # Via the CLIO Kit launcher (recommended)
 uvx clio-kit search serve                    # Start the API server
-uvx clio-kit search query --namespace local_fs --q "pressure between 190 and 360 kPa"
+uvx clio-kit search query --namespace local_fs --q "reactor pressure calibration"
 uvx clio-kit search index --namespace local_fs
 uvx clio-kit search list --namespace local_fs
 ```
@@ -29,7 +31,7 @@ uvx clio-kit search list --namespace local_fs
 cd clio-agentic-search
 uv sync --all-extras --dev
 uv run clio serve                            # Start dev server with hot reload
-uv run clio query --namespace local_fs --q "pressure > 200 kPa"
+uv run clio query --namespace local_fs --q "reactor pressure calibration"
 uv run clio index --namespace local_fs
 ```
 
@@ -37,7 +39,7 @@ uv run clio index --namespace local_fs
 
 - **Multi-namespace registry** with runtime/auth config bundles
 - **Connectors**: filesystem + DuckDB (`local_fs`), S3 object store, Qdrant vector store, Neo4j graph, Redis KV log
-- **Scientific retrieval operators**: numeric range (`unit`, `min`, `max`), unit matching, formula targeting (normalized signatures)
+- **Structure-aware chunking**: sections, captions, tables, table cells (cited as `file#table=N&row=R&column=C`), equations
 - **Background indexing** job API with cancellation tokens and per-namespace serialized execution
 - **Retry/backoff** wrappers for connect/index operations
 - **Telemetry**: OpenTelemetry tracing (opt-in), Prometheus metrics at `/metrics`
@@ -87,7 +89,6 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy src/
 uv run pytest --ignore=tests/benchmarks -v
-uv run python -m clio_agentic_search.evals.quality_gate
 ```
 
 ## Benchmarks

@@ -5,8 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
-from clio_agentic_search.retrieval.scientific import ScientificQueryOperators
-
 
 @dataclass(frozen=True, slots=True)
 class ScoredChunk:
@@ -60,14 +58,3 @@ class GraphSearchCapable(Protocol):
 class StreamingLogCapable(Protocol):
     def stream_logs(self, namespace: str, limit: int) -> list[str]:
         """Read streaming log records."""
-
-
-@runtime_checkable
-class ScientificSearchCapable(Protocol):
-    def search_scientific(
-        self,
-        query: str,
-        top_k: int,
-        operators: ScientificQueryOperators,
-    ) -> list[ScoredChunk]:
-        """Search by scientific operators on structured/indexed scientific metadata."""

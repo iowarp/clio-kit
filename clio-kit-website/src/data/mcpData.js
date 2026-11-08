@@ -3,7 +3,7 @@ export const mcpData = {
   "agentic_search": {
     "name": "Agentic Search",
     "category": "Search & Retrieval",
-    "description": "Hybrid retrieval engine. Lexical, vector, graph, and scientific search over namespaced document corpora. DuckDB storage. FastAPI service with async job queue.",
+    "description": "Hybrid retrieval engine. Lexical, vector, graph, and metadata search over namespaced document corpora. DuckDB storage. FastAPI service with async job queue.",
     "icon": "\ud83d\udd0d",
     "actions": [
       "query",

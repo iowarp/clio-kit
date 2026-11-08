@@ -67,7 +67,7 @@ AI agents handle scientific computing tasks through natural language:
 - ✅ **"Find papers on neural networks from ArXiv"** - ArXiv MCP searches
 - ✅ **"Plot the results from this CSV file"** - Plot MCP visualizes
 - ✅ **"Optimize memory usage for this pandas DataFrame"** - Pandas MCP optimizes
-- ✅ **"Find all documents where pressure exceeds 200 kPa"** - Agentic Search retrieves
+- ✅ **"Find the reactor calibration notes and cite the table they came from"** - Agentic Search retrieves
 
 **One unified interface. 22 MCP servers. Hybrid search engine. 150+ specialized tools. Built for research.**
 
@@ -95,9 +95,9 @@ clio-kit mcp-server hdf5
 clio-kit mcp-server pandas
 clio-kit mcp-server slurm
 
-# Agentic search — hybrid retrieval for scientific corpora
+# Agentic search — hybrid retrieval with cited results
 clio-kit search serve               # Start search API server
-clio-kit search query --namespace local_fs --q "pressure > 200 kPa"
+clio-kit search query --namespace local_fs --q "reactor pressure calibration"
 
 # AI prompts also available
 clio-kit prompts                    # List all prompts
@@ -271,7 +271,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 
 ### Agentic Search
 
-Hybrid retrieval engine for scientific corpora — combines lexical (BM25), vector, graph, and scientific search (numeric range, unit matching, formula targeting) over namespaced document collections. DuckDB storage, FastAPI, async job queue, OpenTelemetry tracing, Prometheus metrics.
+Hybrid retrieval engine for agents — combines lexical, vector, graph, and metadata retrieval over namespaced document collections, with structure-aware chunking (sections, tables, table cells, captions, equations) and cell-level citations. DuckDB storage, FastAPI, async job queue, OpenTelemetry tracing, Prometheus metrics.
 
 ```bash
 # Start the search API server
@@ -280,8 +280,8 @@ clio-kit search serve
 # Index documents from a namespace
 clio-kit search index --namespace local_fs
 
-# Query with scientific operators
-clio-kit search query --namespace local_fs --q "pressure between 190 and 360 kPa"
+# Query a namespace
+clio-kit search query --namespace local_fs --q "reactor pressure calibration"
 
 # List indexed documents
 clio-kit search list --namespace local_fs
@@ -333,13 +333,13 @@ clio-kit search list --namespace local_fs
 
 **Tools used:** `line_plot`, `data_info`
 
-### Agentic Search: Scientific Retrieval
+### Agentic Search: Cited Retrieval
 
 ```
-"Find all chunks mentioning pressure above 200 kPa in the local_fs namespace."
+"Find where the reactor pressure calibration is described in the local_fs namespace."
 ```
 
-**CLI:** `clio-kit search query --namespace local_fs --q "pressure > 200 kPa"`
+**CLI:** `clio-kit search query --namespace local_fs --q "reactor pressure calibration"`
 
 ---
 

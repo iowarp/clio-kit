@@ -19,7 +19,6 @@ try:
 except ImportError:
     _HAS_FCNTL = False
 
-from clio_agentic_search.indexing.scientific import decode_measurements
 from clio_agentic_search.indexing.text_features import tokenize
 from clio_agentic_search.models.contracts import (
     ChunkRecord,
@@ -120,27 +119,10 @@ class DuckDBStorage:
                 )
                 """
             )
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS scientific_measurements (
-                    namespace TEXT,
-                    chunk_id TEXT,
-                    canonical_unit TEXT,
-                    canonical_value DOUBLE,
-                    raw_unit TEXT,
-                    raw_value DOUBLE
-                )
-                """
-            )
-            connection.execute(
-                """
-                CREATE TABLE IF NOT EXISTS scientific_formulas (
-                    namespace TEXT,
-                    chunk_id TEXT,
-                    formula_signature TEXT
-                )
-                """
-            )
+            # Scientific measurement/formula tables moved to clio-converter; drop
+            # leftovers from databases created before the separation.
+            connection.execute("DROP TABLE IF EXISTS scientific_measurements")
+            connection.execute("DROP TABLE IF EXISTS scientific_formulas")
             connection.execute(
                 """
                 CREATE TABLE IF NOT EXISTS lexical_postings (
@@ -150,18 +132,6 @@ class DuckDBStorage:
                     term_freq INTEGER,
                     PRIMARY KEY (namespace, token, chunk_id)
                 )
-                """
-            )
-            connection.execute(
-                """
-                CREATE INDEX IF NOT EXISTS idx_sci_meas
-                ON scientific_measurements(namespace, canonical_unit, canonical_value)
-                """
-            )
-            connection.execute(
-                """
-                CREATE INDEX IF NOT EXISTS idx_sci_form
-                ON scientific_formulas(namespace, formula_signature)
                 """
             )
             connection.execute(
@@ -181,12 +151,6 @@ class DuckDBStorage:
         with self._write_lock():
             with self._connection_lock:
                 connection = self._require_connection()
-                connection.execute(
-                    "DELETE FROM scientific_measurements WHERE namespace = ?", [namespace]
-                )
-                connection.execute(
-                    "DELETE FROM scientific_formulas WHERE namespace = ?", [namespace]
-                )
                 connection.execute("DELETE FROM lexical_postings WHERE namespace = ?", [namespace])
                 connection.execute("DELETE FROM embeddings WHERE namespace = ?", [namespace])
                 connection.execute("DELETE FROM metadata WHERE namespace = ?", [namespace])
@@ -338,53 +302,6 @@ class DuckDBStorage:
                 file_state.content_hash,
             ],
         )
-
-        # Populate scientific index tables from metadata
-        measurement_rows: list[tuple[str, str, str, float, str, float]] = []
-        formula_rows: list[tuple[str, str, str]] = []
-        for meta_item in metadata:
-            if meta_item.scope != "chunk":
-                continue
-            if meta_item.key == "scientific.measurements":
-                for m in decode_measurements(meta_item.value):
-                    measurement_rows.append(
-                        (
-                            meta_item.namespace,
-                            meta_item.record_id,
-                            m.canonical_unit,
-                            m.canonical_value,
-                            m.raw_unit,
-                            m.raw_value,
-                        )
-                    )
-            elif meta_item.key == "scientific.formulas":
-                for sig in meta_item.value.split(";"):
-                    if sig:
-                        formula_rows.append(
-                            (
-                                meta_item.namespace,
-                                meta_item.record_id,
-                                sig,
-                            )
-                        )
-
-        if measurement_rows:
-            connection.executemany(
-                """
-                INSERT INTO scientific_measurements(
-                    namespace, chunk_id, canonical_unit, canonical_value, raw_unit, raw_value
-                ) VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                measurement_rows,
-            )
-        if formula_rows:
-            connection.executemany(
-                """
-                INSERT INTO scientific_formulas(namespace, chunk_id, formula_signature)
-                VALUES (?, ?, ?)
-                """,
-                formula_rows,
-            )
 
         if include_lexical_postings:
             lexical_rows: list[tuple[str, str, str, int]] = []
@@ -573,53 +490,6 @@ class DuckDBStorage:
             raise KeyError(f"Missing document '{document_id}' in namespace '{namespace}'")
         return str(row[0])
 
-    def query_chunks_by_measurement_range(
-        self,
-        namespace: str,
-        canonical_unit: str,
-        minimum: float | None,
-        maximum: float | None,
-    ) -> list[ChunkRecord]:
-        conditions = ["sm.namespace = ?", "sm.canonical_unit = ?"]
-        params: list[Any] = [namespace, canonical_unit]
-        if minimum is not None:
-            conditions.append("sm.canonical_value >= ?")
-            params.append(minimum)
-        if maximum is not None:
-            conditions.append("sm.canonical_value <= ?")
-            params.append(maximum)
-        where = " AND ".join(conditions)
-        with self._connection_lock:
-            connection = self._require_connection()
-            rows = connection.execute(
-                f"""
-                SELECT DISTINCT c.namespace, c.chunk_id, c.document_id,
-                       c.chunk_index, c.text, c.start_offset, c.end_offset
-                FROM scientific_measurements sm
-                JOIN chunks c ON c.namespace = sm.namespace AND c.chunk_id = sm.chunk_id
-                WHERE {where}
-                ORDER BY c.chunk_id
-                """,
-                params,
-            ).fetchall()
-        return [self._row_to_chunk_record(row) for row in rows]
-
-    def query_chunks_by_formula(self, namespace: str, formula_signature: str) -> list[ChunkRecord]:
-        with self._connection_lock:
-            connection = self._require_connection()
-            rows = connection.execute(
-                """
-                SELECT DISTINCT c.namespace, c.chunk_id, c.document_id,
-                       c.chunk_index, c.text, c.start_offset, c.end_offset
-                FROM scientific_formulas sf
-                JOIN chunks c ON c.namespace = sf.namespace AND c.chunk_id = sf.chunk_id
-                WHERE sf.namespace = ? AND sf.formula_signature = ?
-                ORDER BY c.chunk_id
-                """,
-                [namespace, formula_signature],
-            ).fetchall()
-        return [self._row_to_chunk_record(row) for row in rows]
-
     def query_chunks_lexical(
         self,
         namespace: str,
@@ -688,26 +558,6 @@ class DuckDBStorage:
     def _delete_document(self, namespace: str, document_id: str) -> None:
         with self._connection_lock:
             connection = self._require_connection()
-            connection.execute(
-                """
-                DELETE FROM scientific_measurements
-                WHERE namespace = ?
-                AND chunk_id IN (
-                    SELECT chunk_id FROM chunks WHERE namespace = ? AND document_id = ?
-                )
-                """,
-                [namespace, namespace, document_id],
-            )
-            connection.execute(
-                """
-                DELETE FROM scientific_formulas
-                WHERE namespace = ?
-                AND chunk_id IN (
-                    SELECT chunk_id FROM chunks WHERE namespace = ? AND document_id = ?
-                )
-                """,
-                [namespace, namespace, document_id],
-            )
             connection.execute(
                 """
                 DELETE FROM embeddings

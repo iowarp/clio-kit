@@ -1,11 +1,11 @@
 ---
 title: Agentic Search
-description: "Hybrid retrieval engine with lexical, vector, graph, and scientific search over namespaced document corpora. Part of CLIO Kit (IoWarp Platform)."
+description: "Hybrid retrieval engine with lexical, vector, graph, and metadata search over namespaced document corpora. Part of CLIO Kit (IoWarp Platform)."
 ---
 
 # Agentic Search
 
-Hybrid retrieval engine for scientific computing corpora. Indexes documents into namespace-specific backends and supports lexical, vector, graph, metadata, and scientific-operator retrieval in one pipeline.
+Hybrid retrieval engine for AI agents. Indexes documents into namespace-specific backends and supports lexical, vector, graph, and metadata retrieval in one pipeline, with structure-aware chunking and table-cell citations.
 
 **Type**: Standalone FastAPI service (not an MCP server)
 
@@ -13,7 +13,7 @@ Hybrid retrieval engine for scientific computing corpora. Indexes documents into
 
 - **Multi-namespace registry** with runtime/auth config bundles
 - **Connectors**: local filesystem, S3-compatible object store, Qdrant vector store, Neo4j graph, Redis KV — all backed by DuckDB
-- **Scientific retrieval operators**: numeric range, unit matching, formula targeting
+- **Structure-aware chunking**: sections, captions, tables, table cells, equations, with cell-level citation URIs
 - **Background indexing** with async job queue, cancellation tokens, serialized per-namespace execution
 - **Retry wrappers** with exponential backoff
 - **Telemetry**: OpenTelemetry tracing, Prometheus metrics at `/metrics`
@@ -41,7 +41,7 @@ uv sync --all-extras --dev
 uv run clio index --namespace local_fs
 
 # Query
-uv run clio query --namespace local_fs --q "pressure between 190 and 360 kPa"
+uv run clio query --namespace local_fs --q "reactor pressure calibration"
 
 # Run API server
 uv run uvicorn clio_agentic_search.api.app:app --reload
@@ -62,5 +62,4 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy src/
 uv run pytest --ignore=tests/benchmarks
-uv run python -m clio_agentic_search.evals.quality_gate
 ```

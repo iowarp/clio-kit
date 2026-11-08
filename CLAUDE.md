@@ -143,14 +143,11 @@ uv run ruff format --check .
 uv run mypy src/
 uv run pytest --ignore=tests/benchmarks -v
 
-# Full quality gate (6 checks)
-uv run python -m clio_agentic_search.evals.quality_gate
-
 # Run API server
 uv run uvicorn clio_agentic_search.api.app:app --reload
 
 # CLI
-uv run clio query --namespace local_fs --q "pressure between 190 and 360 kPa"
+uv run clio query --namespace local_fs --q "reactor pressure calibration"
 uv run clio index --namespace local_fs
 ```
 

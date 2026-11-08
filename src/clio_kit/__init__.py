@@ -811,7 +811,7 @@ def search(args):
     """Run agentic search commands (query, index, serve, list, seed)."""
 
     if not args:
-        click.echo("clio-kit search: Hybrid retrieval engine for scientific corpora")
+        click.echo("clio-kit search: Hybrid retrieval engine for agents")
         click.echo("\nSubcommands:")
         click.echo("  query   Run retrieval queries")
         click.echo("  index   Index documents into a namespace")
@@ -821,7 +821,7 @@ def search(args):
         click.echo("\nUsage: clio-kit search <subcommand> [options]")
         click.echo("\nExamples:")
         click.echo(
-            '  clio-kit search query --namespace local_fs --q "pressure > 200 kPa"'
+            '  clio-kit search query --namespace local_fs --q "reactor pressure calibration"'
         )
         click.echo("  clio-kit search index --namespace local_fs")
         click.echo("  clio-kit search serve --port 8080")

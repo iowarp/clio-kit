@@ -13,63 +13,23 @@ from functools import lru_cache
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from clio_agentic_search import __version__
 from clio_agentic_search.core.namespace_registry import NamespaceRegistry, build_default_registry
 from clio_agentic_search.jobs import JobCancelledError, get_job_queue, reset_job_queue
 from clio_agentic_search.retrieval.coordinator import RetrievalCoordinator
-from clio_agentic_search.retrieval.scientific import (
-    NumericRangeOperator,
-    ScientificQueryOperators,
-    UnitMatchOperator,
-)
 from clio_agentic_search.retry import index_with_retry
 from clio_agentic_search.telemetry import get_metrics, get_tracer, reset_telemetry
 
 
-class NumericRangeRequest(BaseModel):
-    unit: str
-    minimum: float | None = None
-    maximum: float | None = None
-
-
-class UnitMatchRequest(BaseModel):
-    unit: str
-    value: float | None = None
-    tolerance: float = 1e-9
-
-
-class ScientificOperatorsRequest(BaseModel):
-    numeric_range: NumericRangeRequest | None = None
-    unit_match: UnitMatchRequest | None = None
-    formula: str | None = None
-
-    def to_domain(self) -> ScientificQueryOperators:
-        numeric_range = None
-        if self.numeric_range is not None:
-            numeric_range = NumericRangeOperator(
-                unit=self.numeric_range.unit,
-                minimum=self.numeric_range.minimum,
-                maximum=self.numeric_range.maximum,
-            )
-
-        unit_match = None
-        if self.unit_match is not None:
-            unit_match = UnitMatchOperator(
-                unit=self.unit_match.unit,
-                value=self.unit_match.value,
-                tolerance=self.unit_match.tolerance,
-            )
-
-        return ScientificQueryOperators(
-            numeric_range=numeric_range,
-            unit_match=unit_match,
-            formula=self.formula,
-        )
-
-
 class QueryRequest(BaseModel):
+    # Unknown fields are rejected (HTTP 422) rather than silently ignored, so a
+    # client still sending the removed ``scientific_operators`` filter never gets
+    # unfiltered results that look filtered. Scientific operators now belong to
+    # clio-converter.
+    model_config = ConfigDict(extra="forbid")
+
     namespace: str = "local_fs"
     namespaces: list[str] = Field(default_factory=list)
     query: str
@@ -77,9 +37,6 @@ class QueryRequest(BaseModel):
     offset: int = Field(default=0, ge=0)
     limit: int = Field(default=20, ge=1, le=100)
     metadata_filters: dict[str, str] = Field(default_factory=dict)
-    scientific_operators: ScientificOperatorsRequest = Field(
-        default_factory=ScientificOperatorsRequest
-    )
     full_reindex: bool = False
 
 
@@ -264,7 +221,6 @@ def _execute_query(request: QueryRequest) -> QueryResponse:
 
     tracer = get_tracer()
     coordinator = RetrievalCoordinator()
-    scientific_operators = request.scientific_operators.to_domain()
     if len(connectors) == 1:
         with tracer.start_span("retrieval.single_namespace"):
             single_result = coordinator.query(
@@ -272,7 +228,6 @@ def _execute_query(request: QueryRequest) -> QueryResponse:
                 query=request.query,
                 top_k=request.top_k,
                 metadata_filters=request.metadata_filters,
-                scientific_operators=scientific_operators,
             )
         namespaces = [single_result.namespace]
         citations = single_result.citations
@@ -284,7 +239,6 @@ def _execute_query(request: QueryRequest) -> QueryResponse:
                 query=request.query,
                 top_k=request.top_k,
                 metadata_filters=request.metadata_filters,
-                scientific_operators=scientific_operators,
             )
         namespaces = list(multi_result.namespaces)
         citations = multi_result.citations

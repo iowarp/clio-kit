@@ -9,11 +9,6 @@ from collections.abc import Sequence
 from clio_agentic_search.core.namespace_registry import build_default_registry
 from clio_agentic_search.core.seeding import seed_connector
 from clio_agentic_search.retrieval.coordinator import RetrievalCoordinator
-from clio_agentic_search.retrieval.scientific import (
-    NumericRangeOperator,
-    ScientificQueryOperators,
-    UnitMatchOperator,
-)
 
 _EPILOG = """\
 Environment variables:
@@ -61,21 +56,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--full-reindex",
         action="store_true",
         help="Force a full reindex before querying.",
-    )
-    query_parser.add_argument(
-        "--numeric-range",
-        default="",
-        help="Scientific numeric range as min:max:unit (blank min/max allowed).",
-    )
-    query_parser.add_argument(
-        "--unit-match",
-        default="",
-        help="Scientific unit match as value:unit or unit.",
-    )
-    query_parser.add_argument(
-        "--formula",
-        default="",
-        help="Formula-targeted retrieval expression.",
     )
 
     seed_parser = subparsers.add_parser("seed", help="Seed explicit demo/test records.")
@@ -135,17 +115,9 @@ def _run_query(
     top_k: int,
     filter_pairs: list[str],
     full_reindex: bool,
-    numeric_range: str,
-    unit_match: str,
-    formula: str,
 ) -> int:
     registry = build_default_registry()
     filters = _parse_filters(filter_pairs)
-    scientific_operators = _parse_scientific_operators(
-        numeric_range=numeric_range,
-        unit_match=unit_match,
-        formula=formula,
-    )
     target_namespaces = _resolve_target_namespaces(namespace=namespace, namespaces=namespaces)
     try:
         connectors = []
@@ -181,7 +153,6 @@ def _run_query(
                 query=text,
                 top_k=top_k,
                 metadata_filters=filters,
-                scientific_operators=scientific_operators,
             )
             result_namespaces = [result.namespace]
             citations = result.citations
@@ -192,7 +163,6 @@ def _run_query(
                 query=text,
                 top_k=top_k,
                 metadata_filters=filters,
-                scientific_operators=scientific_operators,
             )
             result_namespaces = list(multi_result.namespaces)
             citations = multi_result.citations
@@ -296,50 +266,6 @@ def _parse_filters(filter_pairs: list[str]) -> dict[str, str]:
     return parsed
 
 
-def _parse_scientific_operators(
-    *,
-    numeric_range: str,
-    unit_match: str,
-    formula: str,
-) -> ScientificQueryOperators:
-    numeric_range_operator: NumericRangeOperator | None = None
-    if numeric_range:
-        parts = [part.strip() for part in numeric_range.split(":")]
-        if len(parts) != 3:
-            raise ValueError(
-                "Invalid --numeric-range. Expected min:max:unit, with blank min/max allowed."
-            )
-        minimum_text, maximum_text, unit = parts
-        if not unit:
-            raise ValueError("Invalid --numeric-range. Unit is required.")
-        minimum = float(minimum_text) if minimum_text else None
-        maximum = float(maximum_text) if maximum_text else None
-        numeric_range_operator = NumericRangeOperator(
-            unit=unit,
-            minimum=minimum,
-            maximum=maximum,
-        )
-
-    unit_match_operator: UnitMatchOperator | None = None
-    if unit_match:
-        parts = [part.strip() for part in unit_match.split(":")]
-        if len(parts) == 1 and parts[0]:
-            unit_match_operator = UnitMatchOperator(unit=parts[0], value=None)
-        elif len(parts) == 2:
-            value_text, unit = parts
-            if not unit:
-                raise ValueError("Invalid --unit-match. Unit is required.")
-            unit_match_operator = UnitMatchOperator(unit=unit, value=float(value_text))
-        else:
-            raise ValueError("Invalid --unit-match. Expected unit or value:unit.")
-
-    return ScientificQueryOperators(
-        numeric_range=numeric_range_operator,
-        unit_match=unit_match_operator,
-        formula=formula.strip() or None,
-    )
-
-
 def _resolve_target_namespaces(*, namespace: str, namespaces: str) -> list[str]:
     parsed = [item.strip() for item in namespaces.split(",") if item.strip()]
     if parsed:
@@ -404,9 +330,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 top_k=args.top_k,
                 filter_pairs=args.filter,
                 full_reindex=args.full_reindex,
-                numeric_range=args.numeric_range,
-                unit_match=args.unit_match,
-                formula=args.formula,
             )
         except ValueError as error:
             print(str(error), file=sys.stderr)

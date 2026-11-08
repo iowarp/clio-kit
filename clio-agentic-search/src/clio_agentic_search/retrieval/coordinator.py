@@ -11,13 +11,11 @@ from clio_agentic_search.retrieval.capabilities import (
     GraphSearchCapable,
     LexicalSearchCapable,
     MetadataFilterCapable,
-    ScientificSearchCapable,
     ScoredChunk,
     StreamingLogCapable,
     VectorSearchCapable,
 )
 from clio_agentic_search.retrieval.rerank import DefaultHeuristicReranker, Reranker
-from clio_agentic_search.retrieval.scientific import ScientificQueryOperators
 from clio_agentic_search.telemetry import Tracer, get_tracer
 
 
@@ -49,7 +47,6 @@ class RetrievalCoordinator:
         query: str,
         top_k: int = 5,
         metadata_filters: dict[str, str] | None = None,
-        scientific_operators: ScientificQueryOperators | None = None,
     ) -> QueryResult:
         namespace = connector.descriptor().name
         trace: list[TraceEvent] = []
@@ -58,7 +55,6 @@ class RetrievalCoordinator:
             query=query,
             top_k=top_k,
             metadata_filters=metadata_filters or {},
-            scientific_operators=scientific_operators or ScientificQueryOperators(),
             trace=trace,
         )
         return QueryResult(namespace=namespace, query=query, citations=citations, trace=trace)
@@ -70,11 +66,9 @@ class RetrievalCoordinator:
         query: str,
         top_k: int = 5,
         metadata_filters: dict[str, str] | None = None,
-        scientific_operators: ScientificQueryOperators | None = None,
     ) -> MultiNamespaceQueryResult:
         trace: list[TraceEvent] = []
         filters = metadata_filters or {}
-        operators = scientific_operators or ScientificQueryOperators()
         all_citations: list[CitationRecord] = []
         namespaces: list[str] = []
 
@@ -92,7 +86,6 @@ class RetrievalCoordinator:
                 query=query,
                 top_k=top_k,
                 metadata_filters=filters,
-                scientific_operators=operators,
                 trace=trace,
             )
             all_citations.extend(citations)
@@ -126,7 +119,6 @@ class RetrievalCoordinator:
         query: str,
         top_k: int,
         metadata_filters: dict[str, str],
-        scientific_operators: ScientificQueryOperators,
         trace: list[TraceEvent],
     ) -> list[CitationRecord]:
         namespace = connector.descriptor().name
@@ -167,37 +159,11 @@ class RetrievalCoordinator:
             attributes={"namespace": namespace, "candidates": str(len(graph))},
         )
 
-        scientific: list[ScoredChunk] = []
-        if scientific_operators.is_active() and isinstance(connector, ScientificSearchCapable):
-            scientific = connector.search_scientific(
-                query=query,
-                top_k=top_k * 4,
-                operators=scientific_operators,
-            )
-            self._append_trace(
-                trace=trace,
-                stage="scientific_completed",
-                message="scientific branch finished",
-                attributes={"namespace": namespace, "candidates": str(len(scientific))},
-            )
-
         merged = self._merge_candidates(
             lexical=lexical,
             vector=vector,
             graph=graph,
-            scientific=scientific,
         )
-        if scientific_operators.is_active() and isinstance(connector, ScientificSearchCapable):
-            matched_scientific_ids = {candidate.chunk_id for candidate in scientific}
-            merged = [
-                candidate for candidate in merged if candidate.chunk_id in matched_scientific_ids
-            ]
-            self._append_trace(
-                trace=trace,
-                stage="scientific_filter_completed",
-                message="scientific operator filtering finished",
-                attributes={"namespace": namespace, "candidates": str(len(merged))},
-            )
         self._append_trace(
             trace=trace,
             stage="merge_completed",
@@ -269,7 +235,6 @@ class RetrievalCoordinator:
         lexical: list[ScoredChunk],
         vector: list[ScoredChunk],
         graph: list[ScoredChunk],
-        scientific: list[ScoredChunk],
     ) -> list[ScoredChunk]:
         merged_by_chunk: dict[str, ScoredChunk] = {}
         for candidate in lexical:
@@ -290,20 +255,6 @@ class RetrievalCoordinator:
             )
 
         for candidate in graph:
-            existing = merged_by_chunk.get(candidate.chunk_id)
-            if existing is None:
-                merged_by_chunk[candidate.chunk_id] = candidate
-                continue
-            merged_by_chunk[candidate.chunk_id] = ScoredChunk(
-                chunk_id=existing.chunk_id,
-                document_id=existing.document_id,
-                text=existing.text,
-                lexical_score=existing.lexical_score,
-                vector_score=existing.vector_score,
-                metadata_score=max(existing.metadata_score, candidate.metadata_score),
-            )
-
-        for candidate in scientific:
             existing = merged_by_chunk.get(candidate.chunk_id)
             if existing is None:
                 merged_by_chunk[candidate.chunk_id] = candidate

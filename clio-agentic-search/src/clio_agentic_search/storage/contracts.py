@@ -107,18 +107,6 @@ class StorageAdapter(Protocol):
     def get_document_uri(self, namespace: str, document_id: str) -> str:
         """Resolve a document URI by id."""
 
-    def query_chunks_by_measurement_range(
-        self,
-        namespace: str,
-        canonical_unit: str,
-        minimum: float | None,
-        maximum: float | None,
-    ) -> list[ChunkRecord]:
-        """Query chunks by canonical measurement range."""
-
-    def query_chunks_by_formula(self, namespace: str, formula_signature: str) -> list[ChunkRecord]:
-        """Query chunks by normalized formula signature."""
-
     def list_documents(self, namespace: str) -> list[DocumentSummary]:
         """List documents with chunk counts for a namespace."""
 

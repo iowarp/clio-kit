@@ -32,7 +32,7 @@ NON_MCP_SHOWCASE_ENTRIES = {
         "name": "Agentic Search",
         "category": "Search & Retrieval",
         "description": (
-            "Hybrid retrieval engine. Lexical, vector, graph, and scientific "
+            "Hybrid retrieval engine. Lexical, vector, graph, and metadata "
             "search over namespaced document corpora. DuckDB storage. FastAPI "
             "service with async job queue."
         ),
