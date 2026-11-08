@@ -46,7 +46,7 @@ def get_slurm_info(*, max_records: Optional[int] = None) -> dict:
             test_runner=subprocess.run,
         )
 
-        partitions: list[dict[str, str]] = []
+        partitions: list[dict[str, str | bool]] = []
         truncated = result.stdout_truncated
         if result.returncode == 0:
             for line in complete_stdout_lines(result):
@@ -59,6 +59,7 @@ def get_slurm_info(*, max_records: Optional[int] = None) -> dict:
                         partitions.append(
                             {
                                 "partition": parts[0].rstrip("*"),
+                                "default": parts[0].endswith("*"),
                                 "avail_idle": parts[1],
                                 "timelimit": parts[2],
                                 "nodes": parts[3],

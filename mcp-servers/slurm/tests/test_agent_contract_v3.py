@@ -794,3 +794,138 @@ def test_cancellation_backend_failure_is_not_reported_as_success() -> None:
     ):
         with pytest.raises(ToolError, match="Slurm cancellation failed: denied"):
             request_cancellation("123", confirm_job_id="123")
+
+
+def test_cluster_snapshot_flags_default_partition_and_parses_node_counts() -> None:
+    """sinfo's trailing * and %A allocated/idle pair reach the agent as fields."""
+    rows = "\n".join(
+        SLURM_FIELD_SEPARATOR.join(fields)
+        for fields in (
+            ["debug*", "3/1", "1:00:00", "4", "mixed", "node[01-04]"],
+            ["compute", "n/a", "2-00:00:00", "8", "idle", "node[05-12]"],
+        )
+    )
+
+    def fake(command: list[str], **_kwargs: Any) -> SlurmCommandResult:
+        stdout = f"{rows}\n" if command[0] == "sinfo" and len(command) > 2 else ""
+        return SlurmCommandResult(args=command, returncode=0, stdout=stdout, stderr="")
+
+    target = "slurm_mcp.implementation.cluster_info"
+    with (
+        patch(f"{target}.check_slurm_available", return_value=True),
+        patch(f"{target}.run_slurm_command", side_effect=fake),
+        patch.object(
+            agent_contract,
+            "get_queue_info",
+            return_value={"jobs": [], "state_summary": {}},
+        ),
+    ):
+        result = cluster_snapshot()
+    debug, compute = result.partitions
+    assert (debug.name, debug.default) == ("debug", True)
+    assert (debug.nodes_allocated, debug.nodes_idle) == (3, 1)
+    assert (compute.default, compute.nodes_allocated, compute.nodes_idle) == (
+        False,
+        None,
+        None,
+    )
+
+
+@pytest.mark.parametrize(
+    ("state", "squeue_reason", "details", "expected"),
+    [
+        ("RUNNING", "node01", {"jobstate": "RUNNING", "reason": "None"}, None),
+        ("RUNNING", "node01", None, None),
+        ("PENDING", "(Resources)", None, "Resources"),
+        (
+            "COMPLETED",
+            "Job not found (may have completed)",
+            {"jobstate": "COMPLETED", "reason": "None"},
+            None,
+        ),
+        (
+            "PENDING",
+            "(Priority)",
+            {"jobstate": "PENDING", "reason": "Priority"},
+            "Priority",
+        ),
+    ],
+)
+def test_describe_reason_is_slurms_reason_not_node_list_or_lookup_note(
+    state: str, squeue_reason: str, details: dict[str, str] | None, expected: str | None
+) -> None:
+    """squeue %R is a node list for running jobs; a found job is not 'not found'."""
+    detail_result: dict[str, Any] = (
+        {"job_id": "42", "details": details}
+        if details is not None
+        else {"job_id": "42", "error": "Job not found"}
+    )
+    with (
+        patch.object(
+            agent_contract,
+            "get_job_status",
+            return_value={"job_id": "42", "status": state, "reason": squeue_reason},
+        ),
+        patch.object(agent_contract, "get_job_details", return_value=detail_result),
+    ):
+        assert describe_job("42").reason == expected
+
+
+def test_submit_names_available_partitions_when_sbatch_rejects_one(
+    tmp_path: Any,
+) -> None:
+    """An invalid partition error tells the agent which partitions exist."""
+    script = tmp_path / "job.sh"
+    script.write_text("echo ok\n", encoding="utf-8")
+    rejection = RuntimeError(
+        "sbatch failed: sbatch: error: invalid partition specified: gpu"
+    )
+    partitions = {
+        "partitions": [
+            {"partition": "debug", "default": True},
+            {"partition": "compute", "default": False},
+        ]
+    }
+    with (
+        patch.object(agent_contract, "submit_slurm_job", side_effect=rejection),
+        patch.object(agent_contract, "get_slurm_info", return_value=partitions),
+    ):
+        with pytest.raises(
+            ToolError, match=r"Available partitions: debug \(default\), compute\."
+        ):
+            submit(str(script), partition="gpu")
+    with (
+        patch.object(
+            agent_contract, "submit_array_job", return_value={"error": str(rejection)}
+        ),
+        patch.object(agent_contract, "get_slurm_info", return_value=partitions),
+    ):
+        with pytest.raises(ToolError, match="array submission failed.*Available"):
+            submit(str(script), partition="gpu", array="1-2")
+
+
+def test_array_wrapper_adds_no_lines_to_job_output(tmp_path: Any) -> None:
+    """The submitted array script prints only what the user's script prints."""
+    script = tmp_path / "sweep.sh"
+    script.write_text("#!/bin/bash\necho task $SLURM_ARRAY_TASK_ID\n", encoding="utf-8")
+    submitted: list[str] = []
+
+    def fake(command: list[str], **_kwargs: Any) -> SlurmCommandResult:
+        submitted.append(open(command[1], encoding="utf-8").read())
+        return SlurmCommandResult(
+            args=command, returncode=0, stdout="Submitted batch job 9\n", stderr=""
+        )
+
+    target = "slurm_mcp.implementation.array_jobs"
+    with (
+        patch(f"{target}.check_slurm_available", return_value=True),
+        patch(f"{target}.run_slurm_command", side_effect=fake),
+        patch(f"{target}.ensure_logs_directory", return_value=str(tmp_path)),
+    ):
+        assert submit_array_job(str(script), "1-2")["array_job_id"] == "9"
+    commands = [
+        line
+        for line in submitted[0].splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+    assert commands == ["echo task $SLURM_ARRAY_TASK_ID"]

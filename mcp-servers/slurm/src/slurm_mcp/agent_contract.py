@@ -208,7 +208,18 @@ class SlurmPartition(ClosedModel):
     """Normalized Slurm partition summary."""
 
     name: str
-    availability: str
+    default: bool = Field(
+        default=False,
+        description="True for the partition sbatch uses when none is requested.",
+    )
+    availability: str = Field(
+        description=(
+            "Slurm's allocated/idle node counts (sinfo %A), not up/down "
+            "availability; nodes_allocated and nodes_idle carry the parsed counts."
+        )
+    )
+    nodes_allocated: int | None = Field(default=None, ge=0)
+    nodes_idle: int | None = Field(default=None, ge=0)
     time_limit: str
     nodes: str
     state: str
@@ -350,6 +361,26 @@ def _raise_backend_error(result: dict[str, Any], operation: str) -> None:
         raise ToolError(f"Slurm {operation} failed: {error}")
 
 
+def _partition_hint(error: str) -> str:
+    """Name the partitions sbatch accepts when it rejected the requested one."""
+    if "invalid partition" not in error.lower():
+        return ""
+    try:
+        info = get_slurm_info(max_records=64)
+    except Exception:
+        return ""
+    names = [
+        str(raw.get("partition", "")) + (" (default)" if raw.get("default") else "")
+        for raw in info.get("partitions", [])
+        if isinstance(raw, dict) and raw.get("partition")
+    ]
+    if not names:
+        return ""
+    return (
+        f" Available partitions: {', '.join(names)}. Omit partition to use the default."
+    )
+
+
 def submit(
     script_path: str,
     *,
@@ -372,14 +403,19 @@ def submit(
     normalized_partition = _validated_resource_token(partition, "partition")
     normalized_array = validate_array_spec(array)
     if normalized_array is None:
-        result = submit_slurm_job(
-            normalized_script,
-            cores,
-            normalized_memory,
-            normalized_time,
-            normalized_name,
-            normalized_partition,
-        )
+        try:
+            result = submit_slurm_job(
+                normalized_script,
+                cores,
+                normalized_memory,
+                normalized_time,
+                normalized_name,
+                normalized_partition,
+            )
+        except RuntimeError as exc:
+            raise ToolError(
+                f"Slurm submission failed: {exc}{_partition_hint(str(exc))}"
+            ) from exc
         native_id = result.get("job_id")
         kind: Literal["job", "array"] = "job"
     else:
@@ -392,7 +428,11 @@ def submit(
             normalized_name,
             normalized_partition,
         )
-        _raise_backend_error(result, "array submission")
+        if result.get("error"):
+            raise ToolError(
+                f"Slurm array submission failed: {result['error']}"
+                f"{_partition_hint(str(result['error']))}"
+            )
         native_id = result.get("array_job_id") or result.get("job_id")
         kind = "array"
     _raise_backend_error(result, "submission")
@@ -466,6 +506,35 @@ def list_jobs(
     )
 
 
+def _node_count(allocated_idle: object, index: int) -> int | None:
+    """One count from sinfo's "allocated/idle" pair, or None when unparsable."""
+    parts = str(allocated_idle or "").split("/")
+    if len(parts) != 2 or not parts[index].isdigit():
+        return None
+    return int(parts[index])
+
+
+def _job_reason(
+    status_reason: str,
+    details: dict[str, Any] | None,
+    normalized_state: str,
+) -> str | None:
+    """Slurm's own reason for the job's state, or None when it gives none.
+
+    scontrol's Reason field is preferred. squeue's %R column is a reason only
+    while the job waits; for a running job it holds the node list.
+    """
+    if details is not None and "reason" in details:
+        reason = str(details["reason"]).strip()
+        return None if reason in {"", "None", "(null)"} else reason
+    if status_reason.startswith("Job not found"):
+        return status_reason if details is None else None
+    if normalized_state == "PENDING":
+        reason = status_reason.strip().strip("()")
+        return None if reason in {"", "None", "N/A", "null"} else reason
+    return None
+
+
 def describe_job(
     job_id: str,
     *,
@@ -535,13 +604,17 @@ def describe_job(
         elif output_result.get("error"):
             diagnostics.append(f"{stream} unavailable: {output_result['error']}")
 
-    reason = status_result.get("reason")
     normalized_state = state.split("+", maxsplit=1)[0].split(maxsplit=1)[0]
+    reason = _job_reason(
+        status_reason,
+        details if isinstance(details, dict) else None,
+        normalized_state,
+    )
     return SlurmJobDescription(
         scheduler_native_id=native_id,
         state=state,
         terminal=normalized_state in _TERMINAL_STATES,
-        reason=str(reason) if reason is not None else None,
+        reason=reason,
         properties=properties,
         outputs=outputs,
         diagnostics=diagnostics,
@@ -584,7 +657,10 @@ def cluster_snapshot(
     partitions = [
         SlurmPartition(
             name=str(raw.get("partition", "")),
+            default=raw.get("default") is True,
             availability=str(raw.get("avail_idle", "")),
+            nodes_allocated=_node_count(raw.get("avail_idle"), 0),
+            nodes_idle=_node_count(raw.get("avail_idle"), 1),
             time_limit=str(raw.get("timelimit", "")),
             nodes=str(raw.get("nodes", "")),
             state=str(raw.get("state", "")),

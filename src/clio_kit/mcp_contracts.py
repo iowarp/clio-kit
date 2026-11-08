@@ -131,8 +131,8 @@ USER_CONTRACT_SPECS: Final = (
         ),
     ),
     UserContractSpec(
-        contract_id="clio-kit-slurm-user-v3",
-        artifact_name="slurm-user-v3.json",
+        contract_id="clio-kit-slurm-user-v3.1",
+        artifact_name="slurm-user-v3.1.json",
         server_name="slurm",
         distribution_name="slurm-mcp",
         entry_command="slurm-mcp",
@@ -190,6 +190,7 @@ HISTORICAL_USER_CONTRACT_ARTIFACTS: Final = (
     "jarvis-user-v3.7.json",
     "jarvis-user-v3.7.1.json",
     "scientific-catalog-user-v1.json",
+    "slurm-user-v3.json",
     "spack-user-v2.json",
     "spack-user-v2.1.json",
     "spack-user-v2.2.json",

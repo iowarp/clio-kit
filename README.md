@@ -196,7 +196,7 @@ and Scientific Catalog, with SHA-256 digests for downstream verification:
 ```bash
 clio-kit mcp-contracts
 clio-kit mcp-contract clio-kit-jarvis-user-v3.7.2
-clio-kit mcp-contract clio-kit-slurm-user-v3
+clio-kit mcp-contract clio-kit-slurm-user-v3.1
 clio-kit mcp-contract clio-kit-spack-user-v2.3
 clio-kit mcp-contract clio-kit-scientific-catalog-user-v1.1
 ```
@@ -472,7 +472,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`plot`** | 2.2.6 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |
 | **`seismology`** | 2.3.2 | Seismology | Analyze SAC waveforms and archives | `clio-kit mcp-server seismology` |
 | **`scientific-catalog`** | 1.1.5 | Discovery | Operator-owned scientific dataset discovery | `clio-kit mcp-server scientific-catalog` |
-| **`slurm`** | 3.0.3 | HPC | Job submission and management | `clio-kit mcp-server slurm` |
+| **`slurm`** | 3.1.0 | HPC | Job submission and management | `clio-kit mcp-server slurm` |
 | **`spack`** | 2.3.2 | Package Management | Structured package discovery, installation, and location | `clio-kit mcp-server spack` |
 | **`terrain`** | 2.2.6 | Geospatial | Analyze DEMs and terrain point clouds | `clio-kit mcp-server terrain` |
 | **`web`** | 2.1.4 | Web | Web search and URL fetch, with queryable, cancellable fetch tasks; DOI and document conversion need a remote service | `clio-kit mcp-server web` |

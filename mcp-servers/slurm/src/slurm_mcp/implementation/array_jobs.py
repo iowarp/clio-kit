@@ -79,11 +79,6 @@ def submit_array_job(
             if partition:
                 f.write(f"#SBATCH --partition={partition}\n")
 
-            f.write("\n# Array job script content:\n")
-            f.write(
-                'echo "Array job ${SLURM_ARRAY_JOB_ID}, task ${SLURM_ARRAY_TASK_ID}"\n'
-            )
-            f.write('echo "Running on node: $(hostname)"\n')
             f.write("\n# Original script content:\n")
 
             # Skip shebang in original content if it exists

@@ -282,7 +282,7 @@
       "name": "clio-slurm",
       "source": "./plugins/clio-slurm",
       "description": "Submit, list, inspect and cancel Slurm jobs, and describe the cluster.",
-      "version": "3.0.3",
+      "version": "3.1.0",
       "category": "scientific",
       "keywords": [
         "hpc",
