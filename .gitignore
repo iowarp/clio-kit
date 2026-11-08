@@ -252,10 +252,11 @@ rework/
 # Local agent sessions are not release artifacts.
 .clio-coder/
 
-# Local standalone project; excluded from this repository and release.
-/clio-agentic-search/
-
 # Project installation state; the generated shared catalogue remains tracked.
 /.clio-kit/packages/
 /.clio-kit/sources/
 /.clio-kit/installed/
+
+# Local working directories kept out of the repository.
+/clio-converter/
+/handoffs/
