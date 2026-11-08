@@ -17,6 +17,8 @@ MCP server, skill or hook. Detailed contribution rules are in
 - `.claude-plugin/`: native Claude export and federation snapshot.
 - `docs/`: documentation source shared by GitHub and Docusaurus.
 - `website/`: website configuration, components and static assets.
+- `clio-agentic-search/`: standalone hybrid retrieval service (not an MCP server),
+  with its own lock, tests and CI jobs. The launcher does not ship or discover it.
 
 ## Choose the contribution route
 
@@ -68,7 +70,9 @@ uv run --frozen python scripts/check_file_size.py
 ```
 
 Run a changed server's own suite from `mcp-servers/<name>/` using its own locked
-environment. Root pytest targets `tests/`; recursive collection mixes independent
+environment. For `clio-agentic-search/`, run `uv sync --locked --dev`, then
+`uv run ruff check .`, `uv run ruff format --check .`, `uv run mypy src/` and
+`uv run pytest --ignore=tests/benchmarks` from that directory. Root pytest targets `tests/`; recursive collection mixes independent
 server dependencies. For launcher or packaging changes, also run
 `uv run --frozen python scripts/verify_marketplace_install.py --all-servers`.
 For distribution changes, also run `uv run --frozen python scripts/verify_partial_install.py --output /tmp/clio-partial-install` with a new output directory.

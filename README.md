@@ -248,6 +248,15 @@ Individual skills also work: `clio-kit skill install clio-kit-scientific-debuggi
 Adapted Clio Coder skills use the `clio-kit-` prefix to distinguish them from upstream originals.
 See [Clio Coder integration](docs/marketplace.md#clio-coder-integration) for upstream packages and native plugin support.
 
+### Agentic Search
+
+[`clio-agentic-search`](clio-agentic-search/README.md) is a standalone hybrid
+retrieval service in this repository, not an MCP server. It indexes documents and
+serves lexical, vector, graph and metadata retrieval over a FastAPI API
+(`/query`, `/jobs/index`, `/documents`, `/health`, `/metrics`). Run it from a
+checkout with `uv run clio serve` inside `clio-agentic-search/`; the `clio-kit`
+launcher does not ship it.
+
 ### Contribute Servers, Skills or Plugins
 
 Contribute a package folder under `plugins/`, `skills/`, `agents/` or `hooks/`;

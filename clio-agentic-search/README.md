@@ -3,7 +3,7 @@
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![PyPI version](https://img.shields.io/pypi/v/clio-kit.svg)](https://pypi.org/project/clio-kit/)
 [![CI](https://github.com/iowarp/clio-kit/actions/workflows/quality_control.yml/badge.svg)](https://github.com/iowarp/clio-kit/actions/workflows/quality_control.yml)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/)
 
 > **Status: Experimental** — API surface and storage format may change between minor releases. Suitable for research and evaluation; not yet recommended for production workloads.
 
@@ -13,19 +13,12 @@ Part of [**CLIO Kit**](https://github.com/iowarp/clio-kit) — the IoWarp platfo
 
 Hybrid retrieval engine for AI agents. Indexes documents into namespace-specific backends and supports lexical (token-overlap), vector, graph, and metadata retrieval in one pipeline, with structure-aware chunking and table-cell citations. DuckDB storage, FastAPI server, async job queue, OpenTelemetry tracing, Prometheus metrics.
 
-> Scientific units, measurements, formula matching and the scientific quality gate moved to [`clio-converter`](../clio-converter/README.md). Search no longer accepts `scientific_operators` (API returns 422) or `--numeric-range` / `--unit-match` / `--formula` (CLI).
+> Scientific units, measurements, formula matching and the scientific quality gate moved to `clio-converter`, a separate project that is not part of this repository. Search no longer accepts `scientific_operators` (API returns 422) or `--numeric-range` / `--unit-match` / `--formula` (CLI).
 
 ## Quick start
 
-```bash
-# Via the CLIO Kit launcher (recommended)
-uvx clio-kit search serve                    # Start the API server
-uvx clio-kit search query --namespace local_fs --q "reactor pressure calibration"
-uvx clio-kit search index --namespace local_fs
-uvx clio-kit search list --namespace local_fs
-```
-
-### Development mode
+The `clio-kit` launcher does not ship or run this service. Run it from a CLIO Kit
+checkout:
 
 ```bash
 cd clio-agentic-search
@@ -90,6 +83,10 @@ uv run ruff format --check .
 uv run mypy src/
 uv run pytest --ignore=tests/benchmarks -v
 ```
+
+CI runs these checks in the `agentic-search-*` jobs of
+`.github/workflows/quality_control.yml` whenever `clio-agentic-search/` changes,
+and the release workflow checks its lock and audits its dependencies.
 
 ## Benchmarks
 
