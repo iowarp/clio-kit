@@ -2,7 +2,13 @@ import React, {useEffect, useMemo, useState} from 'react';
 import Link from '@docusaurus/Link';
 import Heading from '@theme/Heading';
 import {useHistory, useLocation} from '@docusaurus/router';
-import {catalogue, hasAdaptedCopy, kinds, publisherFor} from './data';
+import {
+  catalogue,
+  hasAdaptedCopy,
+  itemUrl,
+  kinds,
+  publisherFor,
+} from './data';
 import {Icon, Card} from './shared';
 import styles from './styles.module.css';
 
@@ -242,6 +248,44 @@ export function Catalog({fixedPublisher}) {
           )}
         </div>
       </div>
+      <EntryIndex items={base} />
     </section>
+  );
+}
+
+// Plain links to every entry, independent of filters and paging, so each
+// detail page is reachable from the server-rendered HTML.
+function EntryIndex({items}) {
+  const groups = kinds
+    .filter(([key]) => key !== 'all')
+    .map(([key, label]) => [
+      label,
+      items
+        .filter((item) => item.kind === key)
+        .sort((a, b) => a.title.localeCompare(b.title)),
+    ])
+    .filter(([, entries]) => entries.length);
+  return (
+    <nav className={styles.entryIndex} aria-labelledby="entry-index">
+      <Heading as="h2" id="entry-index" className={styles.entryIndexTitle}>
+        Index of all {items.length} entries
+      </Heading>
+      <div className={styles.entryIndexGroups}>
+        {groups.map(([label, entries]) => (
+          <section key={label}>
+            <h3 className={styles.filterLabel}>
+              {label} ({entries.length})
+            </h3>
+            <ul>
+              {entries.map((item) => (
+                <li key={item.id}>
+                  <Link to={itemUrl(item)}>{item.title}</Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </nav>
   );
 }

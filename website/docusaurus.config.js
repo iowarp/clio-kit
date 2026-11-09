@@ -5,6 +5,10 @@
 // See: https://docusaurus.io/docs/api/docusaurus-config
 
 import {themes as prismThemes} from 'prism-react-renderer';
+import createLlmsTxt from './plugins/llms-txt.cjs';
+
+// llms.txt is written from the same URL list as sitemap.xml.
+const llmsTxt = createLlmsTxt();
 
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
@@ -80,7 +84,18 @@ const config = {
     locales: ['en'],
   },
 
-  plugins: ['./plugins/catalogue-routes.cjs', './plugins/doc-search.cjs'],
+  plugins: [
+    './plugins/catalogue-routes.cjs',
+    './plugins/doc-search.cjs',
+    llmsTxt.plugin,
+    [
+      '@docusaurus/plugin-client-redirects',
+      {
+        // GitHub Pages cannot send 301s; these emit static redirect pages.
+        redirects: [{from: '/docs/mcps/seismic', to: '/docs/mcps/seismology'}],
+      },
+    ],
+  ],
 
   presets: [
     [
@@ -97,7 +112,12 @@ const config = {
             'https://github.com/iowarp/clio-kit/tree/main/docs/',
         },
         blog: false,
-        sitemap: {ignorePatterns: ['/component']},
+        sitemap: {
+          // Launcher MCP entries reproduce /docs/mcps/* and declare it canonical.
+          ignorePatterns: ['/component', '/catalogue/mcp/**'],
+          lastmod: 'date',
+          createSitemapItems: llmsTxt.createSitemapItems,
+        },
         theme: {
           customCss: ['./src/css/custom.css', './src/css/editorial.css'],
         },
