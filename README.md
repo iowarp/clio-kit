@@ -95,6 +95,9 @@ clio-kit mcp-server hdf5
 clio-kit mcp-server pandas
 clio-kit mcp-server slurm
 
+# Build a server's environment without starting it (safe to repeat)
+clio-kit mcp-server --prepare hdf5
+
 # Agentic search — hybrid retrieval for scientific corpora
 clio-kit search serve               # Start search API server
 clio-kit search query --namespace local_fs --q "pressure > 200 kPa"
