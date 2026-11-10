@@ -187,13 +187,13 @@ Both search endpoints return an array of `DataSourceResponse` objects:
 
 ### 1. Simple term search:
 ```bash
-curl -X GET "http://155.101.6.191:8003/search?terms=climate&server=global" \
+curl -X GET "http://<your-ep-host>:8002/search?terms=climate&server=global" \
   -H "Authorization: Bearer <token>"
 ```
 
 ### 2. Advanced search with multiple criteria:
 ```bash
-curl -X POST "http://155.101.6.191:8003/search" \
+curl -X POST "http://<your-ep-host>:8002/search" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token>" \
   -d '{
@@ -206,7 +206,7 @@ curl -X POST "http://155.101.6.191:8003/search" \
 
 ### 3. List organizations with filtering:
 ```bash
-curl -X GET "http://155.101.6.191:8003/organization?name=research&server=global" \
+curl -X GET "http://<your-ep-host>:8002/organization?name=research&server=global" \
   -H "Authorization: Bearer <token>"
 ```
 
