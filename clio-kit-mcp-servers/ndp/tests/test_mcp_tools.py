@@ -29,7 +29,7 @@ class TestServerBasics:
         assert len(dataset.resources) == 1
 
     def test_ndp_client_initialization(self):
-        """Test that NDPClient is properly initialized."""
+        """Test that the default client targets the public NDP catalog."""
         assert server.ndp_client is not None
-        assert server.ndp_client.base_url == "http://155.101.6.191:8003"
+        assert server.ndp_client.base_url == "https://nationaldataplatform.org/catalog"
         assert server.ndp_client.max_retries == 3

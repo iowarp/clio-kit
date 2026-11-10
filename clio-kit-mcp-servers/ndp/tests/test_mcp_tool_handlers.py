@@ -6,7 +6,13 @@ import pytest
 from fastmcp.exceptions import ToolError
 
 from ndp_mcp import server
-from ndp_mcp.server import Dataset
+from ndp_mcp.server import Dataset, NDPClient
+
+
+@pytest.fixture(autouse=True)
+def endpoint_api_client(monkeypatch):
+    """Exercise the tool handlers against the NDP Endpoint API client they mock."""
+    monkeypatch.setattr(server, "ndp_client", NDPClient("http://ep.test"))
 
 
 @pytest.fixture

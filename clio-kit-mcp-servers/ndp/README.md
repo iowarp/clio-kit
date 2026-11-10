@@ -14,6 +14,17 @@ The National Data Platform (NDP) MCP server provides comprehensive access to sea
 uvx clio-kit mcp-server ndp
 ```
 
+## Configuration
+
+Works out of the box against the public NDP catalog; no endpoint setup is needed.
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `NDP_CATALOG_URL` | `https://nationaldataplatform.org/catalog` | Base URL of the CKAN catalog used when `NDP_API_URL` is unset. Serves the `global` catalog only. |
+| `NDP_API_URL` | unset | Base URL of a self-hosted [NDP Endpoint API](https://github.com/national-data-platform/ep-api) (for example `http://my-ep-host:8002`). When set, all calls go through it, and the `local` and `pre_ckan` catalogs become available. |
+
+If the configured backend cannot be reached, tools fail with an error naming the URL and the variable that controls it.
+
 ## Documentation
 
 - **Full Documentation**: [CLIO Kit Website](https://docs.iowarp.ai/)
