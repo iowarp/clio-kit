@@ -119,9 +119,8 @@ class TestServerInitialization:
         assert callable(server.explore_datasets)
 
     def test_ndp_client_timeout_configured(self):
-        """Test that NDPClient has timeout configured."""
-        assert server.ndp_client.timeout is not None
-        assert hasattr(server.ndp_client.timeout, "connect")
+        """Every request runs inside one bounded budget (#351)."""
+        assert 0 < server.ndp_client.request_budget_s <= 60
 
     def test_module_imports(self):
         """Test that required modules are imported."""
