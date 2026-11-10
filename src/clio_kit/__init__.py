@@ -9,7 +9,9 @@ import sys
 import subprocess
 import sysconfig
 import tempfile
+import time
 from pathlib import Path
+from typing import NoReturn
 import click
 
 from clio_kit.env_cache import (
@@ -545,9 +547,23 @@ def main(ctx):
 )
 @click.argument("server", required=False)
 @click.option("-b", "--branch", help="Git branch to use (for development)")
+@click.option(
+    "--prepare",
+    is_flag=True,
+    help=(
+        "Build or sync the server's environment (the first-run uv sync), then "
+        "exit 0 without starting the server. Safe to repeat. Prints one JSON "
+        "result line on stdout; failures exit 10 build_failed, 11 access_denied, "
+        "12 path_too_long, 13 network, 14 uv_missing, 1 unknown server."
+    ),
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def mcp_server(server, branch, args):
+def mcp_server(server, branch, prepare, args):
     """Run an MCP server. List all if no server specified."""
+
+    if prepare:
+        _prepare_server(server, branch)
+        return
 
     server_command_map, dir_name_map = auto_discover_mcps()
 
@@ -594,22 +610,22 @@ def mcp_server(server, branch, args):
     _run_child_command([entry_command, *args], entry_command, child_environment)
 
 
-def _run_locked_local_server(
-    server_path: Path,
-    entry_command: str,
-    args: tuple[str, ...],
-    child_environment: dict[str, str],
-) -> None:
-    """Build, evict, and launch one embedded server from its source-locked cache.
+@dataclasses.dataclass(frozen=True)
+class _LockedServerRuntime:
+    """One embedded server's materialized project and its source-keyed environment."""
 
-    The root wheel ships each server's project and ``uv.lock``. The child runs
-    from an immutable, source-and-lock-keyed environment so the outer wheel binds
-    the child dependency closure exactly. After the environment for the current
-    spec is confirmed built, older specs of this server are evicted and the
-    private uv cache is pruned, keeping steady-state disk bounded to the newest
-    spec. The in-use marker is held across the whole launch so a concurrent
-    launch or ``cache gc`` never evicts the environment this process is using.
-    """
+    server: str
+    project: Path
+    environment: Path
+    cache_root: Path
+    project_sha256: str
+
+
+def _locked_server_runtime(
+    server_path: Path,
+    child_environment: dict[str, str],
+) -> _LockedServerRuntime:
+    """Materialize the server project and point ``child_environment`` at its env."""
     runtime_identity = locked_server_project_identity(server_path)
     runtime_project = materialize_locked_server_project(
         server_path,
@@ -628,6 +644,54 @@ def _run_locked_local_server(
     child_environment["UV_CACHE_DIR"] = str((cache_root / "uv-cache").resolve())
     child_environment["UV_PRERELEASE"] = "allow"
     child_environment.pop("VIRTUAL_ENV", None)
+    return _LockedServerRuntime(
+        server=server_path.name,
+        project=runtime_project,
+        environment=environment_path,
+        cache_root=cache_root,
+        project_sha256=project_sha256,
+    )
+
+
+def _maintain_cache_after_build(runtime: _LockedServerRuntime, uv: str) -> None:
+    """Evict superseded specs and prune the uv cache; never blocks a launch."""
+    try:
+        maintain_after_build(
+            runtime.cache_root,
+            runtime.server,
+            project_sha256=runtime.project_sha256,
+            uv_executable=uv,
+        )
+    except Exception as exc:  # noqa: BLE001 - launch must never be blocked
+        default_event_emitter(
+            {
+                "event": "cache_maintenance_failed",
+                "server": runtime.server,
+                "reason": repr(exc),
+            }
+        )
+
+
+def _run_locked_local_server(
+    server_path: Path,
+    entry_command: str,
+    args: tuple[str, ...],
+    child_environment: dict[str, str],
+) -> None:
+    """Build, evict, and launch one embedded server from its source-locked cache.
+
+    The root wheel ships each server's project and ``uv.lock``. The child runs
+    from an immutable, source-and-lock-keyed environment so the outer wheel binds
+    the child dependency closure exactly. After the environment for the current
+    spec is confirmed built, older specs of this server are evicted and the
+    private uv cache is pruned, keeping steady-state disk bounded to the newest
+    spec. The in-use marker is held across the whole launch so a concurrent
+    launch or ``cache gc`` never evicts the environment this process is using.
+    """
+    runtime = _locked_server_runtime(server_path, child_environment)
+    runtime_project = runtime.project
+    cache_root = runtime.cache_root
+    environment_path = runtime.environment
 
     uv = uv_command()
     try:
@@ -636,21 +700,7 @@ def _run_locked_local_server(
         pass
     with EnvironmentInUseMarker(cache_root, environment_path.name):
         if _build_locked_environment(uv, runtime_project, child_environment):
-            try:
-                maintain_after_build(
-                    cache_root,
-                    server_path.name,
-                    project_sha256=project_sha256,
-                    uv_executable=uv,
-                )
-            except Exception as exc:  # noqa: BLE001 - launch must never be blocked
-                default_event_emitter(
-                    {
-                        "event": "cache_maintenance_failed",
-                        "server": server_path.name,
-                        "reason": repr(exc),
-                    }
-                )
+            _maintain_cache_after_build(runtime, uv)
         else:
             default_event_emitter(
                 {
@@ -677,26 +727,245 @@ def _build_locked_environment(
     child server's stdout is the JSON-RPC channel.
     """
     try:
-        completed = subprocess.run(
-            [
-                uv,
-                "sync",
-                "--no-dev",
-                "--no-editable",
-                "--frozen",
-                "--project",
-                str(runtime_project),
-            ],
-            env=child_environment,
-            capture_output=True,
-        )
+        completed = _sync_locked_environment(uv, runtime_project, child_environment)
     except OSError:
         return False
+    return completed.returncode == 0
+
+
+def _sync_locked_environment(
+    uv: str,
+    runtime_project: Path,
+    child_environment: dict[str, str],
+) -> subprocess.CompletedProcess[bytes]:
+    """Run the frozen ``uv sync`` for one runtime project, echoing its output to stderr."""
+    completed = subprocess.run(
+        [
+            uv,
+            "sync",
+            "--no-dev",
+            "--no-editable",
+            "--frozen",
+            "--project",
+            str(runtime_project),
+        ],
+        env=child_environment,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+    )
     for stream in (completed.stdout, completed.stderr):
         if stream:
             sys.stderr.write(stream.decode("utf-8", errors="replace"))
     sys.stderr.flush()
-    return completed.returncode == 0
+    return completed
+
+
+# ``mcp-server --prepare`` outcome contract. Exit codes and ``error`` kinds are
+# stable: CLIO maps them to its typed provisioning failures.
+PREPARE_RESULT_SCHEMA = "clio-kit.mcp-prepare.v1"
+PREPARE_EXIT_UNKNOWN_SERVER = 1
+PREPARE_EXIT_BUILD_FAILED = 10
+PREPARE_EXIT_ACCESS_DENIED = 11
+PREPARE_EXIT_PATH_TOO_LONG = 12
+PREPARE_EXIT_NETWORK = 13
+PREPARE_EXIT_UV_MISSING = 14
+_PREPARE_EXIT_CODES = {
+    "unknown_server": PREPARE_EXIT_UNKNOWN_SERVER,
+    "build_failed": PREPARE_EXIT_BUILD_FAILED,
+    "access_denied": PREPARE_EXIT_ACCESS_DENIED,
+    "path_too_long": PREPARE_EXIT_PATH_TOO_LONG,
+    "network": PREPARE_EXIT_NETWORK,
+    "uv_missing": PREPARE_EXIT_UV_MISSING,
+}
+_PATH_TOO_LONG_MARKERS = (
+    "os error 206",
+    "winerror 206",
+    "filename or extension is too long",
+    "file name too long",
+    "os error 36",
+)
+_ACCESS_DENIED_MARKERS = (
+    "access is denied",
+    "os error 5)",
+    "winerror 5]",
+    "permission denied",
+    "os error 13",
+    "windows pe resources",
+)
+_NETWORK_MARKERS = (
+    "failed to fetch",
+    "failed to download",
+    "error sending request",
+    "dns error",
+    "tcp connect error",
+    "connection refused",
+    "connection reset",
+    "connection aborted",
+    "operation timed out",
+    "network is unreachable",
+    "no such host is known",
+    "could not connect",
+    "os error 11001",
+    "os error 10060",
+    "os error 10061",
+    "request failed after",
+)
+_WINDOWS_MAX_PATH = 260
+
+
+class PrepareFailure(Exception):
+    """A typed ``mcp-server --prepare`` failure; ``kind`` keys the exit code."""
+
+    def __init__(self, kind: str, detail: str) -> None:
+        super().__init__(detail)
+        self.kind = kind
+        self.detail = detail
+
+
+def _classify_build_output(output: str) -> str:
+    """Return the typed failure kind a failed build's output names."""
+    lowered = output.lower()
+    if any(marker in lowered for marker in _PATH_TOO_LONG_MARKERS):
+        return "path_too_long"
+    if any(marker in lowered for marker in _ACCESS_DENIED_MARKERS):
+        return "access_denied"
+    if any(marker in lowered for marker in _NETWORK_MARKERS):
+        return "network"
+    return "build_failed"
+
+
+def _classify_os_error(exc: OSError) -> str:
+    """Return the typed failure kind for an OS error raised while materializing."""
+    winerror = getattr(exc, "winerror", None)
+    names = [str(name) for name in (exc.filename, exc.filename2) if name]
+    if winerror == 206 or exc.errno == 36:  # ERROR_FILENAME_EXCED_RANGE / ENAMETOOLONG
+        return "path_too_long"
+    if winerror == 3 and any(len(name) >= _WINDOWS_MAX_PATH for name in names):
+        return "path_too_long"
+    if isinstance(exc, PermissionError) or winerror == 5:
+        return "access_denied"
+    return _classify_build_output(str(exc))
+
+
+def _environment_interpreter(environment: Path) -> Path:
+    if os.name == "nt":
+        return environment / "Scripts" / "python.exe"
+    return environment / "bin" / "python"
+
+
+def _discard_partial_environment(runtime: "_LockedServerRuntime") -> None:
+    """Remove a half-built environment uv would refuse ("not a valid Python environment").
+
+    An environment whose build was interrupted (or denied mid-write) is left
+    without a usable interpreter; every later ``uv sync`` then fails on it. It
+    is only removed when no live launcher holds it.
+    """
+    from clio_kit.environment_locks import environment_in_use
+
+    environment = runtime.environment
+    try:
+        if not environment.is_dir() or not any(environment.iterdir()):
+            return
+    except OSError:
+        return
+    if (environment / "pyvenv.cfg").is_file() and _environment_interpreter(
+        environment
+    ).is_file():
+        return
+    if environment_in_use(runtime.cache_root, environment.name):
+        return
+    default_event_emitter(
+        {
+            "event": "partial_environment_discarded",
+            "server": runtime.server,
+            "environment": str(environment),
+        }
+    )
+    shutil.rmtree(environment)
+
+
+def _emit_prepare_result(payload: dict[str, object]) -> None:
+    click.echo(json.dumps({"schema": PREPARE_RESULT_SCHEMA, **payload}, sort_keys=True))
+
+
+def _prepare_failed(server: str, kind: str, detail: str) -> NoReturn:
+    detail = detail.strip()
+    click.echo(
+        f"clio-kit mcp-server --prepare {server}: error={kind}: {detail}", err=True
+    )
+    _emit_prepare_result(
+        {"status": "error", "server": server, "error": kind, "detail": detail[-2000:]}
+    )
+    sys.exit(_PREPARE_EXIT_CODES[kind])
+
+
+def _prepare_server(server: str | None, branch: str | None) -> None:
+    """Build or sync one server's environment without starting it, then exit 0."""
+    if not server:
+        raise click.UsageError("--prepare requires a server name.")
+    if branch:
+        raise click.UsageError(
+            "--prepare cannot be combined with --branch (uvx owns that environment)."
+        )
+    server_command_map, dir_name_map = auto_discover_mcps()
+    server_lower = server.lower()
+    if server_lower not in server_command_map:
+        _prepare_failed(
+            server,
+            "unknown_server",
+            f"available servers: {', '.join(sorted(server_command_map))}",
+        )
+    server_path = get_servers_path() / dir_name_map[server_lower]
+    started = time.monotonic()
+    if not server_path.exists():
+        # An installed console script has no clio-kit-owned environment to build.
+        _emit_prepare_result(
+            {"status": "not_applicable", "server": server_lower, "seconds": 0.0}
+        )
+        return
+
+    child_environment = subprocess_env_with_github_https_rewrite()
+    try:
+        runtime = _locked_server_runtime(server_path, child_environment)
+        _discard_partial_environment(runtime)
+        runtime.environment.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        _prepare_failed(server_lower, _classify_os_error(exc), f"{type(exc).__name__}: {exc}")
+    except click.ClickException as exc:
+        _prepare_failed(server_lower, "build_failed", exc.format_message())
+
+    uv = uv_command()
+    with EnvironmentInUseMarker(runtime.cache_root, runtime.environment.name):
+        try:
+            completed = _sync_locked_environment(
+                uv, runtime.project, child_environment
+            )
+        except FileNotFoundError as exc:
+            _prepare_failed(
+                server_lower,
+                "uv_missing",
+                f"uv not found ({exc}); install uv: https://github.com/astral-sh/uv",
+            )
+        except OSError as exc:
+            _prepare_failed(server_lower, _classify_os_error(exc), f"{type(exc).__name__}: {exc}")
+        if completed.returncode != 0:
+            output = b"\n".join((completed.stdout or b"", completed.stderr or b""))
+            text = output.decode("utf-8", errors="replace")
+            _prepare_failed(
+                server_lower,
+                _classify_build_output(text),
+                f"uv sync exited {completed.returncode}: {text[-1500:]}",
+            )
+        _maintain_cache_after_build(runtime, uv)
+    _emit_prepare_result(
+        {
+            "status": "prepared",
+            "server": server_lower,
+            "environment": str(runtime.environment),
+            "project": str(runtime.project),
+            "seconds": round(time.monotonic() - started, 3),
+        }
+    )
 
 
 def _run_child_command(
