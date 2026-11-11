@@ -3,9 +3,10 @@ schema-version = 1
 # Publish new immutable server releases when schemas, runtime behavior or locked
 # dependencies change. A dependency security update warrants a patch release even
 # when the tool schema is unchanged. Never reuse an already-published version.
-# 2.12.2: ndp defaults to the public NDP catalog instead of a retired endpoint;
-# every other server keeps the version and contract 2.12.0 published. 2.12.1 was
-# tagged but never published, so ndp 2.2.8 first reaches the registry here.
+# 2.12.3: ndp defaults to the public NDP catalog instead of a retired endpoint;
+# every other server keeps the version and contract 2.12.0 published. 2.12.1 and
+# 2.12.2 were tagged but never published, so ndp 2.2.8 first reaches the
+# registry here.
 [mcp-registry-release]
 publish = ["ndp"]
 

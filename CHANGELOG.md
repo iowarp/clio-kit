@@ -2,11 +2,12 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
-## 2.12.2 - 2026-11-11
+## 2.12.3 - 2026-11-11
 
-Launcher fixes, and ndp 2.2.8 works against the public NDP catalog. Every
-other MCP server keeps its 2.12.0 version. 2.12.1 was tagged but never
-published; 2.12.2 is the first release that carries these changes.
+Launcher fixes, ndp 2.2.8 works against the public NDP catalog, and the web
+server works behind a SOCKS proxy. Every other MCP server keeps its 2.12.0
+version. 2.12.1 and 2.12.2 were tagged but never published; 2.12.3 is the
+first release that carries these changes.
 
 - **Self-healing server environments**: a Python server environment left
   half-built by an interrupted or denied first build (no `pyvenv.cfg` or
@@ -28,6 +29,15 @@ published; 2.12.2 is the first release that carries these changes.
   `local` and `pre_ckan` catalogs. Connection errors name the URL and the
   variable that controls it, and the `ndp://catalogs` resource reports the
   active backend (#401).
+- **web works behind a SOCKS proxy**: the web server now depends on
+  `httpx[socks]`, so a sandboxed Windows launch that sets
+  `ALL_PROXY=socks5h://...` no longer fails with "Using SOCKS proxy, but the
+  'socksio' package is not installed" (#407).
+
+## 2.12.2 - 2026-11-11
+
+Tagged but not published: main moved past the tag before its build ran.
+Its changes ship in 2.12.3.
 
 ## 2.12.1 - 2026-11-11
 
