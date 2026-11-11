@@ -2665,7 +2665,7 @@ source = { editable = "." }
 dependencies = [
     { name = "ddgs" },
     { name = "fastmcp", extra = ["tasks"] },
-    { name = "httpx" },
+    { name = "httpx", extra = ["socks"] },
     { name = "platformdirs" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -2688,7 +2688,7 @@ dev = [
 requires-dist = [
     { name = "ddgs", specifier = ">=6.0" },
     { name = "fastmcp", extras = ["tasks"], specifier = ">=4.1.2,<5" },
-    { name = "httpx", specifier = ">=0.27.0" },
+    { name = "httpx", extras = ["socks"], specifier = ">=0.27.0" },
     { name = "platformdirs", specifier = ">=4.0" },
     { name = "pydantic", specifier = ">=2.5" },
     { name = "pydantic-settings", specifier = ">=2.6" },
