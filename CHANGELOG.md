@@ -2,10 +2,11 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
-## 2.12.1 - 2026-11-11
+## 2.12.2 - 2026-11-11
 
 Launcher fixes, and ndp 2.2.8 works against the public NDP catalog. Every
-other MCP server keeps its 2.12.0 version.
+other MCP server keeps its 2.12.0 version. 2.12.1 was tagged but never
+published; 2.12.2 is the first release that carries these changes.
 
 - **Self-healing server environments**: a Python server environment left
   half-built by an interrupted or denied first build (no `pyvenv.cfg` or
@@ -27,6 +28,11 @@ other MCP server keeps its 2.12.0 version.
   `local` and `pre_ckan` catalogs. Connection errors name the URL and the
   variable that controls it, and the `ndp://catalogs` resource reports the
   active backend (#401).
+
+## 2.12.1 - 2026-11-11
+
+Tagged but not published: its release checks failed on a stale README
+version row. Its changes ship in 2.12.2.
 
 ## 2.12.0 - 2026-11-08
 
