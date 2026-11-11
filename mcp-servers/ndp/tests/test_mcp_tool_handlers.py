@@ -6,7 +6,13 @@ import pytest
 from fastmcp.exceptions import ToolError
 
 from ndp_mcp import server
-from ndp_mcp.server import Dataset
+from ndp_mcp.server import Dataset, NDPClient
+
+
+@pytest.fixture(autouse=True)
+def endpoint_api_client(monkeypatch):
+    """Exercise the tool handlers against the NDP Endpoint API client they mock."""
+    monkeypatch.setattr(server, "ndp_client", NDPClient("http://ep.test"))
 
 
 @pytest.fixture
@@ -540,4 +546,47 @@ class TestReleaseRegressions:
         from fastmcp import Client
 
         async with Client(server.mcp) as client:
-            assert client.server_info.version == "2.2.7"
+            assert client.server_info.version == "2.2.8"
+
+
+class TestBackendSelection:
+    """The public CKAN catalog is the default; NDP_API_URL selects an Endpoint API."""
+
+    def test_default_backend_is_public_catalog(self, monkeypatch):
+        monkeypatch.delenv("NDP_API_URL", raising=False)
+        monkeypatch.delenv("NDP_CATALOG_URL", raising=False)
+        client = server.create_ndp_client()
+        assert isinstance(client, server.NDPCatalogClient)
+        assert client.base_url == "https://nationaldataplatform.org/catalog"
+
+    def test_catalog_url_override(self, monkeypatch):
+        monkeypatch.delenv("NDP_API_URL", raising=False)
+        monkeypatch.setenv("NDP_CATALOG_URL", "https://ckan.example.org/catalog/")
+        client = server.create_ndp_client()
+        assert isinstance(client, server.NDPCatalogClient)
+        assert client.base_url == "https://ckan.example.org/catalog"
+
+    def test_api_url_selects_endpoint_api(self, monkeypatch):
+        monkeypatch.setenv("NDP_API_URL", "http://ep.example.org:8002")
+        client = server.create_ndp_client()
+        assert isinstance(client, NDPClient)
+        assert client.base_url == "http://ep.example.org:8002"
+
+    def test_endpoint_api_without_url_is_rejected(self, monkeypatch):
+        monkeypatch.delenv("NDP_API_URL", raising=False)
+        with pytest.raises(ValueError, match="NDP_API_URL"):
+            NDPClient()
+
+    @pytest.mark.asyncio
+    async def test_catalog_rejects_non_global_server(self):
+        client = server.NDPCatalogClient("https://ckan.example.org")
+        with pytest.raises(ValueError, match="NDP_API_URL"):
+            await client.list_organizations(server="local")
+
+    def test_catalogs_resource_reports_backend(self, monkeypatch):
+        monkeypatch.setattr(
+            server, "ndp_client", server.NDPCatalogClient("https://ckan.example.org")
+        )
+        catalogs = server.available_catalogs()
+        assert catalogs["catalogs"] == ["global"]
+        assert catalogs["backend"]["type"] == "ckan"

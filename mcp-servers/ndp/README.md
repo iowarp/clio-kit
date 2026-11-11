@@ -130,10 +130,15 @@ uv run --frozen ndp-mcp
 
 ## Configuration
 
+Works out of the box against the public NDP catalog; no endpoint setup is needed.
+
 | Variable | Default | Purpose |
 |---|---|---|
-| `NDP_API_URL` | `http://155.101.6.191:8003` | Base URL of the NDP endpoint API. The default is the public NDP endpoint, reached over plain HTTP; set this to use another deployment. |
+| `NDP_CATALOG_URL` | `https://nationaldataplatform.org/catalog` | Base URL of the CKAN catalog used when `NDP_API_URL` is unset. Serves the `global` catalog only. |
+| `NDP_API_URL` | unset | Base URL of a self-hosted [NDP Endpoint API](https://github.com/national-data-platform/ep-api) (for example `http://my-ep-host:8002`). When set, all calls go through it, and the `local` and `pre_ckan` catalogs become available. |
 | `CLIO_KIT_ARTIFACTS` | current working directory | Where `stage_resource` writes files when `output_dir` is not given. |
+
+If the configured backend cannot be reached, tools fail with an error naming the URL and the variable that controls it.
 
 `search_datasets` needs at least one search term or filter, and `get_dataset_details` looks a dataset up by `id` (default) or `name`.
 

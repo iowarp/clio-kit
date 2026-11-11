@@ -87,8 +87,8 @@ class TestServerInitialization:
         assert hasattr(server.ndp_client, "retry_delay")
 
     def test_ndp_client_default_base_url(self):
-        """Test NDPClient has correct default base URL."""
-        assert server.ndp_client.base_url == "http://155.101.6.191:8003"
+        """Test the default client targets the public NDP catalog."""
+        assert server.ndp_client.base_url == "https://nationaldataplatform.org/catalog"
 
     def test_dataset_model_available(self):
         """Test that Dataset model is available in module."""
