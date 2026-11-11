@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions",
-    "version": "2.12.0"
+    "version": "2.12.1"
   },
   "plugins": [
     {
@@ -148,7 +148,7 @@
       "name": "clio-ndp",
       "source": "./plugins/clio-ndp",
       "description": "National Data Platform (NDP) MCP server for searching and discovering datasets across multiple CKAN instances",
-      "version": "2.2.7",
+      "version": "2.2.8",
       "category": "scientific",
       "keywords": [
         "datasets",

@@ -3,10 +3,10 @@ schema-version = 1
 # Publish new immutable server releases when schemas, runtime behavior or locked
 # dependencies change. A dependency security update warrants a patch release even
 # when the tool schema is unchanged. Never reuse an already-published version.
-# 2.12.0: adios, hdf5, parquet, pandas and slurm ship new tool behavior; every
-# other server takes a patch release for the joserfc and pyasn1 lock updates.
+# 2.12.1: ndp defaults to the public NDP catalog instead of a retired endpoint;
+# every other server keeps the version and contract 2.12.0 published.
 [mcp-registry-release]
-publish = ["adios", "arxiv", "chronolog", "compression", "darshan", "geo", "hdf5", "jarvis", "lmod", "ndp", "node-hardware", "pandas", "parallel-sort", "paraview", "parquet", "plot", "scientific-catalog", "seismology", "slurm", "spack", "terrain", "web"]
+publish = ["ndp"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
@@ -86,7 +86,7 @@ geo = "2.3.3"
 hdf5 = "2.3.0"
 jarvis = "3.7.6"
 lmod = "3.0.3"
-ndp = "2.2.7"
+ndp = "2.2.8"
 node-hardware = "2.3.2"
 pandas = "2.4.0"
 parallel-sort = "2.3.2"
