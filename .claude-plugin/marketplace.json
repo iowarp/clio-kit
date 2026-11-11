@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions",
-    "version": "2.12.1"
+    "version": "2.12.2"
   },
   "plugins": [
     {
