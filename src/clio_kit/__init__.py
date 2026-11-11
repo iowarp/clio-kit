@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import contextlib
 import dataclasses
 import hashlib
 import importlib.metadata as importlib_metadata
@@ -24,6 +25,7 @@ from clio_kit.env_cache import (
     maintain_after_build,
     measure_cache_budget,
 )
+from clio_kit.environment_build import locked_environment_build
 from clio_kit.mcp_contracts import (
     load_mcp_user_contract,
     load_mcp_user_contract_index,
@@ -694,12 +696,13 @@ def _run_locked_local_server(
     environment_path = runtime.environment
 
     uv = uv_command()
-    try:
-        environment_path.mkdir(parents=True, exist_ok=True)
-    except OSError:
-        pass
-    with EnvironmentInUseMarker(cache_root, environment_path.name):
-        if _build_locked_environment(uv, runtime_project, child_environment):
+    with contextlib.ExitStack() as held:
+        with _locked_environment_build(runtime, uv, child_environment):
+            held.enter_context(
+                EnvironmentInUseMarker(cache_root, environment_path.name)
+            )
+            built = _build_locked_environment(uv, runtime_project, child_environment)
+        if built:
             _maintain_cache_after_build(runtime, uv)
         else:
             default_event_emitter(
@@ -847,41 +850,19 @@ def _classify_os_error(exc: OSError) -> str:
     return _classify_build_output(str(exc))
 
 
-def _environment_interpreter(environment: Path) -> Path:
-    if os.name == "nt":
-        return environment / "Scripts" / "python.exe"
-    return environment / "bin" / "python"
-
-
-def _discard_partial_environment(runtime: "_LockedServerRuntime") -> None:
-    """Remove a half-built environment uv would refuse ("not a valid Python environment").
-
-    An environment whose build was interrupted (or denied mid-write) is left
-    without a usable interpreter; every later ``uv sync`` then fails on it. It
-    is only removed when no live launcher holds it.
-    """
-    from clio_kit.environment_locks import environment_in_use
-
-    environment = runtime.environment
-    try:
-        if not environment.is_dir() or not any(environment.iterdir()):
-            return
-    except OSError:
-        return
-    if (environment / "pyvenv.cfg").is_file() and _environment_interpreter(
-        environment
-    ).is_file():
-        return
-    if environment_in_use(runtime.cache_root, environment.name):
-        return
-    default_event_emitter(
-        {
-            "event": "partial_environment_discarded",
-            "server": runtime.server,
-            "environment": str(environment),
-        }
+def _locked_environment_build(
+    runtime: "_LockedServerRuntime", uv: str, child_environment: dict[str, str]
+) -> contextlib.AbstractContextManager[None]:
+    """Serialize this environment's build and heal a half-built one first."""
+    return locked_environment_build(
+        runtime.cache_root,
+        runtime.environment,
+        server=runtime.server,
+        uv=uv,
+        project=runtime.project,
+        child_environment=child_environment,
+        emit=default_event_emitter,
     )
-    shutil.rmtree(environment)
 
 
 def _emit_prepare_result(payload: dict[str, object]) -> None:
@@ -927,27 +908,29 @@ def _prepare_server(server: str | None, branch: str | None) -> None:
     child_environment = subprocess_env_with_github_https_rewrite()
     try:
         runtime = _locked_server_runtime(server_path, child_environment)
-        _discard_partial_environment(runtime)
-        runtime.environment.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         _prepare_failed(server_lower, _classify_os_error(exc), f"{type(exc).__name__}: {exc}")
     except click.ClickException as exc:
         _prepare_failed(server_lower, "build_failed", exc.format_message())
 
     uv = uv_command()
-    with EnvironmentInUseMarker(runtime.cache_root, runtime.environment.name):
-        try:
-            completed = _sync_locked_environment(
-                uv, runtime.project, child_environment
+    with contextlib.ExitStack() as held:
+        with _locked_environment_build(runtime, uv, child_environment):
+            held.enter_context(
+                EnvironmentInUseMarker(runtime.cache_root, runtime.environment.name)
             )
-        except FileNotFoundError as exc:
-            _prepare_failed(
-                server_lower,
-                "uv_missing",
-                f"uv not found ({exc}); install uv: https://github.com/astral-sh/uv",
-            )
-        except OSError as exc:
-            _prepare_failed(server_lower, _classify_os_error(exc), f"{type(exc).__name__}: {exc}")
+            try:
+                completed = _sync_locked_environment(
+                    uv, runtime.project, child_environment
+                )
+            except FileNotFoundError as exc:
+                _prepare_failed(
+                    server_lower,
+                    "uv_missing",
+                    f"uv not found ({exc}); install uv: https://github.com/astral-sh/uv",
+                )
+            except OSError as exc:
+                _prepare_failed(server_lower, _classify_os_error(exc), f"{type(exc).__name__}: {exc}")
         if completed.returncode != 0:
             output = b"\n".join((completed.stdout or b"", completed.stderr or b""))
             text = output.decode("utf-8", errors="replace")
