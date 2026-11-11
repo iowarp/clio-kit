@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import dataclasses
 import hashlib
 import importlib.metadata as importlib_metadata
 import json
@@ -416,9 +417,25 @@ def main(ctx):
 )
 @click.argument("server", required=False)
 @click.option("-b", "--branch", help="Git branch to use (for development)")
+@click.option(
+    "--prepare",
+    is_flag=True,
+    help=(
+        "Build or sync the server's environment (the first-run build), then "
+        "exit 0 without starting the server. Safe to repeat. Prints one JSON "
+        "result line on stdout; failures exit 10 build_failed, 11 access_denied, "
+        "12 path_too_long, 13 network, 14 uv_missing, 1 unknown server."
+    ),
+)
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def mcp_server(server, branch, args):
+def mcp_server(server, branch, prepare, args):
     """Run an MCP server. List all if no server specified."""
+
+    if prepare:
+        from clio_kit.server_prepare import prepare_server
+
+        prepare_server(server, branch)
+        return
 
     server_command_map, dir_name_map = auto_discover_mcps()
 
@@ -464,22 +481,23 @@ def mcp_server(server, branch, args):
     _run_locked_local_server(server_path, entry_command, args, child_environment)
 
 
-def _run_locked_local_server(
-    server_path: Path,
-    entry_command: str,
-    args: tuple[str, ...],
-    child_environment: dict[str, str],
-) -> None:
-    """Build, evict, and launch one embedded server from its source-locked cache.
+@dataclasses.dataclass(frozen=True)
+class _LockedServerRuntime:
+    """One embedded server's materialized project and its source-keyed environment."""
 
-    Selected artifacts supply each server project and lock. The child runs
-    from an immutable, source-and-lock-keyed environment so the outer wheel binds
-    the child dependency closure exactly. After the environment for the current
-    spec is confirmed built, older specs of this server are evicted and the
-    private uv cache is pruned, keeping steady-state disk bounded to the newest
-    spec. The in-use marker is held across the whole launch so a concurrent
-    launch or ``cache gc`` never evicts the environment this process is using.
-    """
+    server: str
+    runtime: str
+    project: Path
+    environment: Path
+    cache_root: Path
+    project_sha256: str
+
+
+def _locked_server_runtime(
+    server_path: Path,
+    child_environment: dict[str, str],
+) -> _LockedServerRuntime:
+    """Materialize the server project and point ``child_environment`` at its env."""
     # The descriptor names the runtime; a tree generated before descriptors
     # existed has none, and every server in such a tree is Python.
     descriptor = read_server_descriptor(server_path)
@@ -507,46 +525,78 @@ def _run_locked_local_server(
         child_environment["UV_CACHE_DIR"] = str((cache_root / "uv-cache").resolve())
         child_environment["UV_PRERELEASE"] = "allow"
         child_environment.pop("VIRTUAL_ENV", None)
+    return _LockedServerRuntime(
+        server=server_path.name,
+        runtime=runtime,
+        project=runtime_project,
+        environment=environment_path,
+        cache_root=cache_root,
+        project_sha256=project_sha256,
+    )
+
+
+def _maintain_cache_after_build(runtime: _LockedServerRuntime, uv: str) -> None:
+    """Evict superseded specs and prune the uv cache; never blocks a launch."""
+    try:
+        maintain_after_build(
+            runtime.cache_root,
+            runtime.server,
+            project_sha256=runtime.project_sha256,
+            uv_executable=uv,
+        )
+    except Exception as exc:  # noqa: BLE001 - launch must never be blocked
+        default_event_emitter(
+            {
+                "event": "cache_maintenance_failed",
+                "server": runtime.server,
+                "reason": repr(exc),
+            }
+        )
+
+
+def _run_locked_local_server(
+    server_path: Path,
+    entry_command: str,
+    args: tuple[str, ...],
+    child_environment: dict[str, str],
+) -> None:
+    """Build, evict, and launch one embedded server from its source-locked cache.
+
+    Selected artifacts supply each server project and lock. The child runs
+    from an immutable, source-and-lock-keyed environment so the outer wheel binds
+    the child dependency closure exactly. After the environment for the current
+    spec is confirmed built, older specs of this server are evicted and the
+    private uv cache is pruned, keeping steady-state disk bounded to the newest
+    spec. The in-use marker is held across the whole launch so a concurrent
+    launch or ``cache gc`` never evicts the environment this process is using.
+    """
+    runtime = _locked_server_runtime(server_path, child_environment)
 
     try:
-        environment_path.mkdir(parents=True, exist_ok=True)
+        runtime.environment.mkdir(parents=True, exist_ok=True)
     except OSError:
         pass
-    with EnvironmentInUseMarker(cache_root, environment_path.name):
+    with EnvironmentInUseMarker(runtime.cache_root, runtime.environment.name):
         if cached_build(
-            runtime,
-            runtime_project,
+            runtime.runtime,
+            runtime.project,
             lambda: _build_locked_environment(
-                runtime, runtime_project, entry_command, child_environment
+                runtime.runtime, runtime.project, entry_command, child_environment
             ),
         ):
-            try:
-                maintain_after_build(
-                    cache_root,
-                    server_path.name,
-                    project_sha256=project_sha256,
-                    uv_executable=uv_command(),
-                )
-            except Exception as exc:  # noqa: BLE001 - launch must never be blocked
-                default_event_emitter(
-                    {
-                        "event": "cache_maintenance_failed",
-                        "server": server_path.name,
-                        "reason": repr(exc),
-                    }
-                )
+            _maintain_cache_after_build(runtime, uv_command())
         else:
             default_event_emitter(
                 {
                     "event": "cache_maintenance_skipped",
-                    "server": server_path.name,
+                    "server": runtime.server,
                     "reason": "environment_build_failed",
                 }
             )
             raise click.ClickException(
-                f"Failed to build locked {runtime} server {server_path.name}"
+                f"Failed to build locked {runtime.runtime} server {runtime.server}"
             )
-        cmd = locked_server_command(runtime_project, entry_command, runtime)
+        cmd = locked_server_command(runtime.project, entry_command, runtime.runtime)
         cmd.extend(args)
         _run_child_command(cmd, entry_command, child_environment)
 
@@ -569,29 +619,46 @@ def _build_locked_environment(
     inputs rather than of when it happened to run.
     """
     try:
-        command = build_command(
-            runtime,
-            runtime_project,
-            entry_command,
-            executable=runtime_executable(runtime),
+        completed = _run_locked_build(
+            runtime, runtime_project, entry_command, child_environment
         )
     except UnsupportedRuntime as exc:
         sys.stderr.write(f"{exc}\n")
         return False
-    try:
-        completed = subprocess.run(
-            command,
-            env=child_environment,
-            capture_output=True,
-            cwd=str(runtime_project) if build_runs_in_project(runtime) else None,
-        )
     except OSError:
         return False
+    return completed.returncode == 0
+
+
+def _run_locked_build(
+    runtime: str,
+    runtime_project: Path,
+    entry_command: str,
+    child_environment: dict[str, str],
+) -> subprocess.CompletedProcess[bytes]:
+    """Run one runtime's lock-only build, echoing its output to stderr.
+
+    Raises ``UnsupportedRuntime`` when the toolchain is missing and ``OSError``
+    when the build cannot be spawned. stdin is never read.
+    """
+    command = build_command(
+        runtime,
+        runtime_project,
+        entry_command,
+        executable=runtime_executable(runtime),
+    )
+    completed = subprocess.run(
+        command,
+        env=child_environment,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        cwd=str(runtime_project) if build_runs_in_project(runtime) else None,
+    )
     for stream in (completed.stdout, completed.stderr):
         if stream:
             sys.stderr.write(stream.decode("utf-8", errors="replace"))
     sys.stderr.flush()
-    return completed.returncode == 0
+    return completed
 
 
 def _run_child_command(

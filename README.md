@@ -177,6 +177,9 @@ clio-kit mcp-servers
 clio-kit mcp-server hdf5
 clio-kit mcp-server pandas
 clio-kit mcp-server slurm
+
+# Build a server's environment without starting it (safe to repeat)
+clio-kit mcp-server --prepare hdf5
 ```
 
 Once 2.11.0 is published, install it with `uv tool install 'clio-kit>=2.11.0'`
