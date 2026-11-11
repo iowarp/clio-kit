@@ -13,7 +13,9 @@ keywords = ["web", "fetch", "search", "mcp", "llm-integration", "agentic-web"]
 
 dependencies = [
     "fastmcp[tasks]>=4.1.2,<5",
-    "httpx>=0.27.0",
+    # The Windows mxc sandbox proxy exports ALL_PROXY=socks5h:// to confined servers;
+    # httpx raises at client construction without socksio.
+    "httpx[socks]>=0.27.0",
     "trafilatura>=1.12",
     "readability-lxml>=0.8",
     "ddgs>=6.0",
