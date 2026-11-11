@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import contextlib
 import dataclasses
 import hashlib
 import importlib.metadata as importlib_metadata
@@ -34,6 +35,7 @@ from clio_kit.env_cache import (
     default_event_emitter,
     maintain_after_build,
 )
+from clio_kit.environment_build import locked_environment_build
 from clio_kit.plugins import PLUGIN_COMMANDS
 from clio_kit.runtime_build import cached_build
 from clio_kit.retired_servers import unknown_server_lines
@@ -554,6 +556,31 @@ def _maintain_cache_after_build(runtime: _LockedServerRuntime, uv: str) -> None:
         )
 
 
+def _locked_environment_build(
+    runtime: _LockedServerRuntime, uv: str, child_environment: dict[str, str]
+) -> contextlib.AbstractContextManager[None]:
+    """Serialize a Python environment's build and heal a half-built one first.
+
+    Node and Go install into the content-addressed materialized project, and
+    ``cached_build`` already serializes them, so they only need the directory.
+    """
+    if runtime.runtime != "python":
+        try:
+            runtime.environment.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
+        return contextlib.nullcontext()
+    return locked_environment_build(
+        runtime.cache_root,
+        runtime.environment,
+        server=runtime.server,
+        uv=uv,
+        project=runtime.project,
+        child_environment=child_environment,
+        emit=default_event_emitter,
+    )
+
+
 def _run_locked_local_server(
     server_path: Path,
     entry_command: str,
@@ -572,19 +599,24 @@ def _run_locked_local_server(
     """
     runtime = _locked_server_runtime(server_path, child_environment)
 
-    try:
-        runtime.environment.mkdir(parents=True, exist_ok=True)
-    except OSError:
-        pass
-    with EnvironmentInUseMarker(runtime.cache_root, runtime.environment.name):
-        if cached_build(
-            runtime.runtime,
-            runtime.project,
-            lambda: _build_locked_environment(
-                runtime.runtime, runtime.project, entry_command, child_environment
-            ),
-        ):
-            _maintain_cache_after_build(runtime, uv_command())
+    uv = uv_command()
+    with contextlib.ExitStack() as held:
+        # The in-use marker is entered inside the build lock, so a launcher
+        # waiting for the lock never looks like a live holder of the
+        # environment being healed, and it stays held for the whole launch.
+        with _locked_environment_build(runtime, uv, child_environment):
+            held.enter_context(
+                EnvironmentInUseMarker(runtime.cache_root, runtime.environment.name)
+            )
+            built = cached_build(
+                runtime.runtime,
+                runtime.project,
+                lambda: _build_locked_environment(
+                    runtime.runtime, runtime.project, entry_command, child_environment
+                ),
+            )
+        if built:
+            _maintain_cache_after_build(runtime, uv)
         else:
             default_event_emitter(
                 {

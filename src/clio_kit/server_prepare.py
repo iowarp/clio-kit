@@ -9,23 +9,17 @@ build output and cache events go to stderr.
 
 from __future__ import annotations
 
+import contextlib
 import json
-import os
-import shutil
 import subprocess
 import sys
 import time
-from typing import TYPE_CHECKING, NoReturn
+from typing import NoReturn
 
 import click
 
-from clio_kit.env_cache import EnvironmentInUseMarker, default_event_emitter
+from clio_kit.env_cache import EnvironmentInUseMarker
 from clio_kit.runtimes import UnsupportedRuntime
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    from clio_kit import _LockedServerRuntime
 
 # Exit codes and ``error`` kinds are stable: CLIO maps them to its typed
 # provisioning failures.
@@ -119,43 +113,6 @@ def _classify_os_error(exc: OSError) -> str:
     return _classify_build_output(str(exc))
 
 
-def _environment_interpreter(environment: Path) -> Path:
-    if os.name == "nt":
-        return environment / "Scripts" / "python.exe"
-    return environment / "bin" / "python"
-
-
-def _discard_partial_environment(runtime: _LockedServerRuntime) -> None:
-    """Remove a half-built environment uv would refuse ("not a valid Python environment").
-
-    An environment whose build was interrupted (or denied mid-write) is left
-    without a usable interpreter; every later ``uv sync`` then fails on it. It
-    is only removed when no live launcher holds it.
-    """
-    from clio_kit.environment_locks import environment_in_use
-
-    environment = runtime.environment
-    try:
-        if not environment.is_dir() or not any(environment.iterdir()):
-            return
-    except OSError:
-        return
-    if (environment / "pyvenv.cfg").is_file() and _environment_interpreter(
-        environment
-    ).is_file():
-        return
-    if environment_in_use(runtime.cache_root, environment.name):
-        return
-    default_event_emitter(
-        {
-            "event": "partial_environment_discarded",
-            "server": runtime.server,
-            "environment": str(environment),
-        }
-    )
-    shutil.rmtree(environment)
-
-
 def _emit_prepare_result(payload: dict[str, object]) -> None:
     click.echo(json.dumps({"schema": PREPARE_RESULT_SCHEMA, **payload}, sort_keys=True))
 
@@ -203,9 +160,6 @@ def prepare_server(server: str | None, branch: str | None) -> None:
             )
             return
         runtime = kit._locked_server_runtime(server_path, child_environment)
-        if runtime.runtime == "python":
-            _discard_partial_environment(runtime)
-        runtime.environment.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         _prepare_failed(
             server_lower, _classify_os_error(exc), f"{type(exc).__name__}: {exc}"
@@ -226,9 +180,13 @@ def prepare_server(server: str | None, branch: str | None) -> None:
 
     toolchain_kind = "uv_missing" if runtime.runtime == "python" else "build_failed"
     uv = kit.uv_command()
-    with EnvironmentInUseMarker(runtime.cache_root, runtime.environment.name):
+    with contextlib.ExitStack() as held:
         try:
-            built = cached_build(runtime.runtime, runtime.project, build)
+            with kit._locked_environment_build(runtime, uv, child_environment):
+                held.enter_context(
+                    EnvironmentInUseMarker(runtime.cache_root, runtime.environment.name)
+                )
+                built = cached_build(runtime.runtime, runtime.project, build)
         except UnsupportedRuntime as exc:
             _prepare_failed(server_lower, toolchain_kind, str(exc))
         except FileNotFoundError as exc:
