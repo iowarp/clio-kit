@@ -176,8 +176,9 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     assert manifests == [project / "server.json" for project in all_projects]
     assert list(expected_server_versions) == sorted(expected_server_versions)
     assert set(expected_server_versions) == {project.name for project in all_projects}
-    # Every server has a patched HTTP runtime in this coordinated release.
-    assert publish_servers == tuple(sorted(expected_server_versions))
+    # 2.12.1 changes runtime behavior only in ndp; every other server keeps the
+    # contract 2.12.0 published.
+    assert publish_servers == ("ndp",)
     assert marketplace["metadata"]["version"] == expected_version
     assert set(marketplace_plugins) == set(expected_server_versions)
     assert set(bundle_plugins) == set(expected_bundles)

@@ -2,7 +2,33 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
-## 2.12.0 - unreleased
+## 2.12.1 - 2026-11-11
+
+Launcher fixes, and ndp 2.2.8 works against the public NDP catalog. Every
+other MCP server keeps its 2.12.0 version.
+
+- **Self-healing server environments**: a Python server environment left
+  half-built by an interrupted or denied first build (no `pyvenv.cfg` or
+  interpreter) is set aside and rebuilt on the next launch instead of failing
+  every later start with "not a valid Python environment". A missing
+  environment is created in a temporary sibling directory and renamed into
+  place, and concurrent launches of the same server wait on a per-environment
+  build lock (#403).
+- **`clio-kit mcp-server --prepare <server>`** builds or syncs a server's
+  environment without starting it, prints one `clio-kit.mcp-prepare.v1` JSON
+  result line, and exits with a typed code: 1 unknown server, 10 build failed,
+  11 access denied, 12 path too long, 13 network, 14 uv missing. It is safe to
+  repeat (#402).
+- **ndp 2.2.8 defaults to the public NDP catalog**: with no configuration the
+  server now queries the NDP CKAN catalog at
+  `https://nationaldataplatform.org/catalog` (override with `NDP_CATALOG_URL`)
+  instead of a retired endpoint that no longer answers. Setting `NDP_API_URL`
+  still selects a self-hosted NDP Endpoint API, which is required for the
+  `local` and `pre_ckan` catalogs. Connection errors name the URL and the
+  variable that controls it, and the `ndp://catalogs` resource reports the
+  active backend (#401).
+
+## 2.12.0 - 2026-11-08
 
 Five servers gain tool behavior found by running them through a coding agent
 (Clio Coder) on planted scientific datasets. Every other server takes a patch

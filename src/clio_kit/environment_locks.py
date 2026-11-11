@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Final
 
@@ -42,14 +43,57 @@ class EnvironmentInUseMarker:
             self._handle = None
 
 
-def environment_in_use(cache_root: Path, env_dir_name: str) -> bool:
+class EnvironmentBuildLock:
+    """Serialize building one environment across launcher processes.
+
+    The context value says whether this process holds the lock exclusively.
+    Only an exclusive holder may discard or replace the environment directory;
+    after ``timeout`` seconds a waiter proceeds without it, so a wedged builder
+    can delay a launch but never deadlock it.
+    """
+
+    def __init__(
+        self, cache_root: Path, env_dir_name: str, *, timeout: float = 600.0
+    ) -> None:
+        self._path = (
+            cache_root / ENVIRONMENTS_DIRNAME / LOCKS_DIRNAME / f"{env_dir_name}.build"
+        )
+        self._timeout = timeout
+        self._handle: _FileLock | None = None
+
+    def __enter__(self) -> bool:
+        try:
+            self._path.parent.mkdir(parents=True, exist_ok=True)
+            handle = _FileLock(self._path)
+            deadline = time.monotonic() + self._timeout
+            while not handle.try_acquire():
+                if time.monotonic() >= deadline:
+                    return False
+                time.sleep(0.2)
+        except OSError:
+            return False
+        self._handle = handle
+        return True
+
+    def __exit__(self, *_exc: object) -> None:
+        if self._handle is not None:
+            self._handle.release()
+            self._handle = None
+
+
+def environment_in_use(
+    cache_root: Path, env_dir_name: str, *, ignore_current_process: bool = False
+) -> bool:
     """Return whether any live launcher currently holds this environment."""
 
     lock_dir = locks_dir(cache_root, env_dir_name)
     if not lock_dir.is_dir():
         return False
+    own_marker = f"{os.getpid()}.lock"
     in_use = False
     for lock_path in lock_dir.glob("*.lock"):
+        if ignore_current_process and lock_path.name == own_marker:
+            continue
         probe = _FileLock(lock_path)
         if probe.try_acquire():
             probe.release()

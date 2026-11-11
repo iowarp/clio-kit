@@ -10,9 +10,17 @@ from dotenv import load_dotenv
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 from fastmcp.prompts import Message
-from pydantic import BaseModel, Field
+from pydantic import Field
 from typing_extensions import NotRequired, TypedDict
 
+from ndp_mcp.clients import (
+    NDP_API_URL_ENV,
+    NDP_CATALOG_URL_ENV,
+    Dataset,
+    NDPCatalogClient,
+    NDPClient,  # noqa: F401  (re-exported for callers and tests)
+    create_ndp_client,
+)
 from ndp_mcp.staging_utils import _clean_max_bytes, _parse_resource_size_bytes, _safe_filename
 
 # Environment setup
@@ -21,7 +29,7 @@ load_dotenv()
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "ndp",
-    version="2.2.7",
+    version="2.2.8",
     instructions=(
         "Discovers and explores scientific datasets from the National Data Platform "
         "(NDP) and stages their resources for analysis. Use search_datasets to find "
@@ -150,18 +158,6 @@ def _stage_pelican_resource(
     }
 
 
-class Dataset(BaseModel):
-    """Model for dataset information from NDP API."""
-
-    id: str
-    name: str
-    title: str
-    owner_org: str | None = None
-    notes: str | None = None
-    resources: list[dict[str, Any]] = Field(default_factory=list)
-    extras: dict[str, Any] | None = None
-
-
 # --- Structured result shapes (drive real MCP outputSchema declarations) ----
 
 
@@ -243,139 +239,7 @@ class StageResourceResult(TypedDict):
     _meta: NotRequired[ToolMeta]
 
 
-class NDPClient:
-    """Client for interacting with NDP API with retry logic and error handling."""
-
-    def __init__(self, base_url: str | None = None):
-        # NDP_API_URL overrides the default public NDP endpoint.
-        base_url = base_url or os.getenv("NDP_API_URL") or "http://155.101.6.191:8003"
-        self.base_url = base_url.rstrip("/")
-        self.timeout = httpx.Timeout(30.0)
-        self.max_retries = 3
-        self.retry_delay = 1.0
-
-    async def _make_request(  # type: ignore[return]
-        self,
-        method: str,
-        endpoint: str,
-        params: dict[str, Any] | None = None,
-        json_data: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """Make HTTP request with retry logic."""
-        url = f"{self.base_url}{endpoint}"
-
-        for attempt in range(self.max_retries):
-            try:
-                async with httpx.AsyncClient(timeout=self.timeout) as client:
-                    if method.upper() == "GET":
-                        response = await client.get(url, params=params)
-                    elif method.upper() == "POST":
-                        response = await client.post(url, params=params, json=json_data)
-                    else:
-                        raise ValueError(f"Unsupported HTTP method: {method}")
-
-                    response.raise_for_status()
-                    return response.json()  # type: ignore[no-any-return]
-
-            except httpx.TimeoutException:
-                if attempt < self.max_retries - 1:
-                    await asyncio.sleep(self.retry_delay * (2**attempt))
-                    continue
-                raise Exception(f"Request timed out after {self.max_retries} attempts") from None
-            except httpx.HTTPStatusError as e:
-                if e.response.status_code >= 500 and attempt < self.max_retries - 1:
-                    await asyncio.sleep(self.retry_delay * (2**attempt))
-                    continue
-                raise Exception(f"HTTP {e.response.status_code}: {e.response.text}") from e
-            except Exception as e:
-                if attempt < self.max_retries - 1:
-                    await asyncio.sleep(self.retry_delay * (2**attempt))
-                    continue
-                raise Exception(f"Request failed: {str(e)}") from e
-
-    async def list_organizations(
-        self, name_filter: str | None = None, server: str = "global"
-    ) -> list[str]:
-        """List organizations from NDP API."""
-        params = {"server": server}
-        if name_filter:
-            params["name"] = name_filter
-
-        result = await self._make_request("GET", "/organization", params=params)
-        return result if isinstance(result, list) else []
-
-    async def search_datasets_simple(
-        self, terms: list[str], keys: list[str] | None = None, server: str = "global"
-    ) -> list[Dataset]:
-        """Search datasets using simple term-based search."""
-        params = {"server": server}
-
-        # Add terms as query parameters
-        for term in terms:
-            params.setdefault("terms", []).append(term)  # type: ignore[attr-defined, arg-type]
-
-        # Add keys if provided
-        if keys:
-            for key in keys:
-                params.setdefault("keys", []).append(key)  # type: ignore[attr-defined, arg-type]
-
-        result = await self._make_request("GET", "/search", params=params)
-
-        if isinstance(result, list):
-            return [Dataset(**item) for item in result]
-        return []
-
-    async def search_datasets_advanced(
-        self,
-        dataset_name: str | None = None,
-        dataset_title: str | None = None,
-        owner_org: str | None = None,
-        resource_url: str | None = None,
-        resource_name: str | None = None,
-        dataset_description: str | None = None,
-        resource_description: str | None = None,
-        resource_format: str | None = None,
-        search_term: str | None = None,
-        filter_list: list[str] | None = None,
-        timestamp: str | None = None,
-        server: str = "global",
-    ) -> list[Dataset]:
-        """Search datasets using advanced search with specific field filtering."""
-        search_data = {"server": server}
-
-        # Add all non-None parameters to the search
-        if dataset_name:
-            search_data["dataset_name"] = dataset_name
-        if dataset_title:
-            search_data["dataset_title"] = dataset_title
-        if owner_org:
-            search_data["owner_org"] = owner_org
-        if resource_url:
-            search_data["resource_url"] = resource_url
-        if resource_name:
-            search_data["resource_name"] = resource_name
-        if dataset_description:
-            search_data["dataset_description"] = dataset_description
-        if resource_description:
-            search_data["resource_description"] = resource_description
-        if resource_format:
-            search_data["resource_format"] = resource_format
-        if search_term:
-            search_data["search_term"] = search_term
-        if filter_list:
-            search_data["filter_list"] = filter_list  # type: ignore[assignment]
-        if timestamp:
-            search_data["timestamp"] = timestamp
-
-        result = await self._make_request("POST", "/search", json_data=search_data)
-
-        if isinstance(result, list):
-            return [Dataset(**item) for item in result]
-        return []
-
-
-# Initialize NDP client
-ndp_client = NDPClient()
+ndp_client = create_ndp_client()
 
 
 @mcp.tool(
@@ -487,32 +351,6 @@ async def search_datasets(
             "(see list_organizations). Listing the whole catalogue is not supported."
         )
     try:
-        # Determine which search method to use
-        if search_terms:
-            # Use simple search
-            datasets = await ndp_client.search_datasets_simple(
-                terms=search_terms, keys=search_keys, server=server
-            )
-        else:
-            # Use advanced search
-            datasets = await ndp_client.search_datasets_advanced(
-                dataset_name=dataset_name,
-                dataset_title=dataset_title,
-                owner_org=owner_org,
-                resource_url=resource_url,
-                resource_name=resource_name,
-                dataset_description=dataset_description,
-                resource_description=resource_description,
-                resource_format=resource_format,
-                search_term=search_term,
-                filter_list=filter_list,
-                timestamp=timestamp,
-                server=server,
-            )
-
-        # Store total count before limiting
-        total_found = len(datasets)
-
         # Convert limit to integer if it's a string
         if isinstance(limit, str):
             try:
@@ -522,10 +360,42 @@ async def search_datasets(
 
         # Apply limit if specified, or default limit of 20 to prevent huge responses
         effective_limit = limit if limit and limit > 0 else 20
-        was_limited = len(datasets) > effective_limit
 
-        if len(datasets) > effective_limit:
-            datasets = datasets[:effective_limit]
+        advanced_filters: dict[str, Any] = {
+            "dataset_name": dataset_name,
+            "dataset_title": dataset_title,
+            "owner_org": owner_org,
+            "resource_url": resource_url,
+            "resource_name": resource_name,
+            "dataset_description": dataset_description,
+            "resource_description": resource_description,
+            "resource_format": resource_format,
+            "search_term": search_term,
+            "filter_list": filter_list,
+            "timestamp": timestamp,
+            "server": server,
+        }
+        if isinstance(ndp_client, NDPCatalogClient):
+            # Fetch only the page needed; the catalog reports the full hit count.
+            if search_terms:
+                datasets, total_found = await ndp_client.search_datasets_simple_page(
+                    terms=search_terms, keys=search_keys, server=server, limit=effective_limit
+                )
+            else:
+                datasets, total_found = await ndp_client.search_datasets_advanced_page(
+                    **advanced_filters, limit=effective_limit
+                )
+        elif search_terms:
+            datasets = await ndp_client.search_datasets_simple(
+                terms=search_terms, keys=search_keys, server=server
+            )
+            total_found = len(datasets)
+        else:
+            datasets = await ndp_client.search_datasets_advanced(**advanced_filters)
+            total_found = len(datasets)
+
+        was_limited = total_found > effective_limit
+        datasets = datasets[:effective_limit]
 
         # A search hit is a pointer, not the record. Returning every resource dict
         # and extras blob made a 20-row result exceed the client token cap; the
@@ -576,7 +446,14 @@ async def get_dataset_details(
     """Get detailed information about a specific dataset."""
     try:
         # Search for the specific dataset
-        if identifier_type == "id":
+        if isinstance(ndp_client, NDPCatalogClient) and identifier_type in ("id", "name"):
+            found = await ndp_client.get_dataset(dataset_identifier, server=server)
+            matching_dataset = (
+                found
+                if found is not None and getattr(found, identifier_type) == dataset_identifier
+                else None
+            )
+        elif identifier_type == "id":
             # Filter server-side: an unfiltered search returns the whole
             # catalogue and times out upstream.
             datasets = await ndp_client.search_datasets_advanced(
@@ -739,8 +616,18 @@ async def stage_resource(
 @mcp.resource("ndp://catalogs")
 def available_catalogs() -> dict[str, Any]:
     """List of available NDP dataset catalogs."""
+    if isinstance(ndp_client, NDPCatalogClient):
+        return {
+            "catalogs": ["global"],
+            "backend": {"type": "ckan", "url": ndp_client.base_url, "env": NDP_CATALOG_URL_ENV},
+            "description": (
+                "Public NDP catalog. Set NDP_API_URL to an NDP Endpoint API to also "
+                "reach the 'local' and 'pre_ckan' catalogs."
+            ),
+        }
     return {
         "catalogs": ["global", "local", "pre_ckan"],
+        "backend": {"type": "endpoint_api", "url": ndp_client.base_url, "env": NDP_API_URL_ENV},
         "description": "Available NDP data catalogs",
     }
 
