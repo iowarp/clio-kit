@@ -110,6 +110,67 @@ def test_built_wheel_default_spack_entry_exposes_exact_admin_profile(
     assert {tool["name"] for tool in tools} == {"spack_environment"}
 
 
+def test_built_wheel_ships_and_lists_the_a2ui_skill(
+    built_root_wheel: Path,
+    tmp_path: Path,
+) -> None:
+    """The `skills/` shared-data dir round-trips through a real wheel build:
+    `clio-kit skills` lists the shipped A2UI skill with no dev-checkout on disk."""
+    uvx = shutil.which("uvx")
+    assert uvx is not None, "uvx is required for built-wheel tests"
+
+    completed = subprocess.run(
+        [
+            uvx,
+            "--isolated",
+            "--refresh",
+            "--from",
+            str(built_root_wheel),
+            "clio-kit",
+            "skills",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=_wheel_environment(tmp_path),
+        timeout=120,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "author-a2ui-surfaces" in completed.stdout
+
+
+def test_built_wheel_prints_the_a2ui_skill_body(
+    built_root_wheel: Path,
+    tmp_path: Path,
+) -> None:
+    """`clio-kit skill author-a2ui-surfaces` prints the real SKILL.md from the wheel."""
+    uvx = shutil.which("uvx")
+    assert uvx is not None, "uvx is required for built-wheel tests"
+
+    completed = subprocess.run(
+        [
+            uvx,
+            "--isolated",
+            "--refresh",
+            "--from",
+            str(built_root_wheel),
+            "clio-kit",
+            "skill",
+            "author-a2ui-surfaces",
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=_wheel_environment(tmp_path),
+        timeout=120,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "name: author-a2ui-surfaces" in completed.stdout
+    assert "create_a2ui_surface" in completed.stdout
+
+
 def _wheel_environment(
     tmp_path: Path, *, fake_home: Path | None = None
 ) -> dict[str, str]:
