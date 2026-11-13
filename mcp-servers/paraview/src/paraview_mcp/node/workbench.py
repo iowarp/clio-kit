@@ -61,12 +61,22 @@ def _value(value: Any) -> str:
     return str(value)
 
 
-def _depths(objects: list[dict[str, Any]]) -> dict[str, int]:
-    depth: dict[str, int] = {}
+def pipeline_order(objects: list[dict[str, Any]]) -> list[tuple[dict[str, Any], int]]:
+    """Objects as ParaView's pipeline browser lists them: each under its input."""
+    ids = {o["id"] for o in objects}
+    children: dict[str | None, list[dict[str, Any]]] = {}
     for item in objects:
-        parent = item.get("input")
-        depth[item["id"]] = depth.get(parent, -1) + 1 if parent else 0
-    return depth
+        parent = item.get("input") if item.get("input") in ids else None
+        children.setdefault(parent, []).append(item)
+    out: list[tuple[dict[str, Any], int]] = []
+
+    def walk(parent: str | None, depth: int) -> None:
+        for item in children.get(parent, []):
+            out.append((item, depth))
+            walk(item["id"], depth + 1)
+
+    walk(None, 0)
+    return out
 
 
 def _color_items(info: dict[str, Any]) -> list[dict[str, str]]:
@@ -198,17 +208,16 @@ class Workbench:
             active = scene["selection"].get("object") or active
         if active not in ids:
             active = ids[-1] if ids else None
-        depths = _depths(objects)
         state.clio_objects = [
             {
                 "id": o["id"],
                 "label": o.get("label") or o.get("type"),
                 "type": o.get("type"),
-                "depth": depths[o["id"]],
+                "depth": depth,
                 "visible": (o.get("display") or {}).get("visible", True),
                 "removable": o is not objects[0] and o["kind"] != "session",
             }
-            for o in objects
+            for o, depth in pipeline_order(objects)
         ]
         state.clio_parallel = bool(
             (scene.get("camera") or {}).get("parallel_projection")

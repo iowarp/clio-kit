@@ -261,3 +261,22 @@ def test_information_shows_short_property_values() -> None:
         {"key": "Scalars", "value": "POINTS, p"},
         {"key": "LowerThreshold", "value": "1.759e-25"},
     ]
+
+
+def test_the_pipeline_lists_each_object_under_its_input() -> None:
+    from paraview_mcp.node.workbench import pipeline_order
+
+    objects = [
+        {"id": "o1"},
+        {"id": "o2", "input": "o1"},
+        {"id": "o3", "input": "o1"},
+        {"id": "o4", "input": "o2"},
+        {"id": "o5", "input": "o3"},
+    ]
+    assert [(o["id"], d) for o, d in pipeline_order(objects)] == [
+        ("o1", 0),
+        ("o2", 1),
+        ("o4", 2),
+        ("o3", 1),
+        ("o5", 2),
+    ]
