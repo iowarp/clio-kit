@@ -78,6 +78,35 @@ def load_data(file_path: str) -> pd.DataFrame:
         raise
 
 
+def load_leading_rows(
+    file_path: str, columns: List[str], max_rows: int
+) -> tuple[pd.DataFrame, bool]:
+    """Read only ``columns`` and the first ``max_rows`` rows of a data file.
+
+    The row cap bounds the work, not just the output (#346): a 50 MB CSV
+    parsed in full timed out even when only 500 rows were wanted. The header
+    is read first so a missing column still names the columns that exist.
+    One row past the cap is read to report whether the file was cut short.
+
+    Returns:
+        The rows, and True when the file has more rows than ``max_rows``.
+    """
+    if file_path.endswith(".csv"):
+        reader = pd.read_csv
+    elif file_path.endswith((".xlsx", ".xls")):
+        reader = pd.read_excel
+    else:
+        raise ValueError(f"Unsupported file format: {file_path}")
+    available = reader(file_path, nrows=0).columns.tolist()
+    missing = [col for col in columns if col not in available]
+    if missing:
+        raise ValueError(
+            f"Column(s) not found in data: {missing}. Available columns: {available}"
+        )
+    df = reader(file_path, usecols=list(dict.fromkeys(columns)), nrows=max_rows + 1)
+    return df.head(max_rows), len(df) > max_rows
+
+
 def _require_numeric(df: pd.DataFrame, column: str) -> None:
     """Reject a text column where the plot needs numbers on the y axis."""
     if not pd.api.types.is_numeric_dtype(df[column]):
@@ -570,17 +599,8 @@ def create_timeseries_plot(
         if not selected_y:
             raise ValueError("At least one y column is required for a time-series plot")
 
-        df = load_data(file_path)
         row_limit = max(1, int(max_rows))
-        if len(df) > row_limit:
-            df = df.head(row_limit)
-
-        missing = [col for col in [x_column, *selected_y] if col not in df.columns]
-        if missing:
-            raise ValueError(
-                f"Column(s) not found in data: {missing}. "
-                f"Available columns: {df.columns.tolist()}"
-            )
+        df, truncated = load_leading_rows(file_path, [x_column, *selected_y], row_limit)
 
         x_raw = ["" if pd.isna(v) else str(v) for v in df[x_column].tolist()]
         x_axis = _infer_x_axis(x_raw)
@@ -651,6 +671,7 @@ def create_timeseries_plot(
             "y_columns": sorted(plotted),
             "title": title or os.path.basename(file_path),
             "data_points": len(x_raw),
+            "truncated": truncated,
         }
     except Exception as e:
         logger.error(f"Error creating timeseries plot: {e}")

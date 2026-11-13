@@ -219,6 +219,55 @@ def test_create_timeseries_max_rows_limits_points(datetime_csv):
     os.unlink(f.name)
 
 
+def test_create_timeseries_reports_truncation(datetime_csv, tmp_path):
+    """The result says when max_rows cut the file short, so callers can disclose it."""
+    capped = create_timeseries_plot(
+        datetime_csv, "timestamp", "temperature", None, str(tmp_path / "a.png"), 3
+    )
+    whole = create_timeseries_plot(
+        datetime_csv, "timestamp", "temperature", None, str(tmp_path / "b.png"), 5
+    )
+    assert (capped["data_points"], capped["truncated"]) == (3, True)
+    assert (whole["data_points"], whole["truncated"]) == (5, False)
+
+
+def test_create_timeseries_never_parses_rows_past_max_rows(tmp_path):
+    """#346: the cap bounds the work. The rows past it here are malformed, so a
+    reader that parses the whole file before slicing fails; a capped read does not."""
+    path = tmp_path / "long.csv"
+    rows = ["t,v", *(f"{i},{i * 0.5}" for i in range(10)), *(["bad,row,extra"] * 3)]
+    path.write_text("\n".join(rows) + "\n")
+    with pytest.raises(pd.errors.ParserError):
+        pd.read_csv(path)
+
+    result = create_timeseries_plot(
+        str(path), "t", "v", None, str(tmp_path / "out.png"), max_rows=5
+    )
+
+    assert result["status"] == "success", result
+    assert (result["data_points"], result["truncated"]) == (5, True)
+
+
+def test_create_timeseries_reads_only_the_plotted_columns(tmp_path, monkeypatch):
+    """Unplotted columns are not parsed either."""
+    path = tmp_path / "wide.csv"
+    pd.DataFrame({"t": [1, 2], "v": [1.0, 2.0], "notes": ["a", "b"]}).to_csv(
+        path, index=False
+    )
+    calls = []
+    real_read_csv = pd.read_csv
+
+    def spy(*args, **kwargs):
+        calls.append(kwargs)
+        return real_read_csv(*args, **kwargs)
+
+    monkeypatch.setattr(pd, "read_csv", spy)
+    result = create_timeseries_plot(str(path), "t", "v", None, str(tmp_path / "o.png"))
+
+    assert result["status"] == "success"
+    assert [c.get("usecols") for c in calls if c.get("nrows")] == [["t", "v"]]
+
+
 def test_create_timeseries_missing_column(datetime_csv):
     result = create_timeseries_plot(
         datetime_csv, "timestamp", "does_not_exist", None, "out.png"
@@ -267,6 +316,10 @@ def test_create_timeseries_excel_input():
             result = create_timeseries_plot(src.name, "day", "metric", None, out.name)
             assert result["status"] == "success"
             assert os.path.exists(out.name)
+            capped = create_timeseries_plot(
+                src.name, "day", "metric", None, out.name, max_rows=2
+            )
+            assert (capped["data_points"], capped["truncated"]) == (2, True)
         os.unlink(out.name)
     os.unlink(src.name)
 
