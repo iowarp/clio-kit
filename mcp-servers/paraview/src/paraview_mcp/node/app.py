@@ -123,7 +123,25 @@ def register_composite_serializers() -> None:
         actor = rep.GetScalarBarActor() if rep.GetVisibility() else None
         if actor is None:
             return None
-        return scalar_bar_actor_serializer(parent, actor, rep_id, context, depth)
+        found = scalar_bar_actor_serializer(parent, actor, rep_id, context, depth)
+        if found is not None:
+            # trame-vtk puts every legend in one place; set them side by side.
+            props = parent.GetViewProps()
+            shown = [
+                props.GetItemAsObject(i)
+                for i in range(props.GetNumberOfItems())
+                if props.GetItemAsObject(i).GetClassName()
+                == "vtkPVScalarBarRepresentation"
+                and props.GetItemAsObject(i).GetVisibility()
+            ]
+            index = next((i for i, p in enumerate(shown) if p is rep), 0)
+            if index:  # the first keeps trame-vtk's own place at the right edge
+                found["properties"].update(
+                    automated=False,
+                    boxPosition=[0.72 - 0.24 * (index - 1), -0.9],
+                    boxSize=[0.2, 1.2],
+                )
+        return found
 
     register_instance_serializer("vtkPVScalarBarRepresentation", scalar_bar)
 
