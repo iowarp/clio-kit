@@ -298,3 +298,157 @@ def test_reported_version_matches_the_node_folder_version() -> None:
     from paraview_mcp import server
 
     assert server.mcp.version == config.SERVER_VERSION
+
+
+def _fake_ssh(tmp_path: Path, script: str) -> None:
+    fake = tmp_path / "ssh"
+    fake.write_text("#!/bin/sh\n" + script)
+    fake.chmod(0o755)
+
+
+def test_the_via_value_is_used_only_without_a_config_jump(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from paraview_mcp.transport import SshTransport
+
+    _fake_ssh(tmp_path, 'case "$*" in *" -G node"*) echo "proxyjump login";; esac\n')
+    monkeypatch.setenv("PATH", f"{tmp_path}:/usr/bin:/bin")
+    configured = SshTransport(Target("node", "other"))
+    bare = SshTransport(Target("bare", "other"))
+    try:
+        assert configured.jump_host() == "login"
+        assert bare.config_jump() is None and bare.jump_host() == "other"
+    finally:
+        configured.close()
+        bare.close()
+
+
+def test_a_password_host_fails_at_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from paraview_mcp.transport import SshTransport
+
+    _fake_ssh(
+        tmp_path,
+        'case "$*" in *" -G "*) exit 0;; esac\n'
+        'echo "u@locked: Permission denied (password)." >&2; exit 255\n',
+    )
+    monkeypatch.setenv("PATH", f"{tmp_path}:/usr/bin:/bin")
+    transport = SshTransport(Target("locked"))
+    with pytest.raises(ParaViewError) as caught:
+        transport.open()
+    assert caught.value.code == "interactive_sign_in"
+    assert not transport.folder.exists()
+
+
+class _FakeClient:
+    def __init__(self, results: dict) -> None:
+        self.results = results
+        self.calls: list[tuple[str, dict]] = []
+
+    def command(self, name: str, args: dict) -> dict:
+        self.calls.append((name, args))
+        return self.results[name]
+
+
+class _FakeLink:
+    local_port = 43210
+    token = "secret-token-value"
+
+    def __init__(self, client: _FakeClient) -> None:
+        self.client = client
+
+
+class _FakeAttacher:
+    def __init__(self, client: _FakeClient) -> None:
+        self.link = _FakeLink(client)
+        self.settings = Settings(target=Target("node", "login"))
+
+    def ensure(self) -> _FakeLink:
+        return self.link
+
+    def describe(self) -> dict:
+        return {"where": "on node through login", "paraview": "6.2.1", "folder": "/f"}
+
+
+SUMMARY = {
+    "scene": "cube-1",
+    "dataset": {"path": "/d/cube.vti", "growing": False},
+    "objects": [
+        {
+            "id": "o1",
+            "label": "cube.vti",
+            "kind": "reader",
+            "type": "XMLImageDataReader",
+            "display": {"visible": True, "representation": "Outline"},
+        }
+    ],
+    "time": {"steps": 1},
+    "view": {"mode": "local", "geometry_mb": 0.1, "threshold_mb": 20.0},
+    "camera": {"position": [0, 0, 1], "focal_point": [0, 0, 0], "view_up": [0, 1, 0]},
+}
+
+
+async def test_tools_pass_one_command_and_keep_the_token_private(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from paraview_mcp import server
+
+    png = "iVBORw0KGgo="
+    client = _FakeClient(
+        {
+            "open_view": SUMMARY,
+            "create_filter": {"object": {**SUMMARY["objects"][0], "id": "o2"}},
+            "measure_field": {
+                "field": "p",
+                "association": "POINTS",
+                "component": "magnitude",
+                "object": "o1",
+                "count": 2,
+                "finite": 2,
+                "min": 0.0,
+                "max": 1.0,
+                "mean": 0.5,
+                "median": 0.5,
+                "std": 0.5,
+                "histogram": {"edges": [0.0, 1.0], "counts": [2]},
+            },
+            "capture": {
+                "png_base64": png,
+                "path": "/f/c.png",
+                "camera": SUMMARY["camera"],
+            },
+            "scene_state": SUMMARY,
+            "inspect_selection": {"selection": None, "message": "Nothing is picked."},
+        }
+    )
+    monkeypatch.setattr(server, "_attacher", _FakeAttacher(client))
+    async with Client(mcp) as mcp_client:
+        opened = await mcp_client.call_tool("open_view", {"path": "/d/cube.vti"})
+        await mcp_client.call_tool(
+            "create_filter", {"filter": "Contour", "properties": {"Isosurfaces": [1]}}
+        )
+        measured = await mcp_client.call_tool("measure_field", {"field": "p"})
+        captured = await mcp_client.call_tool("capture", {})
+        state = await mcp_client.call_tool("scene_state", {})
+        picked = await mcp_client.call_tool("inspect_selection", {})
+    service = opened.meta["ai.iowarp.clio/service"]
+    assert service == {"port": 43210, "token": "secret-token-value"}
+    visible = json.dumps([c.model_dump() for c in opened.content]) + json.dumps(
+        opened.structured_content
+    )
+    assert "secret-token-value" not in visible
+    assert "Scene cube-1 on node through login" in opened.content[0].text
+    assert client.calls[0] == (
+        "open_view",
+        {"path": "/d/cube.vti", "growing": False, "new": False},
+    )
+    assert client.calls[1][1] == {
+        "filter": "Contour",
+        "properties": {"Isosurfaces": [1]},
+        "hide_input": False,
+    }
+    assert "mean 0.5" in measured.content[0].text
+    assert [c.type for c in captured.content] == ["text", "image"]
+    assert "Attached on node through login" in state.content[0].text
+    assert picked.content[0].text == "Nothing is picked."
