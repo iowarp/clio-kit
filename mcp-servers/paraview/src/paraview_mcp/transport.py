@@ -178,7 +178,9 @@ class SshTransport:
             "-o",
             "ServerAliveCountMax=3",
             "-o",
-            f"ControlPath={self.socket}",
+            # Relative to the folder every ssh here runs in: a host's temporary
+            # folder can be too deep for a Unix socket path (about 104 bytes).
+            f"ControlPath={self.socket.name}",
         ]
 
     def config_jump(self) -> str | None:
@@ -189,6 +191,7 @@ class SshTransport:
             text=True,
             timeout=30,
             check=False,
+            cwd=self.folder,
         )
         for line in done.stdout.splitlines():
             key, _, value = line.partition(" ")
@@ -223,6 +226,7 @@ class SshTransport:
                 stdout=subprocess.DEVNULL,
                 stderr=log,
                 start_new_session=True,
+                cwd=self.folder,
             )
         deadline = time.monotonic() + 2 * self.connect_timeout + 10
         while time.monotonic() < deadline:
@@ -246,6 +250,7 @@ class SshTransport:
             capture_output=True,
             timeout=15,
             check=False,
+            cwd=self.folder,
         )
         return done.returncode == 0
 
@@ -267,6 +272,7 @@ class SshTransport:
                 capture_output=True,
                 timeout=timeout,
                 check=False,
+                cwd=self.folder,
             )
         except subprocess.TimeoutExpired as exc:
             raise ParaViewError(
@@ -293,6 +299,7 @@ class SshTransport:
                 capture_output=True,
                 timeout=15,
                 check=False,
+                cwd=self.folder,
             )
             self.forwards.remove((local, remote))
         port = local_port or free_port()
@@ -309,6 +316,7 @@ class SshTransport:
             text=True,
             timeout=15,
             check=False,
+            cwd=self.folder,
         )
         if done.returncode != 0:
             raise ParaViewError(
@@ -331,6 +339,7 @@ class SshTransport:
                 capture_output=True,
                 timeout=15,
                 check=False,
+                cwd=self.folder,
             )
             try:
                 self.master.wait(timeout=5)
