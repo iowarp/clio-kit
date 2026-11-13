@@ -20,40 +20,40 @@ import MCPDetail from '@site/src/components/MCPDetail';
 
 {/* clio-kit:usage:start */}
 
-### Basic Scientific Data Visualization
+### Open and measure
+
 ```
-Load /data/simulation_output.vtk with temperature data, create an isosurface at temperature 300, 
-apply Blue to Red color map preset, and take a high-resolution screenshot.
+Open /data/run42/output.pvd and show an isosurface of pressure at 0.2.
+What is the temperature range on that surface?
 ```
 
-### Volume Visualization with Flow Analysis
+The view opens in a live window you can rotate. The agent reads numbers with
+`measure_field` and `inspect_selection` and sees the view with `capture`.
+
+### ParaView on another machine
+
 ```
-Using /data/fluid_dynamics.bp5, create volume rendering of pressure field with Rainbow color map,
-add streamlines to visualize flow patterns, and adjust opacity for better visibility.
+Connect to the ParaView on node08, through login. It needs `module load paraview` first.
+Then open /scratch/me/run42/output.pvd.
 ```
 
-### Multi-Slice Data Exploration
+Where ParaView runs is a setting of the server, not a tool: `PARAVIEW_ADDRESS` (an SSH
+host), `PARAVIEW_VIA` (a jump host) and `PARAVIEW_PREPARE` (a line run first). The host
+must accept your SSH key or agent; a host that asks for a password or a one-time code
+fails at once. ParaView 6.0 or later is required there.
+
+### A series still being written
+
 ```
-Load /data/medical_scan.vti, get array info to identify density field, create three orthogonal slices 
-through the center, color by density field using Viridis preset, and export slices to VTK format.
+Open /scratch/me/run42/*.vti as a growing series and follow the latest step.
 ```
 
-### Advanced ADIOS2/BP5 Analysis
-```
-Query metadata from /data/checkpoint.bp5 to list available timesteps and variables, 
-convert to VTK format, create histogram of temperature distribution, apply threshold filter 
-to extract hot regions (>500K), and visualize with appropriate color mapping.
-```
+### In CLIO
 
-### Interactive Camera Control
-```
-Load /data/molecule.vtk, create isosurface of electron density, rotate camera 45 degrees around Y axis,
-zoom in to focus on binding site, set camera position for optimal viewing angle, and save multiple viewpoints.
-```
-
-### Native backend configuration
-
-Use a Python interpreter matching the ParaView build, with native modules on `PYTHONPATH` and dependency libraries on `LD_LIBRARY_PATH`. Rendering tools run on the same MCP thread to preserve the graphics context. Headless GLX builds may require Xvfb; the local acceptance test rendered a sphere through native pvserver.
+In CLIO this server is the ParaView connector: enable it in Settings, Extensions, and
+the agent can set the three values itself. See
+[Connectors](https://clio.iowarp.ai/docs/connectors/#paraview) and
+[Apps](https://clio.iowarp.ai/docs/apps/).
 
 {/* clio-kit:usage:end */}
 
