@@ -12,6 +12,7 @@ import pytest
 from fastmcp import Client
 
 from paraview_mcp import attach, config, present
+from paraview_mcp import server as server_module
 from paraview_mcp.config import Settings, Target
 from paraview_mcp.errors import ParaViewError, no_paraview
 from paraview_mcp.server import mcp
@@ -42,6 +43,32 @@ async def test_tools_list_without_paraview() -> None:
     # Only the opening call carries the view.
     assert all("ui" not in (t.meta or {}) for n, t in tools.items() if n != "open_view")
     assert not any("connect" in name for name in tools)
+
+
+async def test_path_arguments_are_declared_where_paraview_runs() -> None:
+    """CLIO reads ``ai.iowarp.clio/paths`` to tell a path on the ParaView machine from one
+    on its own: no provenance warning for a remote open, no sandbox note for a remote
+    denial, and never a local file mistaken for the remote one."""
+    async with Client(mcp) as client:
+        tools = {tool.name: tool for tool in await client.list_tools()}
+    declared = {
+        name: (tool.meta or {}).get("ai.iowarp.clio/paths")
+        for name, tool in tools.items()
+        if (tool.meta or {}).get("ai.iowarp.clio/paths")
+    }
+    # The test process sets no address: ParaView runs on this machine.
+    assert declared == {
+        "open_view": {"path": {"machine": "local", "access": "read"}},
+        "export_artifact": {"path": {"machine": "local", "access": "write"}},
+        "export_scene": {"path": {"machine": "local", "access": "write"}},
+    }
+    assert tools["open_view"].meta["ui"]["resourceUri"] == "ui://paraview/view"
+    remote = server_module.path_arguments(Target(address="node08"), path="read")
+    assert remote == {
+        "ai.iowarp.clio/paths": {
+            "path": {"machine": "remote", "host": "node08", "access": "read"}
+        }
+    }
 
 
 async def test_view_resource_is_an_mcp_app() -> None:
