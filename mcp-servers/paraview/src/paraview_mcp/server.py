@@ -28,6 +28,9 @@ from .link import LinkError
 
 VIEW_URI = "ui://paraview/view"
 SERVICE_META = "ai.iowarp.clio/service"
+# What a host replays to reopen the view: the scene, never the call. A call with
+# new=true started an empty scene; replaying it would wipe what was built since.
+REOPEN_META = "ai.iowarp.clio/reopen"
 
 mcp: FastMCP = FastMCP(
     "paraview",
@@ -118,7 +121,10 @@ def open_view(
     return ToolResult(
         content=[_text(text)],
         structured_content={"scene": summary["scene"], "summary": summary},
-        meta={SERVICE_META: {"port": link.local_port, "token": link.token}},
+        meta={
+            SERVICE_META: {"port": link.local_port, "token": link.token},
+            REOPEN_META: {"arguments": {"scene": summary["scene"]}},
+        },
     )
 
 

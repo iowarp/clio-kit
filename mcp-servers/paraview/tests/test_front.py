@@ -434,6 +434,8 @@ async def test_tools_pass_one_command_and_keep_the_token_private(
         picked = await mcp_client.call_tool("inspect_selection", {})
     service = opened.meta["ai.iowarp.clio/service"]
     assert service == {"port": 43210, "token": "secret-token-value"}
+    # A reopen replays the scene, whatever the call was (new=true would empty it).
+    assert opened.meta["ai.iowarp.clio/reopen"] == {"arguments": {"scene": "cube-1"}}
     visible = json.dumps([c.model_dump() for c in opened.content]) + json.dumps(
         opened.structured_content
     )
