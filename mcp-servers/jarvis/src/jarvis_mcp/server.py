@@ -41,6 +41,8 @@ from .capabilities.jarvis_handler import (
     build_pipeline_env,
 )
 from .models._base import _ClosedDocument
+from .step_settings import ADD_STEP, APPEND_PKG, CONFIGURE_PKG, edit_step_settings
+from .step_settings import package_settings
 from .models.artifact_documents import (
     ExecutionArtifactQuery,
     JarvisArtifactDocument,
@@ -578,7 +580,7 @@ async def append_pkg_tool(
         pkg_id=pkg_id,
         do_configure=do_configure,
         target=target,
-        **(extra_args or {}),
+        **package_settings(extra_args, APPEND_PKG),
     )
 
 
@@ -597,7 +599,8 @@ async def configure_pkg_tool(
     pipeline_id: str, pkg_id: str, extra_args: Optional[dict] = None
 ) -> dict:
     """Configure a package in a pipeline with new settings."""
-    return await configure_pkg(pipeline_id, pkg_id, **(extra_args or {}))
+    settings = package_settings(extra_args, CONFIGURE_PKG)
+    return await configure_pkg(pipeline_id, pkg_id, **settings)
 
 
 @mcp.tool(
@@ -901,7 +904,7 @@ async def jarvis_add_step_tool(
         do_configure=True,
         agent_visible_only=True,
         target=target,
-        **(config or {}),
+        **package_settings(config, ADD_STEP),
     )
 
 
@@ -926,17 +929,11 @@ async def jarvis_edit_step_tool(
     operation: Literal["edit", "remove"] = "edit",
 ) -> dict:
     """Edit or remove one pipeline step with explicit conditional arguments."""
+    settings = edit_step_settings(config, operation)
     if operation == "edit":
-        if config is None:
-            raise ToolError("config is required when operation='edit'")
         return await configure_pkg(
-            pipeline_id,
-            step_id,
-            agent_visible_only=True,
-            **config,
+            pipeline_id, step_id, agent_visible_only=True, **settings
         )
-    if config not in (None, {}):
-        raise ToolError("config is not accepted when operation='remove'")
     return await unlink_pkg(pipeline_id, step_id)
 
 
