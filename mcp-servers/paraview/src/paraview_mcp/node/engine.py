@@ -423,7 +423,12 @@ class Engine(SceneReading):
         return total_kb / 1024.0
 
     def update_view_mode(self) -> str:
-        """Choose local or remote rendering from the geometry size."""
+        """Choose local or remote rendering from the geometry size and what is shown.
+
+        The browser's renderer draws surfaces, lines and points but not a volume, so a
+        visible object shown as ``Volume`` is drawn by ParaView; ``reason`` says why the
+        view is remote (``volume`` or ``geometry``) so the view and the agent can say so.
+        """
         scene = self.scene
         if scene is None:
             return "local"
@@ -431,8 +436,16 @@ class Engine(SceneReading):
         size = self.geometry_mb()
         view_state["geometry_mb"] = round(size, 3)
         view_state["threshold_mb"] = self.threshold_mb
+        volume = any(
+            (item.get("display") or {}).get("visible", True)
+            and (item.get("display") or {}).get("representation") == "Volume"
+            for item in scene.get("objects", [])
+        )
+        view_state["reason"] = (
+            "volume" if volume else "geometry" if size > self.threshold_mb else None
+        )
         if not view_state.get("pinned"):
-            view_state["mode"] = "remote" if size > self.threshold_mb else "local"
+            view_state["mode"] = "remote" if view_state["reason"] else "local"
         return view_state["mode"]
 
     def set_view_mode(self, mode: str) -> None:

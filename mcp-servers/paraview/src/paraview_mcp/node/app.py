@@ -302,10 +302,13 @@ class NodeApp:
             mode = scene["view"].get("mode", "local")
             state.viewMode = mode
             size = scene["view"].get("geometry_mb", 0)
+            switched = mode == "remote" and not scene["view"].get("pinned")
             state.clio_mode_note = (
-                f"Switched: geometry {size:.1f} MB, over {engine.threshold_mb:g} MB"
-                if mode == "remote" and not scene["view"].get("pinned")
-                else ""
+                ""
+                if not switched
+                else "Switched: a volume is drawn on the ParaView machine"
+                if scene["view"].get("reason") == "volume"
+                else f"Switched: geometry {size:.1f} MB, over {engine.threshold_mb:g} MB"
             )
         time_state = engine.time_summary()
         state.clio_steps = time_state.get("steps", 0)

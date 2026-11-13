@@ -298,7 +298,7 @@ def test_remote_mode_above_threshold(tmp_path: Path) -> None:
         os.environ["HOME"] = saved
 
 
-def _pvpython_script(name: str, *args: str) -> dict:
+def _pvpython_script(name: str, *args: str, prefix: str = "COLORS=") -> dict:
     """Run tests/pvpython/<name> with pvpython; return its JSON report."""
     import subprocess
 
@@ -319,7 +319,7 @@ def _pvpython_script(name: str, *args: str) -> dict:
         timeout=300,
         check=False,
     )
-    line = next((x for x in done.stdout.splitlines() if x.startswith("COLORS=")), None)
+    line = next((x for x in done.stdout.splitlines() if x.startswith(prefix)), None)
     assert line, done.stdout[-2000:] + done.stderr[-2000:]
     return json.loads(line.split("=", 1)[1])
 
@@ -335,6 +335,14 @@ def test_colour_maps_survive_a_restart_and_do_not_leak(tmp_path: Path) -> None:
     assert restored["preset"] == "Inferno" and restored["legend"] is True
     assert restored["recorded"] == {"o1": None, "o2": "Inferno", "o3": "Inferno"}
     assert restored["reps"]["o2"] == [["POINTS", "RTData"], 0.7]
+
+
+def test_a_volume_is_drawn_on_the_paraview_machine(tmp_path: Path) -> None:
+    """The browser cannot draw a volume, so showing one switches the view to remote."""
+    seen = _pvpython_script("view_mode_check.py", str(tmp_path), prefix="VIEW=")
+    assert seen["opened"]["mode"] == "local"
+    assert seen["Volume"]["mode"] == "remote" and seen["Volume"]["reason"] == "volume"
+    assert seen["Surface"]["mode"] == "local" and seen["Surface"]["reason"] is None
 
 
 def test_the_panel_runs_the_same_commands(tmp_path: Path) -> None:

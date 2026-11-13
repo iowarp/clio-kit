@@ -271,6 +271,10 @@ def test_present_scene_text_names_the_scene_and_keeps_no_secret() -> None:
     assert "Scene wave-1 on node08" in text
     assert "step 2 of 4" in text and "2 newer step(s)" in text
     assert "remote rendering" in text and "30.00 MB" in text
+    volume = present.view_line(
+        {"mode": "remote", "reason": "volume", "geometry_mb": 0.2, "threshold_mb": 20.0}
+    )
+    assert "a volume is shown, which only ParaView draws" in volume
     assert "scene='wave-1'" in text
 
 
