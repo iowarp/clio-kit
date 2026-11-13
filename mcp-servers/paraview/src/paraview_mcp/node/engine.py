@@ -109,6 +109,10 @@ class Engine(SceneReading):
         from paraview import simple
 
         self.simple = simple
+        # paraview.simple resets the camera on a process's first Render. The engine owns
+        # the camera (a new scene fits it; a restored one applies its saved camera), so
+        # that reset would undo a restored camera (FN-O3).
+        simple._DisableFirstRenderCameraReset()
         self.root = root
         self.threshold_mb = float(threshold_mb)
         self.session = session

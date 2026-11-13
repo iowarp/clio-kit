@@ -337,6 +337,18 @@ def test_colour_maps_survive_a_restart_and_do_not_leak(tmp_path: Path) -> None:
     assert restored["reps"]["o2"] == [["POINTS", "RTData"], 0.7]
 
 
+def test_the_camera_comes_back_exactly_after_a_restart(tmp_path: Path) -> None:
+    """paraview.simple resets the camera on a process's first render; a restored
+    scene's saved camera must survive it (FN-O3)."""
+    built = _pvpython_script(
+        "camera_check.py", str(tmp_path), "build", prefix="CAMERA="
+    )
+    restored = _pvpython_script(
+        "camera_check.py", str(tmp_path), "restore", prefix="CAMERA="
+    )
+    assert restored == built
+
+
 def test_a_volume_is_drawn_on_the_paraview_machine(tmp_path: Path) -> None:
     """The browser cannot draw a volume, so showing one switches the view to remote."""
     seen = _pvpython_script("view_mode_check.py", str(tmp_path), prefix="VIEW=")
