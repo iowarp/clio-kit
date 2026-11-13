@@ -2,6 +2,28 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
+## 2.12.6 - 2026-11-13
+
+adios 2.3.2 and paraview 2.2.8 install adios2 from wheels on macOS, hdf5 2.3.1
+keeps its metrics inside the cache directory it was granted, and every Python
+server runs on Python 3.12. Every other MCP server keeps the version it already
+published.
+
+- **adios2 wheels on macOS**: adios and paraview now require adios2
+  2.13.0.1001 or later, the first release with macOS wheels, so their first
+  prepare on a Mac no longer compiles adios2 from source. Both servers are
+  relocked; Windows still skips adios2 (#417).
+- **hdf5 writes only where it is allowed**: hdf5 no longer creates
+  `~/.hdf5_mcp` when it is imported. Metrics are saved under the server's
+  granted cache directory, which is created only when metrics are first
+  written (#418).
+- **Python 3.12 for every Python server**: each Python server carries a
+  `.python-version` of 3.12, so uv never picks a newer interpreter for which
+  some dependencies have no wheels and must build from source (#419).
+- **Windows can build clio-kit from source**: the wheel build hook reads
+  component sources as UTF-8 instead of the locale encoding, which failed with
+  a cp1252 `UnicodeDecodeError` on Windows (#421).
+
 ## 2.12.5 - 2026-11-13
 
 adios 2.3.1 no longer builds adios2 from source on Windows. Every other MCP

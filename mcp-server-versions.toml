@@ -3,11 +3,12 @@ schema-version = 1
 # Publish new immutable server releases when schemas, runtime behavior or locked
 # dependencies change. A dependency security update warrants a patch release even
 # when the tool schema is unchanged. Never reuse an already-published version.
-# 2.12.5: adios 2.3.1 skips adios2 on Windows, where no wheel exists, and reports
-# its BP5 read tools as unavailable there; every other server keeps the version
-# and contract it already published.
+# 2.12.6: adios 2.3.2 and paraview 2.2.8 relock with adios2 >= 2.13.0.1001 so
+# macOS installs from wheels, and hdf5 2.3.1 keeps metrics under a granted cache
+# directory; every other server keeps the version and contract it already
+# published.
 [mcp-registry-release]
-publish = ["adios"]
+publish = ["adios", "hdf5", "paraview"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
@@ -78,20 +79,20 @@ general = ["compression", "web"]
 # intentionally independent of the clio-kit PyPI distribution version, which
 # only identifies the wheel containing the server implementations.
 [servers]
-adios = "2.3.1"
+adios = "2.3.2"
 arxiv = "2.2.7"
 chronolog = "2.0.5"
 compression = "2.2.7"
 darshan = "2.2.7"
 geo = "2.3.3"
-hdf5 = "2.3.0"
+hdf5 = "2.3.1"
 jarvis = "3.7.6"
 lmod = "3.0.3"
 ndp = "2.2.8"
 node-hardware = "2.3.2"
 pandas = "2.4.0"
 parallel-sort = "2.3.2"
-paraview = "2.2.7"
+paraview = "2.2.8"
 parquet = "2.3.0"
 plot = "2.2.7"
 scientific-catalog = "1.1.6"

@@ -41,7 +41,7 @@
       "key": "mcpServers"
     }
   },
-  "version": "2.12.5",
+  "version": "2.12.6",
   "publishers": [
     {
       "id": "clio-kit",
@@ -153,7 +153,7 @@
       "description": "Fetch and analyze BP5 data files using ADIOS2. Access scientific data, metadata, and attributes for research and analysis purposes.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.3.1",
+      "version": "2.3.2",
       "category": "Scientific data",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/adios",
@@ -736,7 +736,7 @@
       "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.3.0",
+      "version": "2.3.1",
       "category": "Scientific data",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/hdf5",
@@ -1413,7 +1413,7 @@
       "description": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.2.7",
+      "version": "2.2.8",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/paraview",
