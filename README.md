@@ -457,7 +457,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 
 | 📦 **Package** | 📌 **Ver** | 🔧 **System** | 📋 **Description** | ⚡ **Install Command** |
 |:---|:---:|:---:|:---|:---|
-| **`adios`** | 2.3.0 | Data I/O | Read data using ADIOS2 engine | `clio-kit mcp-server adios` |
+| **`adios`** | 2.3.1 | Data I/O | Read data using ADIOS2 engine | `clio-kit mcp-server adios` |
 | **`arxiv`** | 2.2.7 | Research | Fetch research papers from ArXiv | `clio-kit mcp-server arxiv` |
 | **`chronolog`** | 2.0.5 | Logging | Log and retrieve data from ChronoLog | `clio-kit mcp-server chronolog` |
 | **`compression`** | 2.2.7 | Utilities | File compression with gzip | `clio-kit mcp-server compression` |
