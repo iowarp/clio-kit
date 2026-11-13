@@ -34,7 +34,11 @@ def main(out: Path) -> dict[str, Any]:
     seen: dict[str, Any] = {}
     for name, args in {
         "points": {"object": "o1", "representation": "Points"},
-        "surface_opacity": {"object": "o1", "representation": "Surface", "opacity": 0.5},
+        "surface_opacity": {
+            "object": "o1",
+            "representation": "Surface",
+            "opacity": 0.5,
+        },
     }.items():
         try:
             result = engine.run("set_representation", args)
