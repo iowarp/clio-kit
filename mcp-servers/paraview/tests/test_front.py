@@ -379,9 +379,11 @@ class _FakeClient:
     def __init__(self, results: dict) -> None:
         self.results = results
         self.calls: list[tuple[str, dict]] = []
+        self.actors: list[str] = []
 
-    def command(self, name: str, args: dict) -> dict:
+    def command(self, name: str, args: dict, by: str = "agent") -> dict:
         self.calls.append((name, args))
+        self.actors.append(by)
         return self.results[name]
 
 
@@ -488,3 +490,22 @@ async def test_tools_pass_one_command_and_keep_the_token_private(
     assert [c.type for c in captured.content] == ["text", "image"]
     assert "Attached on node through login" in state.content[0].text
     assert picked.content[0].text == "Nothing is picked."
+
+
+async def test_a_call_the_host_marks_as_a_views_is_the_persons(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """JR-P12: a dashboard's linked chart moves the time; the change log says the person."""
+    from paraview_mcp import server
+
+    client = _FakeClient({"set_timestep": {"time": {"steps": 1}}})
+    monkeypatch.setattr(server, "_attacher", _FakeAttacher(client))
+    async with Client(mcp) as mcp_client:
+        await mcp_client.call_tool("set_timestep", {"index": 2})
+        await mcp_client.call_tool(
+            "set_timestep", {"index": 3}, meta={server.ORIGIN_META: "view"}
+        )
+        await mcp_client.call_tool(
+            "set_timestep", {"index": 4}, meta={server.ORIGIN_META: "something else"}
+        )
+    assert client.actors == ["agent", "person", "agent"]

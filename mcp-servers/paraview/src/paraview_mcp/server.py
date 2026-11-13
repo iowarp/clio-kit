@@ -32,6 +32,8 @@ SERVICE_META = "ai.iowarp.clio/service"
 # new=true started an empty scene; replaying it would wipe what was built since.
 REOPEN_META = "ai.iowarp.clio/reopen"
 PATHS_META = "ai.iowarp.clio/paths"
+#: Set by the host on a call a view or a person made, not the agent ("view").
+ORIGIN_META = "ai.iowarp.clio/origin"
 
 mcp: FastMCP = FastMCP(
     "paraview",
@@ -63,12 +65,26 @@ def _fail(exc: ParaViewError) -> ToolError:
     return ToolError(f"{exc.message} [{exc.code}]")
 
 
+def actor() -> str:
+    """Who asked for this call: ``person`` when the host marks it as a view's, else ``agent``.
+
+    CLIO marks a call a view makes (the person's click, a dashboard's linked chart) with
+    ``_meta["ai.iowarp.clio/origin"] = "view"``; every other call is the agent's.
+    """
+    from fastmcp.server.dependencies import fastmcp_request_ctx
+
+    request = fastmcp_request_ctx.get()
+    meta = getattr(request, "meta", None) if request is not None else None
+    origin = meta.get(ORIGIN_META) if isinstance(meta, dict) else None
+    return "person" if origin in ("view", "person") else "agent"
+
+
 def command(name: str, args: dict[str, Any]) -> tuple[Any, Any]:
     """Run one scene command on the node half; return (result, link)."""
     clean = {k: v for k, v in args.items() if v is not None}
     try:
         link = attacher().ensure()
-        return link.client.command(name, clean), link
+        return link.client.command(name, clean, by=actor()), link
     except ParaViewError as exc:
         raise _fail(exc) from exc
     except LinkError as exc:
