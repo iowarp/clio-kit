@@ -1,0 +1,17 @@
+# netCDF-4: climate, ocean and atmosphere data.
+# Verified against a file written by netCDF4-python 1.7.4 (netCDF-C 4.9.3).
+# `_NCProperties` exists since netCDF-C 4.4; older files only carry
+# `_Netcdf4Dimid` on their dimension scales.
+id: netcdf4
+container: hdf5
+version_hint: attr:/@_NCProperties
+detect:
+  - any:
+      - attr: /@_NCProperties
+      - attr: _Netcdf4Dimid
+locate_primary:
+  # Variables, as opposed to dimension scales, carry a DIMENSION_LIST.
+  - datasets_with_attr: DIMENSION_LIST
+schema:
+  kind: netcdf-data-model
+  source: https://docs.unidata.ucar.edu/netcdf-c/current/file_format_specifications.html

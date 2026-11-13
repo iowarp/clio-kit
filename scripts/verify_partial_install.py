@@ -112,7 +112,10 @@ async def verify(output: Path) -> None:
             "--project",
             str(output / "project"),
         )
-        expect([f"skill/{skill}"])
+        # clio-hdf5 is an Agent Plugin: it ships its skill alongside the MCP
+        # server, so installing it fetches skill/hdf5. The server itself is
+        # still only fetched on first use (below).
+        expect([f"skill/{skill}", "skill/hdf5"])
         data = output / "numbers.h5"
         acceptance.command(
             "prepare-known-hdf5",
@@ -148,7 +151,7 @@ async def verify(output: Path) -> None:
         }
         assert statistics == {"mean": 4.0, "sum": 12.0, "count": 3.0}, responses
         assert "FULL DATA: 3 of 3 elements" in text
-        expect([f"skill/{skill}", "server/hdf5"])
+        expect([f"skill/{skill}", "skill/hdf5", "server/hdf5"])
         acceptance.environment["CLIO_KIT_OFFLINE"] = "1"
         await acceptance.session(
             "cached-hdf5-real-query",
@@ -156,7 +159,7 @@ async def verify(output: Path) -> None:
             [("open_file", {"path": str(data)})],
         )
         del acceptance.environment["CLIO_KIT_OFFLINE"]
-        expect([f"skill/{skill}", "server/hdf5"])
+        expect([f"skill/{skill}", "skill/hdf5", "server/hdf5"])
         command(
             "selected-workflow",
             "plugin",

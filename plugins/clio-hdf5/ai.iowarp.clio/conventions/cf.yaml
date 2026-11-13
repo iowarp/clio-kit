@@ -1,0 +1,16 @@
+# CF metadata conventions, layered on netCDF-4.
+# Verified against a CF-1.8 file written by netCDF4-python 1.7.4. A CF file
+# also matches netcdf4; both ids apply.
+id: cf
+container: hdf5
+extends: netcdf4
+version_hint: attr:/@Conventions
+detect:
+  - attr: /@Conventions
+    contains: CF-
+locate_primary:
+  - datasets_with_attr: DIMENSION_LIST
+  - units: "@units"
+schema:
+  kind: cf-standard-names
+  source: https://cfconventions.org/Data/cf-standard-names/current/src/cf-standard-name-table.xml

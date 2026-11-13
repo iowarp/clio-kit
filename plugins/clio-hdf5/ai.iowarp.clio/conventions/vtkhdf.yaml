@@ -1,0 +1,13 @@
+# VTKHDF: VTK's HDF5 format for simulation and visualization data.
+# Verified against an ImageData file written by VTK's vtkHDFWriter. Where
+# the data lives depends on /VTKHDF@Type.
+id: vtkhdf
+container: hdf5
+version_hint: attr:/VTKHDF@Version
+detect:
+  - attr: /VTKHDF@Type
+locate_primary:
+  - path: /VTKHDF/PointData
+schema:
+  kind: vtkhdf
+  source: https://docs.vtk.org/en/latest/design_documents/VTKFileFormats.html#vtkhdf-file-format

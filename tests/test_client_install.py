@@ -13,10 +13,12 @@ from clio_kit.client_install import (
     tomllib,
 )
 from clio_kit.plugins import plugin_group
+from clio_kit.skills import read_skill_frontmatter
 
 ROOT = Path(__file__).resolve().parents[1]
-# Read from the inventory and the folder, so adding a server to the bundle or
-# a skill to its collection does not need a second edit here.
+# Read from the inventory and the skills' bundle metadata, so adding a server
+# or a skill to the bundle does not need a second edit here. A bundle's skills
+# need not share a folder: a plugin's own skills live in the plugin.
 SERVERS = {
     f"clio-{name}"
     for name in tomllib.loads((ROOT / "mcp-server-versions.toml").read_text())[
@@ -25,7 +27,11 @@ SERVERS = {
 }
 SKILLS = {
     path.parent.name
-    for path in (ROOT / "skills/clio-scientific-io-skills/skills").glob("*/SKILL.md")
+    for path in [
+        *ROOT.glob("skills/*/skills/*/SKILL.md"),
+        *ROOT.glob("plugins/*/skills/*/SKILL.md"),
+    ]
+    if read_skill_frontmatter(path.parent).get("bundle") == "clio-scientific-io"
 }
 
 

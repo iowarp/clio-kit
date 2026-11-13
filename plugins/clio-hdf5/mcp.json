@@ -1,0 +1,10 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "clio-hdf5": {
+      "type": "stdio",
+      "command": "clio-kit",
+      "args": ["mcp-server", "hdf5"]
+    }
+  }
+}

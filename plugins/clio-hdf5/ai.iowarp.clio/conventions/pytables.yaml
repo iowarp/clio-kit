@@ -1,0 +1,10 @@
+# PyTables: Python's HDF5 table library. A badge more than a convention:
+# every node carries CLASS, TITLE and VERSION attributes.
+# Verified against a file written by PyTables 3.11.1.
+id: pytables
+container: hdf5
+version_hint: attr:/@PYTABLES_FORMAT_VERSION
+detect:
+  - attr: /@PYTABLES_FORMAT_VERSION
+locate_primary:
+  - find: {attr: CLASS, equals: TABLE}
