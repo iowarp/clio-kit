@@ -43,7 +43,9 @@ Test knobs: `PARAVIEW_IDLE_SECONDS` (node half idle shutdown, default 1800),
 
 ## The first attach on a machine
 
-The front prepares `~/.clio/paraview/<server version>/` there:
+The front prepares `~/.clio/paraview/<server version>/` there (on this machine,
+clio-kit's own data folder, `<user data>/clio-kit/paraview/<server version>/`,
+which a host that confines the servers it launches lets them write):
 
 - `site/`: trame and trame-vtk, installed for the Python of that machine's
   `pvpython` (ParaView 6.0 or later, Python 3.12). If the machine cannot reach
