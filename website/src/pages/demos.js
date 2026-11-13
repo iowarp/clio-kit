@@ -18,7 +18,7 @@ const demos = [
       ['Recorded', 'November 2025'],
       ['Agent', 'Claude Code · Sonnet 4.5'],
       ['Data', 'InCompact3d pipe flow, BP5 · ParaView 5.13.1'],
-      ['Server', 'The old ParaView server; 3.0.0 replaced its tools with a live view'],
+      ['Server', 'The old ParaView server; 3.0.0 replaced its tools with a live view in a tab'],
     ],
     videos: [
       {
@@ -43,14 +43,10 @@ const demos = [
       'Create three orthogonal slice planes for comprehensive flow analysis: Y-normal slice (horizontal plane) at origin, Z-normal slice (vertical plane) at origin, X-normal slice (front view) at origin.',
       'Create an isosurface for velocity magnitude using ux field at value 0.5 with distinct coloring.',
     ],
-    tools: [
-      'load_scientific_data',
-      'generate_isosurface',
-      'create_data_slice',
-      'set_representation_type',
-      'apply_field_coloring',
-      'set_active_source',
-    ],
+    // The recording called the old server's tools, which 3.0.0 removed. The
+    // list shows the tools that do the same steps today.
+    toolsHeading: 'The same steps with today’s tools',
+    tools: ['open_view', 'measure_field', 'create_filter', 'set_representation', 'capture'],
     about: {
       description:
         'Showcase of IOWarp’s ParaView MCP integration for comprehensive computational fluid dynamics (CFD) visualization, demonstrating automated analysis and rendering of BP5 datasets from pipe flow simulations.',
@@ -417,7 +413,7 @@ function Demo({demo, number}) {
             </ol>
           </div>
           <div>
-            <h3>MCP calls in the recording</h3>
+            <h3>{demo.toolsHeading || 'MCP calls in the recording'}</h3>
             <ul className={d.tools}>
               {demo.tools.map((tool) => (
                 <li key={tool}>

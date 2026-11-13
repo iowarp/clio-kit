@@ -66,7 +66,9 @@ def pulse_step(step: int, n: int = PULSE_N) -> vtkImageData:
     r2 = (x - cx) ** 2 + (y - 0.5) ** 2 + (z - 0.5) ** 2
     pressure = np.exp(-r2 / 0.02)
     temperature = 300.0 + 50.0 * pressure + 5.0 * np.sin(2.0 * math.pi * (x + t))
-    velocity = np.stack([np.full_like(x, 0.6), -(z - 0.5), (y - 0.5)], axis=-1).reshape(-1, 3)
+    velocity = np.stack([np.full_like(x, 0.6), -(z - 0.5), (y - 0.5)], axis=-1).reshape(
+        -1, 3
+    )
     image = vtkImageData()
     image.SetDimensions(n, n, n)
     image.SetSpacing(1.0 / (n - 1), 1.0 / (n - 1), 1.0 / (n - 1))
@@ -95,7 +97,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("out", type=Path)
     parser.add_argument(
-        "--large", type=int, metavar="N", help="write only wavelet_large.vti, an N^3 wavelet"
+        "--large",
+        type=int,
+        metavar="N",
+        help="write only wavelet_large.vti, an N^3 wavelet",
     )
     args = parser.parse_args()
     if args.large:
