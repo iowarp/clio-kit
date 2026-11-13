@@ -420,3 +420,10 @@ def test_the_panel_runs_the_same_commands(tmp_path: Path) -> None:
     texts = [c["text"] for c in report["changes"] if c["by"] == "person"]
     assert "removed o3" in texts and "parallel projection" in texts
     assert report["scene_state_changes"] == report["changes"]
+
+
+def test_a_pdb_molecule_takes_a_representation(tmp_path: Path) -> None:
+    """JR-P13: a PDB reader has no colour association; set_representation works."""
+
+    seen = _pvpython_script("pdb_check.py", str(tmp_path), prefix="PDB=")
+    assert seen == {"points": "Points", "surface_opacity": "Surface"}
