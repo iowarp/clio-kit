@@ -41,7 +41,7 @@
       "key": "mcpServers"
     }
   },
-  "version": "2.12.4",
+  "version": "2.12.5",
   "publishers": [
     {
       "id": "clio-kit",
