@@ -34,6 +34,26 @@ REOPEN_META = "ai.iowarp.clio/reopen"
 PATHS_META = "ai.iowarp.clio/paths"
 #: Set by the host on a call a view or a person made, not the agent ("view").
 ORIGIN_META = "ai.iowarp.clio/origin"
+#: What the view reports in ui/update-model-context, for a host linking it to a dashboard.
+STATE_META = "ai.iowarp.clio/state"
+VIEW_STATE = [
+    {"key": "time", "tool": "set_timestep", "description": "The shown time value."},
+    {"key": "time_index", "description": "The shown step, from 0."},
+    {"key": "time_steps", "description": "How many steps the data has."},
+    {"key": "latest_time", "description": "The newest time value written."},
+    {
+        "key": "follow_latest",
+        "description": "Whether the view follows the newest step.",
+    },
+    {
+        "key": "selection",
+        "description": "The point the person picked, with its values.",
+    },
+    {"key": "scene", "description": "The scene id."},
+    {"key": "dataset", "description": "The open dataset."},
+    {"key": "active_object", "description": "The object the panel shows."},
+    {"key": "view_mode", "description": "Local or remote rendering."},
+]
 
 mcp: FastMCP = FastMCP(
     "paraview",
@@ -124,7 +144,7 @@ def _text(text: str) -> TextContent:
 @mcp.tool(
     app=AppConfig(resource_uri=VIEW_URI),
     annotations={"title": "Open a ParaView view", "openWorldHint": True},
-    meta=_paths(path="read"),
+    meta={**_paths(path="read"), STATE_META: VIEW_STATE},
 )
 def open_view(
     path: Annotated[

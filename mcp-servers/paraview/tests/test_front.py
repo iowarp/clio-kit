@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from importlib import resources
+
 import io
 import json
 import os
@@ -509,3 +511,24 @@ async def test_a_call_the_host_marks_as_a_views_is_the_persons(
             "set_timestep", {"index": 4}, meta={server.ORIGIN_META: "something else"}
         )
     assert client.actors == ["agent", "person", "agent"]
+
+
+async def test_open_view_declares_what_its_view_reports() -> None:
+    """FP-D11: the keys a dashboard links by, and the tool that sets the time."""
+    from paraview_mcp import server
+
+    async with Client(mcp) as client:
+        tools = {tool.name: tool for tool in await client.list_tools()}
+    declared = tools["open_view"].meta[server.STATE_META]
+    assert {
+        "key": "time",
+        "tool": "set_timestep",
+        "description": "The shown time value.",
+    } in (declared)
+    view = (resources.files("paraview_mcp") / "view.html").read_text()
+    for entry in declared:
+        assert f"{entry['key']}:" in view, entry["key"]
+    set_timestep = tools["set_timestep"].inputSchema["properties"]
+    assert all(
+        e.get("tool") != "set_timestep" or e["key"] in set_timestep for e in declared
+    )
