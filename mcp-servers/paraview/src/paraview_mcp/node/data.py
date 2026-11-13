@@ -70,6 +70,31 @@ def find_association(proxy: Any, field: str) -> str:
     )
 
 
+def color_component(
+    proxy: Any, color_by: list[str] | None, component: Any
+) -> int | None:
+    """Check a colour component: None for the magnitude, else an index of the field."""
+    if not color_by:
+        raise DataError(
+            "no_color_field",
+            "Colour the object by a field before choosing a component.",
+        )
+    if str(component).lower() == "magnitude":
+        return None
+    arrays = proxy.PointData if color_by[0] == "POINTS" else proxy.CellData
+    count = int(arrays[color_by[1]].GetNumberOfComponents())
+    try:
+        index = int(component)
+    except (TypeError, ValueError):
+        index = {"x": 0, "y": 1, "z": 2}.get(str(component).lower(), -1)
+    if not 0 <= index < count:
+        raise DataError(
+            "bad_component",
+            f"{color_by[1]} has {count} component(s); give Magnitude or 0 to {count - 1}.",
+        )
+    return index
+
+
 def _datasets(proxy: Any) -> list[Any]:
     """Fetch ``proxy``'s output and return its leaf datasets."""
     from paraview import servermanager

@@ -21,6 +21,7 @@ class SceneReading:
     scene: dict[str, Any] | None
     proxies: dict[str, Any]
     session: str | None
+    changes: Any
 
     # Provided by the engine.
     def require_scene(self) -> dict[str, Any]:
@@ -147,7 +148,7 @@ class SceneReading:
                 "known_scenes": manifest.known_scenes(self.root),
                 "session": self.session,
             }
-        return self.summary()
+        return {**self.summary(), "changes": self.changes.recent()}
 
     # -- summaries ------------------------------------------------------------
     def object_summary(self, item: dict[str, Any]) -> dict[str, Any]:

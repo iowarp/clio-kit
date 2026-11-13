@@ -91,7 +91,7 @@ def test_platform_tags() -> None:
 
 def test_build_script_pins_packages_and_targets_pvpython_python() -> None:
     script = attach.build_script(
-        "/home/u/.clio/paraview/3.0.0",
+        "/home/u/.clio/paraview/3.1.0",
         {"python": "3.12", "platform": "linux-x86_64", "machine": "x86_64"},
         "/opt/pv/bin/pvpython",
     )

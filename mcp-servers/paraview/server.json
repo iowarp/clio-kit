@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/paraview-mcp",
   "title": "CLIO Paraview",
   "description": "See and measure 3D scientific data in ParaView, on this machine or over SSH, in a live view.",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"

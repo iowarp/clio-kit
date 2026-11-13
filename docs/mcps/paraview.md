@@ -10,7 +10,7 @@ import MCPDetail from '@site/src/components/MCPDetail';
   icon="🧊"
   category="Data Processing"
   description="See and measure 3D scientific data in ParaView, on this machine or over SSH, in a live view."
-  version="3.0.0"
+  version="3.1.0"
   actions={["open_view", "create_filter", "remove_scene_object", "set_representation", "set_timestep", "set_camera", "fit_camera", "inspect_selection", "measure_field", "capture", "export_artifact", "export_scene", "scene_state"]}
   platforms={["claude", "cursor", "vscode"]}
   keywords={["MCP", "ParaView", "trame", "visualization", "scientific", "3D", "SSH"]}

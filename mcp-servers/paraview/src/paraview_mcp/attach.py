@@ -3,7 +3,7 @@
 The node half lives in ``~/.clio/paraview/<server version>/`` on the machine
 where ParaView runs:
 
-- ``site/``: trame and trame-vtk, built for that machine's pvpython;
+- ``site/``: trame, trame-vtk and trame-vuetify, built for that machine's pvpython;
 - ``code/``: the node half's code, copied over the same connection;
 - ``node.json``: the running node half's pid, port and token (mode 0600);
 - ``scenes/<id>/manifest.json``: each scene, written after every commit.
@@ -89,6 +89,12 @@ def probe_script(version: str, folder: str | None = None) -> str:
     return f"""
 D={where}
 mkdir -p "$D" && chmod 700 "$D"
+# A new server version prepares a new folder; its scenes come from the newest older one.
+if [ ! -d "$D/scenes" ]; then
+  for old in $(ls -d "$D"/../*/scenes 2>/dev/null | sort -V -r); do
+    cp -R "$old" "$D/scenes" && break
+  done
+fi
 echo "CLIO_DIR=$D"
 echo "CLIO_PVPYTHON=$(command -v pvpython 2>/dev/null || true)"
 [ -f "$D/env.json" ] && echo "CLIO_ENV=$(cat "$D/env.json")"
@@ -130,7 +136,7 @@ def platform_tags(info: dict[str, Any]) -> tuple[list[str], str]:
 
 
 def build_script(folder: str, pyinfo: dict[str, Any], pvpython: str | None) -> str:
-    """Install trame and trame-vtk into ``folder/site`` for pvpython's Python."""
+    """Install the trame packages into ``folder/site`` for pvpython's Python."""
     pip_plats, uv_plat = platform_tags(pyinfo)
     packages = " ".join(config.NODE_PACKAGES)
     plats = " ".join(f"--platform {p}" for p in pip_plats)
@@ -390,7 +396,7 @@ class Attacher:
         packages = " ".join(config.NODE_PACKAGES)
         raise ParaViewError(
             "no_package_index",
-            "Could not install trame and trame-vtk for the ParaView "
+            "Could not install trame, trame-vtk and trame-vuetify for the ParaView "
             f"{transport.where}: neither it"
             + (f" nor the jump host {jump}" if jump else "")
             + " could reach the Python package index. ("

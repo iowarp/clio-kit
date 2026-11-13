@@ -5,11 +5,11 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-SERVER_VERSION = "3.0.0"
+SERVER_VERSION = "3.1.0"
 DEFAULT_IDLE_SECONDS = 1800.0
 DEFAULT_PVSERVER_PORT = 11111
 # Pinned to the versions this server was qualified with.
-NODE_PACKAGES = ("trame==4.0.0", "trame-vtk==2.11.17")
+NODE_PACKAGES = ("trame==4.0.0", "trame-vtk==2.11.17", "trame-vuetify==3.3.0")
 
 
 def _clean(value: str | None) -> str | None:

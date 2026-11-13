@@ -207,7 +207,7 @@
       "name": "clio-paraview",
       "source": "./plugins/clio-paraview",
       "description": "See and measure 3D scientific data in ParaView, on this machine or over SSH, in a live view.",
-      "version": "3.0.0",
+      "version": "3.1.0",
       "category": "scientific",
       "keywords": [
         "scientific-visualization",

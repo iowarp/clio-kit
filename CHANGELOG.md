@@ -4,6 +4,20 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
 
 ## Unreleased
 
+- **paraview 3.1.0, ParaView controls in the view**: the live view gains a
+  compact left tool rail: a pipeline browser (show, hide, select, remove), an
+  Add filter palette (Contour, Slice, Clip, Threshold, Glyph, Stream Tracer,
+  Calculator) with a short property form, display controls (representation,
+  colour by field and component, colour map, rescale, legend, opacity), camera
+  presets (reset, look along each axis, parallel projection), data
+  information, and play and step controls for time. Every control runs the
+  same command as the agent's tools, and the view reports what the person
+  changed to the agent. `set_representation` takes `component`, `scalar_bar`
+  and `rescale`; `set_camera` takes `direction` and `parallel_projection`;
+  `scene_state` lists recent changes and who made them. The view follows the
+  host's light or dark theme and style variables. The node folder adds
+  trame-vuetify 3.3.0, so ParaView machines prepare a new `3.1.0` folder
+  (saved scenes are carried over).
 - **paraview 3.0.0, rebuilt**: the ParaView server is a new server. A plain
   Python front speaks MCP and lists its tools with no ParaView installed; a
   node half runs in ParaView's own Python on this machine or on another one

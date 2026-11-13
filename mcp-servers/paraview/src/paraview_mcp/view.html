@@ -6,9 +6,18 @@
 <meta name="color-scheme" content="light dark">
 <title>ParaView view</title>
 <style>
-  html, body { margin: 0; height: 100%; font: 13px system-ui, sans-serif; }
-  body { display: flex; flex-direction: column; min-height: 520px; background: Canvas; color: CanvasText; }
-  #status { padding: 6px 10px; border-bottom: 1px solid color-mix(in srgb, CanvasText 20%, transparent); }
+  /* Fallbacks for a host that sends no style variables (MCP Apps theming). */
+  :root {
+    color-scheme: light dark;
+    --color-background-primary: light-dark(#f7f7f5, #1e1f22);
+    --color-text-primary: light-dark(#1f2328, #e6e8eb);
+    --color-border-primary: light-dark(#d4d6da, #3a3d44);
+    --font-sans: system-ui, sans-serif;
+  }
+  html, body { margin: 0; height: 100%; font: 13px var(--font-sans); }
+  body { display: flex; flex-direction: column; min-height: 520px;
+    background: var(--color-background-primary); color: var(--color-text-primary); }
+  #status { padding: 6px 10px; border-bottom: 1px solid var(--color-border-primary); }
   #status[hidden] { display: none; }
   #status button { font: inherit; margin-left: 8px; }
   #frame { flex: 1; width: 100%; border: 0; min-height: 480px; }
@@ -56,6 +65,29 @@
     }
   }
 
+  // The view follows the host's theme and style variables, and passes them on to
+  // the ParaView page so its panel and render view take the same tone.
+  let appliedVariables = [];
+  function sendTheme() {
+    const theme = hostContext && (hostContext.theme === 'dark' || hostContext.theme === 'light')
+      ? hostContext.theme : null;
+    const styles = (hostContext && hostContext.styles) || {};
+    const variables = styles.variables && typeof styles.variables === 'object' ? styles.variables : {};
+    const root = document.documentElement;
+    appliedVariables.forEach((name) => { if (!(name in variables)) root.style.removeProperty(name); });
+    appliedVariables = [];
+    for (const [name, value] of Object.entries(variables)) {
+      if (/^--[A-Za-z0-9-]+$/.test(name) && typeof value === 'string') {
+        root.style.setProperty(name, value);
+        appliedVariables.push(name);
+      }
+    }
+    root.style.colorScheme = theme || 'light dark';
+    if (frame.contentWindow) {
+      frame.contentWindow.postMessage({ type: 'clio.paraview.theme', theme, variables }, '*');
+    }
+  }
+
   function serviceFrom(context) {
     const entry = context && context[SERVICE_KEY];
     return entry && typeof entry.url === 'string' ? entry.url : null;
@@ -87,10 +119,11 @@
       else line += ', parked by the person; ' + t.newer_steps + ' newer step(s) exist, latest time ' + t.latest_time + '.';
       parts.push(line);
     }
-    if (state.representation && state.representation.length) {
-      parts.push('Shown: ' + state.representation.map((o) => o.id + ' ' + (o.label || o.type) + ' as ' + o.representation
-        + (o.color_by ? ' coloured by ' + o.color_by : '')).join('; ') + '.');
+    const pipeline = state.pipeline || state.representation || [];
+    if (pipeline.length) {
+      parts.push('Pipeline: ' + pipeline.map(objectText).join('; ') + '.');
     }
+    if (state.active_object) parts.push('Selected in the view\'s panel: ' + state.active_object + '.');
     if (state.selection) {
       const s = state.selection;
       parts.push('The person picked point ' + s.point_id + ' of ' + s.object + ' at (' + (s.point || []).join(', ') + '): '
@@ -98,12 +131,39 @@
     }
     if (state.camera) {
       parts.push('Camera position (' + state.camera.position.map((v) => v.toPrecision(4)).join(', ') + '), focal point ('
-        + state.camera.focal_point.map((v) => v.toPrecision(4)).join(', ') + ').');
+        + state.camera.focal_point.map((v) => v.toPrecision(4)).join(', ') + '), view up ('
+        + (state.camera.view_up || []).map((v) => v.toPrecision(3)).join(', ') + ')'
+        + (state.camera.parallel_projection ? ', parallel projection.' : '.'));
+    }
+    if (state.changes_text && state.changes_text.length) {
+      parts.push('Recent changes in the view, oldest first: ' + state.changes_text.join('; ') + '.');
     }
     parts.push(state.view_mode === 'remote'
       ? 'Rendered on the ParaView machine (remote mode).'
       : 'Drawn in the browser from ParaView geometry (local mode).');
     return parts.join(' ');
+  }
+
+  function shortValue(v) {
+    if (Array.isArray(v)) return '(' + v.map(shortValue).join(', ') + ')';
+    return typeof v === 'number' ? String(Number(v.toPrecision(4))) : String(v);
+  }
+
+  function objectText(o) {
+    let line = o.id + ' ' + (o.label || o.type);
+    if (o.input) line += ' (' + o.type + ' on ' + o.input + ')';
+    const props = Object.entries(o.properties || {});
+    if (props.length) line += ' [' + props.map(([k, v]) => k + ' ' + shortValue(v)).join(', ') + ']';
+    if (o.visible === false) return line + ' hidden';
+    line += ' shown as ' + o.representation;
+    if (o.color_by) {
+      line += ' coloured by ' + o.color_by;
+      if (o.color_component !== null && o.color_component !== undefined) line += ' component ' + o.color_component;
+      if (o.colormap) line += ' (' + o.colormap + ')';
+      if (o.scalar_bar) line += ' with a colour legend';
+    } else line += ' in solid colour';
+    if (o.opacity !== undefined && o.opacity < 1) line += ', opacity ' + shortValue(o.opacity);
+    return line;
   }
 
   function structured(state) {
@@ -119,8 +179,11 @@
       follow_latest: t.follow_latest !== false,
       selection: state.selection,
       representation: state.representation,
+      pipeline: state.pipeline || [],
+      active_object: state.active_object || null,
       camera: state.camera,
       view_mode: state.view_mode,
+      changes: state.changes || [],
     };
   }
 
@@ -150,6 +213,8 @@
       if (data.type === 'clio.paraview.state' && data.state) {
         latest = data.state;
         schedule();
+      } else if (data.type === 'clio.paraview.ready') {
+        sendTheme();
       } else if (data.type === 'clio.paraview.link') {
         if (data.up) statusBox.hidden = true;
         else showStatus('Lost the link to ParaView. The scene is kept there; the next ParaView action reconnects it.', true);
@@ -174,6 +239,7 @@
       }
       case 'ui/notifications/host-context-changed': {
         hostContext = Object.assign({}, hostContext, data.params || {});
+        sendTheme();
         const url = serviceFrom(data.params);
         if (url && url !== serviceUrl) { serviceUrl = url; loadFrame(); }
         break;
@@ -189,11 +255,12 @@
   });
 
   request('ui/initialize', {
-    appInfo: { name: 'paraview-view', version: '3.0.0' },
+    appInfo: { name: 'paraview-view', version: '3.1.0' },
     appCapabilities: { availableDisplayModes: ['inline', 'fullscreen'] },
     protocolVersion: PROTOCOL,
   }).then((result) => {
     hostContext = (result && result.hostContext) || {};
+    sendTheme();
     notify('ui/notifications/initialized', {});
     notify('ui/notifications/size-changed', { width: document.body.clientWidth, height: 560 });
     serviceUrl = serviceFrom(hostContext);

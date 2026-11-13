@@ -11,7 +11,7 @@ from __future__ import annotations
 import atexit
 import base64
 from importlib import resources
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastmcp import FastMCP
 from fastmcp.apps import AppConfig
@@ -31,7 +31,7 @@ SERVICE_META = "ai.iowarp.clio/service"
 
 mcp: FastMCP = FastMCP(
     "paraview",
-    version="3.0.0",  # keep equal to mcp-server-versions.toml and SERVER_VERSION
+    version="3.1.0",  # keep equal to mcp-server-versions.toml and SERVER_VERSION
     instructions=(
         "Open, look at and measure 3D scientific data in ParaView, on this machine "
         "or on another one over SSH, and show it to the person in a live view. "
@@ -185,6 +185,20 @@ def set_representation(
     ] = None,
     opacity: Annotated[float | None, Field(ge=0, le=1)] = None,
     visible: Annotated[bool | None, Field(description="Show or hide it.")] = None,
+    component: Annotated[
+        int | Literal["Magnitude"] | None,
+        Field(
+            description="Colour by this component of a vector field (0 is X), or "
+            "Magnitude."
+        ),
+    ] = None,
+    scalar_bar: Annotated[
+        bool | None, Field(description="Show or hide the colour legend.")
+    ] = None,
+    rescale: Annotated[
+        bool | None,
+        Field(description="Rescale the colour range to the data at this time step."),
+    ] = None,
 ) -> str:
     """Change an object's representation, colouring, opacity or visibility."""
     result, _ = command(
@@ -196,6 +210,9 @@ def set_representation(
             "colormap": colormap,
             "opacity": opacity,
             "visible": visible,
+            "component": component,
+            "scalar_bar": scalar_bar,
+            "rescale": rescale,
         },
     )
     return "Now " + present.object_line(result["object"]) + "."
@@ -230,6 +247,13 @@ def set_camera(
     azimuth: Annotated[float, Field(description="Degrees around the view up.")] = 0.0,
     elevation: Annotated[float, Field(description="Degrees up or down.")] = 0.0,
     zoom: Annotated[float, Field(gt=0, description=">1 moves closer.")] = 1.0,
+    direction: Annotated[
+        Literal["+x", "-x", "+y", "-y", "+z", "-z"] | None,
+        Field(description="Look along this axis at the scene, fitted, first."),
+    ] = None,
+    parallel_projection: Annotated[
+        bool | None, Field(description="True for parallel, False for perspective.")
+    ] = None,
 ) -> str:
     """Place the camera, or turn and zoom it from where it is."""
     result, _ = command(
@@ -241,6 +265,8 @@ def set_camera(
             "azimuth": azimuth,
             "elevation": elevation,
             "zoom": zoom,
+            "direction": direction,
+            "parallel_projection": parallel_projection,
         },
     )
     return present.camera_text(result["camera"])
@@ -387,6 +413,7 @@ def scene_state() -> ToolResult:
         lines.append(f"No scene is open. Saved scenes: {known}.")
     else:
         lines.append(present.scene_text(result, attachment["where"]))
+        lines.extend(present.changes_lines(result.get("changes") or []))
     return ToolResult(
         content=[_text("\n".join(lines))],
         structured_content={"attachment": attachment, "scene": result},

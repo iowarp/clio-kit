@@ -47,7 +47,8 @@ The front prepares `~/.clio/paraview/<server version>/` there (on this machine,
 clio-kit's own data folder, `<user data>/clio-kit/paraview/<server version>/`,
 which a host that confines the servers it launches lets them write):
 
-- `site/`: trame and trame-vtk, installed for the Python of that machine's
+- `site/`: trame, trame-vtk and trame-vuetify (pinned in `config.py`),
+  installed for the Python of that machine's
   `pvpython` (ParaView 6.0 or later, Python 3.12). If the machine cannot reach
   the package index, the front builds it from the jump host, which shares the
   home folder on a cluster. If neither can, the message names the command to
@@ -57,7 +58,9 @@ which a host that confines the servers it launches lets them write):
 - `scenes/<id>/manifest.json`: each scene, written after every committed
   command.
 
-Later attaches reuse the folder and take seconds. The node half runs detached:
+Later attaches reuse the folder and take seconds. A new server version prepares
+a new folder (its site may differ) and carries over the saved scenes of the
+newest older one. The node half runs detached:
 when the link drops it keeps the scene, and with no link for thirty minutes it
 writes the scene manifest and exits. If a `pvserver` listens on port 11111 of
 that machine, the node half joins it as a client and shows that session.
@@ -86,8 +89,30 @@ that frames the trame application through the host's service route and asks
 for fullscreen. trame-vtk's `VtkRemoteLocalView` draws locally with vtk.js by
 default, so rotating needs no server images; above the remote render
 threshold, or when the person chooses, ParaView renders and sends images. The
-view reports the time step, the picked point, the representation and the
-camera through `ui/update-model-context`, at most ten times a second.
+view reports the time step, the picked point, the pipeline with each object's
+representation and colouring, the camera and the recent changes (and whether
+the person or the agent made them) through `ui/update-model-context`, at most
+ten times a second.
+
+The view carries ParaView's own controls, icon-led and compact. A left tool
+rail opens one panel at a time (a sheet over the lower view at phone width):
+
+| Icon | Panel |
+| --- | --- |
+| Pipeline | Each object, indented under its input: show or hide, select, remove |
+| Add filter | Contour, Slice, Clip, Threshold, Glyph, Stream Tracer, Calculator on the selected object, with a short form whose defaults come from its data |
+| Display | Representation, colour by field and component, colour map, rescale, legend, opacity |
+| Camera | Reset, look along ±X, ±Y or ±Z, parallel projection |
+| Information | Data type, points, cells, memory, bounds, each field's range, filter properties |
+
+The top bar holds the dataset name, time (previous, play, next, a slider,
+follow latest) and the drawing toggle. Every control that changes the scene
+sends the same engine command as the agent's tool (`create_filter`,
+`set_representation`, `set_camera`, ...): it commits with its manifest or rolls
+back and shows why. The view follows the host's `theme` and
+`styles.variables` (background, text, border, font), and draws the render view
+on a neutral between the host's background and text; a host that sends none
+gets light and dark fallbacks.
 
 The result that opens the view declares the service in its private `_meta`:
 `"ai.iowarp.clio/service": {"port": <forwarded port>, "token": <token>}`. The
