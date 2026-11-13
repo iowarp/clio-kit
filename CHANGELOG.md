@@ -17,7 +17,8 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
   `scene_state` lists recent changes and who made them. The view follows the
   host's light or dark theme and style variables. The node folder adds
   trame-vuetify 3.3.0, so ParaView machines prepare a new `3.1.0` folder
-  (saved scenes are carried over).
+  (saved scenes are carried over). Colour maps are saved with the scene and
+  restored exactly on reopen, and no longer leak from one scene to the next.
 - **paraview 3.0.0, rebuilt**: the ParaView server is a new server. A plain
   Python front speaks MCP and lists its tools with no ParaView installed; a
   node half runs in ParaView's own Python on this machine or on another one
