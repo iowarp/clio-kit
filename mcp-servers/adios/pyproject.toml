@@ -26,7 +26,7 @@ dependencies = [
     "numpy",
     # adios2 publishes no Windows wheels. Its sdist needs MSVC and CMake (2.11 built
     # for 7.5 min) into a layout that never imported. Windows keeps the listing tool.
-    "adios2; sys_platform != 'win32'",
+    "adios2>=2.13.0.1001; sys_platform != 'win32'",
     "h11>=0.16.0",
     "authlib>=1.6.12",
     "cryptography>=48.0.1",
