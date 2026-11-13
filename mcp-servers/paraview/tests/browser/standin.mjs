@@ -162,6 +162,14 @@ async function shot(label) {
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const viewFrame = () => page.frames().find((f) => f.url().includes("/service/"));
+// The local and remote renderers each have a canvas; the hidden one sits off screen.
+async function visibleCanvasBox(frame) {
+  for (const canvas of await frame.locator(".clio-view canvas").elementHandles()) {
+    const box = await canvas.boundingBox();
+    if (box && box.x >= 0 && box.width > 0) return box;
+  }
+  throw new Error("no visible canvas in the view");
+}
 
 await page.goto(`http://127.0.0.1:${hostPort}/`);
 for (let i = 0; i < 120 && !viewFrame(); i++) await sleep(250);
@@ -184,8 +192,7 @@ await shot("01-open");
 
 for (const step of config.steps || []) {
   if (step.do === "drag") {
-    const canvas = await trame.$("canvas");
-    const box = await canvas.boundingBox();
+    const box = await visibleCanvasBox(trame);
     const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
     await sleep(1500);
     const start = Date.now();
@@ -197,8 +204,7 @@ for (const step of config.steps || []) {
     report.drag = { start, end };
     await sleep(1500);
   } else if (step.do === "click") {
-    const canvas = await trame.$("canvas");
-    const box = await canvas.boundingBox();
+    const box = await visibleCanvasBox(trame);
     await page.mouse.click(box.x + box.width * (step.x ?? 0.5), box.y + box.height * (step.y ?? 0.5));
     await sleep(2000);
   } else if (step.do === "wait") {

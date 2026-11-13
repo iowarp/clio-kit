@@ -160,6 +160,8 @@ class Link:
     pvpython: str
     paraview: str
     built_from: str | None = None
+    built_now: bool = False
+    uploaded_now: bool = False
     timings: dict[str, float] = field(default_factory=dict)
 
     @property
@@ -218,6 +220,8 @@ class Attacher:
                 node_pid=link.node.get("pid"),
                 pvserver_session=link.node.get("session"),
                 environment_built_from=link.built_from,
+                built_this_attach=link.built_now,
+                code_copied_this_attach=link.uploaded_now,
                 attach_seconds=link.timings,
             )
         return out
@@ -268,11 +272,12 @@ class Attacher:
             self._write_env(transport, folder, env)
         timings["prepare"] = time.monotonic() - started
         bundle, code_hash = code_bundle()
-        if marks.get("CODE") != code_hash:
+        uploaded = marks.get("CODE") != code_hash
+        if uploaded:
             self._upload(transport, folder, bundle)
         node = json.loads(marks["NODE"]) if marks.get("NODE") else None
         link = None
-        if node is not None and node.get("code_hash") == code_hash:
+        if node is not None and self._matches(node, code_hash):
             link = self._try_link(transport, folder, node, pvpython, env)
         if link is None:
             if node is not None:
@@ -286,9 +291,21 @@ class Attacher:
                 f"answer. Its log is {folder}/node.log.",
             )
         link.built_from = built_from or env.get("built")
+        link.built_now = built_from is not None
+        link.uploaded_now = uploaded
         timings["total"] = time.monotonic() - started
         link.timings = {k: round(v, 2) for k, v in timings.items()}
         return link
+
+    def _matches(self, node: dict[str, Any], code_hash: str) -> bool:
+        """Whether a running node half was started with today's code and knobs."""
+        settings = self.settings
+        if node.get("code_hash") != code_hash:
+            return False
+        if node.get("idle_seconds") not in (None, settings.idle_seconds):
+            return False
+        threshold = settings.threshold_mb
+        return threshold is None or node.get("threshold_mb") == threshold
 
     def _interrogate(self, transport: Transport, pvpython: str) -> dict[str, Any]:
         pv = shlex.quote(pvpython)

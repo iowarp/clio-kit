@@ -18,6 +18,7 @@ from typing import Any
 from .engine import CommandError, Engine
 
 TOKEN_HEADERS = ("X-Clio-Service-Token",)
+END_INTERACTION_EVENT = 45  # vtkCommand::EndInteractionEvent
 
 # Posts the bridge state and the link state to the page that frames trame.
 BRIDGE_JS = r"""
@@ -33,9 +34,14 @@ BRIDGE_JS = r"""
   document.addEventListener('pointerup', function (e) {
     var start = down;
     down = null;
-    if (!start || e.target.tagName !== 'CANVAS' || !window.trame) return;
+    if (!start || !window.trame || !e.target.closest || !e.target.closest('.clio-view')) return;
     if (Math.abs(e.clientX - start.x) + Math.abs(e.clientY - start.y) > 4) return;
-    var box = e.target.getBoundingClientRect();
+    var canvas = Array.prototype.find.call(document.querySelectorAll('.clio-view canvas'), function (c) {
+      var r = c.getBoundingClientRect();
+      return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    });
+    if (!canvas) return;
+    var box = canvas.getBoundingClientRect();
     var camera = null;
     try { camera = window.trame.refs.view.getCamera(); } catch (err) { camera = null; }
     window.trame.trigger('clio_pick', [e.clientX - box.left, box.height - (e.clientY - box.top),
@@ -199,6 +205,10 @@ class NodeApp:
                     )
         self.layout = layout
         ctrl.view_update = self.view.update
+        # In remote mode the camera moves on the server; report it after a drag.
+        interactor = self.engine.view.GetInteractor()
+        if interactor is not None:
+            interactor.AddObserver(END_INTERACTION_EVENT, self._remote_camera)
 
     def _bind_routes(self, wslink_server: Any) -> None:
         from aiohttp import web
@@ -397,6 +407,14 @@ class NodeApp:
             return
         self.engine.browser_camera(camera)
         self.server.state.clio_bridge = self.bridge()
+
+    def _remote_camera(self, *_args: Any) -> None:
+        scene = self.engine.scene
+        if scene is None or scene["view"].get("mode") != "remote":
+            return
+        scene["camera"] = self.engine.read_camera()
+        with self.server.state:
+            self.server.state.clio_bridge = self.bridge()
 
     def _ui_pick(
         self,

@@ -69,7 +69,7 @@ SERVER_TAGS: dict[str, list[str]] = {
     "node-hardware": ["hardware-monitoring", "system-info", "performance"],
     "pandas": ["data-analysis", "pandas", "dataframes", "statistics"],
     "parallel-sort": ["log-processing", "sorting", "large-files", "hpc"],
-    "paraview": ["scientific-visualization", "paraview", "3d-rendering", "hpc"],
+    "paraview": ["scientific-visualization", "paraview", "trame", "mcp-apps", "ssh", "hpc"],
     "parquet": ["parquet", "apache-arrow", "columnar-data", "data-analysis"],
     "plot": ["data-visualization", "matplotlib", "plotting", "charts"],
     "slurm": ["hpc", "slurm", "job-scheduling", "cluster-management"],

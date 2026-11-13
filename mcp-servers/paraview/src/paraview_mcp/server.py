@@ -370,6 +370,17 @@ def scene_state() -> ToolResult:
         )
         + "."
     ]
+    timings = attachment.get("attach_seconds") or {}
+    if timings:
+        lines.append(
+            f"The last attach took {timings.get('total', 0):g} s"
+            + (
+                f" and installed trame (from {attachment.get('environment_built_from')})"
+                if attachment.get("built_this_attach")
+                else "; the prepared folder was reused"
+            )
+            + "."
+        )
     if result.get("scene") is None:
         known = ", ".join(result.get("known_scenes") or []) or "none"
         lines.append(f"No scene is open. Saved scenes: {known}.")

@@ -103,6 +103,7 @@ def main(argv: list[str] | None = None) -> None:
                 "code_hash": args.code_hash,
                 "session": session,
                 "threshold_mb": threshold,
+                "idle_seconds": args.idle_seconds,
                 "started": time.time(),
             },
         )

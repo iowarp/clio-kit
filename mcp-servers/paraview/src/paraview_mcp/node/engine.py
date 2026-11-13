@@ -327,6 +327,9 @@ class Engine:
             files = self._files(item)
             for name in ("FileNames", "FileName"):
                 if name in proxy.ListProperties():
+                    # Setting the same value is not a change; clear it first so
+                    # the reader re-reads its index (a .series file, say).
+                    setattr(proxy, name, [] if name == "FileNames" else "")
                     setattr(proxy, name, files)
                     break
             proxy.UpdatePipelineInformation()
