@@ -313,8 +313,8 @@ class NodeApp:
         state.clio_follow = time_state.get("follow_latest", True)
         state.clio_newer = time_state.get("newer_steps", 0)
         self.bench.refresh(reason)
-        if self.view is not None and reason not in ("selection", "camera"):
-            self.view.update()
+        if reason not in ("selection", "camera"):
+            self._update_view()
         moved = reason in ("open_view", "fit_camera", "set_camera", "rollback")
         if moved and self.view is not None:
             self.view.push_camera()
@@ -379,8 +379,18 @@ class NodeApp:
         applied = apply_to_view(
             engine.simple, engine.view, background, foreground, sources
         )
-        if applied and self.view is not None:
-            self.view.update()
+        if applied:
+            self._update_view()
+
+    def _update_view(self) -> None:
+        """Send the scene to the view. ParaView brings its legends up to date
+        (title, text colours, range) only when it renders, so render first when the
+        browser draws, or the browser gets a legend ParaView has not set up yet."""
+        if self.view is None:
+            return
+        if self.server.state.viewMode != "remote":
+            self.engine.simple.Render(self.engine.view)
+        self.view.update()
 
     def _legend_title(self) -> str | None:
         """The field whose legend the browser shows: the selected object's, if on."""
@@ -390,8 +400,7 @@ class NodeApp:
     def _ui_select(self, object_id: str) -> None:
         self.bench.select(object_id)
         self.server.state.clio_bridge = self.bridge()
-        if self.view is not None:  # the browser's one legend follows the selection
-            self.view.update()
+        self._update_view()  # the browser's one legend follows the selection
 
     def _ui_redraw(self) -> None:
         # Local mode draws in the browser; remote mode needs ParaView to render again.

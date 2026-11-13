@@ -15,7 +15,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from . import data, manifest
+from . import colors, data, manifest
 from .changes import ChangeLog, describe
 from .data import DataError
 from .errors import CommandError, _expand
@@ -164,6 +164,7 @@ class Engine(SceneReading):
         if self.scene is None:
             return
         self.scene["camera"] = self.read_camera()
+        self.scene["colormaps"] = colors.snapshot(self.simple, self.scene)
         manifest.write(self.root, self.scene)
         for listener in list(self.listeners):
             listener(reason)
@@ -198,6 +199,10 @@ class Engine(SceneReading):
             except Exception as exc:  # noqa: BLE001 - a proxy already gone needs no delete
                 print(f"clearing {object_id}: {exc}", flush=True)
         self._growth.clear()
+        if not self.session:
+            from paraview import servermanager
+
+            colors.forget(servermanager, self.view)
 
     def _files(self, item: dict[str, Any]) -> list[str] | str:
         path = item["path"]
@@ -281,9 +286,10 @@ class Engine(SceneReading):
                     )
         else:
             simple.ColorBy(rep, None)
-        rep.SetScalarBarVisibility(
-            self.view, bool(color_by) and bool(display.get("scalar_bar"))
+        wanted = bool(display.get("scalar_bar")) or colors.legend_wanted(
+            self.scene, color_by
         )
+        rep.SetScalarBarVisibility(self.view, bool(color_by) and wanted)
         if not display.get("visible", True):
             simple.Hide(proxy, self.view)
 
@@ -293,6 +299,7 @@ class Engine(SceneReading):
             self.proxies[item["id"]] = proxy
             self._show(item, proxy, apply="display" in item)
         self._apply_time(scene)
+        colors.restore(self.simple, scene.get("colormaps"))
         if scene.get("camera"):
             self.apply_camera(scene["camera"])
         else:
@@ -669,6 +676,7 @@ class Engine(SceneReading):
             )
         if colormap is not None:
             display["colormap"] = colormap
+            colors.share(scene, display.get("color_by"), "colormap", colormap)
         if opacity is not None:
             display["opacity"] = max(0.0, min(1.0, float(opacity)))
         if visible is not None:
@@ -679,6 +687,7 @@ class Engine(SceneReading):
             )
         if scalar_bar is not None:
             display["scalar_bar"] = bool(scalar_bar)
+            colors.share(scene, display.get("color_by"), "scalar_bar", bool(scalar_bar))
         self._show(item, proxy, apply=True)
         if rescale and display.get("color_by"):
             rep = self.simple.GetDisplayProperties(proxy, self.view)

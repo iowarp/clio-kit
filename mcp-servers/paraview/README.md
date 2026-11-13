@@ -114,6 +114,13 @@ back and shows why. The view follows the host's `theme` and
 on a neutral between the host's background and text; a host that sends none
 gets light and dark fallbacks.
 
+Colour maps are part of the scene: the manifest keeps each field's colour map
+(preset, range, vector component) and a reopened scene gets it back exactly; a
+new scene starts with ParaView's defaults, not the last scene's maps. As in
+ParaView, one colour map and one legend belong to a field and are shared by
+every object coloured by it. When the browser draws, it shows one legend (the
+selected object's, else the newest); images ParaView renders show them all.
+
 The result that opens the view declares the service in its private `_meta`:
 `"ai.iowarp.clio/service": {"port": <forwarded port>, "token": <token>}`. The
 host proxies the service under the app's own route and adds the token as

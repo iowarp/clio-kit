@@ -298,6 +298,45 @@ def test_remote_mode_above_threshold(tmp_path: Path) -> None:
         os.environ["HOME"] = saved
 
 
+def _pvpython_script(name: str, *args: str) -> dict:
+    """Run tests/pvpython/<name> with pvpython; return its JSON report."""
+    import subprocess
+
+    assert PVPYTHON is not None
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+    env.setdefault("VTK_DEFAULT_OPENGL_WINDOW", "vtkOSOpenGLRenderWindow")
+    done = subprocess.run(
+        [
+            PVPYTHON,
+            "--force-offscreen-rendering",
+            str(Path(__file__).with_name("pvpython") / name),
+            *args,
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=300,
+        check=False,
+    )
+    line = next((x for x in done.stdout.splitlines() if x.startswith("COLORS=")), None)
+    assert line, done.stdout[-2000:] + done.stderr[-2000:]
+    return json.loads(line.split("=", 1)[1])
+
+
+def test_colour_maps_survive_a_restart_and_do_not_leak(tmp_path: Path) -> None:
+    built = _pvpython_script("colors_check.py", str(tmp_path), "build")
+    # A new scene starts with ParaView's own colour map, not the last scene's Jet.
+    assert built["preset_after_new_scene"] != "Jet"
+    restored = _pvpython_script("colors_check.py", str(tmp_path), "restore")
+    assert built.pop("preset_after_new_scene") is not None
+    assert restored == built
+    # One colour map per field: the Slice's Inferno is the Contour's too, and both say so.
+    assert restored["preset"] == "Inferno" and restored["legend"] is True
+    assert restored["recorded"] == {"o1": None, "o2": "Inferno", "o3": "Inferno"}
+    assert restored["reps"]["o2"] == [["POINTS", "RTData"], 0.7]
+
+
 def test_the_panel_runs_the_same_commands(tmp_path: Path) -> None:
     """Every panel action is an engine command by the person (pvpython)."""
     import subprocess

@@ -42,6 +42,35 @@ def chosen_legend(legends: list[Any], preferred: str | None) -> Any:
     return legends[-1]
 
 
+def _new_map() -> Any:
+    from vtkmodules.vtkRenderingCore import vtkColorTransferFunction
+
+    return vtkColorTransferFunction()
+
+
+class _LegendActor:
+    """The legend's actor, with a colour map of its own for the browser.
+
+    Sent as is, the legend shares the field's colour map object with the mappers;
+    trame-vtk then sends that one object in two forms, and after a colour map change
+    the browser lost both the legend and the scene. The legend gets a copy.
+    """
+
+    def __init__(self, actor: Any, copy: Any) -> None:
+        self._actor = actor
+        self._copy = copy
+
+    def GetLookupTable(self) -> Any:
+        lut = self._actor.GetLookupTable()
+        if lut is None:
+            return None
+        self._copy.DeepCopy(lut)
+        return self._copy
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._actor, name)
+
+
 def register_serializers(preferred: Callable[[], str | None]) -> None:
     """Register the composite-dataset and legend serializers with trame-vtk."""
     from trame_vtk.modules.vtk.serializers import initialize_serializers
@@ -55,11 +84,14 @@ def register_serializers(preferred: Callable[[], str | None]) -> None:
     for name in ("vtkPartitionedDataSetCollection", "vtkPartitionedDataSet"):
         register_instance_serializer(name, merge_to_polydata_serializer)
 
+    copies: dict[int, Any] = {}
+
     def legend(parent: Any, rep: Any, rep_id: Any, context: Any, depth: int) -> Any:
         if chosen_legend(_shown_legends(parent), preferred()) is not rep:
             return None
-        return scalar_bar_actor_serializer(
-            parent, rep.GetScalarBarActor(), rep_id, context, depth
-        )
+        # A fresh copy each time: trame-vtk sends it whole, as a new object.
+        copies[id(rep)] = _new_map()
+        actor = _LegendActor(rep.GetScalarBarActor(), copies[id(rep)])
+        return scalar_bar_actor_serializer(parent, actor, rep_id, context, depth)
 
     register_instance_serializer("vtkPVScalarBarRepresentation", legend)
