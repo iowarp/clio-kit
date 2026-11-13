@@ -24,7 +24,7 @@ def bp_file(tmp_path):
 
 async def call(tool, arguments):
     async with Client(mcp) as client:
-        assert client.server_info.version == "2.3.0"
+        assert client.server_info.version == "2.3.1"
         return await client.call_tool(tool, arguments, raise_on_error=False)
 
 
