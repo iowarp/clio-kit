@@ -59,6 +59,22 @@ BRIDGE_JS = r"""
       client.onConnectionError(function () { post({ type: 'clio.paraview.link', up: false }); });
     }
     post({ type: 'clio.paraview.link', up: true });
+    // A frame that mounts or resizes (a tab moved, the canvas maximized) asks for a
+    // fresh picture: in remote mode nothing else would draw it until the next drag.
+    // The remote view subscribes to images only once it has mounted and sized itself,
+    // so ask again when the view's box changes and a little after the page starts.
+    var redraw = null;
+    function ask() {
+      clearTimeout(redraw);
+      redraw = setTimeout(function () { trame.trigger('clio_redraw'); }, 500);
+    }
+    [300, 1500, 4000].forEach(function (ms) { setTimeout(ask, ms); });
+    window.addEventListener('resize', ask);
+    (function watch() {
+      var box = document.querySelector('.clio-view');
+      if (!box || !window.ResizeObserver) { setTimeout(watch, 200); return; }
+      new ResizeObserver(ask).observe(box);
+    })();
   }
   start();
 })();
@@ -167,6 +183,7 @@ class NodeApp:
         ctrl.trigger("clio_latest")(self._ui_latest)
         ctrl.trigger("clio_set_mode")(self._ui_set_mode)
         ctrl.trigger("clio_pick")(self._ui_pick)
+        ctrl.trigger("clio_redraw")(self._ui_redraw)
         ctrl.on_server_bind.add(self._bind_routes)
 
         with DivLayout(self.server) as layout:
@@ -423,6 +440,11 @@ class NodeApp:
             self.engine.run("set_timestep", {"latest": True})
         except CommandError:
             self._on_scene_change("rollback")
+
+    def _ui_redraw(self) -> None:
+        # Local mode draws in the browser; remote mode needs ParaView to render again.
+        if self.view is not None and self.server.state.viewMode == "remote":
+            self.view.update()
 
     def _ui_set_mode(self, mode: str) -> None:
         if self.engine.scene is None or mode not in MODE_LABELS:
