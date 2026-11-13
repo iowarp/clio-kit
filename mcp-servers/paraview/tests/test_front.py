@@ -217,6 +217,9 @@ async def test_scene_tool_without_paraview_returns_the_message(
     text = result.content[0].text
     assert "No ParaView was found on this machine" in text
     assert "[no_paraview]" in text
+    # The connector's values are named by key, so the agent knows it can set them.
+    for key in ("`address`", "`via`", "`prepare`"):
+        assert key in text
 
 
 def test_prepare_line_runs_first(tmp_path: Path) -> None:
