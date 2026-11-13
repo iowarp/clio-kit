@@ -280,3 +280,26 @@ def test_the_pipeline_lists_each_object_under_its_input() -> None:
         ("o3", 1),
         ("o5", 2),
     ]
+
+
+def test_colour_map_and_legend_are_per_field() -> None:
+    from paraview_mcp.node import colors
+
+    scene = {
+        "objects": [
+            {"id": "o1", "display": {"color_by": None}},
+            {"id": "o2", "display": {"color_by": ["POINTS", "p"], "scalar_bar": True}},
+            {"id": "o3", "display": {"color_by": ["POINTS", "p"], "scalar_bar": False}},
+            {"id": "o4", "display": {"color_by": ["CELLS", "q"], "scalar_bar": False}},
+        ]
+    }
+    assert colors.fields(scene) == ["p", "q"]
+    assert colors.legend_wanted(scene, ["POINTS", "p"]) is True
+    assert colors.legend_wanted(scene, ["CELLS", "q"]) is False
+    colors.share(scene, ["POINTS", "p"], "colormap", "Inferno")
+    assert [o["display"].get("colormap") for o in scene["objects"]] == [
+        None,
+        "Inferno",
+        "Inferno",
+        None,
+    ]

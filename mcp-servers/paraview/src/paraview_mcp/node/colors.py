@@ -99,10 +99,25 @@ def preset_name(simple: Any, field: str | None) -> str | None:
     return str(lut.NameOfLastPresetApplied) or None
 
 
-def share_colormap(scene: dict[str, Any], color_by: Any, colormap: str) -> None:
-    """ParaView has one colour map per field: record it on every object it colours."""
-    field = (color_by or [None, None])[1]
-    for item in scene.get("objects") or []:
+def _same_field(
+    scene: dict[str, Any] | None, field: str | None
+) -> list[dict[str, Any]]:
+    out = []
+    for item in (scene or {}).get("objects") or []:
         shown = item.get("display") or {}
         if field and (shown.get("color_by") or [None, None])[1] == field:
-            shown["colormap"] = colormap
+            out.append(shown)
+    return out
+
+
+def share(scene: dict[str, Any], color_by: Any, key: str, value: Any) -> None:
+    """ParaView has one colour map and one legend per field: record a change of
+    either on every object coloured by that field."""
+    for shown in _same_field(scene, (color_by or [None, None])[1]):
+        shown[key] = value
+
+
+def legend_wanted(scene: dict[str, Any] | None, color_by: Any) -> bool:
+    """Whether the field's one legend is on: any object coloured by it asks for it."""
+    field = (color_by or [None, None])[1]
+    return any(shown.get("scalar_bar") for shown in _same_field(scene, field))

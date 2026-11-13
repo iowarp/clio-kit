@@ -286,9 +286,10 @@ class Engine(SceneReading):
                     )
         else:
             simple.ColorBy(rep, None)
-        rep.SetScalarBarVisibility(
-            self.view, bool(color_by) and bool(display.get("scalar_bar"))
+        wanted = bool(display.get("scalar_bar")) or colors.legend_wanted(
+            self.scene, color_by
         )
+        rep.SetScalarBarVisibility(self.view, bool(color_by) and wanted)
         if not display.get("visible", True):
             simple.Hide(proxy, self.view)
 
@@ -675,7 +676,7 @@ class Engine(SceneReading):
             )
         if colormap is not None:
             display["colormap"] = colormap
-            colors.share_colormap(scene, display.get("color_by"), colormap)
+            colors.share(scene, display.get("color_by"), "colormap", colormap)
         if opacity is not None:
             display["opacity"] = max(0.0, min(1.0, float(opacity)))
         if visible is not None:
@@ -686,6 +687,7 @@ class Engine(SceneReading):
             )
         if scalar_bar is not None:
             display["scalar_bar"] = bool(scalar_bar)
+            colors.share(scene, display.get("color_by"), "scalar_bar", bool(scalar_bar))
         self._show(item, proxy, apply=True)
         if rescale and display.get("color_by"):
             rep = self.simple.GetDisplayProperties(proxy, self.view)

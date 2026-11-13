@@ -85,10 +85,18 @@ def main(out: Path, mode: str) -> dict[str, Any]:
             "set_representation",
             {"object": "o3", "color_by": "RTData", "colormap": "Inferno"},
         )
+        # The field's one legend stays on (it is the Contour's) after the Slice changes.
+        lut = simple.GetColorTransferFunction("RTData")
+        legend = simple.GetScalarBar(lut, engine.view)
         (out / "scene").write_text(engine.scene["scene"])
-        return {"preset_after_new_scene": fresh, **state(engine)}
+        return {
+            "preset_after_new_scene": fresh,
+            "legend": bool(legend.Visibility),
+            **state(engine),
+        }
     engine.run("open_view", {"scene": (out / "scene").read_text()})
-    return state(engine)
+    legend = simple.GetScalarBar(simple.GetColorTransferFunction("RTData"), engine.view)
+    return {"legend": bool(legend.Visibility), **state(engine)}
 
 
 if __name__ == "__main__":
