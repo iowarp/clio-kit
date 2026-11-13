@@ -22,7 +22,7 @@ from pydantic import Field
 
 from . import present
 from .attach import Attacher
-from .config import from_environment
+from .config import Target, from_environment
 from .errors import ParaViewError
 from .link import LinkError
 
@@ -31,6 +31,7 @@ SERVICE_META = "ai.iowarp.clio/service"
 # What a host replays to reopen the view: the scene, never the call. A call with
 # new=true started an empty scene; replaying it would wipe what was built since.
 REOPEN_META = "ai.iowarp.clio/reopen"
+PATHS_META = "ai.iowarp.clio/paths"
 
 mcp: FastMCP = FastMCP(
     "paraview",
@@ -78,6 +79,24 @@ def command(name: str, args: dict[str, Any]) -> tuple[Any, Any]:
         ) from exc
 
 
+def path_arguments(target: Target, **access: str) -> dict[str, Any]:
+    """Declare which arguments are paths, for the tool definition's ``_meta``.
+
+    Paths are on the machine where ParaView runs: CLIO's own machine, or the SSH host.
+    CLIO restarts the server when the connector's address changes, so the declaration
+    listed with the tools always names the current one.
+    """
+    if target.remote:
+        where: dict[str, str] = {"machine": "remote", "host": target.address or ""}
+    else:
+        where = {"machine": "local"}
+    return {PATHS_META: {arg: {**where, "access": use} for arg, use in access.items()}}
+
+
+def _paths(**access: str) -> dict[str, Any]:
+    return path_arguments(from_environment().target, **access)
+
+
 def _where() -> str:
     return attacher().settings.target.describe()
 
@@ -89,6 +108,7 @@ def _text(text: str) -> TextContent:
 @mcp.tool(
     app=AppConfig(resource_uri=VIEW_URI),
     annotations={"title": "Open a ParaView view", "openWorldHint": True},
+    meta=_paths(path="read"),
 )
 def open_view(
     path: Annotated[
@@ -318,7 +338,7 @@ def capture(
     ]
 
 
-@mcp.tool(annotations={"title": "Export a figure"})
+@mcp.tool(annotations={"title": "Export a figure"}, meta=_paths(path="write"))
 def export_artifact(
     path: Annotated[
         str | None,
@@ -342,7 +362,7 @@ def export_artifact(
     ]
 
 
-@mcp.tool(annotations={"title": "Export the scene"})
+@mcp.tool(annotations={"title": "Export the scene"}, meta=_paths(path="write"))
 def export_scene(
     path: Annotated[
         str | None,
