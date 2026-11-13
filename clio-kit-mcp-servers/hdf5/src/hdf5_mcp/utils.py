@@ -75,21 +75,21 @@ def setup_logging(log_level="INFO"):
 # =========================================================================
 
 
-def default_metrics_dir() -> Path:
-    """Where saved metrics go when no directory is given.
+def default_state_dir(leaf: str) -> Path:
+    """Where the server keeps its own files (``leaf`` names the kind, e.g. ``metrics``).
 
-    The server may run inside a host's write fence that denies its home directory, so it
-    writes under a granted data or cache directory, in this order: the host's plugin data
-    folder (``PLUGIN_DATA``), the clio-kit cache (``CLIO_KIT_CACHE_DIR``), then the user's
-    cache directory (``XDG_CACHE_HOME``, else the platform's).
+    The server may run inside a host's write fence that denies its home directory, and its
+    working directory is the user's workspace, so it writes under a granted data or cache
+    directory, in this order: the host's plugin data folder (``PLUGIN_DATA``), the clio-kit
+    cache (``CLIO_KIT_CACHE_DIR``), then the user's cache directory (``XDG_CACHE_HOME``,
+    else the platform's).
     """
-    for env, leaf in (
-        ("PLUGIN_DATA", "metrics"),
-        ("CLIO_KIT_CACHE_DIR", "hdf5_mcp/metrics"),
-    ):
-        configured = os.environ.get(env, "").strip()
-        if configured:
-            return Path(configured).expanduser() / leaf
+    plugin_data = os.environ.get("PLUGIN_DATA", "").strip()
+    if plugin_data:
+        return Path(plugin_data).expanduser() / leaf
+    kit_cache = os.environ.get("CLIO_KIT_CACHE_DIR", "").strip()
+    if kit_cache:
+        return Path(kit_cache).expanduser() / "hdf5_mcp" / leaf
     xdg_cache = os.environ.get("XDG_CACHE_HOME", "").strip()
     if xdg_cache:
         cache_root = Path(xdg_cache).expanduser()
@@ -100,7 +100,12 @@ def default_metrics_dir() -> Path:
         cache_root = Path.home() / "Library" / "Caches"
     else:
         cache_root = Path.home() / ".cache"
-    return cache_root / "hdf5_mcp" / "metrics"
+    return cache_root / "hdf5_mcp" / leaf
+
+
+def default_metrics_dir() -> Path:
+    """Where saved metrics go when no directory is given."""
+    return default_state_dir("metrics")
 
 
 class PerformanceMonitor:

@@ -59,9 +59,18 @@ import asyncio
 import h5py
 import numpy as np
 
-from .utils import HDF5Manager
+from .utils import HDF5Manager, default_state_dir
 
 logger = logging.getLogger(__name__)
+
+
+def _has_content(path: Path) -> bool:
+    """Whether ``path`` holds saved state (older versions left empty placeholder files)."""
+    try:
+        return path.stat().st_size > 0
+    except OSError:
+        return False
+
 
 # =========================================================================
 # Cache Implementation
@@ -207,25 +216,18 @@ class ResourceManager:
         Initialize resource manager.
 
         Args:
-            data_dir: Directory to store metadata
+            data_dir: Directory to store metadata (default: the server's state directory,
+                never the working directory, which is the user's workspace)
             cache_capacity: Maximum number of datasets to cache
         """
-        self.data_dir = data_dir or Path("data")
+        # Resolved now, created only when something is saved: the manager is built at import
+        # time, and a directory the host denies must never stop the server from starting.
+        self.data_dir = data_dir or default_state_dir("resources")
         self.cache_capacity = cache_capacity
         self.file_cache: LRUCache = LRUCache(capacity=cache_capacity)
         self.storage_index_path = self.data_dir / ".storage_index.json"
         self.cache_db_path = self.data_dir / ".cache_db.json"
         self.history_db_path = self.data_dir / ".history_db.json"
-
-        # Initialize paths
-        if not self.data_dir.exists():
-            self.data_dir.mkdir(parents=True)
-        if not self.storage_index_path.exists():
-            self.storage_index_path.touch()
-        if not self.cache_db_path.exists():
-            self.cache_db_path.touch()
-        if not self.history_db_path.exists():
-            self.history_db_path.touch()
 
         # Initialize data structures immediately (before any operations)
         self.storage_index: Dict[str, Any] = self._load_storage_index()
@@ -253,7 +255,7 @@ class ResourceManager:
 
     def _load_storage_index(self) -> Dict[str, Any]:
         """Load the storage index from disk."""
-        if self.storage_index_path.exists():
+        if _has_content(self.storage_index_path):
             try:
                 with open(self.storage_index_path, "r") as f:
                     return json.load(f)
@@ -266,6 +268,7 @@ class ResourceManager:
     def _save_storage_index(self):
         """Save the storage index to disk."""
         try:
+            self.data_dir.mkdir(parents=True, exist_ok=True)
             self.storage_index["last_updated"] = datetime.now().isoformat()
             with open(self.storage_index_path, "w") as f:
                 json.dump(self.storage_index, f, indent=2)
@@ -274,7 +277,7 @@ class ResourceManager:
 
     def _load_cache_db(self) -> Dict[str, Any]:
         """Load the cache database from disk."""
-        if self.cache_db_path.exists():
+        if _has_content(self.cache_db_path):
             try:
                 with open(self.cache_db_path, "r") as f:
                     return json.load(f)
@@ -291,6 +294,7 @@ class ResourceManager:
     def _save_cache_db(self):
         """Save the cache database to disk."""
         try:
+            self.data_dir.mkdir(parents=True, exist_ok=True)
             self.cache_db["last_updated"] = datetime.now().isoformat()
             with open(self.cache_db_path, "w") as f:
                 json.dump(self.cache_db, f, indent=2)
@@ -299,7 +303,7 @@ class ResourceManager:
 
     def _load_history_db(self) -> Dict[str, Any]:
         """Load the history database from disk."""
-        if self.history_db_path.exists():
+        if _has_content(self.history_db_path):
             try:
                 with open(self.history_db_path, "r") as f:
                     return json.load(f)
@@ -312,6 +316,7 @@ class ResourceManager:
     def _save_history_db(self):
         """Save the history database to disk."""
         try:
+            self.data_dir.mkdir(parents=True, exist_ok=True)
             with open(self.history_db_path, "w") as f:
                 json.dump(self.history_db, f, indent=2)
         except Exception as e:
