@@ -245,3 +245,19 @@ def test_the_browser_shows_the_selected_objects_legend() -> None:
     assert chosen_legend(legends, None) is legends[2]
     assert chosen_legend(legends, "pressure") is legends[2]
     assert chosen_legend([], "RTData") is None
+
+
+def test_information_shows_short_property_values() -> None:
+    from paraview_mcp.node.workbench import selected_view
+
+    item = {
+        "id": "o2",
+        "kind": "filter",
+        "type": "Threshold",
+        "properties": {"Scalars": ["POINTS", "p"], "LowerThreshold": 1.7587922e-25},
+    }
+    shown = selected_view(item, WAVELET)["properties"]
+    assert shown == [
+        {"key": "Scalars", "value": "POINTS, p"},
+        {"key": "LowerThreshold", "value": "1.759e-25"},
+    ]

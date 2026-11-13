@@ -52,6 +52,15 @@ def _short(number: float) -> str:
     return f"{number:.4g}"
 
 
+def _value(value: Any) -> str:
+    """A filter property as the Information panel shows it."""
+    if isinstance(value, float):
+        return _short(value)
+    if isinstance(value, (list, tuple)):
+        return ", ".join(_value(v) for v in value)
+    return str(value)
+
+
 def _depths(objects: list[dict[str, Any]]) -> dict[str, int]:
     depth: dict[str, int] = {}
     for item in objects:
@@ -121,7 +130,7 @@ def selected_view(item: dict[str, Any], info: dict[str, Any]) -> dict[str, Any]:
             for a in info.get("arrays") or []
         ],
         "properties": [
-            {"key": k, "value": str(v)}
+            {"key": k, "value": _value(v)}
             for k, v in (item.get("properties") or {}).items()
         ],
     }
