@@ -71,9 +71,23 @@ def parse_markers(text: str) -> dict[str, str]:
     return out
 
 
-def probe_script(version: str) -> str:
+def local_folder(version: str) -> str:
+    """The node half's folder on this machine: clio-kit's own data folder.
+
+    On another machine it is ``~/.clio/paraview/<version>/``. Here it sits in
+    clio-kit's data folder, which a host that confines the servers it launches
+    (CLIO's write fence) lets them write.
+    """
+    import platformdirs
+
+    base = platformdirs.user_data_dir("clio-kit", appauthor=False)
+    return str(Path(base) / "paraview" / version)
+
+
+def probe_script(version: str, folder: str | None = None) -> str:
+    where = shlex.quote(folder) if folder else f'"$HOME/.clio/paraview/{version}"'
     return f"""
-D="$HOME/.clio/paraview/{version}"
+D={where}
 mkdir -p "$D" && chmod 700 "$D"
 echo "CLIO_DIR=$D"
 echo "CLIO_PVPYTHON=$(command -v pvpython 2>/dev/null || true)"
@@ -247,7 +261,10 @@ class Attacher:
     def _attach_over(self, transport: Transport, started: float) -> Link:
         settings = self.settings
         timings: dict[str, float] = {"connect": time.monotonic() - started}
-        probe = transport.run(probe_script(config.SERVER_VERSION), timeout=120)
+        folder_here = None if transport.remote else local_folder(config.SERVER_VERSION)
+        probe = transport.run(
+            probe_script(config.SERVER_VERSION, folder_here), timeout=120
+        )
         marks = parse_markers(probe.stdout)
         folder = marks.get("DIR")
         pvpython = marks.get("PVPYTHON") or ""

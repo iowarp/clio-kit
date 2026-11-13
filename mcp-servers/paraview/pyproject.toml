@@ -11,6 +11,7 @@ authors = [
 keywords = ["MCP", "ParaView", "trame", "visualization", "scientific", "3D", "SSH"]
 dependencies = [
     "fastmcp>=4.1.2,<5",
+    "platformdirs>=4.3",
 ]
 
 [project.urls]

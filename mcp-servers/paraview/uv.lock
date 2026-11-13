@@ -1849,6 +1849,8 @@ version = "3.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastmcp" },
+    { name = "platformdirs", version = "4.12.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "platformdirs", version = "4.14.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
 
 [package.dev-dependencies]
@@ -1863,7 +1865,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "fastmcp", specifier = ">=4.1.2,<5" }]
+requires-dist = [
+    { name = "fastmcp", specifier = ">=4.1.2,<5" },
+    { name = "platformdirs", specifier = ">=4.3" },
+]
 
 [package.metadata.requires-dev]
 dev = [

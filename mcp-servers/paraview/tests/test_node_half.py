@@ -53,9 +53,14 @@ def write_vti(path: Path, shift: float = 0.0, n: int = 8) -> None:
     )
 
 
+def _local(home: Path) -> Path:
+    """The node half's folder on this machine for ``home`` (clio-kit's data folder)."""
+    return home / ".local" / "share" / "clio-kit" / "paraview" / config.SERVER_VERSION
+
+
 def _home(base: Path) -> Path:
     home = base / "home"
-    folder = home / ".clio" / "paraview" / config.SERVER_VERSION
+    folder = _local(home)
     folder.mkdir(parents=True)
     site = os.environ.get("PARAVIEW_TEST_SITE")
     if site:
@@ -89,7 +94,7 @@ def attached(
 
 
 def _stop(home: Path) -> None:
-    record = home / ".clio" / "paraview" / config.SERVER_VERSION / "node.json"
+    record = _local(home) / "node.json"
     if record.exists():
         pid = json.loads(record.read_text())["pid"]
         try:
@@ -99,7 +104,7 @@ def _stop(home: Path) -> None:
 
 
 def _folder() -> Path:
-    return Path(os.environ["HOME"]) / ".clio" / "paraview" / config.SERVER_VERSION
+    return _local(Path(os.environ["HOME"]))
 
 
 def test_open_measure_and_rollback(attached: tuple[Attacher, Path]) -> None:
@@ -239,7 +244,7 @@ def test_remote_mode_above_threshold(tmp_path: Path) -> None:
         assert opened["view"]["mode"] == "remote"
         assert opened["view"]["geometry_mb"] > 0.001
         # Idle shutdown: with no link the node half saves and leaves.
-        folder = home / ".clio" / "paraview" / config.SERVER_VERSION
+        folder = _local(home)
         attacher.close()
         deadline = time.monotonic() + 120
         while (folder / "node.json").exists() and time.monotonic() < deadline:

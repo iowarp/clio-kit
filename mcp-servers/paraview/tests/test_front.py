@@ -158,19 +158,19 @@ def test_local_attach_without_pvpython_fails_clearly(
 ) -> None:
     # AQ35: a PATH with no pvpython on it.
     monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("XDG_DATA_HOME", raising=False)
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
     attacher = attach.Attacher(Settings(target=Target()))
     with pytest.raises(ParaViewError) as caught:
         attacher.ensure()
     assert caught.value.code == "no_paraview"
     assert "on this machine" in caught.value.message
-    assert (tmp_path / ".clio" / "paraview" / config.SERVER_VERSION).is_dir()
-    assert (
-        oct(os.stat(tmp_path / ".clio" / "paraview" / config.SERVER_VERSION).st_mode)[
-            -3:
-        ]
-        == "700"
+    folder = (
+        tmp_path / ".local" / "share" / "clio-kit" / "paraview" / config.SERVER_VERSION
     )
+    assert attach.local_folder(config.SERVER_VERSION) == str(folder)
+    assert folder.is_dir()
+    assert oct(os.stat(folder).st_mode)[-3:] == "700"
 
 
 async def test_scene_tool_without_paraview_returns_the_message(
