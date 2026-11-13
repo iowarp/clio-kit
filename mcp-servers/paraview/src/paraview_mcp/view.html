@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>ParaView view</title>
+<style>
+  html, body { margin: 0; height: 100%; font: 13px system-ui, sans-serif; }
+  body { display: flex; flex-direction: column; min-height: 520px; background: Canvas; color: CanvasText; }
+  #status { padding: 6px 10px; border-bottom: 1px solid color-mix(in srgb, CanvasText 20%, transparent); }
+  #status[hidden] { display: none; }
+  #status button { font: inherit; margin-left: 8px; }
+  #frame { flex: 1; width: 100%; border: 0; min-height: 480px; }
+  #frame[hidden] { display: none; }
+</style>
+</head>
+<body>
+<div id="status" role="status">Opening the ParaView view…</div>
+<iframe id="frame" title="ParaView" hidden></iframe>
+<script>
+(() => {
+  'use strict';
+  const PROTOCOL = '2026-01-26';
+  const SERVICE_KEY = 'ai.iowarp.clio/service';
+  const statusBox = document.getElementById('status');
+  const frame = document.getElementById('frame');
+  const pending = new Map();
+  let nextId = 1;
+  let serviceUrl = null;
+  let hostContext = {};
+  let latest = null;
+  let lastSent = 0;
+  let sendTimer = null;
+  let sentText = '';
+  let opened = null;
+
+  function send(message) { window.parent.postMessage(message, '*'); }
+  function request(method, params) {
+    const id = nextId++;
+    send({ jsonrpc: '2.0', id, method, params });
+    return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+  }
+  function notify(method, params) { send({ jsonrpc: '2.0', method, params }); }
+  function respond(id, result) { send({ jsonrpc: '2.0', id, result }); }
+
+  function showStatus(text, withReconnect) {
+    statusBox.hidden = false;
+    statusBox.textContent = text;
+    if (withReconnect) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.textContent = 'Reconnect';
+      button.addEventListener('click', () => loadFrame());
+      statusBox.appendChild(button);
+    }
+  }
+
+  function serviceFrom(context) {
+    const entry = context && context[SERVICE_KEY];
+    return entry && typeof entry.url === 'string' ? entry.url : null;
+  }
+
+  function loadFrame() {
+    if (!serviceUrl) {
+      showStatus('This host did not give the view its ParaView service, so the live view cannot open here. '
+        + 'The agent can still show the scene with the capture tool.');
+      return;
+    }
+    const base = new URL(serviceUrl, document.baseURI);
+    if (!base.pathname.endsWith('/')) base.pathname += '/';
+    // trame connects its WebSocket straight to the service route.
+    const socket = new URL('ws', base);
+    socket.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
+    const page = new URL('index.html', base);
+    page.search = base.search;
+    page.searchParams.set('sessionURL', socket.href);
+    statusBox.hidden = true;
+    frame.hidden = false;
+    frame.src = page.href;
+  }
+
+  function describe(state) {
+    const parts = [];
+    parts.push('ParaView view of ' + (state.dataset || 'scene ' + state.scene) + ' (scene id ' + state.scene + ').');
+    const t = state.time || {};
+    if (t.steps > 1) {
+      let line = 'Time step ' + (t.index + 1) + ' of ' + t.steps + ' (time ' + t.time + ')';
+      if (t.follow_latest) line += ', following the latest step.';
+      else line += ', parked by the person; ' + t.newer_steps + ' newer step(s) exist, latest time ' + t.latest_time + '.';
+      parts.push(line);
+    }
+    if (state.representation && state.representation.length) {
+      parts.push('Shown: ' + state.representation.map((o) => o.id + ' ' + (o.label || o.type) + ' as ' + o.representation
+        + (o.color_by ? ' coloured by ' + o.color_by : '')).join('; ') + '.');
+    }
+    if (state.selection) {
+      const s = state.selection;
+      parts.push('The person picked point ' + s.point_id + ' of ' + s.object + ' at (' + (s.point || []).join(', ') + '): '
+        + Object.entries(s.values || {}).map(([k, v]) => k + '=' + JSON.stringify(v)).join(', ') + '.');
+    }
+    if (state.camera) {
+      parts.push('Camera position (' + state.camera.position.map((v) => v.toPrecision(4)).join(', ') + '), focal point ('
+        + state.camera.focal_point.map((v) => v.toPrecision(4)).join(', ') + ').');
+    }
+    parts.push(state.view_mode === 'remote' ? 'Drawn by ParaView (remote rendering).' : 'Drawn in the browser (local rendering).');
+    return parts.join(' ');
+  }
+
+  function structured(state) {
+    const t = state.time || {};
+    return {
+      scene: state.scene,
+      dataset: state.dataset,
+      time: t.time === undefined ? null : t.time,
+      time_index: t.index === undefined ? null : t.index,
+      time_steps: t.steps || 0,
+      latest_time: t.latest_time === undefined ? null : t.latest_time,
+      newer_steps: t.newer_steps || 0,
+      follow_latest: t.follow_latest !== false,
+      selection: state.selection,
+      representation: state.representation,
+      camera: state.camera,
+      view_mode: state.view_mode,
+    };
+  }
+
+  // At most ten context updates a second; the last state wins.
+  function report() {
+    sendTimer = null;
+    if (!latest) return;
+    const text = describe(latest);
+    if (text === sentText) return;
+    sentText = text;
+    lastSent = Date.now();
+    request('ui/update-model-context', {
+      content: [{ type: 'text', text }],
+      structuredContent: structured(latest),
+    }).catch(() => { sentText = ''; });
+  }
+  function schedule() {
+    if (sendTimer) return;
+    const wait = Math.max(0, 100 - (Date.now() - lastSent));
+    sendTimer = setTimeout(report, wait);
+  }
+
+  window.addEventListener('message', (event) => {
+    const data = event.data;
+    if (!data || typeof data !== 'object') return;
+    if (frame.contentWindow && event.source === frame.contentWindow) {
+      if (data.type === 'clio.paraview.state' && data.state) {
+        latest = data.state;
+        schedule();
+      } else if (data.type === 'clio.paraview.link') {
+        if (data.up) statusBox.hidden = true;
+        else showStatus('Lost the link to ParaView. The scene is kept there; the next ParaView action reconnects it.', true);
+      }
+      return;
+    }
+    if (event.source !== window.parent || data.jsonrpc !== '2.0') return;
+    if (data.id !== undefined && pending.has(data.id) && !data.method) {
+      const entry = pending.get(data.id);
+      pending.delete(data.id);
+      if (data.error) entry.reject(data.error); else entry.resolve(data.result);
+      return;
+    }
+    switch (data.method) {
+      case 'ui/notifications/tool-result': {
+        opened = data.params || null;
+        if (opened && opened.isError) {
+          const text = (opened.content || []).map((c) => c.text || '').join('\n');
+          showStatus(text || 'ParaView could not open the view.');
+        }
+        break;
+      }
+      case 'ui/notifications/host-context-changed': {
+        hostContext = Object.assign({}, hostContext, data.params || {});
+        const url = serviceFrom(data.params);
+        if (url && url !== serviceUrl) { serviceUrl = url; loadFrame(); }
+        break;
+      }
+      case 'ui/resource-teardown':
+        respond(data.id, {});
+        break;
+      default:
+        if (data.id !== undefined && data.method) {
+          send({ jsonrpc: '2.0', id: data.id, error: { code: -32601, message: 'Method not found' } });
+        }
+    }
+  });
+
+  request('ui/initialize', {
+    appInfo: { name: 'paraview-view', version: '3.0.0' },
+    appCapabilities: { availableDisplayModes: ['inline', 'fullscreen'] },
+    protocolVersion: PROTOCOL,
+  }).then((result) => {
+    hostContext = (result && result.hostContext) || {};
+    notify('ui/notifications/initialized', {});
+    notify('ui/notifications/size-changed', { width: document.body.clientWidth, height: 560 });
+    serviceUrl = serviceFrom(hostContext);
+    loadFrame();
+    const modes = hostContext.availableDisplayModes || [];
+    if (modes.includes('fullscreen') && hostContext.displayMode !== 'fullscreen') {
+      request('ui/request-display-mode', { mode: 'fullscreen' }).catch(() => {});
+    }
+  }).catch((error) => {
+    showStatus('The host did not start the view: ' + ((error && error.message) || 'unknown error') + '.');
+  });
+})();
+</script>
+</body>
+</html>

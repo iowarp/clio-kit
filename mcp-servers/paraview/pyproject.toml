@@ -1,38 +1,24 @@
 [project]
 name = "paraview-mcp"
-version = "1.0.0"
-description = "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them."
+version = "3.0.0"
+description = "See and measure 3D scientific data in ParaView, on this machine or over SSH, in a live view."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "BSD-3-Clause"
 authors = [
     { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
 ]
-
-keywords = ["MCP", "ParaView", "visualization", "scientific", "3D"]
-
+keywords = ["MCP", "ParaView", "trame", "visualization", "scientific", "3D", "SSH"]
 dependencies = [
     "fastmcp>=4.1.2,<5",
-    "adios2>=2.9.0",
-    "numpy>=2.0.0",
-    "python-dotenv>=1.2.2",
-    "authlib>=1.6.12",
-    "cryptography>=48.0.1",
-    "idna>=3.15",
-    "pydantic-settings>=2.14.2",
-    "pygments>=2.20.0",
-    "pyjwt>=2.15.1",
-    "python-multipart>=0.0.31",
-    "starlette>=1.3.1",
-    "urllib3>=2.8.0",
-    "msgpack>=1.2.1",
-    "requests>=2.33.0",
 ]
 
 [project.urls]
 Homepage = "https://toolkit.iowarp.ai/"
 Repository = "https://github.com/iowarp/clio-kit"
 
+[project.scripts]
+paraview-mcp = "paraview_mcp.server:main"
 
 [dependency-groups]
 dev = [
@@ -45,41 +31,25 @@ dev = [
     "ruff>=0.12.5",
 ]
 
-[project.scripts]
-paraview-mcp = "paraview_mcp.server:main"
-paraview-gui = "scripts.launch_gui:main"
-paraview-server = "scripts.launch_server:main"
-automate-setup = "scripts.automate_setup:main"
-build-paraview = "scripts.build_paraview:main"
-install-deps = "scripts.install_deps:main"
-test-installation = "scripts.test_installation:main"
-configure-paraview = "scripts.configure_paraview:main"
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/paraview_mcp", "scripts"]
+packages = ["src/paraview_mcp"]
 
-[tool.coverage.run]
-omit = [
-    # Exclude server.py from coverage - it's a FastMCP glue layer
-    # that initializes global ParaView connections causing test issues.
-    # All business logic is tested in implementation modules
-    "src/paraview_mcp/server.py",
-    "*/tests/*",
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "pvpython: needs a ParaView 6 pvpython; skipped with a typed reason when none is found",
 ]
 
-[tool.coverage.report]
-# Target 90%+ coverage on implementation modules
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise AssertionError",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "class .*\\bProtocol\\):",
-    "@(abc\\.)?abstractmethod",
-]
+[tool.ruff.lint.per-file-ignores]
+# ParaView's array-information proxies are not dicts: membership needs .keys().
+"src/paraview_mcp/node/*" = ["SIM118"]
+
+[tool.mypy]
+ignore_missing_imports = true
