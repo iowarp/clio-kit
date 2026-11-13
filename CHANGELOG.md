@@ -2,10 +2,11 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
-## 2.12.4 - 2026-11-13
+## 2.12.5 - 2026-11-13
 
 adios 2.3.1 no longer builds adios2 from source on Windows. Every other MCP
-server keeps the version it already published.
+server keeps the version it already published. 2.12.4 was tagged but never
+published; 2.12.5 is the first release that carries this change.
 
 - **adios starts in seconds on Windows**: adios2 publishes no Windows wheels,
   so uv compiled it from the sdist on the server's first prepare (457 s on a
@@ -15,6 +16,11 @@ server keeps the version it already published.
   `list_bp5` keep working on Windows; the tools that read BP5 contents raise a
   typed `Adios2Unavailable` (reason `adios2_unavailable`) that says "ADIOS2
   bindings aren't available on Windows" instead of a raw import error (#413).
+
+## 2.12.4 - 2026-11-13
+
+Tagged but not published: its release checks failed because the adios server
+still reported version 2.3.0. Its changes ship in 2.12.5.
 
 ## 2.12.3 - 2026-11-11
 

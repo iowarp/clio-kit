@@ -176,7 +176,7 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     assert manifests == [project / "server.json" for project in all_projects]
     assert list(expected_server_versions) == sorted(expected_server_versions)
     assert set(expected_server_versions) == {project.name for project in all_projects}
-    # 2.12.4 changes runtime behavior only in adios (no adios2 on Windows); every
+    # 2.12.5 changes runtime behavior only in adios (no adios2 on Windows); every
     # other server keeps the contract it already published.
     assert publish_servers == ("adios",)
     assert marketplace["metadata"]["version"] == expected_version

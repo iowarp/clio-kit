@@ -3,7 +3,7 @@ schema-version = 1
 # Publish new immutable server releases when schemas, runtime behavior or locked
 # dependencies change. A dependency security update warrants a patch release even
 # when the tool schema is unchanged. Never reuse an already-published version.
-# 2.12.4: adios 2.3.1 skips adios2 on Windows, where no wheel exists, and reports
+# 2.12.5: adios 2.3.1 skips adios2 on Windows, where no wheel exists, and reports
 # its BP5 read tools as unavailable there; every other server keeps the version
 # and contract it already published.
 [mcp-registry-release]
