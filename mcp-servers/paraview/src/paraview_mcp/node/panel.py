@@ -26,13 +26,17 @@ STYLE = """
 html, body, #app { margin: 0; height: 100%; overflow: hidden; }
 .v-application { font-size: 13px; }
 .clio-root { display: flex; flex-direction: column; height: 100vh; }
-.clio-bar { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center;
+.clio-bar { display: flex; flex-wrap: nowrap; gap: 4px 10px; align-items: center;
   min-height: 36px; padding: 2px 8px; border-bottom: 1px solid rgba(var(--v-border-color), .2); }
 .clio-bar strong { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   max-width: 40vw; }
 .clio-time { display: inline-flex; align-items: center; gap: 2px; }
 .clio-time input[type=range] { width: 140px; }
-.clio-time .clio-step { font-variant-numeric: tabular-nums; min-width: 44px; text-align: center; }
+.clio-time .clio-step { font-variant-numeric: tabular-nums; min-width: 44px; padding: 0 6px; }
+.clio-step-menu { display: flex; align-items: center; gap: 4px; padding: 4px 8px; }
+.clio-step-menu input[type=range] { width: 180px; }
+.clio-bar strong { flex: 0 1 auto; min-width: 0; }
+.clio-time, .clio-mode { flex: none; }
 .clio-mode { margin-left: auto; }
 .clio-body { flex: 1; display: flex; min-height: 0; position: relative; }
 .clio-rail { display: flex; flex-direction: column; gap: 2px; padding: 4px 2px; width: 40px;
@@ -71,9 +75,8 @@ html, body, #app { margin: 0; height: 100%; overflow: hidden; }
     max-height: 62%; z-index: 5; border-right: 0; border-top: 1px solid rgba(var(--v-border-color), .3);
     border-radius: 10px 10px 0 0; box-shadow: 0 -4px 16px rgba(0,0,0,.25); }
   .clio-bar { gap: 2px 6px; }
-  .clio-bar strong { max-width: 26vw; }
-  .clio-time input[type=range] { width: 72px; }
-  .clio-time .clio-stepbtn { display: none; }
+  .clio-bar strong { max-width: none; }
+  .clio-time input[type=range], .clio-time .clio-stepbtn { display: none; }
 }
 """
 
@@ -179,13 +182,7 @@ def _top_bar(v3: Any, html: Any) -> None:
                 raw_attrs=['aria-label="Time step"'],
                 change="trigger('clio_set_time', [Number($event.target.value)])",
             )
-            html.Span(
-                "{{ clio_index + 1 }}/{{ clio_steps }}",
-                classes="clio-step",
-                raw_attrs=[
-                    ":title=\"'Step ' + (clio_index + 1) + ' of ' + clio_steps\""
-                ],
-            )
+            _step_menu(v3, html)
             _follow(v3)
         with html.Span(
             classes="clio-mode", raw_attrs=['role="group"', 'aria-label="Drawing"']
@@ -209,6 +206,49 @@ def _top_bar(v3: Any, html: Any) -> None:
                 ):
                     v3.VIcon(MODE_ICONS[mode], size="small")
                     v3.VTooltip(activator="parent", text=(tip,), location="bottom")
+
+
+def _step_menu(v3: Any, html: Any) -> None:
+    """The step as ``n/N``; pressing it opens previous, a slider and next.
+
+    At phone width this is the whole time control beside Play, so the bar keeps
+    one row.
+    """
+    with v3.VBtn(
+        "{{ clio_index + 1 }}/{{ clio_steps }}",
+        variant="text",
+        size="small",
+        classes="clio-step",
+        raw_attrs=[
+            ":aria-label=\"'Time step ' + (clio_index + 1) + ' of ' + clio_steps\""
+        ],
+    ):
+        with v3.VMenu(
+            activator="parent", location="bottom", close_on_content_click=False
+        ):
+            with v3.VCard(classes="clio-step-menu", raw_attrs=['role="group"']):
+                icon_button(
+                    v3,
+                    "mdi-skip-previous",
+                    "Previous step",
+                    "trigger('clio_step', [-1])",
+                    disabled=("clio_index <= 0",),
+                )
+                html.Input(
+                    type="range",
+                    min=0,
+                    max=("clio_steps - 1",),
+                    value=("clio_index",),
+                    raw_attrs=['aria-label="Time step"'],
+                    change="trigger('clio_set_time', [Number($event.target.value)])",
+                )
+                icon_button(
+                    v3,
+                    "mdi-skip-next",
+                    "Next step",
+                    "trigger('clio_step', [1])",
+                    disabled=("clio_index >= clio_steps - 1",),
+                )
 
 
 def _follow(v3: Any) -> Any:

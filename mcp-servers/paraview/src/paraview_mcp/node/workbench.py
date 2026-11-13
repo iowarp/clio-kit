@@ -15,7 +15,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from . import data, filters, manifest
+from . import colors, data, filters, manifest
 from .errors import CommandError
 
 PRESETS = (
@@ -96,7 +96,9 @@ def _component_items(count: int) -> list[dict[str, Any]]:
     ]
 
 
-def selected_view(item: dict[str, Any], info: dict[str, Any]) -> dict[str, Any]:
+def selected_view(
+    item: dict[str, Any], info: dict[str, Any], preset: str | None = None
+) -> dict[str, Any]:
     """What the Display and Info panels show for one scene object."""
     display = item.get("display") or {}
     color_by = display.get("color_by")
@@ -117,7 +119,8 @@ def selected_view(item: dict[str, Any], info: dict[str, Any]) -> dict[str, Any]:
         "color_items": _color_items(info),
         "component": "Magnitude" if component is None else component,
         "component_items": _component_items(count) if field else [],
-        "colormap": display.get("colormap") or ("Cool to Warm" if field else None),
+        "colormap": display.get("colormap")
+        or (preset or "Cool to Warm" if field else None),
         "scalar_bar": bool(display.get("scalar_bar")),
         "opacity": float(display.get("opacity", 1.0)),
         "data_type": info.get("data_type"),
@@ -231,7 +234,9 @@ class Workbench:
         state = self.state
         state.clio_active = item["id"] if item else None
         info = self.infos.get(item["id"]) if item else None
-        state.clio_sel = selected_view(item, info) if item and info else None
+        field = ((item or {}).get("display") or {}).get("color_by") or [None, None]
+        preset = colors.preset_name(self.engine.simple, field[1]) if item else None
+        state.clio_sel = selected_view(item, info, preset) if item and info else None
         state.clio_opacity = state.clio_sel["opacity"] if state.clio_sel else 1.0
         state.clio_offered = filters.offered(info)
         if state.clio_filter and info is not None:
