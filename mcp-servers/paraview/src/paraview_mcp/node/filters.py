@@ -11,12 +11,18 @@ from __future__ import annotations
 import math
 from typing import Any
 
-# name, icon, short tooltip; what the input must carry ("scalar" or "vector").
+# name, icon; what the input must carry; whether the result replaces its input in
+# the view, as ParaView's own Slice, Clip and Threshold do.
 CATALOG: tuple[dict[str, Any], ...] = (
     {"name": "Contour", "icon": "mdi-circle-double", "needs": "point_scalar"},
-    {"name": "Slice", "icon": "mdi-slash-forward-box", "needs": None},
-    {"name": "Clip", "icon": "mdi-content-cut", "needs": None},
-    {"name": "Threshold", "icon": "mdi-tune-variant", "needs": "scalar"},
+    {"name": "Slice", "icon": "mdi-slash-forward-box", "needs": None, "replaces": True},
+    {"name": "Clip", "icon": "mdi-content-cut", "needs": None, "replaces": True},
+    {
+        "name": "Threshold",
+        "icon": "mdi-tune-variant",
+        "needs": "scalar",
+        "replaces": True,
+    },
     {"name": "Glyph", "icon": "mdi-arrow-top-right-bold-outline", "needs": "vector"},
     {"name": "StreamTracer", "icon": "mdi-weather-windy", "needs": "vector"},
     {"name": "Calculator", "icon": "mdi-calculator-variant-outline", "needs": None},
@@ -30,6 +36,11 @@ NEEDS_TEXT = {
 GLYPH_TYPES = ("Arrow", "Cone", "Sphere", "Line", "Cylinder", "Box")
 SEED_TYPES = ("Point Cloud", "Line")
 ATTRIBUTE_TYPES = ("Point Data", "Cell Data")
+
+
+def replaces_input(name: str) -> bool:
+    """Whether adding ``name`` hides its input, as ParaView does."""
+    return any(e["name"] == name and e.get("replaces") for e in CATALOG)
 
 
 def title(name: str) -> str:

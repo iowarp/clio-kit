@@ -200,3 +200,27 @@ async def test_view_page_passes_the_host_theme_on() -> None:
     assert "var(--color-background-primary)" in html
     # The context tells the agent what the person changed.
     assert "Recent changes in the view" in html
+
+
+def test_slice_clip_and_threshold_replace_their_input() -> None:
+    assert [
+        e["name"] for e in filters.CATALOG if filters.replaces_input(e["name"])
+    ] == [
+        "Slice",
+        "Clip",
+        "Threshold",
+    ]
+
+
+def test_camera_presets_are_separate_lines() -> None:
+    log = changes.ChangeLog()
+    for args in (
+        {"direction": "+y"},
+        {"parallel_projection": True},
+        {"parallel_projection": True},
+    ):
+        log.record("person", *changes.describe("set_camera", args, {}, None))
+    assert [e["text"] for e in log.recent()] == [
+        "camera looks along +Y",
+        "parallel projection",
+    ]

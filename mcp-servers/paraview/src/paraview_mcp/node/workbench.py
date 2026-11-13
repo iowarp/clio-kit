@@ -271,7 +271,12 @@ class Workbench:
             return
         made = self.run(
             "create_filter",
-            {"filter": name, "input": state.clio_active, "properties": properties},
+            {
+                "filter": name,
+                "input": state.clio_active,
+                "properties": properties,
+                "hide_input": filters.replaces_input(name),
+            },
         )
         if made is not None:
             state.clio_filter = ""

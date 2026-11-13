@@ -451,7 +451,7 @@ class Engine(SceneReading):
         )
         moved = self.read_camera()
         if moved != self.scene.get("camera"):
-            self.changes.record("person", "camera", "camera turned in the view")
+            self.changes.record("person", "camera:drag", "camera turned in the view")
         self.scene["camera"] = moved
         manifest.write(self.root, self.scene)
 

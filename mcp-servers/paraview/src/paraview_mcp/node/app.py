@@ -99,7 +99,7 @@ def token_from(request: Any) -> str | None:
 
 
 def register_composite_serializers() -> None:
-    """Let trame-vtk send ParaView 6's partitioned datasets to the browser.
+    """Let trame-vtk send ParaView 6's partitioned datasets and legends to the browser.
 
     ParaView 6 representations hand their mappers a
     vtkPartitionedDataSetCollection; trame-vtk 2.11 has no serializer for it,
@@ -107,6 +107,7 @@ def register_composite_serializers() -> None:
     merge-to-polydata serializer handles any composite dataset.
     """
     from trame_vtk.modules.vtk.serializers import initialize_serializers
+    from trame_vtk.modules.vtk.serializers.actors import scalar_bar_actor_serializer
     from trame_vtk.modules.vtk.serializers.data import merge_to_polydata_serializer
     from trame_vtk.modules.vtk.serializers.registry import (
         register_instance_serializer,
@@ -115,6 +116,16 @@ def register_composite_serializers() -> None:
     initialize_serializers()
     for name in ("vtkPartitionedDataSetCollection", "vtkPartitionedDataSet"):
         register_instance_serializer(name, merge_to_polydata_serializer)
+
+    # ParaView draws a colour legend through a widget representation; its actor is
+    # a vtkScalarBarActor that trame-vtk can send, so the legend shows in local mode.
+    def scalar_bar(parent: Any, rep: Any, rep_id: Any, context: Any, depth: int) -> Any:
+        actor = rep.GetScalarBarActor() if rep.GetVisibility() else None
+        if actor is None:
+            return None
+        return scalar_bar_actor_serializer(parent, actor, rep_id, context, depth)
+
+    register_instance_serializer("vtkPVScalarBarRepresentation", scalar_bar)
 
 
 class NodeApp:

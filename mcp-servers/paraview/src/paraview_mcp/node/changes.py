@@ -68,7 +68,10 @@ def describe(
         text = f"added {made.get('id')} {made.get('type') or args.get('filter')}"
         text += f" on {_object(scene, made.get('input') or args.get('input'))}"
         props = _properties(args.get("properties"))
-        return f"add:{made.get('id')}", text + (f" ({props})" if props else "")
+        text += f" ({props})" if props else ""
+        if args.get("hide_input"):
+            text += ", its input hidden"
+        return f"add:{made.get('id')}", text
     if name == "remove_scene_object":
         removed = ", ".join(result.get("removed") or [str(args.get("object"))])
         return f"remove:{removed}", f"removed {removed}"
@@ -84,7 +87,9 @@ def describe(
             text += ", following the latest step"
         return "time", text
     if name in ("set_camera", "fit_camera"):
-        return "camera", _camera(name, args)
+        # A preset pressed twice is one line; different presets are separate lines.
+        text = _camera(name, args)
+        return f"camera:{text}", text
     return None
 
 
