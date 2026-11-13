@@ -4,6 +4,8 @@
 __pycache__/
 *.py[cod]
 *.py[!o]*
+# Each server pins its build interpreter; it must ship with the server.
+!clio-kit-mcp-servers/*/.python-version
 *.class
 .Python
 venv/
