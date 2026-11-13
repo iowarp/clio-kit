@@ -223,6 +223,11 @@ class NodeApp:
         app.router.add_get("/clio/health", self._health)
         app.router.add_post("/clio/ping", self._ping)
         app.router.add_post("/clio/command", self._command)
+        # trame-client asks a launcher for its session before connecting. There
+        # is none: an empty answer makes it connect to the WebSocket beside its
+        # own page. (A sessionURL parameter would be lowercased by trame-client,
+        # which breaks a host route whose capability is case-sensitive.)
+        app.router.add_post("/paraview/", self._no_launcher)
 
     @staticmethod
     def _json(payload: Any, status: int = 200) -> Any:
@@ -270,6 +275,9 @@ class NodeApp:
                 "session": self.engine.session,
             }
         )
+
+    async def _no_launcher(self, _request: Any) -> Any:
+        return self._json(None)
 
     async def _ping(self, _request: Any) -> Any:
         return self._json({"ok": True})

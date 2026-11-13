@@ -69,12 +69,9 @@
     }
     const base = new URL(serviceUrl, document.baseURI);
     if (!base.pathname.endsWith('/')) base.pathname += '/';
-    // trame connects its WebSocket straight to the service route.
-    const socket = new URL('ws', base);
-    socket.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:';
+    // trame connects its WebSocket beside its page, under the same route.
     const page = new URL('index.html', base);
     page.search = base.search;
-    page.searchParams.set('sessionURL', socket.href);
     statusBox.hidden = true;
     frame.hidden = false;
     frame.src = page.href;
