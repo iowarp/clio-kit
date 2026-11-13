@@ -13,7 +13,7 @@ keywords = ["MCP", "ParaView", "visualization", "scientific", "3D"]
 
 dependencies = [
     "fastmcp>=4.0.0b1",
-    "adios2>=2.9.0",
+    "adios2>=2.13.0.1001",
     "numpy>=2.0.0",
     "python-dotenv>=1.2.2",
     "authlib>=1.6.12",
