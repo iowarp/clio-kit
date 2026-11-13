@@ -224,3 +224,24 @@ def test_camera_presets_are_separate_lines() -> None:
         "camera looks along +Y",
         "parallel projection",
     ]
+
+
+class _Legend:
+    def __init__(self, title: str) -> None:
+        self.title = title
+
+    def GetScalarBarActor(self) -> _Legend:
+        return self
+
+    def GetTitle(self) -> str:
+        return self.title
+
+
+def test_the_browser_shows_the_selected_objects_legend() -> None:
+    from paraview_mcp.node.serializers import chosen_legend
+
+    legends = [_Legend("RTData"), _Legend("velocity Magnitude"), _Legend("temperature")]
+    assert chosen_legend(legends, "velocity") is legends[1]
+    assert chosen_legend(legends, None) is legends[2]
+    assert chosen_legend(legends, "pressure") is legends[2]
+    assert chosen_legend([], "RTData") is None

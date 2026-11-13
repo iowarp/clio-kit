@@ -18,6 +18,7 @@ from typing import Any
 from .changes import lines as change_lines
 from .engine import CommandError, Engine
 from .panel import MODE_LABELS, build
+from .serializers import register_serializers
 from .theme import FALLBACK_CSS, THEME_JS, apply_to_view
 from .workbench import Workbench
 
@@ -98,54 +99,6 @@ def token_from(request: Any) -> str | None:
     return None
 
 
-def register_composite_serializers() -> None:
-    """Let trame-vtk send ParaView 6's partitioned datasets and legends to the browser.
-
-    ParaView 6 representations hand their mappers a
-    vtkPartitionedDataSetCollection; trame-vtk 2.11 has no serializer for it,
-    so local rendering would show an empty scene. trame-vtk's own
-    merge-to-polydata serializer handles any composite dataset.
-    """
-    from trame_vtk.modules.vtk.serializers import initialize_serializers
-    from trame_vtk.modules.vtk.serializers.actors import scalar_bar_actor_serializer
-    from trame_vtk.modules.vtk.serializers.data import merge_to_polydata_serializer
-    from trame_vtk.modules.vtk.serializers.registry import (
-        register_instance_serializer,
-    )
-
-    initialize_serializers()
-    for name in ("vtkPartitionedDataSetCollection", "vtkPartitionedDataSet"):
-        register_instance_serializer(name, merge_to_polydata_serializer)
-
-    # ParaView draws a colour legend through a widget representation; its actor is
-    # a vtkScalarBarActor that trame-vtk can send, so the legend shows in local mode.
-    def scalar_bar(parent: Any, rep: Any, rep_id: Any, context: Any, depth: int) -> Any:
-        actor = rep.GetScalarBarActor() if rep.GetVisibility() else None
-        if actor is None:
-            return None
-        found = scalar_bar_actor_serializer(parent, actor, rep_id, context, depth)
-        if found is not None:
-            # trame-vtk puts every legend in one place; set them side by side.
-            props = parent.GetViewProps()
-            shown = [
-                props.GetItemAsObject(i)
-                for i in range(props.GetNumberOfItems())
-                if props.GetItemAsObject(i).GetClassName()
-                == "vtkPVScalarBarRepresentation"
-                and props.GetItemAsObject(i).GetVisibility()
-            ]
-            index = next((i for i, p in enumerate(shown) if p is rep), 0)
-            if index:  # the first keeps trame-vtk's own place at the right edge
-                found["properties"].update(
-                    automated=False,
-                    boxPosition=[0.72 - 0.24 * (index - 1), -0.9],
-                    boxSize=[0.2, 1.2],
-                )
-        return found
-
-    register_instance_serializer("vtkPVScalarBarRepresentation", scalar_bar)
-
-
 class NodeApp:
     """Binds the engine to trame and serves the command routes."""
 
@@ -167,7 +120,7 @@ class NodeApp:
         from trame.widgets import client
         from trame.widgets import paraview as pv_widgets
 
-        register_composite_serializers()
+        register_serializers(self._legend_title)
         state, ctrl = self.server.state, self.server.controller
         state.trame__title = "ParaView"
         state.update(
@@ -429,9 +382,16 @@ class NodeApp:
         if applied and self.view is not None:
             self.view.update()
 
+    def _legend_title(self) -> str | None:
+        """The field whose legend the browser shows: the selected object's, if on."""
+        sel = self.server.state.clio_sel or {}
+        return sel.get("color") if sel.get("scalar_bar") else None
+
     def _ui_select(self, object_id: str) -> None:
         self.bench.select(object_id)
         self.server.state.clio_bridge = self.bridge()
+        if self.view is not None:  # the browser's one legend follows the selection
+            self.view.update()
 
     def _ui_redraw(self) -> None:
         # Local mode draws in the browser; remote mode needs ParaView to render again.
