@@ -15,7 +15,12 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from .changes import lines as change_lines
 from .engine import CommandError, Engine
+from .panel import MODE_LABELS, build
+from .serializers import register_serializers
+from .theme import FALLBACK_CSS, THEME_JS, apply_to_view
+from .workbench import Workbench
 
 TOKEN_HEADERS = ("X-Clio-Service-Token",)
 END_INTERACTION_EVENT = 45  # vtkCommand::EndInteractionEvent
@@ -59,6 +64,8 @@ BRIDGE_JS = r"""
       client.onConnectionError(function () { post({ type: 'clio.paraview.link', up: false }); });
     }
     post({ type: 'clio.paraview.link', up: true });
+    // The view page answers with the host's theme and colours (theme.py).
+    post({ type: 'clio.paraview.ready' });
     // A frame that mounts or resizes (a tab moved, the canvas maximized) asks for a
     // fresh picture: in remote mode nothing else would draw it until the next drag.
     // The remote view subscribes to images only once it has mounted and sized itself,
@@ -80,38 +87,6 @@ BRIDGE_JS = r"""
 })();
 """
 
-# The two drawing modes (PV7): one icon toggle in the view's bar, each with a
-# short label for its tooltip and for assistive technology.
-MODE_LABELS = {"local": "Draw in browser", "remote": "Render on ParaView machine"}
-
-STYLE = """
-html, body, #app { margin: 0; height: 100%; font: 13px system-ui, sans-serif; }
-.clio-root { display: flex; flex-direction: column; height: 100vh; }
-.clio-bar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center;
-  padding: 6px 10px; background: #f4f5f7; color: #1d2330; border-bottom: 1px solid #d5d8de; }
-.clio-bar button { font: inherit; padding: 3px 8px; border: 1px solid #9aa3b2;
-  border-radius: 4px; background: #fff; color: inherit; cursor: pointer; }
-.clio-bar input[type=range] { width: 160px; }
-.clio-view { flex: 1; position: relative; min-height: 120px; }
-.clio-note { color: #4a5263; }
-.clio-mode { display: inline-flex; margin-left: auto; }
-.clio-mode button { display: inline-flex; padding: 3px 7px; border-radius: 0; }
-.clio-mode button:first-child { border-radius: 4px 0 0 4px; }
-.clio-mode button:last-child { border-radius: 0 4px 4px 0; border-left: 0; }
-.clio-mode button[aria-pressed=true] { background: #1d2330; color: #fff;
-  box-shadow: inset 0 -3px 0 #8fb4ff; }
-.clio-mode i { width: 16px; height: 16px; background: currentColor;
-  -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
-.clio-ico-local { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='3' y='4' width='18' height='12' rx='1.5'/%3E%3Cpath d='M8 20h8M12 16v4'/%3E%3C/svg%3E"); }
-.clio-ico-remote { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='3' y='3' width='18' height='7' rx='1.5'/%3E%3Crect x='3' y='14' width='18' height='7' rx='1.5'/%3E%3Cpath d='M7 6.5h.01M7 17.5h.01'/%3E%3C/svg%3E"); }
-@media (prefers-color-scheme: dark) {
-  .clio-bar { background: #1f232b; color: #e6e9ef; border-color: #363c48; }
-  .clio-bar button { background: #2a2f39; border-color: #4b5262; }
-  .clio-mode button[aria-pressed=true] { background: #e6e9ef; color: #1f232b; }
-  .clio-note { color: #b5bccb; }
-}
-"""
-
 
 def token_from(request: Any) -> str | None:
     """The token a request carries, from the bearer header or the CLIO header."""
@@ -122,25 +97,6 @@ def token_from(request: Any) -> str | None:
         if request.headers.get(name):
             return request.headers[name].strip()
     return None
-
-
-def register_composite_serializers() -> None:
-    """Let trame-vtk send ParaView 6's partitioned datasets to the browser.
-
-    ParaView 6 representations hand their mappers a
-    vtkPartitionedDataSetCollection; trame-vtk 2.11 has no serializer for it,
-    so local rendering would show an empty scene. trame-vtk's own
-    merge-to-polydata serializer handles any composite dataset.
-    """
-    from trame_vtk.modules.vtk.serializers import initialize_serializers
-    from trame_vtk.modules.vtk.serializers.data import merge_to_polydata_serializer
-    from trame_vtk.modules.vtk.serializers.registry import (
-        register_instance_serializer,
-    )
-
-    initialize_serializers()
-    for name in ("vtkPartitionedDataSetCollection", "vtkPartitionedDataSet"):
-        register_instance_serializer(name, merge_to_polydata_serializer)
 
 
 class NodeApp:
@@ -161,11 +117,10 @@ class NodeApp:
 
     # -- trame -----------------------------------------------------------------
     def _build(self) -> None:
-        from trame.ui.html import DivLayout
-        from trame.widgets import client, html
+        from trame.widgets import client
         from trame.widgets import paraview as pv_widgets
 
-        register_composite_serializers()
+        register_serializers(self._legend_title)
         state, ctrl = self.server.state, self.server.controller
         state.trame__title = "ParaView"
         state.update(
@@ -177,82 +132,56 @@ class NodeApp:
             clio_follow=True,
             clio_newer=0,
             clio_mode_note="",
+            clio_theme="light",
+            clio_view_colors=None,
             viewMode="local",
         )
-        ctrl.trigger("clio_set_time")(self._ui_time)
-        ctrl.trigger("clio_latest")(self._ui_latest)
-        ctrl.trigger("clio_set_mode")(self._ui_set_mode)
-        ctrl.trigger("clio_pick")(self._ui_pick)
-        ctrl.trigger("clio_redraw")(self._ui_redraw)
+        state.change("clio_view_colors")(self._ui_theme)
+        bench = self.bench = Workbench(self.engine, state, after=self._after_person)
+        for name, handler in {
+            "clio_set_time": bench.set_time,
+            "clio_latest": bench.latest,
+            "clio_step": bench.step,
+            "clio_play": bench.play,
+            "clio_select": self._ui_select,
+            "clio_visible": bench.set_visible,
+            "clio_remove": bench.remove,
+            "clio_display": bench.display,
+            "clio_camera": bench.camera,
+            "clio_filter_form": bench.open_form,
+            "clio_filter_apply": bench.apply_form,
+            "clio_set_mode": self._ui_set_mode,
+            "clio_pick": self._ui_pick,
+            "clio_redraw": self._ui_redraw,
+        }.items():
+            ctrl.trigger(name)(handler)
         ctrl.on_server_bind.add(self._bind_routes)
 
-        with DivLayout(self.server) as layout:
-            client.Style(STYLE)
+        def make_view() -> Any:
+            client.Style(FALLBACK_CSS)
+            client.Script(THEME_JS)
             client.Script(BRIDGE_JS)
-            with html.Div(classes="clio-root"):
-                with html.Div(classes="clio-bar"):
-                    html.Strong("{{ clio_label }}", title=("clio_path",))
-                    with html.Span(v_if="clio_steps > 1"):
-                        html.Span("Step {{ clio_index + 1 }} of {{ clio_steps }}")
-                        html.Input(
-                            type="range",
-                            min=0,
-                            max=("clio_steps - 1",),
-                            value=("clio_index",),
-                            raw_attrs=['aria-label="Time step"'],
-                            change="trigger('clio_set_time', [Number($event.target.value)])",
-                        )
-                        html.Button(
-                            "Follow latest",
-                            v_if="!clio_follow",
-                            click="trigger('clio_latest')",
-                        )
-                        html.Span(
-                            "Following the latest step",
-                            v_if="clio_follow",
-                            classes="clio-note",
-                        )
-                        html.Span(
-                            "{{ clio_newer }} newer step(s) available",
-                            v_if="!clio_follow && clio_newer > 0",
-                            classes="clio-note",
-                        )
-                    # PV7: where the picture is drawn, as two pressed/unpressed icons.
-                    # The tooltip says why CLIO switched, when it did.
-                    with html.Span(
-                        classes="clio-mode",
-                        raw_attrs=['role="group"', 'aria-label="Drawing"'],
-                    ):
-                        for mode, label in MODE_LABELS.items():
-                            tip = (
-                                f"'{label}' + (viewMode === '{mode}' && clio_mode_note"
-                                " ? '. ' + clio_mode_note : '')"
-                            )
-                            with html.Button(
-                                click=f"trigger('clio_set_mode', ['{mode}'])",
-                                raw_attrs=[
-                                    f'aria-label="{label}"',
-                                    f':title="{tip}"',
-                                    f":aria-pressed=\"viewMode === '{mode}' ? 'true' : 'false'\"",
-                                ],
-                            ):
-                                html.I(classes=f"clio-ico-{mode}")
-                with html.Div(classes="clio-view"):
-                    self.view = pv_widgets.VtkRemoteLocalView(
-                        self.engine.view,
-                        namespace="view",
-                        mode=("viewMode", "local"),
-                        interactive_ratio=0.5,
-                        interactive_quality=50,
-                        interactor_events=("['EndAnimation']",),
-                        EndAnimation=(self._ui_camera, "[trame.refs.view.getCamera()]"),
-                    )
-        self.layout = layout
+            return pv_widgets.VtkRemoteLocalView(
+                self.engine.view,
+                namespace="view",
+                mode=("viewMode", "local"),
+                interactive_ratio=0.5,
+                interactive_quality=50,
+                interactor_events=("['EndAnimation']",),
+                EndAnimation=(self._ui_camera, "[trame.refs.view.getCamera()]"),
+            )
+
+        self.layout, self.view = build(self.server, make_view)
         ctrl.view_update = self.view.update
         # In remote mode the camera moves on the server; report it after a drag.
         interactor = self.engine.view.GetInteractor()
         if interactor is not None:
             interactor.AddObserver(END_INTERACTION_EVENT, self._remote_camera)
+
+    def _after_person(self, name: str) -> None:
+        """After a person's command commits: move the browser's camera if it moved."""
+        if name in ("set_camera", "fit_camera") and self.view is not None:
+            self.view.push_camera()
 
     def _bind_routes(self, wslink_server: Any) -> None:
         from aiohttp import web
@@ -337,7 +266,7 @@ class NodeApp:
             )
         try:
             with self.server.state:
-                result = self.engine.run(name, args)
+                result = self.engine.run(name, args, by="agent")
         except CommandError as exc:
             return self._json(
                 {"error": {"code": exc.code, "message": exc.message}}, 422
@@ -383,6 +312,7 @@ class NodeApp:
         state.clio_index = time_state.get("index", 0)
         state.clio_follow = time_state.get("follow_latest", True)
         state.clio_newer = time_state.get("newer_steps", 0)
+        self.bench.refresh(reason)
         if self.view is not None and reason not in ("selection", "camera"):
             self.view.update()
         moved = reason in ("open_view", "fit_camera", "set_camera", "rollback")
@@ -395,18 +325,28 @@ class NodeApp:
         scene = self.engine.scene
         if scene is None:
             return None
-        shown = [
-            {
-                "id": o["id"],
-                "label": o.get("label"),
-                "type": o.get("type"),
-                "representation": o.get("display", {}).get("representation"),
-                "color_by": (o.get("display", {}).get("color_by") or [None, None])[1],
-            }
-            for o in scene["objects"]
-            if o.get("display", {}).get("visible", True)
-        ]
+        pipeline = []
+        for o in scene["objects"]:
+            display = o.get("display") or {}
+            color = display.get("color_by") or [None, None]
+            pipeline.append(
+                {
+                    "id": o["id"],
+                    "label": o.get("label"),
+                    "type": o.get("type"),
+                    "input": o.get("input"),
+                    "properties": o.get("properties") or {},
+                    "visible": display.get("visible", True),
+                    "representation": display.get("representation"),
+                    "color_by": color[1],
+                    "color_component": display.get("color_component"),
+                    "colormap": display.get("colormap"),
+                    "opacity": display.get("opacity", 1.0),
+                    "scalar_bar": bool(display.get("scalar_bar")),
+                }
+            )
         selection = scene.get("selection")
+        changes = self.engine.changes.recent()
         return {
             "scene": scene["scene"],
             "dataset": (scene.get("dataset") or {}).get("path"),
@@ -419,27 +359,39 @@ class NodeApp:
                 "point": selection.get("point"),
                 "values": selection.get("point_values"),
             },
-            "representation": shown,
+            "pipeline": pipeline,
+            "representation": [p for p in pipeline if p["visible"]],
+            "active_object": self.server.state.clio_active,
             "camera": scene.get("camera"),
             "view_mode": scene["view"].get("mode"),
+            "changes": changes,
+            "changes_text": change_lines(changes),
         }
 
     # -- the person's actions in the view -----------------------------------------
-    def _ui_time(self, index: int) -> None:
-        steps = len(self.engine.timesteps())
-        try:
-            self.engine.run(
-                "set_timestep",
-                {"index": int(index), "latest": int(index) == steps - 1 or None},
-            )
-        except CommandError:
-            self._on_scene_change("rollback")
+    def _ui_theme(self, clio_view_colors: Any = None, **_: Any) -> None:
+        """Draw the render view in the host's tone (how it is drawn, not scene state)."""
+        if not clio_view_colors or len(clio_view_colors) != 2:
+            return
+        engine = self.engine
+        background, foreground = clio_view_colors
+        sources = list(engine.proxies.values())
+        applied = apply_to_view(
+            engine.simple, engine.view, background, foreground, sources
+        )
+        if applied and self.view is not None:
+            self.view.update()
 
-    def _ui_latest(self) -> None:
-        try:
-            self.engine.run("set_timestep", {"latest": True})
-        except CommandError:
-            self._on_scene_change("rollback")
+    def _legend_title(self) -> str | None:
+        """The field whose legend the browser shows: the selected object's, if on."""
+        sel = self.server.state.clio_sel or {}
+        return sel.get("color") if sel.get("scalar_bar") else None
+
+    def _ui_select(self, object_id: str) -> None:
+        self.bench.select(object_id)
+        self.server.state.clio_bridge = self.bridge()
+        if self.view is not None:  # the browser's one legend follows the selection
+            self.view.update()
 
     def _ui_redraw(self) -> None:
         # Local mode draws in the browser; remote mode needs ParaView to render again.

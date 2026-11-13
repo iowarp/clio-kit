@@ -296,3 +296,68 @@ def test_remote_mode_above_threshold(tmp_path: Path) -> None:
         attacher.close()
         _stop(home)
         os.environ["HOME"] = saved
+
+
+def test_the_panel_runs_the_same_commands(tmp_path: Path) -> None:
+    """Every panel action is an engine command by the person (pvpython)."""
+    import subprocess
+
+    assert PVPYTHON is not None
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+    env.setdefault("VTK_DEFAULT_OPENGL_WINDOW", "vtkOSOpenGLRenderWindow")
+    done = subprocess.run(
+        [
+            PVPYTHON,
+            "--force-offscreen-rendering",
+            str(Path(__file__).with_name("pvpython") / "panel_check.py"),
+            str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=300,
+        check=False,
+    )
+    line = next(
+        (x for x in done.stdout.splitlines() if x.startswith("PANEL_REPORT=")), None
+    )
+    assert line, done.stdout[-2000:] + done.stderr[-2000:]
+    report = json.loads(line.split("=", 1)[1])
+    assert set(report["offered"]) == {
+        "Contour",
+        "Slice",
+        "Clip",
+        "Threshold",
+        "Glyph",
+        "StreamTracer",
+        "Calculator",
+    }
+    assert all(not m["error"] for m in report["made"].values()), report["made"]
+    assert [t for _, t in report["objects"]] == [
+        "XMLImageDataReader",
+        "Contour",
+        "Slice",
+        "Clip",
+        "Threshold",
+        "Glyph",
+        "StreamTracer",
+        "Calculator",
+    ]
+    display = report["display"]
+    assert display["color_by"] == ["POINTS", "Gradient"]
+    assert display["color_component"] == 2 and display["scalar_bar"] is True
+    assert display["colormap"] == "Viridis" and display["opacity"] == 0.6
+    assert display["representation"] == "Surface With Edges"
+    assert "unknown_colormap" in report["bad_colormap"]
+    assert report["display_after_refusal"] == "Viridis"
+    assert report["camera"]["parallel_projection"] is True
+    assert report["camera"]["view_up"] == [0.0, 1.0, 0.0]
+    assert report["camera"]["position"][2] > report["camera"]["focal_point"][2]
+    assert report["after_remove"] == ["o1", "o2", "o4", "o5", "o6", "o7", "o8"]
+    assert report["visible_o2"] is False
+    assert report["manifest_objects"] == report["after_remove"]
+    assert report["manifest_parallel"] is True
+    texts = [c["text"] for c in report["changes"] if c["by"] == "person"]
+    assert "removed o3" in texts and "parallel projection" in texts
+    assert report["scene_state_changes"] == report["changes"]

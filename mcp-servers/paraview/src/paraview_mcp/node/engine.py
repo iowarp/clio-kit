@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from . import data, manifest
+from .changes import ChangeLog, describe
 from .data import DataError
 from .errors import CommandError, _expand
 from .reading import SceneReading
@@ -43,6 +44,17 @@ REPRESENTATIONS = (
     "Slice",
     "Feature Edges",
 )
+
+# A camera direction is the way the camera looks, and the view up that goes with
+# it, as ParaView's "Set view direction to +X" buttons choose them.
+DIRECTIONS = {
+    "+x": ((1, 0, 0), (0, 0, 1)),
+    "-x": ((-1, 0, 0), (0, 0, 1)),
+    "+y": ((0, 1, 0), (0, 0, 1)),
+    "-y": ((0, -1, 0), (0, 0, 1)),
+    "+z": ((0, 0, 1), (0, 1, 0)),
+    "-z": ((0, 0, -1), (0, 1, 0)),
+}
 
 
 def _set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
@@ -107,10 +119,15 @@ class Engine(SceneReading):
         self.proxies: dict[str, Any] = {}
         self._growth: dict[str, Any] = {}
         self.listeners: list[Callable[[str], None]] = []
+        self.changes = ChangeLog()
 
     # -- dispatch --------------------------------------------------------
-    def run(self, name: str, args: dict[str, Any]) -> dict[str, Any]:
-        """Apply one command and return its result."""
+    def run(self, name: str, args: dict[str, Any], by: str = "agent") -> dict[str, Any]:
+        """Apply one command and return its result.
+
+        The agent's tools and the person's actions in the view both come here;
+        ``by`` says which, for the change log the view reports.
+        """
         if name not in MUTATING and name not in READING:
             raise CommandError("unknown_command", f"No command named {name!r}.")
         handler = getattr(self, f"cmd_{name}")
@@ -122,6 +139,13 @@ class Engine(SceneReading):
         except Exception:
             self._rollback(before)
             raise
+        if name == "open_view" and (before or {}).get("scene") != (
+            self.scene or {}
+        ).get("scene"):
+            self.changes.clear()
+        change = describe(name, args, result, self.scene)
+        if change is not None:
+            self.changes.record(by, *change)
         self.commit(name)
         return result
 
@@ -226,6 +250,7 @@ class Engine(SceneReading):
                 color_by=[str(v) for v in rep.ColorArrayName] or None,
                 opacity=float(rep.Opacity),
                 colormap=None,
+                scalar_bar=False,
             )
             if display["color_by"] and not display["color_by"][1]:
                 display["color_by"] = None
@@ -234,7 +259,13 @@ class Engine(SceneReading):
         rep.Opacity = float(display.get("opacity", 1.0))
         color_by = display.get("color_by")
         if color_by:
-            simple.ColorBy(rep, (color_by[0], color_by[1]))
+            component = display.get("color_component")
+            simple.ColorBy(
+                rep,
+                (color_by[0], color_by[1])
+                if component is None
+                else (color_by[0], color_by[1], component),
+            )
             rep.RescaleTransferFunctionToDataRange(True, False)
             if display.get("colormap"):
                 lut = simple.GetColorTransferFunction(color_by[1])
@@ -250,6 +281,9 @@ class Engine(SceneReading):
                     )
         else:
             simple.ColorBy(rep, None)
+        rep.SetScalarBarVisibility(
+            self.view, bool(color_by) and bool(display.get("scalar_bar"))
+        )
         if not display.get("visible", True):
             simple.Hide(proxy, self.view)
 
@@ -357,6 +391,7 @@ class Engine(SceneReading):
             "view_up": list(camera.GetViewUp()),
             "view_angle": float(camera.GetViewAngle()),
             "parallel_scale": float(camera.GetParallelScale()),
+            "parallel_projection": bool(self.view.CameraParallelProjection),
         }
 
     def apply_camera(self, camera: dict[str, Any]) -> None:
@@ -367,6 +402,10 @@ class Engine(SceneReading):
             self.view.CameraViewAngle = float(camera["view_angle"])
         if camera.get("parallel_scale"):
             self.view.CameraParallelScale = float(camera["parallel_scale"])
+        if camera.get("parallel_projection") is not None:
+            self.view.CameraParallelProjection = int(
+                bool(camera["parallel_projection"])
+            )
 
     def geometry_mb(self) -> float:
         total_kb = 0
@@ -407,9 +446,13 @@ class Engine(SceneReading):
                 "view_up": camera.get("viewUp", camera.get("view_up")),
                 "view_angle": camera.get("viewAngle"),
                 "parallel_scale": camera.get("parallelScale"),
+                "parallel_projection": camera.get("parallelProjection"),
             }
         )
-        self.scene["camera"] = self.read_camera()
+        moved = self.read_camera()
+        if moved != self.scene.get("camera"):
+            self.changes.record("person", "camera:drag", "camera turned in the view")
+        self.scene["camera"] = moved
         manifest.write(self.root, self.scene)
 
     def pick_display(
@@ -599,6 +642,9 @@ class Engine(SceneReading):
         colormap: str | None = None,
         opacity: float | None = None,
         visible: bool | None = None,
+        component: int | str | None = None,
+        scalar_bar: bool | None = None,
+        rescale: bool | None = None,
     ) -> dict[str, Any]:
         scene = self.require_scene()
         item = manifest.find_object(scene, object)
@@ -606,6 +652,8 @@ class Engine(SceneReading):
             raise CommandError("unknown_object", f"No scene object {object!r}.")
         proxy = self.proxies[item["id"]]
         display = item.setdefault("display", {})
+        if color_by is not None:
+            display["color_component"] = None
         if representation is not None:
             if representation not in REPRESENTATIONS:
                 raise CommandError(
@@ -625,7 +673,16 @@ class Engine(SceneReading):
             display["opacity"] = max(0.0, min(1.0, float(opacity)))
         if visible is not None:
             display["visible"] = bool(visible)
+        if component is not None:
+            display["color_component"] = data.color_component(
+                proxy, display.get("color_by"), component
+            )
+        if scalar_bar is not None:
+            display["scalar_bar"] = bool(scalar_bar)
         self._show(item, proxy, apply=True)
+        if rescale and display.get("color_by"):
+            rep = self.simple.GetDisplayProperties(proxy, self.view)
+            rep.RescaleTransferFunctionToDataRange(False, True)
         self.update_view_mode()
         return {"object": self.object_summary(item)}
 
@@ -668,8 +725,14 @@ class Engine(SceneReading):
         azimuth: float = 0.0,
         elevation: float = 0.0,
         zoom: float = 1.0,
+        direction: str | None = None,
+        parallel_projection: bool | None = None,
     ) -> dict[str, Any]:
         self.require_scene()
+        if direction is not None:
+            self._look(direction)
+        if parallel_projection is not None:
+            self.view.CameraParallelProjection = int(bool(parallel_projection))
         current = self.read_camera()
         if position is not None or focal_point is not None or view_up is not None:
             self.apply_camera(
@@ -688,6 +751,29 @@ class Engine(SceneReading):
         if zoom and zoom != 1.0:
             camera.Dolly(float(zoom))
         return {"camera": self.read_camera()}
+
+    def _look(self, direction: str) -> None:
+        """Look along an axis at the centre of the scene, then fit it."""
+        key = direction.strip().lower()
+        if key not in DIRECTIONS:
+            raise CommandError(
+                "bad_direction",
+                f"{direction!r} is not one of: {', '.join(DIRECTIONS)}.",
+            )
+        look, up = DIRECTIONS[key]
+        current = self.read_camera()
+        focal = current["focal_point"]
+        distance = max(
+            sum((p - f) ** 2 for p, f in zip(current["position"], focal)) ** 0.5, 1e-6
+        )
+        self.apply_camera(
+            {
+                "position": [f - distance * d for f, d in zip(focal, look)],
+                "focal_point": focal,
+                "view_up": list(up),
+            }
+        )
+        self.view.ResetCamera(False)
 
     def cmd_fit_camera(self, object: str | None = None) -> dict[str, Any]:
         scene = self.require_scene()

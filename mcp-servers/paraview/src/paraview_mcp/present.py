@@ -30,7 +30,14 @@ def object_line(item: dict[str, Any]) -> str:
         detail.append(str(display.get("representation", "?")))
         color = display.get("color_by")
         if color:
-            detail.append(f"coloured by {color[1]}")
+            component = display.get("color_component")
+            which = "" if component is None else f" component {component}"
+            colormap = f" ({display['colormap']})" if display.get("colormap") else ""
+            detail.append(f"coloured by {color[1]}{which}{colormap}")
+            if display.get("scalar_bar"):
+                detail.append("colour legend shown")
+        if display.get("opacity", 1.0) < 1.0:
+            detail.append(f"opacity {_num(float(display['opacity']))}")
     if data:
         detail.append(f"{data.get('points', 0)} points, {data.get('cells', 0)} cells")
     parts.append(f"({', '.join(detail)})")
@@ -143,7 +150,18 @@ def measure_text(result: dict[str, Any]) -> str:
     )
 
 
+def changes_lines(changes: list[dict[str, Any]]) -> list[str]:
+    """The newest scene changes, and whether the person or the agent made them."""
+    if not changes:
+        return []
+    return ["Recent changes, oldest first:"] + [
+        f"- {c.get('at', '')} by the {c.get('by', 'agent')}: {c.get('text', '')}"
+        for c in changes
+    ]
+
+
 def camera_text(camera: dict[str, Any]) -> str:
+    projection = " Parallel projection." if camera.get("parallel_projection") else ""
     return (
         "Camera: position ("
         + ", ".join(_num(v) for v in camera["position"])
@@ -152,4 +170,5 @@ def camera_text(camera: dict[str, Any]) -> str:
         + "), view up ("
         + ", ".join(_num(v) for v in camera["view_up"])
         + ")."
+        + projection
     )

@@ -1,6 +1,6 @@
 [project]
 name = "paraview-mcp"
-version = "3.0.0"
+version = "3.1.0"
 description = "See and measure 3D scientific data in ParaView, on this machine or over SSH, in a live view."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -51,6 +51,8 @@ markers = [
 [tool.ruff.lint.per-file-ignores]
 # ParaView's array-information proxies are not dicts: membership needs .keys().
 "src/paraview_mcp/node/*" = ["SIM118"]
+# The view's layout nests trame elements as the page nests them.
+"src/paraview_mcp/node/panel.py" = ["SIM117", "SIM118"]
 
 [tool.mypy]
 ignore_missing_imports = true
