@@ -76,7 +76,7 @@ includes an actual compression round-trip check and troubleshooting steps.
 | `clio-hpc` | Software discovery, JARVIS execution and Slurm scheduling |
 | `clio-performance` | I/O diagnosis, log investigation and session provenance |
 | `clio-scientific-io` | Inspect and read HDF5, ADIOS BP5, Parquet and compressed files |
-| `clio-analysis` | Tabular data, statistics, charts and ParaView |
+| `clio-analysis` | Tabular data, statistics, charts and live ParaView views |
 | `clio-geoscience` | Geospatial, terrain and seismic analysis |
 | `clio-research` | Literature, public datasets and operator catalogues |
 
@@ -236,7 +236,8 @@ Client references: [Codex MCP](https://developers.openai.com/codex/mcp) and
 `clio-kit doctor --server hdf5 --connect` checks prerequisites and a real MCP
 connection. Follow it with a representative tool call on known data and inspect
 the result. HPC workflows require site software and scheduler access; ParaView
-and ChronoLog require compatible native backends. A successful connection does
+needs ParaView 6 on this machine or an SSH host, and ChronoLog its native
+backend. A successful connection does
 not establish that those dependencies are available or that a scientific result
 is correct.
 

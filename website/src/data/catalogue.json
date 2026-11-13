@@ -1410,10 +1410,10 @@
       "kind": "mcp",
       "name": "paraview",
       "title": "Paraview",
-      "description": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
+      "description": "See and measure 3D scientific data in ParaView, on this machine or over SSH, in a live view.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.2.7",
+      "version": "3.0.0",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/paraview",
@@ -1422,7 +1422,9 @@
       "tags": [
         "scientific-visualization",
         "paraview",
-        "3d-rendering",
+        "trame",
+        "mcp-apps",
+        "ssh",
         "hpc"
       ],
       "clients": [
@@ -1443,7 +1445,7 @@
       ],
       "installation": "launcher",
       "nativePackage": "clio-paraview",
-      "summary": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
+      "summary": "See and measure 3D scientific data in ParaView, on this machine or over SSH, in a live view.",
       "mcpSettings": {
         "codex": {
           "command": "clio-kit",
@@ -2577,10 +2579,10 @@
       "kind": "collection",
       "name": "clio-analysis-skills",
       "title": "Analysis Skills",
-      "description": "Skills for the clio-analysis workflow: turn a dataset into summary statistics and a figure.",
+      "description": "Skills for the clio-analysis workflow: turn a dataset into summary statistics, a figure, and a live 3D view.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.7",
+      "version": "1.1.0",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-analysis-skills",
@@ -2618,7 +2620,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Skills for the clio-analysis workflow: turn a dataset into summary statistics and a figure."
+      "summary": "Skills for the clio-analysis workflow: turn a dataset into summary statistics, a figure, and a live 3D view."
     },
     {
       "id": "plugin/clio-coder-dev",
@@ -4212,7 +4214,7 @@
       "description": "Use when choosing a chart, axes, bins or color scale for scientific data. Triggers on \"which chart\", \"log scale\", \"color map\". Calls no tools. Not for rendering a chart; use results-summary.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.7",
+      "version": "1.1.0",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-analysis-skills/skills/chart-select/SKILL.md",
@@ -5688,7 +5690,7 @@
       "description": "Use when profiling missing values, duplicates, outliers and validation rules before analysis. Triggers on \"clean this data\", \"missing values\", \"validate this CSV\". Not for plotting; use results-summary.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.7",
+      "version": "1.1.0",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-analysis-skills/skills/data-clean/SKILL.md",
@@ -6070,7 +6072,7 @@
       "description": "Use when calculating tabular summaries and plotting transformed CSV or Excel data. Triggers on \"summarize this table\", \"plot these results\", \"grouped mean\". Not for mesh or volume rendering; use simulation-visualize.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.7",
+      "version": "1.1.0",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-analysis-skills/skills/results-summary/SKILL.md",
@@ -6182,7 +6184,7 @@
       "description": "Use when inspecting and rendering simulation fields with ParaView. Triggers on \"isosurface\", \"slice this volume\", \"render the field\". Not for tabular charts; use results-summary.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.7",
+      "version": "1.1.0",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-analysis-skills/skills/simulation-visualize/SKILL.md",
@@ -6209,7 +6211,7 @@
         "skill"
       ],
       "installation": "portable-skill",
-      "summary": "Inspect and render simulation fields with ParaView."
+      "summary": "Open, measure and render simulation fields in a live ParaView view."
     },
     {
       "id": "skill/slurm-script",
@@ -6327,10 +6329,10 @@
       "kind": "plugin",
       "name": "clio-analysis",
       "title": "From results to insight",
-      "description": "Turn a dataset into summary statistics and a figure.",
+      "description": "Turn a dataset into summary statistics, a figure, and a live 3D view.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.7",
+      "version": "1.1.0",
       "category": "Analysis & visualization",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-analysis/.claude-plugin/plugin.json",
@@ -6377,7 +6379,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Turn a dataset into summary statistics and a figure."
+      "summary": "Turn a dataset into summary statistics, a figure, and a live 3D view."
     },
     {
       "id": "workflow/clio-dataset-report",

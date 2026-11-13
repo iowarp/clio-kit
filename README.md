@@ -213,7 +213,7 @@ These are broad workflow plugins. Each combines its MCP servers and skills.
 | `clio-hpc` | Build software and run cluster jobs | spack, lmod, jarvis, slurm, node-hardware |
 | `clio-performance` | Diagnose slow jobs and inspect logs | darshan, chronolog, parallel-sort |
 | `clio-scientific-io` | Explore scientific data files | hdf5, adios, parquet, compression |
-| `clio-analysis` | Analyze results and create figures | pandas, plot, paraview |
+| `clio-analysis` | Analyze results, create figures and open live 3D views | pandas, plot, paraview |
 | `clio-geoscience` | Work with maps, terrain and waveforms | geo, terrain, seismology |
 | `clio-research` | Find papers and datasets | arxiv, ndp, scientific-catalog, web |
 
@@ -470,7 +470,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`node-hardware`** | 2.3.2 | System | System hardware information | `clio-kit mcp-server node-hardware` |
 | **`pandas`** | 2.4.0 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
 | **`parallel-sort`** | 2.3.2 | Computing | Large file sorting | `clio-kit mcp-server parallel-sort` |
-| **`paraview`** | 2.2.7 | Visualization | Scientific 3D visualization and analysis | `clio-kit mcp-server paraview` |
+| **`paraview`** | 3.0.0 | Visualization | Live 3D views of scientific data, here or over SSH | `clio-kit mcp-server paraview` |
 | **`parquet`** | 2.3.0 | Data I/O | Read Parquet file columns | `clio-kit mcp-server parquet` |
 | **`plot`** | 2.2.7 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |
 | **`seismology`** | 2.3.3 | Seismology | Analyze SAC waveforms and archives | `clio-kit mcp-server seismology` |

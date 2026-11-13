@@ -166,7 +166,9 @@ async def main() -> int:
         ),
         view_text=report.get("viewText"),
         frames_after_drag_start=sum(
-            1 for f in report["frames"] if drag and f["at"] >= drag["start"] and not f.get("sent")
+            1
+            for f in report["frames"]
+            if drag and f["at"] >= drag["start"] and not f.get("sent")
         ),
         scene_state=_texts(state),
         screenshots=report["shots"] + [str(opts.out / "capture.png")],

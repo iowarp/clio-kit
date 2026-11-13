@@ -1,7 +1,7 @@
 {
   "name": "clio-paraview",
-  "description": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
-  "version": "2.2.7",
+  "description": "See and measure 3D scientific data in ParaView, on this machine or over SSH, in a live view.",
+  "version": "3.0.0",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

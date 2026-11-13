@@ -22,7 +22,7 @@ from pydantic import Field
 
 from . import present
 from .attach import Attacher
-from .config import SERVER_VERSION, from_environment
+from .config import from_environment
 from .errors import ParaViewError
 from .link import LinkError
 
@@ -31,7 +31,7 @@ SERVICE_META = "ai.iowarp.clio/service"
 
 mcp: FastMCP = FastMCP(
     "paraview",
-    version=SERVER_VERSION,
+    version="3.0.0",  # keep equal to mcp-server-versions.toml and SERVER_VERSION
     instructions=(
         "Open, look at and measure 3D scientific data in ParaView, on this machine "
         "or on another one over SSH, and show it to the person in a live view. "

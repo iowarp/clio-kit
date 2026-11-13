@@ -2,6 +2,20 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
+## Unreleased
+
+- **paraview 3.0.0, rebuilt**: the ParaView server is a new server. A plain
+  Python front speaks MCP and lists its tools with no ParaView installed; a
+  node half runs in ParaView's own Python on this machine or on another one
+  reached with one system `ssh` (your keys and config, a jump host, one
+  forwarded port; a host that wants a password fails at once with a clear
+  message). `open_view` shows the data in a live trame view (an MCP Apps view
+  that rotates in the browser and switches to server rendering for large
+  geometry); thirteen scene tools change, measure, capture and export the
+  scene, each committing whole or rolling back, and the scene is saved and
+  restored by id. The 26 tools of 2.2.7, `--multi-clients` and `viz.html` are
+  gone. The `clio-analysis` bundle is 1.1.0.
+
 ## 2.12.3 - 2026-11-11
 
 Launcher fixes, ndp 2.2.8 works against the public NDP catalog, and the web

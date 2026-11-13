@@ -292,3 +292,9 @@ def test_manifest_round_trip(tmp_path: Path) -> None:
     assert manifest.find_object(scene, "iso")["id"] == "o2"
     with pytest.raises(ValueError):
         manifest.scene_dir(tmp_path, "../escape")
+
+
+def test_reported_version_matches_the_node_folder_version() -> None:
+    from paraview_mcp import server
+
+    assert server.mcp.version == config.SERVER_VERSION

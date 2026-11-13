@@ -206,13 +206,15 @@
     {
       "name": "clio-paraview",
       "source": "./plugins/clio-paraview",
-      "description": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
-      "version": "2.2.7",
+      "description": "See and measure 3D scientific data in ParaView, on this machine or over SSH, in a live view.",
+      "version": "3.0.0",
       "category": "scientific",
       "keywords": [
         "scientific-visualization",
         "paraview",
-        "3d-rendering",
+        "trame",
+        "mcp-apps",
+        "ssh",
         "hpc"
       ],
       "license": "BSD-3-Clause",
@@ -455,8 +457,8 @@
     {
       "name": "clio-analysis-skills",
       "source": "./skills/clio-analysis-skills",
-      "description": "Skills for the clio-analysis workflow: turn a dataset into summary statistics and a figure.",
-      "version": "1.0.7",
+      "description": "Skills for the clio-analysis workflow: turn a dataset into summary statistics, a figure, and a live 3D view.",
+      "version": "1.1.0",
       "category": "skills",
       "keywords": [
         "chart-select",
@@ -470,22 +472,24 @@
     {
       "name": "clio-analysis",
       "source": "./plugins/clio-analysis",
-      "description": "Turn a dataset into summary statistics and a figure.",
-      "version": "1.0.7",
+      "description": "Turn a dataset into summary statistics, a figure, and a live 3D view.",
+      "version": "1.1.0",
       "category": "workflow",
       "keywords": [
-        "3d-rendering",
         "charts",
         "data-analysis",
         "data-visualization",
         "dataframes",
         "hpc",
         "matplotlib",
+        "mcp-apps",
         "pandas",
         "paraview",
         "plotting",
         "scientific-visualization",
-        "statistics"
+        "ssh",
+        "statistics",
+        "trame"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"

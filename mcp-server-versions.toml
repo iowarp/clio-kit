@@ -10,7 +10,7 @@ schema-version = 1
 # 2.12.2 were tagged but never published, so ndp 2.2.8 first reaches the
 # registry here.
 [mcp-registry-release]
-publish = ["ndp", "paraview"]
+publish = ["ndp"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.

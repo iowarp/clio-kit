@@ -10,97 +10,83 @@ metadata:
 
 # Simulation Visualization
 
-ParaView is a pipeline with an **active source**. Almost every tool acts on
-whichever object is active, not on one you name. Losing track of that is how you
-end up colouring the wrong object or screenshotting an empty view.
+ParaView holds a **scene**: a dataset, the filters built on it, how each one is
+shown, a time step and a camera. Every scene tool is one command that commits
+whole or not at all, and the scene is saved after each commit. Objects have ids
+(`o1`, `o2`, ...); name the object you mean instead of relying on "the last one".
 
-## The active source is state you must track
+## Where ParaView runs
 
-Every filter you create becomes the new active source. So a slice of an
-isosurface of the data is what you get if you build them in that order without
-resetting.
-
-- `clio-paraview:get_pipeline` — what exists and how it is connected
-- `clio-paraview:get_active_source_names_by_type` — the names you can select
-- `clio-paraview:set_active_source` — go back to a named object
-
-When a filter produces nothing, check what was active before assuming the filter
-failed.
+Paths are paths on the machine where ParaView runs, which may not be this one.
+The server reaches ParaView on this machine, or over SSH on the host its
+configuration names. There is no connect tool: when the person names another
+machine, that is a configuration change, not a tool call. If the first scene
+call says no ParaView was found, report what it says about where it looked.
 
 ## Steps
 
-**1. Load.** `clio-paraview:load_scientific_data` — VTK, EXODUS, CSV, RAW, BP5,
-with format detection. This call also checks the configured server's backend.
-The MCP server has its own Python environment: a failed `import paraview` in
-the agent's shell does not establish that the server is unavailable. Use the
-MCP call's actual result and report its error if it fails.
+**1. Open.** `clio-paraview:open_view` with the dataset path. A glob such as
+`/data/run/step_*.vti` opens a file series; `growing: true` follows a series
+that is still being written. The result names the scene id, every object, its
+fields with their exact ranges, and the time steps. Keep the scene id: passing
+`scene` to `open_view` later reopens exactly that scene.
 
-**2. Find out what fields exist.** `clio-paraview:get_available_arrays`. Do this
-before choosing a filter. Array names are exact; guessing one is the most common
-failure, and the shape matters — an isosurface needs a scalar, streamlines need a
-vector.
+**2. Read the fields before choosing a filter.** Field names are exact and the
+ranges are in the `open_view` result. An isosurface needs a scalar; streamlines
+need a vector.
 
-**3. Find a value worth contouring.** `clio-paraview:get_histogram` on the field.
-An isovalue picked without looking is usually outside the data range, and
-produces an empty surface with no error.
-Histogram bin centers are not the field's exact minimum and maximum. Report
-them as bin centers; obtain actual extrema before claiming an exact range.
+**3. Find a value worth contouring.** `clio-paraview:measure_field` gives the
+exact minimum, maximum, mean, median and a histogram. An isovalue picked
+without looking is usually outside the data and gives an empty surface.
 
 **4. Apply the filter that matches the question.**
+`clio-paraview:create_filter` takes ParaView's own filter and property names:
 
-| Want | Tool | Needs |
+| Want | Filter | Properties |
 |---|---|---|
-| Surface at a constant value | `generate_isosurface` | scalar field + isovalue |
-| Cut plane through the volume | `create_data_slice` | plane position |
-| Flow paths | `generate_flow_streamlines` | vector field |
-| Values along a line | `plot_over_line` | two points |
-| Displacement by a vector | `warp_by_vector` | vector field |
-| Whole volume | `configure_volume_display` | + opacity function |
+| Surface at a constant value | `Contour` | `ContourBy: ["POINTS", field]`, `Isosurfaces: [value]` |
+| Cut plane through the volume | `Slice` | the plane's origin and normal |
+| Keep cells in a range | `Threshold` | the field and the range |
+| Flow paths | `StreamTracer` | a vector field and seeds |
+| Displacement by a vector | `WarpByVector` | a vector field |
 
-**5. Select the display, then colour it.** A histogram can leave its table as
-active source. Use `set_active_source` to restore the intended dataset/filter,
-and `set_representation_type` to choose Surface or Volume before field coloring;
-Outline cannot be field-colored. Then use `clio-paraview:apply_field_coloring`, followed by
-`clio-paraview:set_color_map_preset` for a named preset such as Viridis, or
-`set_color_map` / `edit_volume_opacity` for a custom transfer function.
+A wrong property name is refused with the names that exist; nothing changes.
+`clio-paraview:remove_scene_object` removes an object and what is built on it.
 
-Preset choice is not decoration. A rainbow map invents banding that is not in the
-data; a perceptually uniform map does not. See `chart-select`.
+**5. Show it.** `clio-paraview:set_representation` sets Surface, Wireframe,
+Points, Outline or Volume, the field to colour by and a colour preset such as
+Viridis. Outline cannot be coloured by a field. A rainbow map invents banding
+that is not in the data; a perceptually uniform one does not. See
+`chart-select`.
 
-**6. Frame it.** `clio-paraview:reset_camera` to fit everything, then
-`clio-paraview:rotate_camera` by azimuth and elevation. Reset first — rotating
-from an unknown camera is guesswork.
+**6. Time.** `clio-paraview:set_timestep` moves to a step or a time, or follows
+the latest step of a growing source. The person may park the view on an
+earlier step; the scene says when newer steps exist.
 
-**7. Capture.** `clio-paraview:take_viewport_screenshot` writes a timestamped
-PNG. `clio-paraview:show_screenshot_preview` gives an inline look, which is what
-you want while iterating.
+**7. Look before you claim.** The person sees a live view and may rotate it or
+pick a point. `clio-paraview:capture` renders a PNG at the camera on their
+screen; inspect it before describing what is shown.
+`clio-paraview:inspect_selection` gives the exact values at the point they
+picked. Read numbers from these tools, never from a colour bar or the image.
+`clio-paraview:set_camera` and `fit_camera` move the camera.
 
-Preview while adjusting, save when it is right.
-
-## Surfaces and geometry
-
-`clio-paraview:compute_surface_area` requires the active source to be a **surface
-mesh** — an isosurface or extracted surface, not a volume. On a volume it fails
-rather than approximating.
-
-`clio-paraview:set_representation_type` switches between Surface, Wireframe and
-Points. Points on a large mesh renders when Surface is too slow to iterate on.
-
-`clio-paraview:save_contour_as_stl` exports the active contour for use elsewhere.
+**8. Keep the result.** `clio-paraview:export_artifact` writes a figure;
+`clio-paraview:export_scene` writes the scene manifest and a ParaView state
+file. `clio-paraview:scene_state` says where ParaView is attached and what the
+scene holds.
 
 ## When ParaView is the wrong tool
 
 If the data is a table, this is the wrong server — `clio-plot` reads CSV and
-Excel directly and needs none of this. See `results-summary`.
+Excel directly. See `results-summary`.
 
 ## What not to do
 
-- Do not apply a filter without checking what is active.
-- Do not guess array names; list them.
-- Do not pick an isovalue without looking at the histogram.
+- Do not guess field names; read them from the scene.
+- Do not pick an isovalue without `measure_field`.
 - Do not use a rainbow colour map for continuous scalar data.
-- Do not screenshot before resetting the camera.
-- Do not compute surface area on a volume.
+- Do not describe a render you have not captured and looked at.
+- Do not read a value off the colour bar; measure it.
 
 ## Tool discovery across agents
 
@@ -111,4 +97,8 @@ If a required server is unavailable, report it before attempting the workflow.
 
 ## Completion check
 
-Verify loading and rendering through the configured MCP tools; a connection alone is insufficient. Report source, timestep, active filter, field association (point/cell), units, color range and output image. Inspect the image before declaring rendering complete; do not infer its colors from the preset name alone.
+Verify opening and rendering through the configured MCP tools; a connection
+alone is insufficient. Report the machine, source, time step, filters, field
+association (point/cell), units, colour range and the captured image. Inspect
+the image before declaring rendering complete; do not infer its colours from
+the preset name alone.

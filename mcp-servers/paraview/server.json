@@ -1,0 +1,101 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/paraview-mcp",
+  "title": "CLIO Paraview",
+  "description": "See and measure 3D scientific data in ParaView, on this machine or over SSH, in a live view.",
+  "version": "3.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.12.3",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "paraview"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "open_view",
+      "description": "Open a dataset or restore a saved scene, and show it in a live ParaView view.\n\nWith neither path nor scene, it shows the ParaView session already running\nwhere ParaView is, or the current scene."
+    },
+    {
+      "name": "create_filter",
+      "description": "Add one filter to the scene's pipeline. It commits whole or not at all."
+    },
+    {
+      "name": "remove_scene_object",
+      "description": "Remove an object and everything built on it from the pipeline."
+    },
+    {
+      "name": "set_representation",
+      "description": "Change an object's representation, colouring, opacity or visibility."
+    },
+    {
+      "name": "set_timestep",
+      "description": "Show another time step, or follow the latest one."
+    },
+    {
+      "name": "set_camera",
+      "description": "Place the camera, or turn and zoom it from where it is."
+    },
+    {
+      "name": "fit_camera",
+      "description": "Point the camera so everything, or one object, fills the view."
+    },
+    {
+      "name": "inspect_selection",
+      "description": "Exact field values at the point the person picked in the view."
+    },
+    {
+      "name": "measure_field",
+      "description": "Exact statistics and a histogram of a field at the current time step."
+    },
+    {
+      "name": "capture",
+      "description": "A PNG rendered by ParaView at the camera the view last reported."
+    },
+    {
+      "name": "export_artifact",
+      "description": "Write a figure of the current view as a PNG file."
+    },
+    {
+      "name": "export_scene",
+      "description": "Write the scene manifest, and a ParaView state file beside it."
+    },
+    {
+      "name": "scene_state",
+      "description": "Where ParaView is attached, the dataset, the pipeline, time and view."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "ui://paraview/view",
+      "name": "paraview_view",
+      "description": "The live ParaView view: trame, framed through the host's service route."
+    }
+  ],
+  "tags": [
+    "scientific-visualization",
+    "paraview",
+    "trame",
+    "mcp-apps",
+    "ssh",
+    "hpc"
+  ],
+  "scope": "scientific"
+}
