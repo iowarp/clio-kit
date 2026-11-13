@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/spack-mcp",
   "title": "CLIO Spack",
   "description": "Structured Spack discovery and installation tools for scientific agents",
-  "version": "2.3.3",
+  "version": "2.3.4",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.12.6",
+      "version": "2.12.7",
       "transport": {
         "type": "stdio"
       },

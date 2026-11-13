@@ -25,7 +25,7 @@ load_dotenv()
 # Initialize MCP server
 mcp: FastMCP = FastMCP(
     "arxiv",
-    version="2.2.7",
+    version="2.2.8",
     instructions=(
         "Searches and retrieves academic papers from arXiv. "
         "Search by keyword, author, title, or subject. Fetch paper details and abstracts."

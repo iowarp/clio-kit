@@ -168,7 +168,7 @@ load_dotenv()
 # Initialize MCP server
 mcp: FastMCP = FastMCP(
     "plot",
-    version="2.2.7",  # keep equal to clio-server.toml (tests/test_release_regressions.py)
+    version="2.2.8",  # keep equal to clio-server.toml (tests/test_release_regressions.py)
     instructions=(
         "Creates data visualizations using matplotlib. "
         "Generate line plots, bar charts, scatter plots, histograms, heatmaps, and "

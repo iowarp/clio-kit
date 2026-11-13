@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/pandas-mcp",
   "title": "CLIO Pandas",
   "description": "Load tabular data, then clean, filter, group, merge and summarize it with pandas.",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.12.6",
+      "version": "2.12.7",
       "transport": {
         "type": "stdio"
       },

@@ -176,9 +176,32 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     assert manifests == [project / "server.json" for project in all_projects]
     assert list(expected_server_versions) == sorted(expected_server_versions)
     assert set(expected_server_versions) == {project.name for project in all_projects}
-    # 2.12.6 relocks adios and paraview (adios2 floor) and changes hdf5's metrics
-    # directory; every other server keeps the contract it already published.
-    assert publish_servers == ("adios", "hdf5", "paraview")
+    # 2.12.7 relocks every Python server for an opentelemetry-api security fix,
+    # so every server publishes a patch release.
+    assert publish_servers == (
+        "adios",
+        "arxiv",
+        "chronolog",
+        "compression",
+        "darshan",
+        "geo",
+        "hdf5",
+        "jarvis",
+        "lmod",
+        "ndp",
+        "node-hardware",
+        "pandas",
+        "parallel-sort",
+        "paraview",
+        "parquet",
+        "plot",
+        "scientific-catalog",
+        "seismology",
+        "slurm",
+        "spack",
+        "terrain",
+        "web",
+    )
     assert marketplace["metadata"]["version"] == expected_version
     assert set(marketplace_plugins) == set(expected_server_versions)
     assert set(bundle_plugins) == set(expected_bundles)
