@@ -2,6 +2,20 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
+## 2.12.4 - 2026-11-13
+
+adios 2.3.1 no longer builds adios2 from source on Windows. Every other MCP
+server keeps the version it already published.
+
+- **adios starts in seconds on Windows**: adios2 publishes no Windows wheels,
+  so uv compiled it from the sdist on the server's first prepare (457 s on a
+  cold cache with MSVC present, a failure without one), and the result never
+  imported. The adios2 dependency is now marked `sys_platform != 'win32'`; on
+  a new Windows install the first prepare drops to about 16 s. The server and
+  `list_bp5` keep working on Windows; the tools that read BP5 contents raise a
+  typed `Adios2Unavailable` (reason `adios2_unavailable`) that says "ADIOS2
+  bindings aren't available on Windows" instead of a raw import error (#413).
+
 ## 2.12.3 - 2026-11-11
 
 Launcher fixes, ndp 2.2.8 works against the public NDP catalog, and the web
