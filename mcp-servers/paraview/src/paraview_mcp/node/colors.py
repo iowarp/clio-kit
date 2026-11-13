@@ -97,3 +97,12 @@ def preset_name(simple: Any, field: str | None) -> str | None:
     if "NameOfLastPresetApplied" not in lut.ListProperties():
         return None
     return str(lut.NameOfLastPresetApplied) or None
+
+
+def share_colormap(scene: dict[str, Any], color_by: Any, colormap: str) -> None:
+    """ParaView has one colour map per field: record it on every object it colours."""
+    field = (color_by or [None, None])[1]
+    for item in scene.get("objects") or []:
+        shown = item.get("display") or {}
+        if field and (shown.get("color_by") or [None, None])[1] == field:
+            shown["colormap"] = colormap

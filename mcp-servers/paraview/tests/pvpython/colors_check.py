@@ -32,6 +32,10 @@ def state(engine: Engine) -> dict[str, Any]:
         "points": hashlib.sha1(str(points).encode()).hexdigest(),
         "range": [points[0], points[-4]],
         "preset": str(lut.NameOfLastPresetApplied),
+        "recorded": {
+            o["id"]: (o.get("display") or {}).get("colormap")
+            for o in engine.scene["objects"]
+        },
         "reps": reps,
     }
 
@@ -68,6 +72,18 @@ def main(out: Path, mode: str) -> dict[str, Any]:
         engine.run(
             "set_representation",
             {"object": "o2", "colormap": "Viridis", "opacity": 0.7, "scalar_bar": True},
+        )
+        engine.run(
+            "create_filter",
+            {
+                "filter": "Slice",
+                "input": "o1",
+                "properties": {"SliceType.Normal": [0, 0, 1]},
+            },
+        )
+        engine.run(
+            "set_representation",
+            {"object": "o3", "color_by": "RTData", "colormap": "Inferno"},
         )
         (out / "scene").write_text(engine.scene["scene"])
         return {"preset_after_new_scene": fresh, **state(engine)}

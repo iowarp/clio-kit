@@ -675,6 +675,7 @@ class Engine(SceneReading):
             )
         if colormap is not None:
             display["colormap"] = colormap
+            colors.share_colormap(scene, display.get("color_by"), colormap)
         if opacity is not None:
             display["opacity"] = max(0.0, min(1.0, float(opacity)))
         if visible is not None:

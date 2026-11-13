@@ -331,7 +331,9 @@ def test_colour_maps_survive_a_restart_and_do_not_leak(tmp_path: Path) -> None:
     restored = _pvpython_script("colors_check.py", str(tmp_path), "restore")
     assert built.pop("preset_after_new_scene") is not None
     assert restored == built
-    assert restored["preset"] == "Viridis"
+    # One colour map per field: the Slice's Inferno is the Contour's too, and both say so.
+    assert restored["preset"] == "Inferno"
+    assert restored["recorded"] == {"o1": None, "o2": "Inferno", "o3": "Inferno"}
     assert restored["reps"]["o2"] == [["POINTS", "RTData"], 0.7]
 
 
