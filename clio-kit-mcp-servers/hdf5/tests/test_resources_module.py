@@ -286,15 +286,78 @@ def test_resource_manager_initialization(temp_dir):
 
     assert rm.data_dir == temp_dir
     assert rm.cache_capacity == 100
-    assert rm.storage_index_path.exists()
-    assert rm.cache_db_path.exists()
-    assert rm.history_db_path.exists()
+    assert rm.storage_index_path.parent == temp_dir
+    assert rm.cache_db_path.parent == temp_dir
+    assert rm.history_db_path.parent == temp_dir
 
 
-def test_resource_manager_default_data_dir():
-    """Test ResourceManager with default data directory."""
+@pytest.fixture
+def isolated_state(tmp_path, monkeypatch):
+    """A home, working directory and environment with no data or cache dir configured."""
+    home = tmp_path / "home"
+    workspace = tmp_path / "workspace"
+    home.mkdir()
+    workspace.mkdir()
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+    for env in ("PLUGIN_DATA", "CLIO_KIT_CACHE_DIR", "XDG_CACHE_HOME", "LOCALAPPDATA"):
+        monkeypatch.delenv(env, raising=False)
+    monkeypatch.chdir(workspace)
+    return home, workspace
+
+
+def test_resource_manager_default_data_dir(isolated_state):
+    """The default directory is the server's state dir, never the working directory."""
+    home, workspace = isolated_state
     rm = resources.ResourceManager()
-    assert rm.data_dir == Path("data")
+    assert rm.data_dir.parts[-2:] == ("hdf5_mcp", "resources")
+    assert rm.data_dir.is_absolute()
+    assert rm.data_dir.is_relative_to(home)
+
+
+def test_resource_manager_default_data_dir_follows_host_dirs(
+    isolated_state, tmp_path, monkeypatch
+):
+    """A host-provided plugin data directory decides where state goes."""
+    monkeypatch.setenv("PLUGIN_DATA", str(tmp_path / "granted"))
+    assert resources.ResourceManager().data_dir == tmp_path / "granted" / "resources"
+
+
+def test_resource_manager_creates_nothing_until_saved(isolated_state):
+    """Building the manager (done at server import) writes nothing anywhere."""
+    home, workspace = isolated_state
+    rm = resources.ResourceManager()
+    assert list(workspace.iterdir()) == []
+    assert list(home.iterdir()) == []
+    assert not rm.data_dir.exists()
+
+    rm._save_storage_index()
+    assert json.loads(rm.storage_index_path.read_text())["files"] == {}
+    assert list(workspace.iterdir()) == []
+
+
+def test_resource_manager_save_survives_a_denied_dir(tmp_path, monkeypatch):
+    """A directory the host denies loses the index, not the server."""
+    rm = resources.ResourceManager(data_dir=tmp_path / "denied")
+
+    def deny(*_args, **_kwargs):
+        raise PermissionError(1, "Operation not permitted")
+
+    monkeypatch.setattr(resources.Path, "mkdir", deny)
+    rm._save_storage_index()
+    rm._save_cache_db()
+    rm._save_history_db()
+    assert not (tmp_path / "denied").exists()
+
+
+def test_resource_manager_empty_legacy_files_load_quietly(temp_dir, caplog):
+    """Empty placeholder files left by older versions read as fresh state."""
+    for name in (".storage_index.json", ".cache_db.json", ".history_db.json"):
+        (temp_dir / name).touch()
+    rm = resources.ResourceManager(data_dir=temp_dir)
+    assert rm.storage_index["files"] == {}
+    assert rm.cache_db["datasets"] == {}
+    assert rm.history_db["sessions"] == []
+    assert "Error loading" not in caplog.text
 
 
 def test_resource_manager_load_storage_index(temp_dir):
