@@ -138,7 +138,8 @@ def create_filter(
         dict[str, Any] | None,
         Field(
             description="Filter properties by ParaView name, e.g. "
-            '{"ContourBy": ["POINTS", "p"], "Isosurfaces": [0.5]}.'
+            '{"ContourBy": ["POINTS", "p"], "Isosurfaces": [0.5]}. A dotted name '
+            'sets a property of a part, e.g. {"SliceType.Normal": [0, 0, 1]}.'
         ),
     ] = None,
     label: Annotated[str | None, Field(description="A name for the object.")] = None,

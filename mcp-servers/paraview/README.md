@@ -108,5 +108,6 @@ uv run ruff check . && uv run ruff format --check . && uv run mypy src
 Without a `pvpython` the node-half tests skip with the reason `no_pvpython`.
 `tests/browser/run_standin.py` drives the view in headless Chromium through a
 stand-in MCP Apps host (`tests/browser/standin.mjs`) and checks rotation,
-picking, capture and the reported context. The SSH cluster fixture is in
-`cluster/`.
+picking, capture and the reported context. The SSH cluster fixture is the repository's
+`tests/fixtures/paraview-cluster/`. It stands for a site, and its pvserver form
+starts a pvserver the way a person would; the server itself never does.

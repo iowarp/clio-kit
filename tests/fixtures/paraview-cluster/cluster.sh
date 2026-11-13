@@ -24,7 +24,7 @@ REMOTE_HOME="/home/$CLUSTER_USER"
 STATE_DIR="${CLIO_PV_CLUSTER_STATE:-$HOME/.ssh/clio-pv-cluster}"
 USER_SSH_CONFIG="$HOME/.ssh/config"
 INCLUDE_LINE="Include $STATE_DIR/config"
-INCLUDE_MARK="# clio-pv-cluster: added by mcp-servers/paraview/cluster/cluster.sh up; removed by down"
+INCLUDE_MARK="# clio-pv-cluster: added by tests/fixtures/paraview-cluster/cluster.sh up; removed by down"
 CA_FILE="${CLIO_PV_CLUSTER_CA:-${SSL_CERT_FILE:-}}"
 HTTPS_PROXY_FOR_LOGIN="${CLIO_PV_CLUSTER_HTTPS_PROXY:-}"
 NET_EDGE="$PREFIX-edge"
@@ -144,7 +144,7 @@ write_ssh_files() {
         echo "clio-pv-locked $(host_key "$C_LOCKED")"
     } > "$STATE_DIR/known_hosts"
     cat > "$STATE_DIR/config" <<EOF
-# The ParaView cluster fixture (mcp-servers/paraview/cluster/cluster.sh).
+# The ParaView cluster fixture (tests/fixtures/paraview-cluster/cluster.sh).
 # Written by 'cluster.sh up' and removed by 'cluster.sh down'.
 Host login ares
     HostName 127.0.0.1

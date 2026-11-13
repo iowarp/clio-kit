@@ -145,6 +145,46 @@ def test_open_measure_and_rollback(attached: tuple[Attacher, Path]) -> None:
     assert captured["png_base64"].startswith("iVBOR")
 
 
+def test_slice_plane_is_set_through_its_part(attached: tuple[Attacher, Path]) -> None:
+    attacher, data = attached
+    client = attacher.ensure().client
+    # Its own file, so its own scene: the cube's scene is kept for the restart test.
+    write_vti(data / "slice.vti")
+    client.command("open_view", {"path": str(data / "slice.vti"), "new": True})
+    dotted = client.command(
+        "create_filter",
+        {
+            "filter": "Slice",
+            "input": "o1",
+            "properties": {
+                "SliceType": "Plane",
+                "SliceType.Origin": [3.5, 3.5, 3.5],
+                "SliceType.Normal": [0, 0, 1],
+            },
+        },
+    )
+    # A plane normal to z through z = 3.5 crosses p = x + y + z at 3.5 + x + y.
+    assert dotted["object"]["data"]["arrays"][0]["range"] == [3.5, 17.5]
+    nested = client.command(
+        "create_filter",
+        {
+            "filter": "Slice",
+            "input": "o1",
+            "properties": {"SliceType": {"Origin": [2, 2, 2], "Normal": [1, 0, 0]}},
+        },
+    )
+    assert nested["object"]["data"]["arrays"][0]["range"] == [2.0, 16.0]
+    with pytest.raises(ParaViewError) as caught:
+        client.command(
+            "create_filter",
+            {"filter": "Slice", "input": "o1", "properties": {"SliceType.Bogus": 1}},
+        )
+    assert caught.value.code == "unknown_property"
+    assert "Slice.SliceType has no property 'Bogus'" in str(caught.value)
+    scene = client.command("scene_state", {})
+    assert [o["id"] for o in scene["objects"]] == ["o1", "o2", "o3"]
+
+
 def test_token_record_and_loopback(attached: tuple[Attacher, Path]) -> None:
     attacher, _ = attached
     link = attacher.ensure()

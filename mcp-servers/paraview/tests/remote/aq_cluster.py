@@ -5,7 +5,7 @@ with the connector's environment, calls its tools through a real MCP client,
 and checks what happened on the cluster with ``cluster.sh``. Run from
 ``mcp-servers/paraview`` with the cluster up::
 
-    cluster/cluster.sh up
+    ../../tests/fixtures/paraview-cluster/cluster.sh up
     uv run python tests/remote/aq_cluster.py --out DIR [43 38 39 44 41 46 47 42 50 40]
 
 Scenario ids are the plan's AQ numbers. Results go to DIR/results.json and are
@@ -29,7 +29,7 @@ from fastmcp.client.transports import StdioTransport
 
 HERE = Path(__file__).resolve().parent
 SERVER = HERE.parents[1]
-CLUSTER = SERVER / "cluster" / "cluster.sh"
+CLUSTER = SERVER.parents[1] / "tests" / "fixtures" / "paraview-cluster" / "cluster.sh"
 FIX: dict[str, str] = {}
 
 

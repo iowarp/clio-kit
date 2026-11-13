@@ -59,10 +59,30 @@ BRIDGE_JS = r"""
       client.onConnectionError(function () { post({ type: 'clio.paraview.link', up: false }); });
     }
     post({ type: 'clio.paraview.link', up: true });
+    // A frame that mounts or resizes (a tab moved, the canvas maximized) asks for a
+    // fresh picture: in remote mode nothing else would draw it until the next drag.
+    // The remote view subscribes to images only once it has mounted and sized itself,
+    // so ask again when the view's box changes and a little after the page starts.
+    var redraw = null;
+    function ask() {
+      clearTimeout(redraw);
+      redraw = setTimeout(function () { trame.trigger('clio_redraw'); }, 500);
+    }
+    [300, 1500, 4000].forEach(function (ms) { setTimeout(ask, ms); });
+    window.addEventListener('resize', ask);
+    (function watch() {
+      var box = document.querySelector('.clio-view');
+      if (!box || !window.ResizeObserver) { setTimeout(watch, 200); return; }
+      new ResizeObserver(ask).observe(box);
+    })();
   }
   start();
 })();
 """
+
+# The two drawing modes (PV7): one icon toggle in the view's bar, each with a
+# short label for its tooltip and for assistive technology.
+MODE_LABELS = {"local": "Draw in browser", "remote": "Render on ParaView machine"}
 
 STYLE = """
 html, body, #app { margin: 0; height: 100%; font: 13px system-ui, sans-serif; }
@@ -74,9 +94,20 @@ html, body, #app { margin: 0; height: 100%; font: 13px system-ui, sans-serif; }
 .clio-bar input[type=range] { width: 160px; }
 .clio-view { flex: 1; position: relative; min-height: 120px; }
 .clio-note { color: #4a5263; }
+.clio-mode { display: inline-flex; margin-left: auto; }
+.clio-mode button { display: inline-flex; padding: 3px 7px; border-radius: 0; }
+.clio-mode button:first-child { border-radius: 4px 0 0 4px; }
+.clio-mode button:last-child { border-radius: 0 4px 4px 0; border-left: 0; }
+.clio-mode button[aria-pressed=true] { background: #1d2330; color: #fff;
+  box-shadow: inset 0 -3px 0 #8fb4ff; }
+.clio-mode i { width: 16px; height: 16px; background: currentColor;
+  -webkit-mask: var(--icon) center / contain no-repeat; mask: var(--icon) center / contain no-repeat; }
+.clio-ico-local { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='3' y='4' width='18' height='12' rx='1.5'/%3E%3Cpath d='M8 20h8M12 16v4'/%3E%3C/svg%3E"); }
+.clio-ico-remote { --icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Crect x='3' y='3' width='18' height='7' rx='1.5'/%3E%3Crect x='3' y='14' width='18' height='7' rx='1.5'/%3E%3Cpath d='M7 6.5h.01M7 17.5h.01'/%3E%3C/svg%3E"); }
 @media (prefers-color-scheme: dark) {
   .clio-bar { background: #1f232b; color: #e6e9ef; border-color: #363c48; }
   .clio-bar button { background: #2a2f39; border-color: #4b5262; }
+  .clio-mode button[aria-pressed=true] { background: #e6e9ef; color: #1f232b; }
   .clio-note { color: #b5bccb; }
 }
 """
@@ -145,14 +176,14 @@ class NodeApp:
             clio_index=0,
             clio_follow=True,
             clio_newer=0,
-            clio_mode_text="",
             clio_mode_note="",
             viewMode="local",
         )
         ctrl.trigger("clio_set_time")(self._ui_time)
         ctrl.trigger("clio_latest")(self._ui_latest)
-        ctrl.trigger("clio_toggle_mode")(self._ui_toggle_mode)
+        ctrl.trigger("clio_set_mode")(self._ui_set_mode)
         ctrl.trigger("clio_pick")(self._ui_pick)
+        ctrl.trigger("clio_redraw")(self._ui_redraw)
         ctrl.on_server_bind.add(self._bind_routes)
 
         with DivLayout(self.server) as layout:
@@ -168,7 +199,7 @@ class NodeApp:
                             min=0,
                             max=("clio_steps - 1",),
                             value=("clio_index",),
-                            aria_label="Time step",
+                            raw_attrs=['aria-label="Time step"'],
                             change="trigger('clio_set_time', [Number($event.target.value)])",
                         )
                         html.Button(
@@ -186,13 +217,26 @@ class NodeApp:
                             v_if="!clio_follow && clio_newer > 0",
                             classes="clio-note",
                         )
-                    html.Span("{{ clio_mode_text }}")
-                    html.Span("{{ clio_mode_note }}", classes="clio-note")
-                    html.Button(
-                        "{{ viewMode === 'local' ? 'Render in ParaView' "
-                        ": 'Render in this browser' }}",
-                        click="trigger('clio_toggle_mode')",
-                    )
+                    # PV7: where the picture is drawn, as two pressed/unpressed icons.
+                    # The tooltip says why CLIO switched, when it did.
+                    with html.Span(
+                        classes="clio-mode",
+                        raw_attrs=['role="group"', 'aria-label="Drawing"'],
+                    ):
+                        for mode, label in MODE_LABELS.items():
+                            tip = (
+                                f"'{label}' + (viewMode === '{mode}' && clio_mode_note"
+                                " ? '. ' + clio_mode_note : '')"
+                            )
+                            with html.Button(
+                                click=f"trigger('clio_set_mode', ['{mode}'])",
+                                raw_attrs=[
+                                    f'aria-label="{label}"',
+                                    f':title="{tip}"',
+                                    f":aria-pressed=\"viewMode === '{mode}' ? 'true' : 'false'\"",
+                                ],
+                            ):
+                                html.I(classes=f"clio-ico-{mode}")
                 with html.Div(classes="clio-view"):
                     self.view = pv_widgets.VtkRemoteLocalView(
                         self.engine.view,
@@ -329,18 +373,11 @@ class NodeApp:
             mode = scene["view"].get("mode", "local")
             state.viewMode = mode
             size = scene["view"].get("geometry_mb", 0)
-            state.clio_mode_text = (
-                "Drawn in this browser" if mode == "local" else "Drawn by ParaView"
+            state.clio_mode_note = (
+                f"Switched: geometry {size:.1f} MB, over {engine.threshold_mb:g} MB"
+                if mode == "remote" and not scene["view"].get("pinned")
+                else ""
             )
-            if mode == "remote" and not scene["view"].get("pinned"):
-                state.clio_mode_note = (
-                    f"geometry {size:.1f} MB is above the "
-                    f"{engine.threshold_mb:g} MB remote render threshold"
-                )
-            elif scene["view"].get("pinned"):
-                state.clio_mode_note = "chosen by hand"
-            else:
-                state.clio_mode_note = ""
         time_state = engine.time_summary()
         state.clio_steps = time_state.get("steps", 0)
         state.clio_index = time_state.get("index", 0)
@@ -404,11 +441,16 @@ class NodeApp:
         except CommandError:
             self._on_scene_change("rollback")
 
-    def _ui_toggle_mode(self) -> None:
-        if self.engine.scene is None:
+    def _ui_redraw(self) -> None:
+        # Local mode draws in the browser; remote mode needs ParaView to render again.
+        if self.view is not None and self.server.state.viewMode == "remote":
+            self.view.update()
+
+    def _ui_set_mode(self, mode: str) -> None:
+        if self.engine.scene is None or mode not in MODE_LABELS:
             return
-        current = self.engine.scene["view"].get("mode", "local")
-        self.engine.set_view_mode("remote" if current == "local" else "local")
+        if mode != self.engine.scene["view"].get("mode", "local"):
+            self.engine.set_view_mode(mode)
 
     def _ui_camera(self, camera: dict[str, Any] | None) -> None:
         if not camera or self.engine.scene is None:

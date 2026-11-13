@@ -45,6 +45,33 @@ REPRESENTATIONS = (
 )
 
 
+def _set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
+    """Set ``key`` on a filter. ``"SliceType.Normal"`` (or ``{"SliceType": {...}}``)
+    reaches into the proxy a property holds, such as a Slice's plane."""
+    head, _, rest = key.partition(".")
+    names = proxy.ListProperties()
+    if head not in names:
+        close = difflib.get_close_matches(head, names, n=5)
+        raise CommandError(
+            "unknown_property",
+            f"{owner} has no property {head!r}."
+            + (f" Close matches: {', '.join(close)}." if close else "")
+            + f" Its properties are: {', '.join(names)}.",
+        )
+    if not rest and not isinstance(value, dict):
+        setattr(proxy, head, value)
+        return
+    inner = getattr(proxy, head)
+    if not hasattr(inner, "ListProperties"):
+        raise CommandError(
+            "unknown_property",
+            f"{owner}.{head} is a plain value, so {key!r} cannot be set; give {head} itself.",
+        )
+    settings = {rest: value} if rest else value
+    for name, part in settings.items():
+        _set_property(inner, f"{owner}.{head}", name, part)
+
+
 def _close_presets(name: str) -> str:
     from paraview import servermanager
 
@@ -182,15 +209,7 @@ class Engine(SceneReading):
         factory = getattr(simple, item["type"])
         proxy = factory(Input=source)
         for key, value in (item.get("properties") or {}).items():
-            if key not in proxy.ListProperties():
-                close = difflib.get_close_matches(key, proxy.ListProperties(), n=5)
-                raise CommandError(
-                    "unknown_property",
-                    f"{item['type']} has no property {key!r}."
-                    + (f" Close matches: {', '.join(close)}." if close else "")
-                    + f" Its properties are: {', '.join(proxy.ListProperties())}.",
-                )
-            setattr(proxy, key, value)
+            _set_property(proxy, item["type"], key, value)
         proxy.UpdatePipeline()
         return proxy
 
