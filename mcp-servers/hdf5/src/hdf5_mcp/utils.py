@@ -50,6 +50,7 @@ from typing import Dict, Any, Tuple, Optional, Callable
 from pathlib import Path
 import time
 import os
+import sys
 import psutil
 from functools import wraps
 from threading import Lock, RLock
@@ -74,12 +75,41 @@ def setup_logging(log_level="INFO"):
 # =========================================================================
 
 
+def default_metrics_dir() -> Path:
+    """Where saved metrics go when no directory is given.
+
+    The server may run inside a host's write fence that denies its home directory, and its
+    working directory is the user's workspace, so it writes under a granted data or cache
+    directory, in this order: the host's plugin data folder (``PLUGIN_DATA``), the clio-kit
+    cache (``CLIO_KIT_CACHE_DIR``), then the user's cache directory (``XDG_CACHE_HOME``,
+    else the platform's).
+    """
+    plugin_data = os.environ.get("PLUGIN_DATA", "").strip()
+    if plugin_data:
+        return Path(plugin_data).expanduser() / "metrics"
+    kit_cache = os.environ.get("CLIO_KIT_CACHE_DIR", "").strip()
+    if kit_cache:
+        return Path(kit_cache).expanduser() / "hdf5_mcp" / "metrics"
+    xdg_cache = os.environ.get("XDG_CACHE_HOME", "").strip()
+    if xdg_cache:
+        cache_root = Path(xdg_cache).expanduser()
+    elif sys.platform == "win32":
+        local = os.environ.get("LOCALAPPDATA", "").strip()
+        cache_root = Path(local) if local else Path.home() / "AppData" / "Local"
+    elif sys.platform == "darwin":
+        cache_root = Path.home() / "Library" / "Caches"
+    else:
+        cache_root = Path.home() / ".cache"
+    return cache_root / "hdf5_mcp" / "metrics"
+
+
 class PerformanceMonitor:
     """Monitor and track performance metrics."""
 
     def __init__(self, metrics_dir: Optional[Path] = None):
-        self.metrics_dir = metrics_dir or Path.home() / ".hdf5_mcp" / "metrics"
-        self.metrics_dir.mkdir(parents=True, exist_ok=True)
+        # Resolved now, created only when metrics are saved: monitors are built at import
+        # time, and a directory the host denies must never stop the server from starting.
+        self.metrics_dir = metrics_dir or default_metrics_dir()
         self.metrics: Dict[str, Any] = {  # type: ignore[assignment]
             "operations": {},
             "memory": [],
@@ -133,13 +163,19 @@ class PerformanceMonitor:
             else:
                 self.metrics["cache_stats"]["misses"] += 1
 
-    def save_metrics(self):
-        """Save metrics to disk."""
+    def save_metrics(self) -> Optional[Path]:
+        """Save metrics to disk; return the file, or None when it cannot be written."""
         with self.lock:
             timestamp = time.strftime("%Y%m%d-%H%M%S")
             metrics_file = self.metrics_dir / f"metrics-{timestamp}.json"
-            with open(metrics_file, "w") as f:
-                json.dump(self.metrics, f, indent=2)
+            try:
+                self.metrics_dir.mkdir(parents=True, exist_ok=True)
+                with open(metrics_file, "w") as f:
+                    json.dump(self.metrics, f, indent=2)
+            except OSError as exc:
+                logger.warning("metrics not saved to %s: %s", self.metrics_dir, exc)
+                return None
+            return metrics_file
 
     def get_summary(self) -> Dict[str, Any]:
         """Get a summary of current metrics."""
