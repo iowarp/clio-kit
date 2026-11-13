@@ -95,6 +95,11 @@ host proxies the service under the app's own route and adds the token as
 `Authorization: Bearer`; the browser and the agent never see it. A host that
 does not carry a view's service shows a message, and `capture` still works.
 
+It also declares what a host should replay to reopen the view:
+`"ai.iowarp.clio/reopen": {"arguments": {"scene": <scene id>}}`. A reopened view
+restores the scene with its filters, representation and time step, even when
+the first call started a fresh scene with `new: true`.
+
 ## Development
 
 ```bash
