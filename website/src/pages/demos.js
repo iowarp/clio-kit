@@ -18,6 +18,7 @@ const demos = [
       ['Recorded', 'November 2025'],
       ['Agent', 'Claude Code · Sonnet 4.5'],
       ['Data', 'InCompact3d pipe flow, BP5 · ParaView 5.13.1'],
+      ['Server', 'The old ParaView server; 3.0.0 replaced its tools with a live view'],
     ],
     videos: [
       {

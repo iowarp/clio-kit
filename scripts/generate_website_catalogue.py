@@ -73,7 +73,7 @@ SUMMARIES = {
     "results-summary": "Calculate tabular summaries and plot transformed CSV or Excel data.",
     "seismic-analysis": "Inspect SAC waveforms and evaluate a saved earthquake event catalogue.",
     "session-record": "Record or retrieve a research decision trail with ChronoLog.",
-    "simulation-visualize": "Inspect and render simulation fields with ParaView.",
+    "simulation-visualize": "Open, measure and render simulation fields in a live ParaView view.",
     "slurm-script": "Prepare Slurm resource requests, job arrays and dependencies, and diagnose pending jobs.",
     "software-environment": "Check installed Spack packages and available or saved module environments.",
     "storage-format": "Choose scientific file formats, chunk layouts and compression for an access pattern.",

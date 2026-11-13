@@ -1,1015 +1,411 @@
-"""
-ParaView MCP Server
+"""ParaView MCP server: the front.
 
-This script runs as a standalone process and:
-1. Connects to ParaView using its Python API over network
-2. Exposes key ParaView functionality through the MCP protocol
-3. Updates visualizations in the existing ParaView viewport
-
-Usage:
-1. Start pvserver with --multi-clients flag (e.g., pvserver --multi-clients --server-port=11111)
-2. Start ParaView app and connect to the server
-3. Configure Claude Desktop to use this script
-
+The front is plain Python and speaks MCP over stdio. It lists its tools with
+no ParaView installed. The first scene tool attaches to a node half that runs
+in ParaView's own Python, on this machine or over one SSH connection, and
+every scene tool is passed to it as one command.
 """
 
-import os
-import sys
-import logging
-import argparse
-from typing import Optional, TYPE_CHECKING
+from __future__ import annotations
 
-from mcp.types import ImageContent, TextContent
+import atexit
+import base64
+from importlib import resources
+from typing import Annotated, Any
 
 from fastmcp import FastMCP
+from fastmcp.apps import AppConfig
 from fastmcp.exceptions import ToolError
-from fastmcp.prompts import Message
-from fastmcp.utilities.types import Image
-from dotenv import load_dotenv
-from .implementation import guards
+from fastmcp.tools import ToolResult
+from mcp.types import ImageContent, TextContent
+from pydantic import Field
 
-if TYPE_CHECKING:
-    from .implementation.paraview_capabilities import VisualizationEngine
+from . import present
+from .attach import Attacher
+from .config import from_environment
+from .errors import ParaViewError
+from .link import LinkError
 
-# Load environment variables
-load_dotenv()
+VIEW_URI = "ui://paraview/view"
+SERVICE_META = "ai.iowarp.clio/service"
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
-
-# Default prompt that instructs Claude how to interact with ParaView
-default_prompt = """
-When using ParaView through this interface, please follow these guidelines:
-
-1. IMPORTANT: Only call strictly necessary ParaView functions per reply (and please limit the total number of call per reply). This ensures operations execute in a more interative manner and no excessive calls to related but non-essential functions. 
-
-2. The only execute multiple repeated function call when given a target goal (e.g., identify a specific object), where different parameters need to used (e.g., isosurface with different isovalue). Avoid repeated calling of color map function unless user specific ask for color map design.
-
-3. Paraview will be connect to mcp server on starup so no need to connect first.
-
-
-"""
-# Initialize MCP server
 mcp: FastMCP = FastMCP(
     "paraview",
-    version="2.2.7",
+    version="3.0.0",  # keep equal to mcp-server-versions.toml and SERVER_VERSION
     instructions=(
-        "Controls ParaView for scientific visualization. "
-        "Open data files, apply filters, create renderings, and manage visualization pipelines."
+        "Open, look at and measure 3D scientific data in ParaView, on this machine "
+        "or on another one over SSH, and show it to the person in a live view. "
+        "open_view opens a dataset (paths are on the machine where ParaView runs) "
+        "and returns a scene id; keep it in later open_view calls to reopen the "
+        "same scene. Read numbers with measure_field and inspect_selection, and "
+        "look with capture, before making a claim. Where ParaView runs is the "
+        "connector's setting, not a tool."
     ),
 )
 
-# ParaView/VTK rendering state is thread-affine. All tools run on the MCP
-# event-loop thread; mixing worker-thread tools with async screenshots breaks GLX.
-# ParaView manager will be initialized when needed
-pv_manager: Optional["VisualizationEngine"] = None
-server_host = "localhost"
-server_port = 11111
+_attacher: Attacher | None = None
 
 
-def get_pv_manager() -> "VisualizationEngine":
-    """Lazy initialization of ParaView manager with server connection"""
-    global pv_manager, server_host, server_port
-    if pv_manager is None:
-        try:
-            from .implementation.paraview_capabilities import VisualizationEngine
-
-            engine = VisualizationEngine(server_host, server_port)
-
-            # Connect to the ParaView server
-            logger.info(
-                f"Connecting visualization engine to {server_host}:{server_port}"
-            )
-            success = engine.connect(server_host, server_port)
-            if not success:
-                logger.error(
-                    f"Failed to connect to ParaView server at {server_host}:{server_port}"
-                )
-                # Not cached: the next tool call retries the connection.
-                raise RuntimeError(
-                    guards.CONNECT_FAILED.format(host=server_host, port=server_port)
-                )
-            pv_manager = engine
-            logger.info("Successfully connected to ParaView server")
-
-        except ImportError as e:
-            logger.error(f"Failed to import ParaView: {e}")
-            raise RuntimeError(f"{guards.IMPORT_HELP} Import error: {e}") from e
-    assert pv_manager is not None
-    return pv_manager
+def attacher() -> Attacher:
+    """The process's one attacher, built from the connector's environment."""
+    global _attacher
+    if _attacher is None:
+        _attacher = Attacher(from_environment())
+        atexit.register(_attacher.close)
+    return _attacher
 
 
-# ============================================================================
-# MCP Tools for ParaView
-# ============================================================================
+def _fail(exc: ParaViewError) -> ToolError:
+    return ToolError(f"{exc.message} [{exc.code}]")
 
 
-@mcp.tool(
-    name="load_scientific_data",
-    title="Load Data File",
-    description="Load scientific datasets (VTK, EXODUS, CSV, RAW, BP5) into ParaView with automatic format detection.",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "visualization"},
-)
-async def read_datafile_tool(file_path: str) -> str:
-    """Load a data file into ParaView for visualization and analysis.
-
-    Args:
-        file_path: Absolute path to the data file.
-
-    Returns:
-        Status message with source registration name.
-    """
-    logger.info(f"Reading datafile from {file_path}")
-
-    # Validate file path exists before attempting to load
-    import os
-
-    if not os.path.exists(file_path):
+def command(name: str, args: dict[str, Any]) -> tuple[Any, Any]:
+    """Run one scene command on the node half; return (result, link)."""
+    clean = {k: v for k, v in args.items() if v is not None}
+    try:
+        link = attacher().ensure()
+        return link.client.command(name, clean), link
+    except ParaViewError as exc:
+        raise _fail(exc) from exc
+    except LinkError as exc:
         raise ToolError(
-            f"File not found at path '{file_path}'. Please verify the file path is correct and the file exists."
-        )
+            "The link to ParaView dropped during this call; the scene is kept on "
+            "the node. Call scene_state to see whether the change applied, then "
+            f"retry. ({exc}) [link_lost]"
+        ) from exc
 
-    # Get file size for logging and diagnostics
-    try:
-        file_size = os.path.getsize(file_path)
-        logger.info(f"File size: {file_size} bytes")
-    except OSError as e:
-        logger.warning(f"Could not determine file size: {e}")
 
-    # Attempt to load the data with comprehensive error handling
-    success, message, _, source_name = get_pv_manager().read_datafile(file_path)
+def _where() -> str:
+    return attacher().settings.target.describe()
 
-    if success:
-        return f"{message}. Source registered as '{source_name}'. Use this name for pipeline operations."
-    else:
-        # Provide enhanced error information
-        file_ext = os.path.splitext(file_path)[1].lower()
-        error_guidance = ""
 
-        if file_ext in [".bp", ".bp5"]:
-            error_guidance = "\nFor ADIOS2/BP5 files: Ensure ADIOS2 is installed and ParaView has ADIOS2 support enabled."
-        elif file_ext == ".raw":
-            error_guidance = "\nFor RAW files: Ensure filename follows format 'name_XxYxZ_datatype.raw' (e.g., 'volume_256x256x256_uint8.raw')."
-        elif file_ext in [".vtk", ".vti", ".vtr", ".vts", ".vtu", ".vtp"]:
-            error_guidance = "\nFor VTK files: Check if the file is corrupted or uses an unsupported VTK version."
-
-        raise ToolError(f"{message}{error_guidance}")
+def _text(text: str) -> TextContent:
+    return TextContent(type="text", text=text)
 
 
 @mcp.tool(
-    title="Save STL",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "pipeline"},
+    app=AppConfig(resource_uri=VIEW_URI),
+    annotations={"title": "Open a ParaView view", "openWorldHint": True},
 )
-async def save_contour_as_stl(stl_filename: str = "contour.stl") -> str:
-    """Save the active contour or surface as an STL file in the data directory.
-
-    Args:
-        stl_filename: The STL file name to use, defaults to 'contour.stl'.
-
-    Returns:
-        Status message.
-    """
-    success, message, path = get_pv_manager().save_contour_as_stl(stl_filename)
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    name="create_geometric_shape",
-    title="Create Shape",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "pipeline"},
-)
-async def create_source(source_type: str) -> str:
-    """Create a geometric source (Sphere, Cone, Cylinder, Plane, or Box).
-
-    Args:
-        source_type: Type of source to create.
-
-    Returns:
-        Status message with source name.
-    """
-    success, message, _, source_name = get_pv_manager().create_source(source_type)
-    if success:
-        return f"{message}. Source registered as '{source_name}'."
-    else:
-        raise ToolError(message)
-
-
-@mcp.tool(
-    name="generate_isosurface",
-    title="Create Isosurface",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "pipeline"},
-)
-async def create_isosurface(value: float, field: Optional[str] = None) -> str:
-    """Create an isosurface visualization of the active source at the given isovalue.
-
-    Args:
-        value: Isovalue.
-        field: Optional field name to contour by.
-
-    Returns:
-        Status message with filter name.
-    """
-    success, message, contour_obj, contour_name = get_pv_manager().create_isosurface(
-        value, field
-    )
-    if success:
-        return f"{message}. Filter registered as '{contour_name}'."
-    else:
-        raise ToolError(message)
-
-
-@mcp.tool(
-    name="create_data_slice",
-    title="Create Slice",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "pipeline"},
-)
-async def create_slice(
-    origin_x: Optional[float] = None,
-    origin_y: Optional[float] = None,
-    origin_z: Optional[float] = None,
-    normal_x: float = 0,
-    normal_y: float = 0,
-    normal_z: float = 1,
-) -> str:
-    """Create a slice plane through the loaded volume data.
-
-    Args:
-        origin_x, origin_y, origin_z: Slice origin coordinates (defaults to data center).
-        normal_x, normal_y, normal_z: Normal vector for the slice plane (default [0, 0, 1]).
-
-    Returns:
-        Status message with pipeline name.
-    """
-    success, message, slice_filter, slice_name = get_pv_manager().create_slice(
-        origin_x, origin_y, origin_z, normal_x, normal_y, normal_z
-    )
-
-    if success:
-        return message
-    else:
-        raise ToolError(f"Error creating slice: {message}")
-
-
-@mcp.tool(
-    name="configure_volume_display",
-    title="Toggle Volume",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "rendering"},
-)
-async def toggle_volume_rendering(enable: bool = True) -> str:
-    """Toggle volume rendering visibility for the active source.
-
-    Args:
-        enable: Whether to show (True) or hide (False) volume rendering.
-
-    Returns:
-        Status message with source name.
-    """
-    success, message, source_name = get_pv_manager().create_volume_rendering(enable)
-    if success:
-        return f"{message}. Source registered as '{source_name}'."
-    else:
-        raise ToolError(message)
-
-
-@mcp.tool(
-    title="Toggle Visibility",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "rendering"},
-)
-async def toggle_visibility(enable: bool = True) -> str:
-    """Toggle visibility for the active source.
-
-    Args:
-        enable: Whether to show (True) or hide (False) the active source.
-
-    Returns:
-        Status message with source name.
-    """
-    success, message, source_name = get_pv_manager().toggle_visibility(enable)
-    if success:
-        return f"{message}. Source registered as '{source_name}'."
-    else:
-        raise ToolError(message)
-
-
-@mcp.tool(
-    title="Set Active Source",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "pipeline"},
-)
-async def set_active_source(name: str) -> str:
-    """Set the active pipeline object by its registered name.
-
-    Args:
-        name: The pipeline source name (e.g., 'Contour1').
-
-    Returns:
-        Status message.
-    """
-    success, message = get_pv_manager().set_active_source(name)
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    title="List Sources",
-    annotations={
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-    },
-    tags={"paraview", "pipeline"},
-)
-async def get_active_source_names_by_type(source_type: Optional[str] = None) -> str:
-    """List pipeline source names, optionally filtered by type.
-
-    Args:
-        source_type: Filter by type (e.g., 'Sphere', 'Contour'). None returns all.
-
-    Returns:
-        Formatted list of source names.
-    """
-    success, message, source_names = get_pv_manager().get_active_source_names_by_type(
-        source_type
-    )
-
-    if success and source_names:
-        sources_list = "\n- ".join(source_names)
-        result = f"{message}:\n- {sources_list}"
-        return result
-    elif not success:
-        raise ToolError(message)
-    else:
-        return message
-
-
-@mcp.tool(
-    title="Edit Opacity",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "rendering"},
-)
-async def edit_volume_opacity(
-    field_name: str, opacity_points: list[dict[str, float]]
-) -> str:
-    """Edit the opacity transfer function for a scalar field.
-
-    Args:
-        field_name: The scalar field to modify.
-        opacity_points: List of dicts like [{"value": 0.0, "alpha": 0.0}, ...].
-
-    Returns:
-        Status message.
-    """
-    formatted_points = [[pt["value"], pt["alpha"]] for pt in opacity_points]
-    success, message = get_pv_manager().edit_volume_opacity(
-        field_name, formatted_points
-    )
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    title="Set Color Map",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "rendering"},
-)
-async def set_color_map(field_name: str, color_points: list[dict]) -> str:
-    """Set a custom color transfer function for volume rendering.
-
-    Args:
-        field_name: The field/array name in ParaView.
-        color_points: List of dicts: {"value": float, "rgb": [r, g, b]}.
-
-    Returns:
-        Status message.
-    """
-    try:
-        formatted_points = [(pt["value"], tuple(pt["rgb"])) for pt in color_points]
-    except Exception as e:
-        raise ToolError(f"Invalid format for color_points: {e}")
-
-    success, message = get_pv_manager().set_color_map(field_name, formatted_points)
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    name="apply_field_coloring",
-    title="Color By Field",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "rendering"},
-)
-async def color_by(field: str, component: int = -1) -> str:
-    """Color the active visualization by a specific data field.
-
-    Args:
-        field: Field name to color by.
-        component: Component index (-1 for magnitude).
-
-    Returns:
-        Status message.
-    """
-    success, message = get_pv_manager().color_by(field, component)
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    title="Compute Surface Area",
-    annotations={
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-    },
-    tags={"paraview", "visualization"},
-)
-async def compute_surface_area() -> str:
-    """Compute the surface area of the active dataset (must be a surface mesh).
-
-    Returns:
-        Status message with area value.
-    """
-    success, message, area_value = get_pv_manager().compute_surface_area()
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    title="Set Color Preset",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "rendering"},
-)
-async def set_color_map_preset(preset_name: str = "Cool to Warm") -> str:
-    """Apply a predefined color map preset (e.g., Viridis, Plasma, Cool to Warm).
-
-    Args:
-        preset_name: Name of the color map preset.
-
-    Returns:
-        Status message.
-    """
-    success, message = get_pv_manager().set_color_map_preset(preset_name)
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    title="Set Representation",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "rendering"},
-)
-async def set_representation_type(rep_type: str) -> str:
-    """Set the representation type for the active source (Surface, Wireframe, Points, etc.).
-
-    Args:
-        rep_type: Representation type.
-
-    Returns:
-        Status message.
-    """
-    success, message = get_pv_manager().set_representation_type(rep_type)
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    title="Get Pipeline",
-    annotations={
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-    },
-    tags={"paraview", "pipeline"},
-)
-async def get_pipeline() -> str:
-    """Get the current visualization pipeline structure.
-
-    Returns:
-        Description of the current pipeline.
-    """
-    success, message = get_pv_manager().get_pipeline()
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    title="List Arrays",
-    annotations={
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-    },
-    tags={"paraview", "visualization"},
-)
-async def get_available_arrays() -> str:
-    """List available data arrays in the active source.
-
-    Returns:
-        List of available arrays.
-    """
-    success, message = get_pv_manager().get_available_arrays()
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    title="Compute Histogram",
-    annotations={
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-    },
-    tags={"paraview", "visualization"},
-)
-async def get_histogram(
-    field: Optional[str] = None, num_bins: int = 256, data_location: str = "POINTS"
-) -> str:
-    """Compute histogram data for a field in the active source.
-
-    Args:
-        field: Field name (auto-selected if only one exists).
-        num_bins: Number of bins (default: 256).
-        data_location: 'POINTS' or 'CELLS'.
-
-    Returns:
-        Formatted histogram data.
-    """
-    success, message, histogram_data = get_pv_manager().get_histogram(
-        field, num_bins, data_location
-    )
-
-    if success and histogram_data:
-        # Format histogram data for display
-        hist_summary = f"{message}\n\nHistogram data ({len(histogram_data)} bins):\n"
-        # Show first few and last few bins for preview
-        preview_count = min(5, len(histogram_data))
-        for i in range(preview_count):
-            bin_center, frequency = histogram_data[i]
-            hist_summary += (
-                f"  Bin {i + 1}: center={bin_center:.6g}, count={frequency}\n"
-            )
-
-        if len(histogram_data) > preview_count * 2:
-            hist_summary += (
-                f"  ... ({len(histogram_data) - preview_count * 2} bins omitted) ...\n"
-            )
-        for i in range(
-            max(preview_count, len(histogram_data) - preview_count), len(histogram_data)
-        ):
-            bin_center, frequency = histogram_data[i]
-            hist_summary += (
-                f"  Bin {i + 1}: center={bin_center:.6g}, count={frequency}\n"
-            )
-
-        return hist_summary
-    else:
-        raise ToolError(message)
-
-
-@mcp.tool(
-    name="generate_flow_streamlines",
-    title="Create Streamlines",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "pipeline"},
-)
-async def create_streamline(
-    seed_point_number: int,
-    vector_field: Optional[str] = None,
-    integration_direction: str = "BOTH",
-    max_steps: int = 1000,
-    initial_step: float = 0.1,
-    maximum_step: float = 50.0,
-) -> str:
-    """Create streamlines from a vector volume using the StreamTracer filter.
-
-    Args:
-        seed_point_number: Number of seed points to generate.
-        vector_field: Vector field name (auto-detected if None).
-        integration_direction: 'FORWARD', 'BACKWARD', or 'BOTH'.
-        max_steps: Maximum integration steps.
-        initial_step: Initial step length.
-        maximum_step: Maximum streamline length.
-
-    Returns:
-        Status message with tube name.
-    """
-    success, message, streamline, tube_name = get_pv_manager().create_stream_tracer(
-        vector_field=vector_field,
-        base_source=None,
-        point_center=None,
-        integration_direction=integration_direction,
-        initial_step_length=initial_step,
-        maximum_stream_length=maximum_step,
-        number_of_streamlines=seed_point_number,
-    )
-
-    if success:
-        return f"{message} Tube registered as '{tube_name}'."
-    else:
-        raise ToolError(message)
-
-
-@mcp.tool(
-    name="take_viewport_screenshot",
-    title="Capture Screenshot",
-    description="Capture a screenshot of the current ParaView viewport and save it as a timestamped PNG.",
-    annotations={
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-    },
-    tags={"paraview", "rendering"},
-)
-async def get_screenshot_tool() -> str:
-    """Capture a screenshot of the current viewport and save to the working directory.
-
-    Returns:
-        File path information.
-    """
-    import os
-
-    logger.info("Capturing ParaView viewport screenshot")
-
-    current_dir = os.getcwd()
-    logger.info(f"Screenshot will be saved to: {current_dir}")
-
-    success, message, img_path = get_pv_manager().get_screenshot()
-
-    if not success:
-        logger.error(f"Screenshot capture failed: {message}")
-        raise ToolError(f"Screenshot failed: {message}")
-    else:
-        filename = os.path.basename(img_path)
-        logger.info(f"Screenshot saved successfully: {filename}")
-
-        return f"{message}\nSaved in: {current_dir}\nFilename: {filename}"
-
-
-@mcp.tool(
-    name="show_screenshot_preview",
-    title="Preview Screenshot",
-    description="Capture a screenshot with inline preview using temporary files.",
-    annotations={
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-    },
-    tags={"paraview", "rendering"},
-)
-async def show_screenshot_preview() -> list[TextContent | ImageContent]:
-    """Capture the viewport and return its PNG bytes as native MCP image content."""
-    success, message, img_path = get_pv_manager().get_screenshot()
-    if not success:
-        raise ToolError(f"Screenshot failed: {message}")
-    try:
-        return [
-            TextContent(type="text", text=f"Screenshot saved: {img_path}"),
-            Image(path=img_path).to_image_content(),
-        ]
-    except Exception as exc:
-        raise ToolError(f"Screenshot preview failed: {exc}") from exc
-
-
-@mcp.tool(
-    title="Rotate Camera",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "rendering"},
-)
-async def rotate_camera(azimuth: float = 30.0, elevation: float = 0.0) -> str:
-    """Rotate the camera by azimuth and elevation angles in degrees.
-
-    Args:
-        azimuth: Rotation around vertical axis.
-        elevation: Rotation around horizontal axis.
-
-    Returns:
-        Status message.
-    """
-    success, message = get_pv_manager().rotate_camera(azimuth, elevation)
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    title="Reset Camera",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": True,
-    },
-    tags={"paraview", "rendering"},
-)
-async def reset_camera() -> str:
-    """Reset the camera to show all data in the viewport.
-
-    Returns:
-        Status message.
-    """
-    success, message = get_pv_manager().reset_camera()
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-# @mcp.tool()
-# def plot_over_line(point1: list = None, point2: list = None, resolution: int = 100) -> str:
-#     """
-#     Create a 'Plot Over Line' filter to sample data along a line between two points.
-
-#     Args:
-#         point1 (list, optional): The [x, y, z] coordinates of the start point. If None, will use data bounds.
-#         point2 (list, optional): The [x, y, z] coordinates of the end point. If None, will use data bounds.
-#         resolution (int, optional): Number of sample points along the line (default: 100).
-
-#     Returns:
-#         Status message
-#     """
-#     success, message, plot_filter = pv_manager.plot_over_line(point1, point2, resolution)
-#     return message
-
-
-@mcp.tool(
-    title="Plot Over Line",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "pipeline"},
-)
-async def plot_over_line(
-    point1: Optional[list[float]] = None,
-    point2: Optional[list[float]] = None,
-    resolution: int = 100,
-) -> str:
-    """Create a 'Plot Over Line' filter to sample data between two points.
-
-    Args:
-        point1: Start [x, y, z] coordinates (defaults to data bounds).
-        point2: End [x, y, z] coordinates (defaults to data bounds).
-        resolution: Number of sample points (default: 100).
-
-    Returns:
-        Status message.
-    """
-    success, message, plot_filter = get_pv_manager().plot_over_line(
-        point1, point2, resolution
-    )
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    title="Warp By Vector",
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": False,
-    },
-    tags={"paraview", "pipeline"},
-)
-async def warp_by_vector(
-    vector_field: Optional[str] = None, scale_factor: float = 1.0
-) -> str:
-    """Apply a 'Warp By Vector' filter to the active source.
-
-    Args:
-        vector_field: Vector field name (auto-detected if None).
-        scale_factor: Scale factor for the warp.
-
-    Returns:
-        Status message.
-    """
-    success, message, warp_filter = get_pv_manager().warp_by_vector(
-        vector_field, scale_factor
-    )
-    if not success:
-        raise ToolError(message)
-    return message
-
-
-@mcp.tool(
-    title="List Commands",
-    annotations={
-        "readOnlyHint": True,
-        "destructiveHint": False,
-        "idempotentHint": True,
-    },
-    tags={"paraview", "visualization"},
-)
-async def list_commands() -> str:
-    """List all available commands in this ParaView MCP server.
-
-    Returns:
-        List of available commands.
-    """
-    commands = [
-        "load_scientific_data: Load scientific datasets from various file formats (VTK, EXODUS, CSV, RAW, BP5, etc.)",
-        "create_geometric_shape: Create geometric sources (Sphere, Cone, etc.)",
-        "generate_isosurface: Create isosurface visualizations",
-        "create_data_slice: Create slices through volume data",
-        "configure_volume_display: Enable or disable volume rendering",
-        "toggle_visibility: Enable or disable visibility for the active source",
-        "set_active_source: Set the active pipeline object by name",
-        "get_active_source_names_by_type: Get a list of sources filtered by type",
-        "apply_field_coloring: Color the visualization by a field",
-        "set_color_map_preset: Apply predefined color schemes (Viridis, Plasma, Cool to Warm, etc.)",
-        "set_representation_type: Set the representation type (Surface, Wireframe, etc.)",
-        "edit_volume_opacity: Edit the opacity transfer function",
-        "set_color_map: Set custom color transfer function for volume rendering",
-        "get_pipeline: Get the current pipeline structure",
-        "get_available_arrays: Get available data arrays",
-        "get_histogram: Compute histogram data for a field in the active source",
-        "generate_flow_streamlines: Create streamline visualizations",
-        "compute_surface_area: Compute the surface area of the active surface",
-        "save_contour_as_stl: Save the active surface as STL",
-        "take_viewport_screenshot: Capture screenshot and save to current directory (recommended)",
-        "show_screenshot_preview: Capture screenshot with improved inline preview (fixed closing issues)",
-        "rotate_camera: Rotate the camera view",
-        "reset_camera: Reset the camera to show all data",
-        "plot_line: Plot a line through the data",
-        "warp_by_vector: Warp the active source by a vector field",
-    ]
-
-    return "Available ParaView commands:\n\n" + "\n".join(commands)
-
-
-@mcp.resource("paraview://capabilities")
-def paraview_capabilities() -> dict:
-    """ParaView visualization capabilities and supported formats."""
-    return {
-        "supported_formats": ["VTK", "VTU", "VTS", "PVD", "STL", "OBJ", "PLY"],
-        "operations": ["open", "filter", "render", "screenshot", "pipeline management"],
-    }
-
-
-@mcp.prompt()
-def visualize_data(file_path: str) -> list[Message]:
-    """Guided workflow for creating a ParaView visualization."""
-    return [
-        Message(
-            f"I need to visualize the data file at {file_path}. "
-            "Open it in ParaView, apply appropriate filters, create a rendering, "
-            "and save a screenshot."
+def open_view(
+    path: Annotated[
+        str | None,
+        Field(
+            description="Dataset path on the machine where ParaView runs. A glob "
+            "such as /data/run/step_*.vti opens a file series."
         ),
+    ] = None,
+    scene: Annotated[
+        str | None,
+        Field(description="A scene id from an earlier open_view, to restore it."),
+    ] = None,
+    growing: Annotated[
+        bool, Field(description="The source is still being written; follow it.")
+    ] = False,
+    new: Annotated[
+        bool, Field(description="Start a fresh scene even if one is saved.")
+    ] = False,
+) -> ToolResult:
+    """Open a dataset or restore a saved scene, and show it in a live ParaView view.
+
+    With neither path nor scene, it shows the ParaView session already running
+    where ParaView is, or the current scene.
+    """
+    summary, link = command(
+        "open_view", {"path": path, "scene": scene, "growing": growing, "new": new}
+    )
+    text = present.scene_text(summary, _where())
+    return ToolResult(
+        content=[_text(text)],
+        structured_content={"scene": summary["scene"], "summary": summary},
+        meta={SERVICE_META: {"port": link.local_port, "token": link.token}},
+    )
+
+
+@mcp.tool(annotations={"title": "Add a ParaView filter"})
+def create_filter(
+    filter: Annotated[
+        str,
+        Field(
+            description="ParaView filter name, e.g. Contour, Slice, Clip, Threshold."
+        ),
+    ],
+    input: Annotated[
+        str | None,
+        Field(description="Scene object id or label to filter; default: the last."),
+    ] = None,
+    properties: Annotated[
+        dict[str, Any] | None,
+        Field(
+            description="Filter properties by ParaView name, e.g. "
+            '{"ContourBy": ["POINTS", "p"], "Isosurfaces": [0.5]}.'
+        ),
+    ] = None,
+    label: Annotated[str | None, Field(description="A name for the object.")] = None,
+    hide_input: Annotated[bool, Field(description="Hide the input object.")] = False,
+) -> str:
+    """Add one filter to the scene's pipeline. It commits whole or not at all."""
+    result, _ = command(
+        "create_filter",
+        {
+            "filter": filter,
+            "input": input,
+            "properties": properties,
+            "label": label,
+            "hide_input": hide_input,
+        },
+    )
+    return "Added " + present.object_line(result["object"]) + "."
+
+
+@mcp.tool(annotations={"title": "Remove a scene object", "destructiveHint": True})
+def remove_scene_object(
+    object: Annotated[str, Field(description="Scene object id or label.")],
+) -> str:
+    """Remove an object and everything built on it from the pipeline."""
+    result, _ = command("remove_scene_object", {"object": object})
+    return f"Removed {', '.join(result['removed'])}."
+
+
+@mcp.tool(annotations={"title": "Change how an object is shown"})
+def set_representation(
+    object: Annotated[str, Field(description="Scene object id or label.")],
+    representation: Annotated[
+        str | None,
+        Field(
+            description="Surface, Surface With Edges, Wireframe, Points, Outline, Volume."
+        ),
+    ] = None,
+    color_by: Annotated[
+        str | None, Field(description="Field to colour by, or 'none' for solid.")
+    ] = None,
+    colormap: Annotated[
+        str | None, Field(description="ParaView colour preset, e.g. Viridis.")
+    ] = None,
+    opacity: Annotated[float | None, Field(ge=0, le=1)] = None,
+    visible: Annotated[bool | None, Field(description="Show or hide it.")] = None,
+) -> str:
+    """Change an object's representation, colouring, opacity or visibility."""
+    result, _ = command(
+        "set_representation",
+        {
+            "object": object,
+            "representation": representation,
+            "color_by": color_by,
+            "colormap": colormap,
+            "opacity": opacity,
+            "visible": visible,
+        },
+    )
+    return "Now " + present.object_line(result["object"]) + "."
+
+
+@mcp.tool(annotations={"title": "Change the timestep"})
+def set_timestep(
+    index: Annotated[
+        int | None, Field(description="Step index; -1 is the last.")
+    ] = None,
+    time: Annotated[
+        float | None, Field(description="Time value; the nearest step.")
+    ] = None,
+    latest: Annotated[
+        bool | None, Field(description="True to follow the latest step as it grows.")
+    ] = None,
+) -> str:
+    """Show another time step, or follow the latest one."""
+    result, _ = command(
+        "set_timestep", {"index": index, "time": time, "latest": latest}
+    )
+    return present.time_line(result["time"])
+
+
+@mcp.tool(annotations={"title": "Move the camera"})
+def set_camera(
+    position: Annotated[list[float] | None, Field(min_length=3, max_length=3)] = None,
+    focal_point: Annotated[
+        list[float] | None, Field(min_length=3, max_length=3)
+    ] = None,
+    view_up: Annotated[list[float] | None, Field(min_length=3, max_length=3)] = None,
+    azimuth: Annotated[float, Field(description="Degrees around the view up.")] = 0.0,
+    elevation: Annotated[float, Field(description="Degrees up or down.")] = 0.0,
+    zoom: Annotated[float, Field(gt=0, description=">1 moves closer.")] = 1.0,
+) -> str:
+    """Place the camera, or turn and zoom it from where it is."""
+    result, _ = command(
+        "set_camera",
+        {
+            "position": position,
+            "focal_point": focal_point,
+            "view_up": view_up,
+            "azimuth": azimuth,
+            "elevation": elevation,
+            "zoom": zoom,
+        },
+    )
+    return present.camera_text(result["camera"])
+
+
+@mcp.tool(annotations={"title": "Fit the camera"})
+def fit_camera(
+    object: Annotated[
+        str | None, Field(description="Fit this object; default: everything.")
+    ] = None,
+) -> str:
+    """Point the camera so everything, or one object, fills the view."""
+    result, _ = command("fit_camera", {"object": object})
+    return present.camera_text(result["camera"])
+
+
+@mcp.tool(annotations={"title": "Read the picked point", "readOnlyHint": True})
+def inspect_selection(
+    position: Annotated[
+        list[float] | None,
+        Field(
+            min_length=3,
+            max_length=3,
+            description="Probe here instead of what the person picked.",
+        ),
+    ] = None,
+) -> str:
+    """Exact field values at the point the person picked in the view."""
+    result, _ = command("inspect_selection", {"position": position})
+    if result.get("selection") is None:
+        return result.get("message") or "Nothing is at that position."
+    return present.selection_line(result["selection"])
+
+
+@mcp.tool(annotations={"title": "Measure a field", "readOnlyHint": True})
+def measure_field(
+    field: Annotated[str, Field(description="Field (array) name.")],
+    object: Annotated[
+        str | None, Field(description="Scene object id or label; default: the dataset.")
+    ] = None,
+    bins: Annotated[int, Field(ge=1, le=256)] = 16,
+    component: Annotated[
+        int | None, Field(description="Vector component; default: magnitude.")
+    ] = None,
+) -> ToolResult:
+    """Exact statistics and a histogram of a field at the current time step."""
+    result, _ = command(
+        "measure_field",
+        {"field": field, "object": object, "bins": bins, "component": component},
+    )
+    return ToolResult(
+        content=[_text(present.measure_text(result))], structured_content=result
+    )
+
+
+@mcp.tool(annotations={"title": "Capture the view", "readOnlyHint": True})
+def capture(
+    width: Annotated[int, Field(ge=64, le=4096)] = 1280,
+    height: Annotated[int, Field(ge=64, le=4096)] = 800,
+) -> list[Any]:
+    """A PNG rendered by ParaView at the camera the view last reported."""
+    result, _ = command("capture", {"width": width, "height": height})
+    return [
+        _text(
+            f"ParaView render, {width}x{height}, saved on the ParaView machine at "
+            f"{result['path']}. " + present.camera_text(result["camera"])
+        ),
+        ImageContent(type="image", data=result["png_base64"], mime_type="image/png"),
     ]
 
 
-def main():
-    """
-    Main entry point for the ParaView MCP server.
-    Supports both stdio and SSE transports based on environment variables.
-    """
-    # Handle 'help' command (without dashes) by converting to --help
-    if len(sys.argv) > 1 and sys.argv[1] == "help":
-        sys.argv[1] = "--help"
+@mcp.tool(annotations={"title": "Export a figure"})
+def export_artifact(
+    path: Annotated[
+        str | None,
+        Field(description="Where to write the PNG on the ParaView machine."),
+    ] = None,
+    width: Annotated[int, Field(ge=64, le=8192)] = 1920,
+    height: Annotated[int, Field(ge=64, le=8192)] = 1080,
+    transparent: bool = False,
+) -> list[Any]:
+    """Write a figure of the current view as a PNG file."""
+    result, _ = command(
+        "export_artifact",
+        {"path": path, "width": width, "height": height, "transparent": transparent},
+    )
+    size = len(base64.b64decode(result["png_base64"]))
+    return [
+        _text(
+            f"Wrote {result['path']} ({size} bytes, {width}x{height}) on the ParaView machine."
+        ),
+        ImageContent(type="image", data=result["png_base64"], mime_type="image/png"),
+    ]
 
-    parser = argparse.ArgumentParser(
-        description="ParaView MCP Server - Scientific visualization server with comprehensive ParaView capabilities",
-        prog="paraview-mcp",
-    )
-    parser.add_argument(
-        "--version", action="version", version="ParaView MCP Server v1.0.0"
-    )
-    parser.add_argument(
-        "--transport",
-        choices=["stdio", "http"],
-        default=None,
-        help="Transport type to use (default: stdio)",
-    )
-    parser.add_argument(
-        "--host", default="0.0.0.0", help="Host for HTTP transport (default: 0.0.0.0)"
-    )
-    parser.add_argument(
-        "--port", type=int, default=8000, help="Port for HTTP transport (default: 8000)"
-    )
-    parser.add_argument(
-        "--server",
-        type=str,
-        default="localhost",
-        help="ParaView server hostname (default: localhost)",
-    )
-    parser.add_argument(
-        "--pv-port",
-        type=int,
-        default=11111,
-        help="ParaView server port (default: 11111)",
-    )
-    parser.add_argument(
-        "--paraview_package_path",
-        type=str,
-        help="Path to the ParaView Python package",
-        default=None,
+
+@mcp.tool(annotations={"title": "Export the scene"})
+def export_scene(
+    path: Annotated[
+        str | None,
+        Field(description="Where to write the manifest JSON on the ParaView machine."),
+    ] = None,
+) -> ToolResult:
+    """Write the scene manifest, and a ParaView state file beside it."""
+    result, _ = command("export_scene", {"path": path})
+    return ToolResult(
+        content=[
+            _text(
+                f"Scene manifest: {result['manifest_path']}. ParaView state file: "
+                f"{result['state_path']}."
+            )
+        ],
+        structured_content={"manifest": result["manifest"]},
     )
 
-    args = parser.parse_args()
 
-    try:
-        logger.info("Starting ParaView MCP Server")
+@mcp.tool(annotations={"title": "Describe the ParaView scene", "readOnlyHint": True})
+def scene_state() -> ToolResult:
+    """Where ParaView is attached, the dataset, the pipeline, time and view."""
+    result, _ = command("scene_state", {})
+    attachment = attacher().describe()
+    lines = [
+        f"Attached {attachment['where']}: ParaView {attachment.get('paraview')} "
+        f"({attachment.get('pvpython')}), folder {attachment.get('folder')}"
+        + (
+            f", connected to the ParaView session at {attachment['pvserver_session']}"
+            if attachment.get("pvserver_session")
+            else ""
+        )
+        + "."
+    ]
+    timings = attachment.get("attach_seconds") or {}
+    if timings:
+        lines.append(
+            f"The last attach took {timings.get('total', 0):g} s"
+            + (
+                f" and installed trame (from {attachment.get('environment_built_from')})"
+                if attachment.get("built_this_attach")
+                else "; the prepared folder was reused"
+            )
+            + "."
+        )
+    if result.get("scene") is None:
+        known = ", ".join(result.get("known_scenes") or []) or "none"
+        lines.append(f"No scene is open. Saved scenes: {known}.")
+    else:
+        lines.append(present.scene_text(result, attachment["where"]))
+    return ToolResult(
+        content=[_text("\n".join(lines))],
+        structured_content={"attachment": attachment, "scene": result},
+    )
 
-        # Add the ParaView package path to sys.path
-        if args.paraview_package_path:
-            sys.path.append(args.paraview_package_path)
 
-        # Set ParaView server connection parameters
-        global server_host, server_port
-        server_host = args.server
-        server_port = args.pv_port
-        logger.info(f"ParaView server configured: {server_host}:{server_port}")
+@mcp.resource(
+    VIEW_URI,
+    name="paraview_view",
+    description="The live ParaView view: trame, framed through the host's service route.",
+    mime_type="text/html;profile=mcp-app",
+    app=AppConfig(prefers_border=False),
+)
+def view_resource() -> str:
+    """The view page."""
+    return resources.files("paraview_mcp").joinpath("view.html").read_text("utf-8")
 
-        # Note: ParaView connection will be established when first tool is called
 
-        transport = args.transport or os.getenv("MCP_TRANSPORT", "stdio")
-        if transport == "http":
-            mcp.run(transport="http", host=args.host, port=args.port)
-        else:
-            mcp.run(transport="stdio")
-
-    except Exception as e:
-        logger.error(f"Server error: {e}")
-        sys.exit(1)
+def main() -> None:
+    mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
