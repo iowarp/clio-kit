@@ -16,11 +16,12 @@ class ParaViewError(Exception):
 
 
 HOW_TO_POINT = (
-    "To use a ParaView elsewhere, set the ParaView connector's 'Where ParaView runs' "
-    "to the SSH host name of that machine (and 'Jump host' if you reach it through "
-    "another host). To use one on this machine, set 'Command to run first' to a line "
-    "that puts pvpython on the PATH, for example 'module load paraview' or "
-    "'export PATH=/opt/paraview/bin:$PATH'."
+    "Where ParaView is found is set by the ParaView connector's values, which the "
+    "person or the agent can set: to use a ParaView on another machine, set `address` "
+    "('Where ParaView runs') to its SSH host name, and `via` ('Jump host') if it is "
+    "reached through another host; to use one on this machine, set `prepare` "
+    "('Command to run first') to a line that puts pvpython on the PATH, for example "
+    "'module load paraview' or 'export PATH=/opt/paraview/bin:$PATH'."
 )
 
 
