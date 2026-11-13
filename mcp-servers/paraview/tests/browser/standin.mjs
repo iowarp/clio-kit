@@ -210,7 +210,8 @@ for (const step of config.steps || []) {
   } else if (step.do === "wait") {
     await sleep(step.ms || 1000);
   } else if (step.do === "toggle-mode") {
-    await trame.click("button:has-text('Render in')");
+    // The drawing control: press the choice that is not pressed.
+    await trame.click('[aria-label="Drawing"] button[aria-pressed="false"]');
     await sleep(3000);
   }
   if (step.shot) await shot(step.shot);

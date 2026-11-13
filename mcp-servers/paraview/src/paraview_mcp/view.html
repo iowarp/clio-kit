@@ -100,7 +100,9 @@
       parts.push('Camera position (' + state.camera.position.map((v) => v.toPrecision(4)).join(', ') + '), focal point ('
         + state.camera.focal_point.map((v) => v.toPrecision(4)).join(', ') + ').');
     }
-    parts.push(state.view_mode === 'remote' ? 'Drawn by ParaView (remote rendering).' : 'Drawn in the browser (local rendering).');
+    parts.push(state.view_mode === 'remote'
+      ? 'Rendered on the ParaView machine (remote mode).'
+      : 'Drawn in the browser from ParaView geometry (local mode).');
     return parts.join(' ');
   }
 

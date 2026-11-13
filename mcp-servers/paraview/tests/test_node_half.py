@@ -148,7 +148,9 @@ def test_open_measure_and_rollback(attached: tuple[Attacher, Path]) -> None:
 def test_slice_plane_is_set_through_its_part(attached: tuple[Attacher, Path]) -> None:
     attacher, data = attached
     client = attacher.ensure().client
-    client.command("open_view", {"path": str(data / "cube.vti"), "new": True})
+    # Its own file, so its own scene: the cube's scene is kept for the restart test.
+    write_vti(data / "slice.vti")
+    client.command("open_view", {"path": str(data / "slice.vti"), "new": True})
     dotted = client.command(
         "create_filter",
         {
