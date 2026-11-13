@@ -55,7 +55,7 @@ When using ParaView through this interface, please follow these guidelines:
 # Initialize MCP server
 mcp: FastMCP = FastMCP(
     "paraview",
-    version="2.2.7",
+    version="2.2.8",
     instructions=(
         "Controls ParaView for scientific visualization. "
         "Open data files, apply filters, create renderings, and manage visualization pipelines."

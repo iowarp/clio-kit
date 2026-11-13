@@ -457,20 +457,20 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 
 | 📦 **Package** | 📌 **Ver** | 🔧 **System** | 📋 **Description** | ⚡ **Install Command** |
 |:---|:---:|:---:|:---|:---|
-| **`adios`** | 2.3.1 | Data I/O | Read data using ADIOS2 engine | `clio-kit mcp-server adios` |
+| **`adios`** | 2.3.2 | Data I/O | Read data using ADIOS2 engine | `clio-kit mcp-server adios` |
 | **`arxiv`** | 2.2.7 | Research | Fetch research papers from ArXiv | `clio-kit mcp-server arxiv` |
 | **`chronolog`** | 2.0.5 | Logging | Log and retrieve data from ChronoLog | `clio-kit mcp-server chronolog` |
 | **`compression`** | 2.2.7 | Utilities | File compression with gzip | `clio-kit mcp-server compression` |
 | **`darshan`** | 2.2.7 | Performance | I/O performance trace analysis | `clio-kit mcp-server darshan` |
 | **`geo`** | 2.3.3 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
-| **`hdf5`** | 2.3.0 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
+| **`hdf5`** | 2.3.1 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
 | **`jarvis`** | 3.7.6 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |
 | **`lmod`** | 3.0.3 | Environment | Environment module management | `clio-kit mcp-server lmod` |
 | **`ndp`** | 2.2.8 | Data Protocol | Search and discover datasets across CKAN instances | `clio-kit mcp-server ndp` |
 | **`node-hardware`** | 2.3.2 | System | System hardware information | `clio-kit mcp-server node-hardware` |
 | **`pandas`** | 2.4.0 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
 | **`parallel-sort`** | 2.3.2 | Computing | Large file sorting | `clio-kit mcp-server parallel-sort` |
-| **`paraview`** | 2.2.7 | Visualization | Scientific 3D visualization and analysis | `clio-kit mcp-server paraview` |
+| **`paraview`** | 2.2.8 | Visualization | Scientific 3D visualization and analysis | `clio-kit mcp-server paraview` |
 | **`parquet`** | 2.3.0 | Data I/O | Read Parquet file columns | `clio-kit mcp-server parquet` |
 | **`plot`** | 2.2.7 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |
 | **`seismology`** | 2.3.3 | Seismology | Analyze SAC waveforms and archives | `clio-kit mcp-server seismology` |

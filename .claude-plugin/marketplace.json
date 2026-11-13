@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "CLIO Kit - A meta-marketplace for scientific MCP servers, skills, plugins, agents, and community contributions",
-    "version": "2.12.5"
+    "version": "2.12.6"
   },
   "plugins": [
     {
       "name": "clio-adios",
       "source": "./plugins/clio-adios",
       "description": "Fetch and analyze BP5 data files using ADIOS2. Access scientific data, metadata, and attributes for research and analysis purposes.",
-      "version": "2.3.1",
+      "version": "2.3.2",
       "category": "scientific",
       "keywords": [
         "scientific-computing",
@@ -104,7 +104,7 @@
       "name": "clio-hdf5",
       "source": "./plugins/clio-hdf5",
       "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks.",
-      "version": "2.3.0",
+      "version": "2.3.1",
       "category": "scientific",
       "keywords": [
         "scientific-computing",
@@ -207,7 +207,7 @@
       "name": "clio-paraview",
       "source": "./plugins/clio-paraview",
       "description": "Visualize simulation results in ParaView: load fields, then slice, contour, color and render them.",
-      "version": "2.2.7",
+      "version": "2.2.8",
       "category": "scientific",
       "keywords": [
         "scientific-visualization",
