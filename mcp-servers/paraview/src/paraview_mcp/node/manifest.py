@@ -83,6 +83,12 @@ def known_scenes(root: Path) -> list[str]:
     return sorted(p.parent.name for p in base.glob("*/manifest.json"))
 
 
+def pipeline(scene: dict[str, Any]) -> list[dict[str, Any]]:
+    """The scene's objects that are in ParaView's pipeline: not the script steps that
+    made some of them."""
+    return [item for item in scene["objects"] if item.get("kind") != "script"]
+
+
 def find_object(scene: dict[str, Any], object_id: str) -> dict[str, Any] | None:
     """The object with id or label ``object_id``."""
     for item in scene["objects"]:

@@ -69,18 +69,24 @@ that machine, the node half joins it as a client and shows that session.
 
 | Tool | What it does |
 | --- | --- |
+Building a scene is free; managing its view is tooled
+([design](docs/scene-scripts.md)).
+
+| Tool | What it does |
+| --- | --- |
 | `open_view` | Opens a dataset (a glob opens a file series; `growing` follows one still being written), or restores a scene by id, and returns the live view |
-| `create_filter`, `remove_scene_object` | Change the pipeline |
-| `set_representation`, `set_timestep` | Change what is shown |
+| `run_scene_script` | Builds or changes the scene with `paraview.simple` code run inside it: readers (a second dataset too), filters, colours. It is saved with the scene and replayed on restore |
+| `set_timestep` | Moves in time or follows the latest step |
 | `set_camera`, `fit_camera` | Move the camera |
 | `inspect_selection`, `measure_field` | Exact values: what the person picked, a field's statistics and histogram |
 | `capture` | A PNG rendered by ParaView at the camera the view last reported |
-| `export_artifact`, `export_scene` | A figure, or the scene manifest and a ParaView state file |
+| `export_artifact`, `export_animation`, `export_scene` | A figure; a video of the time steps as the view shows them (MP4 with ffmpeg, else OGG); or the scene manifest and a ParaView state file |
 | `scene_state` | Where it is attached, the dataset, the pipeline, time and view |
 
-Each tool is one command, applied whole: it commits or it rolls back. Paths
-are paths on the machine where ParaView runs. There is no connect tool: where
-ParaView runs is the connector's setting.
+Each tool is one command, applied whole: it commits or it rolls back. A failing
+scene script leaves nothing behind. Paths are paths on the machine where
+ParaView runs. There is no connect tool: where ParaView runs is the connector's
+setting.
 
 ## The view
 
@@ -107,9 +113,10 @@ rail opens one panel at a time (a sheet over the lower view at phone width):
 
 The top bar holds the dataset name, time (previous, play, next, a slider,
 follow latest) and the drawing toggle. Every control that changes the scene
-sends the same engine command as the agent's tool (`create_filter`,
-`set_representation`, `set_camera`, ...): it commits with its manifest or rolls
-back and shows why. The view follows the host's `theme` and
+sends an engine command (`create_filter`, `set_representation`, `set_camera`,
+...): it commits with its manifest or rolls back and shows why. Edits the person
+makes to objects a scene script built are kept on top of the script, so a
+restore replays the script and then their edits. The view follows the host's `theme` and
 `styles.variables` (background, text, border, font), and draws the render view
 on a neutral between the host's background and text; a host that sends none
 gets light and dark fallbacks.

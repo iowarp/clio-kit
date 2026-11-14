@@ -198,7 +198,7 @@ class Workbench:
         if scene is None:
             state.update(clio_objects=[], clio_active=None, clio_sel=None)
             return
-        objects = scene["objects"]
+        objects = manifest.pipeline(scene)
         self.infos = {
             o["id"]: data.describe(self.engine.proxies[o["id"]])
             for o in objects

@@ -15,6 +15,7 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from . import manifest
 from .changes import lines as change_lines
 from .engine import CommandError, Engine
 from .panel import MODE_LABELS, build
@@ -337,7 +338,7 @@ class NodeApp:
         if scene is None:
             return None
         pipeline = []
-        for o in scene["objects"]:
+        for o in manifest.pipeline(scene):
             display = o.get("display") or {}
             color = display.get("color_by") or [None, None]
             pipeline.append(
