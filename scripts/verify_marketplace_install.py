@@ -162,6 +162,7 @@ class Acceptance:
             "clio-scientific-io",
             "clio-analysis",
             "clio-geoscience",
+            "clio-fabrication",
             "clio-research",
             "clio-skills",
             "clio-agents",

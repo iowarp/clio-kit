@@ -51,6 +51,7 @@ Use the user's stated work to select a bundle. Ask only if the work is unknown.
 | HDF5, ADIOS BP5, Parquet, compressed files | `clio-scientific-io` |
 | Tabular statistics, plots, ParaView | `clio-analysis` |
 | Geospatial, terrain, seismic data | `clio-geoscience` |
+| Slicing a model for a 3D printer (PrusaSlicer or OrcaSlicer installed) | `clio-fabrication` |
 | Papers and dataset discovery | `clio-research` |
 
 ### Client configuration and skill locations

@@ -47,6 +47,11 @@ WORKFLOWS = {
         "Geoscience",
         "Workflows for geographic features, terrain and seismic data.",
     ),
+    "clio-fabrication": (
+        "Make a part",
+        "Fabrication",
+        "Slice a model with the slicer you have and check every layer before printing.",
+    ),
     "clio-research": (
         "Find the research behind it",
         "Research & discovery",

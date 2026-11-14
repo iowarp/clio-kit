@@ -11,12 +11,15 @@ schema-version = 1
 # view ParaView controls (pipeline, filters, display, camera, information) that
 # run the tools' own commands, and follows the host's theme; its node folder
 # adds trame-vuetify, so a new version folder is prepared.
+# slicer 1.0.0 is a new server: it slices STL, 3MF and STEP models with the
+# PrusaSlicer or OrcaSlicer already installed (never downloaded) and shows the
+# toolpaths layer by layer in an MCP Apps view (ui://slicer/layers).
 # 2.12.7: every Python server relocks opentelemetry-api 1.45.2 (CVE-2026-126360);
 # adios and paraview also relock with adios2 >= 2.13.0.1001 so macOS installs
 # from wheels, and hdf5 keeps metrics under a granted cache directory. 2.12.6 was
 # tagged but never published, so its server versions are released here.
 [mcp-registry-release]
-publish = ["adios", "arxiv", "chronolog", "compression", "darshan", "geo", "hdf5", "jarvis", "lmod", "ndp", "node-hardware", "pandas", "parallel-sort", "paraview", "parquet", "plot", "scientific-catalog", "seismology", "slurm", "spack", "terrain", "web"]
+publish = ["adios", "arxiv", "chronolog", "compression", "darshan", "geo", "hdf5", "jarvis", "lmod", "ndp", "node-hardware", "pandas", "parallel-sort", "paraview", "parquet", "plot", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "terrain", "web"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
@@ -65,6 +68,11 @@ version = "1.0.2"
 description = "Inspect and map geospatial features, terrain models, and waveform archives."
 servers = ["geo", "seismology", "terrain"]
 
+[bundles.clio-fabrication]
+version = "1.0.0"
+description = "Slice a 3D model for a printer and check it layer by layer before printing."
+servers = ["slicer"]
+
 [bundles.clio-research]
 version = "1.0.4"
 description = "Find papers on a topic and the datasets behind them."
@@ -105,6 +113,7 @@ parquet = "2.3.1"
 plot = "2.2.8"
 scientific-catalog = "1.1.7"
 seismology = "2.3.4"
+slicer = "1.0.0"
 slurm = "3.1.1"
 spack = "2.3.4"
 terrain = "2.2.8"
@@ -136,6 +145,7 @@ ndp = "🔎"
 paraview = "🧊"
 scientific-catalog = "🗃️"
 seismology = "〰️"
+slicer = "🖨️"
 spack = "🛠️"
 terrain = "⛰️"
 web = "🌐"
@@ -164,6 +174,10 @@ environment-files = ["SCIENTIFIC_CATALOG_FILE"]
 
 [prerequisites.paraview]
 note = "Needs ParaView 6 (pvpython) on this machine or on the SSH host in PARAVIEW_ADDRESS; the server starts without it and its first scene call says what is missing. A handshake alone is insufficient."
+
+[prerequisites.slicer]
+executable-environment = ["SLICER_BIN"]
+note = "Needs PrusaSlicer or OrcaSlicer installed on this machine (on PATH, or SLICER_BIN naming it); it never downloads a slicer."
 
 [prerequisites.chronolog]
 note = "Scientific backend requires a workflow check; a handshake alone is insufficient."

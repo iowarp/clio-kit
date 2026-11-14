@@ -1893,6 +1893,105 @@
       }
     },
     {
+      "id": "mcp/slicer",
+      "kind": "mcp",
+      "name": "slicer",
+      "title": "Slicer",
+      "description": "Slice 3D models (STL, 3MF, STEP) with the PrusaSlicer or OrcaSlicer installed here, and see the toolpaths layer by layer.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Fabrication",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/slicer",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "3d-printing",
+        "slicer",
+        "g-code",
+        "prusaslicer",
+        "orcaslicer",
+        "mcp-apps"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/slicer",
+      "evidence": "Locked runtime",
+      "icon": "🖨️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-slicer",
+      "summary": "Slice 3D models (STL, 3MF, STEP) with the PrusaSlicer or OrcaSlicer installed here, and see the toolpaths layer by layer.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "slicer"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "slicer"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "slicer"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "slicer"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "slicer"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "slicer"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "slicer"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/slurm",
       "kind": "mcp",
       "name": "slurm",
@@ -6437,6 +6536,54 @@
         "vscode": false
       },
       "summary": "Turn a small HDF5 dataset into a report with a CSV, figure, checked statistics and evidence review."
+    },
+    {
+      "id": "workflow/clio-fabrication",
+      "kind": "plugin",
+      "name": "clio-fabrication",
+      "title": "Make a part",
+      "description": "Slice a 3D model for a printer and check it layer by layer before printing.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Fabrication",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "plugins/clio-fabrication/.claude-plugin/plugin.json",
+      "members": [
+        "mcp/slicer"
+      ],
+      "servers": [
+        "clio-slicer"
+      ],
+      "tags": [],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace",
+      "evidence": "Membership from manifest",
+      "outcome": "Slice a model with the slicer you have and check every layer before printing.",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-fabrication",
+      "role": "Workflow plugin",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      },
+      "summary": "Slice a 3D model for a printer and check it layer by layer before printing."
     },
     {
       "id": "workflow/clio-geoscience",

@@ -84,6 +84,14 @@ SERVER_TAGS: dict[str, list[str]] = {
     "geo": ["geospatial", "mapping", "geojson", "visualization"],
     "scientific-catalog": ["dataset-catalog", "scientific-computing", "discovery"],
     "seismology": ["seismology", "earthquake", "waveform", "sac", "catalog"],
+    "slicer": [
+        "3d-printing",
+        "slicer",
+        "g-code",
+        "prusaslicer",
+        "orcaslicer",
+        "mcp-apps",
+    ],
     "terrain": ["terrain", "dem", "point-cloud", "geospatial"],
     "web": ["web", "fetch", "search", "agentic-web"],
 }

@@ -274,6 +274,23 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
+      "name": "clio-slicer",
+      "source": "./plugins/clio-slicer",
+      "description": "Slice 3D models (STL, 3MF, STEP) with the PrusaSlicer or OrcaSlicer installed here, and see the toolpaths layer by layer.",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "3d-printing",
+        "slicer",
+        "g-code",
+        "prusaslicer",
+        "orcaslicer",
+        "mcp-apps"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
       "name": "clio-slurm",
       "source": "./plugins/clio-slurm",
       "description": "Submit, list, inspect and cancel Slurm jobs, and describe the cluster.",
@@ -520,6 +537,23 @@
         "terrain",
         "visualization",
         "waveform"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
+      "name": "clio-fabrication",
+      "source": "./plugins/clio-fabrication",
+      "description": "Slice a 3D model for a printer and check it layer by layer before printing.",
+      "version": "1.0.0",
+      "category": "workflow",
+      "keywords": [
+        "3d-printing",
+        "g-code",
+        "mcp-apps",
+        "orcaslicer",
+        "prusaslicer",
+        "slicer"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"

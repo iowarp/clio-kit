@@ -126,6 +126,13 @@
         "seismology"
       ]
     },
+    "clio-slicer": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "slicer"
+      ]
+    },
     "clio-slurm": {
       "command": "clio-kit",
       "args": [
