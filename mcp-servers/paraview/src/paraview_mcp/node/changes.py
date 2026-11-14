@@ -72,6 +72,17 @@ def describe(
         if args.get("hide_input"):
             text += ", its input hidden"
         return f"add:{made.get('id')}", text
+    if name == "set_filter_property":
+        made = result.get("object") or {}
+        target = _object(scene, made.get("id") or args.get("object"))
+        before = result.get("before") or {}
+        parts = [
+            f"{key} {_vector(before.get(key)) if before.get(key) is not None else 'default'}"
+            f" -> {_vector(value)}"
+            for key, value in (args.get("properties") or {}).items()
+        ]
+        keys = ",".join(sorted(args.get("properties") or {}))
+        return f"set:{made.get('id')}:{keys}", f"{target}: " + ", ".join(parts)
     if name == "remove_scene_object":
         removed = ", ".join(result.get("removed") or [str(args.get("object"))])
         return f"remove:{removed}", f"removed {removed}"

@@ -303,3 +303,42 @@ def test_colour_map_and_legend_are_per_field() -> None:
         "Inferno",
         None,
     ]
+
+
+def test_a_filter_is_edited_with_its_own_form_filled_in() -> None:
+    fields = filters.filled(
+        filters.form("Contour", WAVELET),
+        {"ContourBy": ["POINTS", "RTData"], "Isosurfaces": [120.0, 200.5]},
+    )
+    by_key = {f["key"]: f for f in fields}
+    assert by_key["ContourBy"]["value"] == "POINTS:RTData"
+    assert by_key["Isosurfaces"]["value"] == "120, 200.5"
+    assert by_key["Isosurfaces"]["range"] == [37.4, 276.8]  # the slider's span
+    values = {f["key"]: f["value"] for f in fields}
+    assert filters.properties(fields, values) == {
+        "ContourBy": ["POINTS", "RTData"],
+        "Isosurfaces": [120.0, 200.5],
+    }
+
+
+def test_a_changed_filter_is_one_line_naming_old_and_new_values() -> None:
+    scene = {
+        "objects": [
+            {"id": "o1", "label": "clouds.pvd"},
+            {"id": "o2", "label": "Contour2"},
+        ]
+    }
+    key, text = changes.describe(
+        "set_filter_property",
+        {"object": "o2", "properties": {"Isosurfaces": [0.0003]}},
+        {"object": {"id": "o2"}, "before": {"Isosurfaces": [0.0001]}},
+        scene,
+    )
+    assert text == "o2 Contour2: Isosurfaces (0.0001) -> (0.0003)"
+    again, _ = changes.describe(
+        "set_filter_property",
+        {"object": "o2", "properties": {"Isosurfaces": [0.0004]}},
+        {"object": {"id": "o2"}, "before": {"Isosurfaces": [0.0003]}},
+        scene,
+    )
+    assert again == key  # a slider's run of drags is one line, updated in place

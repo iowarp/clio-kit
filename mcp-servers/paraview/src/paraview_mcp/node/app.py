@@ -150,6 +150,7 @@ class NodeApp:
             "clio_camera": bench.camera,
             "clio_filter_form": bench.open_form,
             "clio_filter_apply": bench.apply_form,
+            "clio_filter_edit": bench.edit_form,
             "clio_set_mode": self._ui_set_mode,
             "clio_pick": self._ui_pick,
             "clio_redraw": self._ui_redraw,

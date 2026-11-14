@@ -24,6 +24,7 @@ from .reading import SceneReading
 MUTATING = {
     "open_view",
     "create_filter",
+    "set_filter_property",
     "remove_scene_object",
     "set_representation",
     "set_timestep",
@@ -638,6 +639,36 @@ class Engine(SceneReading):
             self.simple.Hide(self.proxies[parent["id"]], self.view)
         self.update_view_mode()
         return {"object": self.object_summary(item), "scene": self.summary()}
+
+    def cmd_set_filter_property(
+        self, object: str, properties: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        """Change properties of a filter already in the scene, such as a contour value."""
+        scene = self.require_scene()
+        item = manifest.find_object(scene, object)
+        if item is None:
+            raise CommandError("unknown_object", f"No scene object {object!r}.")
+        if item["kind"] != "filter":
+            raise CommandError(
+                "not_a_filter",
+                f"{item['id']} is the dataset, not a filter; only filters have settings to change.",
+            )
+        if not properties:
+            raise CommandError("bad_arguments", "Give at least one property to change.")
+        proxy = self.proxies[item["id"]]
+        kept = item.get("properties") or {}
+        before = {key: kept.get(key) for key in properties}
+        for key, value in properties.items():
+            _set_property(proxy, item["type"], key, value)
+        proxy.UpdatePipeline(self.view.ViewTime)
+        item["properties"] = {**kept, **properties}
+        self.update_view_mode()
+        return {
+            "object": self.object_summary(item),
+            "before": before,
+            "after": dict(properties),
+            "scene": self.summary(),
+        }
 
     def cmd_remove_scene_object(self, object: str) -> dict[str, Any]:
         scene = self.require_scene()

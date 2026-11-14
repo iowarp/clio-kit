@@ -165,6 +165,7 @@ class Workbench:
             clio_sel=None,
             clio_offered=filters.offered(None),
             clio_filter="",
+            clio_editing=None,
             clio_form_title="",
             clio_form_fields=[],
             clio_form={},
@@ -239,8 +240,21 @@ class Workbench:
         state.clio_sel = selected_view(item, info, preset) if item and info else None
         state.clio_opacity = state.clio_sel["opacity"] if state.clio_sel else 1.0
         state.clio_offered = filters.offered(info)
-        if state.clio_filter and info is not None:
+        if state.clio_sel is not None:
+            state.clio_sel = {**state.clio_sel, "editable": self._editable(item)}
+        if state.clio_editing:
+            if state.clio_editing != state.clio_active:
+                state.update(clio_filter="", clio_editing=None)
+        elif state.clio_filter and info is not None:
             self.open_form(state.clio_filter)
+
+    @staticmethod
+    def _editable(item: dict[str, Any] | None) -> bool:
+        return bool(
+            item
+            and item["kind"] == "filter"
+            and item.get("type") in {e["name"] for e in filters.CATALOG}
+        )
 
     # -- actions ---------------------------------------------------------------
     def set_visible(self, object_id: str, visible: bool) -> None:
@@ -269,8 +283,29 @@ class Workbench:
         elif kind == "parallel":
             self.run("set_camera", {"parallel_projection": bool(value)})
 
+    def edit_form(self, object_id: str | None) -> None:
+        """Open the form of a filter already in the scene, showing its settings."""
+        scene = self.engine.scene
+        item = manifest.find_object(scene, object_id) if scene and object_id else None
+        state = self.state
+        info = self.infos.get(item["input"]) if self._editable(item) else None
+        if item is None or info is None:
+            state.update(clio_filter="", clio_editing=None)
+            return
+        fields = filters.filled(
+            filters.form(item["type"], info), item.get("properties") or {}
+        )
+        state.clio_filter = item["type"]
+        state.clio_editing = item["id"]
+        state.clio_form_title = (
+            f"{filters.title(item['type'])} {item.get('label') or item['id']}"
+        )
+        state.clio_form_fields = fields
+        state.clio_form = {f["key"]: f["value"] for f in fields}
+
     def open_form(self, name: str) -> None:
         state = self.state
+        state.clio_editing = None
         active = state.clio_active
         info = self.infos.get(active) if active else None
         if info is None or name not in {e["name"] for e in filters.CATALOG}:
@@ -291,6 +326,13 @@ class Workbench:
             properties = filters.properties(state.clio_form_fields, values or {})
         except filters.FormError as exc:
             state.clio_error = str(exc)
+            return
+        if state.clio_editing:
+            # Editing stays open, so the person can keep adjusting (a slider's drags).
+            self.run(
+                "set_filter_property",
+                {"object": state.clio_editing, "properties": properties},
+            )
             return
         made = self.run(
             "create_filter",

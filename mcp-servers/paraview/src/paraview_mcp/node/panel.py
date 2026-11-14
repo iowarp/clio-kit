@@ -416,6 +416,15 @@ def _filters(v3: Any, html: Any) -> None:
                 ):
                     v3.VIcon(icon=("f.icon",), size="small")
                     v3.VTooltip(activator="parent", text=("f.tip",), location="bottom")
+        v3.VBtn(
+            "Edit {{ clio_sel.label }}",
+            v_if="clio_sel.editable && clio_editing !== clio_active",
+            variant="tonal",
+            size="small",
+            prepend_icon="mdi-pencil",
+            classes="mt-2",
+            click="trigger('clio_filter_edit', [clio_active])",
+        )
         with html.Form(
             v_if="clio_filter",
             classes="clio-form",
@@ -443,6 +452,19 @@ def _filters(v3: Any, html: Any) -> None:
                     variant="outlined",
                     classes="mt-2",
                     raw_attrs=[":inputmode=\"f.kind === 'text' ? 'text' : 'decimal'\""],
+                )
+                v3.VSlider(
+                    v_if="clio_editing && f.kind === 'numbers' && f.range",
+                    min=("f.range[0]",),
+                    max=("f.range[1]",),
+                    step=("(f.range[1] - f.range[0]) / 200",),
+                    model_value=("Number(String(clio_form[f.key]).split(/[ ,]+/)[0])",),
+                    update_modelValue="clio_form[f.key] = String(Number($event.toPrecision(6)))",
+                    end="trigger('clio_filter_apply', [clio_form])",
+                    density="compact",
+                    hide_details=True,
+                    classes="mt-1",
+                    raw_attrs=[":aria-label=\"f.label + ' slider'\""],
                 )
                 v3.VCheckbox(
                     v_if="f.kind === 'bool'",
@@ -478,14 +500,17 @@ def _filters(v3: Any, html: Any) -> None:
                         )
             with html.Div(classes="clio-tools mt-3"):
                 v3.VBtn(
-                    "Apply",
+                    "{{ clio_editing ? 'Update' : 'Apply' }}",
                     color="primary",
                     size="small",
                     prepend_icon="mdi-check",
                     click="trigger('clio_filter_apply', [clio_form])",
                 )
                 v3.VBtn(
-                    "Cancel", variant="text", size="small", click="clio_filter = ''"
+                    "{{ clio_editing ? 'Done' : 'Cancel' }}",
+                    variant="text",
+                    size="small",
+                    click="clio_filter = ''; clio_editing = null",
                 )
 
 

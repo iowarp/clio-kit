@@ -221,6 +221,28 @@ def create_filter(
     return "Added " + present.object_line(result["object"]) + "."
 
 
+@mcp.tool(annotations={"title": "Change a ParaView filter"})
+def set_filter_property(
+    object: Annotated[str, Field(description="Scene object id or label of a filter.")],
+    properties: Annotated[
+        dict[str, Any],
+        Field(
+            description="Filter properties by ParaView name, e.g. "
+            '{"Isosurfaces": [0.0003]} for a Contour, or {"SliceType.Origin": [0, 0, 5]}.'
+        ),
+    ],
+) -> str:
+    """Change settings of a filter already in the scene. It commits whole or not at all."""
+    result, _ = command(
+        "set_filter_property", {"object": object, "properties": properties}
+    )
+    before = result.get("before") or {}
+    changed = ", ".join(
+        f"{key} {before.get(key)!r} -> {value!r}" for key, value in properties.items()
+    )
+    return "Changed " + present.object_line(result["object"]) + f": {changed}."
+
+
 @mcp.tool(annotations={"title": "Remove a scene object", "destructiveHint": True})
 def remove_scene_object(
     object: Annotated[str, Field(description="Scene object id or label.")],

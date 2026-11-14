@@ -23,6 +23,7 @@ from paraview_mcp.transport import LocalTransport, classify_ssh_failure
 EXPECTED_TOOLS = {
     "open_view",
     "create_filter",
+    "set_filter_property",
     "remove_scene_object",
     "set_representation",
     "set_timestep",

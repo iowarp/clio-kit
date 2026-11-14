@@ -135,6 +135,23 @@ def test_open_measure_and_rollback(attached: tuple[Attacher, Path]) -> None:
     assert [o["id"] for o in after["objects"]] == ["o1", "o2"]
     assert json.loads(manifest_path.read_text())["objects"] == before["objects"]
 
+    changed = client.command(
+        "set_filter_property", {"object": "o2", "properties": {"Isosurfaces": [15.5]}}
+    )
+    assert changed["before"] == {"Isosurfaces": [10.5]}
+    edited = json.loads(manifest_path.read_text())["objects"][1]
+    assert edited["properties"]["Isosurfaces"] == [15.5]
+    with pytest.raises(ParaViewError) as refused:
+        client.command("set_filter_property", {"object": "o1", "properties": {"X": 1}})
+    assert refused.value.code == "not_a_filter"
+    with pytest.raises(ParaViewError) as refused:
+        client.command(
+            "set_filter_property", {"object": "o2", "properties": {"Bogus": 1}}
+        )
+    assert refused.value.code == "unknown_property"
+    assert json.loads(manifest_path.read_text())["objects"][1]["properties"][
+        "Isosurfaces"
+    ] == [15.5]
     measured = client.command("measure_field", {"field": "p", "bins": 4})
     assert measured["min"] == 0.0 and measured["max"] == 21.0
     assert measured["mean"] == pytest.approx(10.5)
