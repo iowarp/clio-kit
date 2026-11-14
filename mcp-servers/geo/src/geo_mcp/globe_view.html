@@ -153,8 +153,6 @@
       viewer.scene.requestRender();
     }
   }
-  const themeText = () => getComputedStyle(document.body).color;
-  const themeBackground = () => getComputedStyle(document.body).backgroundColor;
 
   // --- Cesium ----------------------------------------------------------------------
   function loadCesium() {
@@ -262,8 +260,9 @@
       if (!show) { entity.label = undefined; continue; }
       entity.label = new C.LabelGraphics({
         text: featureName(rec), font: '600 12px ' + (getComputedStyle(document.body).fontFamily || 'sans-serif'),
-        fillColor: C.Color.fromCssColorString(themeText()),
-        outlineColor: C.Color.fromCssColorString(themeBackground()), outlineWidth: 3,
+        // The basemap is light in both themes, so labels are dark text on a light halo.
+        fillColor: C.Color.fromCssColorString('#1d1f23'),
+        outlineColor: C.Color.WHITE, outlineWidth: 3,
         style: C.LabelStyle.FILL_AND_OUTLINE, verticalOrigin: C.VerticalOrigin.BOTTOM,
         pixelOffset: new C.Cartesian2(0, -(rec.layer.spec.style.point_size / 2 + 5)),
         showBackground: isSelected(rec), backgroundColor: color(HIGHLIGHT, 0.85),
