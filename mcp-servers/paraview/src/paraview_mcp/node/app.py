@@ -135,7 +135,10 @@ class NodeApp:
             clio_theme="light",
             clio_view_colors=None,
             viewMode="local",
+            clio_drag=None,
         )
+        # A value slider's drag in progress stays in the browser; release applies it.
+        state.client_only("clio_drag")
         state.change("clio_view_colors")(self._ui_theme)
         bench = self.bench = Workbench(self.engine, state, after=self._after_person)
         for name, handler in {

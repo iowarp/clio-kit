@@ -372,3 +372,39 @@ def test_a_field_spanning_decades_gets_a_log_slider() -> None:
     for value in (1e-5, 1e-4):
         assert 0.2 < (math.log10(value) - field["slider"]["min"]) / span < 0.95
     assert filters.slider([-5.0, 5.0])["scale"] == "linear"
+
+
+def test_the_form_never_writes_into_its_state_in_place() -> None:
+    """trame's client re-renders and syncs a state key only when it gets a new value.
+
+    Writing into ``clio_form[f.key]`` (or binding ``v_model`` to it) changes a plain
+    object nothing notices: a controlled slider then snaps back and the form goes stale.
+    """
+    import re
+    from pathlib import Path
+
+    source = Path(panel.__file__).read_text(encoding="utf-8")
+    assert not re.search(r"clio_form\[[^\]]*\](\[[^\]]*\])?\s*=(?!=)", source)
+    assert not re.search(r"v_model=\(\s*\"clio_form\[", source)
+
+
+def test_a_value_slider_previews_its_drag_and_applies_on_release() -> None:
+    events = panel.value_slider_events()
+    assert events["model_value"].startswith("clio_drag && clio_drag.key === f.key")
+    assert events["start"].startswith("clio_drag = {key: f.key, i, x: $event")
+    # Held: only the client-only drag moves. Not held (arrow keys): apply at once.
+    held, _, _ = events["update_modelValue"].partition(" : ")
+    assert "clio_drag = {" in held and "clio_filter_apply" not in held
+    assert "clio_filter_apply" in events["update_modelValue"]
+    assert events["end"].startswith("clio_drag = null, ")
+    for name in ("update_modelValue", "end"):
+        # Applies the whole new form, only when the value changed, keeping the others.
+        assert (
+            "!== clio_form[f.key] && (clio_form = {...clio_form, [f.key]:"
+            in events[name]
+        )
+        assert "j === i ?" in events[name] and ": p).join(', ')" in events[name]
+        assert "trigger('clio_filter_apply', [clio_form])" in events[name]
+        # An expression, never statements: it sits inside a ternary.
+        assert ";" not in events[name]
+    assert "10 ** ($event)" in events["end"]  # a log slider's position is an exponent

@@ -2,12 +2,15 @@
 
 Starts the front over stdio (as an MCP host would), opens a dataset, adds an
 isosurface, then mounts the view in ``standin.mjs`` and drives Chromium:
-rotate, pick. Afterwards it asks the front what was picked, measures the
+rotate, pick (and, with ``--slider``, arrow keys and a drag on the edit form's
+first isovalue slider). Afterwards it asks the front what was picked, measures the
 field and captures a PNG, and checks the capture's camera against the camera
 the view last reported. Usage (from mcp-servers/paraview)::
 
     uv run python tests/browser/run_standin.py --dataset /path/wave.vti \\
         --field RTData --iso 150 --out /tmp/pv-standin
+    uv run python tests/browser/run_standin.py --dataset /path/clouds.vti \\
+        --field q --iso 1e-5 --iso2 1e-4 --slider --out /tmp/pv-slider
 
 Environment: everything the front reads (PARAVIEW_ADDRESS, PARAVIEW_VIA,
 PARAVIEW_PREPARE, PARAVIEW_REMOTE_RENDER_THRESHOLD_MB, ...) passes through.
@@ -31,6 +34,39 @@ HERE = Path(__file__).resolve().parent
 SERVER = HERE.parents[1]
 
 
+def _isosurfaces(found: Any) -> list[float] | None:
+    """The Contour's applied isovalues, anywhere in ``scene_state``'s structured result."""
+    if isinstance(found, dict):
+        if found.get("type") == "Contour" and "properties" in found:
+            return (found["properties"] or {}).get("Isosurfaces")
+        found = list(found.values())
+    for item in found if isinstance(found, list) else []:
+        value = _isosurfaces(item)
+        if value is not None:
+            return value
+    return None
+
+
+def _slider_check(sliders: dict[str, Any] | None, applied: list[float] | None) -> Any:
+    """Whether each slider input moved it, and the drag's value is the one applied."""
+    if not sliders:
+        return None
+    by = {s["at"]: s for s in sliders["samples"]}
+    shown = [float(v) for v in by["after drag"]["values"].replace(",", " ").split()]
+    first = [float(v) for v in by["before"]["values"].replace(",", " ").split()]
+    return {
+        "keys_moved": by["after 3 ArrowRight"]["valuenow"] != by["before"]["valuenow"],
+        "drag_moved_live": by["mid-drag"]["valuenow"]
+        != by["after 3 ArrowRight"]["valuenow"],
+        "drag_moved": by["after drag"]["valuenow"] != by["mid-drag"]["valuenow"],
+        "applied": applied,
+        "applied_is_shown": applied is not None
+        and len(applied) == len(shown)
+        and all(abs(a - b) <= 1e-9 + 1e-6 * abs(b) for a, b in zip(applied, shown)),
+        "others_kept": shown[1:] == first[1:],
+    }
+
+
 def _texts(result: Any) -> str:
     return "\n".join(c.text for c in result.content if getattr(c, "type", "") == "text")
 
@@ -40,6 +76,12 @@ async def main() -> int:
     parser.add_argument("--dataset", required=True)
     parser.add_argument("--field", required=True)
     parser.add_argument("--iso", type=float, required=True)
+    parser.add_argument(
+        "--iso2", type=float, help="a second isovalue, which the slider must keep"
+    )
+    parser.add_argument(
+        "--slider", action="store_true", help="drive the edit form's value slider"
+    )
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--width", default="1440")
     parser.add_argument("--height", default="900")
@@ -67,7 +109,8 @@ async def main() -> int:
                 "filter": "Contour",
                 "properties": {
                     "ContourBy": ["POINTS", opts.field],
-                    "Isosurfaces": [opts.iso],
+                    "Isosurfaces": [opts.iso]
+                    + ([opts.iso2] if opts.iso2 is not None else []),
                     "ComputeScalars": 1,
                 },
             },
@@ -85,6 +128,11 @@ async def main() -> int:
             "steps": [
                 {"do": "drag", "shot": "02-rotated"},
                 {"do": "click", "x": 0.5, "y": 0.5, "shot": "03-picked"},
+                *(
+                    [{"do": "edit-slider", "shot": "05-slider-dragged"}]
+                    if opts.slider
+                    else []
+                ),
             ],
         }
         config = opts.out / "run.json"
@@ -171,6 +219,10 @@ async def main() -> int:
             if drag and f["at"] >= drag["start"] and not f.get("sent")
         ),
         scene_state=_texts(state),
+        sliders=report.get("sliders"),
+        slider_check=_slider_check(
+            report.get("sliders"), _isosurfaces(state.structured_content)
+        ),
         screenshots=report["shots"] + [str(opts.out / "capture.png")],
     )
     (opts.out / "summary.json").write_text(json.dumps(summary, indent=2))

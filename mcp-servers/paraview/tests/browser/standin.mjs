@@ -209,6 +209,41 @@ for (const step of config.steps || []) {
     await sleep(2000);
   } else if (step.do === "wait") {
     await sleep(step.ms || 1000);
+  } else if (step.do === "edit-slider") {
+    // The Contour's edit form: arrow keys, then a drag, on its first value slider.
+    // Select it first: the pick before this may have made another object active.
+    await trame.click('button[aria-label="Pipeline"]');
+    await trame.locator(".clio-name", { hasText: /^\s*Contour/ }).first().click();
+    await sleep(1500);
+    await trame.click('button[aria-label="Add filter"]');
+    await trame.getByRole("button", { name: /^Edit / }).click();
+    const slider = trame.getByRole("slider").first();
+    await slider.waitFor();
+    const values = trame.getByLabel("Values", { exact: true });
+    const read = async (at) => ({ at, valuenow: await slider.getAttribute("aria-valuenow"),
+      values: await values.inputValue() });
+    const sliders = { label: await slider.getAttribute("aria-label"),
+      count: await trame.getByRole("slider").count(), samples: [await read("before")] };
+    await slider.focus();
+    for (let i = 0; i < 3; i++) { await page.keyboard.press("ArrowRight"); await sleep(400); }
+    await sleep(1500);
+    sliders.samples.push(await read("after 3 ArrowRight"));
+    await shot("04-slider-keys");
+    const track = await trame.locator(".v-slider").first().boundingBox();
+    const thumb = await trame.locator(".v-slider-thumb").first().boundingBox();
+    const x0 = thumb.x + thumb.width / 2, y0 = thumb.y + thumb.height / 2;
+    const dx = (track.x + track.width * 0.85 - x0) / 20;
+    await page.mouse.move(x0, y0);
+    await page.mouse.down();
+    for (let i = 1; i <= 20; i++) {
+      await page.mouse.move(x0 + i * dx, y0);
+      await sleep(40);
+      if (i === 10) sliders.samples.push(await read("mid-drag"));
+    }
+    await page.mouse.up();
+    await sleep(3000);
+    sliders.samples.push(await read("after drag"));
+    report.sliders = sliders;
   } else if (step.do === "toggle-mode") {
     // The drawing control: press the choice that is not pressed.
     await trame.click('[aria-label="Drawing"] button[aria-pressed="false"]');
