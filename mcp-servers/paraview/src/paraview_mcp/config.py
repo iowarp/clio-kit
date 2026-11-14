@@ -51,6 +51,9 @@ class Settings:
     pvserver_port: int = DEFAULT_PVSERVER_PORT
     connect_timeout: int = 15
     start_timeout: float = 180.0
+    #: How long a node half that is alive but not answering (busy rendering) is waited
+    #: for before it is taken for hung and restarted.
+    busy_timeout: float = 300.0
 
 
 def _float(name: str, default: float | None) -> float | None:
@@ -73,4 +76,5 @@ def from_environment() -> Settings:
         threshold_mb=_float("PARAVIEW_REMOTE_RENDER_THRESHOLD_MB", None),
         pvserver_port=int(port if port is not None else DEFAULT_PVSERVER_PORT),
         start_timeout=float(_float("PARAVIEW_START_TIMEOUT", 180.0) or 180.0),
+        busy_timeout=float(_float("PARAVIEW_BUSY_TIMEOUT", 300.0) or 300.0),
     )

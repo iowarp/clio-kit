@@ -96,10 +96,20 @@ def color_component(
 
 
 def _datasets(proxy: Any) -> list[Any]:
-    """Fetch ``proxy``'s output and return its leaf datasets."""
-    from paraview import servermanager
+    """``proxy``'s output at the view's time, as its leaf datasets.
 
-    data = servermanager.Fetch(proxy)
+    In a built-in session the pipeline's own output is read directly: ``Fetch`` passes data
+    through a reduction that, for a rectilinear grid, returns the right number of points
+    with half their values zero (ParaView 6.2). A remote session must fetch.
+    """
+    from paraview import servermanager, simple
+
+    connection = servermanager.ActiveConnection
+    if connection is not None and not connection.IsRemote():
+        simple.UpdatePipeline(proxy=proxy)
+        data = proxy.GetClientSideObject().GetOutputDataObject(0)
+    else:
+        data = servermanager.Fetch(proxy)
     if data is None:
         return []
     if data.IsA("vtkCompositeDataSet"):

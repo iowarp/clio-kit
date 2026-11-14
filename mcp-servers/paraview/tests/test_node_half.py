@@ -53,6 +53,28 @@ def write_vti(path: Path, shift: float = 0.0, n: int = 8) -> None:
     )
 
 
+def write_vtr(path: Path, n: int = 6) -> None:
+    """A small ASCII rectilinear grid with uneven z and point field ``p`` = x + y + z."""
+    values = " ".join(
+        f"{x + y + z:g}" for z in range(n) for y in range(n) for x in range(n)
+    )
+    axis = " ".join(str(i) for i in range(n))
+    z = " ".join(f"{i * i:g}" for i in range(n))
+    extent = f"0 {n - 1} 0 {n - 1} 0 {n - 1}"
+    path.write_text(
+        f"""<?xml version="1.0"?>
+<VTKFile type="RectilinearGrid" version="0.1" byte_order="LittleEndian">
+<RectilinearGrid WholeExtent="{extent}"><Piece Extent="{extent}">
+<PointData Scalars="p"><DataArray type="Float32" Name="p" format="ascii">{values}</DataArray>
+</PointData><Coordinates>
+<DataArray type="Float64" Name="x" format="ascii">{axis}</DataArray>
+<DataArray type="Float64" Name="y" format="ascii">{axis}</DataArray>
+<DataArray type="Float64" Name="z" format="ascii">{z}</DataArray>
+</Coordinates></Piece></RectilinearGrid></VTKFile>
+"""
+    )
+
+
 def _local(home: Path) -> Path:
     """The node half's folder on this machine for ``home`` (clio-kit's data folder)."""
     return home / ".local" / "share" / "clio-kit" / "paraview" / config.SERVER_VERSION
@@ -77,6 +99,7 @@ def attached(
     data = base / "data"
     data.mkdir()
     write_vti(data / "cube.vti")
+    write_vtr(data / "grid.vtr")
     saved = {k: os.environ.get(k) for k in ("HOME", "PATH")}
     os.environ["HOME"] = str(home)
     assert PVPYTHON is not None
@@ -135,6 +158,23 @@ def test_open_measure_and_rollback(attached: tuple[Attacher, Path]) -> None:
     assert [o["id"] for o in after["objects"]] == ["o1", "o2"]
     assert json.loads(manifest_path.read_text())["objects"] == before["objects"]
 
+    changed = client.command(
+        "set_filter_property", {"object": "o2", "properties": {"Isosurfaces": [15.5]}}
+    )
+    assert changed["before"] == {"Isosurfaces": [10.5]}
+    edited = json.loads(manifest_path.read_text())["objects"][1]
+    assert edited["properties"]["Isosurfaces"] == [15.5]
+    with pytest.raises(ParaViewError) as refused:
+        client.command("set_filter_property", {"object": "o1", "properties": {"X": 1}})
+    assert refused.value.code == "not_a_filter"
+    with pytest.raises(ParaViewError) as refused:
+        client.command(
+            "set_filter_property", {"object": "o2", "properties": {"Bogus": 1}}
+        )
+    assert refused.value.code == "unknown_property"
+    assert json.loads(manifest_path.read_text())["objects"][1]["properties"][
+        "Isosurfaces"
+    ] == [15.5]
     measured = client.command("measure_field", {"field": "p", "bins": 4})
     assert measured["min"] == 0.0 and measured["max"] == 21.0
     assert measured["mean"] == pytest.approx(10.5)
@@ -143,6 +183,20 @@ def test_open_measure_and_rollback(attached: tuple[Attacher, Path]) -> None:
     assert probe["selection"]["point_values"]["p"] == 6.0
     captured = client.command("capture", {"width": 120, "height": 90})
     assert captured["png_base64"].startswith("iVBOR")
+    # The capture was timed, and so were its frames, so a slow view can say so.
+    assert isinstance(captured["seconds"], float)
+    assert isinstance(client.command("scene_state", {})["view"]["frame_seconds"], float)
+
+
+def test_a_rectilinear_grid_is_measured_whole(attached: tuple[Attacher, Path]) -> None:
+    attacher, data = attached
+    client = attacher.ensure().client
+    client.command("open_view", {"path": str(data / "grid.vtr"), "new": True})
+    measured = client.command("measure_field", {"field": "p", "bins": 3})
+    # Every one of the 216 values, not the half a fetched rectilinear grid carried.
+    assert sum(measured["histogram"]["counts"]) == 216
+    assert measured["max"] == 15.0
+    assert measured["mean"] == pytest.approx(7.5)
 
 
 def test_slice_plane_is_set_through_its_part(attached: tuple[Attacher, Path]) -> None:

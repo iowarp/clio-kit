@@ -81,6 +81,67 @@ html, body, #app { margin: 0; height: 100%; overflow: hidden; }
 """
 
 
+# -- the filter form's values ------------------------------------------------
+# trame's client holds each state key as a ref that only notices a whole new value:
+# writing into ``clio_form[f.key]`` changes a plain object that nothing re-renders or
+# sends. So every form input replaces ``clio_form`` whole (``_form_set``), and a value
+# slider keeps its in-progress drag in the client-only ``clio_drag`` ({key, i, x, text})
+# and writes ``clio_form`` once, when the value is let go.
+
+#: The form's values as a list, one per isovalue.
+_VALUES = "String(clio_form[f.key]).split(/[ ,]+/).filter(Boolean)"
+#: Whether slider ``i`` of field ``f`` is the one being dragged.
+_HELD = "clio_drag && clio_drag.key === f.key && clio_drag.i === i"
+#: A field's text: while one of its value sliders is held, the values it would apply.
+_TYPED = "clio_drag && clio_drag.key === f.key ? clio_drag.text : clio_form[f.key]"
+
+
+def _form_set(value: str) -> str:
+    """JS: put ``value`` in the form field ``f.key`` (a whole new ``clio_form``)."""
+    return f"clio_form = {{...clio_form, [f.key]: {value}}}"
+
+
+def _to_slider(value: str) -> str:
+    """JS: the slider position of ``value`` (its exponent on a log slider)."""
+    return (
+        f"(f.slider.scale === 'log' ? Math.log10(Math.max(Number({value}),"
+        f" 10 ** f.slider.min)) : Number({value}))"
+    )
+
+
+def _joined(position: str) -> str:
+    """JS: the form's values with value ``i`` at slider ``position``, the others kept."""
+    value = f"(f.slider.scale === 'log' ? 10 ** ({position}) : ({position}))"
+    return (
+        f"{_VALUES}.map((p, j) => j === i ? String(Number({value}.toPrecision(3)))"
+        " : p).join(', ')"
+    )
+
+
+def _commit(position: str) -> str:
+    """JS: write value ``i`` at ``position`` and apply it, when that changes it."""
+    joined = _joined(position)
+    return (
+        f"({joined} !== clio_form[f.key] && ({_form_set(joined)},"
+        " trigger('clio_filter_apply', [clio_form])))"
+    )
+
+
+def value_slider_events() -> dict[str, str]:
+    """The model and events of one isovalue slider: preview while held, apply on release.
+
+    A drag (``start`` .. ``end``) moves only the client-only ``clio_drag``; the arrow
+    keys emit no ``start``/``end``, so each key press applies at once.
+    """
+    held = f"clio_drag = {{key: f.key, i, x: $event, text: {_joined('$event')}}}"
+    return {
+        "model_value": f"{_HELD} ? clio_drag.x : {_to_slider('v')}",
+        "start": held,
+        "update_modelValue": f"{_HELD} ? ({held}) : {_commit('$event')}",
+        "end": f"clio_drag = null, {_commit('$event')}",
+    }
+
+
 def _titles_js() -> str:
     return "({" + ", ".join(f"{k}: '{label}'" for k, _, label in PANELS) + "})"
 
@@ -416,6 +477,15 @@ def _filters(v3: Any, html: Any) -> None:
                 ):
                     v3.VIcon(icon=("f.icon",), size="small")
                     v3.VTooltip(activator="parent", text=("f.tip",), location="bottom")
+        v3.VBtn(
+            "Edit {{ clio_sel.label }}",
+            v_if="clio_sel.editable && clio_editing !== clio_active",
+            variant="tonal",
+            size="small",
+            prepend_icon="mdi-pencil",
+            classes="mt-2",
+            click="trigger('clio_filter_edit', [clio_active])",
+        )
         with html.Form(
             v_if="clio_filter",
             classes="clio-form",
@@ -428,7 +498,8 @@ def _filters(v3: Any, html: Any) -> None:
                     v_if="f.kind === 'array' || f.kind === 'select'",
                     label=("f.label",),
                     items=("f.items",),
-                    v_model=("clio_form[f.key]",),
+                    model_value=("clio_form[f.key]",),
+                    update_modelValue=_form_set("$event"),
                     density="compact",
                     hide_details=True,
                     variant="outlined",
@@ -437,17 +508,43 @@ def _filters(v3: Any, html: Any) -> None:
                 v3.VTextField(
                     v_if="f.kind === 'number' || f.kind === 'numbers' || f.kind === 'text'",
                     label=("f.label",),
-                    v_model=("clio_form[f.key]",),
+                    model_value=(_TYPED,),
+                    update_modelValue=_form_set("$event"),
                     density="compact",
                     hide_details=True,
                     variant="outlined",
                     classes="mt-2",
                     raw_attrs=[":inputmode=\"f.kind === 'text' ? 'text' : 'decimal'\""],
                 )
+                # One slider per value, each moving only its own value (log when the field
+                # spans decades); dragging never drops the other isosurfaces.
+                slider = value_slider_events()
+                with html.Div(v_if="clio_editing && f.kind === 'numbers' && f.slider"):
+                    v3.VSlider(
+                        v_for=f"(v, i) in {_VALUES}",
+                        key="i",
+                        min=("f.slider.min",),
+                        max=("f.slider.max",),
+                        step=("(f.slider.max - f.slider.min) / 200",),
+                        model_value=(slider["model_value"],),
+                        start=slider["start"],
+                        update_modelValue=slider["update_modelValue"],
+                        end=slider["end"],
+                        density="compact",
+                        hide_details=True,
+                        classes="mt-1",
+                        raw_attrs=[
+                            (
+                                ":aria-label=\"f.label + ' ' + (i + 1) + ' slider'"
+                                " + (f.slider.scale === 'log' ? ' (log scale)' : '')\""
+                            )
+                        ],
+                    )
                 v3.VCheckbox(
                     v_if="f.kind === 'bool'",
                     label=("f.label",),
-                    v_model=("clio_form[f.key]",),
+                    model_value=("clio_form[f.key]",),
+                    update_modelValue=_form_set("$event"),
                     density="compact",
                     hide_details=True,
                 )
@@ -457,7 +554,10 @@ def _filters(v3: Any, html: Any) -> None:
                         v3.VTextField(
                             v_for="(axis, i) in ['X', 'Y', 'Z']",
                             key="axis",
-                            v_model=("clio_form[f.key][i]",),
+                            model_value=("clio_form[f.key][i]",),
+                            update_modelValue=_form_set(
+                                "clio_form[f.key].map((x, j) => (j === i ? $event : x))"
+                            ),
                             density="compact",
                             hide_details=True,
                             variant="outlined",
@@ -473,19 +573,22 @@ def _filters(v3: Any, html: Any) -> None:
                             key="axis",
                             size="x-small",
                             variant="tonal",
-                            click="clio_form[f.key] = [0, 1, 2].map((j) => (j === i ? 1 : 0))",
+                            click=_form_set("[0, 1, 2].map((j) => (j === i ? 1 : 0))"),
                             raw_attrs=[":aria-label=\"f.label + ' along ' + axis\""],
                         )
             with html.Div(classes="clio-tools mt-3"):
                 v3.VBtn(
-                    "Apply",
+                    "{{ clio_editing ? 'Update' : 'Apply' }}",
                     color="primary",
                     size="small",
                     prepend_icon="mdi-check",
                     click="trigger('clio_filter_apply', [clio_form])",
                 )
                 v3.VBtn(
-                    "Cancel", variant="text", size="small", click="clio_filter = ''"
+                    "{{ clio_editing ? 'Done' : 'Cancel' }}",
+                    variant="text",
+                    size="small",
+                    click="clio_filter = ''; clio_editing = null",
                 )
 
 

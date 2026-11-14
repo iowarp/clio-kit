@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import pytest
 from fastmcp import Client
 
@@ -303,3 +305,106 @@ def test_colour_map_and_legend_are_per_field() -> None:
         "Inferno",
         None,
     ]
+
+
+def test_a_filter_is_edited_with_its_own_form_filled_in() -> None:
+    fields = filters.filled(
+        filters.form("Contour", WAVELET),
+        {"ContourBy": ["POINTS", "RTData"], "Isosurfaces": [120.0, 200.5]},
+    )
+    by_key = {f["key"]: f for f in fields}
+    assert by_key["ContourBy"]["value"] == "POINTS:RTData"
+    assert by_key["Isosurfaces"]["value"] == "120, 200.5"
+    assert by_key["Isosurfaces"]["range"] == [37.4, 276.8]  # the slider's span
+    assert by_key["Isosurfaces"]["slider"] == {
+        "scale": "linear",
+        "min": 37.4,
+        "max": 276.8,
+    }
+    values = {f["key"]: f["value"] for f in fields}
+    assert filters.properties(fields, values) == {
+        "ContourBy": ["POINTS", "RTData"],
+        "Isosurfaces": [120.0, 200.5],
+    }
+
+
+def test_a_changed_filter_is_one_line_naming_old_and_new_values() -> None:
+    scene = {
+        "objects": [
+            {"id": "o1", "label": "clouds.pvd"},
+            {"id": "o2", "label": "Contour2"},
+        ]
+    }
+    key, text = changes.describe(
+        "set_filter_property",
+        {"object": "o2", "properties": {"Isosurfaces": [0.0003]}},
+        {"object": {"id": "o2"}, "before": {"Isosurfaces": [0.0001]}},
+        scene,
+    )
+    assert text == "o2 Contour2: Isosurfaces (0.0001) -> (0.0003)"
+    again, _ = changes.describe(
+        "set_filter_property",
+        {"object": "o2", "properties": {"Isosurfaces": [0.0004]}},
+        {"object": {"id": "o2"}, "before": {"Isosurfaces": [0.0003]}},
+        scene,
+    )
+    assert again == key  # a slider's run of drags is one line, updated in place
+
+
+def test_a_field_spanning_decades_gets_a_log_slider() -> None:
+    clouds = {
+        **WAVELET,
+        "arrays": [
+            {
+                "name": "CLWC",
+                "association": "POINTS",
+                "components": 1,
+                "range": [0, 6.7e-4],
+            }
+        ],
+    }
+    field = {f["key"]: f for f in filters.form("Contour", clouds)}["Isosurfaces"]
+    assert field["slider"]["scale"] == "log"
+    assert field["slider"]["max"] == pytest.approx(math.log10(6.7e-4))
+    assert field["slider"]["min"] == pytest.approx(math.log10(6.7e-8))
+    # Both isosurfaces (1e-5, 1e-4) sit well inside the track, not in its first pixels.
+    span = field["slider"]["max"] - field["slider"]["min"]
+    for value in (1e-5, 1e-4):
+        assert 0.2 < (math.log10(value) - field["slider"]["min"]) / span < 0.95
+    assert filters.slider([-5.0, 5.0])["scale"] == "linear"
+
+
+def test_the_form_never_writes_into_its_state_in_place() -> None:
+    """trame's client re-renders and syncs a state key only when it gets a new value.
+
+    Writing into ``clio_form[f.key]`` (or binding ``v_model`` to it) changes a plain
+    object nothing notices: a controlled slider then snaps back and the form goes stale.
+    """
+    import re
+    from pathlib import Path
+
+    source = Path(panel.__file__).read_text(encoding="utf-8")
+    assert not re.search(r"clio_form\[[^\]]*\](\[[^\]]*\])?\s*=(?!=)", source)
+    assert not re.search(r"v_model=\(\s*\"clio_form\[", source)
+
+
+def test_a_value_slider_previews_its_drag_and_applies_on_release() -> None:
+    events = panel.value_slider_events()
+    assert events["model_value"].startswith("clio_drag && clio_drag.key === f.key")
+    assert events["start"].startswith("clio_drag = {key: f.key, i, x: $event")
+    # Held: only the client-only drag moves. Not held (arrow keys): apply at once.
+    held, _, _ = events["update_modelValue"].partition(" : ")
+    assert "clio_drag = {" in held and "clio_filter_apply" not in held
+    assert "clio_filter_apply" in events["update_modelValue"]
+    assert events["end"].startswith("clio_drag = null, ")
+    for name in ("update_modelValue", "end"):
+        # Applies the whole new form, only when the value changed, keeping the others.
+        assert (
+            "!== clio_form[f.key] && (clio_form = {...clio_form, [f.key]:"
+            in events[name]
+        )
+        assert "j === i ?" in events[name] and ": p).join(', ')" in events[name]
+        assert "trigger('clio_filter_apply', [clio_form])" in events[name]
+        # An expression, never statements: it sits inside a ternary.
+        assert ";" not in events[name]
+    assert "10 ** ($event)" in events["end"]  # a log slider's position is an exponent

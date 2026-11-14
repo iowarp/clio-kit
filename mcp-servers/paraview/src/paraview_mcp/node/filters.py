@@ -124,7 +124,17 @@ def form(name: str, info: dict[str, Any]) -> list[dict[str, Any]]:
                 items=_array_items(arrays),
                 ranges=_ranges(arrays),
             ),
-            _field("Isosurfaces", "Values", "numbers", f"{mid:.6g}"),
+            _field(
+                "Isosurfaces",
+                "Values",
+                "numbers",
+                f"{mid:.6g}",
+                **(
+                    {"range": list(first["range"]), "slider": slider(first["range"])}
+                    if first
+                    else {}
+                ),
+            ),
         ]
     if name in ("Slice", "Clip"):
         part = "SliceType" if name == "Slice" else "ClipType"
@@ -201,8 +211,49 @@ def form(name: str, info: dict[str, Any]) -> list[dict[str, Any]]:
     raise KeyError(name)
 
 
+#: A field spanning this many times its smallest positive value is dragged on a log scale.
+LOG_SLIDER_SPAN = 1000.0
+
+
+def slider(value_range: list[float] | tuple[float, float]) -> dict[str, Any]:
+    """How a value slider over ``value_range`` moves: linear, or log when it spans decades.
+
+    A log slider's ``min``/``max`` are base-10 exponents. A range that starts at zero or
+    below starts the log slider at 1e-4 of its maximum, so cloud water (0 to 7e-4, with
+    isosurfaces at 1e-5 and 1e-4) is not pressed into the first pixels of a linear track.
+    """
+    low, high = float(value_range[0]), float(value_range[1])
+    if high > 0 and low >= 0:
+        floor = low if low > 0 else high / LOG_SLIDER_SPAN / 10
+        if high / floor >= LOG_SLIDER_SPAN:
+            return {"scale": "log", "min": math.log10(floor), "max": math.log10(high)}
+    return {"scale": "linear", "min": low, "max": high}
+
+
 def _ranges(arrays: list[dict[str, Any]]) -> dict[str, list[float]]:
     return {array_key(a): a["range"] for a in arrays}
+
+
+def filled(
+    fields: list[dict[str, Any]], properties: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """``fields`` showing a filter's current ``properties`` (to edit it, not add one)."""
+    out = []
+    for spec in fields:
+        value = properties.get(spec["key"])
+        if value is None:
+            out.append(spec)
+            continue
+        kind = spec["kind"]
+        if kind == "array" and isinstance(value, (list, tuple)) and len(value) == 2:
+            value = f"{value[0]}:{value[1]}"
+        elif kind == "numbers":
+            items = value if isinstance(value, (list, tuple)) else [value]
+            value = ", ".join(f"{float(v):.6g}" for v in items)
+        elif kind == "vector":
+            value = [float(v) for v in value]
+        out.append({**spec, "value": value})
+    return out
 
 
 class FormError(ValueError):
