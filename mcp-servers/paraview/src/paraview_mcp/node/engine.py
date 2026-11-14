@@ -402,9 +402,11 @@ class Engine(CameraCommands, SceneReading):
     def update_view_mode(self) -> str:
         """Choose local or remote rendering from the geometry size and what is shown.
 
-        The browser's renderer draws surfaces, lines and points but not a volume, so a
-        visible object shown as ``Volume`` is drawn by ParaView; ``reason`` says why the
-        view is remote (``volume`` or ``geometry``) so the view and the agent can say so.
+        The browser's renderer draws surfaces, lines and points, but not a volume nor an
+        image slice (the ``Slice`` ParaView picks for a flat image grid: its image-slice
+        mapper has no browser counterpart, so the view drew nothing but the colour legend).
+        A visible object shown either way is drawn by ParaView; ``reason`` says why the view
+        is remote (``volume``, ``slice`` or ``geometry``) so the view and the agent can say so.
         """
         scene = self.scene
         if scene is None:
@@ -413,13 +415,19 @@ class Engine(CameraCommands, SceneReading):
         size = self.geometry_mb()
         view_state["geometry_mb"] = round(size, 3)
         view_state["threshold_mb"] = self.threshold_mb
-        volume = any(
-            (item.get("display") or {}).get("visible", True)
-            and (item.get("display") or {}).get("representation") == "Volume"
+        shown = {
+            (item.get("display") or {}).get("representation")
             for item in scene.get("objects", [])
-        )
+            if (item.get("display") or {}).get("visible", True)
+        }
         view_state["reason"] = (
-            "volume" if volume else "geometry" if size > self.threshold_mb else None
+            "volume"
+            if "Volume" in shown
+            else "slice"
+            if "Slice" in shown
+            else "geometry"
+            if size > self.threshold_mb
+            else None
         )
         view_state["volume_grids"] = volume_grids(scene, self.proxies)
         if not view_state.get("pinned"):

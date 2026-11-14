@@ -2,8 +2,8 @@
 
     pvpython view_mode_check.py OUT_DIR
 
-Opens a small wavelet, shows it as a Volume, then as a Surface, and prints
-``VIEW=<json>`` with the view's mode and reason after each.
+Opens a small wavelet, shows it as a Volume, then as a Surface, then opens a flat one
+(an image slice), and prints ``VIEW=<json>`` with the view's mode and reason after each.
 """
 
 from __future__ import annotations
@@ -31,6 +31,14 @@ def main(out: Path) -> dict[str, Any]:
             {"object": "o1", "representation": shown, "color_by": "RTData"},
         )
         seen[shown] = dict(engine.scene["view"])
+    # A flat image grid opens as an image slice, which the browser cannot draw.
+    flat = out / "flat.vti"
+    simple.SaveData(str(flat), proxy=simple.Wavelet(WholeExtent=[0, 8, 0, 8, 0, 0]))
+    engine.run("open_view", {"path": str(flat), "new": True})
+    seen["flat"] = {
+        **engine.scene["view"],
+        "representation": engine.scene["objects"][0]["display"]["representation"],
+    }
     return seen
 
 
