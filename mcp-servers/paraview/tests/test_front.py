@@ -21,10 +21,7 @@ from paraview_mcp.transport import LocalTransport, classify_ssh_failure
 
 EXPECTED_TOOLS = {
     "open_view",
-    "create_filter",
-    "set_filter_property",
-    "remove_scene_object",
-    "set_representation",
+    "run_scene_script",
     "set_timestep",
     "set_camera",
     "fit_camera",
@@ -32,6 +29,7 @@ EXPECTED_TOOLS = {
     "measure_field",
     "capture",
     "export_artifact",
+    "export_animation",
     "export_scene",
     "scene_state",
 }
@@ -62,6 +60,7 @@ async def test_path_arguments_are_declared_where_paraview_runs() -> None:
     assert declared == {
         "open_view": {"path": {"machine": "local", "access": "read"}},
         "export_artifact": {"path": {"machine": "local", "access": "write"}},
+        "export_animation": {"path": {"machine": "local", "access": "write"}},
         "export_scene": {"path": {"machine": "local", "access": "write"}},
     }
     assert tools["open_view"].meta["ui"]["resourceUri"] == "ui://paraview/view"
@@ -383,7 +382,9 @@ class _FakeClient:
         self.calls: list[tuple[str, dict]] = []
         self.actors: list[str] = []
 
-    def command(self, name: str, args: dict, by: str = "agent") -> dict:
+    def command(
+        self, name: str, args: dict, timeout: float = 900.0, by: str = "agent"
+    ) -> dict:
         self.calls.append((name, args))
         self.actors.append(by)
         return self.results[name]
@@ -436,7 +437,13 @@ async def test_tools_pass_one_command_and_keep_the_token_private(
     client = _FakeClient(
         {
             "open_view": SUMMARY,
-            "create_filter": {"object": {**SUMMARY["objects"][0], "id": "o2"}},
+            "run_scene_script": {
+                "step": {"id": "s2", "label": "shell", "lines": 1},
+                "added": [
+                    {**SUMMARY["objects"][0], "id": "o3", "kind": "made", "by": "s2"}
+                ],
+                "scene": SUMMARY,
+            },
             "measure_field": {
                 "field": "p",
                 "association": "POINTS",
@@ -463,9 +470,12 @@ async def test_tools_pass_one_command_and_keep_the_token_private(
     monkeypatch.setattr(server, "_attacher", _FakeAttacher(client))
     async with Client(mcp) as mcp_client:
         opened = await mcp_client.call_tool("open_view", {"path": "/d/cube.vti"})
-        await mcp_client.call_tool(
-            "create_filter", {"filter": "Contour", "properties": {"Isosurfaces": [1]}}
+        built = await mcp_client.call_tool(
+            "run_scene_script",
+            {"code": "Contour(Input=objects['o1'])", "label": "shell"},
         )
+        assert "Ran script s2 shell" in built.content[0].text
+        assert "made by script s2" in built.content[0].text
         measured = await mcp_client.call_tool("measure_field", {"field": "p"})
         captured = await mcp_client.call_tool("capture", {})
         state = await mcp_client.call_tool("scene_state", {})
@@ -483,11 +493,10 @@ async def test_tools_pass_one_command_and_keep_the_token_private(
         "open_view",
         {"path": "/d/cube.vti", "growing": False, "new": False},
     )
-    assert client.calls[1][1] == {
-        "filter": "Contour",
-        "properties": {"Isosurfaces": [1]},
-        "hide_input": False,
-    }
+    assert client.calls[1] == (
+        "run_scene_script",
+        {"code": "Contour(Input=objects['o1'])", "label": "shell"},
+    )
     assert "mean 0.5" in measured.content[0].text
     assert [c.type for c in captured.content] == ["text", "image"]
     assert "Attached on node through login" in state.content[0].text

@@ -68,7 +68,7 @@ class SceneReading:
         if item is None:
             carrying = [
                 o
-                for o in scene["objects"]
+                for o in manifest.pipeline(scene)
                 if field in self.proxies[o["id"]].PointData.keys()
                 or field in self.proxies[o["id"]].CellData.keys()
             ]
@@ -165,6 +165,7 @@ class SceneReading:
             "kind": item["kind"],
             "type": item.get("type"),
             "input": item.get("input"),
+            "by": item.get("by"),
             "properties": item.get("properties") or {},
             "display": item.get("display", {}),
         }
@@ -181,7 +182,21 @@ class SceneReading:
             "restored": restored,
             "dataset": scene.get("dataset"),
             "session": self.session,
-            "objects": [self.object_summary(o) for o in scene["objects"]],
+            "objects": [self.object_summary(o) for o in manifest.pipeline(scene)],
+            "scripts": [
+                {
+                    "id": o["id"],
+                    "label": o.get("label"),
+                    "lines": len(str(o.get("code") or "").splitlines()),
+                    "made": [
+                        m
+                        for m in o.get("made") or []
+                        if m not in (o.get("removed") or [])
+                    ],
+                }
+                for o in scene["objects"]
+                if o.get("kind") == "script"
+            ],
             "time": self.time_summary(),
             "view": {**scene["view"], "frame_seconds": self.frames.seconds},
             "camera": self.read_camera(),

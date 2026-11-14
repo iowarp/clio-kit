@@ -88,6 +88,14 @@ def describe(
         return f"remove:{removed}", f"removed {removed}"
     if name == "set_representation":
         return _representation(args, scene)
+    if name == "run_scene_script":
+        step = result.get("step") or {}
+        added = ", ".join(
+            f"{o.get('id')} {o.get('label') or o.get('type')}"
+            for o in result.get("added") or []
+        )
+        text = f"ran script {step.get('label')}" + (f": added {added}" if added else "")
+        return f"script:{step.get('id')}", text
     if name == "set_timestep":
         state = result.get("time") or {}
         steps = state.get("steps") or 0

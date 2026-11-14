@@ -348,6 +348,45 @@ def test_a_colour_range_set_by_hand_holds_and_is_restored(
     assert caught.value.code == "unknown_color"
 
 
+def test_a_scene_script_builds_in_the_scene_and_replays(tmp_path: Path) -> None:
+    """A script adds a second dataset and a coloured filter to the scene the view shows;
+    a failing one or one that makes its own view leaves nothing; a restore replays it."""
+    seen = _pvpython_script("scripts_check.py", str(tmp_path), prefix="SCRIPTS=")
+    kinds = {o["type"]: o for o in seen["added"]}
+    assert set(kinds) >= {"Contour"} and all(o["kind"] == "made" for o in seen["added"])
+    assert kinds["Contour"]["display"]["solid_color"] == [1.0, 0.0, 0.0]
+    hidden = [o for o in seen["added"] if o["type"] != "Contour"]
+    assert hidden and hidden[0]["display"]["visible"] is False
+    assert (
+        seen["scripts"][0]["label"] == "shell" and len(seen["scripts"][0]["made"]) == 2
+    )
+    assert seen["failed"] == "script_error" and seen["sources_after_failure"] == 0
+    assert seen["own_view"] == "script_made_a_view" and seen["views_after_refusal"] == 0
+    # Restored: the dataset, and the second dataset the script made; the shell the person
+    # removed stays removed when the script replays.
+    assert [o["kind"] for o in seen["restored"]] == ["reader", "made"]
+    assert seen["restored"][1]["visible"] is False
+    assert len(seen["restored_scripts"][0]["made"]) == 1
+
+
+@pytest.mark.parametrize(("encoder", "fmt"), [("ffmpeg", "mp4"), ("vtk", "ogv")])
+def test_an_animation_is_rendered_in_the_scene_and_encoded(
+    tmp_path: Path, encoder: str, fmt: str
+) -> None:
+    """Each time step is rendered in the scene's view; ffmpeg makes an MP4, and without it
+    VTK's writer makes an OGG; the scene's own time step and pipeline are left as they were."""
+    if encoder == "ffmpeg" and shutil.which("ffmpeg") is None:
+        pytest.skip("no ffmpeg on this machine")
+    seen = _pvpython_script(
+        "animation_check.py", str(tmp_path), encoder, prefix="ANIMATION="
+    )
+    assert seen["format"] == fmt and seen["suffix"] == f".{fmt}" and seen["exists"]
+    assert seen["frames"] == 3 and seen["width"] == 320  # an even size, for H.264
+    assert seen["time_index_after"] == 1
+    assert not [n for n in seen["sources_left"] if n.startswith("Text")]
+    assert seen["bad_labels"] == "bad_labels"
+
+
 def test_restart_restores_the_scene(attached: tuple[Attacher, Path]) -> None:
     attacher, data = attached
     client = attacher.ensure().client

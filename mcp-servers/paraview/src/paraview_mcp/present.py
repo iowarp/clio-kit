@@ -24,6 +24,8 @@ def object_line(item: dict[str, Any]) -> str:
     detail = [str(item.get("type") or item.get("kind"))]
     if item.get("input"):
         detail.append(f"from {item['input']}")
+    if item.get("by"):
+        detail.append(f"made by script {item['by']}")
     if not display.get("visible", True):
         detail.append("hidden")
     else:
@@ -134,6 +136,12 @@ def scene_text(summary: dict[str, Any], where: str) -> str:
     lines.append("Objects:")
     for item in summary.get("objects") or []:
         lines.append(f"- {object_line(item)}")
+    for step in summary.get("scripts") or []:
+        made = ", ".join(step.get("made") or []) or "nothing kept"
+        lines.append(
+            f"Script {step['id']} {step.get('label')} ({step.get('lines')} lines) made {made}; "
+            "it is replayed when the scene is restored."
+        )
     lines.append(time_line(summary.get("time") or {}))
     lines.append(view_line(summary.get("view") or {}))
     selection = summary.get("selection")
@@ -214,3 +222,31 @@ def capture_note(seconds: float | None, view: dict[str, Any]) -> str:
 
 def _hex(rgb: list[float]) -> str:
     return "#" + "".join(f"{round(float(v) * 255):02x}" for v in rgb)
+
+
+def script_text(result: dict[str, Any], where: str) -> str:
+    """What a scene script built, then the scene as it now stands."""
+    step = result.get("step") or {}
+    added = result.get("added") or []
+    head = (
+        f"Ran script {step.get('id')} {step.get('label')} ({step.get('lines')} lines) in the "
+        f"scene: added {len(added)} object(s)."
+    )
+    lines = [head] + [f"+ {object_line(item)}" for item in added]
+    if not added:
+        lines.append("It added no objects (it may have changed existing ones).")
+    lines.append(scene_text(result.get("scene") or {}, where))
+    return "\n".join(lines)
+
+
+def animation_text(result: dict[str, Any]) -> str:
+    """What an exported animation holds, and where it is."""
+    first, last = result.get("steps") or [0, 0]
+    size = float(result.get("size_bytes") or 0) / 1e6
+    return (
+        f"Wrote {result.get('path')} on the ParaView machine: {result.get('format')} by "
+        f"{result.get('encoder')}, {result.get('frames')} frames (time steps {first + 1} to "
+        f"{last + 1}) at {_num(result.get('fps'))} per second, {_num(result.get('seconds'))} s, "
+        f"{result.get('width')}x{result.get('height')}, {size:.1f} MB. Frames are rendered in "
+        "the scene's own view, as the live view shows them."
+    )

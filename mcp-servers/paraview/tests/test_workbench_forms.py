@@ -153,8 +153,6 @@ def test_a_persons_run_of_one_change_is_one_line() -> None:
 async def test_new_tool_inputs_are_listed() -> None:
     async with Client(mcp) as client:
         tools = {tool.name: tool for tool in await client.list_tools()}
-    rep = tools["set_representation"].input_schema["properties"]
-    assert {"component", "scalar_bar", "rescale"} <= set(rep)
     camera = tools["set_camera"].input_schema["properties"]
     assert {"direction", "parallel_projection"} <= set(camera)
     assert "+z" in str(camera["direction"])
