@@ -94,7 +94,7 @@ are kept.
 scene shows.
 
 **Durable dashboards:** a dashboard that embeds a live view should carry the exported
-video beside it. `clio.mcp-app.v1` takes a `fallbackVideo`, the video file, which the
+video beside it. `clio.mcp-app.v1` takes a `recordingUri`, the video file, which the
 web app plays when the live view cannot run: ParaView stopped, an archive, or a shared
 copy. It says that the panel is a recording. The ParaView skill says so too.
 
