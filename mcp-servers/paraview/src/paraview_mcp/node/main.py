@@ -72,6 +72,10 @@ def main(argv: list[str] | None = None) -> None:
     if site.is_dir():
         # ParaView's own packages (wslink, aiohttp) stay first on the path.
         sys.path.append(str(site))
+        from . import vtkjs_patch
+
+        # Logged every start, so a bundle the guard does not fit is visible, not silent.
+        print(f"vtk.js display-actor guard: {vtkjs_patch.apply(site)}", flush=True)
 
     from paraview import simple
 
