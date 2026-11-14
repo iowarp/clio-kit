@@ -13,7 +13,7 @@ rebuilt from the scene, so the agent's changes show in the panel at once.
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from typing import Any, TypeGuard
 
 from . import colors, data, filters, manifest
 from .errors import CommandError
@@ -249,7 +249,7 @@ class Workbench:
             self.open_form(state.clio_filter)
 
     @staticmethod
-    def _editable(item: dict[str, Any] | None) -> bool:
+    def _editable(item: dict[str, Any] | None) -> TypeGuard[dict[str, Any]]:
         return bool(
             item
             and item["kind"] == "filter"
