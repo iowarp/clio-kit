@@ -107,10 +107,14 @@ def build_components(root: Path, output: Path) -> dict:
     native_components = runpy.run_path(
         str(Path(__file__).resolve().parents[1] / "src/clio_kit/client_adapters.py")
     )["native_components"]
-    version = tomllib.loads((root / "pyproject.toml").read_text())["project"]["version"]
+    version = tomllib.loads((root / "pyproject.toml").read_text(encoding="utf-8"))[
+        "project"
+    ]["version"]
     inventory_path = root / "mcp-server-versions.toml"
     prerequisites = (
-        tomllib.loads(inventory_path.read_text()).get("prerequisites", {})
+        tomllib.loads(inventory_path.read_text(encoding="utf-8")).get(
+            "prerequisites", {}
+        )
         if inventory_path.is_file()
         else {}
     )
@@ -192,7 +196,7 @@ def build_components(root: Path, output: Path) -> dict:
         return key
 
     for descriptor in sorted((root / "mcp-servers").glob("*/clio-server.toml")):
-        data = tomllib.loads(descriptor.read_text())
+        data = tomllib.loads(descriptor.read_text(encoding="utf-8"))
         directory = descriptor.parent
         name = data.get("name")
         if not isinstance(name, str) or not re.fullmatch(
@@ -215,7 +219,7 @@ def build_components(root: Path, output: Path) -> dict:
         )
         key = archive(f"server/{data['name']}", directory, excluded)
         scope = (
-            json.loads((directory / "server.json").read_text()).get(
+            json.loads((directory / "server.json").read_text(encoding="utf-8")).get(
                 "scope", "scientific"
             )
             if (directory / "server.json").is_file()
@@ -236,7 +240,7 @@ def build_components(root: Path, output: Path) -> dict:
     for kind in ("plugins", "skills", "agents", "hooks"):
         for manifest_path in sorted((root / kind).glob("*/.claude-plugin/plugin.json")):
             directory = manifest_path.parent.parent
-            manifest = json.loads(manifest_path.read_text())
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
             name = manifest["name"]
             if name != directory.name or not re.fullmatch(
                 r"[a-z0-9]+(?:-[a-z0-9]+)*", name
@@ -246,7 +250,9 @@ def build_components(root: Path, output: Path) -> dict:
                 raise ValueError(f"Duplicate package: {name}")
             skill_names = []
             for path in sorted((directory / "skills").glob("*/SKILL.md")):
-                fields = yaml.safe_load(path.read_text().split("---", 2)[1])
+                fields = yaml.safe_load(
+                    path.read_text(encoding="utf-8").split("---", 2)[1]
+                )
                 skill = fields["name"]
                 if skill != path.parent.name or not re.fullmatch(
                     r"[a-z0-9]+(?:-[a-z0-9]+)*", skill
@@ -272,7 +278,9 @@ def build_components(root: Path, output: Path) -> dict:
                 skill_names.append(skill)
             configurations = []
             if (directory / ".mcp.json").is_file():
-                configurations.append(json.loads((directory / ".mcp.json").read_text()))
+                configurations.append(
+                    json.loads((directory / ".mcp.json").read_text(encoding="utf-8"))
+                )
             inline = manifest.get("mcpServers")
             if isinstance(inline, str):
                 target = directory / inline
@@ -288,7 +296,7 @@ def build_components(root: Path, output: Path) -> dict:
                     parent.is_symlink() for parent in target.parents if parent != root
                 ):
                     raise ValueError(f"Linked MCP configuration: {inline}")
-                inline = json.loads(target.read_text())
+                inline = json.loads(target.read_text(encoding="utf-8"))
             if inline:
                 configurations.append(inline)
             servers: dict = {}
@@ -316,7 +324,7 @@ def build_components(root: Path, output: Path) -> dict:
     index["external"] = (
         [
             entry["name"]
-            for entry in json.loads(marketplace.read_text())["plugins"]
+            for entry in json.loads(marketplace.read_text(encoding="utf-8"))["plugins"]
             if not isinstance(entry["source"], str)
         ]
         if marketplace.exists()
@@ -325,7 +333,7 @@ def build_components(root: Path, output: Path) -> dict:
     index["external_entries"] = (
         [
             entry
-            for entry in json.loads(marketplace.read_text())["plugins"]
+            for entry in json.loads(marketplace.read_text(encoding="utf-8"))["plugins"]
             if not isinstance(entry["source"], str)
         ]
         if marketplace.exists()
@@ -340,6 +348,7 @@ def build_components(root: Path, output: Path) -> dict:
         if old.name not in expected:
             old.unlink()
     (output / "index.json").write_text(
-        json.dumps(index, indent=2, sort_keys=True) + "\n"
+        json.dumps(index, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
     )
     return index

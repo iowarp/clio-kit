@@ -18,7 +18,7 @@ from .models import DatasetDescribeResult, DatasetSearchResult
 
 mcp: FastMCP = FastMCP(
     "scientific-catalog",
-    version="1.1.6",
+    version="1.1.7",
     instructions=(
         "Discover operator-registered scientific datasets using intrinsic metadata. "
         "Use scientific_dataset_search to find an identity, then "
