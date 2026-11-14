@@ -53,6 +53,28 @@ def write_vti(path: Path, shift: float = 0.0, n: int = 8) -> None:
     )
 
 
+def write_vtr(path: Path, n: int = 6) -> None:
+    """A small ASCII rectilinear grid with uneven z and point field ``p`` = x + y + z."""
+    values = " ".join(
+        f"{x + y + z:g}" for z in range(n) for y in range(n) for x in range(n)
+    )
+    axis = " ".join(str(i) for i in range(n))
+    z = " ".join(f"{i * i:g}" for i in range(n))
+    extent = f"0 {n - 1} 0 {n - 1} 0 {n - 1}"
+    path.write_text(
+        f"""<?xml version="1.0"?>
+<VTKFile type="RectilinearGrid" version="0.1" byte_order="LittleEndian">
+<RectilinearGrid WholeExtent="{extent}"><Piece Extent="{extent}">
+<PointData Scalars="p"><DataArray type="Float32" Name="p" format="ascii">{values}</DataArray>
+</PointData><Coordinates>
+<DataArray type="Float64" Name="x" format="ascii">{axis}</DataArray>
+<DataArray type="Float64" Name="y" format="ascii">{axis}</DataArray>
+<DataArray type="Float64" Name="z" format="ascii">{z}</DataArray>
+</Coordinates></Piece></RectilinearGrid></VTKFile>
+"""
+    )
+
+
 def _local(home: Path) -> Path:
     """The node half's folder on this machine for ``home`` (clio-kit's data folder)."""
     return home / ".local" / "share" / "clio-kit" / "paraview" / config.SERVER_VERSION
@@ -77,6 +99,7 @@ def attached(
     data = base / "data"
     data.mkdir()
     write_vti(data / "cube.vti")
+    write_vtr(data / "grid.vtr")
     saved = {k: os.environ.get(k) for k in ("HOME", "PATH")}
     os.environ["HOME"] = str(home)
     assert PVPYTHON is not None
@@ -160,6 +183,17 @@ def test_open_measure_and_rollback(attached: tuple[Attacher, Path]) -> None:
     assert probe["selection"]["point_values"]["p"] == 6.0
     captured = client.command("capture", {"width": 120, "height": 90})
     assert captured["png_base64"].startswith("iVBOR")
+
+
+def test_a_rectilinear_grid_is_measured_whole(attached: tuple[Attacher, Path]) -> None:
+    attacher, data = attached
+    client = attacher.ensure().client
+    client.command("open_view", {"path": str(data / "grid.vtr"), "new": True})
+    measured = client.command("measure_field", {"field": "p", "bins": 3})
+    # Every one of the 216 values, not the half a fetched rectilinear grid carried.
+    assert sum(measured["histogram"]["counts"]) == 216
+    assert measured["max"] == 15.0
+    assert measured["mean"] == pytest.approx(7.5)
 
 
 def test_slice_plane_is_set_through_its_part(attached: tuple[Attacher, Path]) -> None:
