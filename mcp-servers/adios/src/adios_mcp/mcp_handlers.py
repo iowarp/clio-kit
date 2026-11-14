@@ -1,10 +1,32 @@
 # mcp_handlers.py
 import importlib
 import re
+import sys
 from collections.abc import Callable
 from typing import Any, Dict, Optional
 
 from fastmcp.exceptions import ToolError
+
+ADIOS2_UNAVAILABLE_ON_WINDOWS = (
+    "ADIOS2 bindings aren't available on Windows. The adios2 package publishes no "
+    "Windows build, so this tool can't read BP5 contents here. Listing .bp files "
+    "still works."
+)
+ADIOS2_NOT_INSTALLED = (
+    "ADIOS2 bindings aren't installed in this server's environment, so this tool "
+    "can't read BP5 contents. Listing .bp files still works."
+)
+
+
+class Adios2Unavailable(RuntimeError):
+    """The ADIOS2 Python bindings can't be imported on this machine."""
+
+    reason = "adios2_unavailable"
+
+
+def _adios2_missing(exc: ModuleNotFoundError) -> bool:
+    name = exc.name or ""
+    return name == "adios2" or name.startswith("adios2.")
 
 
 class _LazyImplementation:
@@ -20,7 +42,18 @@ class _LazyImplementation:
         return self._invoke
 
     def _invoke(self, *args: Any, **kwargs: Any) -> Any:
-        module = importlib.import_module(self._module_name)
+        try:
+            module = importlib.import_module(self._module_name)
+        except ModuleNotFoundError as exc:
+            if not _adios2_missing(exc):
+                raise
+            # adios2 is not installed on Windows (no wheel exists there).
+            message = (
+                ADIOS2_UNAVAILABLE_ON_WINDOWS
+                if sys.platform == "win32"
+                else ADIOS2_NOT_INSTALLED
+            )
+            raise Adios2Unavailable(message) from exc
         function = getattr(module, self._export_name)
         return function(*args, **kwargs)
 

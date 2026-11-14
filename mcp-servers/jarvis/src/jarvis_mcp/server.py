@@ -356,7 +356,7 @@ load_dotenv()
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "jarvis",
-    version="3.7.6",
+    version="3.7.7",
     instructions=(
         "Manages JARVIS data pipelines for scientific computing. "
         "Create, configure, monitor, and manage data processing pipelines."

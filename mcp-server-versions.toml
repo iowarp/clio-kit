@@ -8,12 +8,12 @@ schema-version = 1
 # view ParaView controls (pipeline, filters, display, camera, information) that
 # run the tools' own commands, and follows the host's theme; its node folder
 # adds trame-vuetify, so a new version folder is prepared.
-# 2.12.3: ndp defaults to the public NDP catalog instead of a retired endpoint;
-# every other server keeps the version and contract 2.12.0 published. 2.12.1 and
-# 2.12.2 were tagged but never published, so ndp 2.2.8 first reaches the
-# registry here.
+# 2.12.7: every Python server relocks opentelemetry-api 1.45.2 (CVE-2026-126360);
+# adios and paraview also relock with adios2 >= 2.13.0.1001 so macOS installs
+# from wheels, and hdf5 keeps metrics under a granted cache directory. 2.12.6 was
+# tagged but never published, so its server versions are released here.
 [mcp-registry-release]
-publish = ["ndp"]
+publish = ["adios", "arxiv", "chronolog", "compression", "darshan", "geo", "hdf5", "jarvis", "lmod", "ndp", "node-hardware", "pandas", "parallel-sort", "paraview", "parquet", "plot", "scientific-catalog", "seismology", "slurm", "spack", "terrain", "web"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
@@ -84,28 +84,28 @@ general = ["compression", "web"]
 # intentionally independent of the clio-kit PyPI distribution version, which
 # only identifies the wheel containing the server implementations.
 [servers]
-adios = "2.3.0"
-arxiv = "2.2.7"
-chronolog = "2.0.5"
-compression = "2.2.7"
-darshan = "2.2.7"
-geo = "2.3.3"
-hdf5 = "2.3.0"
-jarvis = "3.7.6"
-lmod = "3.0.3"
-ndp = "2.2.8"
-node-hardware = "2.3.2"
-pandas = "2.4.0"
-parallel-sort = "2.3.2"
+adios = "2.3.2"
+arxiv = "2.2.8"
+chronolog = "2.0.6"
+compression = "2.2.8"
+darshan = "2.2.8"
+geo = "2.3.4"
+hdf5 = "2.3.1"
+jarvis = "3.7.7"
+lmod = "3.0.4"
+ndp = "2.2.9"
+node-hardware = "2.3.3"
+pandas = "2.4.1"
+parallel-sort = "2.3.3"
 paraview = "3.1.0"
-parquet = "2.3.0"
-plot = "2.2.7"
-scientific-catalog = "1.1.6"
-seismology = "2.3.3"
-slurm = "3.1.0"
-spack = "2.3.3"
-terrain = "2.2.7"
-web = "2.1.5"
+parquet = "2.3.1"
+plot = "2.2.8"
+scientific-catalog = "1.1.7"
+seismology = "2.3.4"
+slurm = "3.1.1"
+spack = "2.3.4"
+terrain = "2.2.8"
+web = "2.1.6"
 
 [workflows.clio-dataset-report]
 version = "1.0.0"

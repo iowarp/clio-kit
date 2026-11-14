@@ -153,7 +153,7 @@ async def lifespan(app):
 # Create FastMCP server with lifespan and instructions
 mcp = FastMCP(
     name="hdf5",
-    version="2.3.0",
+    version="2.3.1",
     instructions="""
         HDF5 FastMCP provides comprehensive HDF5 file operations with AI intelligence.
 

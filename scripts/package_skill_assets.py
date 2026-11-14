@@ -23,7 +23,7 @@ class CustomBuildHook(BuildHookInterface):
             assert catalogue["schema"] == 1
         elif not index.is_file():
             raise ValueError("Source distribution is missing its component catalogue")
-        data = json.loads(index.read_text())
+        data = json.loads(index.read_text(encoding="utf-8"))
         if data["version"] != self.metadata.version:
             raise ValueError("Component catalogue version differs from the launcher")
         destination = (

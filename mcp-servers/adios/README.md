@@ -46,7 +46,9 @@ ADIOS MCP is a comprehensive Model Context Protocol (MCP) server that enables La
 
 - Python 3.10 or higher
 - [uv](https://docs.astral.sh/uv/) package manager (recommended)
-- Linux/macOS environment (Windows supported)
+- Linux/macOS environment. On Windows the server runs and `list_bp5` works, but the
+  tools that read BP5 contents report "ADIOS2 bindings aren't available on Windows",
+  because adios2 publishes no Windows build.
 
 <details>
 <summary><b>Install in Cursor</b></summary>

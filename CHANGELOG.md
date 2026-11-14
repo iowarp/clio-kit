@@ -31,6 +31,59 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
   restored by id. The 26 tools of 2.2.7, `--multi-clients` and `viz.html` are
   gone. The `clio-analysis` bundle is 1.1.0.
 
+## 2.12.7 - 2026-11-13
+
+Every MCP server ships a patch release with opentelemetry-api 1.45.2, which
+fixes a denial of service (CVE-2026-126360). adios 2.3.2 and paraview 2.2.8
+also install adios2 from wheels on macOS, hdf5 2.3.1 keeps its metrics inside
+the cache directory it was granted, and every Python server runs on Python
+3.12. 2.12.6 was tagged but never published; 2.12.7 is the first release that
+carries these changes.
+
+- **opentelemetry-api security fix**: every server lock, the launcher's lock
+  and clio-agentic-search's lock move to opentelemetry-api 1.45.2, which fixes
+  quadratic-time `traceparent` parsing (CVE-2026-126360, GHSA-mf5v-w3w3-f6cg).
+  Every server takes a patch version and is republished to the MCP Registry.
+- **adios2 wheels on macOS**: adios and paraview now require adios2
+  2.13.0.1001 or later, the first release with macOS wheels, so their first
+  prepare on a Mac no longer compiles adios2 from source. Both servers are
+  relocked; Windows still skips adios2 (#417).
+- **hdf5 writes only where it is allowed**: hdf5 no longer creates
+  `~/.hdf5_mcp` when it is imported. Metrics are saved under the server's
+  granted cache directory, which is created only when metrics are first
+  written (#418).
+- **Python 3.12 for every Python server**: each Python server carries a
+  `.python-version` of 3.12, so uv never picks a newer interpreter for which
+  some dependencies have no wheels and must build from source (#419).
+- **Windows can build clio-kit from source**: the wheel build hook reads
+  component sources as UTF-8 instead of the locale encoding, which failed with
+  a cp1252 `UnicodeDecodeError` on Windows (#421).
+
+## 2.12.6 - 2026-11-13
+
+Tagged but not published: its release checks failed on a new opentelemetry-api
+advisory (CVE-2026-126360). Its changes ship in 2.12.7.
+
+## 2.12.5 - 2026-11-13
+
+adios 2.3.1 no longer builds adios2 from source on Windows. Every other MCP
+server keeps the version it already published. 2.12.4 was tagged but never
+published; 2.12.5 is the first release that carries this change.
+
+- **adios starts in seconds on Windows**: adios2 publishes no Windows wheels,
+  so uv compiled it from the sdist on the server's first prepare (457 s on a
+  cold cache with MSVC present, a failure without one), and the result never
+  imported. The adios2 dependency is now marked `sys_platform != 'win32'`; on
+  a new Windows install the first prepare drops to about 16 s. The server and
+  `list_bp5` keep working on Windows; the tools that read BP5 contents raise a
+  typed `Adios2Unavailable` (reason `adios2_unavailable`) that says "ADIOS2
+  bindings aren't available on Windows" instead of a raw import error (#413).
+
+## 2.12.4 - 2026-11-13
+
+Tagged but not published: its release checks failed because the adios server
+still reported version 2.3.0. Its changes ship in 2.12.5.
+
 ## 2.12.3 - 2026-11-11
 
 Launcher fixes, ndp 2.2.8 works against the public NDP catalog, and the web
