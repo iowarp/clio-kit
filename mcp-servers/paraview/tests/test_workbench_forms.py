@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import math
+
 import pytest
 from fastmcp import Client
 
@@ -314,6 +316,11 @@ def test_a_filter_is_edited_with_its_own_form_filled_in() -> None:
     assert by_key["ContourBy"]["value"] == "POINTS:RTData"
     assert by_key["Isosurfaces"]["value"] == "120, 200.5"
     assert by_key["Isosurfaces"]["range"] == [37.4, 276.8]  # the slider's span
+    assert by_key["Isosurfaces"]["slider"] == {
+        "scale": "linear",
+        "min": 37.4,
+        "max": 276.8,
+    }
     values = {f["key"]: f["value"] for f in fields}
     assert filters.properties(fields, values) == {
         "ContourBy": ["POINTS", "RTData"],
@@ -342,3 +349,26 @@ def test_a_changed_filter_is_one_line_naming_old_and_new_values() -> None:
         scene,
     )
     assert again == key  # a slider's run of drags is one line, updated in place
+
+
+def test_a_field_spanning_decades_gets_a_log_slider() -> None:
+    clouds = {
+        **WAVELET,
+        "arrays": [
+            {
+                "name": "CLWC",
+                "association": "POINTS",
+                "components": 1,
+                "range": [0, 6.7e-4],
+            }
+        ],
+    }
+    field = {f["key"]: f for f in filters.form("Contour", clouds)}["Isosurfaces"]
+    assert field["slider"]["scale"] == "log"
+    assert field["slider"]["max"] == pytest.approx(math.log10(6.7e-4))
+    assert field["slider"]["min"] == pytest.approx(math.log10(6.7e-8))
+    # Both isosurfaces (1e-5, 1e-4) sit well inside the track, not in its first pixels.
+    span = field["slider"]["max"] - field["slider"]["min"]
+    for value in (1e-5, 1e-4):
+        assert 0.2 < (math.log10(value) - field["slider"]["min"]) / span < 0.95
+    assert filters.slider([-5.0, 5.0])["scale"] == "linear"

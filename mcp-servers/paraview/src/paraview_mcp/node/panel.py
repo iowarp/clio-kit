@@ -453,19 +453,41 @@ def _filters(v3: Any, html: Any) -> None:
                     classes="mt-2",
                     raw_attrs=[":inputmode=\"f.kind === 'text' ? 'text' : 'decimal'\""],
                 )
-                v3.VSlider(
-                    v_if="clio_editing && f.kind === 'numbers' && f.range",
-                    min=("f.range[0]",),
-                    max=("f.range[1]",),
-                    step=("(f.range[1] - f.range[0]) / 200",),
-                    model_value=("Number(String(clio_form[f.key]).split(/[ ,]+/)[0])",),
-                    update_modelValue="clio_form[f.key] = String(Number($event.toPrecision(6)))",
-                    end="trigger('clio_filter_apply', [clio_form])",
-                    density="compact",
-                    hide_details=True,
-                    classes="mt-1",
-                    raw_attrs=[":aria-label=\"f.label + ' slider'\""],
-                )
+                # One slider per value, each moving only its own value (log when the field
+                # spans decades); dragging never drops the other isosurfaces.
+                with html.Div(v_if="clio_editing && f.kind === 'numbers' && f.slider"):
+                    v3.VSlider(
+                        v_for=(
+                            "(v, i) in String(clio_form[f.key]).split(/[ ,]+/).filter(Boolean)"
+                        ),
+                        key="i",
+                        min=("f.slider.min",),
+                        max=("f.slider.max",),
+                        step=("(f.slider.max - f.slider.min) / 200",),
+                        model_value=(
+                            (
+                                "f.slider.scale === 'log'"
+                                " ? Math.log10(Math.max(Number(v), 10 ** f.slider.min))"
+                                " : Number(v)"
+                            ),
+                        ),
+                        update_modelValue=(
+                            "clio_form[f.key] = String(clio_form[f.key]).split(/[ ,]+/)"
+                            ".filter(Boolean).map((x, j) => j === i ? String(Number("
+                            "(f.slider.scale === 'log' ? 10 ** $event : $event)"
+                            ".toPrecision(3))) : x).join(', ')"
+                        ),
+                        end="trigger('clio_filter_apply', [clio_form])",
+                        density="compact",
+                        hide_details=True,
+                        classes="mt-1",
+                        raw_attrs=[
+                            (
+                                ":aria-label=\"f.label + ' ' + (i + 1) + ' slider'"
+                                " + (f.slider.scale === 'log' ? ' (log scale)' : '')\""
+                            )
+                        ],
+                    )
                 v3.VCheckbox(
                     v_if="f.kind === 'bool'",
                     label=("f.label",),
