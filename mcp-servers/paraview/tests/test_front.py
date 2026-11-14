@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from importlib import resources
-
 import io
 import json
 import os
 import tarfile
+from importlib import resources
 from pathlib import Path
 
 import pytest
