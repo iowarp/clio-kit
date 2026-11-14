@@ -364,8 +364,9 @@ def normalize_layer(layer: Any, index: int) -> dict[str, Any]:
         # A dot must read on any basemap: opaque unless the style asks otherwise.
         "point_alpha": _number(style.get("alpha", 0.95), "alpha", 0.0, 1.0),
         "line_width": max(1.0, 2.0 * _number(style.get("linewidth", 1.0), "linewidth", 0, 50)),
+        # A dot must stay visible and clickable on a globe, whatever the PNG marker size.
         "point_size": max(
-            4.0,
+            7.0,
             min(40.0, 1.4 * math.sqrt(_number(style.get("markersize", 45), "markersize", 0, 4e4))),
         ),
         "zorder": int(_number(style.get("zorder", 5 + index), "zorder", -1e6, 1e6)),

@@ -190,3 +190,10 @@ def test_bounds_cross_the_antimeridian_when_narrower() -> None:
     # The widest gap is 170°W to 5°W, so the narrowest arc runs east from 5°W to 170°W.
     assert merged_bounds([pacific, europe]) == [-5, -10, -170, 60]
     assert "extent" not in view_layer(pacific)
+
+
+def test_a_dot_is_never_too_small_to_see_or_click() -> None:
+    tiny = normalize_layer({"geojson": STATIONS, "style": {"markersize": 4}}, 0)
+    assert tiny["style"]["point_size"] == 7.0
+    default = normalize_layer({"geojson": STATIONS}, 0)
+    assert 9 < default["style"]["point_size"] < 10
