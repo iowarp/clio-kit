@@ -39,6 +39,8 @@ def object_line(item: dict[str, Any]) -> str:
                 detail.append(f"colour range {_num(low)} to {_num(high)} set by hand")
             if display.get("scalar_bar"):
                 detail.append("colour legend shown")
+        elif display.get("solid_color"):
+            detail.append("solid colour " + _hex(display["solid_color"]))
         if display.get("opacity", 1.0) < 1.0:
             detail.append(f"opacity {_num(float(display['opacity']))}")
     if data:
@@ -206,3 +208,7 @@ def capture_note(seconds: float | None, view: dict[str, Any]) -> str:
         return ""
     cause = frame_note({**view, "frame_seconds": seconds}).partition(", because")[2]
     return f" It took {seconds:g} s to draw" + (f", because{cause}." if cause else ".")
+
+
+def _hex(rgb: list[float]) -> str:
+    return "#" + "".join(f"{round(float(v) * 255):02x}" for v in rgb)

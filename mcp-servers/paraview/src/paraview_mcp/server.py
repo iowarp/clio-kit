@@ -293,6 +293,15 @@ def set_representation(
             "it also sets the opacity ramp: low is clear, high is opaque.",
         ),
     ] = None,
+    solid_color: Annotated[
+        str | None,
+        Field(
+            description="Draw the object in one plain colour instead of colouring it by a "
+            "field: a name (white, red, orange, yellow, green, cyan, blue, purple, "
+            "magenta, pink, brown, grey, black) or #rrggbb. Suits a surface at one value, "
+            "such as a contour; a volume needs a field."
+        ),
+    ] = None,
 ) -> str:
     """Change an object's representation, colouring, opacity or visibility."""
     result, _ = command(
@@ -308,6 +317,7 @@ def set_representation(
             "scalar_bar": scalar_bar,
             "rescale": rescale,
             "color_range": color_range,
+            "solid_color": solid_color,
         },
     )
     return "Now " + present.object_line(result["object"]) + "."

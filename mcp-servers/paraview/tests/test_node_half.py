@@ -335,7 +335,17 @@ def test_a_colour_range_set_by_hand_holds_and_is_restored(
     restored = client.command("open_view", {"scene": scene})
     assert restored["objects"][0]["display"]["color_range"] == [2.0, 6.0]
     ranges = _pvpython_script("color_range_check.py", str(data), prefix="RANGE=")
-    assert ranges == {"color": [100.0, 200.0], "opacity": [100.0, 200.0]}
+    assert ranges == {
+        "color": [100.0, 200.0],
+        "opacity": [100.0, 200.0],
+        "solid": [1.0, 0.5, 0.0],
+        "solid_coloured_by": "",
+    }
+    with pytest.raises(ParaViewError) as caught:
+        client.command(
+            "set_representation", {"object": "o1", "solid_color": "sunset glow"}
+        )
+    assert caught.value.code == "unknown_color"
 
 
 def test_restart_restores_the_scene(attached: tuple[Attacher, Path]) -> None:
