@@ -639,7 +639,7 @@
       "description": "MCP server for rendering GeoJSON vector layers into map images with basemaps",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.3.4",
+      "version": "2.4.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/geo",

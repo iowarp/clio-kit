@@ -4,6 +4,18 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
 
 ## Unreleased
 
+- **geo 2.4.0, layers on an interactive globe**: `show_on_globe` takes the
+  layers and styles `render_feature_map` takes (GeoJSON inline or as paths,
+  `color_by`, `category_colors`, `epa_aqi`, colormaps, legends) and shows them
+  on a CesiumJS globe with OpenStreetMap tiles, as an MCP Apps view
+  (`ui://geo/globe`). Points are dots, labelled when few; a layer list toggles
+  layers and shows legends; clicking a feature lists its properties and
+  reports it to the agent as `selected_feature`, and a host that sets
+  `selected_feature` (a linked table row) turns the globe to that feature. The
+  view offers `fly_to`, `select_feature`, `add_layer`, `remove_layer`,
+  `set_style` and `get_view`, follows the host's theme, and is saved under a
+  view id so a reopen shows the same layers, re-reading files. The agent reads
+  only layer names, counts and bounds; the GeoJSON goes to the view.
 - **paraview 3.1.0, ParaView controls in the view**: the live view gains a
   compact left tool rail: a pipeline browser (show, hide, select, remove), an
   Add filter palette (Contour, Slice, Clip, Threshold, Glyph, Stream Tracer,

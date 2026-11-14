@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/geo-mcp",
   "title": "CLIO Geo",
   "description": "MCP server for rendering GeoJSON vector layers into map images with basemaps",
-  "version": "2.3.4",
+  "version": "2.4.0",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -68,9 +68,22 @@
     {
       "name": "feature_bbox",
       "description": "Compute the bounding box [min_lon, min_lat, max_lon, max_lat] of EVERY coordinate in a GeoJSON document, without validating geometry and without rounding. feature_count counts all features in the document, including malformed ones. Use this to inspect a file's raw extent; use bounding_box instead for the extent of valid geometry, padded and rounded, when feeding a map render or spatial query."
+    },
+    {
+      "name": "show_on_globe",
+      "description": "Show GeoJSON layers (points, lines, polygons: stations, regions, footprints, tracks) on an interactive 3D globe the person can turn, zoom and click. Takes render_feature_map's layer schema and styles (color_by, category_colors, legend). For GeoJSON already in a file, pass its path in files. Returns layer names, feature counts and bounds, and a view id that shows the same layers again. The person's clicked feature is reported back as selected_feature."
+    },
+    {
+      "name": "edit_globe_view",
+      "description": "Add, remove or restyle one layer of a saved globe view. Called by the globe view itself when the person or the agent changes its layers."
     }
   ],
   "resources": [
+    {
+      "uri": "ui://geo/globe",
+      "name": "geo_globe",
+      "description": "An interactive CesiumJS globe showing the layers of show_on_globe."
+    },
     {
       "uri": "geo://capabilities",
       "name": "capabilities",
