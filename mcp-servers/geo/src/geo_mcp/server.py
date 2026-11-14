@@ -16,6 +16,7 @@ from fastmcp.prompts import Message
 from pydantic import Field
 from typing_extensions import NotRequired, TypedDict
 
+from .globe import register_globe
 from .implementation import (
     ArcGISQueryError,
     GeoJSONError,
@@ -194,7 +195,7 @@ load_dotenv()
 
 mcp: FastMCP = FastMCP(
     "geo",
-    version="2.3.4",
+    version="2.4.0",
     instructions=(
         "Renders and retrieves geospatial vector data. Pass one or more layers of "
         "GeoJSON (polygons, lines, points) to render_feature_map and get back a PNG "
@@ -207,7 +208,10 @@ mcp: FastMCP = FastMCP(
         "inspect_geojson, validate_geojson, summarize_geojson and feature_bbox: "
         "these use the standard library only and report a file exactly as "
         "written, including features whose geometry the rendering and overlap "
-        "tools would skip. Validate a document before rendering it."
+        "tools would skip. Validate a document before rendering it. To let the person "
+        "explore layers interactively, show_on_globe takes the same layers as "
+        "render_feature_map and opens them on a 3D globe; the feature the person "
+        "clicks is reported back as selected_feature."
     ),
 )
 
@@ -642,6 +646,9 @@ async def feature_bbox_tool(source: _GeoJSONSource) -> dict[str, Any]:
         raise ToolError(f"GeoJSON bounding box failed: {exc}") from exc
 
 
+register_globe(mcp)
+
+
 @mcp.resource("geo://capabilities")
 def capabilities() -> dict[str, Any]:
     """Describe what the geo MCP server can do."""
@@ -657,6 +664,7 @@ def capabilities() -> dict[str, Any]:
             "validate_geojson",
             "summarize_geojson",
             "feature_bbox",
+            "show_on_globe",
         ],
         "document_inspection": (
             "inspect_geojson, validate_geojson, summarize_geojson and "
@@ -671,6 +679,7 @@ def capabilities() -> dict[str, Any]:
         ),
         "outputs": [
             "map PNG",
+            "interactive 3D globe view (MCP Apps, ui://geo/globe)",
             "GeoJSON FeatureCollection file",
             "spatial-overlap matches",
             "bbox",

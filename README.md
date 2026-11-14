@@ -462,7 +462,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`chronolog`** | 2.0.6 | Logging | Log and retrieve data from ChronoLog | `clio-kit mcp-server chronolog` |
 | **`compression`** | 2.2.8 | Utilities | File compression with gzip | `clio-kit mcp-server compression` |
 | **`darshan`** | 2.2.8 | Performance | I/O performance trace analysis | `clio-kit mcp-server darshan` |
-| **`geo`** | 2.3.4 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
+| **`geo`** | 2.4.0 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
 | **`hdf5`** | 2.3.1 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
 | **`jarvis`** | 3.7.7 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |
 | **`lmod`** | 3.0.4 | Environment | Environment module management | `clio-kit mcp-server lmod` |

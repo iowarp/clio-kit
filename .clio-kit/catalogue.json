@@ -82,7 +82,7 @@
       "name": "clio-geo",
       "source": "./plugins/clio-geo",
       "description": "MCP server for rendering GeoJSON vector layers into map images with basemaps",
-      "version": "2.3.4",
+      "version": "2.4.0",
       "category": "scientific",
       "keywords": [
         "geospatial",
