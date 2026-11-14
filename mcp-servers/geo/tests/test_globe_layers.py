@@ -197,3 +197,13 @@ def test_a_dot_is_never_too_small_to_see_or_click() -> None:
     assert tiny["style"]["point_size"] == 7.0
     default = normalize_layer({"geojson": STATIONS}, 0)
     assert 9 < default["style"]["point_size"] < 10
+
+
+def test_many_overlapping_areas_are_fainter_unless_the_style_says() -> None:
+    square = {"type": "Polygon", "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]]}
+    one = normalize_layer({"geojson": [square]}, 0)
+    assert one["style"]["alpha"] == 0.6
+    many = normalize_layer({"geojson": [square] * 160}, 0)
+    assert many["style"]["alpha"] == 0.12
+    asked = normalize_layer({"geojson": [square] * 160, "style": {"alpha": 0.5}}, 0)
+    assert asked["style"]["alpha"] == 0.5

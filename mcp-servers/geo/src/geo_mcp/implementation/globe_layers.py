@@ -357,10 +357,14 @@ def normalize_layer(layer: Any, index: int) -> dict[str, Any]:
     points = sum(1 for f in features if str(f["geometry"].get("type")).endswith("Point"))
     label_on = style.get("labels")
     labelled = bool(label_on) if label_on is not None else 0 < points <= LABEL_LIMIT
+    # Many overlapping areas (a search's footprints) at the PNG's 0.6 merge into one
+    # solid patch; unless the style says otherwise each is fainter, so overlaps show.
+    areas = sum(1 for f in features if str(f["geometry"].get("type")).endswith("Polygon"))
+    area_alpha = 0.6 if areas <= 3 else max(0.12, 0.6 / math.sqrt(areas / 3))
     resolved = {
         "fill": fill,
         "stroke": stroke,
-        "alpha": _number(style.get("alpha", 0.6), "alpha", 0.0, 1.0),
+        "alpha": _number(style.get("alpha", area_alpha), "alpha", 0.0, 1.0),
         # A dot must read on any basemap: opaque unless the style asks otherwise.
         "point_alpha": _number(style.get("alpha", 0.95), "alpha", 0.0, 1.0),
         "line_width": max(1.0, 2.0 * _number(style.get("linewidth", 1.0), "linewidth", 0, 50)),
