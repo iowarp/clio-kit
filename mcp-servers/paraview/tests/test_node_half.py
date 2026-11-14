@@ -304,6 +304,40 @@ def _wait_steps(client, steps: int) -> dict:
     raise AssertionError(f"the series never reached {steps} steps")
 
 
+def test_a_colour_range_set_by_hand_holds_and_is_restored(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """A volume's colour map and opacity ramp take a range by hand, kept on restart."""
+    attacher, data = attached
+    client = attacher.ensure().client
+    write_vti(data / "ranged.vti")
+    scene = client.command("open_view", {"path": str(data / "ranged.vti")})["scene"]
+    shown = client.command(
+        "set_representation",
+        {
+            "object": "o1",
+            "representation": "Volume",
+            "color_by": "p",
+            "color_range": [2.0, 6.0],
+        },
+    )
+    assert shown["object"]["display"]["color_range"] == [2.0, 6.0]
+    with pytest.raises(ParaViewError) as caught:
+        client.command(
+            "set_representation", {"object": "o1", "color_range": [5.0, 1.0]}
+        )
+    assert caught.value.code == "bad_color_range"
+    record = _folder() / "node.json"
+    os.kill(json.loads(record.read_text())["pid"], 9)
+    record.unlink()
+    attacher.link = None
+    client = attacher.ensure().client
+    restored = client.command("open_view", {"scene": scene})
+    assert restored["objects"][0]["display"]["color_range"] == [2.0, 6.0]
+    ranges = _pvpython_script("color_range_check.py", str(data), prefix="RANGE=")
+    assert ranges == {"color": [100.0, 200.0], "opacity": [100.0, 200.0]}
+
+
 def test_restart_restores_the_scene(attached: tuple[Attacher, Path]) -> None:
     attacher, data = attached
     client = attacher.ensure().client

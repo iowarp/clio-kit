@@ -34,6 +34,9 @@ def object_line(item: dict[str, Any]) -> str:
             which = "" if component is None else f" component {component}"
             colormap = f" ({display['colormap']})" if display.get("colormap") else ""
             detail.append(f"coloured by {color[1]}{which}{colormap}")
+            if display.get("color_range"):
+                low, high = display["color_range"]
+                detail.append(f"colour range {_num(low)} to {_num(high)} set by hand")
             if display.get("scalar_bar"):
                 detail.append("colour legend shown")
         if display.get("opacity", 1.0) < 1.0:
