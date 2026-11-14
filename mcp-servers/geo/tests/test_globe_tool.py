@@ -62,6 +62,8 @@ async def test_tool_declares_its_view_state_keys_and_paths() -> None:
     assert {"selection", "camera", "layers", "view"} <= set(keys)
     assert meta["ai.iowarp.clio/paths"] == {"files": {"machine": "local", "access": "read"}}
     assert tools["show_on_globe"].annotations.read_only_hint is True
+    # A host naming a view by its first short text argument reads the title.
+    assert next(iter(tools["show_on_globe"].input_schema["properties"])) == "title"
     edit = tools["edit_globe_view"].meta["ui"]
     assert edit == {"visibility": ["app"]}  # only the view calls it; it opens no view
 
@@ -92,7 +94,9 @@ async def test_result_is_lean_and_the_geojson_goes_to_the_view_only() -> None:
     assert view["title"] == "Cascadia"
     assert [layer["name"] for layer in view["layers"]] == ["stations", "area"]
     assert view["layers"][0]["geojson"]["features"][0]["id"] == "S0"
-    assert result.meta["ai.iowarp.clio/reopen"] == {"arguments": {"view": view["view"]}}
+    assert result.meta["ai.iowarp.clio/reopen"] == {
+        "arguments": {"title": "Cascadia", "view": view["view"]}
+    }
     assert f"view={view['view']!r}" in text
 
 

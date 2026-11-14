@@ -267,6 +267,10 @@
         style: C.LabelStyle.FILL_AND_OUTLINE, verticalOrigin: C.VerticalOrigin.BOTTOM,
         pixelOffset: new C.Cartesian2(0, -(rec.layer.spec.style.point_size / 2 + 5)),
         showBackground: isSelected(rec), backgroundColor: color(HIGHLIGHT, 0.85),
+        // Labels of close points would pile up from far away: they appear once the camera
+        // is near enough to tell the points apart. A selected point is always named.
+        distanceDisplayCondition: isSelected(rec) || hovered === rec ? undefined
+          : new C.DistanceDisplayCondition(0, rec.layer.labelDistance || Number.MAX_VALUE),
       });
       if (isSelected(rec)) entity.label.fillColor = C.Color.BLACK;
       if (isSelected(rec)) entity.label.outlineWidth = 0;
@@ -321,12 +325,26 @@
       entity.geoFeature = rec;
       rec.entities.push(entity);
     }
+    record.labelDistance = labelDistance(record);
     record.features.forEach(restyle);
     source.show = record.visible;
     record.source = source;
     await viewer.dataSources.add(source);
     orderLayers();
     return record;
+  }
+
+  // How near the camera must be for a layer's labels: about 25 times the typical gap
+  // between its points (the median distance to the nearest neighbour).
+  function labelDistance(record) {
+    const now = C.JulianDate.now();
+    const points = [...record.features.values()].filter((rec) => rec.kind === 'point')
+      .map((rec) => rec.entities[0].position && rec.entities[0].position.getValue(now)).filter(Boolean);
+    if (points.length < 2) return Number.MAX_VALUE;
+    const nearest = points.map((p, i) => Math.min(...points.filter((_, j) => j !== i)
+      .map((q) => C.Cartesian3.distance(p, q)))).filter((d) => d > 0).sort((a, b) => a - b);
+    if (!nearest.length) return Number.MAX_VALUE;
+    return Math.max(3.0e4, Math.min(2.0e7, nearest[Math.floor(nearest.length / 2)] * 25));
   }
 
   function orderLayers() {
@@ -357,7 +375,7 @@
     for (const spec of structured.layers || []) await drawLayer(spec);
     renderPanel();
     renderInfo();
-    flyHome(1.5);
+    flyHome();
     viewer.scene.requestRender();
     showStatus('');
     resolveReady();
@@ -379,18 +397,35 @@
     return C.Rectangle.fromDegrees(wrap(west), south, wrap(east), north);
   }
 
-  function flyHome(duration) {
+  // Where the view opens: placed at once, from the bounds alone. A flight or a fit to a
+  // rectangle needs the canvas's size, which a frame that is not on screen yet does
+  // not have, and a flight does not advance while its frame is not drawn.
+  function homeView() {
     const c = current && current.camera;
     if (c) {
-      viewer.camera.flyTo({
-        destination: C.Cartesian3.fromDegrees(c.lon, c.lat, c.height_m),
-        orientation: { heading: C.Math.toRadians(c.heading_deg || 0), pitch: C.Math.toRadians(c.pitch_deg ?? -90), roll: 0 },
-        duration: flightSeconds(duration),
-      });
-      return;
+      return { destination: C.Cartesian3.fromDegrees(c.lon, c.lat, c.height_m),
+        orientation: { heading: C.Math.toRadians(c.heading_deg || 0), pitch: C.Math.toRadians(c.pitch_deg ?? -90), roll: 0 } };
     }
     const box = (current && (current.bbox || current.bounds)) || null;
-    if (box) viewer.camera.flyTo({ destination: padRect(box, 0.12), duration: flightSeconds(duration) });
+    if (!box) return null;
+    const [west, south, east, north] = box.map(Number);
+    let width = east - west;
+    if (width < 0) width += 360;
+    const lat = (south + north) / 2;
+    const lon = ((west + width / 2 + 540) % 360) - 180;
+    const latM = (north - south) * 111e3;
+    const lonM = width * 111e3 * Math.cos(C.Math.toRadians(lat));
+    // Cesium's 60° field of view spans the frame's longer side; the shorter one sees less.
+    const aspect = window.innerWidth > 0 && window.innerHeight > 0 ? window.innerWidth / window.innerHeight : 1.6;
+    const needed = aspect >= 1 ? Math.max(lonM, latM * aspect) : Math.max(lonM / aspect, latM);
+    const height = Math.max(15e3, Math.min(2.0e7, (needed / (2 * Math.tan(Math.PI / 6))) * 1.25));
+    return { destination: C.Cartesian3.fromDegrees(lon, lat, height),
+      orientation: { heading: 0, pitch: -C.Math.PI_OVER_TWO, roll: 0 } };
+  }
+
+  function flyHome() {
+    const home = homeView();
+    if (home) viewer.camera.setView(home);
   }
 
   function flyTo(args) {
@@ -442,7 +477,10 @@
     const duration = flightSeconds(1.2);
     if (recs.length === 1 && recs[0].kind === 'point') {
       const [lon, lat] = recPosition(recs[0]);
-      const height = Math.max(40e3, Math.min(viewer.camera.positionCartographic.height, 8.0e6));
+      // Turn to the point and, from far away, come near enough to tell it from its
+      // neighbours (where the layer's labels appear).
+      const near = (recs[0].layer.labelDistance || 8.0e6) * 0.8;
+      const height = Math.max(20e3, Math.min(viewer.camera.positionCartographic.height, near, 8.0e6));
       await new Promise((resolve) => viewer.camera.flyTo({
         destination: C.Cartesian3.fromDegrees(lon, lat, height),
         orientation: { heading: 0, pitch: -C.Math.PI_OVER_TWO, roll: 0 },

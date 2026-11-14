@@ -76,8 +76,10 @@ and a legend.
   labelled when a layer has 40 points or fewer (`style.label` names the
   property, `style.labels` forces labels on or off). A layer list toggles
   layers and shows each legend. Hovering a feature names it; clicking it
-  highlights it and lists its properties. The view flies to the layers'
-  bounds when it opens. Its panels follow the host's light or dark theme and
+  highlights it and lists its properties. The view shows the layers'
+  bounds when it opens (placed at once, so a frame not yet on screen opens in
+  the right place). Labels of close points appear once the camera is near enough
+  to tell them apart. Its panels follow the host's light or dark theme and
   style variables.
 - **Linked selection.** Every feature has a stable string id: the
   `id_property` value, else the feature's `id`, else `properties.id`, else
@@ -85,8 +87,9 @@ and a legend.
   (layer, name, properties, position), `camera` and `layers` with
   `ui/update-model-context`, so the agent knows what the person picked.
   `selected_feature` is also a setter (`select_feature`): a host that sets it,
-  for example from a linked table row, turns the globe to that feature and
-  highlights it, in one step when the person prefers reduced motion. The tool
+  for example from a linked table row, turns the globe to that feature (coming
+  near enough to tell it from its neighbours) and highlights it, in one step
+  when the person prefers reduced motion. The tool
   declares these state keys in `_meta["ai.iowarp.clio/state"]`.
 - **App tools.** The view offers `fly_to` (`bbox` or `point`), `select_feature`,
   `add_layer`, `remove_layer`, `set_style` and `get_view` (camera, area in view
@@ -96,7 +99,9 @@ and a legend.
   read from a file is saved as its path and read again on reopen; inline
   GeoJSON is saved as given. `show_on_globe(view="g…")` shows the saved layers
   again, which is also what the result declares a host should replay
-  (`_meta["ai.iowarp.clio/reopen"]`). Layer edits from the view go through
+  (`_meta["ai.iowarp.clio/reopen"]`, with the title). `title` is the tool's
+  first argument, so a host that names a view by its first short text
+  argument reads the title rather than a view id. Layer edits from the view go through
   `edit_globe_view`, a tool only the view calls, so a reopen shows them.
   `files` is declared as a local read path (`_meta["ai.iowarp.clio/paths"]`).
 - **Refusals.** A missing file, malformed JSON, a style that is not a colour or

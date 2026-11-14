@@ -235,8 +235,7 @@ def summary_text(payload: dict[str, Any], *, saved: str | None, restored: bool) 
         else (f"bbox {_fmt_bounds(payload['bbox'])}" if payload.get("bbox") else "these bounds")
     )
     lines.append(
-        f"All layers: bounds {_fmt_bounds(payload['bounds'])}; the view flies to {target} "
-        "when it opens."
+        f"All layers: bounds {_fmt_bounds(payload['bounds'])}; the view opens on {target}."
     )
     lines.append(
         "The person can toggle layers and click a feature; their pick reaches you as "
@@ -249,7 +248,7 @@ def summary_text(payload: dict[str, Any], *, saved: str | None, restored: bool) 
     else:
         lines.append(
             f"To show these layers again, for example in a dashboard, call show_on_globe with "
-            f"view={payload['view']!r} instead of sending the GeoJSON again."
+            f"view={payload['view']!r} (and a title) instead of sending the GeoJSON again."
         )
     return "\n".join(lines)
 
@@ -300,7 +299,10 @@ def show_on_globe(
         save_view(record)
     except GlobeStoreError as exc:
         unsaved = exc.reason
-    meta = {} if unsaved else {REOPEN_META: {"arguments": {"view": record["id"]}}}
+    reopen: dict[str, Any] = {"view": record["id"]}
+    if record.get("title"):
+        reopen = {"title": record["title"], **reopen}
+    meta = {} if unsaved else {REOPEN_META: {"arguments": reopen}}
     if unsaved:
         payload["unsaved_reason"] = unsaved
     return ToolResult(
@@ -400,6 +402,9 @@ def register_globe(mcp: FastMCP) -> None:
         },
     )
     async def show_on_globe_tool(
+        # The title comes first: a host that names a view by its first short text
+        # argument (CLIO's view label) then reads the title, not a view id.
+        title: Annotated[str, Field(description="A title shown on the view.")] = "",
         layers: Annotated[
             list[dict[str, Any]] | None, Field(description=_LAYERS_DESCRIPTION)
         ] = None,
@@ -419,7 +424,6 @@ def register_globe(mcp: FastMCP) -> None:
             dict[str, Any] | None,
             Field(description="Optional camera: {lon, lat, height_m, heading_deg, pitch_deg}."),
         ] = None,
-        title: Annotated[str, Field(description="A title shown on the view.")] = "",
     ) -> ToolResult:
         return show_on_globe(layers, files, view, bbox, camera, title)
 
