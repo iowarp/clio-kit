@@ -118,3 +118,15 @@ def test_a_slow_frame_is_reported_with_its_cause() -> None:
     assert note.endswith("much faster.")
     assert present.capture_note(17.25, {"mode": "local"}) == " It took 17.25 s to draw."
     assert present.capture_note(1.0, view) == ""
+
+
+def test_a_solid_colour_is_shown_in_the_object_line() -> None:
+    line = present.object_line(
+        {
+            "id": "o3",
+            "label": "snow shell",
+            "type": "Contour",
+            "display": {"representation": "Surface", "solid_color": [1.0, 0.5, 0.0]},
+        }
+    )
+    assert "solid colour #ff8000" in line

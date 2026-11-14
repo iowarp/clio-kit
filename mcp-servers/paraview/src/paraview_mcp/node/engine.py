@@ -285,6 +285,8 @@ class Engine(CameraCommands, SceneReading):
             # A reader that colours nothing (a PDB's molecule) reports no association;
             # ParaView's ColorBy(None) cannot clear that, and there is nothing to clear.
             simple.ColorBy(rep, None)
+        if not color_by and display.get("solid_color"):
+            rep.AmbientColor = rep.DiffuseColor = display["solid_color"]
         wanted = bool(display.get("scalar_bar")) or colors.legend_wanted(
             self.scene, color_by
         )
@@ -651,6 +653,8 @@ class Engine(CameraCommands, SceneReading):
         component: int | str | None = None,
         scalar_bar: bool | None = None,
         rescale: bool | None = None,
+        color_range: list[float] | None = None,
+        solid_color: str | None = None,
     ) -> dict[str, Any]:
         scene = self.require_scene()
         item = manifest.find_object(scene, object)
@@ -658,6 +662,7 @@ class Engine(CameraCommands, SceneReading):
             raise CommandError("unknown_object", f"No scene object {object!r}.")
         proxy = self.proxies[item["id"]]
         display = item.setdefault("display", {})
+        span = colors.checked_range(color_range, rescale)
         if color_by is not None:
             display["color_component"] = None
         if representation is not None:
@@ -673,6 +678,10 @@ class Engine(CameraCommands, SceneReading):
                 if color_by in ("", "none", "solid")
                 else [data.find_association(proxy, color_by), color_by]
             )
+            if display["color_by"]:
+                display["solid_color"] = None
+        if solid_color is not None:
+            display.update(solid_color=colors.parse_color(solid_color), color_by=None)
         if colormap is not None:
             display["colormap"] = colormap
             colors.share(scene, display.get("color_by"), "colormap", colormap)
@@ -691,6 +700,9 @@ class Engine(CameraCommands, SceneReading):
         if rescale and display.get("color_by"):
             rep = self.simple.GetDisplayProperties(proxy, self.view)
             rep.RescaleTransferFunctionToDataRange(False, True)
+            colors.share(scene, display.get("color_by"), "color_range", None)
+        if span is not None:
+            colors.set_range(self.simple, scene, display.get("color_by"), span)
         self.update_view_mode()
         return {"object": self.object_summary(item)}
 
