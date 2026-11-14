@@ -29,7 +29,7 @@ load_dotenv()
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "ndp",
-    version="2.2.8",
+    version="2.2.9",
     instructions=(
         "Discovers and explores scientific datasets from the National Data Platform "
         "(NDP) and stages their resources for analysis. Use search_datasets to find "

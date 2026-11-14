@@ -61,11 +61,60 @@ def test_performance_monitor_initialization(temp_dir):
     assert "cache_stats" in monitor.metrics
 
 
-def test_performance_monitor_default_dir():
-    """Test PerformanceMonitor with default directory."""
+@pytest.fixture
+def isolated_home(tmp_path, monkeypatch):
+    """A home and environment with no data or cache directory configured."""
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setattr(utils.Path, "home", classmethod(lambda cls: home))
+    for env in ("PLUGIN_DATA", "CLIO_KIT_CACHE_DIR", "XDG_CACHE_HOME", "LOCALAPPDATA"):
+        monkeypatch.delenv(env, raising=False)
+    return home
+
+
+def test_performance_monitor_default_dir(isolated_home):
+    """The default directory is a cache directory, never a dot-folder in home."""
     monitor = utils.PerformanceMonitor()
-    assert monitor.metrics_dir.exists()
-    assert ".hdf5_mcp" in str(monitor.metrics_dir)
+    assert monitor.metrics_dir.parts[-2:] == ("hdf5_mcp", "metrics")
+    assert monitor.metrics_dir.is_relative_to(isolated_home)
+    assert not (isolated_home / ".hdf5_mcp").exists()
+
+
+@pytest.mark.parametrize(
+    "env, leaf",
+    [
+        ("PLUGIN_DATA", ("metrics",)),
+        ("CLIO_KIT_CACHE_DIR", ("hdf5_mcp", "metrics")),
+        ("XDG_CACHE_HOME", ("hdf5_mcp", "metrics")),
+    ],
+)
+def test_performance_monitor_default_dir_follows_host_dirs(
+    isolated_home, tmp_path, monkeypatch, env, leaf
+):
+    """A host-provided data or cache directory decides where metrics go."""
+    monkeypatch.setenv(env, str(tmp_path / "granted"))
+    monitor = utils.PerformanceMonitor()
+    assert monitor.metrics_dir == tmp_path.joinpath("granted", *leaf)
+
+
+def test_performance_monitor_creates_nothing_until_saved(isolated_home, tmp_path):
+    """Building a monitor (done at import time) writes nothing to disk."""
+    target = tmp_path / "metrics"
+    utils.PerformanceMonitor(metrics_dir=target)
+    assert not target.exists()
+    assert not (isolated_home / ".hdf5_mcp").exists()
+
+
+def test_performance_monitor_save_survives_a_denied_dir(tmp_path, monkeypatch):
+    """A directory the host denies loses the metrics, not the server."""
+    monitor = utils.PerformanceMonitor(metrics_dir=tmp_path / "denied" / "metrics")
+
+    def deny(*_args, **_kwargs):
+        raise PermissionError(1, "Operation not permitted")
+
+    monkeypatch.setattr(utils.Path, "mkdir", deny)
+    monitor.track_operation("test_op", 1.0)
+    assert monitor.save_metrics() is None
 
 
 def test_performance_monitor_track_operation():

@@ -26,7 +26,7 @@ def _check_error(result: str) -> str:
 
 mcp = FastMCP(
     "parquet",
-    version="2.3.0",
+    version="2.3.1",
     instructions=(
         "Reads and analyzes Apache Parquet files. "
         "Use summarize_tool for file overview, read_slice_tool for row access, "
