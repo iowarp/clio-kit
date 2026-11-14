@@ -260,13 +260,15 @@ class NodeApp:
             body = await request.json()
             name = str(body["command"])
             args = dict(body.get("args") or {})
+            # The front says whose call it is; anything else is the agent's.
+            by = "person" if body.get("by") == "person" else "agent"
         except (ValueError, KeyError, TypeError):
             return self._json(
                 {"error": {"code": "bad_request", "message": "Malformed command."}}, 400
             )
         try:
             with self.server.state:
-                result = self.engine.run(name, args, by="agent")
+                result = self.engine.run(name, args, by=by)
         except CommandError as exc:
             return self._json(
                 {"error": {"code": exc.code, "message": exc.message}}, 422

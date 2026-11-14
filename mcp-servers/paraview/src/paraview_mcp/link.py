@@ -58,8 +58,13 @@ class NodeClient:
     def ping(self) -> None:
         self._request("POST", "/clio/ping", {}, timeout=10.0)
 
-    def command(self, name: str, args: dict[str, Any], timeout: float = 900.0) -> Any:
+    def command(
+        self, name: str, args: dict[str, Any], timeout: float = 900.0, by: str = "agent"
+    ) -> Any:
         payload = self._request(
-            "POST", "/clio/command", {"command": name, "args": args}, timeout=timeout
+            "POST",
+            "/clio/command",
+            {"command": name, "args": args, "by": by},
+            timeout=timeout,
         )
         return payload["result"]

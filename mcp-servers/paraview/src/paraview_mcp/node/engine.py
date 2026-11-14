@@ -288,7 +288,9 @@ class Engine(SceneReading):
                         f"ParaView has no colour preset {display['colormap']!r}."
                         + _close_presets(display["colormap"]),
                     )
-        else:
+        elif rep.ColorArrayName.GetAssociation() not in (None, "NONE"):
+            # A reader that colours nothing (a PDB's molecule) reports no association;
+            # ParaView's ColorBy(None) cannot clear that, and there is nothing to clear.
             simple.ColorBy(rep, None)
         wanted = bool(display.get("scalar_bar")) or colors.legend_wanted(
             self.scene, color_by

@@ -32,6 +32,28 @@ SERVICE_META = "ai.iowarp.clio/service"
 # new=true started an empty scene; replaying it would wipe what was built since.
 REOPEN_META = "ai.iowarp.clio/reopen"
 PATHS_META = "ai.iowarp.clio/paths"
+#: Set by the host on a call a view or a person made, not the agent ("view").
+ORIGIN_META = "ai.iowarp.clio/origin"
+#: What the view reports in ui/update-model-context, for a host linking it to a dashboard.
+STATE_META = "ai.iowarp.clio/state"
+VIEW_STATE = [
+    {"key": "time", "tool": "set_timestep", "description": "The shown time value."},
+    {"key": "time_index", "description": "The shown step, from 0."},
+    {"key": "time_steps", "description": "How many steps the data has."},
+    {"key": "latest_time", "description": "The newest time value written."},
+    {
+        "key": "follow_latest",
+        "description": "Whether the view follows the newest step.",
+    },
+    {
+        "key": "selection",
+        "description": "The point the person picked, with its values.",
+    },
+    {"key": "scene", "description": "The scene id."},
+    {"key": "dataset", "description": "The open dataset."},
+    {"key": "active_object", "description": "The object the panel shows."},
+    {"key": "view_mode", "description": "Local or remote rendering."},
+]
 
 mcp: FastMCP = FastMCP(
     "paraview",
@@ -63,12 +85,26 @@ def _fail(exc: ParaViewError) -> ToolError:
     return ToolError(f"{exc.message} [{exc.code}]")
 
 
+def actor() -> str:
+    """Who asked for this call: ``person`` when the host marks it as a view's, else ``agent``.
+
+    CLIO marks a call a view makes (the person's click, a dashboard's linked chart) with
+    ``_meta["ai.iowarp.clio/origin"] = "view"``; every other call is the agent's.
+    """
+    from fastmcp.server.dependencies import fastmcp_request_ctx
+
+    request = fastmcp_request_ctx.get()
+    meta = getattr(request, "meta", None) if request is not None else None
+    origin = meta.get(ORIGIN_META) if isinstance(meta, dict) else None
+    return "person" if origin in ("view", "person") else "agent"
+
+
 def command(name: str, args: dict[str, Any]) -> tuple[Any, Any]:
     """Run one scene command on the node half; return (result, link)."""
     clean = {k: v for k, v in args.items() if v is not None}
     try:
         link = attacher().ensure()
-        return link.client.command(name, clean), link
+        return link.client.command(name, clean, by=actor()), link
     except ParaViewError as exc:
         raise _fail(exc) from exc
     except LinkError as exc:
@@ -108,7 +144,7 @@ def _text(text: str) -> TextContent:
 @mcp.tool(
     app=AppConfig(resource_uri=VIEW_URI),
     annotations={"title": "Open a ParaView view", "openWorldHint": True},
-    meta=_paths(path="read"),
+    meta={**_paths(path="read"), STATE_META: VIEW_STATE},
 )
 def open_view(
     path: Annotated[
