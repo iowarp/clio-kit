@@ -16,12 +16,14 @@ from pathlib import Path
 from typing import Any
 
 from . import colors, data, manifest
+from .animation import SceneAnimation
 from .camera import CameraCommands
 from .changes import ChangeLog, describe
 from .data import DataError
 from .errors import CommandError, _expand
 from .frames import FrameClock, volume_grids
 from .reading import SceneReading
+from .scripts import SceneScripts, forget_made
 
 MUTATING = {
     "open_view",
@@ -32,9 +34,10 @@ MUTATING = {
     "set_timestep",
     "set_camera",
     "fit_camera",
+    "run_scene_script",
 }
 READING = {"inspect_selection", "measure_field", "capture", "export_artifact"}
-READING |= {"export_scene", "scene_state"}
+READING |= {"export_scene", "scene_state", "export_animation"}
 
 
 REPRESENTATIONS = (
@@ -89,7 +92,7 @@ def _is_pattern(path: str) -> bool:
     return any(ch in path for ch in "*?[")
 
 
-class Engine(CameraCommands, SceneReading):
+class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation):
     """Holds the render view, the live scene and the proxies that show it."""
 
     def __init__(
@@ -295,8 +298,14 @@ class Engine(CameraCommands, SceneReading):
             simple.Hide(proxy, self.view)
 
     def _build(self, scene: dict[str, Any]) -> None:
+        made: dict[str, Any] = {}
         for item in scene["objects"]:
-            proxy = self._make(item)
+            if item.get("kind") == "script":
+                made.update(self.replay_script(item))
+                continue
+            proxy = (
+                made.pop(item["id"]) if item.get("kind") == "made" else self._make(item)
+            )
             self.proxies[item["id"]] = proxy
             self._show(item, proxy, apply="display" in item)
         self._apply_time(scene)
@@ -578,7 +587,7 @@ class Engine(CameraCommands, SceneReading):
         if input and parent is None:
             raise CommandError("unknown_object", f"No scene object {input!r}.")
         if parent is None:
-            parent = scene["objects"][-1]
+            parent = manifest.pipeline(scene)[-1]
         object_id = f"o{scene['next_id']}"
         scene["next_id"] += 1
         item = {
@@ -640,6 +649,7 @@ class Engine(CameraCommands, SceneReading):
                 "The dataset is the scene's root. Open another dataset instead.",
             )
         gone = manifest.descendants(scene, item["id"])
+        forget_made(scene, gone)
         for object_id in reversed(gone):
             proxy = self.proxies.pop(object_id)
             self.simple.Hide(proxy, self.view)

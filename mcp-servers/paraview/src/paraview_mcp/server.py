@@ -99,12 +99,12 @@ def actor() -> str:
     return "person" if origin in ("view", "person") else "agent"
 
 
-def command(name: str, args: dict[str, Any]) -> tuple[Any, Any]:
+def command(name: str, args: dict[str, Any], timeout: float = 900.0) -> tuple[Any, Any]:
     """Run one scene command on the node half; return (result, link)."""
     clean = {k: v for k, v in args.items() if v is not None}
     try:
         link = attacher().ensure()
-        return link.client.command(name, clean, by=actor()), link
+        return link.client.command(name, clean, timeout=timeout, by=actor()), link
     except ParaViewError as exc:
         raise _fail(exc) from exc
     except LinkError as exc:
@@ -184,143 +184,29 @@ def open_view(
     )
 
 
-@mcp.tool(annotations={"title": "Add a ParaView filter"})
-def create_filter(
-    filter: Annotated[
+@mcp.tool(annotations={"title": "Build the ParaView scene"})
+def run_scene_script(
+    code: Annotated[
         str,
         Field(
-            description="ParaView filter name, e.g. Contour, Slice, Clip, Threshold."
+            description="Python using paraview.simple, run inside the open scene. It sees "
+            "`simple` (and its names, e.g. Contour, OpenDataFile, Show, ColorBy), `view` "
+            "(the scene's render view: show things in it, never make another), "
+            "`objects` (the scene's objects by id or label, e.g. objects['o1']) and "
+            "`folder` (the scene's folder, for files it writes)."
         ),
     ],
-    input: Annotated[
-        str | None,
-        Field(description="Scene object id or label to filter; default: the last."),
-    ] = None,
-    properties: Annotated[
-        dict[str, Any] | None,
-        Field(
-            description="Filter properties by ParaView name, e.g. "
-            '{"ContourBy": ["POINTS", "p"], "Isosurfaces": [0.5]}. A dotted name '
-            'sets a property of a part, e.g. {"SliceType.Normal": [0, 0, 1]}.'
-        ),
-    ] = None,
-    label: Annotated[str | None, Field(description="A name for the object.")] = None,
-    hide_input: Annotated[bool, Field(description="Hide the input object.")] = False,
-) -> str:
-    """Add one filter to the scene's pipeline. It commits whole or not at all."""
-    result, _ = command(
-        "create_filter",
-        {
-            "filter": filter,
-            "input": input,
-            "properties": properties,
-            "label": label,
-            "hide_input": hide_input,
-        },
-    )
-    return "Added " + present.object_line(result["object"]) + "."
-
-
-@mcp.tool(annotations={"title": "Change a ParaView filter"})
-def set_filter_property(
-    object: Annotated[str, Field(description="Scene object id or label of a filter.")],
-    properties: Annotated[
-        dict[str, Any],
-        Field(
-            description="Filter properties by ParaView name, e.g. "
-            '{"Isosurfaces": [0.0003]} for a Contour, or {"SliceType.Origin": [0, 0, 5]}.'
-        ),
-    ],
-) -> str:
-    """Change settings of a filter already in the scene. It commits whole or not at all."""
-    result, _ = command(
-        "set_filter_property", {"object": object, "properties": properties}
-    )
-    before = result.get("before") or {}
-    changed = ", ".join(
-        f"{key} {before.get(key)!r} -> {value!r}" for key, value in properties.items()
-    )
-    return "Changed " + present.object_line(result["object"]) + f": {changed}."
-
-
-@mcp.tool(annotations={"title": "Remove a scene object", "destructiveHint": True})
-def remove_scene_object(
-    object: Annotated[str, Field(description="Scene object id or label.")],
-) -> str:
-    """Remove an object and everything built on it from the pipeline."""
-    result, _ = command("remove_scene_object", {"object": object})
-    return f"Removed {', '.join(result['removed'])}."
-
-
-@mcp.tool(annotations={"title": "Change how an object is shown"})
-def set_representation(
-    object: Annotated[str, Field(description="Scene object id or label.")],
-    representation: Annotated[
-        str | None,
-        Field(
-            description="Surface, Surface With Edges, Wireframe, Points, Outline, Volume."
-        ),
-    ] = None,
-    color_by: Annotated[
-        str | None, Field(description="Field to colour by, or 'none' for solid.")
-    ] = None,
-    colormap: Annotated[
-        str | None, Field(description="ParaView colour preset, e.g. Viridis.")
-    ] = None,
-    opacity: Annotated[float | None, Field(ge=0, le=1)] = None,
-    visible: Annotated[bool | None, Field(description="Show or hide it.")] = None,
-    component: Annotated[
-        int | Literal["Magnitude"] | None,
-        Field(
-            description="Colour by this component of a vector field (0 is X), or "
-            "Magnitude."
-        ),
-    ] = None,
-    scalar_bar: Annotated[
-        bool | None, Field(description="Show or hide the colour legend.")
-    ] = None,
-    rescale: Annotated[
-        bool | None,
-        Field(description="Rescale the colour range to the data at this time step."),
-    ] = None,
-    color_range: Annotated[
-        list[float] | None,
-        Field(
-            min_length=2,
-            max_length=2,
-            description="Set the colour range by hand, [low, high], for the field this "
-            "object is coloured by. Values beyond it take the end colours. For a volume "
-            "it also sets the opacity ramp: low is clear, high is opaque.",
-        ),
-    ] = None,
-    solid_color: Annotated[
-        str | None,
-        Field(
-            description="Draw the object in one plain colour instead of colouring it by a "
-            "field: a name (white, red, orange, yellow, green, cyan, blue, purple, "
-            "magenta, pink, brown, grey, black) or #rrggbb. Suits a surface at one value, "
-            "such as a contour; a volume needs a field."
-        ),
+    label: Annotated[
+        str | None, Field(description="A short name for this step, e.g. 'isobars'.")
     ] = None,
 ) -> str:
-    """Change an object's representation, colouring, opacity or visibility."""
-    result, _ = command(
-        "set_representation",
-        {
-            "object": object,
-            "representation": representation,
-            "color_by": color_by,
-            "colormap": colormap,
-            "opacity": opacity,
-            "visible": visible,
-            "component": component,
-            "scalar_bar": scalar_bar,
-            "rescale": rescale,
-            "color_range": color_range,
-            "solid_color": solid_color,
-        },
-    )
-    return "Now " + present.object_line(result["object"]) + "."
+    """Build or change the scene with a ParaView script: readers (a second dataset too),
+    filters, colours, anything paraview.simple can do. It runs in the scene the person
+    sees, so the live view, captures and the saved scene include what it makes. It applies
+    whole or not at all; a failing script leaves nothing behind. The step is saved with the
+    scene and replayed when the scene is restored."""
+    result, _ = command("run_scene_script", {"code": code, "label": label})
+    return present.script_text(result, _where())
 
 
 @mcp.tool(annotations={"title": "Change the timestep"})
@@ -467,6 +353,53 @@ def export_artifact(
         ),
         ImageContent(type="image", data=result["png_base64"], mime_type="image/png"),
     ]
+
+
+@mcp.tool(annotations={"title": "Export an animation"}, meta=_paths(path="write"))
+def export_animation(
+    path: Annotated[
+        str,
+        Field(
+            description="Where to write the video on the ParaView machine: in the person's "
+            "workspace when it is to be shared or put on a dashboard. The extension is set "
+            "by the encoder (.mp4, else .ogv)."
+        ),
+    ],
+    width: Annotated[int, Field(ge=64, le=3840)] = 1280,
+    height: Annotated[int, Field(ge=64, le=3840)] = 720,
+    fps: Annotated[
+        float, Field(gt=0, le=60, description="Frames (time steps) per second.")
+    ] = 12,
+    start: Annotated[
+        int | None, Field(ge=0, description="First time step index.")
+    ] = None,
+    end: Annotated[int | None, Field(ge=0, description="Last time step index.")] = None,
+    labels: Annotated[
+        list[str] | None,
+        Field(
+            description="One readable label per time step of the scene (e.g. its date and "
+            "hour), stamped in the corner of each frame. Omit for no stamp."
+        ),
+    ] = None,
+) -> str:
+    """Write a video of the scene's time steps as the live view shows them: rendered in the
+    scene's own view, at its camera, colours and filters. Use it for a clip to send around,
+    and put it beside a live view on a dashboard so the dashboard still shows the motion
+    when ParaView is not running."""
+    result, _ = command(
+        "export_animation",
+        {
+            "path": path,
+            "width": width,
+            "height": height,
+            "fps": fps,
+            "start": start,
+            "end": end,
+            "labels": labels,
+        },
+        timeout=3600.0,
+    )
+    return present.animation_text(result)
 
 
 @mcp.tool(annotations={"title": "Export the scene"}, meta=_paths(path="write"))
