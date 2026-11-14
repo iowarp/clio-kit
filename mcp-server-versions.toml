@@ -3,6 +3,9 @@ schema-version = 1
 # Publish new immutable server releases when schemas, runtime behavior or locked
 # dependencies change. A dependency security update warrants a patch release even
 # when the tool schema is unchanged. Never reuse an already-published version.
+# geo 2.4.0 adds show_on_globe: the same layers as render_feature_map on an
+# interactive CesiumJS globe (an MCP Apps view, ui://geo/globe) whose picked feature
+# is reported back; it adds platformdirs as a direct dependency for saved views.
 # paraview 3.0.0 is a new server: a front that attaches over SSH to a node half
 # in ParaView's Python and shows a live trame view (MCP Apps). 3.1.0 gives the
 # view ParaView controls (pipeline, filters, display, camera, information) that
@@ -89,7 +92,7 @@ arxiv = "2.2.8"
 chronolog = "2.0.6"
 compression = "2.2.8"
 darshan = "2.2.8"
-geo = "2.3.4"
+geo = "2.4.0"
 hdf5 = "2.3.1"
 jarvis = "3.7.7"
 lmod = "3.0.4"
