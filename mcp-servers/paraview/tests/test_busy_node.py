@@ -130,3 +130,8 @@ def test_a_solid_colour_is_shown_in_the_object_line() -> None:
         }
     )
     assert "solid colour #ff8000" in line
+
+
+def test_an_image_slice_view_says_why_it_is_drawn_by_paraview() -> None:
+    line = present.view_line({"mode": "remote", "reason": "slice"})
+    assert "an image slice is shown, which only ParaView draws" in line

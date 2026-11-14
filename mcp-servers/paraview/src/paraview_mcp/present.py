@@ -91,6 +91,8 @@ def view_line(view: dict[str, Any]) -> str:
         extra = f"; geometry {size:.2f} MB, remote render threshold {threshold:g} MB"
     if mode == "remote" and view.get("reason") == "volume" and not view.get("pinned"):
         extra += "; a volume is shown, which only ParaView draws"
+    if mode == "remote" and view.get("reason") == "slice" and not view.get("pinned"):
+        extra += "; an image slice is shown, which only ParaView draws"
     if view.get("pinned"):
         extra += "; chosen by hand in the view"
     return f"View: {how}{extra}{frame_note(view)}."

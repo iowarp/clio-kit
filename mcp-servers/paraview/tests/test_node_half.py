@@ -453,6 +453,9 @@ def test_a_volume_is_drawn_on_the_paraview_machine(tmp_path: Path) -> None:
     assert seen["opened"]["mode"] == "local"
     assert seen["Volume"]["mode"] == "remote" and seen["Volume"]["reason"] == "volume"
     assert seen["Surface"]["mode"] == "local" and seen["Surface"]["reason"] is None
+    # A flat grid opens as an image slice, which the browser cannot draw either.
+    assert seen["flat"]["representation"] == "Slice"
+    assert seen["flat"]["mode"] == "remote" and seen["flat"]["reason"] == "slice"
 
 
 def test_the_panel_runs_the_same_commands(tmp_path: Path) -> None:

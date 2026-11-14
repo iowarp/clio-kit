@@ -314,6 +314,8 @@ class NodeApp:
                 if not switched
                 else "Switched: a volume is drawn on the ParaView machine"
                 if scene["view"].get("reason") == "volume"
+                else "Switched: an image slice is drawn on the ParaView machine"
+                if scene["view"].get("reason") == "slice"
                 else f"Switched: geometry {size:.1f} MB, over {engine.threshold_mb:g} MB"
             )
         time_state = engine.time_summary()
