@@ -206,12 +206,8 @@ class Attacher:
         with self.lock:
             link = self.link
             if link is not None:
-                try:
-                    if link.transport.alive():
-                        link.client.health()
-                        return link
-                except LinkError:
-                    pass
+                if link.transport.alive() and self._answers(link.client):
+                    return link
                 self._drop()
             self.link = self._attach()
             self._start_heartbeat()
@@ -507,9 +503,7 @@ class Attacher:
         except ParaViewError:
             return None
         client = NodeClient(port, str(node["token"]))
-        try:
-            client.health()
-        except LinkError:
+        if not self._answers(client):
             return None
         self.local_port = port
         return Link(
@@ -521,6 +515,23 @@ class Attacher:
             pvpython=pvpython,
             paraview=str(env.get("paraview", "")),
         )
+
+    def _answers(self, client: NodeClient) -> bool:
+        """Whether the node half answers, waiting while it is only busy.
+
+        A software volume render holds the node's loop for tens of seconds. A health
+        check that times out then means "busy", not "gone": restarting it would lose
+        the open scene. Only a refused link, or one busy past ``busy_timeout``, fails.
+        """
+
+        deadline = time.monotonic() + self.settings.busy_timeout
+        while True:
+            try:
+                client.health()
+                return True
+            except LinkError as exc:
+                if not exc.busy or time.monotonic() >= deadline:
+                    return False
 
     # -- keeping the link warm ----------------------------------------------------
     def _start_heartbeat(self) -> None:

@@ -416,7 +416,9 @@ def capture(
     return [
         _text(
             f"ParaView render, {width}x{height}, saved on the ParaView machine at "
-            f"{result['path']}. " + present.camera_text(result["camera"])
+            f"{result['path']}. "
+            + present.camera_text(result["camera"])
+            + present.capture_note(result.get("seconds"), result.get("view") or {})
         ),
         ImageContent(type="image", data=result["png_base64"], mime_type="image/png"),
     ]

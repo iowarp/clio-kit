@@ -11,7 +11,20 @@ from .errors import ParaViewError
 
 
 class LinkError(Exception):
-    """The node half could not be reached over the link."""
+    """The node half could not be reached over the link.
+
+    ``busy`` is true when the node half took the request but did not answer in time:
+    it is alive and holding its loop (a long software render does), not gone.
+    """
+
+    def __init__(self, message: str, busy: bool = False) -> None:
+        super().__init__(message)
+        self.busy = busy
+
+
+def _timed_out(exc: BaseException) -> bool:
+    reason = exc.reason if isinstance(exc, urllib.error.URLError) else exc
+    return isinstance(reason, TimeoutError)
 
 
 class NodeClient:
@@ -50,7 +63,7 @@ class NodeClient:
                 str(error.get("message") or f"The node half answered {exc.code}."),
             ) from exc
         except (urllib.error.URLError, OSError, ValueError) as exc:
-            raise LinkError(str(exc)) from exc
+            raise LinkError(str(exc), busy=_timed_out(exc)) from exc
 
     def health(self) -> dict[str, Any]:
         return dict(self._request("GET", "/clio/health", timeout=10.0))

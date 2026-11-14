@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import os
 import tempfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,7 @@ class SceneReading:
     proxies: dict[str, Any]
     session: str | None
     changes: Any
+    frames: Any
 
     # Provided by the engine.
     def require_scene(self) -> dict[str, Any]:
@@ -92,12 +94,16 @@ class SceneReading:
         folder.mkdir(parents=True, exist_ok=True)
         handle, name = tempfile.mkstemp(suffix=".png", dir=folder)
         os.close(handle)
+        started = time.perf_counter()
         png = self._render_png(Path(name), width, height)
+        seconds = round(time.perf_counter() - started, 2)
         return {
             "png_base64": base64.b64encode(png).decode("ascii"),
             "path": name,
             "camera": self.read_camera(),
             "time": self.time_summary().get("time"),
+            "seconds": seconds,
+            "view": dict(scene["view"]),
             "width": width,
             "height": height,
         }
@@ -177,7 +183,7 @@ class SceneReading:
             "session": self.session,
             "objects": [self.object_summary(o) for o in scene["objects"]],
             "time": self.time_summary(),
-            "view": dict(scene["view"]),
+            "view": {**scene["view"], "frame_seconds": self.frames.seconds},
             "camera": self.read_camera(),
             "selection": scene.get("selection"),
         }

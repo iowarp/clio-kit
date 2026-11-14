@@ -88,7 +88,27 @@ def view_line(view: dict[str, Any]) -> str:
         extra += "; a volume is shown, which only ParaView draws"
     if view.get("pinned"):
         extra += "; chosen by hand in the view"
-    return f"View: {how}{extra}."
+    return f"View: {how}{extra}{frame_note(view)}."
+
+
+#: A frame slower than this is reported, with what makes it slow when that is known.
+SLOW_FRAME_SECONDS = 2.0
+
+
+def frame_note(view: dict[str, Any]) -> str:
+    """How long the last frame took, when slow; and why, when a volume's grid explains it."""
+
+    seconds = view.get("frame_seconds")
+    if seconds is None or seconds < SLOW_FRAME_SECONDS:
+        return ""
+    note = f"; its frames take up to {seconds:g} s each to draw"
+    grids = [g for g in view.get("volume_grids") or [] if g != "vtkImageData"]
+    if grids and view.get("mode") == "remote":
+        note += (
+            f", because ParaView draws a volume of a {grids[0]} far more slowly than one "
+            "of an image grid: a ResampleToImage of it draws the same volume much faster"
+        )
+    return note
 
 
 def scene_text(summary: dict[str, Any], where: str) -> str:
@@ -174,3 +194,12 @@ def camera_text(camera: dict[str, Any]) -> str:
         + ")."
         + projection
     )
+
+
+def capture_note(seconds: float | None, view: dict[str, Any]) -> str:
+    """How long a capture took to draw, when slow; and why, as for the view."""
+
+    if seconds is None or seconds < SLOW_FRAME_SECONDS:
+        return ""
+    cause = frame_note({**view, "frame_seconds": seconds}).partition(", because")[2]
+    return f" It took {seconds:g} s to draw" + (f", because{cause}." if cause else ".")

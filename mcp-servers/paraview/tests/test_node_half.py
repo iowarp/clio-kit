@@ -183,6 +183,9 @@ def test_open_measure_and_rollback(attached: tuple[Attacher, Path]) -> None:
     assert probe["selection"]["point_values"]["p"] == 6.0
     captured = client.command("capture", {"width": 120, "height": 90})
     assert captured["png_base64"].startswith("iVBOR")
+    # The capture was timed, and so were its frames, so a slow view can say so.
+    assert isinstance(captured["seconds"], float)
+    assert isinstance(client.command("scene_state", {})["view"]["frame_seconds"], float)
 
 
 def test_a_rectilinear_grid_is_measured_whole(attached: tuple[Attacher, Path]) -> None:

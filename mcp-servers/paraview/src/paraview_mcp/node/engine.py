@@ -20,6 +20,7 @@ from .camera import CameraCommands
 from .changes import ChangeLog, describe
 from .data import DataError
 from .errors import CommandError, _expand
+from .frames import FrameClock, volume_grids
 from .reading import SceneReading
 
 MUTATING = {
@@ -110,6 +111,7 @@ class Engine(CameraCommands, SceneReading):
         self.view = simple.CreateRenderView()
         self.view.OrientationAxesVisibility = 1
         simple.SetActiveView(self.view)
+        self.frames = FrameClock(self.view)
         self.scene: dict[str, Any] | None = None
         self.proxies: dict[str, Any] = {}
         self._growth: dict[str, Any] = {}
@@ -417,6 +419,7 @@ class Engine(CameraCommands, SceneReading):
         view_state["reason"] = (
             "volume" if volume else "geometry" if size > self.threshold_mb else None
         )
+        view_state["volume_grids"] = volume_grids(scene, self.proxies)
         if not view_state.get("pinned"):
             view_state["mode"] = "remote" if view_state["reason"] else "local"
         return view_state["mode"]
