@@ -148,6 +148,13 @@ CASES = [
         kind="boundary",
     ),
     case(
+        "slicing",
+        "Slice part.stl here for a Prusa MK4 in PLA at 0.2 mm and tell me how long it takes to print and how much filament it uses.",
+        servers=("slicer",),
+        facts=(r"(?i)prusaslicer|orcaslicer|SLICER_BIN",),
+        kind="boundary",
+    ),
+    case(
         "dataset-report",
         "Use the scientific MCPs to turn /readings in sim.h5 into a report in report/: data.csv, plot.png, dataset-report.md and clio-dataset-report.json. Columns are time_s,signal_mV with s,mV units. Preserve the source, verify exported rows, report count/mean/median/min/max and check your artifacts. Distinguish observed patterns from fitted models.",
         servers=("hdf5", "pandas", "plot"),

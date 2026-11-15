@@ -6313,6 +6313,43 @@
       "summary": "Open, measure and render simulation fields in a live ParaView view."
     },
     {
+      "id": "skill/slicing",
+      "kind": "skill",
+      "name": "slicing",
+      "title": "Slicing for 3D printing",
+      "description": "Use when a 3D model (STL, 3MF, STEP, OBJ) is to be sliced for a 3D printer, or the person asks how long a print takes, how much filament it uses, whether it needs supports, or to see its layers. Triggers on \"slice this for my printer\", \"how long will it take to print\", \"show me the layers\", \"does it need supports\". Not for slicing a simulation volume; use simulation-visualize.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Fabrication",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "plugins/clio-slicer/skills/slicing/SKILL.md",
+      "members": [],
+      "servers": [
+        "clio-slicer"
+      ],
+      "tags": [
+        "clio-fabrication"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Slice a 3D model with the slicer you have, then check its layers, print time and filament before printing."
+    },
+    {
       "id": "skill/slurm-script",
       "kind": "skill",
       "name": "slurm-script",
@@ -6550,7 +6587,8 @@
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-fabrication/.claude-plugin/plugin.json",
       "members": [
-        "mcp/slicer"
+        "mcp/slicer",
+        "skill/slicing"
       ],
       "servers": [
         "clio-slicer"
@@ -6569,7 +6607,8 @@
       "evidence": "Membership from manifest",
       "outcome": "Slice a model with the slicer you have and check every layer before printing.",
       "componentTypes": [
-        "mcp"
+        "mcp",
+        "skill"
       ],
       "installation": "native-package",
       "nativePackage": "clio-fabrication",
