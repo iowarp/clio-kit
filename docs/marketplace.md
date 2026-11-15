@@ -370,8 +370,8 @@ their own plugin systems.
 
 A handshake proves a server speaks MCP; it does not prove its scientific
 backends work. Full HPC workflows need Spack, Lmod, JARVIS packages and a working
-scheduler. Chronolog needs its native client/service; ParaView needs a compatible
-ParaView Python environment. Darshan diagnosis needs a genuine profile log.
+scheduler. Chronolog needs its native client/service; ParaView needs ParaView 6
+with its `pvpython`, on this machine or on an SSH host. Darshan diagnosis needs a genuine profile log.
 The catalogue service needs `SCIENTIFIC_CATALOG_FILE` pointing to real metadata.
 
 Pandas interpolation now fills interior numeric gaps linearly by row position;
@@ -461,7 +461,7 @@ through explicit handles. See the [protocol announcement](https://blog.modelcont
 | Component | State to account for when deploying |
 | --- | --- |
 | HDF5 | `open_file` selects a process-local current file for subsequent tools. Keep that sequence in the same server process. |
-| ParaView | The active visualization pipeline and render context belong to one process/backend connection. |
+| ParaView | The scene lives in the node half on the machine where ParaView runs, under an explicit scene id, and its manifest is saved after every command. Any front attached to that machine finds the same node half; `open_view` with the scene id restores the scene after a restart. |
 | ChronoLog | Recording uses an active story handle in the process. Archive retrieval uses explicit chronicle/story names. |
 | Lmod | Restoring a collection changes the server process's retained module environment; it does not change the client's shell. Named collections persist on disk. |
 | Web tasks | The default in-memory task backend does not survive a process restart. Configure the supported shared task backend for durable tasks. |
@@ -495,7 +495,7 @@ The native-backend follow-up also passed real installed-wheel workflows:
 | Lmod 8.6.19 | All seven tools ran against real modulefiles, including saving a collection and restoring it in a new MCP process. |
 | Spack 0.21.2 | Built zlib-ng 2.1.4, located its exact prefix, and confirmed reuse using a qualified package/hash spec. |
 | JARVIS 1.8.1 | Created and executed the built-in echo pipeline and inspected its completed execution and stdout. |
-| ParaView 6.0.0 | Connected to native pvserver, created a sphere, computed surface area, and rendered a PNG through Xvfb. |
+| ParaView 6.0.0 (server 2.2.7, since rebuilt in 3.0.0) | Connected to native pvserver, created a sphere, computed surface area, and rendered a PNG through Xvfb. |
 | ChronoLog | Ran visor/keeper/grapher/player with the Python 3.11 native client and recovered the exact quoted, multiline interaction from its HDF5 archive. |
 
 These tests exposed and fixed Lmod shell integration, ParaView render-thread
@@ -505,7 +505,7 @@ subsecond job timing remains precise. ChronoLog's native suite includes the
 previously skipped archive round trip.
 
 The broader follow-up exercised every default tool at least once, including
-all 26 ParaView tools, two-rank Darshan MPI-IO on one host, real SSH collection,
+all 26 tools of the old ParaView server (2.2.7, since rebuilt), two-rank Darshan MPI-IO on one host, real SSH collection,
 Slurm submission/cancellation, arXiv PDF downloads and NDP CSV staging. This
 counts attempted tool coverage; it does not mean every operation or parameter
 passed. Web's optional remote conversion-events service was unconfigured.

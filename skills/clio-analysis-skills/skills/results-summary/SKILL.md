@@ -129,7 +129,7 @@ heading would incorrectly assign units to its count and dimensionless rows.
 ## When the data is not a table
 
 Mesh and volume data does not belong here. `clio-plot` reads CSV and Excel; a
-simulation field goes to ParaView instead — see
+simulation field goes to ParaView, which opens it in a live view, instead — see
 `simulation-visualize`.
 
 ## What not to do

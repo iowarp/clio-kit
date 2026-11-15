@@ -52,7 +52,7 @@ and skill plugins through dependencies rather than copying their content.
 | `clio-hpc` | Prepare software and run work on a cluster | jarvis, lmod, node-hardware, slurm, spack |
 | `clio-performance` | Investigate job performance and logs | chronolog, darshan, parallel-sort |
 | `clio-scientific-io` | Inspect scientific files and read safely | adios, compression, hdf5, parquet |
-| `clio-analysis` | Summarize results and create figures | pandas, paraview, plot |
+| `clio-analysis` | Summarize results, create figures and open live 3D views | pandas, paraview, plot |
 | `clio-geoscience` | Inspect maps, terrain and waveforms | geo, seismology, terrain |
 | `clio-research` | Find papers and research datasets | arxiv, ndp, scientific-catalog, web |
 

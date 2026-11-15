@@ -274,19 +274,21 @@ and services still need a site installation.
 | Lmod | Install Lmod and Bash; set `LMOD_CMD` to its `libexec/lmod` executable and `MODULEPATH` to your modulefiles. The server has no load tool: set `LMOD_SYSTEM_DEFAULT_MODULES` (then `module_restore` the `system` collection), or start it from a shell with modules already loaded. | Inspect a module, save a collection from a non-empty module set, then restore/list it in a new MCP process. |
 | Spack | Set `SPACK_MCP_COMMAND` to `spack`; use `SPACK_PYTHON` if that Spack release needs a different Python. | Install a small package, locate its prefix, and verify the installation. Use `package/HASH` when several builds match. |
 | JARVIS | Use a writable `JARVIS_ROOT`; configure its private/shared directories and available recipes. Administrative setup requires `--profile all`. | Create an `echo` pipeline, run with `execution.mode="local"`, and inspect its execution status and stdout. |
-| ParaView | Run `pvserver` (it exits when its client disconnects, so restart it for each MCP session or run it in a loop); use `UV_PYTHON` matching ParaView's Python ABI, with its modules on `PYTHONPATH` and shared libraries on `LD_LIBRARY_PATH`. Forward `--server HOST --pv-port PORT` after `--`. | Create a sphere, compute its area, and save a PNG screenshot. Headless builds may require a display such as Xvfb or an EGL/OSMesa-capable build. |
+| ParaView | ParaView 6 or later with its `pvpython`, on this machine or on an SSH host. Set `PARAVIEW_ADDRESS` (and `PARAVIEW_VIA` for a jump host) for another machine, and `PARAVIEW_PREPARE` to a line such as `module load paraview` when `pvpython` is not on the PATH. SSH must sign in with your keys or agent; the first attach installs trame and trame-vtk into `~/.clio/paraview/<version>/` on that machine (clio-kit's data folder on this one), from the jump host if the machine has no package index. | Open a dataset, add an isosurface, measure a field and capture a PNG. Rotate the live view in an MCP Apps host. Headless builds need an EGL/OSMesa-capable ParaView. |
 | ChronoLog | Run its visor/keeper/grapher/player services. Set `UV_PYTHON` to match `py_chronolog_client`, `PYTHONPATH`, `LD_LIBRARY_PATH`, `CHRONO_PORT`, `CHRONO_CONF`, and `HDF5_READER_BIN`. | Start, record, stop, then retrieve and compare the exact archived text. Archiving is asynchronous; allow the configured flush interval. |
 
 For ChronoLog reader compilation, see the
 [server instructions](mcp-servers/chronolog/README.md#native-client-and-archive-reader).
-Keep native Python environments separate: for example, a Python 3.11 ChronoLog
-extension cannot load in a Python 3.13 ParaView process. Give them distinct
-`CLIO_KIT_CACHE_DIR` paths when both interpreters are needed on one machine.
+Keep native Python environments separate: a native extension built for one
+Python cannot load in another. Give them distinct `CLIO_KIT_CACHE_DIR` paths
+when both interpreters are needed on one machine. (The ParaView server needs no
+such care: its front runs in its own environment and its node half in
+ParaView's own Python.)
 The JARVIS 1.8.1 scheduler backend currently fails if Slurm exports the literal
 `SLURM_CLUSTER_NAME=(null)`. Local/direct execution was verified; do not assume
 scheduler execution is ready until the upstream fix is released and tested.
-ParaView MPI rendering additionally requires an MPI-enabled native build; the
-local single-process rendering test does not establish distributed support.
+ParaView under MPI additionally requires an MPI-enabled build; a single-process
+render does not establish distributed support.
 
 Lmod collection changes remain within that MCP process; they do not change
 another server's environment or your parent shell.

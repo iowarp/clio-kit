@@ -90,7 +90,7 @@ const capabilities = [
   ],
   [
     'Analysis and figures',
-    'Clean tables, calculate statistics and plot results with Pandas, Plot and ParaView.',
+    'Clean tables, calculate statistics and plot results with Pandas and Plot, and explore 3D data in a live ParaView view.',
     '/catalogue/workflow/clio-analysis',
   ],
   [

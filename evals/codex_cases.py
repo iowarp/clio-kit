@@ -52,7 +52,7 @@ CASES = [
     ),
     case(
         "simulation-visualize",
-        "Inspect the installed ParaView tools and visualize field.vti with a screenshot saved in this project. Confirm scalar range and representation; do not claim a screenshot if the backend fails.",
+        "Inspect the installed ParaView tools, open field.vti, and save a PNG figure of it in this project. Confirm the scalar range by measuring it and name the representation; do not claim a figure if ParaView is not found.",
         servers=("paraview",),
         kind="visualization",
     ),

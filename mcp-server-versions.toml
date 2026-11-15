@@ -3,6 +3,14 @@ schema-version = 1
 # Publish new immutable server releases when schemas, runtime behavior or locked
 # dependencies change. A dependency security update warrants a patch release even
 # when the tool schema is unchanged. Never reuse an already-published version.
+# geo 2.4.0 adds show_on_globe: the same layers as render_feature_map on an
+# interactive CesiumJS globe (an MCP Apps view, ui://geo/globe) whose picked feature
+# is reported back; it adds platformdirs as a direct dependency for saved views.
+# paraview 3.0.0 is a new server: a front that attaches over SSH to a node half
+# in ParaView's Python and shows a live trame view (MCP Apps). 3.1.0 gives the
+# view ParaView controls (pipeline, filters, display, camera, information) that
+# run the tools' own commands, and follows the host's theme; its node folder
+# adds trame-vuetify, so a new version folder is prepared.
 # 2.12.7: every Python server relocks opentelemetry-api 1.45.2 (CVE-2026-126360);
 # adios and paraview also relock with adios2 >= 2.13.0.1001 so macOS installs
 # from wheels, and hdf5 keeps metrics under a granted cache directory. 2.12.6 was
@@ -48,8 +56,8 @@ description = "Open a scientific data file, see its structure, and read part of 
 servers = ["adios", "compression", "hdf5", "parquet"]
 
 [bundles.clio-analysis]
-version = "1.0.7"
-description = "Turn a dataset into summary statistics and a figure."
+version = "1.1.0"
+description = "Turn a dataset into summary statistics, a figure, and a live 3D view."
 servers = ["pandas", "paraview", "plot"]
 
 [bundles.clio-geoscience]
@@ -84,7 +92,7 @@ arxiv = "2.2.8"
 chronolog = "2.0.6"
 compression = "2.2.8"
 darshan = "2.2.8"
-geo = "2.3.4"
+geo = "2.4.0"
 hdf5 = "2.3.1"
 jarvis = "3.7.7"
 lmod = "3.0.4"
@@ -92,7 +100,7 @@ ndp = "2.2.9"
 node-hardware = "2.3.3"
 pandas = "2.4.1"
 parallel-sort = "2.3.3"
-paraview = "2.2.8"
+paraview = "3.1.0"
 parquet = "2.3.1"
 plot = "2.2.8"
 scientific-catalog = "1.1.7"
@@ -155,7 +163,7 @@ executable-paths = ["/usr/share/lmod/lmod/libexec/lmod", "/usr/local/lmod/lmod/l
 environment-files = ["SCIENTIFIC_CATALOG_FILE"]
 
 [prerequisites.paraview]
-note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
+note = "Needs ParaView 6 (pvpython) on this machine or on the SSH host in PARAVIEW_ADDRESS; the server starts without it and its first scene call says what is missing. A handshake alone is insufficient."
 
 [prerequisites.chronolog]
 note = "Scientific backend requires a workflow check; a handshake alone is insufficient."

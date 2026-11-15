@@ -31,6 +31,7 @@ dependencies = [
     "urllib3>=2.8.0",
     "msgpack>=1.2.1",
     "requests>=2.33.0",
+    "platformdirs>=4.3",
 ]
 
 [project.urls]

@@ -2,6 +2,47 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
+## Unreleased
+
+- **geo 2.4.0, layers on an interactive globe**: `show_on_globe` takes the
+  layers and styles `render_feature_map` takes (GeoJSON inline or as paths,
+  `color_by`, `category_colors`, `epa_aqi`, colormaps, legends) and shows them
+  on a CesiumJS globe with OpenStreetMap tiles, as an MCP Apps view
+  (`ui://geo/globe`). Points are dots, labelled when few; a layer list toggles
+  layers and shows legends; clicking a feature lists its properties and
+  reports it to the agent as `selected_feature`, and a host that sets
+  `selected_feature` (a linked table row) turns the globe to that feature. The
+  view offers `fly_to`, `select_feature`, `add_layer`, `remove_layer`,
+  `set_style` and `get_view`, follows the host's theme, and is saved under a
+  view id so a reopen shows the same layers, re-reading files. The agent reads
+  only layer names, counts and bounds; the GeoJSON goes to the view.
+- **paraview 3.1.0, ParaView controls in the view**: the live view gains a
+  compact left tool rail: a pipeline browser (show, hide, select, remove), an
+  Add filter palette (Contour, Slice, Clip, Threshold, Glyph, Stream Tracer,
+  Calculator) with a short property form, display controls (representation,
+  colour by field and component, colour map, rescale, legend, opacity), camera
+  presets (reset, look along each axis, parallel projection), data
+  information, and play and step controls for time. Every control runs the
+  same command as the agent's tools, and the view reports what the person
+  changed to the agent. `set_representation` takes `component`, `scalar_bar`
+  and `rescale`; `set_camera` takes `direction` and `parallel_projection`;
+  `scene_state` lists recent changes and who made them. The view follows the
+  host's light or dark theme and style variables. The node folder adds
+  trame-vuetify 3.3.0, so ParaView machines prepare a new `3.1.0` folder
+  (saved scenes are carried over). Colour maps are saved with the scene and
+  restored exactly on reopen, and no longer leak from one scene to the next.
+- **paraview 3.0.0, rebuilt**: the ParaView server is a new server. A plain
+  Python front speaks MCP and lists its tools with no ParaView installed; a
+  node half runs in ParaView's own Python on this machine or on another one
+  reached with one system `ssh` (your keys and config, a jump host, one
+  forwarded port; a host that wants a password fails at once with a clear
+  message). `open_view` shows the data in a live trame view (an MCP Apps view
+  that rotates in the browser and switches to server rendering for large
+  geometry); thirteen scene tools change, measure, capture and export the
+  scene, each committing whole or rolling back, and the scene is saved and
+  restored by id. The 26 tools of 2.2.7, `--multi-clients` and `viz.html` are
+  gone. The `clio-analysis` bundle is 1.1.0.
+
 ## 2.12.7 - 2026-11-13
 
 Every MCP server ships a patch release with opentelemetry-api 1.45.2, which

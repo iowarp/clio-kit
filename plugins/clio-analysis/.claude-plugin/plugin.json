@@ -1,7 +1,7 @@
 {
   "name": "clio-analysis",
-  "description": "Turn a dataset into summary statistics and a figure.",
-  "version": "1.0.7",
+  "description": "Turn a dataset into summary statistics, a figure, and a live 3D view.",
+  "version": "1.1.0",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",
