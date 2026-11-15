@@ -77,9 +77,11 @@ includes an actual compression round-trip check and troubleshooting steps.
 | `clio-performance` | I/O diagnosis, log investigation and session provenance |
 | `clio-scientific-io` | Inspect and read HDF5, ADIOS BP5, Parquet and compressed files |
 | `clio-analysis` | Tabular data, statistics, charts and live ParaView views |
-| `clio-geoscience` | Geospatial, terrain and seismic analysis |
+| `clio-geoscience` | Geospatial, terrain and seismic analysis, a 3D globe and NASA Earthdata |
+| `clio-electronics` | Circuit simulation with the installed SPICE simulator, with waveform plots |
+| `clio-home` | Your Home Assistant: sensors and their history, devices and automations |
 | `clio-fabrication` | Slicing models for 3D printing with the installed slicer, layer by layer |
-| `clio-research` | Literature, public datasets and operator catalogues |
+| `clio-research` | Literature, a PDF viewer, public datasets and operator catalogues |
 
 In Claude Code, a bundle installs its member servers and matching skills. Install a server alone
 with `claude plugin install clio-hdf5@clio-kit`, a workflow's procedures with

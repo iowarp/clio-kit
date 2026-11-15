@@ -1,0 +1,9 @@
+{
+  "clio-globe": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "globe"
+    ]
+  }
+}

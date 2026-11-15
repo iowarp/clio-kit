@@ -35,6 +35,13 @@
         "darshan"
       ]
     },
+    "clio-earthdata": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "earthdata"
+      ]
+    },
     "clio-geo": {
       "command": "clio-kit",
       "args": [
@@ -42,11 +49,25 @@
         "geo"
       ]
     },
+    "clio-globe": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "globe"
+      ]
+    },
     "clio-hdf5": {
       "command": "clio-kit",
       "args": [
         "mcp-server",
         "hdf5"
+      ]
+    },
+    "clio-home-assistant": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "home-assistant"
       ]
     },
     "clio-jarvis": {
@@ -105,6 +126,13 @@
         "parquet"
       ]
     },
+    "clio-pdf": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "pdf"
+      ]
+    },
     "clio-plot": {
       "command": "clio-kit",
       "args": [
@@ -145,6 +173,13 @@
       "args": [
         "mcp-server",
         "spack"
+      ]
+    },
+    "clio-spice": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "spice"
       ]
     },
     "clio-terrain": {

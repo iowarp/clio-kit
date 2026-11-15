@@ -1,0 +1,18 @@
+{
+  "name": "clio-kit-globe-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Show regions, places and data footprints on an interactive 3D globe with OpenStreetMap, and find places by name (MCP Apps)",
+  "license": "BSD-3-Clause",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "lint": "node --check bundle/server.js && node --check tests/server.test.js",
+    "test": "node --test tests/server.test.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server-map": "2.0.4"
+  }
+}

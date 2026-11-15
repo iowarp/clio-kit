@@ -4,11 +4,16 @@ from __future__ import annotations
 
 import asyncio
 import os
+from collections.abc import Mapping
 from typing import Any
 
 
 async def inspect_stdio(
-    command: str, args: list[str], *, timeout: float = 180
+    command: str,
+    args: list[str],
+    *,
+    timeout: float = 180,
+    env: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     try:
         from mcp import Client, StdioServerParameters
@@ -19,7 +24,9 @@ async def inspect_stdio(
 
     async def inspect() -> dict[str, Any]:
         async with Client(
-            StdioServerParameters(command=command, args=args, env=dict(os.environ))
+            StdioServerParameters(
+                command=command, args=args, env={**os.environ, **(env or {})}
+            )
         ) as client:
             capabilities = client.server_capabilities
             result: dict[str, Any] = {

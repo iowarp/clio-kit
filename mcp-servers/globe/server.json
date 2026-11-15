@@ -1,0 +1,56 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/globe-mcp",
+  "title": "CLIO Globe",
+  "description": "Show regions, places and data footprints on an interactive 3D globe with OpenStreetMap, and find...",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.12.7",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "globe"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "show-map",
+      "description": "Display an interactive world map zoomed to a specific bounding box. Use the GeoCode tool to find the bounding box of a location. The widget is interactive and exposes tools for navigation (fly to locations) and querying the current view."
+    },
+    {
+      "name": "geocode",
+      "description": "Search for places using OpenStreetMap. Returns coordinates and bounding boxes for up to 5 matches."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "ui://cesium-map/mcp-app.html",
+      "name": "ui://cesium-map/mcp-app.html",
+      "description": null
+    }
+  ],
+  "tags": [
+    "geospatial",
+    "globe",
+    "cesium",
+    "openstreetmap",
+    "mcp-apps"
+  ],
+  "scope": "scientific"
+}

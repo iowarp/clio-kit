@@ -28,7 +28,11 @@ QUALITY_CONTROL = REPO / ".github" / "workflows" / "quality_control.yml"
 
 # Servers excluded from the shared matrix that a dedicated workflow covers
 # instead. Each entry names the workflow, so a stale exemption is visible.
-DEDICATED_WORKFLOWS = {"chronolog": "test-chronomcp.yml"}
+DEDICATED_WORKFLOWS = {
+    "chronolog": "test-chronomcp.yml",
+    "globe": "test-node-servers.yml",
+    "pdf": "test-node-servers.yml",
+}
 
 
 def _discovery_command() -> str:

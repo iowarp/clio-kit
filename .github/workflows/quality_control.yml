@@ -233,9 +233,17 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
         mcp: ${{ fromJson(needs.discover-mcps.outputs.mcps) }}
         exclude:
+          - mcp: home-assistant
+            python-version: "3.10"
+          - mcp: home-assistant
+            python-version: "3.11"
+          - mcp: home-assistant
+            python-version: "3.12"
           - mcp: jarvis
             python-version: "3.10"
           - mcp: scientific-catalog
+            python-version: "3.10"
+          - mcp: spice
             python-version: "3.10"
           - mcp: web
             python-version: "3.10"

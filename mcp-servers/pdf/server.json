@@ -1,0 +1,84 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/pdf-mcp",
+  "title": "CLIO Pdf",
+  "description": "Read scientific papers from arXiv, bioRxiv, Zenodo and other archives in an interactive PDF...",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.12.7",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "pdf"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "list_pdfs",
+      "description": "List available PDFs that can be displayed"
+    },
+    {
+      "name": "read_pdf_bytes",
+      "description": "Read a range of bytes from a PDF (max 512KB per request). The model should NOT call this tool directly."
+    },
+    {
+      "name": "display_pdf",
+      "description": "Open a PDF in an interactive viewer. Call this ONCE per PDF.\n\n**All follow-up actions go through the `interact` tool** with the returned viewUUID \u2014 annotating, signing, stamping, filling forms, navigating, searching, extracting text/screenshots. Calling display_pdf again creates a SEPARATE viewer with a different viewUUID \u2014 interact calls using the new UUID will not reach the viewer the user already sees.\n\nReturns a viewUUID in structuredContent. Pass it to `interact`:\n- add_annotations, update_annotations, remove_annotations, highlight_text\n- fill_form (fill PDF form fields)\n- navigate, search, find, search_navigate, zoom\n- get_text, get_screenshot, get_viewer_state (extract content / read selection & current page)\n- save_as (write annotated PDF to disk)\n\nAccepts local files (use list_pdfs), client MCP root directories, or any HTTPS URL.\nSet `elicit_form_inputs` to true to prompt the user to fill form fields before display."
+    },
+    {
+      "name": "interact",
+      "description": "Interact with a PDF viewer: annotate, navigate, search, extract text/screenshots, fill forms.\nIMPORTANT: viewUUID must be the exact UUID returned by display_pdf (e.g. \"a1b2c3d4-...\"). Do NOT use arbitrary strings.\n\n**BATCHING**: Send multiple commands in one call via `commands` array. Commands run sequentially; results are returned in the same order, one content item per command. If a command fails, the batch stops there and that command's slot contains text starting with `ERROR` \u2014 content.length tells you how far it got. TIP: End with `get_screenshot` to verify your changes.\n\n**ANNOTATION** \u2014 add_annotations with array of annotation objects. Each needs: id (unique string), type, page (1-indexed).\n\n**COORDINATE SYSTEM**: PDF points (1pt = 1/72in), origin at page TOP-LEFT corner. X increases rightward, Y increases downward.\n- US Letter = 612\u00d7792pt. Margins: top\u2248y=50, bottom\u2248y=742, left\u2248x=72, right\u2248x=540, center\u2248(306, 396).\n- Rectangle/circle/stamp x,y is the TOP-LEFT corner. To place a 200\u00d730 box at the TOP of the page: x=72, y=50, width=200, height=30.\n- For highlights/underlines, each rect's y is the TOP of the highlighted region.\n\nAnnotation types:\n\u2022 highlight: rects:[{x,y,width,height}], color?, content? \u2022 underline: rects:[{x,y,w,h}], color?\n\u2022 strikethrough: rects:[{x,y,w,h}], color? \u2022 note: x, y, content, color?\n\u2022 rectangle: x, y, width, height, color?, fillColor?, rotation? \u2022 circle: x, y, width, height, color?, fillColor?\n\u2022 line: x1, y1, x2, y2, color? \u2022 freetext: x, y, content, fontSize?, color?\n\u2022 stamp: x, y, label (any text, e.g. APPROVED, DRAFT, CONFIDENTIAL), color?, rotation?\n\u2022 image: imageUrl (required), x?, y?, width?, height?, mimeType?, rotation?, aspect? \u2014 places an image (signature, logo, etc.) on the page. Pass a local file path or HTTPS URL (NO data: URIs, NO base64). Width/height auto-detected if omitted. Users can also drag & drop images directly onto the viewer.\n\nTIP: For text annotations, prefer highlight_text (auto-finds text) over manual rects.\n\nExample \u2014 add a signature image and a stamp, then screenshot to verify:\n```json\n{\"viewUUID\":\"\u2026\",\"commands\":[\n  {\"action\":\"add_annotations\",\"annotations\":[\n    {\"id\":\"sig1\",\"type\":\"image\",\"page\":1,\"x\":72,\"y\":700,\"imageUrl\":\"/path/to/signature.png\"},\n    {\"id\":\"s1\",\"type\":\"stamp\",\"page\":1,\"x\":300,\"y\":400,\"label\":\"APPROVED\"}\n  ]},\n  {\"action\":\"get_screenshot\",\"page\":1}\n]}\n```\n\n\u2022 highlight_text: auto-find and highlight text (query, page?, color?, content?)\n\u2022 update_annotations: partial update (id+type required) \u2022 remove_annotations: remove by ids\n\n**NAVIGATION**: navigate (page), search (query), find (query, silent), search_navigate (matchIndex), zoom (scale 0.5\u20133.0)\n\n**TEXT/SCREENSHOTS**:\n\u2022 get_text: extract text from pages. Optional `page` for single page, or `intervals` for ranges [{start?,end?}]. Max 20 pages.\n\u2022 get_screenshot: capture a single page as a JPEG image. Requires `page`.\n\u2022 get_viewer_state: snapshot of the live viewer \u2014 JSON {currentPage, pageCount, zoom, displayMode, selectedAnnotationIds, selection:{text,contextBefore,contextAfter,boundingRect}|null}. Use this to read what the user has selected or which page they're on.\n\n**FORMS** \u2014 fill_form: fill fields with `fields` array of {name, value}.\n\n**SAVE** \u2014 save_as: write the annotated PDF (annotations + form values) to a file. Pass `path` (absolute path or file://) for a new location, or omit `path` to overwrite the original. Set `overwrite: true` to replace an existing file (always required when omitting `path`)."
+    },
+    {
+      "name": "submit_page_data",
+      "description": "Submit rendered page data for a get_pages request (used by viewer). The model should NOT call this tool directly."
+    },
+    {
+      "name": "submit_save_data",
+      "description": "Submit annotated PDF bytes for a save_as request (used by viewer). The model should NOT call this tool directly."
+    },
+    {
+      "name": "submit_viewer_state",
+      "description": "Submit a viewer-state snapshot for a get_viewer_state request (used by viewer). The model should NOT call this tool directly."
+    },
+    {
+      "name": "poll_pdf_commands",
+      "description": "Poll for pending commands for a PDF viewer. The model should NOT call this tool directly."
+    },
+    {
+      "name": "save_pdf",
+      "description": "Save annotated PDF bytes back to a local file. The model should NOT call this tool directly \u2014 use interact with action: save_as instead."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "ui://pdf-viewer/mcp-app.html",
+      "name": "ui://pdf-viewer/mcp-app.html",
+      "description": null
+    }
+  ],
+  "tags": [
+    "pdf",
+    "papers",
+    "arxiv",
+    "viewer",
+    "mcp-apps"
+  ],
+  "scope": "scientific"
+}

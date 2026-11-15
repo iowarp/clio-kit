@@ -14,9 +14,13 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSIONS = tomllib.loads(
+INVENTORY = tomllib.loads(
     (ROOT / "mcp-server-versions.toml").read_text(encoding="utf-8")
-)["servers"]
+)
+VERSIONS = INVENTORY["servers"]
+# A server that runs a pinned third-party server as published reports that
+# server's own name and version (tests/test_upstream_servers.py checks the pin).
+UPSTREAM = INVENTORY.get("upstream", {})
 
 
 def reported_versions(server: str) -> list[object]:
@@ -38,6 +42,11 @@ def reported_versions(server: str) -> list[object]:
 def test_server_reports_its_inventory_version(server: str) -> None:
     if not (ROOT / "mcp-servers" / server / "pyproject.toml").is_file():
         return  # a hosted Node or Go server states its version in its own SDK
+    if server in UPSTREAM:
+        assert not reported_versions(server), (
+            f"{server} runs {UPSTREAM[server]['package']}"
+        )
+        return
     versions = reported_versions(server)
     assert versions, f"{server}: no FastMCP(...) constructor found under src/"
     assert set(versions) == {VERSIONS[server]}, (
