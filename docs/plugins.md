@@ -54,6 +54,7 @@ and skill plugins through dependencies rather than copying their content.
 | `clio-scientific-io` | Inspect scientific files and read safely | adios, compression, hdf5, parquet |
 | `clio-analysis` | Summarize results, create figures and open live 3D views | pandas, paraview, plot |
 | `clio-geoscience` | Inspect maps, terrain and waveforms | geo, seismology, terrain |
+| `clio-fabrication` | Slice a model for a 3D printer and check its layers | slicer |
 | `clio-research` | Find papers and research datasets | arxiv, ndp, scientific-catalog, web |
 
 ```bash

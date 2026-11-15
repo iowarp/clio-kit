@@ -18,6 +18,7 @@
 <!-- mcp-name: io.github.iowarp/plot-mcp -->
 <!-- mcp-name: io.github.iowarp/seismology-mcp -->
 <!-- mcp-name: io.github.iowarp/scientific-catalog-mcp -->
+<!-- mcp-name: io.github.iowarp/slicer-mcp -->
 <!-- mcp-name: io.github.iowarp/slurm-mcp -->
 <!-- mcp-name: io.github.iowarp/spack-mcp -->
 <!-- mcp-name: io.github.iowarp/terrain-mcp -->
@@ -170,7 +171,7 @@ uv tool install --force --reinstall --editable .
 # If uv's executable directory is not on PATH:
 uv tool update-shell
 
-# List all 22 available MCP servers
+# List all 23 available MCP servers
 clio-kit mcp-servers
 
 # Run an individual server
@@ -215,6 +216,7 @@ These are broad workflow plugins. Each combines its MCP servers and skills.
 | `clio-scientific-io` | Explore scientific data files | hdf5, adios, parquet, compression |
 | `clio-analysis` | Analyze results, create figures and open live 3D views | pandas, plot, paraview |
 | `clio-geoscience` | Work with maps, terrain and waveforms | geo, terrain, seismology |
+| `clio-fabrication` | Slice a model for a 3D printer and check its layers | slicer |
 | `clio-research` | Find papers and datasets | arxiv, ndp, scientific-catalog, web |
 
 Some servers require additional system software. See [setup and prerequisites](setup.md#native-backend-setup).
@@ -475,6 +477,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`plot`** | 2.2.8 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |
 | **`seismology`** | 2.3.4 | Seismology | Analyze SAC waveforms and archives | `clio-kit mcp-server seismology` |
 | **`scientific-catalog`** | 1.1.7 | Discovery | Operator-owned scientific dataset discovery | `clio-kit mcp-server scientific-catalog` |
+| **`slicer`** | 1.0.0 | 3D Printing | Slice models with the installed PrusaSlicer or OrcaSlicer and view toolpaths layer by layer | `clio-kit mcp-server slicer` |
 | **`slurm`** | 3.1.1 | HPC | Job submission and management | `clio-kit mcp-server slurm` |
 | **`spack`** | 2.3.4 | Package Management | Structured package discovery, installation, and location | `clio-kit mcp-server spack` |
 | **`terrain`** | 2.2.8 | Geospatial | Analyze DEMs and terrain point clouds | `clio-kit mcp-server terrain` |

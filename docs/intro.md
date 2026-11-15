@@ -78,6 +78,7 @@ includes an actual compression round-trip check and troubleshooting steps.
 | `clio-scientific-io` | Inspect and read HDF5, ADIOS BP5, Parquet and compressed files |
 | `clio-analysis` | Tabular data, statistics, charts and live ParaView views |
 | `clio-geoscience` | Geospatial, terrain and seismic analysis |
+| `clio-fabrication` | Slicing models for 3D printing with the installed slicer, layer by layer |
 | `clio-research` | Literature, public datasets and operator catalogues |
 
 In Claude Code, a bundle installs its member servers and matching skills. Install a server alone
