@@ -208,7 +208,7 @@ note = "Needs PrusaSlicer or OrcaSlicer installed on this machine (on PATH, or S
 note = "Needs Node.js 20 or newer (node and npm) on this machine; the first start installs the locked server with npm."
 
 [prerequisites.globe]
-note = "Needs Node.js 20 or newer (node and npm) on this machine; the first start installs the locked server with npm. The globe loads CesiumJS from cesium.com and OpenStreetMap tiles."
+note = "Needs Node.js 20 or newer (node and npm) on this machine; the first start installs the locked server with npm."
 
 # The address and token are configuration, not software on this machine, so they are
 # checked as environment and carry no note (a note reads as "install this first").
