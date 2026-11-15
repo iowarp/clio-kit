@@ -18,13 +18,13 @@ schema-version = 1
 # adios and paraview also relock with adios2 >= 2.13.0.1001 so macOS installs
 # from wheels, and hdf5 keeps metrics under a granted cache directory. 2.12.6 was
 # tagged but never published, so its server versions are released here.
-# earthdata, globe, home-assistant, pdf and spice 1.0.0 are new servers that each run
+# earthdata, home-assistant, pdf and spice 1.0.0 are new servers that each run
 # one pinned third-party MCP server exactly as published (see [upstream] below): pdf
-# and globe the MCP Apps PDF and map examples (Node), earthdata, home-assistant and
+# the MCP Apps PDF example (Node), earthdata, home-assistant and
 # spice earthdata-mcp-server, ha-mcp and ltspice-mcp (Python). Two primary bundles are
 # new, clio-electronics and clio-home; clio-geoscience and clio-research gain members.
 [mcp-registry-release]
-publish = ["adios", "arxiv", "chronolog", "compression", "darshan", "earthdata", "geo", "globe", "hdf5", "home-assistant", "jarvis", "lmod", "ndp", "node-hardware", "pandas", "parallel-sort", "paraview", "parquet", "pdf", "plot", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "spice", "terrain", "web"]
+publish = ["adios", "arxiv", "chronolog", "compression", "darshan", "earthdata", "geo", "hdf5", "home-assistant", "jarvis", "lmod", "ndp", "node-hardware", "pandas", "parallel-sort", "paraview", "parquet", "pdf", "plot", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "spice", "terrain", "web"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
@@ -71,7 +71,7 @@ servers = ["pandas", "paraview", "plot"]
 [bundles.clio-geoscience]
 version = "1.1.0"
 description = "Inspect and map geospatial features, terrain, waveforms and NASA Earth-science data."
-servers = ["earthdata", "geo", "globe", "seismology", "terrain"]
+servers = ["earthdata", "geo", "seismology", "terrain"]
 
 [bundles.clio-fabrication]
 version = "1.0.0"
@@ -117,7 +117,6 @@ compression = "2.2.8"
 darshan = "2.2.8"
 earthdata = "1.0.0"
 geo = "2.4.0"
-globe = "1.0.0"
 hdf5 = "2.3.1"
 home-assistant = "1.0.0"
 jarvis = "3.7.7"
@@ -170,7 +169,6 @@ spack = "🛠️"
 terrain = "⛰️"
 web = "🌐"
 earthdata = "🛰️"
-globe = "🗺️"
 home-assistant = "🏠"
 pdf = "📑"
 spice = "🔌"
@@ -207,9 +205,6 @@ note = "Needs PrusaSlicer or OrcaSlicer installed on this machine (on PATH, or S
 [prerequisites.pdf]
 note = "Needs Node.js 20 or newer (node and npm) on this machine; the first start installs the locked server with npm."
 
-[prerequisites.globe]
-note = "Needs Node.js 20 or newer (node and npm) on this machine; the first start installs the locked server with npm."
-
 # The address and token are configuration, not software on this machine, so they are
 # checked as environment and carry no note (a note reads as "install this first").
 # Earthdata's login is optional, so it has no check at all.
@@ -244,13 +239,6 @@ registry = "pypi"
 version = "0.6.0"
 license = "BSD-3-Clause"
 repository = "https://github.com/datalayer/earthdata-mcp-server"
-
-[upstream.globe]
-package = "@modelcontextprotocol/server-map"
-registry = "npm"
-version = "2.0.4"
-license = "MIT"
-repository = "https://github.com/modelcontextprotocol/ext-apps/tree/main/examples/map-server"
 
 [upstream.home-assistant]
 package = "ha-mcp"

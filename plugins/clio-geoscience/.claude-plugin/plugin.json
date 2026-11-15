@@ -13,7 +13,6 @@
   "dependencies": [
     "clio-earthdata",
     "clio-geo",
-    "clio-globe",
     "clio-seismology",
     "clio-terrain",
     "clio-geoscience-skills"

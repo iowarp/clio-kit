@@ -30,7 +30,6 @@ QUALITY_CONTROL = REPO / ".github" / "workflows" / "quality_control.yml"
 # instead. Each entry names the workflow, so a stale exemption is visible.
 DEDICATED_WORKFLOWS = {
     "chronolog": "test-chronomcp.yml",
-    "globe": "test-node-servers.yml",
     "pdf": "test-node-servers.yml",
 }
 
