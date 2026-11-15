@@ -113,6 +113,19 @@ checks. Mirrors change only where payloads are fetched: expected hashes still
 come from the installed launcher. Missing assets, changed bytes, unsafe archives
 and incomplete downloads fail instead of falling back to an unpinned Git branch.
 
+A launcher installed from a Git commit or a source folder can run components that
+its version's release does not publish yet, for example
+`uv tool install 'clio-kit @ git+https://github.com/iowarp/clio-kit@<commit>'`
+ahead of a release. The installation records where it was built from (Python's
+`direct_url.json`) and the catalogue records each component's source folder. When
+the release answers that an asset does not exist (HTTP 404), the launcher reads
+that component from the same commit or folder and accepts it only if every file
+matches the catalogue's size and SHA-256. A commit's source archive is fetched
+once into `sources/` in the cache: from GitHub's archive service, or with `git` for
+another host or a local repository. Published components still come
+from the release. An explicitly configured mirror, a network failure or a changed
+file never falls back, and a branch name is never followed.
+
 ## Offline use and updates
 
 Artifacts are cached under `components/` inside the normal CLIO Kit cache root

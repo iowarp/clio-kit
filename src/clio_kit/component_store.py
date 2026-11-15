@@ -10,6 +10,7 @@ import shutil
 import tarfile
 import tempfile
 import time
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 from urllib.request import urlopen
 
@@ -17,6 +18,9 @@ import click
 
 from clio_kit.environment_locks import _FileLock
 from clio_kit.component_cache import guarded, record_use
+
+if TYPE_CHECKING:
+    from clio_kit.component_source import Source
 
 INDEX_FILE = Path(__file__).with_name("_components.json")
 MAX_BYTES = 512 * 1024 * 1024
@@ -138,6 +142,47 @@ def _unpack(archive: Path, target: Path, record: dict) -> None:
         raise ValueError("Extracted component differs from catalogue")
 
 
+def _unpublished_source(error: OSError) -> Source | None:
+    """The installation's own source, when the release does not publish an asset.
+
+    Only a missing asset (HTTP 404) from the catalogue's release qualifies; an
+    operator's mirror, a network failure or a damaged download never falls back.
+    """
+    from urllib.error import HTTPError
+
+    from clio_kit.component_source import installed_source
+
+    if os.environ.get("CLIO_KIT_COMPONENT_BASE_URL"):
+        return None
+    if not (isinstance(error, HTTPError) and error.code == 404):
+        return None
+    return installed_source()
+
+
+def _from_source(
+    key: str, record: dict, index: dict, source: Source, destination: Path
+) -> None:
+    from clio_kit.cache_cli import clio_cache_root
+    from clio_kit.component_source import materialize
+
+    click.echo(
+        f"{key} is not published for CLIO Kit {index['version']}; "
+        f"taking it from {source.describe()}",
+        err=True,
+    )
+    try:
+        materialize(record, source, destination, clio_cache_root())
+    except OSError as exc:
+        raise ValueError(
+            f"Cannot read {key} from {source.describe()}: {exc}. Publish this "
+            "release's component assets or configure a trusted mirror"
+        ) from exc
+    if not _verified(destination, record):
+        raise ValueError(
+            f"{key} from {source.describe()} differs from the catalogue; refusing installation"
+        )
+
+
 @guarded
 def fetch(key: str, index: dict | None = None) -> Path:
     data = index if index is not None else catalogue()
@@ -181,9 +226,12 @@ def fetch(key: str, index: dict | None = None) -> Path:
                 _download(record, data, staging / "archive.tar.gz")
                 _unpack(staging / "archive.tar.gz", staging / target.name, record)
             except OSError as exc:
-                raise ValueError(
-                    f"Cannot download {key} for CLIO Kit {data['version']}: {exc}. Check that this release's component assets are published or configure a trusted mirror"
-                ) from exc
+                source = _unpublished_source(exc)
+                if source is None:
+                    raise ValueError(
+                        f"Cannot download {key} for CLIO Kit {data['version']}: {exc}. Check that this release's component assets are published or configure a trusted mirror"
+                    ) from exc
+                _from_source(key, record, data, source, staging / target.name)
             (staging / target.name).rename(target)
         record_use(key, data, target, INDEX_FILE, legacy=False)
         return target

@@ -188,6 +188,9 @@ def build_components(root: Path, output: Path) -> dict:
         filename = f"clio-component-{digest}.tar.gz"
         (output / filename).write_bytes(content)
         index["artifacts"][key] = {
+            # The folder the files come from, for a launcher built from source whose
+            # release does not publish this archive (clio_kit.component_source).
+            "source": directory.relative_to(root).as_posix(),
             "file": filename,
             "sha256": digest,
             "size": len(content),
