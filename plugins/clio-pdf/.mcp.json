@@ -1,0 +1,9 @@
+{
+  "clio-pdf": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "pdf"
+    ]
+  }
+}

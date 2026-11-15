@@ -50,9 +50,11 @@ Use the user's stated work to select a bundle. Ask only if the work is unknown.
 | I/O profiling, application logs, session provenance | `clio-performance` |
 | HDF5, ADIOS BP5, Parquet, compressed files | `clio-scientific-io` |
 | Tabular statistics, plots, ParaView | `clio-analysis` |
-| Geospatial, terrain, seismic data | `clio-geoscience` |
+| Geospatial, terrain, seismic data, a 3D globe, NASA Earthdata | `clio-geoscience` |
+| Circuit simulation (ngspice or LTspice installed) | `clio-electronics` |
+| Home Assistant (its address and a long-lived token) | `clio-home` |
 | Slicing a model for a 3D printer (PrusaSlicer or OrcaSlicer installed) | `clio-fabrication` |
-| Papers and dataset discovery | `clio-research` |
+| Papers, a PDF viewer and dataset discovery | `clio-research` |
 
 ### Client configuration and skill locations
 

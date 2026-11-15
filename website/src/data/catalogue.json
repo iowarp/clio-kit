@@ -632,6 +632,104 @@
       }
     },
     {
+      "id": "mcp/earthdata",
+      "kind": "mcp",
+      "name": "earthdata",
+      "title": "Earthdata",
+      "description": "Search NASA Earthdata for Earth-science datasets and their files, and download them with an Earthdata Login.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/earthdata",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "nasa",
+        "earthdata",
+        "remote-sensing",
+        "datasets",
+        "earth-science"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/earthdata",
+      "evidence": "Locked runtime",
+      "icon": "🛰️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-earthdata",
+      "summary": "Search NASA Earthdata for Earth-science datasets and their files, and download them with an Earthdata Login.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "earthdata"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "earthdata"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "earthdata"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "earthdata"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "earthdata"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "earthdata"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "earthdata"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/geo",
       "kind": "mcp",
       "name": "geo",
@@ -729,6 +827,104 @@
       }
     },
     {
+      "id": "mcp/globe",
+      "kind": "mcp",
+      "name": "globe",
+      "title": "Globe",
+      "description": "Show regions, places and data footprints on an interactive 3D globe with OpenStreetMap, and find places by name (MCP Apps)",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/globe",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "geospatial",
+        "globe",
+        "cesium",
+        "openstreetmap",
+        "mcp-apps"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/globe",
+      "evidence": "Locked runtime",
+      "icon": "🗺️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-globe",
+      "summary": "Show regions, places and data footprints on an interactive 3D globe with OpenStreetMap, and find places by name (MCP Apps)",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "globe"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "globe"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "globe"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "globe"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "globe"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "globe"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "globe"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/hdf5",
       "kind": "mcp",
       "name": "hdf5",
@@ -821,6 +1017,104 @@
           "args": [
             "mcp-server",
             "hdf5"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/home-assistant",
+      "kind": "mcp",
+      "name": "home-assistant",
+      "title": "Home Assistant",
+      "description": "Read sensors and history from your Home Assistant, control devices, and write automations, scripts, scenes and dashboards.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Home & devices",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/home-assistant",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "home-assistant",
+        "smart-home",
+        "sensors",
+        "automation",
+        "iot"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/home_assistant",
+      "evidence": "Locked runtime",
+      "icon": "🏠",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-home-assistant",
+      "summary": "Read sensors and history from your Home Assistant, control devices, and write automations, scripts, scenes and dashboards.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "home-assistant"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "home-assistant"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "home-assistant"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "home-assistant"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "home-assistant"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "home-assistant"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "home-assistant"
           ]
         }
       }
@@ -1602,6 +1896,104 @@
       }
     },
     {
+      "id": "mcp/pdf",
+      "kind": "mcp",
+      "name": "pdf",
+      "title": "Pdf",
+      "description": "Read scientific papers from arXiv, bioRxiv, Zenodo and other archives in an interactive PDF viewer (MCP Apps)",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Research & discovery",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/pdf",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "pdf",
+        "papers",
+        "arxiv",
+        "viewer",
+        "mcp-apps"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/pdf",
+      "evidence": "Locked runtime",
+      "icon": "📑",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-pdf",
+      "summary": "Read scientific papers from arXiv, bioRxiv, Zenodo and other archives in an interactive PDF viewer (MCP Apps)",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pdf"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "pdf"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pdf"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pdf"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pdf"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pdf"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pdf"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/plot",
       "kind": "mcp",
       "name": "plot",
@@ -2180,6 +2572,105 @@
           "args": [
             "mcp-server",
             "spack"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/spice",
+      "kind": "mcp",
+      "name": "spice",
+      "title": "Spice",
+      "description": "Simulate circuits with ngspice or LTspice and plot their waveforms.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Electronics",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/spice",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "spice",
+        "ngspice",
+        "ltspice",
+        "circuit-simulation",
+        "electronics",
+        "mcp-apps"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/spice",
+      "evidence": "Locked runtime",
+      "icon": "🔌",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-spice",
+      "summary": "Simulate circuits with ngspice or LTspice and plot their waveforms.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "spice"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "spice"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "spice"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "spice"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "spice"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "spice"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "spice"
           ]
         }
       }
@@ -2893,10 +3384,10 @@
       "kind": "collection",
       "name": "clio-geoscience-skills",
       "title": "Geoscience Skills",
-      "description": "Skills for the clio-geoscience workflow: inspect and map geospatial features, terrain models, and waveform archives.",
+      "description": "Skills for the clio-geoscience workflow: inspect and map geospatial features, terrain, waveforms and NASA Earth-science data.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-geoscience-skills",
@@ -2933,7 +3424,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Skills for the clio-geoscience workflow: inspect and map geospatial features, terrain models, and waveform archives."
+      "summary": "Skills for the clio-geoscience workflow: inspect and map geospatial features, terrain, waveforms and NASA Earth-science data."
     },
     {
       "id": "plugin/clio-hpc-skills",
@@ -3035,10 +3526,10 @@
       "kind": "collection",
       "name": "clio-research-skills",
       "title": "Research Skills",
-      "description": "Skills for the clio-research workflow: find papers on a topic and the datasets behind them.",
+      "description": "Skills for the clio-research workflow: find papers on a topic, read them in a PDF viewer, and find the datasets behind them.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.4",
+      "version": "1.1.0",
       "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-research-skills",
@@ -3075,7 +3566,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Skills for the clio-research workflow: find papers on a topic and the datasets behind them."
+      "summary": "Skills for the clio-research workflow: find papers on a topic, read them in a PDF viewer, and find the datasets behind them."
     },
     {
       "id": "plugin/clio-scientific-io-skills",
@@ -4274,7 +4765,7 @@
       "description": "Use when assembling verified citations, BibTeX records or a research reading list. Triggers on \"BibTeX\", \"cite these papers\", \"reference list\". Not for broad topic discovery; use research-survey.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.4",
+      "version": "1.1.0",
       "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-research-skills/skills/bibliography/SKILL.md",
@@ -5754,7 +6245,7 @@
       "description": "Use when interpreting axis order, projections, distance units or vertical datums. Triggers on \"lat lon\", \"CRS\", \"UTM\", \"map offset\". Calls no tools. Not for executing map operations; use geospatial-map.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-geoscience-skills/skills/coordinate-systems/SKILL.md",
@@ -5905,7 +6396,7 @@
       "description": "Use when finding dataset metadata and downloading a supported resource to a verified local path. Triggers on \"find a dataset\", \"download this data\", \"stage this resource\". Not for literature surveys; use research-survey.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.4",
+      "version": "1.1.0",
       "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-research-skills/skills/dataset-stage/SKILL.md",
@@ -5944,7 +6435,7 @@
       "description": "Use when validating GeoJSON, querying spatial relationships, mapping features or analyzing terrain grids. Triggers on \"GeoJSON\", \"render a map\", \"DEM\", \"point cloud\". Not for CRS interpretation alone; use coordinate-systems.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-geoscience-skills/skills/geospatial-map/SKILL.md",
@@ -6131,7 +6622,7 @@
       "description": "Use when searching prior work and identifying datasets associated with research claims. Triggers on \"find papers on\", \"literature survey\", \"prior work\". Not for formatting a known citation list; use bibliography.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.4",
+      "version": "1.1.0",
       "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-research-skills/skills/research-survey/SKILL.md",
@@ -6209,7 +6700,7 @@
       "description": "Use when inspecting SAC waveforms or evaluating a saved earthquake event catalogue. Triggers on \"SAC\", \"waveform statistics\", \"b-value\", \"magnitude completeness\". Not for geospatial mapping; use geospatial-map.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-geoscience-skills/skills/seismic-analysis/SKILL.md",
@@ -6575,6 +7066,54 @@
       "summary": "Turn a small HDF5 dataset into a report with a CSV, figure, checked statistics and evidence review."
     },
     {
+      "id": "workflow/clio-electronics",
+      "kind": "plugin",
+      "name": "clio-electronics",
+      "title": "Simulate a circuit",
+      "description": "Simulate a circuit with the SPICE simulator you have and plot its waveforms.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Electronics",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "plugins/clio-electronics/.claude-plugin/plugin.json",
+      "members": [
+        "mcp/spice"
+      ],
+      "servers": [
+        "clio-spice"
+      ],
+      "tags": [],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace",
+      "evidence": "Membership from manifest",
+      "outcome": "Run a circuit with the SPICE simulator you have and plot its waveforms.",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-electronics",
+      "role": "Workflow plugin",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      },
+      "summary": "Simulate a circuit with the SPICE simulator you have and plot its waveforms."
+    },
+    {
       "id": "workflow/clio-fabrication",
       "kind": "plugin",
       "name": "clio-fabrication",
@@ -6629,15 +7168,17 @@
       "kind": "plugin",
       "name": "clio-geoscience",
       "title": "Explore the physical world",
-      "description": "Inspect and map geospatial features, terrain models, and waveform archives.",
+      "description": "Inspect and map geospatial features, terrain, waveforms and NASA Earth-science data.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.2",
+      "version": "1.1.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-geoscience/.claude-plugin/plugin.json",
       "members": [
+        "mcp/earthdata",
         "mcp/geo",
+        "mcp/globe",
         "mcp/seismology",
         "mcp/terrain",
         "skill/coordinate-systems",
@@ -6645,7 +7186,9 @@
         "skill/seismic-analysis"
       ],
       "servers": [
+        "clio-earthdata",
         "clio-geo",
+        "clio-globe",
         "clio-seismology",
         "clio-terrain"
       ],
@@ -6661,7 +7204,7 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace",
       "evidence": "Membership from manifest",
-      "outcome": "Workflows for geographic features, terrain and seismic data.",
+      "outcome": "Workflows for geographic features, terrain, seismic and NASA Earth-science data, on a 3D globe.",
       "componentTypes": [
         "mcp",
         "skill"
@@ -6678,7 +7221,55 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Inspect and map geospatial features, terrain models, and waveform archives."
+      "summary": "Inspect and map geospatial features, terrain, waveforms and NASA Earth-science data."
+    },
+    {
+      "id": "workflow/clio-home",
+      "kind": "plugin",
+      "name": "clio-home",
+      "title": "Work with your home",
+      "description": "Read your home's sensors and their history, control devices, and write automations.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Home & devices",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "plugins/clio-home/.claude-plugin/plugin.json",
+      "members": [
+        "mcp/home-assistant"
+      ],
+      "servers": [
+        "clio-home-assistant"
+      ],
+      "tags": [],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace",
+      "evidence": "Membership from manifest",
+      "outcome": "Read your Home Assistant's sensors and history, control devices and write automations.",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-home",
+      "role": "Workflow plugin",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      },
+      "summary": "Read your home's sensors and their history, control devices, and write automations."
     },
     {
       "id": "workflow/clio-hpc",
@@ -6802,16 +7393,17 @@
       "kind": "plugin",
       "name": "clio-research",
       "title": "Find the research behind it",
-      "description": "Find papers on a topic and the datasets behind them.",
+      "description": "Find papers on a topic, read them in a PDF viewer, and find the datasets behind them.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.4",
+      "version": "1.1.0",
       "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-research/.claude-plugin/plugin.json",
       "members": [
         "mcp/arxiv",
         "mcp/ndp",
+        "mcp/pdf",
         "mcp/scientific-catalog",
         "mcp/web",
         "skill/bibliography",
@@ -6821,6 +7413,7 @@
       "servers": [
         "clio-arxiv",
         "clio-ndp",
+        "clio-pdf",
         "clio-scientific-catalog",
         "clio-web"
       ],
@@ -6836,7 +7429,7 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace",
       "evidence": "Membership from manifest",
-      "outcome": "Papers and datasets, with guidance for discovery and staging.",
+      "outcome": "Papers to find and read, and datasets, with guidance for discovery and staging.",
       "componentTypes": [
         "mcp",
         "skill"
@@ -6853,7 +7446,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Find papers on a topic and the datasets behind them."
+      "summary": "Find papers on a topic, read them in a PDF viewer, and find the datasets behind them."
     },
     {
       "id": "workflow/clio-scientific-io",

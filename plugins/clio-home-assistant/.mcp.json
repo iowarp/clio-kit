@@ -1,0 +1,9 @@
+{
+  "clio-home-assistant": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "home-assistant"
+    ]
+  }
+}

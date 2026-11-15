@@ -94,6 +94,18 @@ SERVER_TAGS: dict[str, list[str]] = {
     ],
     "terrain": ["terrain", "dem", "point-cloud", "geospatial"],
     "web": ["web", "fetch", "search", "agentic-web"],
+    "earthdata": ["nasa", "earthdata", "remote-sensing", "datasets", "earth-science"],
+    "globe": ["geospatial", "globe", "cesium", "openstreetmap", "mcp-apps"],
+    "home-assistant": ["home-assistant", "smart-home", "sensors", "automation", "iot"],
+    "pdf": ["pdf", "papers", "arxiv", "viewer", "mcp-apps"],
+    "spice": [
+        "spice",
+        "ngspice",
+        "ltspice",
+        "circuit-simulation",
+        "electronics",
+        "mcp-apps",
+    ],
 }
 
 
@@ -450,9 +462,28 @@ def read_pyproject(server_dir: Path) -> dict[str, Any]:
     return data.get("project", {})
 
 
+def read_upstream(repo_root: Path) -> dict[str, dict[str, Any]]:
+    """The servers that run a pinned third-party server as published ([upstream])."""
+    with open(repo_root / SERVER_VERSIONS_FILE, "rb") as handle:
+        upstream = tomllib.load(handle).get("upstream", {})
+    if not isinstance(upstream, dict) or not all(
+        isinstance(row, dict) for row in upstream.values()
+    ):
+        raise ValueError(
+            f"{SERVER_VERSIONS_FILE} [upstream] must hold one table per server"
+        )
+    return upstream
+
+
 def extract_metadata(server_dir: Path) -> dict[str, Any] | None:
-    """Run extract_mcp_metadata.py in the server's environment."""
-    if server_runtime(server_dir) != "python":
+    """Read a server's tools: by a real stdio session, or for a Python server whose
+    code is here, by importing it in its own environment (extract_mcp_metadata.py).
+
+    A server in another language, and one that runs an upstream server as published,
+    has no ``mcp`` object of its own to import, so it is asked over the protocol.
+    """
+    upstream = read_upstream(server_dir.parent.parent).get(server_dir.name)
+    if server_runtime(server_dir) != "python" or upstream is not None:
         from clio_kit.protocol_probe import inspect_stdio
 
         try:
@@ -466,6 +497,7 @@ def extract_metadata(server_dir: Path) -> dict[str, Any] | None:
                         "run",
                         str(server_dir.resolve()),
                     ],
+                    env=dict((upstream or {}).get("probe-environment", {})),
                 )
             )
         except Exception as exc:
@@ -744,6 +776,14 @@ def generate_all(mcps_dir: str) -> None:
         print(f"Processing {server_name} ({runtime})...")
 
         project = read_project_metadata(server_dir, runtime)
+        # Before extraction: a server asked over the protocol is started from it.
+        write_server_descriptor(
+            server_dir,
+            server_name,
+            project,
+            runtime=runtime,
+            server_version=server_versions[server_name],
+        )
 
         # Publication requires successful live protocol extraction in any runtime.
         selected = server_name in registry_publish_servers
@@ -774,14 +814,6 @@ def generate_all(mcps_dir: str) -> None:
             continue
         else:
             print("  Skipped server.json (using existing, extraction failed)")
-
-        write_server_descriptor(
-            server_dir,
-            server_name,
-            project,
-            runtime=runtime,
-            server_version=server_versions[server_name],
-        )
 
         # Claude Code plugin files: always write (no metadata needed)
         write_claude_plugin_files(

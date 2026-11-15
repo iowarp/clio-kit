@@ -45,17 +45,27 @@ WORKFLOWS = {
     "clio-geoscience": (
         "Explore the physical world",
         "Geoscience",
-        "Workflows for geographic features, terrain and seismic data.",
+        "Workflows for geographic features, terrain, seismic and NASA Earth-science data, on a 3D globe.",
     ),
     "clio-fabrication": (
         "Make a part",
         "Fabrication",
         "Slice a model with the slicer you have and check every layer before printing.",
     ),
+    "clio-electronics": (
+        "Simulate a circuit",
+        "Electronics",
+        "Run a circuit with the SPICE simulator you have and plot its waveforms.",
+    ),
+    "clio-home": (
+        "Work with your home",
+        "Home & devices",
+        "Read your Home Assistant's sensors and history, control devices and write automations.",
+    ),
     "clio-research": (
         "Find the research behind it",
         "Research & discovery",
-        "Papers and datasets, with guidance for discovery and staging.",
+        "Papers to find and read, and datasets, with guidance for discovery and staging.",
     ),
 }
 # Public one-line summaries where the agent-facing description reads as trigger

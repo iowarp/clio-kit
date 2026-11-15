@@ -1,7 +1,7 @@
 {
   "name": "clio-research",
-  "description": "Find papers on a topic and the datasets behind them.",
-  "version": "1.0.4",
+  "description": "Find papers on a topic, read them in a PDF viewer, and find the datasets behind them.",
+  "version": "1.1.0",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",
@@ -13,6 +13,7 @@
   "dependencies": [
     "clio-arxiv",
     "clio-ndp",
+    "clio-pdf",
     "clio-scientific-catalog",
     "clio-web",
     "clio-research-skills"

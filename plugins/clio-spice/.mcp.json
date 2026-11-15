@@ -1,0 +1,9 @@
+{
+  "clio-spice": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "spice"
+    ]
+  }
+}

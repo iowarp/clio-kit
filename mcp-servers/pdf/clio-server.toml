@@ -1,0 +1,10 @@
+# Written by hand: a node server's descriptor is never generated.
+name = "pdf"
+runtime = "node"
+version = "1.0.0"
+lock = "package-lock.json"
+entry = "bundle/server.js"
+description = "Read scientific papers from arXiv, bioRxiv, Zenodo and other archives in an interactive PDF viewer (MCP Apps)"
+# The wrapper's own licence; @modelcontextprotocol/server-pdf, which it runs, is MIT.
+license = "BSD-3-Clause"
+keywords = ["MCP", "PDF", "papers", "arXiv", "viewer", "MCP Apps"]

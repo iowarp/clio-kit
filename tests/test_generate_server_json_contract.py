@@ -177,15 +177,20 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     assert list(expected_server_versions) == sorted(expected_server_versions)
     assert set(expected_server_versions) == {project.name for project in all_projects}
     # 2.12.7 relocks every Python server for an opentelemetry-api security fix,
-    # so every server publishes a patch release; slicer 1.0.0 is new.
+    # so every server publishes a patch release; slicer 1.0.0 is new, and so are
+    # the five that run an upstream server as published (earthdata, globe,
+    # home-assistant, pdf, spice).
     assert publish_servers == (
         "adios",
         "arxiv",
         "chronolog",
         "compression",
         "darshan",
+        "earthdata",
         "geo",
+        "globe",
         "hdf5",
+        "home-assistant",
         "jarvis",
         "lmod",
         "ndp",
@@ -194,12 +199,14 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
         "parallel-sort",
         "paraview",
         "parquet",
+        "pdf",
         "plot",
         "scientific-catalog",
         "seismology",
         "slicer",
         "slurm",
         "spack",
+        "spice",
         "terrain",
         "web",
     )
