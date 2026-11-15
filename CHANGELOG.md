@@ -4,6 +4,10 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
 
 ## Unreleased
 
+- **globe server removed**: the plain 3D globe (the MCP Apps map example,
+  `@modelcontextprotocol/server-map`) only framed a named region and could not
+  draw points or GeoJSON. Geo's `show_on_globe` replaces it; `clio-geoscience`
+  no longer includes `clio-globe`.
 - **geo 2.4.0, layers on an interactive globe**: `show_on_globe` takes the
   layers and styles `render_feature_map` takes (GeoJSON inline or as paths,
   `color_by`, `category_colors`, `epa_aqi`, colormaps, legends) and shows them

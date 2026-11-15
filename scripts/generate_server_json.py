@@ -95,7 +95,6 @@ SERVER_TAGS: dict[str, list[str]] = {
     "terrain": ["terrain", "dem", "point-cloud", "geospatial"],
     "web": ["web", "fetch", "search", "agentic-web"],
     "earthdata": ["nasa", "earthdata", "remote-sensing", "datasets", "earth-science"],
-    "globe": ["geospatial", "globe", "cesium", "openstreetmap", "mcp-apps"],
     "home-assistant": ["home-assistant", "smart-home", "sensors", "automation", "iot"],
     "pdf": ["pdf", "papers", "arxiv", "viewer", "mcp-apps"],
     "spice": [

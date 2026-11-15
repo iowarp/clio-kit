@@ -53,7 +53,7 @@ and skill plugins through dependencies rather than copying their content.
 | `clio-performance` | Investigate job performance and logs | chronolog, darshan, parallel-sort |
 | `clio-scientific-io` | Inspect scientific files and read safely | adios, compression, hdf5, parquet |
 | `clio-analysis` | Summarize results, create figures and open live 3D views | pandas, paraview, plot |
-| `clio-geoscience` | Inspect maps, terrain, waveforms and Earth-science datasets | earthdata, geo, globe, seismology, terrain |
+| `clio-geoscience` | Inspect maps, terrain, waveforms and Earth-science datasets | earthdata, geo, seismology, terrain |
 | `clio-electronics` | Simulate a circuit and plot its waveforms | spice |
 | `clio-home` | Read your home's sensors, control devices and write automations | home-assistant |
 | `clio-fabrication` | Slice a model for a 3D printer and check its layers | slicer |

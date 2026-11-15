@@ -7,7 +7,6 @@
 <!-- mcp-name: io.github.iowarp/darshan-mcp -->
 <!-- mcp-name: io.github.iowarp/earthdata-mcp -->
 <!-- mcp-name: io.github.iowarp/geo-mcp -->
-<!-- mcp-name: io.github.iowarp/globe-mcp -->
 <!-- mcp-name: io.github.iowarp/hdf5-mcp -->
 <!-- mcp-name: io.github.iowarp/home-assistant-mcp -->
 <!-- mcp-name: io.github.iowarp/jarvis-mcp -->
@@ -220,7 +219,7 @@ These are broad workflow plugins. Each combines its MCP servers and skills.
 | `clio-performance` | Diagnose slow jobs and inspect logs | darshan, chronolog, parallel-sort |
 | `clio-scientific-io` | Explore scientific data files | hdf5, adios, parquet, compression |
 | `clio-analysis` | Analyze results, create figures and open live 3D views | pandas, plot, paraview |
-| `clio-geoscience` | Work with maps, a 3D globe, terrain, waveforms and NASA Earthdata | geo, globe, terrain, seismology, earthdata |
+| `clio-geoscience` | Work with maps, a 3D globe, terrain, waveforms and NASA Earthdata | geo, terrain, seismology, earthdata |
 | `clio-fabrication` | Slice a model for a 3D printer and check its layers | slicer |
 | `clio-electronics` | Simulate a circuit and plot its waveforms | spice |
 | `clio-home` | Read your home's sensors, control devices and write automations | home-assistant |
@@ -473,7 +472,6 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`darshan`** | 2.2.8 | Performance | I/O performance trace analysis | `clio-kit mcp-server darshan` |
 | **`earthdata`** | 1.0.0 | Earth Science | Search and download NASA Earthdata datasets (runs earthdata-mcp-server 0.6.0) | `clio-kit mcp-server earthdata` |
 | **`geo`** | 2.4.0 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
-| **`globe`** | 1.0.0 | Geospatial | Interactive 3D globe with OpenStreetMap, and place search (runs the MCP Apps map server 2.0.4) | `clio-kit mcp-server globe` |
 | **`hdf5`** | 2.3.1 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
 | **`home-assistant`** | 1.0.0 | Home | Your Home Assistant's sensors, devices and automations (runs ha-mcp 9.2.0) | `clio-kit mcp-server home-assistant` |
 | **`jarvis`** | 3.7.7 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |

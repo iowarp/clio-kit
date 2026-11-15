@@ -117,22 +117,6 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
-      "name": "clio-globe",
-      "source": "./plugins/clio-globe",
-      "description": "Show regions, places and data footprints on an interactive 3D globe with OpenStreetMap, and find places by name (MCP Apps)",
-      "version": "1.0.0",
-      "category": "scientific",
-      "keywords": [
-        "geospatial",
-        "globe",
-        "cesium",
-        "openstreetmap",
-        "mcp-apps"
-      ],
-      "license": "BSD-3-Clause",
-      "repository": "https://github.com/iowarp/clio-kit"
-    },
-    {
       "name": "clio-hdf5",
       "source": "./plugins/clio-hdf5",
       "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks.",
@@ -614,7 +598,6 @@
       "category": "workflow",
       "keywords": [
         "catalog",
-        "cesium",
         "datasets",
         "dem",
         "earth-science",
@@ -622,11 +605,8 @@
         "earthquake",
         "geojson",
         "geospatial",
-        "globe",
         "mapping",
-        "mcp-apps",
         "nasa",
-        "openstreetmap",
         "point-cloud",
         "remote-sensing",
         "sac",

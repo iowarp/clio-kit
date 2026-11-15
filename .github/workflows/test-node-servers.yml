@@ -7,13 +7,11 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "mcp-servers/globe/**"
       - "mcp-servers/pdf/**"
       - ".github/workflows/test-node-servers.yml"
   pull_request:
     branches: [ main, dev, develop ]
     paths:
-      - "mcp-servers/globe/**"
       - "mcp-servers/pdf/**"
       - ".github/workflows/test-node-servers.yml"
 
@@ -27,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        server: [globe, pdf]
+        server: [pdf]
         node-version: ["20", "22", "24"]
     defaults:
       run:

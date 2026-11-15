@@ -49,13 +49,6 @@
         "geo"
       ]
     },
-    "clio-globe": {
-      "command": "clio-kit",
-      "args": [
-        "mcp-server",
-        "globe"
-      ]
-    },
     "clio-hdf5": {
       "command": "clio-kit",
       "args": [

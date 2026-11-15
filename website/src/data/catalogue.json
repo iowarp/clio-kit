@@ -827,104 +827,6 @@
       }
     },
     {
-      "id": "mcp/globe",
-      "kind": "mcp",
-      "name": "globe",
-      "title": "Globe",
-      "description": "Show regions, places and data footprints on an interactive 3D globe with OpenStreetMap, and find places by name (MCP Apps)",
-      "publisher": "clio-kit",
-      "origin": "Maintained",
-      "version": "1.0.0",
-      "category": "Geoscience",
-      "source": "https://github.com/iowarp/clio-kit",
-      "path": "mcp-servers/globe",
-      "members": [],
-      "servers": [],
-      "tags": [
-        "geospatial",
-        "globe",
-        "cesium",
-        "openstreetmap",
-        "mcp-apps"
-      ],
-      "clients": [
-        "codex",
-        "opencode",
-        "cursor",
-        "antigravity",
-        "claude-code",
-        "vscode",
-        "other"
-      ],
-      "license": "BSD-3-Clause",
-      "docs": "/docs/mcps/globe",
-      "evidence": "Locked runtime",
-      "icon": "🗺️",
-      "componentTypes": [
-        "mcp"
-      ],
-      "installation": "launcher",
-      "nativePackage": "clio-globe",
-      "summary": "Show regions, places and data footprints on an interactive 3D globe with OpenStreetMap, and find places by name (MCP Apps)",
-      "mcpSettings": {
-        "codex": {
-          "command": "clio-kit",
-          "args": [
-            "mcp-server",
-            "globe"
-          ],
-          "startup_timeout_sec": 300
-        },
-        "opencode": {
-          "type": "local",
-          "command": [
-            "clio-kit",
-            "mcp-server",
-            "globe"
-          ],
-          "enabled": true,
-          "timeout": 120000
-        },
-        "cursor": {
-          "command": "clio-kit",
-          "args": [
-            "mcp-server",
-            "globe"
-          ]
-        },
-        "antigravity": {
-          "command": "clio-kit",
-          "args": [
-            "mcp-server",
-            "globe"
-          ]
-        },
-        "claude-code": {
-          "command": "clio-kit",
-          "args": [
-            "mcp-server",
-            "globe"
-          ],
-          "type": "stdio"
-        },
-        "vscode": {
-          "command": "clio-kit",
-          "args": [
-            "mcp-server",
-            "globe"
-          ],
-          "type": "stdio"
-        },
-        "other": {
-          "command": "clio-kit",
-          "args": [
-            "mcp-server",
-            "globe"
-          ]
-        }
-      }
-    },
-    {
       "id": "mcp/hdf5",
       "kind": "mcp",
       "name": "hdf5",
@@ -7178,7 +7080,6 @@
       "members": [
         "mcp/earthdata",
         "mcp/geo",
-        "mcp/globe",
         "mcp/seismology",
         "mcp/terrain",
         "skill/coordinate-systems",
@@ -7188,7 +7089,6 @@
       "servers": [
         "clio-earthdata",
         "clio-geo",
-        "clio-globe",
         "clio-seismology",
         "clio-terrain"
       ],
