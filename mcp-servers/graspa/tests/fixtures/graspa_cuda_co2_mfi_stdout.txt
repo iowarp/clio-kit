@@ -1,0 +1,108 @@
+Number of Unit Cells: 1.00 1.00 1.00
+INITIALIZATION Cycle: 0, 0 Adsorbate Molecules, Total Energy: 14855765.09240  ||  Component 0 [MFI-2x2x2-P1.cif], 1 Molecules  ||  Component 1 [CO2], 0 Molecules  ||  
+INITIALIZATION Cycle: 5000, 25 Adsorbate Molecules, Total Energy: 14792012.36691  ||  Component 0 [MFI-2x2x2-P1.cif], 1 Molecules  ||  Component 1 [CO2], 25 Molecules  ||  
+PRODUCTION Cycle: 0, 21 Adsorbate Molecules, Total Energy: 14802004.13916  ||  Component 0 [MFI-2x2x2-P1.cif], 1 Molecules  ||  Component 1 [CO2], 21 Molecules  ||  
+PRODUCTION Cycle: 25000, 19 Adsorbate Molecules, Total Energy: 14806042.98010  ||  Component 0 [MFI-2x2x2-P1.cif], 1 Molecules  ||  Component 1 [CO2], 19 Molecules  ||  
+=====================BLOCK AVERAGES (ENERGIES)================
+BLOCK [0], Blocksize: 6000, Average: 0.00000, ErrorBar: 0.00000
+BLOCK [1], Blocksize: 6000, Average: 0.00000, ErrorBar: 0.00000
+BLOCK [2], Blocksize: 6000, Average: 0.00000, ErrorBar: 0.00000
+BLOCK [3], Blocksize: 6000, Average: 0.00000, ErrorBar: 0.00000
+BLOCK [4], Blocksize: 6000, Average: 0.00000, ErrorBar: 0.00000
+Overall: Average: 0.00000, ErrorBar: 0.00000
+==============================================================
+=================== BLOCK AVERAGES (LOADING: # MOLECULES)=============
+COMPONENT [0] (MFI-2x2x2-P1.cif)
+BLOCK [0], Blocksize: 6000, Average: 1.00000, ErrorBar: 0.00000
+BLOCK [1], Blocksize: 6000, Average: 1.00000, ErrorBar: 0.00000
+BLOCK [2], Blocksize: 6000, Average: 1.00000, ErrorBar: 0.00000
+BLOCK [3], Blocksize: 6000, Average: 1.00000, ErrorBar: 0.00000
+BLOCK [4], Blocksize: 6000, Average: 1.00000, ErrorBar: 0.00000
+Overall: Average: 1.00000, ErrorBar: 0.00000
+----------------------------------------------------------
+COMPONENT [1] (CO2)
+BLOCK [0], Blocksize: 6000, Average: 20.47950, ErrorBar: 8.14884
+BLOCK [1], Blocksize: 6000, Average: 20.39550, ErrorBar: 8.87898
+BLOCK [2], Blocksize: 6000, Average: 20.56317, ErrorBar: 8.15328
+BLOCK [3], Blocksize: 6000, Average: 20.24500, ErrorBar: 7.92935
+BLOCK [4], Blocksize: 6000, Average: 19.98383, ErrorBar: 8.16633
+Overall: Average: 20.33340, ErrorBar: 0.40793
+----------------------------------------------------------
+======================================================================
+=====================BLOCK AVERAGES (LOADING: mg/g)=============
+COMPONENT [0] (MFI-2x2x2-P1.cif)
+Framework component 0, molar mass: 46144.12800
+Framework total mass: 46144.12800
+BLOCK [0], Blocksize: 6000, Average: 1000.00000, ErrorBar: 0.00000
+BLOCK [1], Blocksize: 6000, Average: 1000.00000, ErrorBar: 0.00000
+BLOCK [2], Blocksize: 6000, Average: 1000.00000, ErrorBar: 0.00000
+BLOCK [3], Blocksize: 6000, Average: 1000.00000, ErrorBar: 0.00000
+BLOCK [4], Blocksize: 6000, Average: 1000.00000, ErrorBar: 0.00000
+Overall: Average: 1000.00000, ErrorBar: 0.00001
+----------------------------------------------------------
+COMPONENT [1] (CO2)
+Framework component 0, molar mass: 46144.12800
+Framework total mass: 46144.12800
+BLOCK [0], Blocksize: 6000, Average: 19.52737, ErrorBar: 7.76999
+BLOCK [1], Blocksize: 6000, Average: 19.44727, ErrorBar: 8.46618
+BLOCK [2], Blocksize: 6000, Average: 19.60715, ErrorBar: 7.77422
+BLOCK [3], Blocksize: 6000, Average: 19.30377, ErrorBar: 7.56070
+BLOCK [4], Blocksize: 6000, Average: 19.05475, ErrorBar: 7.78666
+Overall: Average: 19.38806, ErrorBar: 0.38896
+----------------------------------------------------------
+==============================================================
+=====================BLOCK AVERAGES (LOADING: mol/kg)=============
+COMPONENT [0] (MFI-2x2x2-P1.cif)
+Framework component 0, molar mass: 46144.12800
+Framework total mass: 46144.12800
+BLOCK [0], Blocksize: 6000, Average: 0.02167, ErrorBar: 0.00000
+BLOCK [1], Blocksize: 6000, Average: 0.02167, ErrorBar: 0.00000
+BLOCK [2], Blocksize: 6000, Average: 0.02167, ErrorBar: 0.00000
+BLOCK [3], Blocksize: 6000, Average: 0.02167, ErrorBar: 0.00000
+BLOCK [4], Blocksize: 6000, Average: 0.02167, ErrorBar: 0.00000
+Overall: Average: 0.02167, ErrorBar: 0.00000
+----------------------------------------------------------
+COMPONENT [1] (CO2)
+Framework component 0, molar mass: 46144.12800
+Framework total mass: 46144.12800
+BLOCK [0], Blocksize: 6000, Average: 0.44382, ErrorBar: 0.17660
+BLOCK [1], Blocksize: 6000, Average: 0.44200, ErrorBar: 0.19242
+BLOCK [2], Blocksize: 6000, Average: 0.44563, ErrorBar: 0.17669
+BLOCK [3], Blocksize: 6000, Average: 0.43873, ErrorBar: 0.17184
+BLOCK [4], Blocksize: 6000, Average: 0.43307, ErrorBar: 0.17697
+Overall: Average: 0.44065, ErrorBar: 0.00884
+----------------------------------------------------------
+==============================================================
+=====================BLOCK AVERAGES (LOADING: g/L)=============
+COMPONENT [0] (MFI-2x2x2-P1.cif)
+Total Unit Cells 1 
+BLOCK [0], Blocksize: 6000, Average: 1796.31859, ErrorBar: 0.00005
+BLOCK [1], Blocksize: 6000, Average: 1796.31859, ErrorBar: 0.00005
+BLOCK [2], Blocksize: 6000, Average: 1796.31859, ErrorBar: 0.00005
+BLOCK [3], Blocksize: 6000, Average: 1796.31859, ErrorBar: 0.00005
+BLOCK [4], Blocksize: 6000, Average: 1796.31859, ErrorBar: 0.00005
+Overall: Average: 1796.31859, ErrorBar: -nan
+----------------------------------------------------------
+COMPONENT [1] (CO2)
+Total Unit Cells 1 
+BLOCK [0], Blocksize: 6000, Average: 35.07738, ErrorBar: 13.95737
+BLOCK [1], Blocksize: 6000, Average: 34.93350, ErrorBar: 15.20796
+BLOCK [2], Blocksize: 6000, Average: 35.22068, ErrorBar: 13.96498
+BLOCK [3], Blocksize: 6000, Average: 34.67572, ErrorBar: 13.58142
+BLOCK [4], Blocksize: 6000, Average: 34.22840, ErrorBar: 13.98733
+Overall: Average: 34.82714, ErrorBar: 0.69870
+----------------------------------------------------------
+==============================================================
+Printing: Component: 0 [ MFI-2x2x2-P1.cif ], NumMol: 1, Molsize: 2304
+Printing: Component: 1 [ CO2 ], NumMol: 20, Molsize: 3
+Component 0, Molsize: 2304
+Component 1, Molsize: 3
+Work took 227.977327 seconds
+======================================
+CHECKING FINAL ENERGY FOR SYSTEM [0]
+======================================
+======================== CALCULATING FINAL STAGE ENERGY ========================
+****** Calculating VDW + Real Energy (CPU) ******
+Host-Host   VDW: 0.00000; Real: 0.00000
+Host-Guest  VDW: -38120.02854; Real: -3968.69263
+Guest-Guest VDW: -443.28119; Real: -222.38200
