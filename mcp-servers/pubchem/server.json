@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.iowarp/pubchem-mcp",
-  "title": "CLIO PubChem",
+  "title": "CLIO Pubchem",
   "description": "Look compounds up in PubChem by name (candidates when a name is ambiguous) and fetch their 3D...",
   "version": "1.0.0",
   "repository": {

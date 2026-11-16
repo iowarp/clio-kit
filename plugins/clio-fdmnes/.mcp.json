@@ -1,0 +1,9 @@
+{
+  "clio-fdmnes": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "fdmnes"
+    ]
+  }
+}

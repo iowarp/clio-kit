@@ -1,7 +1,7 @@
 [project]
 name = "ase-mcp"
 version = "1.0.0"
-description = "Molecular calculations with ASE: SMILES to 3D, energies, optimizations, vibrations, thermochemistry and IR with EMT, xTB, MACE, UMA, NWChem or ORCA."
+description = "Molecular calculations with ASE: SMILES to 3D, energies, optimizations, vibrations, thermochemistry and IR spectra."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "BSD-3-Clause"
