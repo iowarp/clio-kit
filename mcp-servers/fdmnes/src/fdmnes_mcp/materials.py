@@ -95,7 +95,13 @@ def fetch(
     from ase.io import write
 
     query = query.strip()
-    params: dict[str, Any] = {"deprecated": "false", "_limit": max_results}
+    # Sorted on the server: `_limit` applies to the API's own order, so without the sort
+    # the lowest-energy materials can fall outside the first `max_results` rows.
+    params: dict[str, Any] = {
+        "deprecated": "false",
+        "_limit": max_results,
+        "_sort_fields": "energy_above_hull",
+    }
     if MP_ID.match(query):
         params["material_ids"] = query
     elif re.fullmatch(r"[A-Z][A-Za-z0-9().]*", query):

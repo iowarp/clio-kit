@@ -61,6 +61,8 @@ def test_formula_returns_every_candidate_by_hull_energy(monkeypatch, out):
     got = materials.fetch("FeO", 0.1, 5, None, _client(seen))
     assert seen[0].headers["X-API-KEY"] == "k"
     assert seen[0].url.params["formula"] == "FeO"
+    # The limit is applied after the API sorts by hull energy, or the ground state can be cut.
+    assert seen[0].url.params["_sort_fields"] == "energy_above_hull"
     assert [m["material_id"] for m in got["materials"]] == ["mp-1", "mp-2"]
     assert got["status"] == "several"
     first = got["materials"][0]
