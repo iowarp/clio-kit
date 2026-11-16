@@ -2,7 +2,8 @@
 
 Reasons: ``not_found`` (a file that does not exist), ``invalid_input``,
 ``unreadable_structure``, ``binary_missing`` (no FDMNES executable), ``fdmnes_failed``
-(FDMNES exited non-zero or wrote no spectrum), ``timeout``, ``unreadable_spectrum``.
+(FDMNES exited non-zero or wrote no spectrum), ``timeout``, ``unreadable_spectrum``, and for the Materials Project ``mp_key_missing``,
+``mp_key_rejected``, ``mp_unavailable``.
 A tool turns the error into an MCP tool error whose text ends with ``[reason]``.
 """
 

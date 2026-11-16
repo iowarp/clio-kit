@@ -91,3 +91,20 @@ def status_text(d: dict[str, Any]) -> str:
     if ex["found"]:
         return f"FDMNES is ready: {ex['command']} (found via {ex['source']})."
     return f"FDMNES is not available: {ex['problem']}. {d['install']}"
+
+
+def materials_text(d: dict[str, Any]) -> str:
+    rows = d["materials"]
+    lines = [f"Materials Project: {len(rows)} material(s) for {d['query']!r}:"]
+    for m in rows:
+        ehull = m["energy_above_hull_eV_atom"]
+        lines.append(
+            f"- {m['material_id']} {m['formula']}, {m['space_group']} ({m['crystal_system']}), "
+            f"{m['n_sites']} sites, "
+            + (f"{ehull:.3f} eV/atom above the hull" if ehull is not None else "hull unknown")
+            + (f", {m['magnetic_ordering']}" if m.get("magnetic_ordering") else "")
+            + f" → {m['cif']}"
+        )
+    if len(rows) > 1:
+        lines.append(d["note"])
+    return "\n".join(lines)

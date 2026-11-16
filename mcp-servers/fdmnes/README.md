@@ -17,6 +17,7 @@ it to the workspace), else the current folder. A taken name gets `-2`, `-3` …
 | `run_xanes(structure, absorber, edge="K", method="green", radius=6, scf=true, quadrupole=false, magnetism=false, energy_range?, extra_keywords?, timeout_s?, run_name?, output_dir?)` | Writes the FDMNES input, runs FDMNES (SCF cycles are sent as progress), and writes `spectrum.csv` (one per site when `absorber` is a list of sites) and `result.json`. Reports the threshold and edge energy, inequivalent absorbing sites, point group, cluster size, SCF cycles, and for each spectrum E0, white line, edge step and peaks. |
 | `read_spectrum(path, energy_shift=0, output_dir?)` | Reads an FDMNES `*_conv.txt` or a measured two-column file (text or CSV), shifts and normalizes it, writes `spectra/<name>.normalized.csv`. |
 | `compare_spectra(paths, labels?, align=false, output_dir?)` | Normalizes each spectrum, optionally shifts each so its E0 matches the first, interpolates all onto the first one's grid over the shared range, writes `spectra/comparison.csv`, and reports each one's E0, shift, R-factor (Σ(y−y₀)²/Σy₀²) and correlation against the first. |
+| `fetch_materials_project(query, energy_above_hull_max=0.05, max_results=5, output_dir?)` | Crystal structures from the Materials Project by formula or `mp-` id, written as CIF (with magnetic moments) under `chemistry/fdmnes/structures/`. A formula returns every material within the hull window, ordered by energy above the hull, with space group and magnetic ordering; none is chosen. Needs `MP_API_KEY`. |
 | `fdmnes_status()` | Whether FDMNES is found, where, and how to install it. |
 
 - `absorber` is always given: an element (`"Fe"`, every Fe site; FDMNES computes the
@@ -52,10 +53,15 @@ downloads FDMNES. The `fdmnes` plugin's install skill builds it with Spack from 
 Fortran source (`spack install fdmnes`, recipe in clio-kit's Spack repository): serial,
 Gaussian solver, LAPACK.
 
+`fetch_materials_project` needs a Materials Project API key in `MP_API_KEY` (free after
+signing in at next-gen.materialsproject.org). It is a small client of the REST API
+(`api.materialsproject.org/materials/summary/`, `X-API-KEY`), not mp-api or pymatgen.
+Only the mocked tests ran here: no key was available, so no live fetch was made.
+
 Errors end with `[reason]`: `not_found`, `invalid_input`, `unreadable_structure`,
 `binary_missing`, `fdmnes_failed` (with the last lines of FDMNES's output; the run
 folder and `result.json` with `status: failed` are kept), `timeout`,
-`unreadable_spectrum`.
+`unreadable_spectrum`, `mp_key_missing`, `mp_key_rejected`, `mp_unavailable`.
 
 ## Tests
 
@@ -76,7 +82,7 @@ Apache-2.0) to clio-kit. `inputs.py` is adapted from ChemGraph's
 `tools/xanes_core.py` `write_fdmnes_input`, and the normalization in `spectrum.py` from
 its `get_normalized_xanes`; both say so and what changed (the absorber is never chosen
 for the caller, molecules in Cartesian Å, 10-digit fractions, E0 from the steepest rise,
-no silent normalization). The Materials Project fetcher, Parsl wrappers and plotting
-were not ported. The Apache License 2.0 is at https://www.apache.org/licenses/LICENSE-2.0.
+no silent normalization). ChemGraph's Materials Project fetch (mp-api) is replaced by a small REST client
+(`materials.py`); the Parsl wrappers and plotting were not ported. The Apache License 2.0 is at https://www.apache.org/licenses/LICENSE-2.0.
 FDMNES is by Yves Joly and collaborators (Institut Néel, CNRS) and is not distributed
 here.
