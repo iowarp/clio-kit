@@ -1,0 +1,57 @@
+[project]
+name = "avogadro-mcp"
+version = "1.0.0"
+description = "Avogadro 2 for building and editing structures in 3D, streamed into a view; edits and selections come back as files."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "BSD-3-Clause"
+authors = [
+    { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
+]
+keywords = ["MCP", "chemistry", "Avogadro", "molecular editor", "MCP Apps"]
+dependencies = [
+    "fastmcp>=4.1.2,<5",
+    "ase>=3.25",
+    "starlette>=0.40",
+    "uvicorn>=0.30",
+    "websockets>=13",
+]
+
+[project.urls]
+Homepage = "https://toolkit.iowarp.ai/"
+Repository = "https://github.com/iowarp/clio-kit"
+
+[project.scripts]
+avogadro-mcp = "avogadro_mcp.server:main"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.1.0",
+    "ruff>=0.12.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/avogadro_mcp"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+markers = [
+    "integration: runs the real Avogadro with Xvfb and x11vnc; skipped when they are missing",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# The live test drives a real server with blocking calls on purpose (one at a time).
+"tests/test_live.py" = ["ASYNC210", "ASYNC221"]

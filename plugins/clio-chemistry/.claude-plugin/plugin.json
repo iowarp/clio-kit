@@ -12,6 +12,7 @@
   "license": "BSD-3-Clause",
   "dependencies": [
     "clio-ase",
+    "clio-avogadro",
     "clio-decimer",
     "clio-fdmnes",
     "clio-graspa",

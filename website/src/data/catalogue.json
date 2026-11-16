@@ -443,6 +443,103 @@
       }
     },
     {
+      "id": "mcp/avogadro",
+      "kind": "mcp",
+      "name": "avogadro",
+      "title": "Avogadro",
+      "description": "Avogadro 2 for building and editing structures in 3D, streamed into a view; edits and selections come back as files.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Scientific computing",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/avogadro",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "chemistry",
+        "avogadro",
+        "molecular-editor",
+        "mcp-apps"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/avogadro",
+      "evidence": "Locked runtime",
+      "icon": "⚛️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-avogadro",
+      "summary": "Avogadro 2 for building and editing structures in 3D, streamed into a view; edits and selections come back as files.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "avogadro"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "avogadro"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "avogadro"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "avogadro"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "avogadro"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "avogadro"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "avogadro"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/chronolog",
       "kind": "mcp",
       "name": "chronolog",
@@ -7418,6 +7515,7 @@
       "path": "plugins/clio-chemistry/.claude-plugin/plugin.json",
       "members": [
         "mcp/ase",
+        "mcp/avogadro",
         "mcp/decimer",
         "mcp/fdmnes",
         "mcp/graspa",
@@ -7425,6 +7523,7 @@
       ],
       "servers": [
         "clio-ase",
+        "clio-avogadro",
         "clio-decimer",
         "clio-fdmnes",
         "clio-graspa",

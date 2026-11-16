@@ -3,6 +3,7 @@
 <!-- mcp-name: io.github.iowarp/adios-mcp -->
 <!-- mcp-name: io.github.iowarp/arxiv-mcp -->
 <!-- mcp-name: io.github.iowarp/ase-mcp -->
+<!-- mcp-name: io.github.iowarp/avogadro-mcp -->
 <!-- mcp-name: io.github.iowarp/chronolog-mcp -->
 <!-- mcp-name: io.github.iowarp/compression-mcp -->
 <!-- mcp-name: io.github.iowarp/darshan-mcp -->
@@ -180,7 +181,7 @@ uv tool install --force --reinstall --editable .
 # If uv's executable directory is not on PATH:
 uv tool update-shell
 
-# List all 32 available MCP servers
+# List all 33 available MCP servers
 clio-kit mcp-servers
 
 # Run an individual server
@@ -228,7 +229,7 @@ These are broad workflow plugins. Each combines its MCP servers and skills.
 | `clio-fabrication` | Slice a model for a 3D printer and check its layers | slicer |
 | `clio-electronics` | Simulate a circuit and plot its waveforms | spice |
 | `clio-home` | Read your home's sensors, control devices and write automations | home-assistant |
-| `clio-chemistry` | Find a compound, build structures, compute energies, spectra and adsorption | pubchem, decimer, ase, fdmnes, graspa |
+| `clio-chemistry` | Find a compound, build structures, compute energies, spectra and adsorption | pubchem, decimer, ase, avogadro, fdmnes, graspa |
 | `clio-research` | Find papers, read them, and find datasets | arxiv, ndp, pdf, scientific-catalog, web |
 
 Some servers require additional system software. See [setup and prerequisites](setup.md#native-backend-setup).
@@ -474,6 +475,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`adios`** | 2.3.2 | Data I/O | Read data using ADIOS2 engine | `clio-kit mcp-server adios` |
 | **`arxiv`** | 2.2.8 | Research | Fetch research papers from ArXiv | `clio-kit mcp-server arxiv` |
 | **`ase`** | 1.0.0 | Chemistry | Molecular energies, optimizations, vibrations, thermochemistry and IR with xTB, MACE, UMA, NWChem or ORCA | `clio-kit mcp-server ase` |
+| **`avogadro`** | 1.0.0 | Chemistry | Build and edit structures in Avogadro 2, streamed into a view; edits and selections come back as files | `clio-kit mcp-server avogadro` |
 | **`chronolog`** | 2.0.6 | Logging | Log and retrieve data from ChronoLog | `clio-kit mcp-server chronolog` |
 | **`compression`** | 2.2.8 | Utilities | File compression with gzip | `clio-kit mcp-server compression` |
 | **`darshan`** | 2.2.8 | Performance | I/O performance trace analysis | `clio-kit mcp-server darshan` |

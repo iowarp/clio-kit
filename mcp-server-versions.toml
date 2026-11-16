@@ -24,7 +24,7 @@ schema-version = 1
 # spice earthdata-mcp-server, ha-mcp and ltspice-mcp (Python). Two primary bundles are
 # new, clio-electronics and clio-home; clio-geoscience and clio-research gain members.
 [mcp-registry-release]
-publish = ["adios", "arxiv", "ase", "chronolog", "compression", "darshan", "decimer", "earthdata", "fdmnes", "geo", "graspa", "hdf5", "home-assistant", "jarvis", "lmod", "ndp", "node-hardware", "pandas", "parallel-sort", "paraview", "parquet", "pdf", "plot", "pubchem", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "spice", "terrain", "web"]
+publish = ["adios", "arxiv", "ase", "avogadro", "chronolog", "compression", "darshan", "decimer", "earthdata", "fdmnes", "geo", "graspa", "hdf5", "home-assistant", "jarvis", "lmod", "ndp", "node-hardware", "pandas", "parallel-sort", "paraview", "parquet", "pdf", "plot", "pubchem", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "spice", "terrain", "web"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
@@ -91,7 +91,7 @@ servers = ["home-assistant"]
 [bundles.clio-chemistry]
 version = "1.0.0"
 description = "Find a compound, build and change its structure, compute energies and spectra, and simulate adsorption."
-servers = ["ase", "decimer", "fdmnes", "graspa", "pubchem"]
+servers = ["ase", "avogadro", "decimer", "fdmnes", "graspa", "pubchem"]
 
 [bundles.clio-research]
 version = "1.1.0"
@@ -118,6 +118,7 @@ general = ["compression", "home-assistant", "web"]
 adios = "2.3.2"
 arxiv = "2.2.8"
 ase = "1.0.0"
+avogadro = "1.0.0"
 chronolog = "2.0.6"
 compression = "2.2.8"
 darshan = "2.2.8"
@@ -183,6 +184,7 @@ home-assistant = "🏠"
 pdf = "📑"
 spice = "🔌"
 ase = "🧪"
+avogadro = "⚛️"
 decimer = "🖼️"
 fdmnes = "🔬"
 graspa = "🫧"
@@ -228,6 +230,11 @@ environment = ["HOMEASSISTANT_URL", "HOMEASSISTANT_TOKEN"]
 
 [prerequisites.spice]
 note = "Needs ngspice or LTspice installed on this machine; ltspice-mcp finds it and never downloads one."
+
+[prerequisites.avogadro]
+executables = ["Xvfb", "x11vnc"]
+executable-environment = ["AVOGADRO_COMMAND"]
+note = "Needs Avogadro 2 (the avogadro plugin's install-avogadro skill installs it; then AVOGADRO_COMMAND or avogadro2 on PATH) and, on Linux, Xvfb and x11vnc for the streamed view."
 
 [prerequisites.fdmnes]
 executable-environment = ["FDMNES_COMMAND", "FDMNES_EXE"]

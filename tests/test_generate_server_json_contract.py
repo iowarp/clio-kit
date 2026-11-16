@@ -180,11 +180,12 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     # so every server publishes a patch release; slicer 1.0.0 is new, and so are
     # the four that run an upstream server as published (earthdata,
     # home-assistant, pdf, spice). The chemistry servers (ase, decimer, fdmnes,
-    # graspa, pubchem) are new at 1.0.0.
+    # graspa, pubchem) and avogadro are new at 1.0.0.
     assert publish_servers == (
         "adios",
         "arxiv",
         "ase",
+        "avogadro",
         "chronolog",
         "compression",
         "darshan",

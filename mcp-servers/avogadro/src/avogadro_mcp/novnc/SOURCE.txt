@@ -1,0 +1,2 @@
+noVNC v1.5.0 (git commit 7fcf9dcfe0cc5b14e3841a4429dc091a6ffca861, github.com/novnc/noVNC):
+core/ and vendor/pako/ copied unchanged. noVNC core is MPL-2.0 and pako MIT; see LICENSE.txt.

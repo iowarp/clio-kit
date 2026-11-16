@@ -61,6 +61,21 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
+      "name": "clio-avogadro",
+      "source": "./plugins/clio-avogadro",
+      "description": "Avogadro 2 for building and editing structures in 3D, streamed into a view; edits and selections come back as files.",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "chemistry",
+        "avogadro",
+        "molecular-editor",
+        "mcp-apps"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
       "name": "clio-chronolog",
       "source": "./plugins/clio-chronolog",
       "description": "Record and retrieve agent interactions in a ChronoLog log store.",
@@ -761,6 +776,7 @@
       "keywords": [
         "adsorption",
         "ase",
+        "avogadro",
         "chemistry",
         "compounds",
         "decimer",
@@ -769,7 +785,9 @@
         "graspa",
         "image",
         "mace",
+        "mcp-apps",
         "mof",
+        "molecular-editor",
         "nwchem",
         "ocsr",
         "orca",

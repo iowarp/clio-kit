@@ -21,6 +21,13 @@
         "ase"
       ]
     },
+    "clio-avogadro": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "avogadro"
+      ]
+    },
     "clio-chronolog": {
       "command": "clio-kit",
       "args": [

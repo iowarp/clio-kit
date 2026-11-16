@@ -108,6 +108,7 @@ SERVER_TAGS: dict[str, list[str]] = {
         "thermochemistry",
         "vibrations",
     ],
+    "avogadro": ["chemistry", "avogadro", "molecular-editor", "mcp-apps"],
     "decimer": ["chemistry", "ocsr", "decimer", "smiles", "image"],
     "fdmnes": ["chemistry", "xanes", "xas", "spectroscopy", "fdmnes"],
     "graspa": ["chemistry", "adsorption", "gcmc", "mof", "graspa"],
