@@ -280,6 +280,21 @@ def nwchem_kwargs(
     return kwargs
 
 
+def _model_download_lock() -> Any:
+    """Serialize MACE foundation-model loads across worker processes.
+
+    MACE downloads a missing model to a fixed ``<cache>/mace/<name>.part`` and renames it,
+    so parallel first runs collide; under this lock the first downloads and the rest read
+    the cached file.
+    """
+    from filelock import FileLock
+    from mace.tools.utils import get_cache_dir
+
+    cache = Path(get_cache_dir())
+    cache.mkdir(parents=True, exist_ok=True)
+    return FileLock(str(cache / ".download.lock"))
+
+
 def _mace(
     resolved: dict[str, Any],
     charge: int,
@@ -304,20 +319,25 @@ def _mace(
     versions["torch"] = version("torch")
     dtype = str(resolved.get("dtype") or "float64")
     if model.startswith("mace-off-"):
-        calc = mace_off(model=model.removeprefix("mace-off-"), device="cpu", default_dtype=dtype)
+        with _model_download_lock():
+            calc = mace_off(
+                model=model.removeprefix("mace-off-"), device="cpu", default_dtype=dtype
+            )
     elif model.startswith("mace-mp-"):
-        calc = mace_mp(
-            model=model.removeprefix("mace-mp-"),
-            device="cpu",
-            default_dtype=dtype,
-            dispersion=bool(resolved.get("dispersion")),
-        )
+        with _model_download_lock():
+            calc = mace_mp(
+                model=model.removeprefix("mace-mp-"),
+                device="cpu",
+                default_dtype=dtype,
+                dispersion=bool(resolved.get("dispersion")),
+            )
     elif model.startswith("mace-omol-"):
-        calc = mace_omol(
-            model=model.removeprefix("mace-omol-").replace("-", "_"),
-            device="cpu",
-            default_dtype=dtype,
-        )
+        with _model_download_lock():
+            calc = mace_omol(
+                model=model.removeprefix("mace-omol-").replace("-", "_"),
+                device="cpu",
+                default_dtype=dtype,
+            )
         info.update({"charge": int(charge), "spin": int(multiplicity)})
     elif Path(model).expanduser().is_file():
         calc = MACECalculator(

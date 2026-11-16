@@ -106,3 +106,25 @@ def test_nwchem_command_completion(
     monkeypatch.setenv("NWCHEM_COMMAND", "/opt/nwchem")
     calc, *_ = calculators.build(resolved({"type": "nwchem", "nprocs": 4}), 0, 1, tmp_path)
     assert calc.command == "mpirun -np 4 /opt/nwchem PREFIX.nwi > PREFIX.nwo"
+
+
+def test_mace_model_loads_take_turns(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """Parallel first runs share MACE's fixed download path, so loads hold one lock."""
+    import sys
+    import types
+
+    from filelock import Timeout
+
+    utils = types.ModuleType("mace.tools.utils")
+    utils.get_cache_dir = lambda: tmp_path / "cache" / "mace"  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "mace", types.ModuleType("mace"))
+    monkeypatch.setitem(sys.modules, "mace.tools", types.ModuleType("mace.tools"))
+    monkeypatch.setitem(sys.modules, "mace.tools.utils", utils)
+
+    first = calculators._model_download_lock()
+    second = calculators._model_download_lock()
+    assert Path(first.lock_file).parent == tmp_path / "cache" / "mace"
+    with first, pytest.raises(Timeout):
+        second.acquire(timeout=0.1)
+    with second:
+        pass
