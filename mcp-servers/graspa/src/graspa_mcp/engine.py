@@ -3,7 +3,7 @@
 gRASPA (snurr-group/gRASPA, MIT) needs an NVIDIA (CUDA, NVHPC) or AMD (HIP) GPU; the
 SYCL port runs on Intel GPUs. This server never downloads or builds it. It is found as
 ``GRASPA_COMMAND`` or ``CHEMGRAPH_GRASPA_EXECUTABLE`` (ChemGraph's variable), else
-``nvc_main.x``, ``graspa`` or ``sycl.out`` on PATH. The graspa plugin's install skill
+``nvc_main.x``, ``hip_main.x``, ``graspa`` or ``sycl.out`` on PATH. The graspa plugin's install skill
 builds it with Spack on a GPU node (``spack install graspa``).
 """
 
@@ -21,7 +21,7 @@ from typing import Any
 from .errors import GraspaError
 
 ENV_VARS = ("GRASPA_COMMAND", "CHEMGRAPH_GRASPA_EXECUTABLE")
-PATH_NAMES = ("nvc_main.x", "graspa", "sycl.out")
+PATH_NAMES = ("nvc_main.x", "hip_main.x", "graspa", "sycl.out")
 Report = Callable[[float, float | None, str], Awaitable[None]]
 CYCLE = re.compile(r"^(INITIALIZATION|EQUILIBRATION|PRODUCTION) Cycle:\s*(\d+),\s*(\d+) Adsorbate")
 

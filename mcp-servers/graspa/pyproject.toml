@@ -1,7 +1,7 @@
 [project]
 name = "graspa-mcp"
 version = "1.0.0"
-description = "Gas adsorption in porous crystals (MOFs, zeolites) by grand-canonical Monte Carlo with gRASPA: run, prepare for a GPU node, read and rank."
+description = "Gas adsorption in MOFs and zeolites by grand-canonical Monte Carlo with gRASPA: run, prepare for a GPU node, read and rank."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "BSD-3-Clause"

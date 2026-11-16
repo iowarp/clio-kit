@@ -1,0 +1,14 @@
+# Keep everything Spack writes for CLIO under one folder, $CLIO_SPACK_ROOT (for example
+# <workspace>/.spack): the install tree, build stages and caches. Use with
+#   spack -C <clio-kit>/spack-repo/config ...
+# together with SPACK_USER_CONFIG_PATH, SPACK_USER_CACHE_PATH and
+# SPACK_DISABLE_LOCAL_CONFIG=1 (see spack-repo/README.md), so no ~/.spack is written.
+config:
+  install_tree:
+    root: $CLIO_SPACK_ROOT/opt
+  build_stage:
+    - $CLIO_SPACK_ROOT/stage
+  source_cache: $CLIO_SPACK_ROOT/cache/source
+  misc_cache: $CLIO_SPACK_ROOT/cache/misc
+  test_stage: $CLIO_SPACK_ROOT/test
+  license_dir: $CLIO_SPACK_ROOT/licenses

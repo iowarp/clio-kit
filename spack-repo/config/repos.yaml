@@ -1,0 +1,3 @@
+# The clio package repository, relative to this file, ahead of Spack's builtin packages.
+repos:
+  clio: $CLIO_KIT_SPACK_REPO/spack_repo/clio

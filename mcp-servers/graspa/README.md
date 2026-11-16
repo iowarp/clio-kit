@@ -47,7 +47,7 @@ current folder; a taken name gets `-2`, `-3` …
 ## Needs
 
 `run_graspa` needs the gRASPA executable: `GRASPA_COMMAND`, `CHEMGRAPH_GRASPA_EXECUTABLE`
-(ChemGraph's variable), or `nvc_main.x`, `graspa` or `sycl.out` on PATH
+(ChemGraph's variable), or `nvc_main.x`, `hip_main.x`, `graspa` or `sycl.out` on PATH
 (`binary_missing` otherwise, pointing to `prepare_graspa`). This server never downloads
 or builds it; the graspa plugin's install skill builds it with Spack on a GPU node
 (`spack install graspa`). `prepare_graspa`, `read_graspa` and `rank_frameworks` need
