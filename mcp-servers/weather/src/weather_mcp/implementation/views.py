@@ -136,13 +136,22 @@ def grid_view(
     variables = [str(name) for name in dataset.data_vars]
     if not variables:
         return None
-    if role == "section":
+    if role in ("section", "transport"):
+        # A section draws 2-D fields along the line (distance against depth or level);
+        # a transport's time series and per-time fields are left to other views.
+        drawn = [
+            name
+            for name in variables
+            if dataset[name].ndim == 2 and "distance" in map(str, dataset[name].dims)
+        ]
+        if not drawn:
+            return None
         return {
             "component": "clio.section.v1",
             "title": label,
             "sectionUri": str(path),
-            "variable": variables[0],
-            "variables": variables[:MAX_VARIABLES],
+            "variable": drawn[0],
+            "variables": drawn[:MAX_VARIABLES],
         }
     dims = {str(dim) for dim in dataset.dims}
     horizontal = ({"latitude", "longitude"} <= dims) or ({"lat", "lon"} <= dims)

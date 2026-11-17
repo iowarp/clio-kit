@@ -101,3 +101,26 @@ def test_particle_trajectories_are_tracks_too(tmp_path: Path) -> None:
     assert view is not None
     [layer] = view["layers"]
     assert layer["kind"] == "tracks" and layer["trackField"] == "particle"
+
+
+def test_a_transport_shows_its_mean_section(tmp_path: Path) -> None:
+    """Q4: the transport arrived with no view; its 2-D section is now shown."""
+    ds = xr.Dataset(
+        {
+            "volume_transport": (("time",), np.ones(3)),
+            "normal_velocity": (("time", "depth", "distance"), np.ones((3, 4, 5))),
+            "normal_velocity_mean": (("depth", "distance"), np.ones((4, 5))),
+        },
+        coords={
+            "time": np.arange(3),
+            "depth": np.arange(4.0),
+            "distance": np.arange(5.0),
+        },
+    )
+    view = views.grid_view("transport", tmp_path / "t.nc", ds)
+    assert view is not None and view["component"] == "clio.section.v1"
+    assert view["variables"] == ["normal_velocity_mean"]
+    assert (
+        views.grid_view("transport", tmp_path / "t.nc", ds[["volume_transport"]])
+        is None
+    )

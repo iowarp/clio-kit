@@ -91,6 +91,19 @@ def transport(
         reference_temperature=reference_temperature,
     )
     out.attrs["path"] = json.dumps({"type": "LineString", "coordinates": path})
+    velocity = out.get("normal_velocity")
+    vertical = next(
+        (
+            d
+            for d in ("depth", "lev", "level", "z", "pressure")
+            if velocity is not None and d in velocity.dims
+        ),
+        None,
+    )
+    if velocity is not None and vertical and velocity.ndim > 2:
+        # The mean section, for the section view (it draws distance against depth).
+        others = [d for d in velocity.dims if d not in ("distance", vertical)]
+        out["normal_velocity_mean"] = velocity.mean(others, keep_attrs=True)
     saved = _save_grid(
         out,
         name,
