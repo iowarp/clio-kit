@@ -124,3 +124,21 @@ def test_a_transport_shows_its_mean_section(tmp_path: Path) -> None:
         views.grid_view("transport", tmp_path / "t.nc", ds[["volume_transport"]])
         is None
     )
+
+
+def test_a_route_view_is_general_and_carries_its_context(tmp_path: Path) -> None:
+    """Any ordered plan (cruise, glider, sampling line) gets one map: line, stops, context."""
+    feature = {"id": "feature", "kind": "tracks", "label": "Forecast track"}
+    view = views.route_view(
+        tmp_path / "route.parquet",
+        tmp_path / "wp.parquet",
+        "Glider mission",
+        stop_field="waypoint",
+        stop_label="Waypoints",
+        context=[feature],
+        replan_event="mission.replan",
+    )
+    assert [layer["id"] for layer in view["layers"]] == ["feature", "route", "stops"]
+    stops = view["layers"][2]
+    assert stops["idField"] == stops["labelField"] == "waypoint"
+    assert view["action"]["event"]["name"] == "mission.replan"

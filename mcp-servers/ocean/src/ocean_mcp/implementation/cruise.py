@@ -146,3 +146,26 @@ def plan_across_feature(
         "time": arrival.isoformat(),
     }
     return table, numbers
+
+
+def route_table(
+    stations: pd.DataFrame,
+    *,
+    port: tuple[float, float],
+    depart: pd.Timestamp,
+    back: Any,
+) -> pd.DataFrame:
+    """The ship's line: port, each station on arrival, port again on return."""
+    rows = [{"time": pd.Timestamp(depart), "longitude": port[0], "latitude": port[1]}]
+    rows += [
+        {
+            "time": pd.Timestamp(r.arrive),
+            "longitude": r.longitude,
+            "latitude": r.latitude,
+        }
+        for r in stations.itertuples()
+    ]
+    rows.append({"time": pd.Timestamp(back), "longitude": port[0], "latitude": port[1]})
+    route = pd.DataFrame(rows)
+    route.insert(0, "track", "route")
+    return route

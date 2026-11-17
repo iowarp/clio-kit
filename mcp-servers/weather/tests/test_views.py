@@ -101,3 +101,21 @@ def test_particle_trajectories_are_tracks_too(tmp_path: Path) -> None:
     assert view is not None
     [layer] = view["layers"]
     assert layer["kind"] == "tracks" and layer["trackField"] == "particle"
+
+
+def test_a_route_view_is_general_and_carries_its_context(tmp_path: Path) -> None:
+    """Any ordered plan (cruise, glider, sampling line) gets one map: line, stops, context."""
+    feature = {"id": "feature", "kind": "tracks", "label": "Forecast track"}
+    view = views.route_view(
+        tmp_path / "route.parquet",
+        tmp_path / "wp.parquet",
+        "Glider mission",
+        stop_field="waypoint",
+        stop_label="Waypoints",
+        context=[feature],
+        replan_event="mission.replan",
+    )
+    assert [layer["id"] for layer in view["layers"]] == ["feature", "route", "stops"]
+    stops = view["layers"][2]
+    assert stops["idField"] == stops["labelField"] == "waypoint"
+    assert view["action"]["event"]["name"] == "mission.replan"

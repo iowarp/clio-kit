@@ -691,10 +691,35 @@ def cruise_plan(
         },
         packages=("gsw",),
     )
+    route = cruise.route_table(table, port=port_xy, depart=when, back=numbers["return"])
+    route_out = _save_table(
+        route,
+        f"{name}-route",
+        "route",
+        output_dir,
+        tool="cruise_plan",
+        sources=sources,
+        method={"port": port, "speed_knots": speed_knots},
+    )
+    context = []
+    if track:
+        feature = views.table_view("tracks", Path(track), t)
+        if feature:
+            layer = {**feature["layers"][0], "id": "feature", "label": "Forecast track"}
+            context.append(layer)
+    out.view = views.route_view(
+        route_out.path,
+        out.path,
+        f"Cruise plan: {numbers['stations']} stations, {numbers['days_used']:.1f} of "
+        f"{days_available:g} days",
+        stop_field="station",
+        stop_label="Stations",
+        context=context,
+    )
     verdict = "fits" if numbers["fits"] else "does NOT fit"
     return result(
         f"{numbers['stations']} stations, {numbers['steaming_km']:.0f} km steaming; plan {verdict} in {days_available:g} days ({numbers['days_used']:.1f} used).",
-        [out],
+        [out, route_out],
         **numbers,
         schedule=table.astype({"arrive": str, "leave": str}).to_dict("records"),
     )

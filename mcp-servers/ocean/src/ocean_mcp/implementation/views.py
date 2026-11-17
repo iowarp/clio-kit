@@ -9,6 +9,7 @@ whose shape has no fitting component (a summary table, a series) get no view.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -56,6 +57,9 @@ def _numeric(table: Any) -> list[str]:
 
 #: Columns naming the track a row belongs to (eddies, storms, floats, particles).
 TRACK_ID = ("track", "particle", "storm", "sid", "float", "platform")
+
+
+_SAFE_ID = re.compile(r"[^A-Za-z0-9_-]+")
 
 
 def table_view(
@@ -185,3 +189,62 @@ def grid_file_view(role: str, path: Path, title: str = "") -> dict[str, Any] | N
 
     with xr.open_dataset(path) as dataset:
         return grid_view(role, path, dataset, title)
+
+
+def route_view(
+    route: Path,
+    stops: Path,
+    title: str,
+    *,
+    stop_field: str,
+    stop_label: str = "Stops",
+    context: list[dict[str, Any]] | None = None,
+    replan_event: str = "route.replan",
+) -> dict[str, Any]:
+    """A planned route: its line, its named stops the person can move, and context.
+
+    For any plan that visits places in order (a cruise's stations, a glider's
+    waypoints, a sampling line): ``route`` holds the line in order (``track``,
+    ``time``, longitude, latitude), ``stops`` the stops named by ``stop_field``.
+    ``context`` adds layers the plan is judged against (the forecast track of the
+    feature being sampled, a field). Moving a stop records it in ``/edits/<view>``;
+    the person's "Ask to replan" sends the moves to the agent as ``replan_event``.
+    """
+    edits_path = f"/edits/{_SAFE_ID.sub('-', stop_field)}"
+    return {
+        "component": "clio.layered-map.v1",
+        "title": title,
+        "layers": [
+            *(context or []),
+            {
+                "id": "route",
+                "kind": "tracks",
+                "label": "Route",
+                "dataUri": str(route),
+                "latitudeField": "latitude",
+                "longitudeField": "longitude",
+                "idField": "track",
+                "trackField": "track",
+                "timeField": "time",
+            },
+            {
+                "id": "stops",
+                "kind": "points",
+                "label": stop_label,
+                "dataUri": str(stops),
+                "latitudeField": "latitude",
+                "longitudeField": "longitude",
+                "idField": stop_field,
+                "labelField": stop_field,
+                "editable": True,
+            },
+        ],
+        "edits": {"path": edits_path},
+        "action": {
+            "event": {
+                "name": replan_event,
+                "context": {"stops": str(stops), "moved": {"path": edits_path}},
+            }
+        },
+        "actionLabel": "Ask to replan",
+    }

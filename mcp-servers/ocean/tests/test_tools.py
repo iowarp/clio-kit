@@ -159,6 +159,26 @@ async def test_cruise_plan_retimes_moved_stations() -> None:
     )
     assert out["mode"] == "re-timed the given stations"
     assert out["fits"] is False and "does NOT fit" in out["summary"]
+    # The plan is shown as the ship's line from port, through the named stations, home.
+    stations, route = out["outputs"]
+    assert route["role"] == "route"
+    line = pd.read_parquet(route["path"])
+    assert list(zip(line["longitude"], line["latitude"], strict=True)) == [
+        (0, 0),
+        (1, 0),
+        (1, 1),
+        (0, 0),
+    ]
+    view = stations["view"]
+    assert view["component"] == "clio.layered-map.v1"
+    route_layer, station_layer = view["layers"]
+    assert route_layer["kind"] == "tracks" and route_layer["dataUri"] == route["path"]
+    assert (
+        station_layer["labelField"] == "station" and station_layer["editable"] is True
+    )
+    # Moving a station is recorded and sent to the agent to replan.
+    assert view["edits"]["path"].startswith("/edits/")
+    assert view["action"]["event"]["context"]["moved"] == view["edits"]
 
 
 async def test_errors_are_typed(tmp_path: Path) -> None:
