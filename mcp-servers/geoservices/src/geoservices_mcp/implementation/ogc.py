@@ -18,6 +18,7 @@ from .common import (
     get_json,
     get_text,
     http_error,
+    raise_for_status,
     strip_query,
 )
 
@@ -278,7 +279,7 @@ def wcs_subset(url: str, coverage_id: str, region: Region, out: Path) -> dict[st
     ]
     try:
         with client() as http, http.stream("GET", base, params=params) as response:
-            response.raise_for_status()
+            raise_for_status(response)
             kind = response.headers.get("content-type", "")
             size = 0
             with out.open("wb") as handle:

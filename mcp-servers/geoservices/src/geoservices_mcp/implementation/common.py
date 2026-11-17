@@ -85,6 +85,13 @@ def client() -> httpx.Client:
     )
 
 
+def raise_for_status(response: httpx.Response) -> None:
+    """Like ``raise_for_status``, reading a streamed error body first so its text is reported."""
+    if response.is_error:
+        response.read()
+    response.raise_for_status()
+
+
 def http_error(exc: Exception, what: str) -> GeoServiceError:
     """Turn a transport or HTTP failure into a typed, human-readable reason."""
     if isinstance(exc, httpx.HTTPStatusError):
@@ -104,7 +111,7 @@ def get_json(url: str, params: dict[str, Any] | None = None, *, what: str) -> An
     """GET a JSON document with a size bound; ArcGIS error envelopes become errors."""
     try:
         with client() as http, http.stream("GET", url, params=params) as response:
-            response.raise_for_status()
+            raise_for_status(response)
             body = bytearray()
             for chunk in response.iter_bytes(65536):
                 body.extend(chunk)
@@ -134,7 +141,7 @@ def get_text(url: str, params: dict[str, Any] | None = None, *, what: str) -> st
     """GET a text document (XML capabilities) with the same size bound."""
     try:
         with client() as http, http.stream("GET", url, params=params) as response:
-            response.raise_for_status()
+            raise_for_status(response)
             body = bytearray()
             for chunk in response.iter_bytes(65536):
                 body.extend(chunk)

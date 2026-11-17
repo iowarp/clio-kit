@@ -476,3 +476,16 @@ async def test_oversized_pages_are_halved_and_reported(
     result = await call("fetch_features", {"url": url})
     assert result["feature_count"] == 5 and result["paging"]["complete"] is True
     assert "halved" in result["paging"]["page_size_reduced"]
+
+
+async def test_an_http_error_reports_its_body(site: Site) -> None:
+    site.routes["/arcgis/rest/services/Down/FeatureServer/0"] = lambda q: (
+        503,
+        "text/plain",
+        b"maintenance window",
+    )
+    with pytest.raises(ToolError, match="HTTP 503: maintenance window"):
+        await call(
+            "describe_geo_service",
+            {"url": site.base + "/arcgis/rest/services/Down/FeatureServer/0"},
+        )
