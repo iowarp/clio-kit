@@ -489,3 +489,20 @@ async def test_an_http_error_reports_its_body(site: Site) -> None:
             "describe_geo_service",
             {"url": site.base + "/arcgis/rest/services/Down/FeatureServer/0"},
         )
+
+
+async def test_a_read_over_the_byte_budget_is_refused_with_numbers(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from geoservices_mcp.implementation import raster as raster_impl
+
+    tile = tmp_path / "big.tif"
+    _tile(tile, "EPSG:26910", 760000, 4300000, 5.0)
+    monkeypatch.setattr(raster_impl, "MAX_READ_BYTES", 1000)
+    with pytest.raises(
+        ToolError, match=r"would fetch about .* GB of full-resolution data"
+    ):
+        await call(
+            "read_raster_window",
+            {"sources": [str(tile)], "bbox": [-120.02, 38.80, -120.005, 38.81]},
+        )

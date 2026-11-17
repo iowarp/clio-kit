@@ -9,6 +9,7 @@ budget and the decimation is reported, never hidden.
 from __future__ import annotations
 
 import math
+import os
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,12 @@ import numpy as np
 from .common import GeoServiceError, Region
 
 MAX_SOURCES = 64
+#: Full-resolution bytes one read may fetch. Sources without overviews must be read at
+#: native resolution even for a coarse result, so a whole-basin window of a 0.5 m mosaic
+#: would fetch tens of gigabytes; refuse that with the numbers instead of hanging.
+MAX_READ_BYTES = int(
+    os.environ.get("GEOSERVICES_MAX_READ_BYTES", str(1536 * 1024 * 1024))
+)
 DEFAULT_MAX_CELLS = 4_000_000
 GDAL_ENV = {
     "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR",
@@ -118,6 +125,7 @@ def read_window(
             else:  # approximate the native cell size in the target CRS
                 b = transform_bounds(first.crs, target, *first.bounds)
                 native_res = (b[2] - b[0]) / first.width
+            _check_read_budget(used, want, target, native_res, band, max_cells)
             width = (want[2] - want[0]) / native_res
             height = (want[3] - want[1]) / native_res
             factor = max(1.0, math.sqrt(width * height / max_cells))
@@ -260,3 +268,53 @@ def _warp(ds, band, layer, transform, target, nodata, floating, factor) -> None:
         dst_nodata=nodata,
         resampling=_resampling(floating, factor),
     )
+
+
+def _check_read_budget(
+    used: list[Any],
+    want: Any,
+    target: Any,
+    native_res: float,
+    band: int,
+    max_cells: int,
+) -> None:
+    """Refuse a read whose full-resolution fetch would exceed MAX_READ_BYTES."""
+    from rasterio.warp import transform_bounds
+
+    width = (want[2] - want[0]) / native_res
+    height = (want[3] - want[1]) / native_res
+    total = 0.0
+    smallest_factor = math.inf
+    for ds in used:
+        left, bottom, right, top = transform_bounds(
+            target, ds.crs, *want, densify_pts=21
+        )
+        b = ds.bounds
+        w = max(0.0, min(right, b.right) - max(left, b.left)) / abs(ds.res[0])
+        h = max(0.0, min(top, b.top) - max(bottom, b.bottom)) / abs(ds.res[1])
+        cells = w * h
+        # GDAL reads the coarsest overview that is still at least as fine as the output.
+        factor = max(1.0, math.sqrt(width * height / max_cells))
+        usable = [o for o in ds.overviews(band) if o <= factor] or [1]
+        read_factor = max(usable)
+        smallest_factor = min(smallest_factor, read_factor)
+        total += cells / (read_factor**2) * np.dtype(ds.dtypes[band - 1]).itemsize
+    if total > MAX_READ_BYTES:
+        area_km2 = (
+            (want[2] - want[0]) * (want[3] - want[1]) / 1e6
+            if target.is_projected
+            else None
+        )
+        fits = MAX_READ_BYTES / max(total, 1) * (area_km2 or 0)
+        raise GeoServiceError(
+            f"This window would fetch about {total / 1e9:.1f} GB of full-resolution data "
+            f"(the source has {'no overviews' if smallest_factor == 1 else 'only coarse overviews'} "
+            "at this scale, so every native block is read even for a coarse result). Read a "
+            + (
+                f"smaller region (about {fits:.0f} km\u00b2 fits) "
+                if area_km2
+                else "smaller region "
+            )
+            + "or use a coarser product for the whole area, such as a 10 or 30 m DEM or a WCS "
+            "coverage."
+        )

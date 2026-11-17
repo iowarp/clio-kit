@@ -10,6 +10,7 @@ it is; a limit that was hit is reported with the reason, never hidden.
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Annotated, Any
@@ -276,8 +277,13 @@ async def read_raster_window_tool(
             fetched = path.with_name(path.stem + "_wcs.tif")
             got = ogc.wcs_subset(items[0], coverage_id, region, fetched)
             try:
-                result = raster.read_window(
-                    [str(fetched)], region, path, max_cells=max_cells, dst_crs=dst_crs
+                result = await asyncio.to_thread(
+                    raster.read_window,
+                    [str(fetched)],
+                    region,
+                    path,
+                    max_cells=max_cells,
+                    dst_crs=dst_crs,
                 )
             finally:
                 fetched.unlink(missing_ok=True)
@@ -289,8 +295,13 @@ async def read_raster_window_tool(
                     "ArcGIS ImageServer export is not supported yet; use the layer's WCS or "
                     "a GeoTIFF download if the record offers one"
                 )
-            result = raster.read_window(
-                items, region, path, max_cells=max_cells, dst_crs=dst_crs
+            result = await asyncio.to_thread(
+                raster.read_window,
+                items,
+                region,
+                path,
+                max_cells=max_cells,
+                dst_crs=dst_crs,
             )
         sidecar = write_provenance(
             path,
@@ -378,7 +389,8 @@ async def read_point_cloud_tool(
             output_path, f"{slug(target.rstrip('/').rsplit('/', 2)[-2])}_points", ".laz"
         )
         if kind == "ept":
-            result = pointcloud.ept_subset(
+            result = await asyncio.to_thread(
+                pointcloud.ept_subset,
                 target,
                 region,
                 path,
@@ -386,7 +398,8 @@ async def read_point_cloud_tool(
                 classifications=classifications,
             )
         elif kind == "copc":
-            result = pointcloud.copc_subset(
+            result = await asyncio.to_thread(
+                pointcloud.copc_subset,
                 target,
                 region,
                 path,
