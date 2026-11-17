@@ -184,8 +184,12 @@ def exceedance(
         bool, Field(description="Variable is accumulated since the run start.")
     ] = True,
     scale: Annotated[
-        float, Field(description="Unit factor (1000 for m to mm).")
-    ] = 1000.0,
+        float | None,
+        Field(
+            description="Unit factor to the thresholds' units; omit to use the field's own "
+            "units (m to mm, mm and kg m-2 as they are)."
+        ),
+    ] = None,
     window_hours: Annotated[int, Field(description="Window length, hours.")] = 24,
     name: Annotated[str, Field(description="Name for the outputs.")] = "exceedance",
     output_dir: Annotated[
@@ -207,7 +211,8 @@ def exceedance(
         "method": {
             "thresholds": thresholds,
             "accumulated": accumulated,
-            "scale": scale,
+            "scale": numbers["scale"],
+            "units_in": numbers["units_in"],
             "window_hours": window_hours,
             "probability": "fraction of members above the threshold",
         },

@@ -64,6 +64,31 @@ async def test_exceedance_counts_members(ensemble_point: Path) -> None:
     assert out["windows"] == 3
 
 
+async def test_exceedance_reads_units_and_refuses_unknown_ones(
+    ensemble_point: Path, tmp_path: Path
+) -> None:
+    ds = xr.open_dataset(ensemble_point).load()
+    in_mm = ds.assign(tp=ds["tp"] * 1000.0)
+    in_mm["tp"].attrs["units"] = "kg m**-2"
+    mm_path = tmp_path / "ens_mm.nc"
+    in_mm.to_netcdf(mm_path)
+    out = await call(
+        "exceedance", ensemble=str(mm_path), variable="tp", thresholds=[30.0]
+    )
+    assert out["max_probability_gt_30"] == pytest.approx(20 / 51)
+    assert out["scale"] == 1.0
+    bare = ds.copy()
+    bare["tp"].attrs = {}
+    bare_path = tmp_path / "ens_bare.nc"
+    bare.to_netcdf(bare_path)
+    async with Client(mcp) as client:
+        with pytest.raises(ToolError, match="^bad_input: tp has units none"):
+            await client.call_tool(
+                "exceedance",
+                {"ensemble": str(bare_path), "variable": "tp", "thresholds": [30.0]},
+            )
+
+
 async def test_threshold_events_find_planted_heat_wave(hourly_t2m: Path) -> None:
     out = await call(
         "threshold_events",

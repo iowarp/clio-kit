@@ -28,7 +28,7 @@ def ensemble_point(tmp_path: Path) -> Path:
     hours = steps.astype(float)
     tp = (daily_mm[:, None] * hours[None, :] / 24.0) / 1000.0
     ds = xr.Dataset(
-        {"tp": (("number", "step"), tp)},
+        {"tp": (("number", "step"), tp, {"units": "m"})},
         coords={
             "number": members,
             "step": steps.astype("timedelta64[h]").astype("timedelta64[ns]"),

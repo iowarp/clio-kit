@@ -35,21 +35,48 @@ def _valid_times(da: xr.DataArray) -> pd.DatetimeIndex:
     )
 
 
+#: Factors from a precipitation field's declared units to millimetres.
+_TO_MM = {
+    "m": 1000.0,
+    "mm": 1.0,
+    "kg m**-2": 1.0,
+    "kg m-2": 1.0,
+    "kg/m2": 1.0,
+    "kg m^-2": 1.0,
+}
+
+
+def unit_factor(units: str) -> float | None:
+    """The factor to millimetres for a field's declared units, or None if unknown."""
+    return _TO_MM.get(units.strip())
+
+
 def exceedance(
     ds: xr.Dataset,
     *,
     variable: str,
     thresholds: list[float],
     accumulated: bool,
-    scale: float,
+    scale: float | None,
     window_hours: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, Any]]:
     """Per window: each member's amount and the fraction above each threshold.
 
-    ``scale`` converts units (1000 for metres to mm). Windows are consecutive
-    ``window_hours`` blocks from the first valid time; an accumulated field's
-    amount in a window is its value at the window end minus at the start.
+    ``scale`` converts units; without it the field's own ``units`` decide (metres of
+    water to mm, mm and kg m-2 unchanged), and a field without known units is refused.
+    Windows are consecutive ``window_hours`` blocks from the first valid time; an
+    accumulated field's amount in a window is its value at the window end minus at
+    the start.
     """
+    units = str(ds[variable].attrs.get("units", "")).strip()
+    if scale is None:
+        scale = unit_factor(units)
+        if scale is None:
+            raise WeatherToolError(
+                "bad_input",
+                f"{variable} has units {units or 'none'}: pass scale to convert it "
+                "to the thresholds' units",
+            )
     da = ds[variable] * scale
     member = pick(da, MEMBER)
     if "step" not in da.dims:
@@ -102,6 +129,8 @@ def exceedance(
         "members": int(table["members"].max()),
         "window_hours": window_hours,
         "accumulated": accumulated,
+        "units_in": units or None,
+        "scale": scale,
     }
     total = None
     if accumulated:

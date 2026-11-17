@@ -122,15 +122,24 @@ def ensemble_open_data(
                 "backend_unavailable", f"ECMWF open data: {exc}"
             ) from exc
         pieces = []
+        kinds = []
         for kind in ("cf", "pf"):
             part = xr.open_dataset(
                 target,
                 engine="cfgrib",
                 backend_kwargs={"indexpath": "", "filter_by_keys": {"dataType": kind}},
             )
+            # A run may publish no control member for a parameter: the index has no
+            # entry for it and this piece is empty. Its absence is reported in the
+            # source name, not hidden.
+            if not part.data_vars:
+                continue
             if "number" not in part.dims:
                 part = part.expand_dims("number")
             pieces.append(part)
+            kinds.append({"cf": "control", "pf": "perturbed"}[kind])
+        if not pieces:
+            raise WeatherToolError("no_data", f"ECMWF open data has no {param} members")
         ds = xr.concat(pieces, dim="number").sortby("number")
         if point is not None:
             lon = point[0] % 360 if float(ds.longitude.max()) > 180 else point[0]
@@ -140,7 +149,10 @@ def ensemble_open_data(
         ds = ds.load()
     run = pd.Timestamp(reply.datetime) if hasattr(reply, "datetime") else None
     source = Source(
-        name=f"ECMWF {model.upper()} ENS open data ({ds.sizes.get('number', 0)} members)",
+        name=(
+            f"ECMWF {model.upper()} ENS open data ({ds.sizes.get('number', 0)} members: "
+            f"{' and '.join(kinds)})"
+        ),
         kind="service",
         reference="https://www.ecmwf.int/en/forecasts/datasets/open-data",
         version=f"run {run.isoformat() if run is not None else 'latest'}",
