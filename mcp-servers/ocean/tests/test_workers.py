@@ -97,3 +97,35 @@ async def test_mhw_track_and_metrics_find_the_2003_event(sst_grid: Path) -> None
     assert top["start"][:7] in ("2003-06", "2003-07")
     assert top["duration_days"] >= 30
     assert top["category"] in ("Strong", "Severe", "Extreme")
+
+
+async def test_days_an_eddy_is_missed_are_interpolated_not_zero(tmp_path: Path) -> None:
+    """A warm eddy absent for two days is one track; the gap is filled and flagged.
+
+    Before, the merge's empty slots came out as rows at 0°E 0°N on 1 January 1950
+    (the Q7 run drew lines across the Atlantic from them).
+    """
+    t = pd.date_range("2020-01-01", periods=14, freq="D")
+    lat = np.arange(20, 40, 0.25)
+    lon = np.arange(-80, -50, 0.25)
+    yy, xx = np.meshgrid(lat, lon, indexing="ij")
+    frames = []
+    for i in range(len(t)):
+        warm = 0.3 * np.exp(-((yy - 30) ** 2 + (xx - (-65 + 0.1 * i)) ** 2) / 0.8)
+        cold = -0.25 * np.exp(-((yy - 25) ** 2 + (xx - (-70 - 0.05 * i)) ** 2) / 0.6)
+        frames.append(cold if i in (6, 7) else warm + cold)
+    path = tmp_path / "gap.nc"
+    xr.Dataset(
+        {"sla": (("time", "latitude", "longitude"), np.array(frames), {"units": "m"})},
+        coords={"time": t, "latitude": lat, "longitude": lon},
+    ).to_netcdf(path)
+    out = await call(
+        "eddy_track", grid=str(path), wavelength_km=None, min_lifetime_days=5
+    )
+    tracks = pd.read_parquet(out["outputs"][0]["path"])
+    warm = tracks[tracks["polarity"] == "anticyclonic"]
+    assert not ((warm["longitude"] == 0) & (warm["latitude"] == 0)).any()
+    assert warm["time"].min() >= pd.Timestamp("2020-01-01")
+    filled = warm[warm["virtual"]]
+    assert len(filled) == 2
+    assert filled["longitude"].between(-65, -63).all()

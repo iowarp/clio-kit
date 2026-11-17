@@ -101,7 +101,15 @@ def track(paths: list[str], virtual: int):
     corr = Correspondances(datasets=paths, virtual=virtual)
     corr.track()
     corr.prepare_merging()
-    return corr.merge(raw_data=False)
+    eddies = corr.merge(raw_data=False)
+    # Days an eddy was missed (up to ``virtual`` of them) are slots left at zero by
+    # the merge: time 0 (1 January 1950), 0°E 0°N. As py-eddy-tracker's own tracking
+    # script does, flag them virtual and fill them by interpolation between the
+    # observations either side, so no track jumps to the Gulf of Guinea in 1950.
+    if len(eddies):
+        eddies["virtual"][:] = eddies["time"] == 0
+        eddies.filled_by_interpolation(eddies["virtual"] == 1)
+    return eddies
 
 
 def main(request_path: str) -> int:
@@ -125,6 +133,7 @@ def main(request_path: str) -> int:
                 }
             )
             frame["track"] = np.asarray(tracks["track"])
+            frame["virtual"] = np.asarray(tracks["virtual"]).astype(bool)
             frame["polarity"] = polarity
             rows.append(frame)
     if rows:
