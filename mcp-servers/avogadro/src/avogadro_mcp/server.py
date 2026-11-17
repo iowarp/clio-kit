@@ -164,9 +164,10 @@ async def open_in_avogadro(
     name="read_avogadro",
     title="Read from Avogadro",
     description=(
-        "What the person last sent from Avogadro (Extensions > CLIO > Send to CLIO), written as "
-        "an XYZ structure file plus Avogadro's CJSON under output_dir/chemistry/avogadro/, "
-        "with its formula and the atoms they had selected (0-based indices, file order)."
+        "The molecule open in Avogadro now, with the person's edits and the atoms they have "
+        "selected (0-based indices, file order), written as an XYZ structure file plus "
+        "Avogadro's CJSON under output_dir/chemistry/avogadro/. An Avogadro too old to report "
+        "its molecule gives what the person last sent with Extensions > CLIO > Send to CLIO."
     ),
     annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True},
     meta={PATHS_META: {"output_dir": {"machine": "local", "access": "write"}}},
@@ -178,15 +179,27 @@ async def read_avogadro(
 ) -> ToolResult:
     def go() -> dict[str, Any]:
         s = session()
-        sent = s.latest_sent()
-        if sent is None:
-            raise AvogadroError(
-                "nothing_sent",
-                "The person has not sent anything from Avogadro yet. Ask them to choose "
-                "Extensions > CLIO > Send to CLIO in the Avogadro view (selecting the atoms "
-                "they mean first).",
-            )
-        doc = json.loads(sent.read_text())
+        doc, source, sent = None, "live", None
+        try:
+            reply = s.rpc("getMolecule", {"format": "cjson"})
+            doc = json.loads(reply["content"])
+        except AvogadroError as exc:
+            # Not open, or an Avogadro without getMolecule (before 2.1, JSON-RPC -32601):
+            # what the person last sent with Send to CLIO, if anything.
+            unknown = "-32601" in str(exc) or "not found" in str(exc).lower()
+            if exc.reason != "not_running" and not unknown:
+                raise
+            sent = s.latest_sent()
+            if sent is None and exc.reason == "not_running":
+                raise
+            if sent is None:
+                raise AvogadroError(
+                    "nothing_sent",
+                    "This Avogadro cannot report its molecule, and the person has not sent "
+                    "anything yet. Ask them to choose Extensions > CLIO > Send to CLIO in the "
+                    "Avogadro view (selecting the atoms they mean first).",
+                ) from exc
+            doc, source = json.loads(sent.read_text()), "sent"
         mol = cjson.read(doc)
         folder = _out_dir(output_dir)
         stem = time.strftime("avogadro-%Y%m%d-%H%M%S")
@@ -205,7 +218,8 @@ async def read_avogadro(
             "unit_cell": mol["unit_cell"],
             "structure": {"path": str(xyz), "format": "xyz", "n_atoms": mol["n_atoms"]},
             "cjson": str(cj),
-            "sent": sent.stem,
+            "source": source,
+            **({"sent": sent.stem} if sent is not None else {}),
         }
 
     data = _run(go)

@@ -45,7 +45,12 @@ def read_text(d: dict[str, Any]) -> str:
         else "no atoms selected"
     )
     return (
-        f"The person sent {d['formula']} ({d['n_atoms']} atoms) from Avogadro; {sel_text}. "
-        f"Structure: {d['structure']['path']} (XYZ); Avogadro's CJSON: {d['cjson']}."
+        (
+            f"Avogadro has {d['formula']} ({d['n_atoms']} atoms) open; {sel_text}. "
+            if d.get("source", "live") == "live"
+            else f"The person sent {d['formula']} ({d['n_atoms']} atoms) from Avogadro; "
+            f"{sel_text}. "
+        )
+        + f"Structure: {d['structure']['path']} (XYZ); Avogadro's CJSON: {d['cjson']}."
         + (" It has a unit cell (kept in the CJSON)." if d.get("unit_cell") else "")
     )

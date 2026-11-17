@@ -85,7 +85,7 @@ async def test_tools_say_what_is_missing(monkeypatch, out):
         assert "install-avogadro" in status.content[0].text
         with pytest.raises(ToolError, match=r"install-avogadro.*\[not_installed\]"):
             await client.call_tool("open_in_avogadro", {})
-        with pytest.raises(ToolError, match=r"\[nothing_sent\]"):
+        with pytest.raises(ToolError, match=r"\[not_running\]"):
             await client.call_tool("read_avogadro", {})
         tools = {t.name: t for t in await client.list_tools()}
     assert set(tools) == {
@@ -95,3 +95,25 @@ async def test_tools_say_what_is_missing(monkeypatch, out):
         "avogadro_snapshot",
         "close_avogadro",
     }
+
+
+async def test_read_takes_the_live_molecule_with_its_selection(monkeypatch, out):
+    """Avogadro 2.1 reports its molecule: the person's edit arrives without a menu step."""
+    from avogadro_mcp import server
+
+    class Live:
+        def rpc(self, method, params):
+            assert method == "getMolecule" and params == {"format": "cjson"}
+            return {"format": "cjson", "content": json.dumps(CJSON)}
+
+        def latest_sent(self):
+            raise AssertionError("a live Avogadro is read directly")
+
+    monkeypatch.setattr(server, "session", lambda: Live())
+    async with Client(mcp) as client:
+        got = await client.call_tool("read_avogadro", {})
+    data = got.structured_content
+    assert data["source"] == "live" and data["selected"] == [1, 2]
+    assert data["selected_elements"] == ["H", "H"] and "sent" not in data
+    assert Path(data["structure"]["path"]).is_file()
+    assert "Avogadro has" in got.content[0].text
