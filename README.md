@@ -492,7 +492,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`home-assistant`** | 1.0.0 | Home | Your Home Assistant's sensors, devices and automations (runs ha-mcp 9.2.0) | `clio-kit mcp-server home-assistant` |
 | **`jarvis`** | 3.7.7 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |
 | **`lmod`** | 3.0.4 | Environment | Environment module management | `clio-kit mcp-server lmod` |
-| **`ndp`** | 2.2.9 | Data Protocol | Search and discover datasets across CKAN instances | `clio-kit mcp-server ndp` |
+| **`ndp`** | 2.2.10 | Data Protocol | Search and discover datasets across CKAN instances | `clio-kit mcp-server ndp` |
 | **`node-hardware`** | 2.3.3 | System | System hardware information | `clio-kit mcp-server node-hardware` |
 | **`pandas`** | 2.4.1 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
 | **`parallel-sort`** | 2.3.3 | Computing | Large file sorting | `clio-kit mcp-server parallel-sort` |

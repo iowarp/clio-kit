@@ -298,7 +298,7 @@
       "name": "clio-ndp",
       "source": "./plugins/clio-ndp",
       "description": "National Data Platform (NDP) MCP server for searching and discovering datasets across multiple CKAN instances",
-      "version": "2.2.9",
+      "version": "2.2.10",
       "category": "scientific",
       "keywords": [
         "datasets",
