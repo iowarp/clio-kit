@@ -128,7 +128,8 @@ def check_smiles(smiles: str) -> dict[str, Any]:
     from rdkit import Chem, RDLogger
     from rdkit.Chem import Descriptors, rdMolDescriptors
 
-    RDLogger.DisableLog("rdApp.*")
+    # RDKit builds these functions at import time; its stubs do not list them.
+    RDLogger.DisableLog("rdApp.*")  # type: ignore[attr-defined]
     text = (smiles or "").strip()
     if not text:
         return {"valid": False, "error": "the model returned no SMILES"}
@@ -145,7 +146,7 @@ def check_smiles(smiles: str) -> dict[str, Any]:
         "valid": True,
         "canonical_smiles": Chem.MolToSmiles(mol),
         "formula": rdMolDescriptors.CalcMolFormula(mol),
-        "molecular_weight_g_mol": round(Descriptors.MolWt(mol), 3),
+        "molecular_weight_g_mol": round(Descriptors.MolWt(mol), 3),  # type: ignore[attr-defined]
         "heavy_atoms": mol.GetNumHeavyAtoms(),
         "stereo_centres": len(Chem.FindMolChiralCenters(mol, includeUnassigned=True)),
         "inchikey": inchikey,
