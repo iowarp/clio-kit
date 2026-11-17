@@ -32,7 +32,9 @@ def test_a_profile_table_is_shown_as_a_profile_stack(tmp_path: Path) -> None:
     assert view["dataUri"] == str(tmp_path / "p.parquet")
 
 
-def test_tracks_and_points_are_map_layers_and_a_summary_has_no_view(tmp_path: Path) -> None:
+def test_tracks_and_points_are_map_layers_and_a_summary_has_no_view(
+    tmp_path: Path,
+) -> None:
     tracks = pd.DataFrame(
         {
             "track": [1, 1],
@@ -45,7 +47,9 @@ def test_tracks_and_points_are_map_layers_and_a_summary_has_no_view(tmp_path: Pa
     layer = view["layers"][0]
     assert view["component"] == "clio.layered-map.v1" and layer["kind"] == "tracks"
     assert layer["trackField"] == "track" and layer["timeField"] == "time"
-    points = pd.DataFrame({"station": ["X"], "latitude": [1.0], "longitude": [2.0], "v": [3.0]})
+    points = pd.DataFrame(
+        {"station": ["X"], "latitude": [1.0], "longitude": [2.0], "v": [3.0]}
+    )
     point = views.table_view("points", tmp_path / "s.parquet", points)["layers"][0]
     assert point["kind"] == "points" and point["idField"] == "station"
     summary = pd.DataFrame({"model": ["A"], "rmse": [1.0]})
@@ -55,7 +59,11 @@ def test_tracks_and_points_are_map_layers_and_a_summary_has_no_view(tmp_path: Pa
 def test_a_field_is_a_grid_layer_and_a_section_its_own_view(tmp_path: Path) -> None:
     field = xr.Dataset(
         {"sst": (("time", "latitude", "longitude"), np.zeros((2, 3, 4)))},
-        coords={"time": [0, 1], "latitude": [0.0, 1.0, 2.0], "longitude": [0.0, 1, 2, 3]},
+        coords={
+            "time": [0, 1],
+            "latitude": [0.0, 1.0, 2.0],
+            "longitude": [0.0, 1, 2, 3],
+        },
     )
     path = tmp_path / "f.nc"
     field.to_netcdf(path)

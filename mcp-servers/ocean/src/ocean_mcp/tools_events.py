@@ -397,6 +397,23 @@ def mhw_events(
     )
 
 
+def _start_record(row: dict[str, Any]) -> dict[str, Any]:
+    """One year's bloom start for the result: dates as ISO text, a missing one as null."""
+    out: dict[str, Any] = {}
+    for key, value in row.items():
+        if key in ("bloom_start", "peak"):
+            out[key] = (
+                None
+                if value is None or pd.isna(value)
+                else pd.Timestamp(value).isoformat()
+            )
+        elif isinstance(value, float) and not np.isfinite(value):
+            out[key] = None
+        else:
+            out[key] = value
+    return out
+
+
 @mcp.tool(
     name="bloom_phenology",
     title="Bloom Start",
@@ -492,7 +509,7 @@ def bloom_phenology(
         f"Bloom start found in {numbers['years_with_start']} of {numbers['years']} years ({method}).",
         outputs,
         **numbers,
-        starts=table.astype({"bloom_start": str}).to_dict("records"),
+        starts=[_start_record(row) for row in table.to_dict("records")],
     )
 
 

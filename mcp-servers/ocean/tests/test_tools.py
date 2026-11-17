@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
 from fastmcp import Client
@@ -193,3 +194,27 @@ async def test_swath_download_without_login_names_the_credential(
             end="2024-01-03",
             download=True,
         )
+
+
+async def test_bloom_phenology_returns_a_year_without_a_start_as_null(
+    tmp_path: Path,
+) -> None:
+    # One year with a spring bloom, one already above its threshold from 1 January.
+    t = pd.date_range("2020-01-01", "2021-12-31", freq="D", tz="UTC")
+    doy = t.day_of_year.to_numpy()
+    bloom = 0.3 + 2.0 * np.exp(-((doy - 100) ** 2) / (2 * 12**2))
+    early = np.where(doy < 120, 1.0 + doy / 100.0, 0.2)
+    chl = np.where(t.year == 2020, bloom, early)
+    series = tmp_path / "chl.csv"
+    pd.DataFrame({"time": t, "chl": chl}).to_csv(series, index=False)
+    data = await call(
+        "bloom_phenology",
+        method="median_plus_5pct",
+        series=str(series),
+        column="chl",
+        output_dir=str(tmp_path),
+    )
+    by_year = {row["year"]: row for row in data["starts"]}
+    assert by_year[2020]["bloom_start"].startswith("2020-03")
+    assert by_year[2021]["bloom_start"] is None
+    assert "not observed" in by_year[2021]["reason"]
