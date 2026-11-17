@@ -49,13 +49,27 @@ def free_port() -> int:
         return int(s.getsockname()[1])
 
 
+#: A Unix socket path holds at most 107 bytes on Linux (108 with the terminator).
+SOCKET_PATH_MAX = 107
+
+
+def socket_dir(preferred: Path) -> Path:
+    """Avogadro's TMPDIR, which holds its RPC socket: ``preferred`` when the socket path
+    fits, else a fresh folder under /tmp. A sandbox's TMPDIR can be deep enough that
+    ``<TMPDIR>/avogadro`` is over the limit, and Avogadro then fails to listen (EINVAL)."""
+    if len(str(preferred / RPC_NAME).encode()) <= SOCKET_PATH_MAX:
+        preferred.mkdir(parents=True)
+        return preferred
+    return Path(tempfile.mkdtemp(prefix="clio-avo-", dir="/tmp"))
+
+
 class Session:
     def __init__(self) -> None:
         self.root = Path(tempfile.mkdtemp(prefix="clio-avogadro-"))
-        self.tmp = self.root / "tmp"
+        self.tmp = socket_dir(self.root / "tmp")
         self.data = self.root / "data"
         self.handoff = self.root / "handoff"
-        for p in (self.tmp, self.data, self.root / "config", self.handoff):
+        for p in (self.data, self.root / "config", self.handoff):
             p.mkdir(parents=True)
         self.token = secrets.token_urlsafe(32)
         self.procs: dict[str, subprocess.Popen[bytes]] = {}
@@ -238,12 +252,13 @@ class Session:
                         pass
         if not keep_root:
             shutil.rmtree(self.root, ignore_errors=True)
+            shutil.rmtree(self.tmp, ignore_errors=True)
 
     # --- what the agent does ---------------------------------------------------
     def rpc(self, method: str, params: dict[str, Any]) -> Any:
         if not self.running():
             raise AvogadroError("not_running", "Avogadro is not open; call open_in_avogadro.")
-        return rpc.call(self.tmp / "avogadro", method, params)
+        return rpc.call(self.tmp / RPC_NAME, method, params)
 
     def latest_sent(self) -> Path | None:
         files = sorted(self.handoff.glob("sent-*.cjson"))
