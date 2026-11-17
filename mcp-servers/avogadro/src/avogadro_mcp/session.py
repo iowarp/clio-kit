@@ -35,7 +35,7 @@ WIDTH, HEIGHT = 1440, 900  # the window's size until the view reports its own
 #: The virtual screen; the window and the streamed region follow the view inside it.
 MAX_WIDTH, MAX_HEIGHT = 3840, 2160
 #: Below this Avogadro's desktop interface does not fit; the view scales it down instead.
-MIN_WIDTH, MIN_HEIGHT = 800, 600
+MIN_WIDTH, MIN_HEIGHT = 560, 420
 RPC_NAME = "avogadro"  # Avogadro's default RPC socket name, under its TMPDIR
 
 

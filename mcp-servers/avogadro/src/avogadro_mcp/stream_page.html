@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Avogadro</title>
 <style>
-  html, body { margin: 0; height: 100%; background: #1e1f22; }
+  html, body { margin: 0; height: 100%; background: #f2efe8; overflow: hidden; }
+  @media (prefers-color-scheme: dark) { html, body { background: #1e1f22; } }
   #screen { width: 100%; height: 100%; }
   #note { position: absolute; top: 8px; left: 8px; font: 13px system-ui, sans-serif;
     color: #e6e8eb; background: rgba(0,0,0,.6); padding: 4px 8px; border-radius: 4px; }
@@ -24,6 +25,7 @@
   function connect() {
     const rfb = new RFB(document.getElementById('screen'), url.href);
     rfb.scaleViewport = true;
+    rfb.background = 'transparent';  // the page's theme colour around a scaled window
     rfb.resizeSession = false;
     rfb.focusOnClick = true;
     rfb.addEventListener('connect', () => {
