@@ -91,6 +91,13 @@
         "node-hardware"
       ]
     },
+    "clio-ocean": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "ocean"
+      ]
+    },
     "clio-pandas": {
       "command": "clio-kit",
       "args": [

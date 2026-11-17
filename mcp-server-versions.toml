@@ -24,7 +24,7 @@ schema-version = 1
 # spice earthdata-mcp-server, ha-mcp and ltspice-mcp (Python). Two primary bundles are
 # new, clio-electronics and clio-home; clio-geoscience and clio-research gain members.
 [mcp-registry-release]
-publish = ["adios", "arxiv", "chronolog", "compression", "darshan", "earthdata", "geo", "hdf5", "home-assistant", "jarvis", "lmod", "ndp", "node-hardware", "pandas", "parallel-sort", "paraview", "parquet", "pdf", "plot", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "spice", "terrain", "web"]
+publish = ["adios", "arxiv", "chronolog", "compression", "darshan", "earthdata", "geo", "hdf5", "home-assistant", "jarvis", "lmod", "ndp", "node-hardware", "ocean", "pandas", "parallel-sort", "paraview", "parquet", "pdf", "plot", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "spice", "terrain", "web"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
@@ -69,9 +69,9 @@ description = "Turn a dataset into summary statistics, a figure, and a live 3D v
 servers = ["pandas", "paraview", "plot"]
 
 [bundles.clio-geoscience]
-version = "1.1.0"
-description = "Inspect and map geospatial features, terrain, waveforms and NASA Earth-science data."
-servers = ["earthdata", "geo", "seismology", "terrain"]
+version = "1.2.0"
+description = "Maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data."
+servers = ["earthdata", "geo", "ocean", "seismology", "terrain"]
 
 [bundles.clio-fabrication]
 version = "1.0.0"
@@ -123,6 +123,7 @@ jarvis = "3.7.7"
 lmod = "3.0.4"
 ndp = "2.2.9"
 node-hardware = "2.3.3"
+ocean = "1.0.0"
 pandas = "2.4.1"
 parallel-sort = "2.3.3"
 paraview = "3.1.0"
@@ -169,6 +170,7 @@ spack = "🛠️"
 terrain = "⛰️"
 web = "🌐"
 earthdata = "🛰️"
+ocean = "🌊"
 home-assistant = "🏠"
 pdf = "📑"
 spice = "🔌"
@@ -213,6 +215,9 @@ environment = ["HOMEASSISTANT_URL", "HOMEASSISTANT_TOKEN"]
 
 [prerequisites.spice]
 note = "Needs ngspice or LTspice installed on this machine; ltspice-mcp finds it and never downloads one."
+
+[prerequisites.ocean]
+note = "Marine heatwave and eddy tracking build separate worker environments with uv on first use (marEx, AGPL-3.0-or-later; py-eddy-tracker, GPL-3.0, on Python 3.10)."
 
 [prerequisites.chronolog]
 note = "Scientific backend requires a workflow check; a handshake alone is insufficient."

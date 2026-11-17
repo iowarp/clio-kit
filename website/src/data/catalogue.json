@@ -1408,6 +1408,107 @@
       }
     },
     {
+      "id": "mcp/ocean",
+      "kind": "mcp",
+      "name": "ocean",
+      "title": "Ocean",
+      "description": "MCP server for ocean analysis: CTD casts, TEOS-10, water masses, Argo and glider profiles, sections, transports, tides, eddies, particles, marine heatwaves and model checks, each result with a provenance record",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/ocean",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "oceanography",
+        "argo",
+        "ctd",
+        "teos-10",
+        "tides",
+        "eddies",
+        "marine-heatwave",
+        "mom6"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/ocean",
+      "evidence": "Locked runtime",
+      "icon": "🌊",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-ocean",
+      "summary": "MCP server for ocean analysis.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ocean"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "ocean"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ocean"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ocean"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ocean"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ocean"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ocean"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/pandas",
       "kind": "mcp",
       "name": "pandas",
@@ -3286,10 +3387,10 @@
       "kind": "collection",
       "name": "clio-geoscience-skills",
       "title": "Geoscience Skills",
-      "description": "Skills for the clio-geoscience workflow: inspect and map geospatial features, terrain, waveforms and NASA Earth-science data.",
+      "description": "Skills for the clio-geoscience workflow: maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-geoscience-skills",
@@ -3326,7 +3427,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Skills for the clio-geoscience workflow: inspect and map geospatial features, terrain, waveforms and NASA Earth-science data."
+      "summary": "Skills for the clio-geoscience workflow: maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data."
     },
     {
       "id": "plugin/clio-hpc-skills",
@@ -6147,7 +6248,7 @@
       "description": "Use when interpreting axis order, projections, distance units or vertical datums. Triggers on \"lat lon\", \"CRS\", \"UTM\", \"map offset\". Calls no tools. Not for executing map operations; use geospatial-map.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-geoscience-skills/skills/coordinate-systems/SKILL.md",
@@ -6337,7 +6438,7 @@
       "description": "Use when validating GeoJSON, querying spatial relationships, mapping features or analyzing terrain grids. Triggers on \"GeoJSON\", \"render a map\", \"DEM\", \"point cloud\". Not for CRS interpretation alone; use coordinate-systems.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-geoscience-skills/skills/geospatial-map/SKILL.md",
@@ -6602,7 +6703,7 @@
       "description": "Use when inspecting SAC waveforms or evaluating a saved earthquake event catalogue. Triggers on \"SAC\", \"waveform statistics\", \"b-value\", \"magnitude completeness\". Not for geospatial mapping; use geospatial-map.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-geoscience-skills/skills/seismic-analysis/SKILL.md",
@@ -7070,16 +7171,17 @@
       "kind": "plugin",
       "name": "clio-geoscience",
       "title": "Explore the physical world",
-      "description": "Inspect and map geospatial features, terrain, waveforms and NASA Earth-science data.",
+      "description": "Maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-geoscience/.claude-plugin/plugin.json",
       "members": [
         "mcp/earthdata",
         "mcp/geo",
+        "mcp/ocean",
         "mcp/seismology",
         "mcp/terrain",
         "skill/coordinate-systems",
@@ -7089,6 +7191,7 @@
       "servers": [
         "clio-earthdata",
         "clio-geo",
+        "clio-ocean",
         "clio-seismology",
         "clio-terrain"
       ],
@@ -7121,7 +7224,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Inspect and map geospatial features, terrain, waveforms and NASA Earth-science data."
+      "summary": "Maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data."
     },
     {
       "id": "workflow/clio-home",

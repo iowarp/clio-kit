@@ -1,0 +1,195 @@
+"""Tools through a real MCP client: results, outputs, provenance, typed errors."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pandas as pd
+import pytest
+from fastmcp import Client
+from fastmcp.exceptions import ToolError
+
+from ocean_mcp.server import mcp
+
+EXPECTED_TOOLS = {
+    "ctd_read",
+    "teos10",
+    "water_masses",
+    "argo_fetch",
+    "glider_fetch",
+    "profile_metrics",
+    "section",
+    "transport",
+    "overturning",
+    "harmonics",
+    "spectra",
+    "sea_level_decompose",
+    "particles",
+    "eddy_track",
+    "track_crossings",
+    "swath_fetch",
+    "swath_compare",
+    "mhw_point",
+    "mhw_track",
+    "mhw_events",
+    "bloom_phenology",
+    "mixed_layer_budget",
+    "cruise_plan",
+    "drift",
+    "colocate",
+    "mom6_preflight",
+}
+
+
+async def call(tool: str, **arguments: object) -> dict:
+    async with Client(mcp) as client:
+        reply = await client.call_tool(tool, arguments)
+    assert reply.content[0].text == reply.structured_content["summary"]
+    return reply.structured_content
+
+
+async def test_tool_set_and_titles() -> None:
+    async with Client(mcp) as client:
+        tools = await client.list_tools()
+    assert {t.name for t in tools} == EXPECTED_TOOLS
+    for tool in tools:
+        assert tool.title and len(tool.title) <= 24 and "(" not in tool.title, tool.name
+        assert tool.description and len(tool.description) <= 500, tool.name
+
+
+def _provenance(output: dict) -> dict:
+    return json.loads(Path(output["provenance"]).read_text())
+
+
+async def test_casts_to_water_masses_to_section(
+    cast_files: list[Path], whp_file: Path
+) -> None:
+    read = await call("ctd_read", paths=[str(whp_file)], name="a16n")
+    table = read["outputs"][0]["path"]
+    assert read["profiles"] == 1 and read["formats"] == ["whp-exchange"]
+    masses = await call("water_masses", profiles=table)
+    assert masses["definition"]["name"] == "atlantic_emery_meincke_1986"
+    assert {c["water_mass"] for c in masses["cores"]} >= {
+        "Mediterranean Water",
+        "North Atlantic Deep Water",
+    }
+    record = _provenance(masses["outputs"][0])
+    assert record["schema"] == "clio.provenance/1" and record["method"][
+        "citation"
+    ].startswith("Emery")
+    casts = await call("ctd_read", paths=[str(p) for p in cast_files], name="casts")
+    sec = await call(
+        "section",
+        variables=["CT", "SA"],
+        profiles=casts["outputs"][0]["path"],
+        order="latitude",
+    )
+    assert sec["columns"] == 3 and sec["path"]["type"] == "LineString"
+    assert Path(sec["outputs"][0]["path"]).suffix == ".nc"
+
+
+async def test_profile_metrics_reports_criterion(cast_files: list[Path]) -> None:
+    casts = await call("ctd_read", paths=[str(p) for p in cast_files])
+    m = await call(
+        "profile_metrics",
+        profiles=casts["outputs"][0]["path"],
+        criterion="temperature_threshold",
+        threshold=0.2,
+    )
+    assert m["method"]["mld"]["criterion"] == "temperature_threshold"
+    assert 50 < m["mld_median_dbar"] < 90
+
+
+async def test_transport_states_approximation(velocity_grid: Path) -> None:
+    out = await call(
+        "transport",
+        grid=str(velocity_grid),
+        path=[[-1, 0], [1, 0]],
+        temperature="thetao",
+        product="synthetic",
+    )
+    assert "approximate" in out["summary"]
+    assert _provenance(out["outputs"][0])["notes"]
+
+
+async def test_mhw_point_finds_planted_event(sst_series: Path) -> None:
+    out = await call(
+        "mhw_point",
+        series=str(sst_series),
+        column="sst",
+        baseline=[1983, 2012],
+        period=["2022-01-01", "2022-12-31"],
+    )
+    assert out["events"] >= 1
+    starts = [e["start"] for e in out["top_events"]]
+    assert any(s.startswith(("2022-06", "2022-05")) for s in starts)
+    assert out["method"]["baseline"] == [1983, 2012]
+
+
+async def test_particles_follow_uniform_flow(surface_flow: Path) -> None:
+    out = await call(
+        "particles",
+        grid=str(surface_flow),
+        station=[2.0, 0.0],
+        days=5,
+        direction="forward",
+        count=50,
+        radius_km=1.0,
+        dt_minutes=60,
+        output_hours=24,
+    )
+    # 0.1 m/s for 5 days is 43.2 km.
+    assert out["median_displacement_km"] == pytest.approx(43.2, rel=0.05)
+    trajectories = pd.read_parquet(out["outputs"][0]["path"])
+    assert trajectories["particle"].nunique() == 50
+
+
+async def test_cruise_plan_retimes_moved_stations() -> None:
+    out = await call(
+        "cruise_plan",
+        port=[0, 0],
+        depart="2026-11-20T06:00Z",
+        days_available=1,
+        stations=[
+            {"name": "A", "longitude": 1, "latitude": 0},
+            {"name": "B", "longitude": 1, "latitude": 1},
+        ],
+    )
+    assert out["mode"] == "re-timed the given stations"
+    assert out["fits"] is False and "does NOT fit" in out["summary"]
+
+
+async def test_errors_are_typed(tmp_path: Path) -> None:
+    with pytest.raises(ToolError, match=r"^bad_input: "):
+        await call("ctd_read", paths=[str(tmp_path / "nothing*.cnv")])
+    with pytest.raises(ToolError, match=r"^bad_input: unknown definition"):
+        frame = pd.DataFrame(
+            {
+                "profile": ["a"],
+                "time": [pd.Timestamp("2020")],
+                "latitude": [0.0],
+                "longitude": [0.0],
+                "pressure": [1.0],
+                "temperature": [1.0],
+                "salinity": [35.0],
+            }
+        )
+        path = tmp_path / "p.parquet"
+        frame.to_parquet(path)
+        await call("water_masses", profiles=str(path), definition="pacific_nowhere")
+
+
+async def test_swath_download_without_login_names_the_credential(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    for name in ("EARTHDATA_USERNAME", "EARTHDATA_PASSWORD", "EARTHDATA_TOKEN"):
+        monkeypatch.delenv(name, raising=False)
+    with pytest.raises(ToolError, match=r"^credential_missing: NASA Earthdata Login"):
+        await call(
+            "swath_fetch",
+            box=[-75, -70, 35, 40],
+            start="2024-01-01",
+            end="2024-01-03",
+            download=True,
+        )
