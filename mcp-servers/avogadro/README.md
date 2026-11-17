@@ -78,8 +78,13 @@ refused and accepted, the VNC handshake through the WebSocket bridge, an RPC sna
 handoff read back with its selection, a clean stop), and in headless Chromium the stream
 page connected through the service, Select > Select All and Extensions > CLIO > Send to CLIO
 clicked through the stream, and `state` reporting the molecule with all its atoms selected.
-**Avogadro 2.1.0 itself has not run here yet**: it is to be installed and run by CLIO in the
-live chemistry cases.
+Avogadro 2.1.0, installed by CLIO with the `install-avogadro` skill, streams in a CLIO
+conversation with a structure loaded, and its RPC snapshots render. Running it under CLIO
+found three things the 1.99 checks did not: 2.1 waits on a first-run dialog before it starts
+the RPC listener (the server passes `--skip-dialogs`), a sandbox's deep TMPDIR can put the
+RPC socket path over the 107-byte Unix limit (the socket folder then goes under /tmp), and
+noVNC's `vendor/pako/lib` must be shipped (the repository ignores `lib/` folders). An edit
+sent back with Send to CLIO from 2.1 has not been checked yet.
 
 ## NOTICE
 
