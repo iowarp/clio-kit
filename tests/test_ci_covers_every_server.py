@@ -95,6 +95,9 @@ def test_ci_python_lanes_match_package_requirements() -> None:
             assert (lane not in matrix["exclude"]) == (version in supported), lane
     setup = (REPO / ".github/actions/setup-mcp/action.yml").read_text()
     assert (
-        'uv sync --frozen --all-extras --dev --python "${{ inputs.python-version }}"'
+        'uv sync --frozen --all-extras --dev --python "${{ steps.python.outputs.version }}"'
         in setup
     )
+    # Later `uv run` steps must keep the lane's interpreter (and the dev
+    # packages installed into it) instead of following .python-version.
+    assert 'echo "UV_PYTHON=$version" >> "$GITHUB_ENV"' in setup
