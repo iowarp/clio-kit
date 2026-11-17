@@ -99,7 +99,7 @@
     },
     {
       "name": "station_fetch",
-      "description": "Hourly station observations (2 m temperature, dew point, sea-level pressure) from the NOAA Integrated Surface Database for ISD station ids (USAF+WBAN, e.g. 08535099999 for Lisbon) over a period; no key."
+      "description": "Hourly station observations (2 m temperature, dew point, sea-level pressure) from NOAA GHCN-hourly, for stations named by ICAO code (e.g. LPPT), WMO id or GHCNh id, over a period; values with a failed quality code are removed and counted; no key."
     },
     {
       "name": "station_verify",

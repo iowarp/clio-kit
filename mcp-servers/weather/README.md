@@ -19,7 +19,7 @@ deterministic open-data forecasts, Polytope and CDS requests are left to the
 [copernicus-mcp](https://github.com/CliDyn/copernicus-mcp), used as their
 maintainers ship them. This server fetches only what has no keyless
 maintained route: ERA5 fields from the analysis-ready ARCO-ERA5 copy on
-Google Cloud, ECMWF ensemble open data, IBTrACS best tracks, NOAA ISD station
+Google Cloud, ECMWF ensemble open data, IBTrACS best tracks, NOAA GHCN-hourly station
 observations and CMIP6 from the Pangeo catalog.
 
 ## Results and provenance
@@ -28,7 +28,7 @@ Every tool returns `status`, a one-sentence `summary`, the numbers, and
 `outputs` (`{path, role, media_type, provenance, rows}`): tables as Parquet,
 grids and sections as NetCDF. Each output has a `<file>.provenance.json`
 sidecar (`clio.provenance/1`) with sources, data licences (ERA5, ECMWF open
-data, CMIP6, IBTrACS, ISD), method, model checkpoint and its licence, and
+data, CMIP6, IBTrACS, GHCNh), method, model checkpoint and its licence, and
 package versions. Errors start with a reason code (`bad_input`, `no_data`,
 `too_large`, `backend_unavailable`, `worker_failed`, `timeout`,
 `internal_error`).
@@ -51,7 +51,7 @@ package versions. Errors start with a reason code (`bad_input`, `no_data`,
 | `evaluate_run` | Bias map, zonal-mean bias and regional seasonal cycles against a reference |
 | `cmip_change` | CMIP6 regional change per model, multi-model mean and spread (Pangeo) |
 | `score` | RMSE, bias, ACC and fair CRPS by lead time; error map at a lead |
-| `station_fetch` | NOAA ISD hourly observations for station ids |
+| `station_fetch` | NOAA GHCN-hourly observations for ICAO, WMO or GHCNh station ids |
 | `station_verify` | Forecast at stations against observations by lead time |
 | `ibtracs_fetch` | IBTrACS v04r01 best tracks |
 | `track_score` | Position, pressure and wind errors of forecast tracks by model and lead |

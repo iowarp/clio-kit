@@ -9,6 +9,7 @@ from pydantic import Field
 
 from .app import FETCHES, WRITES, mcp, weather_tool
 from .implementation import fetch, verification
+from .implementation import stations as stations_mod
 from .implementation.common import result
 from .implementation.grids import open_grid
 from .saving import save_grid, save_table
@@ -114,16 +115,19 @@ def score(
     name="station_fetch",
     title="Fetch Stations",
     description=(
-        "Hourly station observations (2 m temperature, dew point, sea-level pressure) from the NOAA "
-        "Integrated Surface Database for ISD station ids (USAF+WBAN, e.g. 08535099999 for Lisbon) "
-        "over a period; no key."
+        "Hourly station observations (2 m temperature, dew point, sea-level pressure) from NOAA "
+        "GHCN-hourly, for stations named by ICAO code (e.g. LPPT), WMO id or GHCNh id, over a "
+        "period; values with a failed quality code are removed and counted; no key."
     ),
     annotations=FETCHES,
     tags={"weather", "observations", "stations", "fetch"},
 )
 @weather_tool("station_fetch")
 def station_fetch(
-    stations: Annotated[list[str], Field(description="ISD station ids.")],
+    stations: Annotated[
+        list[str],
+        Field(description="GHCNh station ids, four-letter ICAO codes or WMO ids."),
+    ],
     start: Annotated[str, Field(description="Start date.")],
     end: Annotated[str, Field(description="End date.")],
     name: Annotated[str, Field(description="Name for the output.")] = "stations",
@@ -131,7 +135,7 @@ def station_fetch(
         str | None, Field(description="Directory for outputs.")
     ] = None,
 ) -> dict[str, Any]:
-    table, src = fetch.isd_stations(stations, start, end)
+    table, src, done = stations_mod.ghcnh_stations(stations, start, end)
     out = save_table(
         table,
         name,
@@ -140,8 +144,9 @@ def station_fetch(
         tool="station_fetch",
         sources=[src],
         method={
-            "variables": ["TMP", "DEW", "SLP"],
-            "missing": "ISD 9999/99999 sentinels removed",
+            "variables": list(stations_mod.VARIABLES.values()),
+            "quality": "values with a suspect or failed quality code removed",
+            **done,
         },
         packages=("pandas",),
     )
@@ -150,6 +155,8 @@ def station_fetch(
         f"{len(table)} observations from {len(counts)} stations.",
         [out],
         observations_by_station={str(k): int(v) for k, v in counts.items()},
+        stations=done["stations"],
+        removed_by_quality_code=done["removed_by_quality_code"],
         licence=src.licence,
     )
 

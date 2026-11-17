@@ -1,5 +1,5 @@
 """Fetch what no maintainer ships keyless: ARCO ERA5 fields, ENS open data,
-IBTrACS tracks and NOAA ISD station observations.
+IBTrACS tracks. Station observations are in :mod:`.stations`.
 
 ERA5 point series, deterministic open-data forecasts and CDS/Polytope
 requests are left to the ECMWF skills and copernicus-mcp, used as shipped.
@@ -29,7 +29,6 @@ ERA5_LICENCE = (
 ECMWF_OPEN_LICENCE = "ECMWF open data, CC-BY 4.0: Copyright European Centre for Medium-Range Weather Forecasts (ECMWF)"
 IBTRACS_URL = "https://www.ncei.noaa.gov/data/international-best-track-archive-for-climate-stewardship-ibtracs/v04r01/access/csv/ibtracs.{subset}.list.v04r01.csv"
 IBTRACS_DOI = "https://doi.org/10.25921/82ty-9e16"
-ISD_URL = "https://www.ncei.noaa.gov/data/global-hourly/access/{year}/{station}.csv"
 
 
 def era5_arco(
@@ -225,64 +224,3 @@ def ibtracs(
         licence="NOAA NCEI public domain; cite Knapp et al. (2010) and doi:10.25921/82ty-9e16",
     )
     return out.dropna(subset=["latitude", "longitude"]).reset_index(drop=True), source
-
-
-def _isd_value(text: str, scale: float, missing: str) -> float:
-    value = str(text).split(",")[0]
-    return np.nan if value.lstrip("+-") == missing else float(value) / scale
-
-
-def isd_stations(
-    stations: list[str], start: str, end: str
-) -> tuple[pd.DataFrame, Source]:
-    """Hourly observations (2 m temperature, dew point, sea-level pressure, wind) from NOAA ISD."""
-    years = range(pd.Timestamp(start).year, pd.Timestamp(end).year + 1)
-    rows = []
-    for station in stations:
-        for year in years:
-            url = ISD_URL.format(year=year, station=station)
-            response = requests.get(url, timeout=120)
-            if response.status_code == 404:
-                continue
-            if not response.ok:
-                raise WeatherToolError(
-                    "backend_unavailable",
-                    f"ISD {station} {year}: HTTP {response.status_code}",
-                )
-            frame = pd.read_csv(io.StringIO(response.text), low_memory=False)
-            rows.append(
-                pd.DataFrame(
-                    {
-                        "station": station,
-                        "name": frame.get("NAME"),
-                        "time": pd.to_datetime(frame["DATE"], utc=True),
-                        "latitude": frame["LATITUDE"].astype(float),
-                        "longitude": frame["LONGITUDE"].astype(float),
-                        "t2m_c": [_isd_value(v, 10, "9999") for v in frame["TMP"]],
-                        "td2m_c": [_isd_value(v, 10, "9999") for v in frame["DEW"]]
-                        if "DEW" in frame
-                        else np.nan,
-                        "mslp_hpa": [_isd_value(v, 10, "99999") for v in frame["SLP"]]
-                        if "SLP" in frame
-                        else np.nan,
-                    }
-                )
-            )
-    if not rows:
-        raise WeatherToolError(
-            "no_data", f"no ISD records for {stations} in {start}..{end}"
-        )
-    table = pd.concat(rows, ignore_index=True)
-    table = table[
-        (table["time"] >= pd.Timestamp(start, tz="UTC"))
-        & (table["time"] <= pd.Timestamp(end, tz="UTC") + pd.Timedelta(days=1))
-    ]
-    source = Source(
-        name="NOAA Integrated Surface Database (global-hourly)",
-        kind="service",
-        reference="https://www.ncei.noaa.gov/products/land-based-station/integrated-surface-database",
-        version="access CSV",
-        subset={"stations": stations, "start": start, "end": end},
-        licence="NOAA NCEI: free use; WMO Resolution 40 restrictions may apply to some non-US stations",
-    )
-    return table.reset_index(drop=True), source
