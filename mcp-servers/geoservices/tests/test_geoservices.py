@@ -355,6 +355,40 @@ def test_signed_urls_lose_their_signature_in_provenance() -> None:
     assert redact_url(plain) == plain
 
 
+async def test_integer_raster_decimated_keeps_nodata_as_nan(tmp_path: Path) -> None:
+    """An int16 DEM read below native resolution becomes float with NaN nodata."""
+    import rasterio
+    from rasterio.transform import from_origin
+
+    path = tmp_path / "int16.tif"
+    data = np.full((400, 400), 1500, dtype="int16")
+    data[:, :100] = -32768
+    with rasterio.open(
+        path,
+        "w",
+        driver="GTiff",
+        height=400,
+        width=400,
+        count=1,
+        dtype="int16",
+        crs="EPSG:26910",
+        transform=from_origin(760000, 4300000, 5, 5),
+        nodata=-32768,
+    ) as out:
+        out.write(data, 1)
+    from rasterio.warp import transform_bounds
+
+    box = transform_bounds("EPSG:26910", "EPSG:4326", 760000, 4298000, 762000, 4300000)
+    inside = [box[0] + 0.001, box[1] + 0.001, box[2] - 0.001, box[3] - 0.001]
+    result = await call(
+        "read_raster_window",
+        {"sources": [str(path)], "bbox": inside, "max_cells": 10_000},
+    )
+    assert result["decimation"] > 1 and result["nodata"] is None
+    assert result["statistics"]["min"] == pytest.approx(1500)
+    assert 0.5 < result["valid_fraction"] < 0.9
+
+
 async def test_raster_window_outside_the_data_is_a_typed_failure(
     tmp_path: Path,
 ) -> None:

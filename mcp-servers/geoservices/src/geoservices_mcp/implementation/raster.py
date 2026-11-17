@@ -287,9 +287,9 @@ def _read_aligned(ds, band, layer, transform, res, nodata, floating, factor) -> 
         masked=True,
         resampling=_resampling(floating, factor),
     )
-    values = data.filled(nodata).astype(layer.dtype, copy=False)
-    if floating:
-        values = np.where(np.ma.getmaskarray(data), np.nan, values)
+    # Convert before filling: an integer source decimated into a float output takes
+    # NaN as nodata, which an integer array cannot hold.
+    values = data.astype(layer.dtype, copy=False).filled(nodata)
     layer[r0:r1, c0:c1] = values
 
 
