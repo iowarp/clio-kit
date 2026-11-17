@@ -25,6 +25,10 @@ class GeoServiceError(ValueError):
     """A request could not be completed; the message says why and what to try."""
 
 
+class ResponseTooLarge(GeoServiceError):
+    """One response exceeded the size bound; a smaller page may fit."""
+
+
 @dataclass(frozen=True)
 class Region:
     """A WGS84 longitude/latitude box."""
@@ -105,7 +109,7 @@ def get_json(url: str, params: dict[str, Any] | None = None, *, what: str) -> An
             for chunk in response.iter_bytes(65536):
                 body.extend(chunk)
                 if len(body) > MAX_JSON_BYTES:
-                    raise GeoServiceError(
+                    raise ResponseTooLarge(
                         f"{what} returned more than 64 MiB; narrow the request"
                     )
     except httpx.HTTPError as exc:
@@ -135,7 +139,7 @@ def get_text(url: str, params: dict[str, Any] | None = None, *, what: str) -> st
             for chunk in response.iter_bytes(65536):
                 body.extend(chunk)
                 if len(body) > MAX_JSON_BYTES:
-                    raise GeoServiceError(f"{what} returned more than 64 MiB")
+                    raise ResponseTooLarge(f"{what} returned more than 64 MiB")
     except httpx.HTTPError as exc:
         raise http_error(exc, what) from exc
     return body.decode("utf-8", errors="replace")

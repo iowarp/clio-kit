@@ -463,3 +463,16 @@ async def test_every_output_gets_a_provenance_sidecar(site: Site) -> None:
     )
     assert record["sources"][0]["subset"]["where"] == "YEAR=2021"
     assert record["software"]["geoservices-mcp"] == "1.0.0"
+
+
+async def test_oversized_pages_are_halved_and_reported(
+    site: Site, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _layer(site, features=5, server_max=4)
+    monkeypatch.setattr(
+        common, "MAX_JSON_BYTES", 520
+    )  # the layer JSON and two features fit; four do not
+    url = site.base + "/arcgis/rest/services/Fires/FeatureServer/0"
+    result = await call("fetch_features", {"url": url})
+    assert result["feature_count"] == 5 and result["paging"]["complete"] is True
+    assert "halved" in result["paging"]["page_size_reduced"]

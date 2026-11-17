@@ -7,7 +7,14 @@ from collections.abc import Iterable
 from itertools import pairwise
 from typing import Any
 
-from .common import ARCGIS_RE, GeoServiceError, Region, get_json, strip_query
+from .common import (
+    ARCGIS_RE,
+    GeoServiceError,
+    Region,
+    ResponseTooLarge,
+    get_json,
+    strip_query,
+)
 
 MAX_LIST = 100
 
@@ -221,7 +228,7 @@ def query(
     server_max = int(info.get("maxRecordCount") or page_size)
     page = max(1, min(page_size, server_max, max_features))
     features: list[dict[str, Any]] = []
-    pages, offset, exceeded, fmt = 0, 0, False, "geojson"
+    pages, offset, exceeded, fmt, reductions = 0, 0, False, "geojson", 0
     while len(features) < max_features:
         params = {
             "where": where,
@@ -235,6 +242,13 @@ def query(
         }
         try:
             data = get_json(target, params, what="ArcGIS query")
+        except ResponseTooLarge:
+            # Detailed polygons: fewer per page, never a silently smaller result.
+            if page == 1:
+                raise
+            page = max(1, page // 2)
+            reductions += 1
+            continue
         except GeoServiceError:
             if fmt == "geojson" and pages == 0:
                 fmt = "json"  # older MapServer layers: Esri JSON, converted below and recorded
@@ -262,6 +276,11 @@ def query(
         "server_max_record_count": server_max,
         "format": "GeoJSON" if fmt == "geojson" else "Esri JSON converted to GeoJSON",
         "complete": len(features) < max_features and not (exceeded and pages >= 1000),
+        **(
+            {"page_size_reduced": f"halved {reductions} times: pages exceeded 64 MiB"}
+            if reductions
+            else {}
+        ),
     }
     return features[:max_features], paging
 
