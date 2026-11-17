@@ -234,7 +234,8 @@ async def fetch_features_tool(
         "through ranged HTTP reads, or an OGC WCS coverage subset (give coverage_id). "
         "Tiles in different CRSs are warped to one. The output is decimated to max_cells "
         "and the decimation is reported. Returns CRS, shape, resolution, units, valid "
-        "fraction and statistics."
+        "fraction, region_not_covered (the part of the region no source reaches, with "
+        "its box) and statistics."
     ),
     annotations=WRITES,
     tags={"geospatial", "raster", "geotiff", "cog", "vrt", "wcs", "dem"},

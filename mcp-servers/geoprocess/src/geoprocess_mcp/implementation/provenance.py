@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from importlib import metadata
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 PROVENANCE_SCHEMA = "clio.provenance/1"
 SERVER_NAME = "geoprocess"
@@ -43,6 +44,56 @@ def file_digest(path: Path) -> str:
     return digest.hexdigest()
 
 
+# Query parameters that carry a signature or credential (Azure SAS, AWS SigV4,
+# Google signed URLs, API keys and tokens). They never go into a sidecar.
+SIGNING_PARAMS = {
+    "sig",
+    "signature",
+    "token",
+    "access_token",
+    "api_key",
+    "apikey",
+    "key",
+    "se",
+    "st",
+    "sp",
+    "sv",
+    "sr",
+    "spr",
+    "skoid",
+    "sktid",
+    "skt",
+    "ske",
+    "sks",
+    "skv",
+    "expires",
+    "policy",
+    "key-pair-id",
+}
+
+
+def redact_url(text: str) -> str:
+    """``text`` with signing and credential query parameters removed.
+
+    A signed URL stays usable as a reference to the object; the signature expires
+    and is a credential, so it is replaced by a marker saying it was removed.
+    """
+    parts = urlsplit(text)
+    if not parts.query:
+        return text
+    kept, removed = [], False
+    for name, value in parse_qsl(parts.query, keep_blank_values=True):
+        lowered = name.lower()
+        if lowered in SIGNING_PARAMS or lowered.startswith(("x-amz-", "x-goog-")):
+            removed = True
+        else:
+            kept.append((name, value))
+    if not removed:
+        return text
+    query = urlencode(kept + [("signature", "removed")])
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, query, parts.fragment))
+
+
 @dataclass
 class Source:
     """One input to a result: a product, a service query or a local file."""
@@ -56,9 +107,9 @@ class Source:
 
     def as_dict(self) -> dict[str, Any]:
         return {
-            "name": self.name,
+            "name": redact_url(self.name),
             "kind": self.kind,
-            "reference": self.reference,
+            "reference": redact_url(self.reference),
             "version": self.version,
             "subset": dict(self.subset),
             "licence": self.licence,

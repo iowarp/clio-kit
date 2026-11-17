@@ -314,6 +314,47 @@ async def test_raster_window_mosaics_two_utm_zones_and_reports_decimation(
     assert 0 < result["valid_fraction"] < 1
 
 
+async def test_raster_window_names_the_part_no_tile_covers(tmp_path: Path) -> None:
+    """A missing neighbour tile is reported, not left as a silent empty strip."""
+    from rasterio.warp import transform_bounds
+
+    tile = tmp_path / "north.tif"
+    _tile(tile, "EPSG:26910", 760000, 4300000, 2000.0)
+    west, south, east, north = transform_bounds(
+        "EPSG:26910", "EPSG:4326", 760000, 4299000, 761000, 4300000
+    )
+    inside = [west + 0.001, south + 0.001, east - 0.001, north - 0.001]
+    whole = await call("read_raster_window", {"sources": [str(tile)], "bbox": inside})
+    assert whole["region_not_covered"] is None
+    below = [inside[0], south - 0.01, inside[2], inside[3]]
+    result = await call("read_raster_window", {"sources": [str(tile)], "bbox": below})
+    gap = result["region_not_covered"]
+    assert 0.3 < gap["fraction"] < 0.9
+    assert gap["bbox_wgs84"][1] == pytest.approx(south - 0.01, abs=0.001)
+    assert gap["bbox_wgs84"][3] == pytest.approx(south, abs=0.001)
+    assert "No source covers" in gap["note"]
+
+
+def test_signed_urls_lose_their_signature_in_provenance() -> None:
+    from geoservices_mcp.implementation.provenance import Source, redact_url
+
+    signed = (
+        "https://acct.blob.core.windows.net/3dep/n40w121.tif"
+        "?st=2026-11-16&se=2026-11-17&sp=rl&sv=2025-07-05&sr=c&sig=SECRET%3D"
+    )
+    record = Source(
+        name="n40w121.tif?sig=SECRET", kind="file", reference=signed
+    ).as_dict()
+    assert "SECRET" not in json.dumps(record)
+    assert record["reference"] == (
+        "https://acct.blob.core.windows.net/3dep/n40w121.tif?signature=removed"
+    )
+    aws = "https://b.s3.amazonaws.com/k.tif?X-Amz-Signature=abc&X-Amz-Credential=x&v=2"
+    assert redact_url(aws) == "https://b.s3.amazonaws.com/k.tif?v=2&signature=removed"
+    plain = "https://services.example/arcgis/rest/services/Fires/FeatureServer/0?f=json"
+    assert redact_url(plain) == plain
+
+
 async def test_raster_window_outside_the_data_is_a_typed_failure(
     tmp_path: Path,
 ) -> None:

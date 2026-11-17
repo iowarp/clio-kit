@@ -161,6 +161,7 @@ def read_window(
                     else mosaic == nodata
                 )
                 mosaic[fill & empty] = layer[fill & empty]
+            not_covered = _not_covered(used, target, transform, rows, cols, res)
             units = (first.units or [None])[band - 1]
             description = (first.descriptions or [None])[band - 1]
             data = (
@@ -209,10 +210,48 @@ def read_window(
         "sources_outside_region": outside,
         "sources_unreadable": skipped,
         "valid_fraction": round(valid / data.size, 4) if data.size else 0.0,
+        "region_not_covered": not_covered,
         "nodata": None if isinstance(nodata, float) and math.isnan(nodata) else nodata,
         "units": units,
         "band_description": description,
         "statistics": stats,
+    }
+
+
+def _not_covered(used, target, transform, rows, cols, res) -> dict[str, Any] | None:
+    """The part of the window that no source's footprint reaches, or ``None``.
+
+    Footprints are the sources' own bounds, so this separates "no tile here" from
+    nodata cells inside a tile. A missing neighbour tile shows up here instead of
+    as a silently empty strip of the output.
+    """
+    from rasterio.warp import transform_bounds
+
+    xs = transform.c + (np.arange(cols) + 0.5) * res
+    ys = transform.f - (np.arange(rows) + 0.5) * res
+    covered = np.zeros((rows, cols), dtype=bool)
+    for ds in used:
+        b = transform_bounds(ds.crs, target, *ds.bounds, densify_pts=21)
+        inside_x = (xs >= b[0]) & (xs <= b[2])
+        inside_y = (ys >= b[1]) & (ys <= b[3])
+        covered |= inside_y[:, None] & inside_x[None, :]
+    missing = ~covered
+    if not missing.any():
+        return None
+    rows_idx = np.flatnonzero(missing.any(axis=1))
+    cols_idx = np.flatnonzero(missing.any(axis=0))
+    box = (
+        xs[cols_idx[0]] - res / 2,
+        ys[rows_idx[-1]] - res / 2,
+        xs[cols_idx[-1]] + res / 2,
+        ys[rows_idx[0]] + res / 2,
+    )
+    west, south, east, north = transform_bounds(target, "EPSG:4326", *box)
+    return {
+        "fraction": round(float(missing.mean()), 4),
+        "bbox_wgs84": [round(v, 5) for v in (west, south, east, north)],
+        "note": "No source covers this part of the region; its cells are nodata. "
+        "Add the tiles that cover it, or report it as missing.",
     }
 
 
