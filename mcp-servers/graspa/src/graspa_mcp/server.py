@@ -13,6 +13,7 @@ from typing import Annotated, Any, Literal, TypeVar
 
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
+from fastmcp.prompts import Message
 from fastmcp.tools import ToolResult
 from mcp.types import TextContent
 from pydantic import Field
@@ -264,6 +265,18 @@ def capabilities() -> dict[str, Any]:
         "outputs": "chemistry/graspa/<run>/ under output_dir, $CLIO_KIT_ARTIFACTS or cwd",
         "needs": "gRASPA on a GPU node for run_graspa; nothing for prepare/read/rank",
     }
+
+
+@mcp.prompt()
+def adsorption_uptake(framework: str, adsorbate: str) -> list[Message]:
+    """Guided adsorption uptake of a gas in a framework."""
+    return [
+        Message(
+            f"Compute the {adsorbate} uptake in {framework} with grand canonical Monte Carlo at the "
+            "conditions I give. Report the uptake with units and its error, the force field, and "
+            "whether the framework carries charges."
+        ),
+    ]
 
 
 def main() -> None:

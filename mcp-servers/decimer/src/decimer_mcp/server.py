@@ -13,6 +13,7 @@ from typing import Annotated, Any, TypeVar
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
+from fastmcp.prompts import Message
 from fastmcp.tools import ToolResult
 from mcp.types import TextContent
 from pydantic import Field
@@ -131,6 +132,18 @@ def capabilities() -> dict[str, Any]:
         "weights": f"about 300 MB per model from Zenodo, cached in {recognize.cache_dir()}",
         "accepts": "PNG, JPEG, GIF, TIFF, BMP, WEBP, HEIC images of one structure",
     }
+
+
+@mcp.prompt()
+def structure_from_drawing(image_path: str) -> list[Message]:
+    """Guided reading of a drawn or printed structure into SMILES."""
+    return [
+        Message(
+            f"Read the chemical structure drawn in {image_path} as SMILES. If the image holds more "
+            "than one structure, crop each first. Report the confidence and flag low-confidence "
+            "tokens before the SMILES is used."
+        ),
+    ]
 
 
 def main() -> None:

@@ -14,6 +14,7 @@ from typing import Annotated, Any, Literal, TypeVar
 
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
+from fastmcp.prompts import Message
 from fastmcp.tools import ToolResult
 from mcp.types import TextContent
 from pydantic import Field
@@ -423,6 +424,18 @@ def capabilities() -> dict[str, Any]:
         "structures": "files: XYZ, extended XYZ, SDF/MOL, PDB, CIF, ASE .traj, POSCAR",
         "outputs": "chemistry/ase/<run>/ under output_dir, $CLIO_KIT_ARTIFACTS or cwd",
     }
+
+
+@mcp.prompt()
+def optimize_and_check(structure: str) -> list[Message]:
+    """Guided optimization with a frequency check."""
+    return [
+        Message(
+            f"Optimize {structure} with a calculator suited to it, then compute its frequencies. "
+            "Report the method, the final energy and largest force, and any imaginary modes; "
+            "say what an imaginary mode means for this structure."
+        ),
+    ]
 
 
 def main() -> None:

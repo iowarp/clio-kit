@@ -23,6 +23,7 @@ from typing import Annotated, Any, TypeVar
 from fastmcp import FastMCP
 from fastmcp.apps import AppConfig
 from fastmcp.exceptions import ToolError
+from fastmcp.prompts import Message
 from fastmcp.tools import ToolResult
 from mcp.types import ImageContent, TextContent
 from pydantic import Field
@@ -118,6 +119,7 @@ def _status() -> dict[str, Any]:
         "something is missing, and whether Avogadro is running."
     ),
     annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
+    tags={"chemistry"},
 )
 async def avogadro_status() -> ToolResult:
     data = _status()
@@ -142,6 +144,7 @@ def _named_xyz(path: Path) -> str:
     ),
     app=AppConfig(resource_uri=VIEW_URI),
     annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True},
+    tags={"chemistry", "structure"},
     meta={PATHS_META: {"path": {"machine": "local", "access": "read"}}, STATE_META: VIEW_STATE},
 )
 async def open_in_avogadro(
@@ -182,6 +185,7 @@ async def open_in_avogadro(
         "its molecule gives what the person last sent with Extensions > CLIO > Send to CLIO."
     ),
     annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True},
+    tags={"chemistry", "structure"},
     meta={PATHS_META: {"output_dir": {"machine": "local", "access": "write"}}},
 )
 async def read_avogadro(
@@ -243,6 +247,7 @@ async def read_avogadro(
     title="Avogadro Snapshot",
     description="A PNG of Avogadro's 3D view as it is now, saved and returned as an image.",
     annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False},
+    tags={"chemistry", "visualization"},
     meta={PATHS_META: {"output_dir": {"machine": "local", "access": "write"}}},
 )
 async def avogadro_snapshot(
@@ -266,7 +271,7 @@ async def avogadro_snapshot(
     return ToolResult(
         content=[
             _text(f"Snapshot of Avogadro's view: {png}."),
-            ImageContent(type="image", data=data, mimeType="image/png"),
+            ImageContent(type="image", data=data, mime_type="image/png"),
         ],
         structured_content={"path": str(png)},
     )
@@ -277,6 +282,7 @@ async def avogadro_snapshot(
     title="Close Avogadro",
     description="Stop Avogadro and its virtual display; what was not sent is lost.",
     annotations={"readOnlyHint": False, "destructiveHint": True, "idempotentHint": True},
+    tags={"chemistry"},
 )
 async def close_avogadro() -> ToolResult:
     global _session
@@ -295,6 +301,20 @@ async def close_avogadro() -> ToolResult:
 )
 def view_resource() -> str:
     return resources.files("avogadro_mcp").joinpath("view.html").read_text("utf-8")
+
+
+@mcp.prompt()
+def build_in_avogadro(path: str = "") -> list[Message]:
+    """Guided hand-building of a structure in Avogadro."""
+    return [
+        Message(
+            "Open "
+            + (path or "an empty molecule")
+            + " in Avogadro so I can build or edit it by hand. "
+            "When I say I am done, read the molecule I have open, with the atoms I selected, "
+            "and tell me what changed."
+        ),
+    ]
 
 
 def main() -> None:

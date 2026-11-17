@@ -11,6 +11,7 @@ from typing import Annotated, Any, TypeVar
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
+from fastmcp.prompts import Message
 from fastmcp.tools import ToolResult
 from mcp.types import TextContent
 from pydantic import Field
@@ -141,6 +142,17 @@ def capabilities() -> dict[str, Any]:
         "ambiguous_names": "returned as candidates for the person to choose; never a first match",
         "outputs": ["3D (or 2D) SDF", "compound record JSON"],
     }
+
+
+@mcp.prompt()
+def compound_lookup(name: str) -> list[Message]:
+    """Guided lookup of a compound in PubChem by name."""
+    return [
+        Message(
+            f"Find {name} in PubChem: resolve the name to its compound ID, report the formula, "
+            "molecular weight and canonical SMILES, and fetch its 3D structure as a file."
+        ),
+    ]
 
 
 def main() -> None:

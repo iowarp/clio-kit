@@ -13,6 +13,7 @@ from typing import Annotated, Any, Literal, TypeVar
 
 from fastmcp import Context, FastMCP
 from fastmcp.exceptions import ToolError
+from fastmcp.prompts import Message
 from fastmcp.tools import ToolResult
 from mcp.types import TextContent
 from pydantic import Field
@@ -261,6 +262,18 @@ def capabilities() -> dict[str, Any]:
         "needs": "the FDMNES executable (FDMNES_COMMAND, FDMNES_EXE or fdmnes on PATH); "
         "MP_API_KEY for fetch_materials_project",
     }
+
+
+@mcp.prompt()
+def site_xanes(structure: str, element: str) -> list[Message]:
+    """Guided K-edge XANES for each inequivalent site."""
+    return [
+        Message(
+            f"Compute the {element} K-edge XANES of {structure} for each inequivalent {element} site. "
+            "Name each site by its coordination, say whether the potential was self-consistent, "
+            "and compare the pre-edge and edge positions between sites."
+        ),
+    ]
 
 
 def main() -> None:

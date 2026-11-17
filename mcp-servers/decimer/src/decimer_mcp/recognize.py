@@ -19,15 +19,23 @@ import sys
 import threading
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, TypedDict
 
 from platformdirs import user_cache_dir
 
 from .errors import DecimerError
 
+
 # What DECIMER downloads (zip sizes on Zenodo, checked 2026-11). Reported to the agent
 # on the call that downloads them, so a long first call is explained.
-MODELS = {
+class _Model(TypedDict):
+    name: str
+    folder: str
+    zip_mb: int
+    url: str
+
+
+MODELS: dict[bool, _Model] = {
     False: {
         "name": "DECIMER",
         "folder": "DECIMER_model",

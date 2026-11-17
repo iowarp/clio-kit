@@ -29,6 +29,7 @@ avogadro-mcp = "avogadro_mcp.server:main"
 dev = [
     "httpx>=0.28",
     "pytest>=9.0.3",
+    "pytest-cov>=6.2.1",
     "pytest-asyncio>=1.1.0",
     "ruff>=0.12.5",
 ]
