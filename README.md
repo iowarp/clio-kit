@@ -11,6 +11,7 @@
 <!-- mcp-name: io.github.iowarp/earthdata-mcp -->
 <!-- mcp-name: io.github.iowarp/fdmnes-mcp -->
 <!-- mcp-name: io.github.iowarp/geo-mcp -->
+<!-- mcp-name: io.github.iowarp/geoprocess-mcp -->
 <!-- mcp-name: io.github.iowarp/geoservices-mcp -->
 <!-- mcp-name: io.github.iowarp/graspa-mcp -->
 <!-- mcp-name: io.github.iowarp/hdf5-mcp -->
@@ -182,7 +183,7 @@ uv tool install --force --reinstall --editable .
 # If uv's executable directory is not on PATH:
 uv tool update-shell
 
-# List all 34 available MCP servers
+# List all 35 available MCP servers
 clio-kit mcp-servers
 
 # Run an individual server
@@ -226,7 +227,7 @@ These are broad workflow plugins. Each combines its MCP servers and skills.
 | `clio-performance` | Diagnose slow jobs and inspect logs | darshan, chronolog, parallel-sort |
 | `clio-scientific-io` | Explore scientific data files | hdf5, adios, parquet, compression |
 | `clio-analysis` | Analyze results, create figures and open live 3D views | pandas, plot, paraview |
-| `clio-geoscience` | Work with maps, a 3D globe, terrain, waveforms and NASA Earthdata | geo, geoservices, terrain, seismology, earthdata |
+| `clio-geoscience` | Work with maps, a 3D globe, terrain, waveforms and NASA Earthdata | geo, geoservices, geoprocess, terrain, seismology, earthdata |
 | `clio-fabrication` | Slice a model for a 3D printer and check its layers | slicer |
 | `clio-electronics` | Simulate a circuit and plot its waveforms | spice |
 | `clio-home` | Read your home's sensors, control devices and write automations | home-assistant |
@@ -484,6 +485,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`earthdata`** | 1.0.0 | Earth Science | Search and download NASA Earthdata datasets (runs earthdata-mcp-server 0.6.0) | `clio-kit mcp-server earthdata` |
 | **`fdmnes`** | 1.0.0 | Spectroscopy | XANES spectra of crystals and molecules with FDMNES; normalize and compare spectra | `clio-kit mcp-server fdmnes` |
 | **`geo`** | 2.4.0 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
+| **`geoprocess`** | 1.0.0 | Geospatial | Reproject, clip, overlay, zonal statistics and raster differences | `clio-kit mcp-server geoprocess` |
 | **`geoservices`** | 1.0.0 | Geospatial | Fetch ArcGIS, OGC, STAC, remote raster and lidar data by region | `clio-kit mcp-server geoservices` |
 | **`graspa`** | 1.0.0 | Chemistry | Gas adsorption uptake in MOFs and zeolites by GCMC with gRASPA; rank frameworks | `clio-kit mcp-server graspa` |
 | **`hdf5`** | 2.3.1 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |

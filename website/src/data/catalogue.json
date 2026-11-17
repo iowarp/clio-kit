@@ -1222,6 +1222,105 @@
       }
     },
     {
+      "id": "mcp/geoprocess",
+      "kind": "mcp",
+      "name": "geoprocess",
+      "title": "Geoprocess",
+      "description": "Core geospatial operations: reproject, clip, dissolve and overlay, zonal statistics and raster differencing",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/geoprocess",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "geospatial",
+        "gis",
+        "overlay",
+        "zonal-statistics",
+        "reprojection",
+        "raster"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/geoprocess",
+      "evidence": "Locked runtime",
+      "icon": "📐",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-geoprocess",
+      "summary": "Core geospatial operations: reproject, clip, dissolve and overlay, zonal statistics and raster differencing",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "geoprocess"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/geoservices",
       "kind": "mcp",
       "name": "geoservices",
@@ -7829,6 +7928,7 @@
       "members": [
         "mcp/earthdata",
         "mcp/geo",
+        "mcp/geoprocess",
         "mcp/geoservices",
         "mcp/seismology",
         "mcp/terrain",
@@ -7839,6 +7939,7 @@
       "servers": [
         "clio-earthdata",
         "clio-geo",
+        "clio-geoprocess",
         "clio-geoservices",
         "clio-seismology",
         "clio-terrain"

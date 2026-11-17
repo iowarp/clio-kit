@@ -13,6 +13,7 @@
   "dependencies": [
     "clio-earthdata",
     "clio-geo",
+    "clio-geoprocess",
     "clio-geoservices",
     "clio-seismology",
     "clio-terrain",

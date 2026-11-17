@@ -93,6 +93,14 @@ SERVER_TAGS: dict[str, list[str]] = {
         "mcp-apps",
     ],
     "terrain": ["terrain", "dem", "point-cloud", "geospatial"],
+    "geoprocess": [
+        "geospatial",
+        "gis",
+        "overlay",
+        "zonal-statistics",
+        "reprojection",
+        "raster",
+    ],
     "geoservices": [
         "geospatial",
         "arcgis",

@@ -184,6 +184,23 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
+      "name": "clio-geoprocess",
+      "source": "./plugins/clio-geoprocess",
+      "description": "Core geospatial operations: reproject, clip, dissolve and overlay, zonal statistics and raster differencing",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "geospatial",
+        "gis",
+        "overlay",
+        "zonal-statistics",
+        "reprojection",
+        "raster"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
       "name": "clio-geoservices",
       "source": "./plugins/clio-geoservices",
       "description": "Fetch geospatial data where it is served: ArcGIS REST, OGC WFS and WCS, STAC, remote rasters and EPT/COPC lidar, by region",
@@ -724,18 +741,23 @@
         "earthquake",
         "geojson",
         "geospatial",
+        "gis",
         "lidar",
         "mapping",
         "nasa",
         "ogc",
+        "overlay",
         "point-cloud",
+        "raster",
         "remote-sensing",
+        "reprojection",
         "sac",
         "seismology",
         "stac",
         "terrain",
         "visualization",
-        "waveform"
+        "waveform",
+        "zonal-statistics"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
