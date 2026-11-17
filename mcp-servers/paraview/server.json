@@ -34,16 +34,8 @@
       "description": "Open a dataset or restore a saved scene, and show it in a live ParaView view.\n\nWith neither path nor scene, it shows the ParaView session already running\nwhere ParaView is, or the current scene."
     },
     {
-      "name": "create_filter",
-      "description": "Add one filter to the scene's pipeline. It commits whole or not at all."
-    },
-    {
-      "name": "remove_scene_object",
-      "description": "Remove an object and everything built on it from the pipeline."
-    },
-    {
-      "name": "set_representation",
-      "description": "Change an object's representation, colouring, opacity or visibility."
+      "name": "run_scene_script",
+      "description": "Build or change the scene with a ParaView script: readers (a second dataset too),\nfilters, colours, anything paraview.simple can do. It runs in the scene the person\nsees, so the live view, captures and the saved scene include what it makes. It applies\nwhole or not at all; a failing script leaves nothing behind. The step is saved with the\nscene and replayed when the scene is restored."
     },
     {
       "name": "set_timestep",
@@ -74,6 +66,10 @@
       "description": "Write a figure of the current view as a PNG file."
     },
     {
+      "name": "export_animation",
+      "description": "Write a video of the scene's time steps as the live view shows them: rendered in the\nscene's own view, at its camera, colours and filters. Use it for a clip to send around,\nand put it beside a live view on a dashboard so the dashboard still shows the motion\nwhen ParaView is not running."
+    },
+    {
       "name": "export_scene",
       "description": "Write the scene manifest, and a ParaView state file beside it."
     },
@@ -87,6 +83,12 @@
       "uri": "ui://paraview/view",
       "name": "paraview_view",
       "description": "The live ParaView view: trame, framed through the host's service route."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "explore_dataset",
+      "description": "Guided workflow: open a dataset in ParaView, measure it and show it."
     }
   ],
   "tags": [

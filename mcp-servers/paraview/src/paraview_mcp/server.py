@@ -16,6 +16,7 @@ from typing import Annotated, Any, Literal
 from fastmcp import FastMCP
 from fastmcp.apps import AppConfig
 from fastmcp.exceptions import ToolError
+from fastmcp.prompts import Message
 from fastmcp.tools import ToolResult
 from mcp.types import ImageContent, TextContent
 from pydantic import Field
@@ -143,7 +144,14 @@ def _text(text: str) -> TextContent:
 
 @mcp.tool(
     app=AppConfig(resource_uri=VIEW_URI),
-    annotations={"title": "Open a ParaView view", "openWorldHint": True},
+    annotations={
+        "title": "Open a ParaView view",
+        "openWorldHint": True,
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": False,
+    },
+    tags={"paraview", "scene"},
     meta={**_paths(path="read"), STATE_META: VIEW_STATE},
 )
 def open_view(
@@ -184,7 +192,15 @@ def open_view(
     )
 
 
-@mcp.tool(annotations={"title": "Build the ParaView scene"})
+@mcp.tool(
+    annotations={
+        "title": "Build the ParaView scene",
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": False,
+    },
+    tags={"paraview", "scene"},
+)
 def run_scene_script(
     code: Annotated[
         str,
@@ -209,7 +225,15 @@ def run_scene_script(
     return present.script_text(result, _where())
 
 
-@mcp.tool(annotations={"title": "Change the timestep"})
+@mcp.tool(
+    annotations={
+        "title": "Change the timestep",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+    },
+    tags={"paraview", "view"},
+)
 def set_timestep(
     index: Annotated[
         int | None, Field(description="Step index; -1 is the last.")
@@ -228,7 +252,15 @@ def set_timestep(
     return present.time_line(result["time"])
 
 
-@mcp.tool(annotations={"title": "Move the camera"})
+@mcp.tool(
+    annotations={
+        "title": "Move the camera",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": False,
+    },
+    tags={"paraview", "view"},
+)
 def set_camera(
     position: Annotated[list[float] | None, Field(min_length=3, max_length=3)] = None,
     focal_point: Annotated[
@@ -263,7 +295,15 @@ def set_camera(
     return present.camera_text(result["camera"])
 
 
-@mcp.tool(annotations={"title": "Fit the camera"})
+@mcp.tool(
+    annotations={
+        "title": "Fit the camera",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+    },
+    tags={"paraview", "view"},
+)
 def fit_camera(
     object: Annotated[
         str | None, Field(description="Fit this object; default: everything.")
@@ -274,7 +314,15 @@ def fit_camera(
     return present.camera_text(result["camera"])
 
 
-@mcp.tool(annotations={"title": "Read the picked point", "readOnlyHint": True})
+@mcp.tool(
+    annotations={
+        "title": "Read the picked point",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+    },
+    tags={"paraview", "analysis"},
+)
 def inspect_selection(
     position: Annotated[
         list[float] | None,
@@ -292,7 +340,15 @@ def inspect_selection(
     return present.selection_line(result["selection"])
 
 
-@mcp.tool(annotations={"title": "Measure a field", "readOnlyHint": True})
+@mcp.tool(
+    annotations={
+        "title": "Measure a field",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+    },
+    tags={"paraview", "analysis"},
+)
 def measure_field(
     field: Annotated[str, Field(description="Field (array) name.")],
     object: Annotated[
@@ -313,7 +369,15 @@ def measure_field(
     )
 
 
-@mcp.tool(annotations={"title": "Capture the view", "readOnlyHint": True})
+@mcp.tool(
+    annotations={
+        "title": "Capture the view",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+    },
+    tags={"paraview", "view"},
+)
 def capture(
     width: Annotated[int, Field(ge=64, le=4096)] = 1280,
     height: Annotated[int, Field(ge=64, le=4096)] = 800,
@@ -331,7 +395,16 @@ def capture(
     ]
 
 
-@mcp.tool(annotations={"title": "Export a figure"}, meta=_paths(path="write"))
+@mcp.tool(
+    annotations={
+        "title": "Export a figure",
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": True,
+    },
+    tags={"paraview", "export"},
+    meta=_paths(path="write"),
+)
 def export_artifact(
     path: Annotated[
         str | None,
@@ -355,7 +428,16 @@ def export_artifact(
     ]
 
 
-@mcp.tool(annotations={"title": "Export an animation"}, meta=_paths(path="write"))
+@mcp.tool(
+    annotations={
+        "title": "Export an animation",
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": True,
+    },
+    tags={"paraview", "export"},
+    meta=_paths(path="write"),
+)
 def export_animation(
     path: Annotated[
         str,
@@ -402,7 +484,16 @@ def export_animation(
     return present.animation_text(result)
 
 
-@mcp.tool(annotations={"title": "Export the scene"}, meta=_paths(path="write"))
+@mcp.tool(
+    annotations={
+        "title": "Export the scene",
+        "readOnlyHint": False,
+        "destructiveHint": True,
+        "idempotentHint": True,
+    },
+    tags={"paraview", "export"},
+    meta=_paths(path="write"),
+)
 def export_scene(
     path: Annotated[
         str | None,
@@ -422,7 +513,15 @@ def export_scene(
     )
 
 
-@mcp.tool(annotations={"title": "Describe the ParaView scene", "readOnlyHint": True})
+@mcp.tool(
+    annotations={
+        "title": "Describe the ParaView scene",
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+    },
+    tags={"paraview", "scene"},
+)
 def scene_state() -> ToolResult:
     """Where ParaView is attached, the dataset, the pipeline, time and view."""
     result, _ = command("scene_state", {})
@@ -470,6 +569,18 @@ def scene_state() -> ToolResult:
 def view_resource() -> str:
     """The view page."""
     return resources.files("paraview_mcp").joinpath("view.html").read_text("utf-8")
+
+
+@mcp.prompt()
+def explore_dataset(path: str) -> list[Message]:
+    """Guided workflow: open a dataset in ParaView, measure it and show it."""
+    return [
+        Message(
+            f"Open {path} in a live ParaView view with open_view and read what it holds "
+            "with scene_state. Measure the fields that matter with measure_field, look "
+            "with capture, and report the numbers you read, not impressions."
+        ),
+    ]
 
 
 def main() -> None:
