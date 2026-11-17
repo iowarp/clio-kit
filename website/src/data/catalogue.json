@@ -341,6 +341,205 @@
       }
     },
     {
+      "id": "mcp/ase",
+      "kind": "mcp",
+      "name": "ase",
+      "title": "Ase",
+      "description": "Molecular calculations with ASE: SMILES to 3D, energies, optimizations, vibrations, thermochemistry and IR spectra.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Scientific computing",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/ase",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "chemistry",
+        "ase",
+        "xtb",
+        "mace",
+        "uma",
+        "nwchem",
+        "orca",
+        "thermochemistry",
+        "vibrations"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/ase",
+      "evidence": "Locked runtime",
+      "icon": "🧪",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-ase",
+      "summary": "Molecular calculations with ASE: SMILES to 3D, energies, optimizations, vibrations, thermochemistry and IR spectra.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ase"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "ase"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ase"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ase"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ase"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ase"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ase"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/avogadro",
+      "kind": "mcp",
+      "name": "avogadro",
+      "title": "Avogadro",
+      "description": "Avogadro 2 for building and editing structures in 3D, streamed into a view; edits and selections come back as files.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Scientific computing",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/avogadro",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "chemistry",
+        "avogadro",
+        "molecular-editor",
+        "mcp-apps"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/avogadro",
+      "evidence": "Locked runtime",
+      "icon": "⚛️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-avogadro",
+      "summary": "Avogadro 2 for building and editing structures in 3D, streamed into a view; edits and selections come back as files.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "avogadro"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "avogadro"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "avogadro"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "avogadro"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "avogadro"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "avogadro"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "avogadro"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/chronolog",
       "kind": "mcp",
       "name": "chronolog",
@@ -632,6 +831,104 @@
       }
     },
     {
+      "id": "mcp/decimer",
+      "kind": "mcp",
+      "name": "decimer",
+      "title": "Decimer",
+      "description": "Read a chemical structure drawing (PNG, JPEG) into SMILES with the DECIMER image-to-SMILES model, checked with RDKit.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Scientific computing",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/decimer",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "chemistry",
+        "ocsr",
+        "decimer",
+        "smiles",
+        "image"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/decimer",
+      "evidence": "Locked runtime",
+      "icon": "🖼️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-decimer",
+      "summary": "Read a chemical structure drawing (PNG, JPEG) into SMILES with the DECIMER image-to-SMILES model, checked with RDKit.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "decimer"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "decimer"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "decimer"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "decimer"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "decimer"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "decimer"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "decimer"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/earthdata",
       "kind": "mcp",
       "name": "earthdata",
@@ -730,6 +1027,104 @@
       }
     },
     {
+      "id": "mcp/fdmnes",
+      "kind": "mcp",
+      "name": "fdmnes",
+      "title": "Fdmnes",
+      "description": "X-ray absorption near-edge spectra (XANES) of crystals and molecules with FDMNES: run, normalize and compare spectra.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Scientific computing",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/fdmnes",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "chemistry",
+        "xanes",
+        "xas",
+        "spectroscopy",
+        "fdmnes"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/fdmnes",
+      "evidence": "Locked runtime",
+      "icon": "🔬",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-fdmnes",
+      "summary": "X-ray absorption near-edge spectra (XANES) of crystals and molecules with FDMNES: run, normalize and compare spectra.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "fdmnes"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "fdmnes"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "fdmnes"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "fdmnes"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "fdmnes"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "fdmnes"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "fdmnes"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/geo",
       "kind": "mcp",
       "name": "geo",
@@ -822,6 +1217,104 @@
           "args": [
             "mcp-server",
             "geo"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/graspa",
+      "kind": "mcp",
+      "name": "graspa",
+      "title": "Graspa",
+      "description": "Gas adsorption in MOFs and zeolites by grand-canonical Monte Carlo with gRASPA: run, prepare for a GPU node, read and rank.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Scientific computing",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/graspa",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "chemistry",
+        "adsorption",
+        "gcmc",
+        "mof",
+        "graspa"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/graspa",
+      "evidence": "Locked runtime",
+      "icon": "🫧",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-graspa",
+      "summary": "Gas adsorption in MOFs and zeolites by grand-canonical Monte Carlo with gRASPA: run, prepare for a GPU node, read and rank.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "graspa"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "graspa"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "graspa"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "graspa"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "graspa"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "graspa"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "graspa"
           ]
         }
       }
@@ -1988,6 +2481,104 @@
           "args": [
             "mcp-server",
             "plot"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/pubchem",
+      "kind": "mcp",
+      "name": "pubchem",
+      "title": "Pubchem",
+      "description": "Look compounds up in PubChem by name (candidates when a name is ambiguous) and fetch their 3D structures as SDF.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Scientific computing",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/pubchem",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "chemistry",
+        "pubchem",
+        "compounds",
+        "smiles",
+        "sdf"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/pubchem",
+      "evidence": "Locked runtime",
+      "icon": "⚗️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-pubchem",
+      "summary": "Look compounds up in PubChem by name (candidates when a name is ambiguous) and fetch their 3D structures as SDF.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pubchem"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "pubchem"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pubchem"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pubchem"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pubchem"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pubchem"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "pubchem"
           ]
         }
       }
@@ -6909,6 +7500,64 @@
         "vscode": true
       },
       "summary": "Turn a dataset into summary statistics, a figure, and a live 3D view."
+    },
+    {
+      "id": "workflow/clio-chemistry",
+      "kind": "plugin",
+      "name": "clio-chemistry",
+      "title": "Chemistry",
+      "description": "Find a compound, build and change its structure, compute energies and spectra, and simulate adsorption.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Scientific computing",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "plugins/clio-chemistry/.claude-plugin/plugin.json",
+      "members": [
+        "mcp/ase",
+        "mcp/avogadro",
+        "mcp/decimer",
+        "mcp/fdmnes",
+        "mcp/graspa",
+        "mcp/pubchem"
+      ],
+      "servers": [
+        "clio-ase",
+        "clio-avogadro",
+        "clio-decimer",
+        "clio-fdmnes",
+        "clio-graspa",
+        "clio-pubchem"
+      ],
+      "tags": [],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace",
+      "evidence": "Membership from manifest",
+      "outcome": "Find a compound, build and change its structure, compute energies and spectra, and simulate adsorption.",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-chemistry",
+      "role": "Workflow plugin",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      },
+      "summary": "Find a compound, build and change its structure, compute energies and spectra, and simulate adsorption."
     },
     {
       "id": "workflow/clio-dataset-report",

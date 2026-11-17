@@ -41,6 +41,41 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
+      "name": "clio-ase",
+      "source": "./plugins/clio-ase",
+      "description": "Molecular calculations with ASE: SMILES to 3D, energies, optimizations, vibrations, thermochemistry and IR spectra.",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "chemistry",
+        "ase",
+        "xtb",
+        "mace",
+        "uma",
+        "nwchem",
+        "orca",
+        "thermochemistry",
+        "vibrations"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
+      "name": "clio-avogadro",
+      "source": "./plugins/clio-avogadro",
+      "description": "Avogadro 2 for building and editing structures in 3D, streamed into a view; edits and selections come back as files.",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "chemistry",
+        "avogadro",
+        "molecular-editor",
+        "mcp-apps"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
       "name": "clio-chronolog",
       "source": "./plugins/clio-chronolog",
       "description": "Record and retrieve agent interactions in a ChronoLog log store.",
@@ -86,6 +121,22 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
+      "name": "clio-decimer",
+      "source": "./plugins/clio-decimer",
+      "description": "Read a chemical structure drawing (PNG, JPEG) into SMILES with the DECIMER image-to-SMILES model, checked with RDKit.",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "chemistry",
+        "ocsr",
+        "decimer",
+        "smiles",
+        "image"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
       "name": "clio-earthdata",
       "source": "./plugins/clio-earthdata",
       "description": "Search NASA Earthdata for Earth-science datasets and their files, and download them with an Earthdata Login.",
@@ -102,6 +153,22 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
+      "name": "clio-fdmnes",
+      "source": "./plugins/clio-fdmnes",
+      "description": "X-ray absorption near-edge spectra (XANES) of crystals and molecules with FDMNES: run, normalize and compare spectra.",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "chemistry",
+        "xanes",
+        "xas",
+        "spectroscopy",
+        "fdmnes"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
       "name": "clio-geo",
       "source": "./plugins/clio-geo",
       "description": "MCP server for rendering GeoJSON vector layers into map images with basemaps",
@@ -112,6 +179,22 @@
         "mapping",
         "geojson",
         "visualization"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
+      "name": "clio-graspa",
+      "source": "./plugins/clio-graspa",
+      "description": "Gas adsorption in MOFs and zeolites by grand-canonical Monte Carlo with gRASPA: run, prepare for a GPU node, read and rank.",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "chemistry",
+        "adsorption",
+        "gcmc",
+        "mof",
+        "graspa"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -294,6 +377,22 @@
         "matplotlib",
         "plotting",
         "charts"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
+      "name": "clio-pubchem",
+      "source": "./plugins/clio-pubchem",
+      "description": "Look compounds up in PubChem by name (candidates when a name is ambiguous) and fetch their 3D structures as SDF.",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "chemistry",
+        "pubchem",
+        "compounds",
+        "smiles",
+        "sdf"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -664,6 +763,44 @@
         "iot",
         "sensors",
         "smart-home"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
+      "name": "clio-chemistry",
+      "source": "./plugins/clio-chemistry",
+      "description": "Find a compound, build and change its structure, compute energies and spectra, and simulate adsorption.",
+      "version": "1.0.0",
+      "category": "workflow",
+      "keywords": [
+        "adsorption",
+        "ase",
+        "avogadro",
+        "chemistry",
+        "compounds",
+        "decimer",
+        "fdmnes",
+        "gcmc",
+        "graspa",
+        "image",
+        "mace",
+        "mcp-apps",
+        "mof",
+        "molecular-editor",
+        "nwchem",
+        "ocsr",
+        "orca",
+        "pubchem",
+        "sdf",
+        "smiles",
+        "spectroscopy",
+        "thermochemistry",
+        "uma",
+        "vibrations",
+        "xanes",
+        "xas",
+        "xtb"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"

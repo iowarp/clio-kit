@@ -1,0 +1,67 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/avogadro-mcp",
+  "title": "CLIO Avogadro",
+  "description": "Avogadro 2 for building and editing structures in 3D, streamed into a view; edits and selections...",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.12.7",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "avogadro"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "avogadro_status",
+      "description": "Whether Avogadro 2 is installed here (and where), whether the virtual display and VNC server the streamed view needs (Xvfb, x11vnc) are present, what to install when something is missing, and whether Avogadro is running."
+    },
+    {
+      "name": "open_in_avogadro",
+      "description": "Open Avogadro in a view, with a structure file (XYZ, SDF/MOL, PDB, CIF, CJSON, \u2026) or empty to build from scratch. The person works in it; when they choose Extensions > CLIO > Send to CLIO, the view tells you, and read_avogadro writes what they sent. Starts Avogadro the first time (seconds)."
+    },
+    {
+      "name": "read_avogadro",
+      "description": "What the person last sent from Avogadro (Extensions > CLIO > Send to CLIO), written as an XYZ structure file plus Avogadro's CJSON under output_dir/chemistry/avogadro/, with its formula and the atoms they had selected (0-based indices, file order)."
+    },
+    {
+      "name": "avogadro_snapshot",
+      "description": "A PNG of Avogadro's 3D view as it is now, saved and returned as an image."
+    },
+    {
+      "name": "close_avogadro",
+      "description": "Stop Avogadro and its virtual display; what was not sent is lost."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "ui://avogadro/view",
+      "name": "avogadro_view",
+      "description": "Avogadro 2, streamed through the host's service route."
+    }
+  ],
+  "tags": [
+    "chemistry",
+    "avogadro",
+    "molecular-editor",
+    "mcp-apps"
+  ],
+  "scope": "scientific"
+}

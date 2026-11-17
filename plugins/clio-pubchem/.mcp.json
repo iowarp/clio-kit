@@ -1,0 +1,9 @@
+{
+  "clio-pubchem": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "pubchem"
+    ]
+  }
+}

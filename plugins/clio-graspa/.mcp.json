@@ -1,0 +1,9 @@
+{
+  "clio-graspa": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "graspa"
+    ]
+  }
+}

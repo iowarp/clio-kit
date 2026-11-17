@@ -14,6 +14,20 @@
         "arxiv"
       ]
     },
+    "clio-ase": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "ase"
+      ]
+    },
+    "clio-avogadro": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "avogadro"
+      ]
+    },
     "clio-chronolog": {
       "command": "clio-kit",
       "args": [
@@ -35,6 +49,13 @@
         "darshan"
       ]
     },
+    "clio-decimer": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "decimer"
+      ]
+    },
     "clio-earthdata": {
       "command": "clio-kit",
       "args": [
@@ -42,11 +63,25 @@
         "earthdata"
       ]
     },
+    "clio-fdmnes": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "fdmnes"
+      ]
+    },
     "clio-geo": {
       "command": "clio-kit",
       "args": [
         "mcp-server",
         "geo"
+      ]
+    },
+    "clio-graspa": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "graspa"
       ]
     },
     "clio-hdf5": {
@@ -131,6 +166,13 @@
       "args": [
         "mcp-server",
         "plot"
+      ]
+    },
+    "clio-pubchem": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "pubchem"
       ]
     },
     "clio-scientific-catalog": {

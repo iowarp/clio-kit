@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Avogadro</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #f2efe8; overflow: hidden; }
+  @media (prefers-color-scheme: dark) { html, body { background: #1e1f22; } }
+  #screen { width: 100%; height: 100%; }
+  /* A window scaled down to fit sits at the top, like an image, with any spare space
+     below it (noVNC centres it vertically with margin: auto). */
+  #screen canvas { margin: 0 auto !important; }
+  #note { position: absolute; top: 8px; left: 8px; font: 13px system-ui, sans-serif;
+    color: #e6e8eb; background: rgba(0,0,0,.6); padding: 4px 8px; border-radius: 4px; }
+  #note[hidden] { display: none; }
+</style>
+</head>
+<body>
+<div id="note" role="status">Connecting to Avogadro…</div>
+<div id="screen"></div>
+<script type="module">
+  // noVNC v1.5.0 core (MPL-2.0), served unchanged from novnc/core/.
+  import RFB from './novnc/core/rfb.js';
+  const note = document.getElementById('note');
+  const url = new URL('websockify', location.href);
+  url.protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  function connect() {
+    const rfb = new RFB(document.getElementById('screen'), url.href);
+    rfb.scaleViewport = true;
+    rfb.background = 'transparent';  // the page's theme colour around a scaled window
+    rfb.resizeSession = false;
+    rfb.focusOnClick = true;
+    rfb.addEventListener('connect', () => {
+      note.hidden = true;
+      reportSize();
+      window.parent.postMessage({ type: 'clio.avogadro.link', up: true }, '*');
+    });
+    rfb.addEventListener('disconnect', () => {
+      note.hidden = false;
+      note.textContent = 'Lost the link to Avogadro; reconnecting…';
+      window.parent.postMessage({ type: 'clio.avogadro.link', up: false }, '*');
+      setTimeout(connect, 2000);
+    });
+  }
+  // The server sizes Avogadro's window to this page, so the window is drawn 1:1
+  // (scaleViewport only scales when the page is smaller than Avogadro's minimum).
+  let sent = '';
+  function reportSize() {
+    const size = { width: Math.round(innerWidth), height: Math.round(innerHeight) };
+    const key = size.width + 'x' + size.height;
+    if (key === sent) return;
+    sent = key;
+    fetch('size', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(size) }).catch(() => { sent = ''; });
+  }
+  let pending = 0;
+  new ResizeObserver(() => { clearTimeout(pending); pending = setTimeout(reportSize, 250); })
+    .observe(document.body);
+  connect();
+</script>
+</body>
+</html>

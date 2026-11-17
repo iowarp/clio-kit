@@ -233,6 +233,18 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
         mcp: ${{ fromJson(needs.discover-mcps.outputs.mcps) }}
         exclude:
+          - mcp: ase
+            python-version: "3.10"
+          - mcp: avogadro
+            python-version: "3.10"
+          - mcp: decimer
+            python-version: "3.10"
+          - mcp: decimer
+            python-version: "3.13"
+          - mcp: fdmnes
+            python-version: "3.10"
+          - mcp: graspa
+            python-version: "3.10"
           - mcp: home-assistant
             python-version: "3.10"
           - mcp: home-assistant
@@ -240,6 +252,8 @@ jobs:
           - mcp: home-assistant
             python-version: "3.12"
           - mcp: jarvis
+            python-version: "3.10"
+          - mcp: pubchem
             python-version: "3.10"
           - mcp: scientific-catalog
             python-version: "3.10"
