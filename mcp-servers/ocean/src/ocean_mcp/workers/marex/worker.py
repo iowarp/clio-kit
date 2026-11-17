@@ -26,6 +26,37 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+#: Mean Earth radius (IUGG), km.
+EARTH_RADIUS_KM = 6371.0088
+
+
+def cell_areas_km2(lat: xr.DataArray, lon: xr.DataArray) -> xr.DataArray:
+    """Area of each cell of a regular latitude-longitude grid, km^2, on a sphere.
+
+    marEx reports areas in cells unless it is given cell areas, so an event's area is
+    summed here from its cells instead. Spacing comes from the coordinates; a cell is
+    bounded halfway to its neighbours and clipped at the poles.
+    """
+    lat_deg = np.asarray(lat, dtype=float)
+    lon_deg = np.asarray(lon, dtype=float)
+    dlon = (
+        np.deg2rad(float(np.median(np.abs(np.diff(lon_deg)))))
+        if lon_deg.size > 1
+        else 0.0
+    )
+    order = np.argsort(lat_deg)
+    sorted_lat = lat_deg[order]
+    edges = np.empty(sorted_lat.size + 1)
+    edges[1:-1] = (sorted_lat[1:] + sorted_lat[:-1]) / 2
+    step = np.median(np.diff(sorted_lat)) if sorted_lat.size > 1 else 0.0
+    edges[0], edges[-1] = sorted_lat[0] - step / 2, sorted_lat[-1] + step / 2
+    edges = np.clip(edges, -90.0, 90.0)
+    band = np.abs(np.diff(np.sin(np.deg2rad(edges))))
+    per_lat = np.empty_like(band)
+    per_lat[order] = EARTH_RADIUS_KM**2 * dlon * band
+    row = xr.DataArray(per_lat, coords={lat.name: lat}, dims=[lat.name])
+    return row * xr.ones_like(lon, dtype=float)
+
 
 def main(request_path: str) -> int:
     request = json.loads(Path(request_path).read_text())
@@ -88,6 +119,7 @@ def main(request_path: str) -> int:
     duration = (ends - starts).days + 1
     keep = events["ID"].to_numpy()[duration >= int(request.get("min_duration_days", 5))]
     weights = np.cos(np.deg2rad(anomaly[y_dim]))
+    areas = cell_areas_km2(anomaly[y_dim], anomaly[x_dim])
     doy_index = anomaly[time_dim].dt.dayofyear
     threshold_daily = thresholds.sel(dayofyear=doy_index)
     id_field = events["ID_field"]
@@ -108,9 +140,7 @@ def main(request_path: str) -> int:
                     "anomaly_mean": float((a * w).sum() / w.sum()),
                     "threshold_mean": float((th * w).sum() / w.sum()),
                     "anomaly_max": float(a.where(cells).max()),
-                    "area_km2": float(
-                        events["area"].isel({time_dim: t_index}).sel(ID=event_id)
-                    ),
+                    "area_km2": float(areas.where(cells, 0.0).sum()),
                     "centroid_lat": float(
                         events["centroid"]
                         .isel(component=0, **{time_dim: t_index})
