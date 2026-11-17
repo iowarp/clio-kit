@@ -161,6 +161,12 @@ def ensemble_open_data(
     return ds, source
 
 
+def _agency_column(frame: pd.DataFrame, column: str) -> pd.Series:
+    if column not in frame:
+        return pd.Series(np.nan, index=frame.index)
+    return pd.to_numeric(frame[column], errors="coerce")
+
+
 def ibtracs(
     subset: str, storm: str | None, season: int | None, name: str | None
 ) -> tuple[pd.DataFrame, Source]:
@@ -198,22 +204,18 @@ def ibtracs(
             "time": pd.to_datetime(frame["ISO_TIME"], utc=True),
             "latitude": pd.to_numeric(frame["LAT"], errors="coerce"),
             "longitude": pd.to_numeric(frame["LON"], errors="coerce"),
-            "mslp_hpa": pd.to_numeric(
-                frame.get("WMO_PRES", frame.get("USA_PRES")), errors="coerce"
-            ),
-            "wind_kt": pd.to_numeric(
-                frame.get("WMO_WIND", frame.get("USA_WIND")), errors="coerce"
-            ),
         }
     )
-    usa_pres = (
-        pd.to_numeric(frame.get("USA_PRES"), errors="coerce")
-        if "USA_PRES" in frame
-        else None
-    )
-    if usa_pres is not None:
-        out["mslp_hpa"] = out["mslp_hpa"].fillna(
-            pd.Series(usa_pres.to_numpy(), index=out.index)
+    for kind, unit in (("PRES", "mslp_hpa"), ("WIND", "wind_kt")):
+        wmo = _agency_column(frame, f"WMO_{kind}")
+        usa = _agency_column(frame, f"USA_{kind}")
+        out[f"wmo_{unit}"] = wmo
+        out[f"usa_{unit}"] = usa
+        # The merged column takes the WMO agency's value and, where it has none
+        # (provisional tracks), JTWC's; the agency of each row is kept beside it.
+        out[unit] = wmo.where(wmo.notna(), usa)
+        out[f"{unit.split('_')[0]}_agency"] = np.select(
+            [wmo.notna(), usa.notna()], ["wmo", "usa"], default=""
         )
     source = Source(
         name=f"IBTrACS v04r01 ({subset})",

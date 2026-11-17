@@ -229,7 +229,9 @@ def station_verify(
     description=(
         "Best track of a tropical cyclone from IBTrACS v04r01 (NOAA NCEI), by storm id (SID) or by "
         "name and season; subset 'last3years', 'ACTIVE' or a basin ('NA', 'WP', 'EP', 'NI', 'SI', 'SP', "
-        "'SA') to keep the download small. Times, positions, pressure and wind."
+        "'SA') to keep the download small. Times, positions, pressure and wind: the WMO agency's values, "
+        "or JTWC's where the WMO agency has none (provisional tracks), with the agency of each row and "
+        "both agencies' columns (WMO winds are 10-minute means, JTWC's 1-minute)."
     ),
     annotations=FETCHES,
     tags={"weather", "cyclone", "best track", "fetch"},
@@ -269,6 +271,10 @@ def ibtracs_fetch(
         f"{len(storms)} storm(s), {len(table)} best-track points.",
         [out],
         storms=storms.astype({"start": str, "end": str}).to_dict("records"),
+        agencies={
+            "pressure": table["mslp_agency"].value_counts().to_dict(),
+            "wind": table["wind_agency"].value_counts().to_dict(),
+        },
         licence=src.licence,
     )
 

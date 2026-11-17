@@ -303,4 +303,16 @@ def track_score(
         .mean()
         .to_dict(),
     }
+    for field, agency in (
+        ("mslp_error_hpa", "mslp_agency"),
+        ("wind_error_kt", "wind_agency"),
+    ):
+        if field in table and agency in obs:
+            used = sorted({a for a in obs[agency].dropna() if a})
+            numbers[f"best_track_{agency}"] = used
+            if len(used) > 1:
+                numbers.setdefault("notes", []).append(
+                    f"{field} is against a best track that mixes agencies {used} "
+                    "(WMO winds are 10-minute means, JTWC's 1-minute)"
+                )
     return table, numbers
