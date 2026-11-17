@@ -14,7 +14,7 @@ from typing import Any, Literal
 import numpy as np
 import pandas as pd
 
-from .common import OceanToolError, Source
+from .common import OceanToolError, Source, cache_dir
 
 ARGO_DOI = "https://doi.org/10.17882/42182"
 ARGO_LICENCE = "Argo data are freely available without restriction (Argo data policy); cite doi:10.17882/42182"
@@ -46,6 +46,9 @@ def argo_fetch(
     }
     if dataset == "bgc":
         kwargs["params"] = params or "all"
+    # argopy caches under ~/.cache by default, which a sandboxed server may not be
+    # allowed to write; keep it beside the server's outputs instead.
+    argopy.set_options(cachedir=str(cache_dir("argopy")))
     try:
         fetcher = argopy.DataFetcher(**kwargs)
         if box is not None:

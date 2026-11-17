@@ -48,6 +48,15 @@ def output_root() -> Path:
     return root
 
 
+def cache_dir(name: str) -> Path:
+    """A writable cache folder: ``OCEAN_MCP_CACHE_DIR/<name>`` or ``<output root>/.cache/<name>``."""
+    configured = os.environ.get("OCEAN_MCP_CACHE_DIR", "").strip()
+    base = Path(configured).expanduser() if configured else output_root() / ".cache"
+    folder = base / name
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder
+
+
 def output_path(name: str, suffix: str, output_dir: str | None = None) -> Path:
     """A path for a new output file, under ``output_dir`` or the output root."""
     stem = _SAFE.sub("-", name).strip("-") or "output"

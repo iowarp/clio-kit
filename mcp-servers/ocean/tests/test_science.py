@@ -325,3 +325,14 @@ def test_colocate_reports_known_bias(velocity_grid: Path) -> None:
     )
     assert numbers["matched"] == 3
     assert numbers["overall_bias"] == pytest.approx(0.5, abs=1e-6)
+
+
+def test_cache_dir_is_under_the_configured_root(tmp_path, monkeypatch) -> None:
+    from ocean_mcp.implementation.common import cache_dir
+
+    monkeypatch.setenv("OCEAN_MCP_CACHE_DIR", str(tmp_path / "c"))
+    assert cache_dir("argopy") == tmp_path / "c" / "argopy"
+    assert (tmp_path / "c" / "argopy").is_dir()
+    monkeypatch.delenv("OCEAN_MCP_CACHE_DIR")
+    monkeypatch.setenv("OCEAN_MCP_OUTPUT_DIR", str(tmp_path / "out"))
+    assert cache_dir("argopy") == tmp_path / "out" / ".cache" / "argopy"
