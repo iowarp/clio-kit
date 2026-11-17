@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
-import tomllib
 from stdio_session import session
+
+if sys.version_info >= (3, 11):
+    import tomllib
+else:  # requires-python is >=3.10; pytest itself brings tomli there
+    import tomli as tomllib
 
 from earthdata_mcp import server
 
