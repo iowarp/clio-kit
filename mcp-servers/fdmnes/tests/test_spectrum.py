@@ -23,6 +23,20 @@ def test_normalize_gives_unit_step_at_the_edge():
     assert abs(np.mean(n["mu_norm"][e > 50]) - 1.0) < 0.1
 
 
+def test_a_sharp_pre_edge_peak_is_not_taken_for_the_edge():
+    """A pre-edge peak on a fine grid rises faster than the edge (magnetite's tetrahedral Fe)."""
+    e = np.concatenate(
+        [np.arange(-30.0, -10.0, 1.0), np.arange(-10.0, 20.0, 0.2), np.arange(20.0, 81.0, 1.0)]
+    )
+    edge = 0.03 / (1 + np.exp(-(e - 12.0) / 2.0))
+    pre_peak = 0.008 * np.exp(-(((e - 0.5) / 0.4) ** 2))
+    wiggle = 0.006 * np.sin((e - 25.0) / 6.0) * (e > 25)
+    mu = 0.0002 + edge + pre_peak + wiggle
+    n = spectrum.normalize(e, mu)
+    assert abs(n["e0_eV"] - 12.0) < 2.0
+    assert abs(n["edge_step"] - 0.03) < 0.006
+
+
 def test_short_range_is_reported_not_normalized():
     e, mu = _edge()
     keep = (e > -5) & (e < 10)

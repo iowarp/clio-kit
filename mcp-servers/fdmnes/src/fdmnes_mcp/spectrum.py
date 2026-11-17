@@ -20,6 +20,8 @@ import numpy as np
 from .errors import FdmnesError
 
 PRE_GAP, POST_GAP, MIN_POINTS = 10.0, 20.0, 3
+#: The post-edge level is a mean over at least this many eV, or the range is too short.
+POST_SPAN = 20.0
 
 
 def read_two_columns(path: Path) -> tuple[np.ndarray, np.ndarray, str]:
@@ -48,8 +50,18 @@ def read_two_columns(path: Path) -> tuple[np.ndarray, np.ndarray, str]:
 
 
 def edge_energy(energy: np.ndarray, mu: np.ndarray) -> float:
-    """E0: the energy of the steepest rise (largest dμ/dE)."""
-    return float(energy[int(np.argmax(np.gradient(mu, energy)))])
+    """E0: where μ first reaches half the jump from the low-energy start to its maximum.
+
+    Half-height rather than the steepest rise: a sharp pre-edge peak on a fine grid has a
+    larger dμ/dE than the main edge and would be taken for it.
+    """
+    start = float(np.median(mu[: max(MIN_POINTS, len(mu) // 10)]))
+    half = start + 0.5 * (float(np.max(mu)) - start)
+    i = int(np.argmax(mu >= half))
+    if i == 0:
+        return float(energy[0])
+    e1, e2, m1, m2 = energy[i - 1], energy[i], mu[i - 1], mu[i]
+    return float(e1 + (half - m1) * (e2 - e1) / (m2 - m1)) if m2 != m1 else float(e2)
 
 
 def normalize(energy: np.ndarray, mu: np.ndarray) -> dict[str, Any]:
@@ -57,17 +69,19 @@ def normalize(energy: np.ndarray, mu: np.ndarray) -> dict[str, Any]:
     pre = energy <= e0 - PRE_GAP
     post = energy >= e0 + POST_GAP
     out: dict[str, Any] = {"e0_eV": e0, "normalized": False}
-    if pre.sum() < MIN_POINTS or post.sum() < MIN_POINTS:
+    span = float(energy[post][-1] - energy[post][0]) if post.sum() else 0.0
+    if pre.sum() < MIN_POINTS or post.sum() < MIN_POINTS or span < POST_SPAN:
         out["reason"] = (
-            f"too few points {PRE_GAP:g} eV below or {POST_GAP:g} eV above the edge "
-            f"(E0 {e0:.2f} eV; {int(pre.sum())} below, {int(post.sum())} above); "
-            "extend the energy range to normalize"
+            f"too few points {PRE_GAP:g} eV below or too short a range from {POST_GAP:g} eV "
+            f"above the edge (E0 {e0:.2f} eV; {int(pre.sum())} points below, "
+            f"{span:g} eV above, {POST_SPAN:g} needed); extend the energy range to normalize"
         )
         out["mu_norm"] = None
         return out
     m_pre, b_pre = np.polyfit(energy[pre], mu[pre], 1)
-    m_post, b_post = np.polyfit(energy[post], mu[post], 1)
-    step = (m_post * e0 + b_post) - (m_pre * e0 + b_pre)
+    # Flat post-edge: the mean above the edge, not a line through the oscillations
+    # extrapolated back to E0, which a XANES range (tens of eV) does not determine.
+    step = float(np.mean(mu[post])) - (m_pre * e0 + b_pre)
     if not np.isfinite(step) or abs(step) < 1e-12:
         out["reason"] = "the edge step is zero; there is no edge in this range"
         out["mu_norm"] = None
