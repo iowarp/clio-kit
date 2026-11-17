@@ -74,6 +74,12 @@
       "description": "Describe what the slicer MCP server can do."
     }
   ],
+  "prompts": [
+    {
+      "name": "slice_for_printer",
+      "description": "Guided workflow: slice a model for a printer and show where the time goes."
+    }
+  ],
   "tags": [
     "3d-printing",
     "slicer",
