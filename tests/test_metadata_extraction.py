@@ -17,6 +17,12 @@ class _ExtractorModule(Protocol):
 
     async def extract(self, module_path: str) -> dict[str, Any]: ...
 
+    def extract_over_stdio(
+        self, module_path: str, env: dict[str, str]
+    ) -> dict[str, Any]: ...
+
+    def upstream_entry(self, server_name: str) -> dict[str, Any] | None: ...
+
 
 def _load_extractor() -> _ExtractorModule:
     path = Path(__file__).parents[1] / "scripts" / "extract_mcp_metadata.py"
@@ -97,3 +103,67 @@ def test_extract_preserves_tool_hints_for_readme_generation(
     assert hints["readOnlyHint"] is True
     assert hints["destructiveHint"] is False
     assert hints["idempotentHint"] is True
+
+
+FAKE_UPSTREAM = """
+import json, os, sys
+
+TOOLS = [
+    {"name": "first", "description": "One.", "annotations": {"readOnlyHint": True}},
+    {"name": "second", "_meta": {"fastmcp": {"tags": ["b", "a"]}}},
+]
+
+
+def main():
+    for line in sys.stdin:
+        message = json.loads(line)
+        if "id" not in message:
+            continue
+        method, params = message["method"], message.get("params") or {}
+        if method == "initialize":
+            result = {
+                "protocolVersion": params["protocolVersion"],
+                "capabilities": {"tools": {}, "prompts": {}},
+                "serverInfo": {"name": os.environ["FAKE_NAME"], "version": "9"},
+                "instructions": "Upstream.",
+            }
+        elif method == "tools/list" and params.get("cursor") != "page-2":
+            result = {"tools": TOOLS[:1], "nextCursor": "page-2"}
+        elif method == "tools/list":
+            result = {"tools": TOOLS[1:]}
+        elif method == "prompts/list":
+            result = {"prompts": [{"name": "guide"}]}
+        else:
+            print(json.dumps({"jsonrpc": "2.0", "id": message["id"],
+                              "error": {"code": -32601, "message": method}}), flush=True)
+            continue
+        print(json.dumps({"jsonrpc": "2.0", "id": message["id"], "result": result}),
+              flush=True)
+"""
+
+
+def test_upstream_server_is_read_over_stdio(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A wrapper with no mcp object reports the tools its upstream lists, all pages."""
+    (tmp_path / "fake_upstream.py").write_text(FAKE_UPSTREAM, encoding="utf-8")
+    monkeypatch.setenv("PYTHONPATH", str(tmp_path))
+
+    result = extract_mcp_metadata.extract_over_stdio(
+        "fake_upstream", {"FAKE_NAME": "from-probe-environment"}
+    )
+
+    assert result["name"] == "from-probe-environment"
+    assert result["instructions"] == "Upstream."
+    assert [t["name"] for t in result["tools"]] == ["first", "second"]
+    assert result["tools"][0]["annotations"] == {"readOnlyHint": True}
+    assert result["tools"][1]["tags"] == ["a", "b"]
+    assert result["resources"] == [] and result["resource_templates"] == []
+    assert result["prompts"] == [{"name": "guide", "description": ""}]
+
+
+def test_upstream_servers_come_from_the_inventory() -> None:
+    entry = extract_mcp_metadata.upstream_entry("home-assistant")
+    assert entry is not None and entry["package"] == "ha-mcp"
+    assert "HOMEASSISTANT_URL" in entry["probe-environment"]
+    assert extract_mcp_metadata.upstream_entry("hdf5") is None
