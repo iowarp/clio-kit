@@ -81,7 +81,14 @@ def run_particles(
         if start
         else (times[-1] if direction == "backward" else times[0])
     )
+    if begin.tzinfo is not None:  # "...Z" or an offset: the field's times are naive UTC
+        begin = begin.tz_convert("UTC").tz_localize(None)
     span = pd.Timedelta(days=days)
+    if not times[0] <= begin <= times[-1]:
+        raise OceanToolError(
+            "out_of_range",
+            f"the release time {begin} is outside the field ({times[0]} to {times[-1]})",
+        )
     if direction == "backward" and begin - span < times[0]:
         raise OceanToolError(
             "out_of_range",

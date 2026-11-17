@@ -236,8 +236,13 @@ async def test_particles_say_what_their_spread_means_and_can_diffuse(
     }
     still = await call("particles", **common)
     assert "not an uncertainty" in still["summary"]
-    spread = await call("particles", diffusivity_m2s=100.0, **common)
+    # A start time with a zone (as an agent writes it, "...Z") is read as UTC (Q9 rerun).
+    spread = await call(
+        "particles", diffusivity_m2s=100.0, start="2021-01-01T00:00:00Z", **common
+    )
     assert "random walk" in spread["summary"]
     # sqrt(2 K t) for 100 m2/s over 5 days is about 9 km per axis.
     assert spread["end_spread_km"] > 2 * still["end_spread_km"]
     assert spread["median_displacement_km"] == pytest.approx(43.2, rel=0.2)
+    with pytest.raises(ToolError, match="out_of_range"):
+        await call("particles", start="2020-06-01", **common)
