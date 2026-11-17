@@ -85,3 +85,19 @@ def test_a_field_is_a_grid_layer_and_a_section_its_own_view(tmp_path: Path) -> N
     )
     view = views.grid_view("section", tmp_path / "s.nc", section)
     assert view["component"] == "clio.section.v1" and view["variable"] == "CT"
+
+
+def test_particle_trajectories_are_tracks_too(tmp_path: Path) -> None:
+    """The particles tool names its track column ``particle`` (Q9: no track view)."""
+    table = pd.DataFrame(
+        {
+            "particle": [0, 0, 1, 1],
+            "time": pd.to_datetime(["2026-09-16", "2026-09-17"] * 2),
+            "longitude": [-64.2, -64.3, -64.1, -64.0],
+            "latitude": [31.7, 31.8, 31.6, 31.5],
+        }
+    )
+    view = views.table_view("tracks", tmp_path / "p.parquet", table)
+    assert view is not None
+    [layer] = view["layers"]
+    assert layer["kind"] == "tracks" and layer["trackField"] == "particle"

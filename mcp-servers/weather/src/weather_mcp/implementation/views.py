@@ -54,6 +54,10 @@ def _numeric(table: Any) -> list[str]:
     ]
 
 
+#: Columns naming the track a row belongs to (eddies, storms, floats, particles).
+TRACK_ID = ("track", "particle", "storm", "sid", "float", "platform")
+
+
 def table_view(
     role: str, path: Path, table: Any, title: str = ""
 ) -> dict[str, Any] | None:
@@ -81,7 +85,8 @@ def table_view(
         }
     if "latitude" not in columns or "longitude" not in columns:
         return None
-    if role == "tracks" and "track" in columns and "time" in columns:
+    track = _first(columns, TRACK_ID) if role == "tracks" else None
+    if track and "time" in columns:
         layer = {
             "id": "tracks",
             "kind": "tracks",
@@ -89,8 +94,8 @@ def table_view(
             "dataUri": str(path),
             "latitudeField": "latitude",
             "longitudeField": "longitude",
-            "idField": "track",
-            "trackField": "track",
+            "idField": track,
+            "trackField": track,
             "timeField": "time",
         }
     else:
