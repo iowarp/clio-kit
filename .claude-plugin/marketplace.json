@@ -426,6 +426,25 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
+      "name": "clio-weather",
+      "source": "./plugins/clio-weather",
+      "description": "MCP server for weather and climate analysis: ensemble exceedance, threshold events, sections and soundings with CAPE, forecast scores, station verification, blob tracking, climate indices and CMIP6 regional change, each result with a provenance record",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "weather",
+        "climate",
+        "era5",
+        "ensemble",
+        "cape",
+        "cyclone",
+        "cmip6",
+        "verification"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
       "name": "clio-web",
       "source": "./plugins/clio-web",
       "description": "Provider-fixed web search plus transparent URL, DOI, and document fetching",
@@ -617,14 +636,20 @@
       "category": "workflow",
       "keywords": [
         "argo",
+        "cape",
         "catalog",
+        "climate",
+        "cmip6",
         "ctd",
+        "cyclone",
         "datasets",
         "dem",
         "earth-science",
         "earthdata",
         "earthquake",
         "eddies",
+        "ensemble",
+        "era5",
         "geojson",
         "geospatial",
         "mapping",
@@ -639,8 +664,10 @@
         "teos-10",
         "terrain",
         "tides",
+        "verification",
         "visualization",
-        "waveform"
+        "waveform",
+        "weather"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"

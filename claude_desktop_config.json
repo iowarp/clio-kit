@@ -189,6 +189,13 @@
         "terrain"
       ]
     },
+    "clio-weather": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "weather"
+      ]
+    },
     "clio-web": {
       "command": "clio-kit",
       "args": [

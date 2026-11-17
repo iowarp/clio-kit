@@ -16,6 +16,7 @@
     "clio-ocean",
     "clio-seismology",
     "clio-terrain",
+    "clio-weather",
     "clio-geoscience-skills"
   ]
 }

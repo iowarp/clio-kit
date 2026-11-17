@@ -2776,6 +2776,107 @@
       }
     },
     {
+      "id": "mcp/weather",
+      "kind": "mcp",
+      "name": "weather",
+      "title": "Weather",
+      "description": "MCP server for weather and climate analysis: ensemble exceedance, threshold events, sections and soundings with CAPE, forecast scores, station verification, blob tracking, climate indices and CMIP6 regional change, each result with a provenance record",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/weather",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "weather",
+        "climate",
+        "era5",
+        "ensemble",
+        "cape",
+        "cyclone",
+        "cmip6",
+        "verification"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/weather",
+      "evidence": "Locked runtime",
+      "icon": "⛅",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-weather",
+      "summary": "MCP server for weather and climate analysis.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "weather"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "weather"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "weather"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "weather"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "weather"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "weather"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "weather"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/web",
       "kind": "mcp",
       "name": "web",
@@ -7184,6 +7285,7 @@
         "mcp/ocean",
         "mcp/seismology",
         "mcp/terrain",
+        "mcp/weather",
         "skill/coordinate-systems",
         "skill/geospatial-map",
         "skill/seismic-analysis"
@@ -7193,7 +7295,8 @@
         "clio-geo",
         "clio-ocean",
         "clio-seismology",
-        "clio-terrain"
+        "clio-terrain",
+        "clio-weather"
       ],
       "tags": [],
       "clients": [

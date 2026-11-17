@@ -1,0 +1,25 @@
+# Worker environment for Earth2Studio (Apache-2.0) and the model packages it loads.
+# Separate from the weather server because torch and the model stacks are large;
+# the server runs worker.py here as a subprocess. CPU torch comes from the PyTorch
+# CPU index; on a CUDA machine replace the index to run on the GPU.
+[project]
+name = "weather-earth2-worker"
+version = "1.0.0"
+description = "Runs Earth2Studio prognostic models and downscaling for the weather MCP server"
+requires-python = ">=3.12,<3.13"
+license = "Apache-2.0"
+dependencies = [
+    "earth2studio[fcn,dlwp,corrdiff,data]==0.20.0",
+    "torch>=2.5",
+]
+
+[tool.uv]
+package = false
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }

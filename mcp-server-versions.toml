@@ -24,7 +24,7 @@ schema-version = 1
 # spice earthdata-mcp-server, ha-mcp and ltspice-mcp (Python). Two primary bundles are
 # new, clio-electronics and clio-home; clio-geoscience and clio-research gain members.
 [mcp-registry-release]
-publish = ["adios", "arxiv", "chronolog", "compression", "darshan", "earthdata", "geo", "hdf5", "home-assistant", "jarvis", "lmod", "ndp", "node-hardware", "ocean", "pandas", "parallel-sort", "paraview", "parquet", "pdf", "plot", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "spice", "terrain", "web"]
+publish = ["adios", "arxiv", "chronolog", "compression", "darshan", "earthdata", "geo", "hdf5", "home-assistant", "jarvis", "lmod", "ndp", "node-hardware", "ocean", "pandas", "parallel-sort", "paraview", "parquet", "pdf", "plot", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "spice", "terrain", "weather", "web"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
@@ -71,7 +71,7 @@ servers = ["pandas", "paraview", "plot"]
 [bundles.clio-geoscience]
 version = "1.2.0"
 description = "Maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data."
-servers = ["earthdata", "geo", "ocean", "seismology", "terrain"]
+servers = ["earthdata", "geo", "ocean", "seismology", "terrain", "weather"]
 
 [bundles.clio-fabrication]
 version = "1.0.0"
@@ -137,6 +137,7 @@ slurm = "3.1.1"
 spack = "2.3.4"
 spice = "1.0.0"
 terrain = "2.2.8"
+weather = "1.0.0"
 web = "2.1.6"
 
 [workflows.clio-dataset-report]
@@ -171,6 +172,7 @@ terrain = "⛰️"
 web = "🌐"
 earthdata = "🛰️"
 ocean = "🌊"
+weather = "⛅"
 home-assistant = "🏠"
 pdf = "📑"
 spice = "🔌"
@@ -218,6 +220,10 @@ note = "Needs ngspice or LTspice installed on this machine; ltspice-mcp finds it
 
 [prerequisites.ocean]
 note = "Marine heatwave and eddy tracking build separate worker environments with uv on first use (marEx, AGPL-3.0-or-later; py-eddy-tracker, GPL-3.0, on Python 3.10)."
+
+[prerequisites.weather]
+executable-environment = ["TEMPESTEXTREMES_BIN"]
+note = "Object and cyclone tracking need TempestExtremes built from source (TEMPESTEXTREMES_BIN); AI forecasts build a large Earth2Studio environment on first use and need a CUDA GPU unless allow_cpu."
 
 [prerequisites.chronolog]
 note = "Scientific backend requires a workflow check; a handshake alone is insufficient."
