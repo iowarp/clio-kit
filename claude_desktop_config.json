@@ -77,6 +77,13 @@
         "geo"
       ]
     },
+    "clio-geoservices": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "geoservices"
+      ]
+    },
     "clio-graspa": {
       "command": "clio-kit",
       "args": [

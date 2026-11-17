@@ -1,0 +1,9 @@
+{
+  "clio-geoservices": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "geoservices"
+    ]
+  }
+}

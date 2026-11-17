@@ -177,6 +177,24 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
+      "name": "clio-geoservices",
+      "source": "./plugins/clio-geoservices",
+      "description": "Fetch geospatial data where it is served: ArcGIS REST, OGC WFS and WCS, STAC, remote rasters and EPT/COPC lidar, by region",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "geospatial",
+        "arcgis",
+        "ogc",
+        "stac",
+        "cog",
+        "lidar",
+        "point-cloud"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
       "name": "clio-graspa",
       "source": "./plugins/clio-graspa",
       "description": "Gas adsorption in MOFs and zeolites by grand-canonical Monte Carlo with gRASPA: run, prepare for a GPU node, read and rank.",
@@ -487,7 +505,7 @@
       "name": "clio-terrain",
       "source": "./plugins/clio-terrain",
       "description": "MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding",
-      "version": "2.2.8",
+      "version": "2.3.0",
       "category": "scientific",
       "keywords": [
         "terrain",
@@ -689,7 +707,9 @@
       "version": "1.1.0",
       "category": "workflow",
       "keywords": [
+        "arcgis",
         "catalog",
+        "cog",
         "datasets",
         "dem",
         "earth-science",
@@ -697,12 +717,15 @@
         "earthquake",
         "geojson",
         "geospatial",
+        "lidar",
         "mapping",
         "nasa",
+        "ogc",
         "point-cloud",
         "remote-sensing",
         "sac",
         "seismology",
+        "stac",
         "terrain",
         "visualization",
         "waveform"

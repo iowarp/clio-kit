@@ -1222,6 +1222,106 @@
       }
     },
     {
+      "id": "mcp/geoservices",
+      "kind": "mcp",
+      "name": "geoservices",
+      "title": "Geoservices",
+      "description": "Fetch geospatial data where it is served: ArcGIS REST, OGC WFS and WCS, STAC, remote rasters and EPT/COPC lidar, by region",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/geoservices",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "geospatial",
+        "arcgis",
+        "ogc",
+        "stac",
+        "cog",
+        "lidar",
+        "point-cloud"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/geoservices",
+      "evidence": "Locked runtime",
+      "icon": "🗺️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-geoservices",
+      "summary": "Fetch geospatial data where it is served: ArcGIS REST, OGC WFS and WCS, STAC, remote rasters and EPT/COPC lidar, by region",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "geoservices"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/graspa",
       "kind": "mcp",
       "name": "graspa",
@@ -3176,7 +3276,7 @@
       "description": "MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.2.8",
+      "version": "2.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/terrain",
@@ -7729,6 +7829,7 @@
       "members": [
         "mcp/earthdata",
         "mcp/geo",
+        "mcp/geoservices",
         "mcp/seismology",
         "mcp/terrain",
         "skill/coordinate-systems",
@@ -7738,6 +7839,7 @@
       "servers": [
         "clio-earthdata",
         "clio-geo",
+        "clio-geoservices",
         "clio-seismology",
         "clio-terrain"
       ],

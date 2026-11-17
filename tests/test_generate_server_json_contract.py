@@ -193,6 +193,7 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
         "earthdata",
         "fdmnes",
         "geo",
+        "geoservices",
         "graspa",
         "hdf5",
         "home-assistant",
