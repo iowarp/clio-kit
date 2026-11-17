@@ -124,6 +124,14 @@ async def avogadro_status() -> ToolResult:
     return ToolResult(content=[_text(present.status_text(data))], structured_content=data)
 
 
+def _named_xyz(path: Path) -> str:
+    """The XYZ text with its comment line replaced by the file's name (no extension)."""
+    lines = path.read_text().splitlines()
+    if len(lines) >= 2:
+        lines[1] = path.stem
+    return "\n".join(lines) + "\n"
+
+
 @mcp.tool(
     name="open_in_avogadro",
     title="Open in Avogadro",
@@ -146,7 +154,12 @@ async def open_in_avogadro(
         target = _existing(path) if path else None
         s.start()
         if target:
-            s.rpc("openFile", {"fileName": str(target)})
+            if target.suffix.lower() == ".xyz":
+                # Avogadro names an XYZ molecule after its comment line (ASE writes its
+                # property list there), so load it under the file's own name.
+                s.rpc("loadMolecule", {"format": "xyz", "content": _named_xyz(target)})
+            else:
+                s.rpc("openFile", {"fileName": str(target)})
             s.opened.append(str(target))
         return {"opened": str(target) if target else None, "avogadro": s.command}
 

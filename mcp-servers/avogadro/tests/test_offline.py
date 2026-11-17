@@ -117,3 +117,13 @@ async def test_read_takes_the_live_molecule_with_its_selection(monkeypatch, out)
     assert data["selected_elements"] == ["H", "H"] and "sent" not in data
     assert Path(data["structure"]["path"]).is_file()
     assert "Avogadro has" in got.content[0].text
+
+
+def test_an_xyz_opens_under_its_file_name(tmp_path):
+    """ASE's property list in the comment line would otherwise name the molecule."""
+    from avogadro_mcp import server
+
+    f = tmp_path / "final.xyz"
+    f.write_text('2\nProperties=species:S:1:pos:R:3 pbc="F F F"\nH 0 0 0\nH 0 0 0.74\n')
+    text = server._named_xyz(f)
+    assert text.splitlines()[1] == "final" and text.splitlines()[3] == "H 0 0 0.74"
