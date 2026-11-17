@@ -76,6 +76,8 @@ def score(
         f0 = fc.sel({init: t0}) if init and init in fc.dims else fc
         for step in f0[lead].to_numpy():
             f = f0.sel({lead: step})
+            if not bool(f.notnull().any()):  # a run without this lead (runs aligned)
+                continue
             valid = (
                 pd.Timestamp(t0) + pd.Timedelta(step)
                 if t0 is not None

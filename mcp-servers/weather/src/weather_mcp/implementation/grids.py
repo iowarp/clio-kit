@@ -36,6 +36,53 @@ def pick(
     return None
 
 
+_GRIB_SUFFIXES = (".grib", ".grib2", ".grb", ".grb2")
+
+
+def _is_grib(path: str) -> bool:
+    return path.endswith(_GRIB_SUFFIXES)
+
+
+def _grib_file(path: str, variables: list[str] | None) -> xr.Dataset:
+    """One GRIB file as one dataset of the wanted variables.
+
+    A forecast file usually mixes levels and parameters, which cfgrib opens as several
+    hypercubes; those holding the wanted variables are merged.
+    """
+    import cfgrib
+
+    cubes = cfgrib.open_datasets(path, backend_kwargs={"indexpath": ""})
+    wanted = [v for v in variables or [] if v]
+    if wanted:
+        cubes = [
+            c[[v for v in wanted if v in c]]
+            for c in cubes
+            if any(v in c for v in wanted)
+        ]
+    if not cubes:
+        return xr.Dataset()
+    return xr.merge(cubes, compat="override", join="outer")
+
+
+def _grib_runs(paths: list[str], variables: list[str] | None) -> xr.Dataset:
+    """Several GRIB forecast files, one run each, stacked along their run time.
+
+    Each file of an ECMWF run carries its run time as the scalar ``time`` and its
+    leads as ``step``; stacked, ``time`` becomes the initialisation dimension the
+    scores read. Runs with different leads are aligned, missing leads left empty.
+    """
+    runs = [_grib_file(path, variables) for path in paths]
+    runs = [run for run in runs if run.data_vars]
+    if not runs:
+        raise WeatherToolError("bad_input", "none of the GRIB files holds the variable")
+    if all("time" in run.coords and "time" not in run.dims for run in runs):
+        runs = [run.expand_dims("time") for run in runs]
+        return xr.concat(
+            runs, dim="time", join="outer", coords="minimal", compat="override"
+        )
+    return xr.combine_by_coords(runs, combine_attrs="drop_conflicts")
+
+
 def open_grid(path: str, variables: list[str] | None = None) -> xr.Dataset:
     """Open NetCDF, GRIB (through cfgrib), Zarr, or a glob of NetCDF files."""
     expanded = str(Path(path).expanduser())
@@ -48,9 +95,11 @@ def open_grid(path: str, variables: list[str] | None = None) -> xr.Dataset:
         raise WeatherToolError("bad_input", f"no file matches {path}")
     try:
         first = matches[0]
-        if len(matches) > 1:
+        if len(matches) > 1 and all(_is_grib(m) for m in matches):
+            ds = _grib_runs(matches, variables)
+        elif len(matches) > 1:
             ds = xr.open_mfdataset(matches, combine="by_coords")
-        elif first.endswith((".grib", ".grib2", ".grb", ".grb2")):
+        elif _is_grib(first):
             ds = xr.open_dataset(
                 first, engine="cfgrib", backend_kwargs={"indexpath": ""}
             )
