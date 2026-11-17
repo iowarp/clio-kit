@@ -8,6 +8,7 @@ its service, query and QC mode so the provenance record can repeat it.
 from __future__ import annotations
 
 import os
+import threading
 from pathlib import Path
 from typing import Any, Literal
 
@@ -19,6 +20,40 @@ from .common import OceanToolError, Source, cache_dir
 ARGO_DOI = "https://doi.org/10.17882/42182"
 ARGO_LICENCE = "Argo data are freely available without restriction (Argo data policy); cite doi:10.17882/42182"
 GLIDER_ERDDAP = "https://gliders.ioos.us/erddap"
+
+
+_ARGOPY_IMPORT = threading.Lock()
+
+
+def argopy_with_cache() -> Any:
+    """argopy, caching beside the server's outputs instead of under ``~/.cache``.
+
+    A sandboxed server may not write its home. argopy fixes its cache folder from
+    ``~`` when it is imported: ``OPTIONS["cachedir"]``, default arguments and
+    singletons all keep that path, so ``set_options`` afterwards does not reach
+    them. argopy is therefore imported with ``HOME`` pointing at a folder of the
+    server's own cache, then ``HOME`` is restored.
+    """
+    import sys
+
+    home = cache_dir("argopy-home")
+    folder = home / ".cache" / "argopy"
+    folder.mkdir(parents=True, exist_ok=True)
+    with _ARGOPY_IMPORT:
+        if "argopy" not in sys.modules:
+            saved = os.environ.get("HOME")
+            os.environ["HOME"] = str(home)
+            try:
+                import argopy
+            finally:
+                if saved is None:
+                    os.environ.pop("HOME", None)
+                else:
+                    os.environ["HOME"] = saved
+    import argopy
+
+    argopy.set_options(cachedir=str(folder))
+    return argopy
 
 
 def argo_fetch(
@@ -36,8 +71,7 @@ def argo_fetch(
     (dates as YYYY-MM-DD). ``mode`` is argopy's user mode: ``standard`` keeps
     only good (QC 1/2) adjusted data, ``research`` delayed-mode high quality.
     """
-    import argopy
-
+    argopy = argopy_with_cache()
     kwargs: dict[str, Any] = {
         "src": source,
         "mode": mode,
@@ -46,9 +80,6 @@ def argo_fetch(
     }
     if dataset == "bgc":
         kwargs["params"] = params or "all"
-    # argopy caches under ~/.cache by default, which a sandboxed server may not be
-    # allowed to write; keep it beside the server's outputs instead.
-    argopy.set_options(cachedir=str(cache_dir("argopy")))
     try:
         fetcher = argopy.DataFetcher(**kwargs)
         if box is not None:

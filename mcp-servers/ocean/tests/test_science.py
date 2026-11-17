@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import gsw
@@ -336,3 +337,22 @@ def test_cache_dir_is_under_the_configured_root(tmp_path, monkeypatch) -> None:
     monkeypatch.delenv("OCEAN_MCP_CACHE_DIR")
     monkeypatch.setenv("OCEAN_MCP_OUTPUT_DIR", str(tmp_path / "out"))
     assert cache_dir("argopy") == tmp_path / "out" / ".cache" / "argopy"
+
+
+def test_argopy_caches_beside_the_outputs(tmp_path, monkeypatch) -> None:
+    """argopy's import-time cache folder is the server's, not ~/.cache."""
+    pytest.importorskip("argopy")
+    import sys
+
+    monkeypatch.setenv("OCEAN_MCP_CACHE_DIR", str(tmp_path / "c"))
+    for name in [m for m in sys.modules if m == "argopy" or m.startswith("argopy.")]:
+        monkeypatch.delitem(sys.modules, name)
+    home = os.environ.get("HOME")
+    from ocean_mcp.implementation.fetch import argopy_with_cache
+
+    argopy_with_cache()
+    from argopy.options import OPTIONS
+
+    folder = str(tmp_path / "c" / "argopy-home" / ".cache" / "argopy")
+    assert OPTIONS["cachedir"] == folder
+    assert os.environ.get("HOME") == home
