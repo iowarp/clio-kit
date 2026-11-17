@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import tomllib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
@@ -63,20 +64,29 @@ class Acceptance:
         )
 
     async def session(
-        self, name: str, args: list[str], calls: list[tuple[str, dict]] | None = None
+        self,
+        name: str,
+        args: list[str],
+        calls: list[tuple[str, dict]] | None = None,
+        *,
+        env: dict[str, str] | None = None,
+        mode: str | None = None,
     ) -> list[dict]:
         async def exchange() -> list[dict]:
             with (self.output / f"{name}.stderr").open("w") as errors:
                 async with Client(
                     stdio_client(
                         StdioServerParameters(
-                            command=str(self.launcher), args=args, env=self.environment
+                            command=str(self.launcher),
+                            args=args,
+                            env={**self.environment, **(env or {})},
                         ),
                         errlog=errors,
                     ),
                     # Runtime fixtures exercise language-neutral negotiation;
                     # shipped Python servers must support the selected era.
-                    mode="auto" if args[0] == "server" else self.protocol_mode,
+                    mode=mode
+                    or ("auto" if args[0] == "server" else self.protocol_mode),
                 ) as client:
                     tools = []
                     cursor = None
@@ -581,8 +591,30 @@ class Acceptance:
             inventory = self.command(
                 "all-server-inventory", [str(self.launcher), "mcp-servers"]
             )
+            upstream = shipped_upstream()
             for name in re.findall(r"^\s+- ([a-z0-9-]+)$", inventory, re.M):
-                await self.session("connect-" + name, ["mcp-server", name])
+                await self.session(
+                    "connect-" + name,
+                    ["mcp-server", name],
+                    # Listing needs no real account; the inventory records what a
+                    # wrapped upstream needs to start (ha-mcp: an address and token).
+                    env=upstream.get(name, {}).get("probe-environment"),
+                    # The selected era binds the Python servers this repository
+                    # writes. A Node server negotiates like the runtime fixtures:
+                    # pdf runs @modelcontextprotocol/server-pdf as published, which
+                    # speaks the handshake era only.
+                    mode=None if is_python_server(name) else "auto",
+                )
+
+
+def shipped_upstream() -> dict[str, dict]:
+    """The [upstream] rows: servers that run a third-party server as published."""
+    with open(ROOT / "mcp-server-versions.toml", "rb") as handle:
+        return tomllib.load(handle).get("upstream", {})
+
+
+def is_python_server(name: str) -> bool:
+    return (ROOT / "mcp-servers" / name / "pyproject.toml").is_file()
 
 
 def main() -> None:
