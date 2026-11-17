@@ -402,7 +402,8 @@ def mhw_events(
     description=(
         "Phytoplankton bloom initiation per year from a chlorophyll series (or a gridded product averaged "
         "over a box) by a stated method: median plus 5 % (Siegel et al. 2002) or the steepest rise of "
-        "log-chlorophyll, searched within chosen months."
+        "log-chlorophyll, both tied to the chosen months' chlorophyll peak. A year whose bloom is already "
+        "under way when the months open gets no date, with the reason."
     ),
     annotations=WRITES,
     tags={"ocean", "chlorophyll", "phenology"},

@@ -164,9 +164,12 @@ def bloom_start(
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
     """Bloom initiation per year.
 
-    ``median_plus_5pct`` (Siegel et al. 2002): first day chlorophyll exceeds
-    the year's median plus 5 %. ``max_rate``: day of the steepest increase of
-    the smoothed log-chlorophyll. Both search months ``season[0]..season[1]``.
+    Both methods look at months ``season[0]..season[1]`` and tie the start to
+    that window's chlorophyll peak. ``median_plus_5pct`` (Siegel et al. 2002):
+    the first day of the run above the year's median plus 5 % that leads into
+    the peak; when that run is already under way on the window's first day the
+    onset was not observed and no date is given. ``max_rate``: the day of the
+    steepest increase of the smoothed log-chlorophyll before the peak.
     """
     s = daily(series).interpolate(limit=15)
     if smooth_days > 1:
@@ -186,34 +189,45 @@ def bloom_start(
                 }
             )
             continue
+        peak = window.idxmax()
+        rising = window[window.index <= peak]
         if method == "median_plus_5pct":
             level = float(group.median()) * 1.05
-            over = window[window > level]
-            start = over.index[0] if len(over) else None
+            below = rising[rising <= level]
+            if rising.iloc[-1] <= level:
+                start, reason = None, "never exceeded"
+            elif below.empty:
+                start = None
+                reason = "above the threshold when the window opens; onset not observed"
+            else:
+                start = rising.index[rising.index > below.index[-1]][0]
+                reason = ""
             rows.append(
                 {
                     "year": year,
                     "bloom_start": start,
+                    "peak": peak,
                     "threshold": level,
-                    "reason": "" if start is not None else "never exceeded",
+                    "reason": reason,
                 }
             )
         else:
-            rate = np.log(window.clip(lower=1e-3)).diff()
-            start = rate.idxmax()
+            rate = np.log(rising.clip(lower=1e-3)).diff().dropna()
+            start = rate.idxmax() if len(rate) and rate.max() > 0 else None
             rows.append(
                 {
                     "year": year,
                     "bloom_start": start,
-                    "max_rate_per_day": float(rate.max()),
-                    "reason": "",
+                    "peak": peak,
+                    "max_rate_per_day": float(rate.max()) if len(rate) else None,
+                    "reason": "" if start is not None else "no rise before the peak",
                 }
             )
     table = pd.DataFrame(rows)
     found = table.dropna(subset=["bloom_start"])
     numbers: dict[str, Any] = {"years": len(table), "years_with_start": len(found)}
     if len(found):
-        doy = pd.to_datetime(found["bloom_start"]).dt.dayofyear
+        doy = pd.to_datetime(found["bloom_start"]).dt.day_of_year
         numbers["mean_start_day_of_year"] = float(doy.mean())
         numbers["start_day_range"] = [int(doy.min()), int(doy.max())]
         if len(found) >= 5:

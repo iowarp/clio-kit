@@ -221,6 +221,37 @@ def test_bloom_start_median_plus_five_percent() -> None:
     assert numbers["years_with_start"] == 5
 
 
+def test_bloom_start_follows_the_run_into_the_peak() -> None:
+    # A winter blip above the threshold, a dip below it, then the spring bloom.
+    t = pd.date_range("2020-01-01", "2020-12-31", freq="D", tz="UTC")
+    doy = t.day_of_year.to_numpy()
+    chl = 0.3 + 2.0 * np.exp(-((doy - 100) ** 2) / (2 * 12**2))
+    chl[:10] = 0.6
+    series = pd.Series(chl, index=t)
+    for method in ("median_plus_5pct", "max_rate"):
+        table, _ = events.bloom_start(
+            series, method=method, season=(1, 7), smooth_days=1
+        )
+        start = pd.Timestamp(table["bloom_start"].iloc[0]).day_of_year
+        assert 60 < start < 100, (method, start)
+
+
+def test_bloom_already_under_way_is_not_dated() -> None:
+    # Chlorophyll above the year's threshold from the window's first day to the peak.
+    t = pd.date_range("2020-01-01", "2020-12-31", freq="D", tz="UTC")
+    doy = t.day_of_year.to_numpy()
+    chl = np.where(doy < 120, 1.0 + doy / 100.0, 0.2)
+    table, numbers = events.bloom_start(
+        pd.Series(chl, index=t),
+        method="median_plus_5pct",
+        season=(1, 7),
+        smooth_days=1,
+    )
+    assert table["bloom_start"].iloc[0] is None
+    assert "not observed" in table["reason"].iloc[0]
+    assert numbers["years_with_start"] == 0
+
+
 def test_mixed_layer_budget_closes_for_flux_only_warming() -> None:
     t = pd.date_range("2022-06-01", periods=31, freq="D")
     h = 20.0
