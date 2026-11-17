@@ -581,3 +581,48 @@ async def test_a_read_over_the_byte_budget_is_refused_with_numbers(
             "read_raster_window",
             {"sources": [str(tile)], "bbox": [-120.02, 38.80, -120.005, 38.81]},
         )
+
+
+# --- read deadline ------------------------------------------------------------------------
+
+
+async def test_a_read_past_its_deadline_fails_typed_and_leaves_no_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A server that keeps dropping connections must not hold a tool call forever."""
+    import threading
+
+    from geoservices_mcp.implementation import deadline
+
+    monkeypatch.setenv("GEOSERVICES_READ_DEADLINE_S", "0.2")
+    out = tmp_path / "dem.tif"
+    finished = threading.Event()
+
+    def slow(staged: Path) -> dict[str, Any]:
+        staged.write_bytes(b"late")
+        finished.wait(5)
+        return {"output_path": str(staged)}
+
+    with pytest.raises(GeoServiceError, match="did not finish within 0.2 s"):
+        await deadline.run_with_deadline("read_raster_window", out, slow)
+    finished.set()
+    import asyncio
+
+    await asyncio.sleep(
+        0.2
+    )  # the abandoned worker finishes and removes its staging file
+    assert not out.exists() and not deadline.staging_path(out).exists()
+
+
+async def test_a_read_in_time_lands_at_the_output_path(tmp_path: Path) -> None:
+    from geoservices_mcp.implementation import deadline
+
+    out = tmp_path / "dem.tif"
+
+    def quick(staged: Path) -> dict[str, Any]:
+        staged.write_bytes(b"data")
+        return {"output_path": str(staged)}
+
+    result = await deadline.run_with_deadline("read_raster_window", out, quick)
+    assert result["output_path"] == str(out) and out.read_bytes() == b"data"
+    assert not deadline.staging_path(out).exists()

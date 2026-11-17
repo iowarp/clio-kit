@@ -10,7 +10,6 @@ it is; a limit that was hit is reported with the reason, never hidden.
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 from typing import Annotated, Any
@@ -30,6 +29,7 @@ from .implementation.common import (
     slug,
     unwrap_viewer,
 )
+from .implementation.deadline import run_with_deadline
 from .implementation.describe import describe_any, features_summary
 from .implementation.provenance import Source, output_entry, write_provenance
 
@@ -278,13 +278,16 @@ async def read_raster_window_tool(
             fetched = path.with_name(path.stem + "_wcs.tif")
             got = ogc.wcs_subset(items[0], coverage_id, region, fetched)
             try:
-                result = await asyncio.to_thread(
-                    raster.read_window,
-                    [str(fetched)],
-                    region,
+                result = await run_with_deadline(
+                    "read_raster_window",
                     path,
-                    max_cells=max_cells,
-                    dst_crs=dst_crs,
+                    lambda staged: raster.read_window(
+                        [str(fetched)],
+                        region,
+                        staged,
+                        max_cells=max_cells,
+                        dst_crs=dst_crs,
+                    ),
                 )
             finally:
                 fetched.unlink(missing_ok=True)
@@ -296,13 +299,12 @@ async def read_raster_window_tool(
                     "ArcGIS ImageServer export is not supported yet; use the layer's WCS or "
                     "a GeoTIFF download if the record offers one"
                 )
-            result = await asyncio.to_thread(
-                raster.read_window,
-                items,
-                region,
+            result = await run_with_deadline(
+                "read_raster_window",
                 path,
-                max_cells=max_cells,
-                dst_crs=dst_crs,
+                lambda staged: raster.read_window(
+                    items, region, staged, max_cells=max_cells, dst_crs=dst_crs
+                ),
             )
         sidecar = write_provenance(
             path,
@@ -390,22 +392,28 @@ async def read_point_cloud_tool(
             output_path, f"{slug(target.rstrip('/').rsplit('/', 2)[-2])}_points", ".laz"
         )
         if kind == "ept":
-            result = await asyncio.to_thread(
-                pointcloud.ept_subset,
-                target,
-                region,
+            result = await run_with_deadline(
+                "read_point_cloud",
                 path,
-                max_points=max_points,
-                classifications=classifications,
+                lambda staged: pointcloud.ept_subset(
+                    target,
+                    region,
+                    staged,
+                    max_points=max_points,
+                    classifications=classifications,
+                ),
             )
         elif kind == "copc":
-            result = await asyncio.to_thread(
-                pointcloud.copc_subset,
-                target,
-                region,
+            result = await run_with_deadline(
+                "read_point_cloud",
                 path,
-                max_points=max_points,
-                classifications=classifications,
+                lambda staged: pointcloud.copc_subset(
+                    target,
+                    region,
+                    staged,
+                    max_points=max_points,
+                    classifications=classifications,
+                ),
             )
         else:
             raise GeoServiceError(
