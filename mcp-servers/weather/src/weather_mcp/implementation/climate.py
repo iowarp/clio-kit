@@ -27,7 +27,16 @@ PANGEO_CMIP6 = "https://storage.googleapis.com/cmip6/pangeo-cmip6.json"
 
 
 def monthly(da: xr.DataArray) -> xr.DataArray:
+    """Monthly means. Times out of order (stores joined from several datasets) are
+    sorted; duplicate times are refused rather than one of them dropped silently."""
     t = pick(da, TIME)
+    if not da.indexes[t].is_monotonic_increasing:
+        da = da.sortby(t)
+    duplicated = int(da.indexes[t].duplicated().sum())
+    if duplicated:
+        raise WeatherToolError(
+            "bad_input", f"{duplicated} duplicate times in {da.name or 'the series'}"
+        )
     return da.resample({t: "MS"}).mean()
 
 

@@ -378,3 +378,28 @@ async def test_gpu_tracker_refuses_without_cuda(tmp_path: Path) -> None:
             model="m",
             backend="earth2studio",
         )
+
+
+def test_a_box_across_zero_longitude_is_put_in_order(tmp_path: Path) -> None:
+    from weather_mcp.implementation.grids import open_grid
+
+    lon = np.array([355.0, 357.5, 0.0, 2.5])
+    path = tmp_path / "wrap.nc"
+    xr.Dataset(
+        {"t": (("latitude", "longitude"), np.arange(8.0).reshape(2, 4))},
+        coords={"latitude": [50.0, 52.5], "longitude": lon},
+    ).to_netcdf(path)
+    ds = open_grid(str(path))
+    assert ds.longitude.to_numpy().tolist() == [0.0, 2.5, 355.0, 357.5]
+    assert float(ds.t.sel(longitude=357.0, latitude=50.0, method="nearest")) == 1.0
+
+
+def test_monthly_sorts_times_and_refuses_duplicates() -> None:
+    times = pd.to_datetime(["2000-02-01", "2000-01-01", "2000-01-15"])
+    da = xr.DataArray([2.0, 1.0, 3.0], coords={"time": times}, dims="time", name="tas")
+    assert climate.monthly(da).to_numpy().tolist() == [2.0, 2.0]
+    twice = xr.DataArray(
+        [1.0, 1.0], coords={"time": pd.to_datetime(["2000-01-01"] * 2)}, dims="time"
+    )
+    with pytest.raises(Exception, match="duplicate times"):
+        climate.monthly(twice)

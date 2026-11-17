@@ -76,7 +76,23 @@ def open_grid(path: str, variables: list[str] | None = None) -> xr.Dataset:
                 "bad_input",
                 f"{Path(path).name} lacks {', '.join(missing)}; it has {', '.join(map(str, ds.data_vars))}",
             )
-    return ds
+    return monotonic_longitude(ds)
+
+
+def monotonic_longitude(ds: xr.Dataset) -> xr.Dataset:
+    """The dataset with its longitude axis sorted when it is not monotonic.
+
+    A box cut across 0° from 0-360 data (or across 180° from -180-180 data) stores
+    longitudes such as 353...359, 0...3; nearest-point selection needs them in order.
+    Only the order changes, never a value.
+    """
+    name = pick(ds, LON, required=False)
+    if name is None or name not in ds.dims:
+        return ds
+    index = ds.indexes[name]
+    if index.is_monotonic_increasing or index.is_monotonic_decreasing:
+        return ds
+    return ds.sortby(name)
 
 
 def to_dataset_lon(ds: xr.Dataset | xr.DataArray, lon: float) -> float:
