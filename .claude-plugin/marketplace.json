@@ -494,7 +494,7 @@
       "name": "clio-terrain",
       "source": "./plugins/clio-terrain",
       "description": "MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding",
-      "version": "2.2.8",
+      "version": "2.3.0",
       "category": "scientific",
       "keywords": [
         "terrain",

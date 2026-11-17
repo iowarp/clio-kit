@@ -146,7 +146,7 @@ slicer = "1.0.0"
 slurm = "3.1.1"
 spack = "2.3.4"
 spice = "1.0.0"
-terrain = "2.2.8"
+terrain = "2.3.0"
 web = "2.1.6"
 
 [workflows.clio-dataset-report]
