@@ -30,9 +30,9 @@ def status_text(d: dict[str, Any]) -> str:
 def open_text(d: dict[str, Any]) -> str:
     what = f"opened {d['opened']}" if d.get("opened") else "is open with an empty molecule"
     return (
-        f"Avogadro {what} in the view. The person builds and edits there; to hand you the "
-        "result they choose Extensions > CLIO > Send to CLIO (with any atoms selected), and "
-        "read_avogadro reads it."
+        f"Avogadro {what} in the view. The person builds, edits and selects atoms there; "
+        "when they say they are done or ask about it, read_avogadro reads the molecule open "
+        "in Avogadro, with their selection."
     )
 
 

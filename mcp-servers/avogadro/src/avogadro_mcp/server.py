@@ -49,9 +49,9 @@ mcp = FastMCP(
         "element changes, optimizing while dragging, crystals, surfaces, supercells. "
         "avogadro_status says whether Avogadro and the streaming programs are here and what "
         "to install when not. open_in_avogadro opens a "
-        "structure file in the view; the person edits and sends it back with Extensions > "
-        "CLIO > Send to CLIO; read_avogadro writes what they sent as a structure file with "
-        "their selected atoms. avogadro_snapshot saves a picture; close_avogadro stops it."
+        "structure file in the view; the person edits there; read_avogadro writes the molecule "
+        "open in Avogadro as a structure file with their selected atoms. avogadro_snapshot "
+        "saves a picture; close_avogadro stops it."
     ),
 )
 
@@ -129,9 +129,8 @@ async def avogadro_status() -> ToolResult:
     title="Open in Avogadro",
     description=(
         "Open Avogadro in a view, with a structure file (XYZ, SDF/MOL, PDB, CIF, CJSON, …) or "
-        "empty to build from scratch. The person works in it; when they choose Extensions > "
-        "CLIO > Send to CLIO, the view tells you, and read_avogadro writes what they sent. "
-        "Starts Avogadro the first time (seconds)."
+        "empty to build from scratch. The person works in it; read_avogadro reads what is "
+        "open, with their selection. Starts Avogadro the first time (seconds)."
     ),
     app=AppConfig(resource_uri=VIEW_URI),
     annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": True},
