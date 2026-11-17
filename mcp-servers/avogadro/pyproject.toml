@@ -38,6 +38,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/avogadro_mcp"]
+# The repository ignores every lib/ folder; noVNC's vendored pako lives in one.
+artifacts = ["src/avogadro_mcp/novnc/vendor/pako/lib/**/*.js"]
 
 [tool.ruff]
 line-length = 100

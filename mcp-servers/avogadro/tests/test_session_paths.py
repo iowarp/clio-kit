@@ -20,3 +20,16 @@ def test_a_deep_folder_moves_the_socket_under_tmp(tmp_path: Path) -> None:
         assert str(d).startswith("/tmp/clio-avo-") and not deep.exists()
     finally:
         d.rmdir()
+
+
+def test_the_vendored_novnc_modules_are_all_present() -> None:
+    """Every module noVNC imports is shipped (a missing one leaves the view blank)."""
+    import re
+
+    root = Path(session.__file__).parent / "novnc"
+    missing = []
+    for js in root.rglob("*.js"):
+        for target in re.findall(r'from\s+"(\.[^"]+)"', js.read_text()):
+            if not (js.parent / target).resolve().is_file():
+                missing.append(f"{js.relative_to(root)} -> {target}")
+    assert not missing, missing
