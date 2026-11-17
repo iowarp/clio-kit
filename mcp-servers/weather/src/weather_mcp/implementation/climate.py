@@ -221,7 +221,10 @@ def evaluate_run(
             .sortby(lon)
             .rename({lon: "longitude", lat: "latitude"})
         )
-        return da.interp(longitude=((lons + 180) % 360) - 180, latitude=lats)
+        # The target longitudes in -180..180, in order: a 0-360 grid's would
+        # otherwise run 0...177.5, -180...-2.5 and no box could be cut from it.
+        target = np.unique(((lons + 180) % 360) - 180)
+        return da.interp(longitude=target, latitude=lats)
 
     a, b = regrid(run), regrid(reference)
     ta, tb = pick(a, TIME), pick(b, TIME)

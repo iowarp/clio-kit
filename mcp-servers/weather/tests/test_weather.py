@@ -292,6 +292,31 @@ async def test_evaluate_run_bias(tmp_path: Path) -> None:
     )
 
 
+async def test_evaluate_run_on_0_360_grids_cuts_boxes(tmp_path: Path) -> None:
+    # Both grids in 0-360 (as CMIP6 and some ERA5 copies are) and a box across 180.
+    t = pd.date_range("2000-01-01", "2001-12-01", freq="MS")
+    lat = np.arange(-60, 61, 10.0)
+    lon = np.arange(0, 360, 10.0)
+    ref = xr.Dataset(
+        {"tas": (("time", "lat", "lon"), np.full((len(t), len(lat), len(lon)), 280.0))},
+        coords={"time": t, "lat": lat, "lon": lon},
+    )
+    rp, mp = tmp_path / "ref.nc", tmp_path / "run.nc"
+    ref.to_netcdf(rp)
+    (ref - 1.0).to_netcdf(mp)
+    out = await call(
+        "evaluate_run",
+        run=str(mp),
+        reference=str(rp),
+        variable="tas",
+        regions={"global": [-180, 180, -90, 90], "nino34": [-170, -120, -5, 5]},
+    )
+    assert out["global_mean_bias"] == pytest.approx(-1.0, abs=1e-6)
+    assert out["seasonal_cycle_rmse_by_region"]["nino34"] == pytest.approx(
+        1.0, abs=1e-6
+    )
+
+
 async def test_errors_are_typed(tmp_path: Path) -> None:
     with pytest.raises(ToolError, match=r"^bad_input: "):
         await call(
