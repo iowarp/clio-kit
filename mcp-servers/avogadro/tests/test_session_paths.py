@@ -50,3 +50,10 @@ def test_a_release_the_install_skill_unpacked_is_found(tmp_path: Path, monkeypat
     got = install.find()
     assert got["found"] and got["source"] == "install-avogadro"
     assert "avogadro-2.1.0" in got["command"]
+
+
+def test_the_window_follows_the_view_within_limits() -> None:
+    """A panel's own size, 1:1; a phone keeps Avogadro's minimum and is scaled down."""
+    assert session.fitted_size(1180, 790) == (1180, 790)
+    assert session.fitted_size(390, 700) == (session.MIN_WIDTH, 700)
+    assert session.fitted_size(9000, 9000) == (session.MAX_WIDTH, session.MAX_HEIGHT)

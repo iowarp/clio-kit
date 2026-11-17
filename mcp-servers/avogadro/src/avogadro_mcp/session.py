@@ -31,7 +31,11 @@ from .errors import AvogadroError
 
 PKG = resources.files("avogadro_mcp")
 #: The virtual screen; Avogadro's window fills it (there is no window manager to do it).
-WIDTH, HEIGHT = 1440, 900
+WIDTH, HEIGHT = 1440, 900  # the window's size until the view reports its own
+#: The virtual screen; the window and the streamed region follow the view inside it.
+MAX_WIDTH, MAX_HEIGHT = 3840, 2160
+#: Below this Avogadro's desktop interface does not fit; the view scales it down instead.
+MIN_WIDTH, MIN_HEIGHT = 800, 600
 RPC_NAME = "avogadro"  # Avogadro's default RPC socket name, under its TMPDIR
 
 
@@ -63,6 +67,14 @@ def socket_dir(preferred: Path) -> Path:
     return Path(tempfile.mkdtemp(prefix="clio-avo-", dir="/tmp"))
 
 
+def fitted_size(width: int, height: int) -> tuple[int, int]:
+    """The window size for a view of ``width`` x ``height`` CSS pixels, within the limits."""
+    return (
+        max(MIN_WIDTH, min(MAX_WIDTH, int(width))),
+        max(MIN_HEIGHT, min(MAX_HEIGHT, int(height))),
+    )
+
+
 class Session:
     def __init__(self) -> None:
         self.root = Path(tempfile.mkdtemp(prefix="clio-avogadro-"))
@@ -76,6 +88,7 @@ class Session:
         self.display: str = ""
         self.vnc_port = 0
         self.service_port = 0
+        self.size = (WIDTH, HEIGHT)
         self.command = ""
         self._server: Any = None
         self._thread: threading.Thread | None = None
@@ -146,7 +159,7 @@ class Session:
                 str(wfd),
                 "-screen",
                 "0",
-                f"{WIDTH}x{HEIGHT}x24",
+                f"{MAX_WIDTH}x{MAX_HEIGHT}x24",
                 "-nolisten",
                 "tcp",
             ],
@@ -217,6 +230,9 @@ class Session:
                 "-nopw",
                 "-forever",
                 "-shared",
+                # Only the region the window fills is streamed; fit() moves it.
+                "-clip",
+                f"{WIDTH}x{HEIGHT}+0+0",
                 "-quiet",
             ],
         )
@@ -255,6 +271,47 @@ class Session:
             shutil.rmtree(self.tmp, ignore_errors=True)
 
     # --- what the agent does ---------------------------------------------------
+    def fit(self, width: int, height: int) -> tuple[int, int]:
+        """Make the Avogadro window and the streamed region the view's size, in CSS pixels.
+
+        The view then draws the window 1:1 instead of shrinking a fixed desktop into its
+        panel. Narrower than MIN_WIDTH x MIN_HEIGHT stays at that size and the view
+        scales it down (Avogadro's desktop interface does not fit a phone).
+        """
+        w, h = fitted_size(width, height)
+        if (w, h) == self.size or not self.running():
+            return self.size
+        from Xlib import X, display  # only with a running display
+
+        d = display.Display(self.display)
+        try:
+            root = d.screen().root
+            for win in root.query_tree().children:
+                attrs = win.get_attributes()
+                if attrs.map_state != X.IsViewable or attrs.override_redirect:
+                    continue
+                geo = win.get_geometry()
+                if geo.width >= 300 and geo.height >= 200:  # the main window, not a tooltip
+                    win.configure(x=0, y=0, width=w, height=h)
+            d.sync()
+        finally:
+            d.close()
+        subprocess.run(
+            [
+                install.display_tools()["found"]["x11vnc"],
+                "-display",
+                self.display,
+                "-sync",
+                "-remote",
+                f"clip:{w}x{h}+0+0",
+            ],
+            capture_output=True,
+            timeout=15,
+            check=False,
+        )
+        self.size = (w, h)
+        return self.size
+
     def rpc(self, method: str, params: dict[str, Any]) -> Any:
         if not self.running():
             raise AvogadroError("not_running", "Avogadro is not open; call open_in_avogadro.")
@@ -307,6 +364,12 @@ class Session:
                 return Response(body, media_type="text/html")
             if path == "state":
                 return JSONResponse(self.state())
+            if path == "size" and request.method == "POST":
+                body = await request.json()
+                w, h = await asyncio.to_thread(
+                    self.fit, int(body.get("width", 0)), int(body.get("height", 0))
+                )
+                return JSONResponse({"width": w, "height": h})
             if path.startswith("novnc/"):
                 target = (novnc / path[len("novnc/") :]).resolve()
                 if novnc.resolve() in target.parents and target.is_file():
@@ -350,7 +413,7 @@ class Session:
         app = Starlette(
             routes=[
                 WebSocketRoute("/websockify", bridge),
-                Route("/{path:path}", page),
+                Route("/{path:path}", page, methods=["GET", "POST"]),
             ]
         )
         self.service_port = free_port()

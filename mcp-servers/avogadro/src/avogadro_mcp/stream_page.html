@@ -28,6 +28,7 @@
     rfb.focusOnClick = true;
     rfb.addEventListener('connect', () => {
       note.hidden = true;
+      reportSize();
       window.parent.postMessage({ type: 'clio.avogadro.link', up: true }, '*');
     });
     rfb.addEventListener('disconnect', () => {
@@ -37,6 +38,20 @@
       setTimeout(connect, 2000);
     });
   }
+  // The server sizes Avogadro's window to this page, so the window is drawn 1:1
+  // (scaleViewport only scales when the page is smaller than Avogadro's minimum).
+  let sent = '';
+  function reportSize() {
+    const size = { width: Math.round(innerWidth), height: Math.round(innerHeight) };
+    const key = size.width + 'x' + size.height;
+    if (key === sent) return;
+    sent = key;
+    fetch('size', { method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(size) }).catch(() => { sent = ''; });
+  }
+  let pending = 0;
+  new ResizeObserver(() => { clearTimeout(pending); pending = setTimeout(reportSize, 250); })
+    .observe(document.body);
   connect();
 </script>
 </body>

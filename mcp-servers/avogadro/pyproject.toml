@@ -15,6 +15,7 @@ dependencies = [
     "starlette>=0.40",
     "uvicorn>=0.30",
     "websockets>=13",
+    "python-xlib>=0.33",
 ]
 
 [project.urls]
