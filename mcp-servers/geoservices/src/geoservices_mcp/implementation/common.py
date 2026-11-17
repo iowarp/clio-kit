@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import ssl
 import tempfile
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit, urlunsplit
@@ -61,12 +63,21 @@ class Region:
         return [self.west, self.south, self.east, self.north]
 
 
+@lru_cache(maxsize=1)
+def _system_tls() -> ssl.SSLContext:
+    """The OS trust store, so networks that inspect TLS with an OS-trusted CA work."""
+    import truststore
+
+    return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+
+
 def client() -> httpx.Client:
-    """An HTTP client with bounded timeouts; proxies and CA bundles come from the environment."""
+    """An HTTP client with bounded timeouts, verifying TLS against the OS trust store."""
     return httpx.Client(
         timeout=httpx.Timeout(READ_TIMEOUT_S, connect=CONNECT_TIMEOUT_S),
         follow_redirects=True,
         headers={"User-Agent": USER_AGENT},
+        verify=_system_tls(),
     )
 
 
