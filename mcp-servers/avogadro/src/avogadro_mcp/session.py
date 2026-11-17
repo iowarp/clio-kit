@@ -32,7 +32,7 @@ from .errors import AvogadroError
 PKG = resources.files("avogadro_mcp")
 #: The virtual screen; Avogadro's window fills it (there is no window manager to do it).
 WIDTH, HEIGHT = 1440, 900
-RPC_NAME = "avogadro"
+RPC_NAME = "avogadro"  # Avogadro's default RPC socket name, under its TMPDIR
 
 
 def workspace_dir() -> Path:
@@ -173,10 +173,11 @@ class Session:
         self.workdir = workspace_dir()
         self._spawn(
             "avogadro",
-            # --rpc-name names the socket and, from Avogadro 2.1, skips the startup
-            # dialogs: a first-run consent dialog otherwise waits for a click before
-            # the RPC listener starts, so the socket never appears in an unattended run.
-            [self.command, "--rpc-name", RPC_NAME, "-qwindowgeometry", f"{WIDTH}x{HEIGHT}+0+0"],
+            # --skip-dialogs (Avogadro 2.1): a first-run dialog otherwise waits for a
+            # click before the RPC listener starts, so in an unattended run the socket
+            # never appears. The socket keeps its default name: 2.1 refuses to listen
+            # on a name given with --rpc-name here (QLocalServer error 22).
+            [self.command, "--skip-dialogs", "-qwindowgeometry", f"{WIDTH}x{HEIGHT}+0+0"],
             env,
             cwd=self.workdir,
         )
