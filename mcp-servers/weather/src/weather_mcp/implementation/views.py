@@ -109,6 +109,19 @@ def table_view(
     return {"component": "clio.layered-map.v1", "title": label, "layers": [layer]}
 
 
+def _zero_span(values: Any) -> float:
+    """The largest distance from zero when the values lie on both sides of it, else 0."""
+    import numpy as np
+
+    data = np.asarray(values)
+    if data.size == 0 or not np.issubdtype(data.dtype, np.number):
+        return 0.0
+    low, high = float(np.nanmin(data)), float(np.nanmax(data))
+    if not (np.isfinite(low) and np.isfinite(high) and low < 0 < high):
+        return 0.0
+    return max(-low, high)
+
+
 def grid_view(
     role: str, path: Path, dataset: Any, title: str = ""
 ) -> dict[str, Any] | None:
@@ -143,6 +156,11 @@ def grid_view(
         "gridUri": str(path),
         "variable": mapped[0],
     }
+    span = _zero_span(dataset[mapped[0]])
+    if span:
+        # Values either side of zero (a bias, an anomaly): a diverging scale centred on 0.
+        layer["colormap"] = "balance"
+        layer["valueRange"] = [-span, span]
     return {"component": "clio.layered-map.v1", "title": label, "layers": [layer]}
 
 

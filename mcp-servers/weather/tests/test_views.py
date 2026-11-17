@@ -69,6 +69,15 @@ def test_a_field_is_a_grid_layer_and_a_section_its_own_view(tmp_path: Path) -> N
     field.to_netcdf(path)
     layer = views.grid_file_view("grid", path)["layers"][0]
     assert layer["kind"] == "grid" and layer["variable"] == "sst"
+    assert "colormap" not in layer
+    bias = xr.Dataset(
+        {"bias": (("latitude", "longitude"), np.array([[-1.0, 2.0], [0.5, -0.2]]))},
+        coords={"latitude": [0.0, 1.0], "longitude": [0.0, 1.0]},
+    )
+    assert (
+        views.grid_view("grid", tmp_path / "b.nc", bias)["layers"][0]["colormap"]
+        == "balance"
+    )
     assert layer["gridUri"] == str(path)
     section = xr.Dataset(
         {"CT": (("pressure", "distance"), np.zeros((3, 2)))},
