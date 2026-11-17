@@ -179,12 +179,13 @@ def test_every_committed_server_has_an_agent_runnable_package_coordinate() -> No
     # 2.12.7 relocks every Python server for an opentelemetry-api security fix,
     # so every server publishes a patch release; slicer 1.0.0 is new, and so are
     # the four that run an upstream server as published (earthdata,
-    # home-assistant, pdf, spice). ocean, weather and grids 1.0.0 are new (earth and ocean campaign).
+    # home-assistant, pdf, spice). ocean, weather, grids and copernicus 1.0.0 are new (earth and ocean campaign).
     assert publish_servers == (
         "adios",
         "arxiv",
         "chronolog",
         "compression",
+        "copernicus",
         "darshan",
         "earthdata",
         "geo",

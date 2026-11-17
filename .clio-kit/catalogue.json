@@ -64,6 +64,24 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
+      "name": "clio-copernicus",
+      "source": "./plugins/clio-copernicus",
+      "description": "Search, subset and download Copernicus Marine and Climate Data Store products, with provenance and resumable jobs.",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "copernicus",
+        "cmems",
+        "cds",
+        "era5",
+        "ocean",
+        "climate",
+        "reanalysis"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
       "name": "clio-darshan",
       "source": "./plugins/clio-darshan",
       "description": "Darshan I/O profiler MCP server for analyzing I/O trace files",
@@ -649,8 +667,11 @@
         "bathymetry",
         "cape",
         "catalog",
+        "cds",
         "climate",
+        "cmems",
         "cmip6",
+        "copernicus",
         "ctd",
         "cyclone",
         "datasets",
@@ -671,8 +692,10 @@
         "model",
         "mom6",
         "nasa",
+        "ocean",
         "oceanography",
         "point-cloud",
+        "reanalysis",
         "remote-sensing",
         "sac",
         "seismology",

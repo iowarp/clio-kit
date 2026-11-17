@@ -24,7 +24,7 @@ schema-version = 1
 # spice earthdata-mcp-server, ha-mcp and ltspice-mcp (Python). Two primary bundles are
 # new, clio-electronics and clio-home; clio-geoscience and clio-research gain members.
 [mcp-registry-release]
-publish = ["adios", "arxiv", "chronolog", "compression", "darshan", "earthdata", "geo", "grids", "hdf5", "home-assistant", "jarvis", "lmod", "ndp", "node-hardware", "ocean", "pandas", "parallel-sort", "paraview", "parquet", "pdf", "plot", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "spice", "terrain", "weather", "web"]
+publish = ["adios", "arxiv", "chronolog", "compression", "copernicus", "darshan", "earthdata", "geo", "grids", "hdf5", "home-assistant", "jarvis", "lmod", "ndp", "node-hardware", "ocean", "pandas", "parallel-sort", "paraview", "parquet", "pdf", "plot", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "spice", "terrain", "weather", "web"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
@@ -71,7 +71,7 @@ servers = ["pandas", "paraview", "plot"]
 [bundles.clio-geoscience]
 version = "1.2.0"
 description = "Maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data."
-servers = ["earthdata", "geo", "grids", "ocean", "seismology", "terrain", "weather"]
+servers = ["copernicus", "earthdata", "geo", "grids", "ocean", "seismology", "terrain", "weather"]
 
 [bundles.clio-fabrication]
 version = "1.0.0"
@@ -114,6 +114,7 @@ adios = "2.3.2"
 arxiv = "2.2.8"
 chronolog = "2.0.6"
 compression = "2.2.8"
+copernicus = "1.0.0"
 darshan = "2.2.8"
 earthdata = "1.0.0"
 geo = "2.4.0"
@@ -175,6 +176,7 @@ earthdata = "🛰️"
 ocean = "🌊"
 weather = "⛅"
 grids = "🗺️"
+copernicus = "🛳️"
 home-assistant = "🏠"
 pdf = "📑"
 spice = "🔌"
@@ -220,6 +222,9 @@ environment = ["HOMEASSISTANT_URL", "HOMEASSISTANT_TOKEN"]
 [prerequisites.spice]
 note = "Needs ngspice or LTspice installed on this machine; ltspice-mcp finds it and never downloads one."
 
+[prerequisites.copernicus]
+note = "Runs copernicus-mcp 0.7.2 as published. Copernicus Marine needs a free account (COPERNICUSMARINE_SERVICE_USERNAME, COPERNICUSMARINE_SERVICE_PASSWORD); Climate Data Store tools appear once CDSAPI_KEY is set."
+
 [prerequisites.ocean]
 note = "Marine heatwave and eddy tracking build separate worker environments with uv on first use (marEx, AGPL-3.0-or-later; py-eddy-tracker, GPL-3.0, on Python 3.10)."
 
@@ -246,6 +251,15 @@ note = "Scientific backend requires a workflow check; a handshake alone is insuf
 # `probe-environment` is what tool listing at generation needs and nothing else
 # (ha-mcp refuses to start without an address and a token, but lists its tools
 # without reaching them).
+[upstream.copernicus]
+package = "copernicus-mcp"
+registry = "pypi"
+version = "0.7.2"
+license = "BSD-3-Clause"
+repository = "https://github.com/CliDyn/copernicus-mcp"
+# A placeholder CDS key makes the upstream list its CDS tools too; listing sends no request.
+probe-environment = { CDSAPI_KEY = "00000000-0000-0000-0000-000000000000", COPERNICUS_MCP_CACHE_DIR = "/tmp/clio-kit-copernicus-probe/cache", COPERNICUS_MCP_STATE_DB = "/tmp/clio-kit-copernicus-probe/state.sqlite" }
+
 [upstream.earthdata]
 package = "earthdata-mcp-server"
 registry = "pypi"

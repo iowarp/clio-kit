@@ -535,6 +535,106 @@
       }
     },
     {
+      "id": "mcp/copernicus",
+      "kind": "mcp",
+      "name": "copernicus",
+      "title": "Copernicus",
+      "description": "Search, subset and download Copernicus Marine and Climate Data Store products, with provenance and resumable jobs.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/copernicus",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "copernicus",
+        "cmems",
+        "cds",
+        "era5",
+        "ocean",
+        "climate",
+        "reanalysis"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/copernicus",
+      "evidence": "Locked runtime",
+      "icon": "🛳️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-copernicus",
+      "summary": "Search, subset and download Copernicus Marine and Climate Data Store products, with provenance and resumable jobs.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "copernicus"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "copernicus"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "copernicus"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "copernicus"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "copernicus"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "copernicus"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "copernicus"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/darshan",
       "kind": "mcp",
       "name": "darshan",
@@ -7379,6 +7479,7 @@
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-geoscience/.claude-plugin/plugin.json",
       "members": [
+        "mcp/copernicus",
         "mcp/earthdata",
         "mcp/geo",
         "mcp/grids",
@@ -7391,6 +7492,7 @@
         "skill/seismic-analysis"
       ],
       "servers": [
+        "clio-copernicus",
         "clio-earthdata",
         "clio-geo",
         "clio-grids",

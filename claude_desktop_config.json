@@ -28,6 +28,13 @@
         "compression"
       ]
     },
+    "clio-copernicus": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "copernicus"
+      ]
+    },
     "clio-darshan": {
       "command": "clio-kit",
       "args": [

@@ -11,6 +11,7 @@
   "repository": "https://github.com/iowarp/clio-kit",
   "license": "BSD-3-Clause",
   "dependencies": [
+    "clio-copernicus",
     "clio-earthdata",
     "clio-geo",
     "clio-grids",
