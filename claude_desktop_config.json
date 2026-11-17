@@ -49,6 +49,13 @@
         "geo"
       ]
     },
+    "clio-grids": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "grids"
+      ]
+    },
     "clio-hdf5": {
       "command": "clio-kit",
       "args": [

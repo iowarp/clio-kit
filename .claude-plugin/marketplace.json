@@ -117,6 +117,23 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
+      "name": "clio-grids",
+      "source": "./plugins/clio-grids",
+      "description": "MCP server for hand edits to 2-D model grids (bathymetry, land masks, topography): an interactive editor, an ordered edit list located by longitude and latitude, and replay onto a regenerated grid with content hashes",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "grid",
+        "bathymetry",
+        "land-mask",
+        "topography",
+        "model",
+        "mcp-apps"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
       "name": "clio-hdf5",
       "source": "./plugins/clio-hdf5",
       "description": "Open HDF5 files, browse groups, inspect datasets and attributes, and read or summarize data in chunks.",
@@ -617,7 +634,7 @@
     {
       "name": "clio-geoscience-skills",
       "source": "./skills/clio-geoscience-skills",
-      "description": "Skills for the clio-geoscience workflow: maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data.",
+      "description": "Skills for the clio-geoscience workflow: maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data.",
       "version": "1.2.0",
       "category": "skills",
       "keywords": [
@@ -631,11 +648,12 @@
     {
       "name": "clio-geoscience",
       "source": "./plugins/clio-geoscience",
-      "description": "Maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data.",
+      "description": "Maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data.",
       "version": "1.2.0",
       "category": "workflow",
       "keywords": [
         "argo",
+        "bathymetry",
         "cape",
         "catalog",
         "climate",
@@ -652,8 +670,12 @@
         "era5",
         "geojson",
         "geospatial",
+        "grid",
+        "land-mask",
         "mapping",
         "marine-heatwave",
+        "mcp-apps",
+        "model",
         "mom6",
         "nasa",
         "oceanography",
@@ -664,6 +686,7 @@
         "teos-10",
         "terrain",
         "tides",
+        "topography",
         "verification",
         "visualization",
         "waveform",

@@ -827,6 +827,105 @@
       }
     },
     {
+      "id": "mcp/grids",
+      "kind": "mcp",
+      "name": "grids",
+      "title": "Grids",
+      "description": "MCP server for hand edits to 2-D model grids (bathymetry, land masks, topography): an interactive editor, an ordered edit list located by longitude and latitude, and replay onto a regenerated grid with content hashes",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/grids",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "grid",
+        "bathymetry",
+        "land-mask",
+        "topography",
+        "model",
+        "mcp-apps"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/grids",
+      "evidence": "Locked runtime",
+      "icon": "🗺️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-grids",
+      "summary": "MCP server for hand edits to 2-D model grids (bathymetry, land masks, topography).",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "grids"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "grids"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "grids"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "grids"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "grids"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "grids"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "grids"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/hdf5",
       "kind": "mcp",
       "name": "hdf5",
@@ -3488,7 +3587,7 @@
       "kind": "collection",
       "name": "clio-geoscience-skills",
       "title": "Geoscience Skills",
-      "description": "Skills for the clio-geoscience workflow: maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data.",
+      "description": "Skills for the clio-geoscience workflow: maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.2.0",
@@ -3528,7 +3627,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Skills for the clio-geoscience workflow: maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data."
+      "summary": "Skills for the clio-geoscience workflow: maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data."
     },
     {
       "id": "plugin/clio-hpc-skills",
@@ -7272,7 +7371,7 @@
       "kind": "plugin",
       "name": "clio-geoscience",
       "title": "Explore the physical world",
-      "description": "Maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data.",
+      "description": "Maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.2.0",
@@ -7282,6 +7381,7 @@
       "members": [
         "mcp/earthdata",
         "mcp/geo",
+        "mcp/grids",
         "mcp/ocean",
         "mcp/seismology",
         "mcp/terrain",
@@ -7293,6 +7393,7 @@
       "servers": [
         "clio-earthdata",
         "clio-geo",
+        "clio-grids",
         "clio-ocean",
         "clio-seismology",
         "clio-terrain",
@@ -7327,7 +7428,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data."
+      "summary": "Maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data."
     },
     {
       "id": "workflow/clio-home",

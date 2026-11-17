@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Grid editor</title>
+<!--
+  The grids server's editor (MCP Apps, ui://grids/editor). It draws the field
+  grid_open names, lets the person select a box or cells and choose an edit,
+  and sends the whole ordered edit list to grid_edit for every change, so each
+  change is a tool call the transcript records and the log replays.
+-->
+<style>
+  :root {
+    color-scheme: light dark;
+    --color-background-primary: light-dark(#ffffff, #1e1f22);
+    --color-background-secondary: light-dark(#f4f5f7, #26282c);
+    --color-text-primary: light-dark(#1f2328, #e6e8eb);
+    --color-text-secondary: light-dark(#59606a, #a6adb7);
+    --color-border-primary: light-dark(#d4d6da, #3a3d44);
+    --color-accent: light-dark(#0b6bcb, #6cb6ff);
+    --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --border-radius-md: 8px;
+  }
+  html, body { margin: 0; }
+  body { font: 13px/1.4 var(--font-sans); color: var(--color-text-primary);
+    background: var(--color-background-primary); }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 12px; padding: 12px; }
+  @media (max-width: 640px) { main { grid-template-columns: minmax(0, 1fr); } }
+  h1 { font-size: 14px; margin: 0 0 4px; }
+  .muted { color: var(--color-text-secondary); }
+  #stage { position: relative; border: 1px solid var(--color-border-primary);
+    border-radius: var(--border-radius-md); overflow: hidden; touch-action: none; }
+  canvas { display: block; width: 100%; image-rendering: pixelated; cursor: crosshair; }
+  #legend { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+  #legend canvas { width: 140px; height: 10px; border-radius: 3px; cursor: default; }
+  aside { display: flex; flex-direction: column; gap: 10px; }
+  fieldset { border: 1px solid var(--color-border-primary); border-radius: var(--border-radius-md);
+    padding: 8px; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+  legend { padding: 0 4px; }
+  label { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+  input, select, button { font: inherit; color: inherit; background: var(--color-background-secondary);
+    border: 1px solid var(--color-border-primary); border-radius: 6px; padding: 3px 6px; }
+  input[type=number] { width: 90px; }
+  button { cursor: pointer; }
+  button.primary { background: var(--color-accent); color: #fff; border-color: transparent; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  ol { margin: 0; padding-left: 18px; max-height: 180px; overflow: auto; }
+  #status { min-height: 1.4em; }
+  #status.error { color: light-dark(#b42318, #ff8f85); }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <section>
+    <h1 id="title">Grid editor</h1>
+    <div class="muted" id="facts">Waiting for a grid.</div>
+    <div id="stage"><canvas id="field" width="384" height="192" aria-label="Grid field"></canvas></div>
+    <div id="legend" class="muted"><span id="lo"></span><canvas id="ramp" width="140" height="10"></canvas><span id="hi"></span></div>
+    <div class="muted" id="hover">&nbsp;</div>
+  </section>
+  <aside>
+    <fieldset>
+      <legend>Select</legend>
+      <label>Mode <select id="mode"><option value="box">Drag a box</option><option value="points">Pick cells</option></select></label>
+      <div class="muted" id="selection">Nothing selected: an edit covers the whole grid.</div>
+      <button id="clear-selection" type="button">Clear selection</button>
+    </fieldset>
+    <fieldset>
+      <legend>Edit</legend>
+      <label>Operation <select id="op">
+        <option value="set">Set a value</option>
+        <option value="clip">Clip to a range</option>
+        <option value="fill_enclosed">Fill enclosed wet cells</option>
+      </select></label>
+      <label data-for="set">Value <input id="value" type="number" step="any" value="0"></label>
+      <label data-for="clip">Minimum <input id="min" type="number" step="any"></label>
+      <label data-for="clip">Maximum <input id="max" type="number" step="any"></label>
+      <label data-for="clip fill_enclosed">Wet cells are <select id="wet">
+        <option value="">(any, for clip)</option><option value="positive">positive</option>
+        <option value="negative">negative</option><option value="nonzero">nonzero</option></select></label>
+      <label data-for="fill_enclosed">Land value <input id="land" type="number" step="any" value="0"></label>
+      <label>Note <input id="note" type="text" placeholder="why"></label>
+      <button id="apply" class="primary" type="button" disabled>Apply edit</button>
+    </fieldset>
+    <fieldset>
+      <legend>Edits</legend>
+      <ol id="edits"></ol>
+      <button id="undo" type="button" disabled>Undo last edit</button>
+      <div class="muted" id="output"></div>
+    </fieldset>
+    <div id="status" role="status"></div>
+  </aside>
+</main>
+<script>
+(() => {
+  'use strict';
+  const PROTOCOL = '2026-01-26';
+  const $ = (id) => document.getElementById(id);
+  const pending = new Map();
+  let nextId = 1;
+  let hostContext = {};
+  let appliedVariables = [];
+  const send = (message) => window.parent.postMessage(message, '*');
+  function request(method, params) {
+    const id = 'grids-' + nextId++;
+    send({ jsonrpc: '2.0', id, method, params });
+    return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+  }
+  const notify = (method, params) => send({ jsonrpc: '2.0', method, params });
+  const respond = (id, result) => send({ jsonrpc: '2.0', id, result });
+
+  // State: the base grid, the edit list, the window shown and the selection.
+  let base = null;     // grid_open structuredContent
+  let output = null;   // where grid_edit writes
+  let edits = [];
+  let shown = null;    // {window, path}
+  let selection = null; // {box: [w,s,e,n]} or {points: [[lon,lat]]}
+  let drag = null;
+
+  function setStatus(text, error) {
+    $('status').textContent = text || '';
+    $('status').className = error ? 'error' : '';
+  }
+
+  function applyTheme() {
+    const variables = (hostContext.styles && hostContext.styles.variables) || {};
+    const root = document.documentElement;
+    appliedVariables.forEach((name) => root.style.removeProperty(name));
+    appliedVariables = [];
+    for (const [name, value] of Object.entries(variables)) {
+      if (/^--[A-Za-z0-9-]+$/.test(name) && typeof value === 'string') {
+        root.style.setProperty(name, value);
+        appliedVariables.push(name);
+      }
+    }
+    const theme = hostContext.theme === 'dark' || hostContext.theme === 'light' ? hostContext.theme : null;
+    root.style.colorScheme = theme || 'light dark';
+    if (shown) draw();
+  }
+
+  // A perceptual ramp (viridis stops) for the field.
+  const STOPS = [[68, 1, 84], [59, 82, 139], [33, 145, 140], [94, 201, 98], [253, 231, 37]];
+  function colour(f) {
+    const x = Math.min(1, Math.max(0, f)) * (STOPS.length - 1);
+    const i = Math.min(STOPS.length - 2, Math.floor(x));
+    const t = x - i;
+    return STOPS[i].map((c, k) => Math.round(c + (STOPS[i + 1][k] - c) * t));
+  }
+
+  function rowsNorthUp(win) {
+    const lats = win.lat;
+    return lats.length > 1 && lats[0] < lats[lats.length - 1];
+  }
+
+  function draw() {
+    const win = shown.window;
+    const [rows, cols] = win.shape;
+    const canvas = $('field');
+    canvas.width = cols;
+    canvas.height = rows;
+    const ctx = canvas.getContext('2d');
+    const image = ctx.createImageData(cols, rows);
+    const [lo, hi] = win.range || [0, 1];
+    const flip = rowsNorthUp(win);
+    for (let r = 0; r < rows; r += 1) {
+      const row = win.values[flip ? rows - 1 - r : r];
+      for (let c = 0; c < cols; c += 1) {
+        const v = row[c];
+        const at = (r * cols + c) * 4;
+        if (v === null) { image.data[at + 3] = 0; continue; }
+        const [red, green, blue] = colour(hi > lo ? (v - lo) / (hi - lo) : 0.5);
+        image.data[at] = red; image.data[at + 1] = green; image.data[at + 2] = blue; image.data[at + 3] = 255;
+      }
+    }
+    ctx.putImageData(image, 0, 0);
+    drawSelection(ctx);
+    $('lo').textContent = lo.toPrecision(4);
+    $('hi').textContent = hi.toPrecision(4);
+    const ramp = $('ramp').getContext('2d');
+    for (let x = 0; x < 140; x += 1) { ramp.fillStyle = 'rgb(' + colour(x / 139).join(',') + ')'; ramp.fillRect(x, 0, 1, 10); }
+  }
+
+  // Cell <-> lon/lat on the shown window (rows drawn north up).
+  function cellAt(event) {
+    const canvas = $('field');
+    const rect = canvas.getBoundingClientRect();
+    const c = Math.floor(((event.clientX - rect.left) / rect.width) * canvas.width);
+    const r = Math.floor(((event.clientY - rect.top) / rect.height) * canvas.height);
+    const win = shown.window;
+    if (c < 0 || r < 0 || c >= win.shape[1] || r >= win.shape[0]) return null;
+    const row = rowsNorthUp(win) ? win.shape[0] - 1 - r : r;
+    return { c, r, lon: win.lon[c], lat: win.lat[row], value: win.values[row][c] };
+  }
+
+  function pixelOf(lon, lat) {
+    const win = shown.window;
+    const near = (list, v) => list.reduce((best, x, i) => (Math.abs(x - v) < Math.abs(list[best] - v) ? i : best), 0);
+    const c = near(win.lon, lon);
+    const row = near(win.lat, lat);
+    return { c, r: rowsNorthUp(win) ? win.shape[0] - 1 - row : row };
+  }
+
+  function drawSelection(ctx) {
+    if (!selection) return;
+    ctx.strokeStyle = '#ff3b30';
+    ctx.lineWidth = Math.max(1, shown.window.shape[1] / 300);
+    if (selection.box) {
+      const [w, s, e, n] = selection.box;
+      const a = pixelOf(w, n);
+      const b = pixelOf(e, s);
+      ctx.strokeRect(Math.min(a.c, b.c), Math.min(a.r, b.r), Math.abs(b.c - a.c) + 1, Math.abs(b.r - a.r) + 1);
+    } else {
+      ctx.fillStyle = '#ff3b30';
+      for (const [lon, lat] of selection.points) { const p = pixelOf(lon, lat); ctx.fillRect(p.c, p.r, 1, 1); }
+    }
+  }
+
+  function describeSelection() {
+    if (!selection) return 'Nothing selected: an edit covers the whole grid.';
+    if (selection.box) return 'Box ' + selection.box.map((v) => v.toFixed(2)).join(', ') + ' (W, S, E, N)';
+    return selection.points.length + ' cells picked';
+  }
+
+  function showSelection() {
+    $('selection').textContent = describeSelection();
+    draw();
+  }
+
+  const canvas = $('field');
+  canvas.addEventListener('pointerdown', (event) => {
+    if (!shown) return;
+    const cell = cellAt(event);
+    if (!cell) return;
+    if ($('mode').value === 'points') {
+      const points = selection && selection.points ? selection.points : [];
+      selection = { points: points.concat([[cell.lon, cell.lat]]) };
+      showSelection();
+      return;
+    }
+    drag = cell;
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener('pointermove', (event) => {
+    if (!shown) return;
+    const cell = cellAt(event);
+    if (cell) $('hover').textContent = cell.lon.toFixed(3) + ', ' + cell.lat.toFixed(3) + ': ' + (cell.value === null ? 'no value' : cell.value);
+    if (drag && cell) {
+      selection = { box: [Math.min(drag.lon, cell.lon), Math.min(drag.lat, cell.lat), Math.max(drag.lon, cell.lon), Math.max(drag.lat, cell.lat)] };
+      showSelection();
+    }
+  });
+  canvas.addEventListener('pointerup', () => { drag = null; });
+  $('clear-selection').addEventListener('click', () => { selection = null; showSelection(); });
+
+  function showFields() {
+    const op = $('op').value;
+    document.querySelectorAll('[data-for]').forEach((el) => { el.hidden = !el.dataset.for.split(' ').includes(op); });
+  }
+  $('op').addEventListener('change', showFields);
+
+  function editFromForm() {
+    const op = $('op').value;
+    const edit = { op };
+    if (selection) edit.region = selection.box ? { box: selection.box } : { points: selection.points };
+    const number = (id) => ($(id).value === '' ? undefined : Number($(id).value));
+    if (op === 'set') edit.value = number('value');
+    if (op === 'clip') { edit.min = number('min'); edit.max = number('max'); if ($('wet').value) edit.wet = $('wet').value; }
+    if (op === 'fill_enclosed') { edit.wet = $('wet').value || 'positive'; edit.land_value = number('land'); }
+    if ($('note').value) edit.note = $('note').value;
+    Object.keys(edit).forEach((key) => edit[key] === undefined && delete edit[key]);
+    return edit;
+  }
+
+  function describeEdit(edit) {
+    const where = edit.region ? (edit.region.box ? 'box' : edit.region.points.length + ' cells') : 'whole grid';
+    const what = edit.op === 'set' ? 'set ' + edit.value
+      : edit.op === 'clip' ? 'clip ' + (edit.min ?? '') + '..' + (edit.max ?? '')
+        : 'fill enclosed ' + edit.wet + ' cells with ' + edit.land_value;
+    const count = edit.cells_changed === undefined ? '' : ' (' + edit.cells_changed + ' cells)';
+    return what + ', ' + where + count + (edit.note ? ': ' + edit.note : '');
+  }
+
+  function showEdits() {
+    $('edits').replaceChildren(...edits.map((edit) => { const li = document.createElement('li'); li.textContent = describeEdit(edit); return li; }));
+    $('undo').disabled = edits.length === 0;
+  }
+
+  function structured(result) {
+    if (result && result.isError) {
+      const text = (result.content || []).map((c) => c.text).join(' ');
+      throw new Error(text || 'the tool refused');
+    }
+    return (result && result.structuredContent) || {};
+  }
+
+  async function loadWindow(path) {
+    const result = structured(await request('tools/call', { name: 'grid_window', arguments: { path, variable: base.grid.variable, max_cells: 384 } }));
+    shown = { window: result.window, path };
+    draw();
+  }
+
+  async function commit(next) {
+    $('apply').disabled = true;
+    setStatus('Applying ' + next.length + ' edits...');
+    try {
+      const clean = next.map((edit) => { const copy = Object.assign({}, edit); delete copy.cells_changed; return copy; });
+      const args = { path: base.grid.path, variable: base.grid.variable, output, edits: clean, expect_base_hash: base.grid.hash };
+      const result = structured(await request('tools/call', { name: 'grid_edit', arguments: args }));
+      edits = result.edits;
+      showEdits();
+      $('output').textContent = 'Result ' + result.output + ' (hash ' + result.result_hash + '), log beside it.';
+      await loadWindow(result.output);
+      setStatus(result.summary);
+      notify('ui/update-model-context', { content: [{ type: 'text', text: 'Grid editor: ' + result.summary }] });
+    } catch (error) {
+      setStatus(String((error && error.message) || error), true);
+    } finally {
+      $('apply').disabled = !base;
+    }
+  }
+
+  $('apply').addEventListener('click', () => {
+    const edit = editFromForm();
+    $('note').value = '';
+    commit(edits.concat([edit]));
+  });
+  $('undo').addEventListener('click', () => {
+    const next = edits.slice(0, -1);
+    if (next.length) commit(next);
+    else { edits = []; showEdits(); $('output').textContent = ''; loadWindow(base.grid.path).catch((e) => setStatus(String(e.message), true)); }
+  });
+
+  function onToolResult(params) {
+    const data = params && params.structuredContent;
+    if (!data || !data.grid) { setStatus('No grid in this result.', true); return; }
+    base = data;
+    output = data.output;
+    const g = data.grid;
+    $('title').textContent = g.variable + ' in ' + g.path.split(/[\\/]/).pop();
+    $('facts').textContent = g.shape.join(' x ') + ' cells, hash ' + g.hash + (g.units ? ', ' + g.units : '');
+    $('apply').disabled = false;
+    loadWindow(g.path).catch((error) => setStatus(String(error.message), true));
+  }
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window.parent) return;
+    const data = event.data;
+    if (!data || data.jsonrpc !== '2.0') return;
+    if (data.id !== undefined && pending.has(data.id) && !data.method) {
+      const entry = pending.get(data.id);
+      pending.delete(data.id);
+      if (data.error) entry.reject(new Error(data.error.message || 'request failed')); else entry.resolve(data.result);
+      return;
+    }
+    switch (data.method) {
+      case 'ui/notifications/tool-result': onToolResult(data.params); break;
+      case 'ui/notifications/tool-cancelled': setStatus('The call that opens this editor was cancelled.', true); break;
+      case 'ui/notifications/host-context-changed':
+        hostContext = Object.assign({}, hostContext, data.params || {});
+        applyTheme();
+        break;
+      case 'ui/resource-teardown': respond(data.id, {}); break;
+      case 'ping': respond(data.id, {}); break;
+      default:
+        if (data.id !== undefined && data.method) send({ jsonrpc: '2.0', id: data.id, error: { code: -32601, message: 'Method not found: ' + data.method } });
+    }
+  });
+
+  showFields();
+  request('ui/initialize', {
+    appInfo: { name: 'grids-editor', version: '1.0.0' },
+    appCapabilities: { availableDisplayModes: ['inline', 'fullscreen'] },
+    protocolVersion: PROTOCOL,
+  }).then((result) => {
+    hostContext = (result && result.hostContext) || {};
+    applyTheme();
+    notify('ui/notifications/initialized', {});
+    notify('ui/notifications/size-changed', { height: 620 });
+  }).catch((error) => setStatus('The host did not start the editor: ' + ((error && error.message) || 'unknown error') + '.', true));
+
+  window.gridEditor = { get edits() { return edits.slice(); }, get selection() { return selection; }, get shown() { return shown; } };
+})();
+</script>
+</body>
+</html>

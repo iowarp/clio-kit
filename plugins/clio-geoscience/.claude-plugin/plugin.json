@@ -1,6 +1,6 @@
 {
   "name": "clio-geoscience",
-  "description": "Maps, terrain, waveforms, ocean and weather data, and NASA Earth-science data.",
+  "description": "Maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data.",
   "version": "1.2.0",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
@@ -13,6 +13,7 @@
   "dependencies": [
     "clio-earthdata",
     "clio-geo",
+    "clio-grids",
     "clio-ocean",
     "clio-seismology",
     "clio-terrain",

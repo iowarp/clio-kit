@@ -28,6 +28,7 @@
 <!-- mcp-name: io.github.iowarp/spice-mcp -->
 <!-- mcp-name: io.github.iowarp/terrain-mcp -->
 <!-- mcp-name: io.github.iowarp/weather-mcp -->
+<!-- mcp-name: io.github.iowarp/grids-mcp -->
 <!-- mcp-name: io.github.iowarp/web-mcp -->
 
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
@@ -177,7 +178,7 @@ uv tool install --force --reinstall --editable .
 # If uv's executable directory is not on PATH:
 uv tool update-shell
 
-# List all 29 available MCP servers
+# List all 30 available MCP servers
 clio-kit mcp-servers
 
 # Run an individual server
@@ -221,7 +222,7 @@ These are broad workflow plugins. Each combines its MCP servers and skills.
 | `clio-performance` | Diagnose slow jobs and inspect logs | darshan, chronolog, parallel-sort |
 | `clio-scientific-io` | Explore scientific data files | hdf5, adios, parquet, compression |
 | `clio-analysis` | Analyze results, create figures and open live 3D views | pandas, plot, paraview |
-| `clio-geoscience` | Work with maps, a 3D globe, terrain, waveforms, ocean data and models, and NASA Earthdata | geo, terrain, seismology, ocean, weather, earthdata |
+| `clio-geoscience` | Work with maps, a 3D globe, terrain, waveforms, ocean data and models, model grids, and NASA Earthdata | geo, terrain, seismology, ocean, weather, grids, earthdata |
 | `clio-fabrication` | Slice a model for a 3D printer and check its layers | slicer |
 | `clio-electronics` | Simulate a circuit and plot its waveforms | spice |
 | `clio-home` | Read your home's sensors, control devices and write automations | home-assistant |
@@ -488,6 +489,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`plot`** | 2.2.8 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |
 | **`ocean`** | 1.0.0 | Oceanography | CTD, Argo, gliders, TEOS-10, sections, tides, eddies, heatwaves, MOM6 checks | `clio-kit mcp-server ocean` |
 | **`weather`** | 1.0.0 | Weather & climate | Ensembles, heat waves, soundings, scores, ARs, cyclones, CMIP6, AI forecasts | `clio-kit mcp-server weather` |
+| **`grids`** | 1.0.0 | Modeling | Edit model bathymetry and land masks in an interactive editor; replayable edit logs | `clio-kit mcp-server grids` |
 | **`seismology`** | 2.3.4 | Seismology | Analyze SAC waveforms and archives | `clio-kit mcp-server seismology` |
 | **`scientific-catalog`** | 1.1.7 | Discovery | Operator-owned scientific dataset discovery | `clio-kit mcp-server scientific-catalog` |
 | **`slicer`** | 1.0.0 | 3D Printing | Slice models with the installed PrusaSlicer or OrcaSlicer and view toolpaths layer by layer | `clio-kit mcp-server slicer` |
