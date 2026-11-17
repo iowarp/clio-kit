@@ -11,7 +11,7 @@ import xarray as xr
 from pydantic import Field
 
 from .app import WRITES, mcp, ocean_tool, open_grid
-from .implementation import cruise, events, timeseries
+from .implementation import cruise, events, timeseries, views
 from .implementation.common import (
     OceanToolError,
     Output,
@@ -278,6 +278,7 @@ def mhw_track(
             write_provenance(
                 events_nc, tool="mhw_track", sources=src, method=method, notes=note
             ),
+            view=views.grid_file_view("grid", events_nc),
         ),
         Output(
             series_parquet,

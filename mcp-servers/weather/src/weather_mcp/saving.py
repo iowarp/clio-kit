@@ -7,6 +7,7 @@ from typing import Any
 import pandas as pd
 import xarray as xr
 
+from .implementation import views
 from .implementation.common import Output, media_type, output_path, write_provenance
 
 
@@ -23,7 +24,12 @@ def save_table(
             frame[column] = frame[column].dt.tz_localize("UTC")
     frame.to_parquet(path, index=False)
     return Output(
-        path, role, media_type(path), write_provenance(path, **prov), rows=len(frame)
+        path,
+        role,
+        media_type(path),
+        write_provenance(path, **prov),
+        rows=len(frame),
+        view=views.table_view(role, path, frame),
     )
 
 
@@ -43,4 +49,10 @@ def save_grid(
         for k, v in clean.attrs.items()
     }
     clean.to_netcdf(path)
-    return Output(path, role, media_type(path), write_provenance(path, **prov))
+    return Output(
+        path,
+        role,
+        media_type(path),
+        write_provenance(path, **prov),
+        view=views.grid_view(role, path, clean),
+    )

@@ -11,7 +11,7 @@ import pandas as pd
 from pydantic import Field
 
 from .app import FETCHES, WRITES, mcp, weather_tool
-from .implementation import blobs, climate
+from .implementation import blobs, climate, views
 from .implementation.common import (
     Output,
     Source,
@@ -137,7 +137,15 @@ def detect_blobs(
     )
     return result(
         f"{summary['object'].nunique() if len(summary) else 0} objects tracked ({threshold}, lifetime >= {min_time}).",
-        [Output(target, "grid", media_type(target), sidecar)],
+        [
+            Output(
+                target,
+                "grid",
+                media_type(target),
+                sidecar,
+                view=views.grid_file_view("grid", target),
+            )
+        ],
         objects=int(summary["object"].nunique()) if len(summary) else 0,
         objects_table=summary.astype({"start": str, "end": str}).to_dict("records")
         if len(summary)
@@ -206,7 +214,15 @@ def stitch_blobs(
     )
     return result(
         f"{len(summary)} objects after stitching (lifetime >= {min_time}).",
-        [Output(target, "grid", media_type(target), sidecar)],
+        [
+            Output(
+                target,
+                "grid",
+                media_type(target),
+                sidecar,
+                view=views.grid_file_view("grid", target),
+            )
+        ],
         objects=len(summary),
     )
 

@@ -11,7 +11,7 @@ import pandas as pd
 from pydantic import Field
 
 from .app import FETCHES, WRITES, expand_paths, mcp, ocean_tool, open_grid
-from .implementation import fetch, hydrography, sections
+from .implementation import fetch, hydrography, sections, views
 from .implementation.common import (
     OceanToolError,
     Output,
@@ -40,7 +40,8 @@ def _save_table(
         path, index=False
     )
     sidecar = write_provenance(path, **prov)
-    return Output(path, role, media_type(path), sidecar, rows=len(table))
+    view = views.table_view(role, path, table)
+    return Output(path, role, media_type(path), sidecar, rows=len(table), view=view)
 
 
 def _save_grid(
@@ -49,7 +50,9 @@ def _save_grid(
     path = output_path(name, ".nc", output_dir)
     ds.to_netcdf(path)
     sidecar = write_provenance(path, **prov)
-    return Output(path, role, media_type(path), sidecar)
+    return Output(
+        path, role, media_type(path), sidecar, view=views.grid_view(role, path, ds)
+    )
 
 
 @mcp.tool(

@@ -11,7 +11,7 @@ import pandas as pd
 from pydantic import Field
 
 from .app import WRITES, mcp, weather_tool
-from .implementation import blobs
+from .implementation import blobs, views
 from .implementation.common import (
     Output,
     Source,
@@ -111,7 +111,15 @@ def ai_forecast(
     )
     return result(
         f"{model.upper()} from {time} ({source}), {steps} steps on {reply['device']}.",
-        [Output(target, "grid", media_type(target), sidecar)],
+        [
+            Output(
+                target,
+                "grid",
+                media_type(target),
+                sidecar,
+                view=views.grid_file_view("grid", target),
+            )
+        ],
         model=model,
         device=reply["device"],
         checkpoint_licence=CHECKPOINT_LICENCES[model],
@@ -356,7 +364,15 @@ def downscale(
     )
     return result(
         f"CorrDiffTaiwan at {time} ({samples} sample(s)) on {reply['device']}.",
-        [Output(target, "grid", media_type(target), sidecar)],
+        [
+            Output(
+                target,
+                "grid",
+                media_type(target),
+                sidecar,
+                view=views.grid_file_view("grid", target),
+            )
+        ],
         device=reply["device"],
         region=region,
     )

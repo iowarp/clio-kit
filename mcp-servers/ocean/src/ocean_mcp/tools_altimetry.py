@@ -10,7 +10,7 @@ import xarray as xr
 from pydantic import Field
 
 from .app import FETCHES, WRITES, mcp, ocean_tool, open_grid
-from .implementation import fetch
+from .implementation import fetch, views
 from .implementation.common import (
     Output,
     Source,
@@ -125,7 +125,16 @@ def eddy_track(
     return result(
         f"Identified {reply['identified']['anticyclonic']} anticyclonic and {reply['identified']['cyclonic']} cyclonic eddy observations; "
         f"{tracks['track'].nunique() if len(tracks) else 0} tracks live at least {min_lifetime_days} days {polarity}.",
-        [Output(target, "tracks", media_type(target), sidecar, rows=len(tracks))],
+        [
+            Output(
+                target,
+                "tracks",
+                media_type(target),
+                sidecar,
+                rows=len(tracks),
+                view=views.table_view("tracks", target, tracks),
+            )
+        ],
         identified=reply["identified"],
         tracks=int(tracks["track"].nunique()) if len(tracks) else 0,
         tracks_by_polarity={str(k): int(v) for k, v in polarity.items()},

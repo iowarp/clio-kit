@@ -159,6 +159,8 @@ class Output:
     media_type: str
     provenance: Path | None = None
     rows: int | None = None
+    #: The component that shows this output (``implementation.views``), if one fits.
+    view: dict[str, Any] | None = None
 
     def as_dict(self) -> dict[str, Any]:
         record: dict[str, Any] = {
@@ -170,6 +172,8 @@ class Output:
             record["provenance"] = str(self.provenance)
         if self.rows is not None:
             record["rows"] = self.rows
+        if self.view is not None:
+            record["view"] = self.view
         return record
 
 
