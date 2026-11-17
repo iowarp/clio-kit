@@ -109,7 +109,7 @@ def save(frame: Any, out: Path) -> dict[str, Any]:
         if frame.crs and frame.crs.to_epsg() != 4326
         else frame
     )
-    out.write_text(wgs.to_json(drop_id=True))
+    out.write_text(wgs.to_json(drop_id=True, default=str))
     bounds = [round(float(v), 6) for v in wgs.total_bounds] if len(wgs) else None
     return {
         "output_path": str(out),

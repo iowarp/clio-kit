@@ -232,3 +232,23 @@ async def test_outputs_carry_provenance_with_input_digests(tmp_path: Path) -> No
     assert [s["name"] for s in record["sources"]] == ["after.tif", "before.tif"]
     assert all(s["version"].startswith("sha256:") for s in record["sources"])
     assert any("vertical datum" in note for note in record["notes"])
+
+
+async def test_date_attributes_do_not_break_outputs(tmp_path: Path) -> None:
+    import geopandas as gpd
+    import pandas as pd
+    from shapely.geometry import Polygon
+
+    path = tmp_path / "dated.gpkg"
+    gpd.GeoDataFrame(
+        {
+            "kind": ["deer", "deer"],
+            "edited": pd.to_datetime(["2020-05-01", "2021-06-02"]),
+        },
+        geometry=[Polygon(square(X0, Y0, 500)), Polygon(square(X0 + 250, Y0, 500))],
+        crs=UTM,
+    ).to_file(path, driver="GPKG")
+    result = await call(
+        "overlay_features", {"operation": "dissolve", "source": str(path), "by": "kind"}
+    )
+    assert result["area"]["groups"]["deer"] == pytest.approx(37.5, rel=0.01)
