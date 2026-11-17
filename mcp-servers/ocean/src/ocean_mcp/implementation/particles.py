@@ -48,8 +48,15 @@ def run_particles(
     dt_minutes: float,
     output_hours: float,
     seed: int,
+    diffusivity_m2s: float = 0.0,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
-    """Advect particles with Parcels; returns trajectories and numbers."""
+    """Advect particles with Parcels; returns trajectories and numbers.
+
+    With ``diffusivity_m2s`` above zero a uniform horizontal random walk
+    (Parcels' ``DiffusionUniformKh``) stands for the motion the grid does not
+    resolve; at zero the particles move with the resolved flow only, and their
+    spread is the release disc stretched by resolved shear, which the numbers say.
+    """
     import parcels
 
     lon_name, lat_name, vertical, time_name = _coord_names(ds)
@@ -92,6 +99,12 @@ def run_particles(
         mesh="spherical",
         allow_time_extrapolation=False,
     )
+    kernels = [parcels.AdvectionRK4]
+    if diffusivity_m2s > 0:
+        fieldset.add_constant_field("Kh_zonal", diffusivity_m2s, mesh="spherical")
+        fieldset.add_constant_field("Kh_meridional", diffusivity_m2s, mesh="spherical")
+        fieldset.add_constant("dres", 0.00005)
+        kernels.append(parcels.DiffusionUniformKh)
     lons, lats = seed_disc(station_lon, station[1], radius_km, count, seed)
     release = np.full(
         count, np.datetime64(begin.tz_localize(None) if begin.tzinfo else begin)
@@ -115,7 +128,7 @@ def run_particles(
                 particle.delete()
 
         pset.execute(
-            [parcels.AdvectionRK4, delete_out_of_bounds],
+            [*kernels, delete_out_of_bounds],
             runtime=span.to_pytimedelta(),
             dt=sign * pd.Timedelta(minutes=dt_minutes).to_pytimedelta(),
             output_file=output,
@@ -156,6 +169,11 @@ def run_particles(
         (ends["longitude"] - station_lon) * np.cos(np.deg2rad(station[1])) * 111.2,
         (ends["latitude"] - station[1]) * 111.2,
     )
+    centre_lon, centre_lat = ends["longitude"].median(), ends["latitude"].median()
+    spread = np.hypot(
+        (ends["longitude"] - centre_lon) * np.cos(np.deg2rad(centre_lat)) * 111.2,
+        (ends["latitude"] - centre_lat) * 111.2,
+    )
     numbers = {
         "particles": count,
         "kept_to_end": len(ends),
@@ -166,7 +184,16 @@ def run_particles(
         if len(displacement)
         else float("nan"),
         "parcels_version": parcels.__version__,
-        "integrator": "AdvectionRK4, ScipyParticle",
+        "integrator": "AdvectionRK4, ScipyParticle"
+        + (", DiffusionUniformKh" if diffusivity_m2s > 0 else ""),
+        "diffusivity_m2s": diffusivity_m2s,
+        "end_spread_km": float(np.median(spread)) if len(spread) else float("nan"),
+        "spread_meaning": (
+            f"resolved flow plus a {diffusivity_m2s:g} m2/s random walk for unresolved motion"
+            if diffusivity_m2s > 0
+            else "resolved flow only (no diffusion): the spread is the release disc "
+            "stretched by resolved shear, not an uncertainty of where the water came from"
+        ),
     }
     return table, numbers
 

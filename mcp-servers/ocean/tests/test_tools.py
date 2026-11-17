@@ -218,3 +218,26 @@ async def test_bloom_phenology_returns_a_year_without_a_start_as_null(
     assert by_year[2020]["bloom_start"].startswith("2020-03")
     assert by_year[2021]["bloom_start"] is None
     assert "not observed" in by_year[2021]["reason"]
+
+
+async def test_particles_say_what_their_spread_means_and_can_diffuse(
+    surface_flow: Path,
+) -> None:
+    """Q9: 500 particles moved as one, and the result called it a spread."""
+    common = {
+        "grid": str(surface_flow),
+        "station": [2.0, 0.0],
+        "days": 5,
+        "direction": "forward",
+        "count": 50,
+        "radius_km": 1.0,
+        "dt_minutes": 60,
+        "output_hours": 24,
+    }
+    still = await call("particles", **common)
+    assert "not an uncertainty" in still["summary"]
+    spread = await call("particles", diffusivity_m2s=100.0, **common)
+    assert "random walk" in spread["summary"]
+    # sqrt(2 K t) for 100 m2/s over 5 days is about 9 km per axis.
+    assert spread["end_spread_km"] > 2 * still["end_spread_km"]
+    assert spread["median_displacement_km"] == pytest.approx(43.2, rel=0.2)

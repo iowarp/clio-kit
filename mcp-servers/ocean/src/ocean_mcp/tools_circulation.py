@@ -452,6 +452,16 @@ def particles(
         float, Field(description="Integration step, minutes.")
     ] = 30.0,
     output_hours: Annotated[float, Field(description="Output interval, hours.")] = 24.0,
+    diffusivity_m2s: Annotated[
+        float,
+        Field(
+            description=(
+                "Horizontal diffusivity for motion the grid does not resolve, m2/s "
+                "(0: resolved flow only, and the spread is not an uncertainty)."
+            ),
+            ge=0,
+        ),
+    ] = 0.0,
     density_step_degrees: Annotated[
         float, Field(description="Cell size of the end-point density grid.")
     ] = 0.25,
@@ -483,6 +493,7 @@ def particles(
         dt_minutes=dt_minutes,
         output_hours=output_hours,
         seed=seed,
+        diffusivity_m2s=diffusivity_m2s,
     )
     density = particles_impl.end_density(table, direction, density_step_degrees)
     prov = {
@@ -504,7 +515,10 @@ def particles(
         ),
     ]
     return result(
-        f"{numbers['kept_to_end']} of {count} particles ran {days:g} days {direction}; median displacement {numbers['median_displacement_km']:.0f} km.",
+        f"{numbers['kept_to_end']} of {count} particles ran {days:g} days {direction}; "
+        f"median displacement {numbers['median_displacement_km']:.0f} km; end cloud "
+        f"{numbers['end_spread_km']:.0f} km across (median distance from its centre), "
+        f"from {numbers['spread_meaning']}.",
         outputs,
         **numbers,
     )
