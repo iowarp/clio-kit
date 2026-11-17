@@ -106,6 +106,50 @@ def empty_times(ds: xr.Dataset) -> list[str]:
     return [t.isoformat() for t in times]
 
 
+#: ECMWF's open-data server keeps only the last few days of runs; ECMWF publishes the
+#: same files on these cloud mirrors, which keep them longer. Tried in this order (AWS
+#: last: it throttles its one-range-per-field downloads); the
+#: source used and why an earlier one failed go into the result's provenance.
+OPEN_DATA_SOURCES = (
+    ("ecmwf", "ECMWF's server", "https://data.ecmwf.int/forecasts"),
+    (
+        "google",
+        "the Google Cloud mirror",
+        "https://storage.googleapis.com/ecmwf-open-data",
+    ),
+    ("aws", "the AWS mirror", "https://ecmwf-forecasts.s3.eu-central-1.amazonaws.com"),
+)
+#: Retries per source, and seconds between them. The client's default (500) turns a
+#: throttled mirror into an apparent hang; a bounded count moves on to the next source.
+OPEN_DATA_RETRIES = 3
+OPEN_DATA_RETRY_AFTER = 5
+
+
+def _retrieve_open_data(
+    model: str, request: dict[str, Any], target: Path
+) -> tuple[Any, str, str, list[str]]:
+    """Retrieve from the first source that has the run; the source and earlier failures."""
+    from ecmwf.opendata import Client
+
+    failures: list[str] = []
+    for key, label, url in OPEN_DATA_SOURCES:
+        try:
+            client = Client(
+                source=key,
+                model=model,
+                maximum_retries=OPEN_DATA_RETRIES,
+                retry_after=OPEN_DATA_RETRY_AFTER,
+            )
+            reply = client.retrieve(target=str(target), **request)
+        except Exception as exc:  # noqa: BLE001 - each failure is reported with its source
+            failures.append(f"{label}: {str(exc)[:200]}")
+            continue
+        return reply, label, url, failures
+    raise WeatherToolError(
+        "backend_unavailable", "ECMWF open data: " + "; ".join(failures)
+    )
+
+
 def ensemble_open_data(
     *,
     param: str,
@@ -117,9 +161,6 @@ def ensemble_open_data(
     model: str,
 ) -> tuple[xr.Dataset, Source]:
     """ENS members (control + perturbed) from ECMWF open data, cut to a box or point."""
-    from ecmwf.opendata import Client
-
-    client = Client(source="ecmwf", model=model)
     request: dict[str, Any] = {
         "stream": "enfo",
         "type": ["cf", "pf"],
@@ -132,12 +173,7 @@ def ensemble_open_data(
         request["time"] = time
     with tempfile.TemporaryDirectory() as tmp:
         target = Path(tmp) / "ens.grib2"
-        try:
-            reply = client.retrieve(target=str(target), **request)
-        except Exception as exc:
-            raise WeatherToolError(
-                "backend_unavailable", f"ECMWF open data: {exc}"
-            ) from exc
+        reply, used, url, failures = _retrieve_open_data(model, request, target)
         pieces = []
         kinds = []
         for kind in ("cf", "pf"):
@@ -168,10 +204,11 @@ def ensemble_open_data(
     source = Source(
         name=(
             f"ECMWF {model.upper()} ENS open data ({ds.sizes.get('number', 0)} members: "
-            f"{' and '.join(kinds)})"
+            f"{' and '.join(kinds)}) from {used}"
+            + (f" (not on {'; '.join(failures)})" if failures else "")
         ),
         kind="service",
-        reference="https://www.ecmwf.int/en/forecasts/datasets/open-data",
+        reference=url,
         version=f"run {run.isoformat() if run is not None else 'latest'}",
         subset={"param": param, "steps": steps, "box": box, "point": point},
         licence=ECMWF_OPEN_LICENCE,
