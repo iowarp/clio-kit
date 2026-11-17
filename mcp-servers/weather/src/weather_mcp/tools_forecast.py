@@ -73,6 +73,14 @@ def era5_fetch(
         hours=hours,
         max_values=max_values,
     )
+    empty = fetch.empty_times(ds)
+    stop = ds.attrs.get("arco_valid_time_stop_era5t", "")
+    notes = []
+    if empty:
+        notes.append(
+            f"{len(empty)} time step(s) have no values in the store (first {empty[0]}, "
+            f"last {empty[-1]}); ERA5T in this copy is stated to end {stop or 'unknown'}"
+        )
     out = save_grid(
         ds,
         name,
@@ -82,12 +90,20 @@ def era5_fetch(
         sources=[src],
         method={"store": fetch.ARCO_ERA5},
         packages=("xarray", "gcsfs", "zarr"),
+        notes=notes,
     )
     info = describe(ds)
+    summary = f"ERA5 {', '.join(variables)} over {box} from {info['time_range'][0]} to {info['time_range'][1]} ({info['dims']})."
+    if empty:
+        summary += (
+            f" {len(empty)} of {ds.sizes['time']} time steps are empty in the store."
+        )
     return result(
-        f"ERA5 {', '.join(variables)} over {box} from {info['time_range'][0]} to {info['time_range'][1]} ({info['dims']}).",
+        summary,
         [out],
         **info,
+        empty_times=empty,
+        era5t_ends=stop,
         licence=src.licence,
     )
 

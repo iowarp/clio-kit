@@ -70,6 +70,9 @@ def era5_arco(
             f"the subset holds {size:.3g} values (limit {max_values:.3g}); narrow the box, period, levels or hours",
         )
     sub = sub.load()
+    sub.attrs["arco_valid_time_stop_era5t"] = str(
+        ds.attrs.get("valid_time_stop_era5t", "")
+    )
     source = Source(
         name="ERA5 hourly (ARCO-ERA5, Google Cloud)",
         kind="product",
@@ -86,6 +89,21 @@ def era5_arco(
         licence=ERA5_LICENCE,
     )
     return sub, source
+
+
+def empty_times(ds: xr.Dataset) -> list[str]:
+    """Time steps with no value in any variable (gaps in the store, or past its end)."""
+    if "time" not in ds.dims:
+        return []
+    filled = None
+    for name in ds.data_vars:
+        other = [d for d in ds[name].dims if d != "time"]
+        has = ds[name].notnull().any(other) if other else ds[name].notnull()
+        filled = has if filled is None else (filled | has)
+    if filled is None:
+        return []
+    times = ds["time"].to_index()[~filled.to_numpy()]
+    return [t.isoformat() for t in times]
 
 
 def ensemble_open_data(
