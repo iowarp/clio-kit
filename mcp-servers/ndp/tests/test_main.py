@@ -2,6 +2,8 @@
 
 from unittest.mock import patch
 
+import pydantic
+
 from ndp_mcp import server
 from ndp_mcp.server import main
 
@@ -129,7 +131,7 @@ class TestServerInitialization:
         assert server.os is not None
         assert server.httpx is not None
         assert server.FastMCP is not None
-        assert server.BaseModel is not None
+        assert issubclass(server.Dataset, pydantic.BaseModel)
         assert server.Field is not None
         assert server.ToolError is not None
         assert server.Message is not None
