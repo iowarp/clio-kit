@@ -32,6 +32,7 @@ from .errors import AvogadroError
 PKG = resources.files("avogadro_mcp")
 #: The virtual screen; Avogadro's window fills it (there is no window manager to do it).
 WIDTH, HEIGHT = 1440, 900
+RPC_NAME = "avogadro"
 
 
 def workspace_dir() -> Path:
@@ -172,11 +173,14 @@ class Session:
         self.workdir = workspace_dir()
         self._spawn(
             "avogadro",
-            [self.command, "-qwindowgeometry", f"{WIDTH}x{HEIGHT}+0+0"],
+            # --rpc-name names the socket and, from Avogadro 2.1, skips the startup
+            # dialogs: a first-run consent dialog otherwise waits for a click before
+            # the RPC listener starts, so the socket never appears in an unattended run.
+            [self.command, "--rpc-name", RPC_NAME, "-qwindowgeometry", f"{WIDTH}x{HEIGHT}+0+0"],
             env,
             cwd=self.workdir,
         )
-        sock = self.tmp / "avogadro"
+        sock = self.tmp / RPC_NAME
         deadline = time.monotonic() + 60
         while not sock.exists():
             if not self._alive("avogadro") or time.monotonic() > deadline:
