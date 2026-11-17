@@ -151,20 +151,24 @@ def blob_table(
             mask = frame == obj
             area = cell_area * mask
             yy, xx = np.nonzero(mask)
+            centre = float(
+                np.degrees(
+                    np.angle((np.exp(1j * np.radians(lonv))[None, :] * area).sum())
+                )
+            )
+            # Extents relative to the centroid, so an object across 0° (or 180°) has
+            # its real west and east edges rather than the grid's first and last.
+            offsets = (lonv[xx] - centre + 180.0) % 360.0 - 180.0
             record: dict[str, Any] = {
                 "object": int(obj),
                 "time": when,
                 "area_km2": float(area.sum()),
                 "centroid_lat": float((latv[:, None] * area).sum() / area.sum()),
-                "centroid_lon": float(
-                    np.degrees(
-                        np.angle((np.exp(1j * np.radians(lonv))[None, :] * area).sum())
-                    )
-                ),
+                "centroid_lon": centre,
                 "lat_min": float(latv[yy].min()),
                 "lat_max": float(latv[yy].max()),
-                "lon_min": float(lonv[xx].min()),
-                "lon_max": float(lonv[xx].max()),
+                "lon_min": _wrap(centre + float(offsets.min())),
+                "lon_max": _wrap(centre + float(offsets.max())),
                 "cells": int(mask.sum()),
             }
             fields = dict(extra)
@@ -198,9 +202,19 @@ def object_summary(
             steps=("time", "size"),
             area_max_km2=("area_km2", "max"),
             centroid_lat_mean=("centroid_lat", "mean"),
-            centroid_lon_mean=("centroid_lon", "mean"),
+            centroid_lon_mean=("centroid_lon", _circular_mean),
         )
         .reset_index()
     )
     out["duration_hours"] = (out["end"] - out["start"]).dt.total_seconds() / 3600
     return out
+
+
+def _wrap(lon: float) -> float:
+    """A longitude in [-180, 180)."""
+    return (lon + 180.0) % 360.0 - 180.0
+
+
+def _circular_mean(lons: pd.Series) -> float:
+    """The mean direction of longitudes, so a mean across 0° or 180° is not halfway round."""
+    return float(np.degrees(np.angle(np.exp(1j * np.radians(lons.to_numpy())).mean())))

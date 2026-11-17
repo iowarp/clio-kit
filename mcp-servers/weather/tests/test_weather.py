@@ -403,3 +403,26 @@ def test_monthly_sorts_times_and_refuses_duplicates() -> None:
     )
     with pytest.raises(Exception, match="duplicate times"):
         climate.monthly(twice)
+
+
+def test_blob_extents_and_mean_cross_zero_longitude(tmp_path: Path) -> None:
+    from weather_mcp.implementation import blobs
+
+    lon = np.arange(0.0, 360.0, 2.0)
+    lat = np.array([50.0, 52.0, 54.0])
+    ids = np.zeros((2, lat.size, lon.size), dtype="int32")
+    ids[:, :, (lon >= 350) | (lon <= 10)] = 1  # one object from 350°E to 10°E
+    path = tmp_path / "stitched.nc"
+    xr.Dataset(
+        {"object_id": (("time", "lat", "lon"), ids)},
+        coords={
+            "time": pd.date_range("2010-01-01", periods=2, freq="D"),
+            "lat": lat,
+            "lon": lon,
+        },
+    ).to_netcdf(path)
+    table = blobs.blob_table(path, lon="lon", lat="lat", values=None, extra={})
+    assert table["lon_min"].iloc[0] == pytest.approx(-10.0)
+    assert table["lon_max"].iloc[0] == pytest.approx(10.0)
+    summary = blobs.object_summary(table)
+    assert abs(summary["centroid_lon_mean"].iloc[0]) < 1.0
