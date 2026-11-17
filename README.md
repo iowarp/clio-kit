@@ -175,7 +175,7 @@ uv tool install --force --reinstall --editable .
 # If uv's executable directory is not on PATH:
 uv tool update-shell
 
-# List all 28 available MCP servers
+# List all 27 available MCP servers
 clio-kit mcp-servers
 
 # Run an individual server
