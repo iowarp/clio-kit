@@ -33,3 +33,20 @@ def test_the_vendored_novnc_modules_are_all_present() -> None:
             if not (js.parent / target).resolve().is_file():
                 missing.append(f"{js.relative_to(root)} -> {target}")
     assert not missing, missing
+
+
+def test_a_release_the_install_skill_unpacked_is_found(tmp_path: Path, monkeypatch) -> None:
+    """Installed in one conversation, found in every other (no per-conversation path)."""
+    from avogadro_mcp import install
+
+    for v in ("2.0.0", "2.1.0"):
+        run = tmp_path / ".local" / "opt" / f"avogadro-{v}" / "squashfs-root" / "AppRun"
+        run.parent.mkdir(parents=True)
+        run.write_text("#!/bin/sh\n")
+        run.chmod(0o755)
+    monkeypatch.delenv(install.ENV, raising=False)
+    monkeypatch.setenv("PATH", str(tmp_path / "empty"))
+    monkeypatch.setattr(install.Path, "home", staticmethod(lambda: tmp_path))
+    got = install.find()
+    assert got["found"] and got["source"] == "install-avogadro"
+    assert "avogadro-2.1.0" in got["command"]

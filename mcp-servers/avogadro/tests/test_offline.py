@@ -69,6 +69,7 @@ def test_lookup_order(monkeypatch, tmp_path, out):
     assert not got["found"] and "Where Avogadro is" in got["problem"]
     monkeypatch.delenv("AVOGADRO_COMMAND")
     monkeypatch.setenv("PATH", str(tmp_path))
+    monkeypatch.setattr(install.Path, "home", staticmethod(lambda: tmp_path))  # no installs
     assert not install.find()["found"]
 
 

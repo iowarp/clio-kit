@@ -3,7 +3,10 @@ anything: the avogadro plugin's install-avogadro skill does, with the person's c
 and points the connector's "Where Avogadro is" (AVOGADRO_COMMAND) at it.
 
 Lookup order: ``AVOGADRO_COMMAND`` (an ``avogadro2`` executable or an unpacked AppImage's
-``AppRun``), then ``avogadro2`` on PATH. The release the skill installs is ``VERSION``.
+``AppRun``), then ``avogadro2`` on PATH, then where the install skill unpacks it
+(``~/.local/opt/avogadro-<version>/squashfs-root/AppRun``, newest first), so a release
+installed in one conversation is found in every other. The release the skill installs is
+``VERSION``.
 """
 
 from __future__ import annotations
@@ -33,7 +36,22 @@ def find() -> dict[str, Any]:
     path = shutil.which("avogadro2")
     if path:
         return {"found": True, "command": path, "source": "PATH"}
+    installed = skill_installs()
+    if installed:
+        return {"found": True, "command": str(installed[0]), "source": "install-avogadro"}
     return {"found": False, "source": None, "problem": "no avogadro2 found on this machine"}
+
+
+def skill_installs(home: Path | None = None) -> list[Path]:
+    """Unpacked releases the install skill left in ``~/.local/opt``, newest version first."""
+
+    def version(p: Path) -> tuple[int, ...]:
+        tail = p.parents[1].name.removeprefix("avogadro-")
+        return tuple(int(x) if x.isdigit() else 0 for x in tail.split("."))
+
+    root = (home or Path.home()) / ".local" / "opt"
+    runs = [p for p in root.glob("avogadro-*/squashfs-root/AppRun") if os.access(p, os.X_OK)]
+    return sorted(runs, key=version, reverse=True)
 
 
 def platform_supported() -> tuple[bool, str]:
