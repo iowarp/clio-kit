@@ -30,6 +30,7 @@ from .implementation.common import (
     unwrap_viewer,
 )
 from .implementation.describe import describe_any, features_summary
+from .implementation.provenance import Source, output_entry, write_provenance
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
@@ -184,11 +185,36 @@ async def fetch_features_tool(
             )
         path = _out(output_path, f"{slug(name)}_features", ".geojson")
         path.write_text(json.dumps({"type": "FeatureCollection", "features": features}))
+        sidecar = write_provenance(
+            path,
+            tool="fetch_features",
+            sources=[
+                Source(
+                    name=name,
+                    kind="service",
+                    reference=url,
+                    subset={
+                        "bbox": region.as_list() if region else None,
+                        "where": where,
+                        "type_name": type_name,
+                        "out_fields": out_fields,
+                    },
+                )
+            ],
+            method={"protocol": kind, "max_features": max_features, **paging},
+            packages=["httpx"],
+            notes=[]
+            if paging.get("complete")
+            else [f"stopped at {max_features} features"],
+        )
         return {
             "url": url,
             "region": region.as_list() if region else None,
             "where": where,
             "output_path": str(path),
+            "outputs": [
+                output_entry(path, "features", "application/geo+json", sidecar)
+            ],
             **features_summary(features),
             "paging": paging,
             "summary": f"{len(features)} features saved"
@@ -266,6 +292,37 @@ async def read_raster_window_tool(
             result = raster.read_window(
                 items, region, path, max_cells=max_cells, dst_crs=dst_crs
             )
+        sidecar = write_provenance(
+            path,
+            tool="read_raster_window",
+            sources=[
+                Source(
+                    name=coverage_id or item.rsplit("/", 1)[-1],
+                    kind="service" if coverage_id else "file",
+                    reference=item,
+                    subset={"bbox": region.as_list(), "coverage_id": coverage_id},
+                )
+                for item in items
+            ],
+            method={
+                key: result.get(key)
+                for key in (
+                    "crs",
+                    "resolution",
+                    "native_resolution",
+                    "decimation",
+                    "nodata",
+                )
+            }
+            | {"max_cells": max_cells},
+            packages=["rasterio", "numpy"],
+            notes=[
+                f"unreadable source {s['source']}: {s['reason']}"
+                for s in result.get("sources_unreadable", [])
+            ]
+            + ([] if result.get("units") else ["the source declares no units"]),
+        )
+        result["outputs"] = [output_entry(path, "raster", "image/tiff", sidecar)]
         stats = result.get("statistics") or {}
         result["summary"] = (
             f"{result['shape'][0]}x{result['shape'][1]} cells at {result['resolution']} "
@@ -340,6 +397,31 @@ async def read_point_cloud_tool(
             raise GeoServiceError(
                 f"read_point_cloud reads EPT (ept.json) and COPC; this URL looks like {kind!r}"
             )
+        sidecar = write_provenance(
+            path,
+            tool="read_point_cloud",
+            sources=[
+                Source(
+                    name=target.rstrip("/").rsplit("/", 2)[-2],
+                    kind="service",
+                    reference=target,
+                    subset={
+                        "bbox": region.as_list(),
+                        "classifications": classifications,
+                    },
+                )
+            ],
+            method={
+                key: result.get(key)
+                for key in ("format", "depth", "spacing", "complete", "nodes_read")
+            }
+            | {"max_points": max_points},
+            packages=["laspy", "lazrs", "pyproj"],
+            notes=[result["limit_reason"]] if result.get("limit_reason") else [],
+        )
+        result["outputs"] = [
+            output_entry(path, "points", "application/vnd.laszip", sidecar)
+        ]
         result["summary"] = f"{result['point_count']:,} points saved" + (
             "" if result["complete"] else f"; {result['limit_reason']}"
         )
@@ -379,11 +461,30 @@ async def search_stac_tool(
         items, how = stac.search(url, region, datetime, collections, limit)
         path = _out(output_path, "stac_items", ".geojson")
         path.write_text(json.dumps({"type": "FeatureCollection", "features": items}))
+        sidecar = write_provenance(
+            path,
+            tool="search_stac",
+            sources=[
+                Source(
+                    name="STAC",
+                    kind="service",
+                    reference=url,
+                    subset={
+                        "bbox": region.as_list() if region else None,
+                        "datetime": datetime,
+                        "collections": collections,
+                    },
+                )
+            ],
+            method={"limit": limit, **how},
+            packages=["httpx"],
+        )
         return {
             "url": url,
             "region": region.as_list() if region else None,
             "datetime": datetime,
             "output_path": str(path),
+            "outputs": [output_entry(path, "items", "application/geo+json", sidecar)],
             "item_count": len(items),
             "items": [stac._summary(i) for i in items[:50]],
             **how,

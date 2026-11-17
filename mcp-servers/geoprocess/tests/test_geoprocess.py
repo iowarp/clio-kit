@@ -217,3 +217,18 @@ async def test_tools_have_compact_titles() -> None:
         tools = await client.list_tools()
     assert len(tools) == 5
     assert all(t.title and len(t.title) <= 24 and "(" not in t.title for t in tools)
+
+
+async def test_outputs_carry_provenance_with_input_digests(tmp_path: Path) -> None:
+    before = raster(tmp_path / "before.tif", np.full((10, 10), 1.0))
+    after = raster(tmp_path / "after.tif", np.full((10, 10), 3.0))
+    result = await call("raster_difference", {"first": after, "second": before})
+    (entry,) = result["outputs"]
+    record = json.loads(Path(entry["provenance"]).read_text())
+    assert (
+        record["schema"] == "clio.provenance/1"
+        and record["tool"] == "raster_difference"
+    )
+    assert [s["name"] for s in record["sources"]] == ["after.tif", "before.tif"]
+    assert all(s["version"].startswith("sha256:") for s in record["sources"])
+    assert any("vertical datum" in note for note in record["notes"])

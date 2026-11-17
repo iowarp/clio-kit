@@ -20,6 +20,7 @@ from fastmcp.prompts import Message
 from pydantic import Field
 
 from .implementation import raster_ops, vector
+from .implementation.provenance import local_file_source, output_entry, write_provenance
 from .implementation.vector import GeoProcessError, output_path
 
 logging.basicConfig(
@@ -95,6 +96,18 @@ async def reproject_tool(
         else:
             out = _out(output_path, f"{_stem(source)}_reprojected", ".geojson")
             result = vector.reproject_vector(source, dst_crs, out, source_crs)
+        _record(
+            result,
+            tool="reproject",
+            role="reprojected",
+            inputs=[source],
+            method={
+                "dst_crs": dst_crs,
+                "resolution": resolution,
+                "resampling": resampling,
+            },
+            packages=["rasterio", "geopandas", "pyproj"],
+        )
         result["summary"] = (
             f"Reprojected {result['source_crs']} to {result['target_crs']}"
         )
@@ -129,6 +142,14 @@ async def clip_features_tool(
     try:
         out = _out(output_path, f"{_stem(source)}_clipped", ".geojson")
         result = vector.clip(source, mask, bbox, out, source_crs)
+        _record(
+            result,
+            tool="clip_features",
+            role="clipped",
+            inputs=[source, mask],
+            method={"bbox": bbox, "mask": mask},
+            packages=["geopandas", "shapely"],
+        )
         result["summary"] = (
             f"{result['feature_count']} of {result['input_features']} features inside "
             f"{result['clipped_by']}"
@@ -174,6 +195,14 @@ async def overlay_features_tool(
     try:
         out = _out(output_path, f"{_stem(source)}_{operation}", ".geojson")
         result = vector.overlay(operation, source, other, by, out, source_crs)
+        _record(
+            result,
+            tool="overlay_features",
+            role=operation,
+            inputs=[source, other],
+            method={"operation": operation, "by": by, "area_crs": vector.EQUAL_AREA},
+            packages=["geopandas", "shapely", "pyproj"],
+        )
         area = result["area"]
         result["summary"] = (
             f"{operation}: {result['feature_count']} features covering "
@@ -268,6 +297,15 @@ async def raster_difference_tool(
     try:
         out = _out(output_path, f"{_stem(first)}_minus_{_stem(second)}", ".tif")
         result = raster_ops.raster_difference(first, second, out, band, resampling)
+        _record(
+            result,
+            tool="raster_difference",
+            role="difference",
+            inputs=[first, second],
+            method={"band": band, "resampling": resampling, "grid": "first"},
+            packages=["rasterio", "numpy"],
+            notes=list(result["caveats"]),
+        )
         d = result["difference"]
         result["summary"] = (
             f"Difference over {result['overlap_fraction']:.0%} of the grid"
@@ -281,6 +319,43 @@ async def raster_difference_tool(
         return result
     except Exception as exc:
         raise _fail("raster_difference", exc) from exc
+
+
+_MEDIA = {
+    ".tif": "image/tiff",
+    ".geojson": "application/geo+json",
+    ".gpkg": "application/geopackage+sqlite3",
+}
+
+
+def _record(
+    result: dict[str, Any],
+    *,
+    tool: str,
+    role: str,
+    inputs: list[str | None],
+    method: dict[str, Any],
+    packages: list[str],
+    notes: list[str] | None = None,
+) -> None:
+    """Write the output's provenance sidecar and list it in the result's outputs."""
+    path = Path(result["output_path"])
+    sidecar = write_provenance(
+        path,
+        tool=tool,
+        sources=[local_file_source(Path(item).expanduser()) for item in inputs if item],
+        method=method,
+        packages=packages,
+        notes=notes or [],
+    )
+    result["outputs"] = [
+        output_entry(
+            path,
+            role,
+            _MEDIA.get(path.suffix.lower(), "application/octet-stream"),
+            sidecar,
+        )
+    ]
 
 
 def _out(name: str | None, default: str, suffix: str) -> Path:

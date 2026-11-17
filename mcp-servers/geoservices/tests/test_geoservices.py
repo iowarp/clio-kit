@@ -430,3 +430,36 @@ async def test_tools_have_compact_titles() -> None:
         "search_stac",
     }
     assert all(t.title and len(t.title) <= 24 and "(" not in t.title for t in tools)
+
+
+async def test_every_output_gets_a_provenance_sidecar(site: Site) -> None:
+    _layer(site, features=3)
+    url = site.base + "/arcgis/rest/services/Fires/FeatureServer/0"
+    result = await call(
+        "fetch_features", {"url": url, "bbox": TAHOE, "where": "YEAR=2021"}
+    )
+    (entry,) = result["outputs"]
+    record = json.loads(Path(entry["provenance"]).read_text())
+    assert entry["provenance"] == entry["path"] + ".provenance.json"
+    assert list(record) == [
+        "schema",
+        "output",
+        "created",
+        "server",
+        "tool",
+        "sources",
+        "method",
+        "software",
+        "licences",
+        "notes",
+    ]
+    assert (
+        record["schema"] == "clio.provenance/1"
+        and record["server"] == "geoservices 1.0.0"
+    )
+    assert (
+        record["sources"][0]["kind"] == "service"
+        and record["sources"][0]["reference"] == url
+    )
+    assert record["sources"][0]["subset"]["where"] == "YEAR=2021"
+    assert record["software"]["geoservices-mcp"] == "1.0.0"
