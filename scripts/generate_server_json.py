@@ -84,6 +84,10 @@ SERVER_TAGS: dict[str, list[str]] = {
     "geo": ["geospatial", "mapping", "geojson", "visualization"],
     "scientific-catalog": ["dataset-catalog", "scientific-computing", "discovery"],
     "seismology": ["seismology", "earthquake", "waveform", "sac", "catalog"],
+    "copernicus": ["copernicus", "cmems", "cds", "era5", "ocean", "climate", "reanalysis"],
+    "grids": ["grid", "bathymetry", "land-mask", "topography", "model", "mcp-apps"],
+    "weather": ["weather", "climate", "era5", "ensemble", "cape", "cyclone", "cmip6", "verification"],
+    "ocean": ["oceanography", "argo", "ctd", "teos-10", "tides", "eddies", "marine-heatwave", "mom6"],
     "slicer": [
         "3d-printing",
         "slicer",

@@ -27,6 +27,7 @@
 <!-- mcp-name: io.github.iowarp/pdf-mcp -->
 <!-- mcp-name: io.github.iowarp/plot-mcp -->
 <!-- mcp-name: io.github.iowarp/pubchem-mcp -->
+<!-- mcp-name: io.github.iowarp/ocean-mcp -->
 <!-- mcp-name: io.github.iowarp/scientific-catalog-mcp -->
 <!-- mcp-name: io.github.iowarp/seismology-mcp -->
 <!-- mcp-name: io.github.iowarp/slicer-mcp -->
@@ -34,6 +35,9 @@
 <!-- mcp-name: io.github.iowarp/spack-mcp -->
 <!-- mcp-name: io.github.iowarp/spice-mcp -->
 <!-- mcp-name: io.github.iowarp/terrain-mcp -->
+<!-- mcp-name: io.github.iowarp/weather-mcp -->
+<!-- mcp-name: io.github.iowarp/grids-mcp -->
+<!-- mcp-name: io.github.iowarp/copernicus-mcp -->
 <!-- mcp-name: io.github.iowarp/web-mcp -->
 
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
@@ -183,7 +187,7 @@ uv tool install --force --reinstall --editable .
 # If uv's executable directory is not on PATH:
 uv tool update-shell
 
-# List all 35 available MCP servers
+# List all 39 available MCP servers
 clio-kit mcp-servers
 
 # Run an individual server
@@ -227,7 +231,7 @@ These are broad workflow plugins. Each combines its MCP servers and skills.
 | `clio-performance` | Diagnose slow jobs and inspect logs | darshan, chronolog, parallel-sort |
 | `clio-scientific-io` | Explore scientific data files | hdf5, adios, parquet, compression |
 | `clio-analysis` | Analyze results, create figures and open live 3D views | pandas, plot, paraview |
-| `clio-geoscience` | Work with maps, a 3D globe, terrain, waveforms and NASA Earthdata | geo, geoservices, geoprocess, terrain, seismology, earthdata |
+| `clio-geoscience` | Work with maps, a 3D globe, terrain, geoprocessing and OGC services, waveforms, ocean data and models, model grids, and NASA Earthdata | geo, geoservices, geoprocess, terrain, seismology, ocean, weather, grids, copernicus, earthdata |
 | `clio-fabrication` | Slice a model for a 3D printer and check its layers | slicer |
 | `clio-electronics` | Simulate a circuit and plot its waveforms | spice |
 | `clio-home` | Read your home's sensors, control devices and write automations | home-assistant |
@@ -501,6 +505,10 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`pdf`** | 1.0.0 | Research | Read papers in an interactive PDF viewer (runs the MCP Apps PDF server 2.0.4) | `clio-kit mcp-server pdf` |
 | **`plot`** | 2.2.8 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |
 | **`pubchem`** | 1.0.0 | Chemistry | Resolve compound names in PubChem (candidates when ambiguous) and fetch 3D structures | `clio-kit mcp-server pubchem` |
+| **`ocean`** | 1.0.0 | Oceanography | CTD, Argo, gliders, TEOS-10, sections, tides, eddies, heatwaves, MOM6 checks | `clio-kit mcp-server ocean` |
+| **`weather`** | 1.0.0 | Weather & climate | Ensembles, heat waves, soundings, scores, ARs, cyclones, CMIP6, AI forecasts | `clio-kit mcp-server weather` |
+| **`grids`** | 1.0.0 | Modeling | Edit model bathymetry and land masks in an interactive editor; replayable edit logs | `clio-kit mcp-server grids` |
+| **`copernicus`** | 1.0.0 | Data access | Copernicus Marine and Climate Data Store search, subsets and downloads (runs copernicus-mcp 0.7.2) | `clio-kit mcp-server copernicus` |
 | **`seismology`** | 2.3.4 | Seismology | Analyze SAC waveforms and archives | `clio-kit mcp-server seismology` |
 | **`scientific-catalog`** | 1.1.7 | Discovery | Operator-owned scientific dataset discovery | `clio-kit mcp-server scientific-catalog` |
 | **`slicer`** | 1.0.0 | 3D Printing | Slice models with the installed PrusaSlicer or OrcaSlicer and view toolpaths layer by layer | `clio-kit mcp-server slicer` |

@@ -1,7 +1,7 @@
 {
   "name": "clio-geoscience",
-  "description": "Inspect and map geospatial features, terrain, waveforms and NASA Earth-science data.",
-  "version": "1.1.0",
+  "description": "Maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data.",
+  "version": "1.3.0",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",
@@ -11,12 +11,16 @@
   "repository": "https://github.com/iowarp/clio-kit",
   "license": "BSD-3-Clause",
   "dependencies": [
+    "clio-copernicus",
     "clio-earthdata",
     "clio-geo",
     "clio-geoprocess",
     "clio-geoservices",
+    "clio-grids",
+    "clio-ocean",
     "clio-seismology",
     "clio-terrain",
+    "clio-weather",
     "clio-geoscience-skills"
   ]
 }

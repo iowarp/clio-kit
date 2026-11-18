@@ -1,0 +1,148 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/ocean-mcp",
+  "title": "CLIO Ocean",
+  "description": "MCP server for ocean analysis: CTD casts, TEOS-10, water masses, Argo and glider profiles,...",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.12.7",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "ocean"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "ctd_read",
+      "description": "Read CTD cast files (Sea-Bird .cnv, CCHDO WHP-exchange _ct1.csv or a zip of them, CF NetCDF, or CSV) into one profile table (Parquet) with profile, time, latitude, longitude, pressure and the measured variables. Reports profiles, depth range, positions and the formats read."
+    },
+    {
+      "name": "teos10",
+      "description": "Add TEOS-10 properties to a profile table with gsw: Absolute Salinity (SA), Conservative Temperature (CT), potential temperature (pt0), sigma0 and depth; optionally buoyancy frequency N\u00b2 per profile as a second table. Needs in-situ temperature and practical salinity."
+    },
+    {
+      "name": "water_masses",
+      "description": "Assign each sample of a profile table to a water mass by its potential temperature, salinity and pressure against a stated regional definition: a built-in one (atlantic_emery_meincke_1986) or your own {name, citation, masses:[{name, theta:[lo,hi], salinity:[lo,hi], pressure:[lo,hi]}]}. Returns the definition used, counts and where each mass sits (pressure, latitude, mean \u03b8-S)."
+    },
+    {
+      "name": "argo_fetch",
+      "description": "Fetch Argo profiles with argopy into a profile table: a region box [lon_min, lon_max, lat_min, lat_max, p_min, p_max, 'YYYY-MM-DD', 'YYYY-MM-DD'] or float WMO numbers; core (phy) or BGC (oxygen, chlorophyll, nitrate). 'standard' mode keeps only good adjusted data. Large boxes over many years take minutes; fetch by year if needed."
+    },
+    {
+      "name": "glider_fetch",
+      "description": "Find glider deployments in the IOOS Glider DAC (give box and dates), or fetch one deployment (give dataset_id): its profiles as a table split into transects by heading reversals, with suspect samples flagged (provider QC, spikes, density inversions)."
+    },
+    {
+      "name": "profile_metrics",
+      "description": "Per-profile mixed layer depth by a stated criterion (density or temperature threshold from a reference pressure, e.g. 0.03 kg m-3 from 10 dbar), mean N\u00b2 over a pressure band, and optionally anomaly profiles on standard levels against a reference table with their vertical type. Returns one row per profile and, with a reference, the anomaly table."
+    },
+    {
+      "name": "section",
+      "description": "Build a section (field along a path against depth or pressure) as NetCDF: from a profile table (casts ordered by time, latitude, longitude or a given order, on pressure levels) or from a gridded file sampled along a path of [lon, lat] vertices. The path is stored with the section so a map can draw it and a redrawn path can recompute it."
+    },
+    {
+      "name": "transport",
+      "description": "Volume (Sv) and heat (PW, relative to a stated reference temperature) transport normal to a path through gridded u, v (and temperature) on a regular lon-lat product, per time step. Positive is to the right of the path's direction. The result states that a drawn path on a regular grid gives an approximate transport."
+    },
+    {
+      "name": "overturning",
+      "description": "Meridional overturning streamfunction (Sv) on the model's own grid, in depth or density space, from a per-cell meridional transport (MOM6 vmo kg/s or vh m3/s) or a velocity v; plus the time series of its maximum at a chosen latitude (e.g. 26.5 N)."
+    },
+    {
+      "name": "harmonics",
+      "description": "Tidal harmonic analysis with UTide of a sea level (height) or current (u, v) series: constituent amplitudes and phases (or ellipse parameters for currents) with confidence and SNR, the predicted and residual series, and optionally a comparison against another constituent table (a tide model at the same point)."
+    },
+    {
+      "name": "spectra",
+      "description": "Power spectrum (Welch) of a series, or rotary spectra (clockwise and anticlockwise) of a current u + iv; frequencies in cycles per day, with the inertial frequency for a latitude."
+    },
+    {
+      "name": "sea_level_decompose",
+      "description": "Trends of a tide gauge record and the nearest altimetry series over their common period (annual cycle removed, autocorrelation-corrected errors) and of their difference, the local part, which includes vertical land motion."
+    },
+    {
+      "name": "particles",
+      "description": "Lagrangian particles with Parcels 3 (RK4) in a gridded velocity field, seeded on a disc around a station and run forward (where water goes) or backward (where it came from). Writes the trajectories and a density grid of end points (destinations or origins)."
+    },
+    {
+      "name": "eddy_track",
+      "description": "Identify mesoscale eddies in daily gridded sea level (SLA or ADT) with py-eddy-tracker (closed contours after a Bessel high-pass at a stated wavelength) and link them into tracks; returns a track table (time, position, amplitude, speed radius, polarity). Runs in a separate GPL worker environment; the first call builds it."
+    },
+    {
+      "name": "track_crossings",
+      "description": "Which tracks (eddies, particles, storms) cross a contour of a field, such as an isobath of a bathymetry grid: a track crosses when any of its points lies on the shallow (or low) side. Returns the count and the crossing tracks with the first crossing time."
+    },
+    {
+      "name": "swath_fetch",
+      "description": "Search SWOT L2 LR sea surface height granules over a box and period (no login needed), or download them with download=true (needs NASA Earthdata Login in the connector)."
+    },
+    {
+      "name": "swath_compare",
+      "description": "Compare SWOT swath sea surface height with a gridded product at each pass time inside a box (each pass's mean removed from both): a pixel table with both values and the difference."
+    },
+    {
+      "name": "mhw_point",
+      "description": "Marine heatwaves (or any threshold events) in a daily series at a point, by the Hobday definition: day-of-year climatology and percentile threshold over a stated baseline, events of at least min_duration days, gaps up to max_gap joined; per event duration, max/mean/cumulative intensity, category and onset/decline rates. Input is a series file or a gridded file and a point."
+    },
+    {
+      "name": "mhw_track",
+      "description": "Detect and track marine heatwaves over a region with marEx (anomalies from a stated baseline, seasonal percentile threshold, connected-object tracking with merging/splitting), keeping events of at least min_duration days. Writes the event ID field (NetCDF) and per-event daily series; run mhw_events next for Hobday metrics and categories. Runs in a separate AGPL worker environment."
+    },
+    {
+      "name": "mhw_events",
+      "description": "Hobday metrics and category for every tracked marine heatwave from mhw_track's event series: start, end, duration, area-mean max/mean/cumulative intensity, intensity ratio to the threshold, category (moderate/strong/severe/extreme), peak area and centroid path. Optionally only events overlapping a period or a box."
+    },
+    {
+      "name": "bloom_phenology",
+      "description": "Phytoplankton bloom initiation per year from a chlorophyll series (or a gridded product averaged over a box) by a stated method: median plus 5 % (Siegel et al. 2002) or the steepest rise of log-chlorophyll, both tied to the chosen months' chlorophyll peak. A year whose bloom is already under way when the months open gets no date, with the reason."
+    },
+    {
+      "name": "mixed_layer_budget",
+      "description": "Mixed-layer heat budget over an event: temperature tendency against net surface heat flux divided by rho cp h (with optional shortwave penetration below h), the residual standing for advection, entrainment and mixing; daily and cumulative terms."
+    },
+    {
+      "name": "cruise_plan",
+      "description": "Plan stations to sample a moving feature (an eddy's forecast track) within ship time: steam from a port, a line of stations across the feature where it will be on arrival, and back; or re-time a plan whose stations the scientist moved (give stations). Reports whether it fits."
+    },
+    {
+      "name": "drift",
+      "description": "Spin-up check of a model run: area-weighted domain means of temperature and salinity and mean kinetic energy per level and time, and per level whether the drift over the last window is below a stated tolerance (equilibrated) or not."
+    },
+    {
+      "name": "colocate",
+      "description": "Sample a model at each observation's position, depth and time (profiles from Argo, CTD or moorings) and report bias and RMSE overall, by depth band and by region cell; writes the matched pairs (for a profile stack of model against observation) and the statistics."
+    },
+    {
+      "name": "mom6_preflight",
+      "description": "Check a regional MOM6 run directory before running: open-boundary segments in MOM_input match the segment files; boundary and initial files cover the run dates in input.nml; the land mask has no isolated wet cells or one-cell channels (except cells the scientist kept); MINIMUM_DEPTH agrees with the bathymetry; LAYOUT fits the mask table. Each check passes, fails or says why it could not run."
+    }
+  ],
+  "tags": [
+    "oceanography",
+    "argo",
+    "ctd",
+    "teos-10",
+    "tides",
+    "eddies",
+    "marine-heatwave",
+    "mom6"
+  ],
+  "scope": "scientific"
+}

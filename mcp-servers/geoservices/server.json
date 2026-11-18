@@ -39,7 +39,7 @@
     },
     {
       "name": "read_raster_window",
-      "description": "Read only the part of one or more rasters inside a region and save it as one GeoTIFF: remote or local GeoTIFF/COG, VRT mosaics, ArcGrid (.adf) and IMG tiles through ranged HTTP reads, or an OGC WCS coverage subset (give coverage_id). Tiles in different CRSs are warped to one. The output is decimated to max_cells and the decimation is reported. Returns CRS, shape, resolution, units, valid fraction and statistics."
+      "description": "Read only the part of one or more rasters inside a region and save it as one GeoTIFF: remote or local GeoTIFF/COG, VRT mosaics, ArcGrid (.adf) and IMG tiles through ranged HTTP reads, or an OGC WCS coverage subset (give coverage_id). Tiles in different CRSs are warped to one. The output is decimated to max_cells and the decimation is reported. Returns CRS, shape, resolution, units, valid fraction, region_not_covered (the part of the region no source reaches, with its box) and statistics."
     },
     {
       "name": "read_point_cloud",

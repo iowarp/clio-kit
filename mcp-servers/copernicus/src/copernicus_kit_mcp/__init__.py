@@ -1,0 +1,1 @@
+"""Copernicus MCP wrapper package."""

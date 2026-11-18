@@ -1,0 +1,9 @@
+{
+  "clio-ocean": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "ocean"
+    ]
+  }
+}

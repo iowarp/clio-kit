@@ -255,6 +255,20 @@ jobs:
             python-version: "3.10"
           - mcp: pubchem
             python-version: "3.10"
+          - mcp: ocean
+            python-version: "3.10"
+          - mcp: ocean
+            python-version: "3.11"
+          - mcp: weather
+            python-version: "3.10"
+          - mcp: weather
+            python-version: "3.11"
+          - mcp: grids
+            python-version: "3.10"
+          - mcp: grids
+            python-version: "3.11"
+          - mcp: copernicus
+            python-version: "3.10"
           - mcp: scientific-catalog
             python-version: "3.10"
           - mcp: spice

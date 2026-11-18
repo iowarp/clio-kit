@@ -49,6 +49,12 @@
       "description": "Describe what the pubchem MCP server can do."
     }
   ],
+  "prompts": [
+    {
+      "name": "compound_lookup",
+      "description": "Guided lookup of a compound in PubChem by name."
+    }
+  ],
   "tags": [
     "chemistry",
     "pubchem",

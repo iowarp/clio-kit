@@ -57,6 +57,12 @@
       "description": "Describe what the fdmnes MCP server can do."
     }
   ],
+  "prompts": [
+    {
+      "name": "site_xanes",
+      "description": "Guided K-edge XANES for each inequivalent site."
+    }
+  ],
   "tags": [
     "chemistry",
     "xanes",
