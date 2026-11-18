@@ -282,6 +282,39 @@ def argo_fetch(
     )
 
 
+def _save_positions(
+    table: pd.DataFrame, dataset_id: str, output_dir: str | None, src: Source
+) -> Output:
+    """One row per profile (where and when it was taken, and its transect), on a map."""
+
+    columns = ["profile", "time", "latitude", "longitude", "transect"]
+    positions = (
+        table[[c for c in columns if c in table]]
+        .groupby("profile", as_index=False, sort=False)
+        .first()
+    )
+    if "transect" in positions:
+        positions["leg"] = [
+            f"transect {int(t)}" if t >= 0 else "between transects"
+            for t in positions["transect"]
+        ]
+    path = output_path(f"{dataset_id}_positions", ".parquet", output_dir)
+    positions.to_parquet(path, index=False)
+    sidecar = write_provenance(
+        path,
+        tool="glider_fetch",
+        sources=[src],
+        method={"positions": "first sample of each profile"},
+        packages=("erddapy",),
+    )
+    view = views.positions_view(
+        path, positions, dataset_id, title=f"{dataset_id} track"
+    )
+    return Output(
+        path, "positions", media_type(path), sidecar, rows=len(positions), view=view
+    )
+
+
 @mcp.tool(
     name="glider_fetch",
     title="Fetch Glider",
@@ -343,10 +376,15 @@ def glider_fetch(
         packages=("erddapy", "gsw"),
     )
     transects = sorted(int(t) for t in table["transect"].unique() if t >= 0)
+    track = _save_positions(table, dataset_id, output_dir, src)
+    if out.view is not None and track.view is not None:
+        # A deployment is a track first: its profiles and where they were taken are one
+        # selection, so picking a profile on either view picks it on the other.
+        out.view = {**out.view, **views.profile_selection(dataset_id)}
     return result(
         f"Deployment {dataset_id}: {table['profile'].nunique()} profiles in {len(transects)} transects; "
         f"{int((table['suspect'] != '').sum())} samples flagged.",
-        [out],
+        [out, track],
         transects=transects,
         flagged=flagged[:200],
         **profile_summary(table),

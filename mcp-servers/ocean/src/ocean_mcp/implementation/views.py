@@ -118,6 +118,44 @@ def table_view(
     return {"component": "clio.layered-map.v1", "title": label, "layers": [layer]}
 
 
+def profile_selection(key: str) -> dict[str, Any]:
+    """The selection binding that links a dataset's profile views by profile id."""
+
+    return {
+        "selection": {"path": f"/selection/{_SAFE_ID.sub('-', key)}-profile"},
+        "selectionField": "profile",
+    }
+
+
+def positions_view(
+    path: Path, table: Any, key: str, title: str = ""
+) -> dict[str, Any] | None:
+    """Where each profile was taken, coloured by transect, linked by profile id."""
+
+    columns = [str(column) for column in table.columns]
+    if not {"profile", "latitude", "longitude"} <= set(columns):
+        return None
+    layer: dict[str, Any] = {
+        "id": "profiles",
+        "kind": "points",
+        "label": title or path.stem,
+        "dataUri": str(path),
+        "latitudeField": "latitude",
+        "longitudeField": "longitude",
+        "idField": "profile",
+    }
+    if "leg" in columns:
+        layer["categoryField"] = "leg"
+    if "time" in columns:
+        layer["timeField"] = "time"
+    view: dict[str, Any] = {
+        "component": "clio.layered-map.v1",
+        "title": title or path.stem,
+        "layers": [layer],
+    }
+    return {**view, **profile_selection(key)}
+
+
 def _zero_span(values: Any) -> float:
     """The largest distance from zero when the values lie on both sides of it, else 0."""
     import numpy as np

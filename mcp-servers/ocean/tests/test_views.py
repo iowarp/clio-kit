@@ -142,3 +142,28 @@ def test_a_route_view_is_general_and_carries_its_context(tmp_path: Path) -> None
     stops = view["layers"][2]
     assert stops["idField"] == stops["labelField"] == "waypoint"
     assert view["action"]["event"]["name"] == "mission.replan"
+
+
+def test_a_glider_track_is_a_map_linked_to_its_profiles(tmp_path: Path) -> None:
+    positions = pd.DataFrame(
+        {
+            "profile": [1, 2, 3],
+            "time": pd.to_datetime(["2020-09-08", "2020-09-09", "2020-09-10"]),
+            "latitude": [18.1, 18.0, 17.9],
+            "longitude": [-64.8, -64.7, -64.6],
+            "transect": [2, 2, -1],
+            "leg": ["transect 2", "transect 2", "between transects"],
+        }
+    )
+    path = tmp_path / "ru29_positions.parquet"
+    view = views.positions_view(path, positions, "ru29 2020", title="ru29 track")
+    assert view is not None
+    (layer,) = view["layers"]
+    assert view["component"] == "clio.layered-map.v1"
+    assert layer["kind"] == "points" and layer["idField"] == "profile"
+    assert layer["categoryField"] == "leg" and layer["timeField"] == "time"
+    # The profile stack of the same deployment binds the same selection by profile id.
+    assert view["selection"] == views.profile_selection("ru29 2020")["selection"]
+    assert view["selection"] == {"path": "/selection/ru29-2020-profile"}
+    assert view["selectionField"] == "profile"
+    assert views.positions_view(path, positions.drop(columns="latitude"), "k") is None
