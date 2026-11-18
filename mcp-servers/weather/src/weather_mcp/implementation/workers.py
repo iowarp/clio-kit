@@ -73,6 +73,15 @@ def run_worker(name: str, request: dict[str, Any], timeout_s: float) -> dict[str
             "backend_unavailable",
             f"could not build the {WORKERS[name]['package']} worker environment: {sync.stderr.strip()[-600:]}",
         )
+    # The worker's libraries write settings and downloads under the home directory
+    # (intake-esgf's config, model checkpoints); a sandboxed server's home is read-only
+    # (Q19 rerun: "Read-only file system: '/root/.config/intake-esgf'"). Give the worker
+    # a home of its own beside its environment, kept between runs.
+    home = _environment_root(name).with_name(f"{name}-home")
+    home.mkdir(parents=True, exist_ok=True)
+    env["HOME"] = str(home)
+    env["XDG_CONFIG_HOME"] = str(home / ".config")
+    env["XDG_CACHE_HOME"] = str(home / ".cache")
     with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
         json.dump(request, handle)
         request_path = handle.name
