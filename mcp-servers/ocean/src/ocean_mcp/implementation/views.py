@@ -144,10 +144,10 @@ def positions_view(
         "longitudeField": "longitude",
         "idField": "profile",
     }
+    # No timeField: on a points layer it shows only the profiles at the map's current
+    # time, and a track is read whole.
     if "leg" in columns:
         layer["categoryField"] = "leg"
-    if "time" in columns:
-        layer["timeField"] = "time"
     view: dict[str, Any] = {
         "component": "clio.layered-map.v1",
         "title": title or path.stem,

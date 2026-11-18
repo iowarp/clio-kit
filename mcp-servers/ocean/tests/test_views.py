@@ -161,7 +161,7 @@ def test_a_glider_track_is_a_map_linked_to_its_profiles(tmp_path: Path) -> None:
     (layer,) = view["layers"]
     assert view["component"] == "clio.layered-map.v1"
     assert layer["kind"] == "points" and layer["idField"] == "profile"
-    assert layer["categoryField"] == "leg" and layer["timeField"] == "time"
+    assert layer["categoryField"] == "leg" and "timeField" not in layer
     # The profile stack of the same deployment binds the same selection by profile id.
     assert view["selection"] == views.profile_selection("ru29 2020")["selection"]
     assert view["selection"] == {"path": "/selection/ru29-2020-profile"}
