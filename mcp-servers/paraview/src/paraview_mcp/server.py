@@ -63,7 +63,7 @@ VIEW_STATE = [
 
 mcp: FastMCP = FastMCP(
     "paraview",
-    version="3.1.0",  # keep equal to mcp-server-versions.toml and SERVER_VERSION
+    version="3.2.0",  # keep equal to mcp-server-versions.toml and SERVER_VERSION
     instructions=(
         "Open, look at and measure 3D scientific data in ParaView, on this machine "
         "or on another one over SSH, and show it to the person in a live view. "

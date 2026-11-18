@@ -10,7 +10,11 @@ schema-version = 1
 # in ParaView's Python and shows a live trame view (MCP Apps). 3.1.0 gives the
 # view ParaView controls (pipeline, filters, display, camera, information) that
 # run the tools' own commands, and follows the host's theme; its node folder
-# adds trame-vuetify, so a new version folder is prepared.
+# adds trame-vuetify, so a new version folder is prepared. 3.2.0 follows a
+# growing source: open_view takes a clio.view-descriptor.v1, a following view
+# moves to each new step and a parked view reports newer steps, watch_steps
+# reports each step as MCP task progress, and measure_over_time adds field
+# statistics per step; it adds fastmcp[tasks].
 # slicer 1.0.0 is a new server: it slices STL, 3MF and STEP models with the
 # PrusaSlicer or OrcaSlicer already installed (never downloaded) and shows the
 # toolpaths layer by layer in an MCP Apps view (ui://slicer/layers).
@@ -135,7 +139,7 @@ ndp = "2.2.9"
 node-hardware = "2.3.3"
 pandas = "2.4.1"
 parallel-sort = "2.3.3"
-paraview = "3.1.0"
+paraview = "3.2.0"
 parquet = "2.3.1"
 pdf = "1.0.0"
 plot = "2.2.8"

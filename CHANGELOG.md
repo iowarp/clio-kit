@@ -20,6 +20,20 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
   `set_style` and `get_view`, follows the host's theme, and is saved under a
   view id so a reopen shows the same layers, re-reading files. The agent reads
   only layer names, counts and bounds; the GeoJSON goes to the view.
+- **paraview 3.2.0, a view that follows a growing source**: `open_view` takes
+  a `view` descriptor (`clio.view-descriptor.v1`, vendored from clio-jarvis)
+  naming the reader, its properties, how to follow and the first display. As
+  the source grows (an ADIOS2 BP output still being written, or a series of
+  files), the node re-reads the reader's time steps: a view on the latest step
+  moves to each new step, and a view set to an earlier step stays there and
+  reports how many newer steps exist. `watch_steps` runs as an MCP task and
+  reports every new step as task progress, and the view reports each step to
+  the agent. `measure_over_time` returns a field's statistics at every step for
+  analysis after a run. Colour map names without their qualifier
+  ("Viridis (matplotlib)") resolve, a fixed colour range survives later display
+  changes, and a free colour range grows with the data while following.
+  ParaView machines prepare a new `3.2.0` folder (saved scenes are carried
+  over).
 - **paraview 3.1.0, ParaView controls in the view**: the live view gains a
   compact left tool rail: a pipeline browser (show, hide, select, remove), an
   Add filter palette (Contour, Slice, Clip, Threshold, Glyph, Stream Tracer,

@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-SERVER_VERSION = "3.1.0"
+SERVER_VERSION = "3.2.0"
 DEFAULT_IDLE_SECONDS = 1800.0
 DEFAULT_PVSERVER_PORT = 11111
 # Pinned to the versions this server was qualified with.
