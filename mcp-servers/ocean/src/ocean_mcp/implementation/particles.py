@@ -220,7 +220,14 @@ def _read_trajectories(store: Path) -> xr.Dataset:
         dims = tuple(array.attrs.get("_ARRAY_DIMENSIONS", ("trajectory", "obs")))
         attrs = {k: v for k, v in array.attrs.items() if k != "_ARRAY_DIMENSIONS"}
         variables[name] = xr.Variable(dims, array[:], attrs)
-    return xr.decode_cf(xr.Dataset(variables))
+    dataset = xr.decode_cf(xr.Dataset(variables))
+    # Parcels numbers particles across every set made in a process; the store keeps
+    # those ids, and the final positions (from the set itself) carry the same ones.
+    if "trajectory" in group:
+        dataset = dataset.assign_coords(
+            trajectory=group["trajectory"][:].astype("int64")
+        )
+    return dataset
 
 
 def end_density(table: pd.DataFrame, direction: str, step_degrees: float) -> xr.Dataset:

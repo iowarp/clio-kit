@@ -146,6 +146,25 @@ async def test_particles_follow_uniform_flow(surface_flow: Path) -> None:
     assert trajectories["particle"].nunique() == 50
 
 
+async def test_a_second_particle_run_keeps_its_own_count(surface_flow: Path) -> None:
+    """Parcels numbers particles across runs in one process; each run still counts its own."""
+    for _ in range(2):
+        out = await call(
+            "particles",
+            grid=str(surface_flow),
+            station=[2.0, 0.0],
+            days=2,
+            direction="forward",
+            count=20,
+            radius_km=1.0,
+            dt_minutes=60,
+            output_hours=24,
+        )
+        trajectories = pd.read_parquet(out["outputs"][0]["path"])
+        assert trajectories["particle"].nunique() == 20
+        assert out["kept_to_end"] == 20
+
+
 async def test_cruise_plan_retimes_moved_stations() -> None:
     out = await call(
         "cruise_plan",
