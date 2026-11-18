@@ -19,6 +19,7 @@ from .implementation.common import (
     media_type,
     output_path,
     result,
+    table_records,
     write_provenance,
 )
 from .implementation.grids import LAT, LON, open_grid, pick
@@ -149,9 +150,7 @@ def detect_blobs(
             )
         ],
         objects=int(summary["object"].nunique()) if len(summary) else 0,
-        objects_table=summary.astype({"start": str, "end": str}).to_dict("records")
-        if len(summary)
-        else [],
+        objects_table=table_records(summary),
         method=method,
     )
 
@@ -374,13 +373,7 @@ def blob_stats(
         outputs,
         objects=len(summary),
         landfalls=landfalls,
-        objects_table=summary.astype(
-            {
-                c: str
-                for c in summary.columns
-                if "time" in c or c in ("start", "end", "landfall")
-            }
-        ).to_dict("records")[:200],
+        objects_table=table_records(summary, limit=200),
     )
 
 

@@ -202,3 +202,36 @@ def iso(value: Any) -> str:
     import pandas as pd
 
     return pd.Timestamp(value).isoformat()
+
+
+def table_records(frame: Any, limit: int | None = None) -> list[dict[str, Any]]:
+    """A table as JSON-safe rows: times as ISO text, missing values as null.
+
+    A missing value (NaN, NaT, None) is a fact of the table, such as an object that
+    never reached the region, so it becomes null rather than failing the result.
+    """
+    import math
+
+    import numpy as np
+    import pandas as pd
+
+    def safe(value: Any) -> Any:
+        if value is None or (isinstance(value, float) and math.isnan(value)):
+            return None
+        if value is pd.NaT:
+            return None
+        if isinstance(value, (pd.Timestamp, dt.datetime, dt.date, np.datetime64)):
+            return None if pd.isna(value) else pd.Timestamp(value).isoformat()
+        if isinstance(value, np.generic):
+            item = value.item()
+            if isinstance(item, float) and not math.isfinite(item):
+                return None
+            return item
+        if isinstance(value, float) and not math.isfinite(value):
+            return None
+        return value
+
+    rows = frame.head(limit) if limit is not None else frame
+    return [
+        {str(k): safe(v) for k, v in row.items()} for row in rows.to_dict("records")
+    ]
