@@ -285,3 +285,72 @@ async def test_particles_say_what_their_spread_means_and_can_diffuse(
     assert spread["median_displacement_km"] == pytest.approx(43.2, rel=0.2)
     with pytest.raises(ToolError, match="out_of_range"):
         await call("particles", start="2020-06-01", **common)
+
+
+def _glider_like(tmp_path: Path) -> Path:
+    """Two transect casts on pressure levels, one sample flagged as a spike."""
+    rows = []
+    for k, profile in enumerate(("p1", "p2")):
+        for pressure in (5.0, 15.0, 25.0, 35.0):
+            rows.append(
+                {
+                    "profile": profile,
+                    "time": pd.Timestamp("2020-09-15", tz="UTC")
+                    + pd.Timedelta(hours=k),
+                    "latitude": 17.9,
+                    "longitude": -64.8 + 0.05 * k,
+                    "pressure": pressure,
+                    "temperature": 28.0 - pressure / 10,
+                    "salinity": 35.5,
+                    "transect": 18,
+                    "suspect": "temperature spike"
+                    if (k, pressure) == (1, 15.0)
+                    else "",
+                }
+            )
+    path = tmp_path / "glider.parquet"
+    pd.DataFrame(rows).to_parquet(path, index=False)
+    return path
+
+
+async def test_a_section_drops_the_samples_a_fetch_flagged(tmp_path: Path) -> None:
+    profiles = _glider_like(tmp_path)
+    out = await call(
+        "section", variables=["CT"], profiles=str(profiles), output_dir=str(tmp_path)
+    )
+    assert out["suspect_dropped"] == {"temperature spike": 1}
+    assert "1 suspect samples dropped" in out["summary"]
+    kept = await call(
+        "section",
+        variables=["CT"],
+        profiles=str(profiles),
+        keep_suspect=True,
+        name="kept",
+        output_dir=str(tmp_path),
+    )
+    assert kept["suspect_dropped"] == {}
+
+
+async def test_teos10_reports_a_non_finite_n2_instead_of_failing(
+    tmp_path: Path,
+) -> None:
+    rows = [
+        {
+            "profile": "p1",
+            "time": pd.Timestamp("2020-09-15", tz="UTC"),
+            "latitude": 17.9,
+            "longitude": -64.8,
+            "pressure": pressure,
+            "temperature": 28.0 - pressure / 10,
+            "salinity": 35.5,
+        }
+        # A repeated pressure gives a zero layer thickness and an infinite N².
+        for pressure in (5.0, 15.0, 15.0, 25.0, 35.0)
+    ]
+    path = tmp_path / "dup.parquet"
+    pd.DataFrame(rows).to_parquet(path, index=False)
+    out = await call(
+        "teos10", profiles=str(path), buoyancy_frequency=True, output_dir=str(tmp_path)
+    )
+    assert out["N2_max"] is None or np.isfinite(out["N2_max"])
+    assert out["N2_non_finite"] >= 0

@@ -156,7 +156,10 @@ def teos10(
         outputs.append(
             _save_table(n2, Path(profiles).stem + "-n2", "profiles", output_dir, **prov)
         )
-        numbers["N2_max"] = float(n2["N2"].max())
+        values = n2["N2"].to_numpy(dtype=float)
+        finite = np.isfinite(values)
+        numbers["N2_max"] = float(values[finite].max()) if finite.any() else None
+        numbers["N2_non_finite"] = int((~finite).sum())
     return result(
         f"TEOS-10 for {table['profile'].nunique()} profiles: CT {numbers['CT_range'][0]:.2f} to {numbers['CT_range'][1]:.2f} °C, "
         f"sigma0 {numbers['sigma0_range'][0]:.2f} to {numbers['sigma0_range'][1]:.2f} kg m-3.",
@@ -582,15 +585,31 @@ def section(
     time: Annotated[
         str | None, Field(description="Time to take from a gridded field (nearest).")
     ] = None,
+    keep_suspect: Annotated[
+        bool,
+        Field(
+            description="Keep samples a fetch flagged in its 'suspect' column (default: drop them)."
+        ),
+    ] = False,
     name: Annotated[str, Field(description="Name for the output.")] = "section",
     output_dir: Annotated[
         str | None, Field(description="Directory for outputs.")
     ] = None,
 ) -> dict[str, Any]:
+    dropped: dict[str, int] = {}
     if profiles:
         table = read_profiles(profiles)
         for column, value in (profile_filter or {}).items():
             table = table[table[column] == value]
+        if not keep_suspect and "suspect" in table:
+            flagged = table["suspect"].fillna("").astype(str) != ""
+            dropped = {
+                str(reason): int(count)
+                for reason, count in table.loc[flagged, "suspect"]
+                .value_counts()
+                .items()
+            }
+            table = table[~flagged]
         if (
             any(v in ("SA", "CT", "sigma0", "pt0") for v in variables)
             and "SA" not in table
@@ -611,6 +630,8 @@ def section(
             "pressure_step_dbar": pressure_step,
             "horizontal_step_km": horizontal_step_km,
             "filter": profile_filter,
+            "suspect_samples": "kept" if keep_suspect else "dropped",
+            "suspect_dropped": dropped,
             "interpolation": "linear in pressure, no extrapolation",
         }
     elif grid and path:
@@ -638,9 +659,12 @@ def section(
         packages=("xarray", "gsw"),
     )
     summary = sections.section_summary(ds)
+    removed = sum(dropped.values())
+    note = f"; {removed} suspect samples dropped" if removed else ""
     return result(
-        f"Section '{name}': {summary['columns']} columns over {summary['length_km']:.0f} km, variables {', '.join(summary['variables'])}.",
+        f"Section '{name}': {summary['columns']} columns over {summary['length_km']:.0f} km, variables {', '.join(summary['variables'])}{note}.",
         [out],
         **summary,
+        suspect_dropped=dropped,
         path=json.loads(ds.attrs["path"]),
     )
