@@ -163,6 +163,7 @@ class Acceptance:
             "clio-analysis",
             "clio-geoscience",
             "clio-fabrication",
+            "clio-fluids",
             "clio-electronics",
             "clio-home",
             "clio-research",

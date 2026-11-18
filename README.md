@@ -4,6 +4,7 @@
 <!-- mcp-name: io.github.iowarp/arxiv-mcp -->
 <!-- mcp-name: io.github.iowarp/ase-mcp -->
 <!-- mcp-name: io.github.iowarp/avogadro-mcp -->
+<!-- mcp-name: io.github.iowarp/cad-mcp -->
 <!-- mcp-name: io.github.iowarp/chronolog-mcp -->
 <!-- mcp-name: io.github.iowarp/compression-mcp -->
 <!-- mcp-name: io.github.iowarp/darshan-mcp -->
@@ -33,6 +34,7 @@
 <!-- mcp-name: io.github.iowarp/spice-mcp -->
 <!-- mcp-name: io.github.iowarp/terrain-mcp -->
 <!-- mcp-name: io.github.iowarp/web-mcp -->
+<!-- mcp-name: io.github.iowarp/xcompact3d-mcp -->
 
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![PyPI version](https://img.shields.io/pypi/v/clio-kit.svg)](https://pypi.org/project/clio-kit/)
@@ -181,7 +183,7 @@ uv tool install --force --reinstall --editable .
 # If uv's executable directory is not on PATH:
 uv tool update-shell
 
-# List all 33 available MCP servers
+# List all 35 available MCP servers
 clio-kit mcp-servers
 
 # Run an individual server
@@ -226,7 +228,8 @@ These are broad workflow plugins. Each combines its MCP servers and skills.
 | `clio-scientific-io` | Explore scientific data files | hdf5, adios, parquet, compression |
 | `clio-analysis` | Analyze results, create figures and open live 3D views | pandas, plot, paraview |
 | `clio-geoscience` | Work with maps, a 3D globe, terrain, waveforms and NASA Earthdata | geo, terrain, seismology, earthdata |
-| `clio-fabrication` | Slice a model for a 3D printer and check its layers | slicer |
+| `clio-fabrication` | Model a part in CAD, slice it for a 3D printer and check its layers | cad, slicer |
+| `clio-fluids` | Simulate the flow around a CAD part on a cluster and read the forces | xcompact3d |
 | `clio-electronics` | Simulate a circuit and plot its waveforms | spice |
 | `clio-home` | Read your home's sensors, control devices and write automations | home-assistant |
 | `clio-chemistry` | Find a compound, build structures, compute energies, spectra and adsorption | pubchem, decimer, ase, avogadro, fdmnes, graspa |
@@ -476,6 +479,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`arxiv`** | 2.2.8 | Research | Fetch research papers from ArXiv | `clio-kit mcp-server arxiv` |
 | **`ase`** | 1.0.0 | Chemistry | Molecular energies, optimizations, vibrations, thermochemistry and IR with xTB, MACE, UMA, NWChem or ORCA | `clio-kit mcp-server ase` |
 | **`avogadro`** | 1.0.0 | Chemistry | Build and edit structures in Avogadro 2, streamed into a view; edits and selections come back as files | `clio-kit mcp-server avogadro` |
+| **`cad`** | 1.0.0 | CAD | Model parts with build123d code, export STL and STEP and rotate them in 3D | `clio-kit mcp-server cad` |
 | **`chronolog`** | 2.0.6 | Logging | Log and retrieve data from ChronoLog | `clio-kit mcp-server chronolog` |
 | **`compression`** | 2.2.8 | Utilities | File compression with gzip | `clio-kit mcp-server compression` |
 | **`darshan`** | 2.2.8 | Performance | I/O performance trace analysis | `clio-kit mcp-server darshan` |
@@ -505,6 +509,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`spice`** | 1.0.0 | Electronics | Simulate circuits with ngspice or LTspice and plot waveforms (runs ltspice-mcp 0.8.0) | `clio-kit mcp-server spice` |
 | **`terrain`** | 2.2.8 | Geospatial | Analyze DEMs and terrain point clouds | `clio-kit mcp-server terrain` |
 | **`web`** | 2.1.6 | Web | Web search and URL fetch, with queryable, cancellable fetch tasks; DOI and document conversion need a remote service | `clio-kit mcp-server web` |
+| **`xcompact3d`** | 1.0.0 | CFD | Set up Xcompact3d flow runs around a CAD body, follow them live and read the forces | `clio-kit mcp-server xcompact3d` |
 
 </div>
 

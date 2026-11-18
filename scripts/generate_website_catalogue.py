@@ -50,7 +50,12 @@ WORKFLOWS = {
     "clio-fabrication": (
         "Make a part",
         "Fabrication",
-        "Slice a model with the slicer you have and check every layer before printing.",
+        "Model a part in CAD, slice it with the slicer you have and check every layer before printing.",
+    ),
+    "clio-fluids": (
+        "See how air flows past it",
+        "Fluids",
+        "Simulate the flow around a CAD part on a cluster, watch it live in ParaView and read the forces.",
     ),
     "clio-electronics": (
         "Simulate a circuit",
@@ -173,6 +178,8 @@ def title(name: str) -> str:
         "hdf5": "HDF5",
         "tdd": "TDD",
         "ndp": "NDP",
+        "cad": "CAD",
+        "xcompact3d": "Xcompact3d",
     }
     words = name.removeprefix("clio-kit-").removeprefix("clio-").split("-")
     return " ".join(acronyms.get(word, word.capitalize()) for word in words)

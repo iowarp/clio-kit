@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Part</title>
+<!--
+  The CAD server's part view (MCP Apps, ui://cad/part). three.js 0.170.0 (MIT) is
+  loaded from jsDelivr at run time; the orbit camera is this file's own. Triangles come
+  from the server's part_mesh tool, which only this view calls.
+-->
+<style>
+  :root {
+    color-scheme: light dark;
+    --color-background-primary: light-dark(#ffffff, #1e1f22);
+    --color-background-secondary: light-dark(#f4f5f7, #26282c);
+    --color-text-primary: light-dark(#1f2328, #e6e8eb);
+    --color-text-secondary: light-dark(#59606a, #a6adb7);
+    --color-border-primary: light-dark(#d4d6da, #3a3d44);
+    --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --border-radius-md: 8px;
+    --cad-focus: #2f6bff;
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { font: 13px/1.4 var(--font-sans); color: var(--color-text-primary);
+    background: var(--color-background-primary); }
+  #stage { position: absolute; inset: 0 0 48px 0; touch-action: none; cursor: grab; }
+  #stage:active { cursor: grabbing; }
+  #stage canvas { display: block; width: 100%; height: 100%; }
+  .chrome { position: absolute; z-index: 5;
+    background: color-mix(in srgb, var(--color-background-primary) 92%, transparent);
+    border: 1px solid var(--color-border-primary); border-radius: var(--border-radius-md);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 0.14); }
+  [hidden] { display: none !important; }
+  #status { left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 12px 16px;
+    max-width: min(460px, 80%); text-align: center; }
+  #panel { left: 10px; top: 10px; width: min(280px, calc(100% - 20px)); }
+  #panel-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px 4px; }
+  #title { font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; }
+  #panel-body { padding: 0 10px 10px; }
+  dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; }
+  dt { color: var(--color-text-secondary); }
+  dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .warn { color: #c4321b; margin: 6px 0 0; }
+  .sub { color: var(--color-text-secondary); font-size: 12px; margin: 6px 0 0; }
+  button { font: inherit; color: inherit; background: var(--color-background-secondary);
+    border: 1px solid var(--color-border-primary); border-radius: 6px; padding: 2px 8px;
+    cursor: pointer; }
+  button[aria-pressed=true] { border-color: var(--cad-focus); color: var(--cad-focus); }
+  button:focus-visible { outline: 2px solid var(--cad-focus); outline-offset: 1px; }
+  #bar { position: absolute; left: 0; right: 0; bottom: 0; height: 48px; z-index: 6;
+    display: flex; gap: 6px; align-items: center; padding: 0 12px; box-sizing: border-box;
+    border-top: 1px solid var(--color-border-primary); background: var(--color-background-secondary);
+    overflow-x: auto; }
+  #bar .label { color: var(--color-text-secondary); font-size: 12px; margin-right: 4px; }
+  #bar .gap { flex: 1; }
+  @media (max-width: 560px) {
+    #panel { width: calc(100% - 20px); }
+    #bar { padding: 0 8px; gap: 4px; }
+    #bar .label { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="stage" role="application" aria-label="The part in 3D. Drag to turn, scroll or pinch to zoom, shift-drag to pan."></div>
+<aside id="panel" class="chrome" aria-label="Part">
+  <div id="panel-head"><span id="title">Part</span>
+    <button id="toggle-panel" type="button" aria-expanded="true" aria-controls="panel-body">Hide</button></div>
+  <div id="panel-body"><dl id="stats"></dl><p id="warn" class="warn" hidden></p>
+    <p class="sub">The arrow is the flow direction, +x; y is up.</p></div>
+</aside>
+<div id="bar" role="toolbar" aria-label="Camera">
+  <span class="label">Look from</span>
+  <button type="button" data-dir="iso">Iso</button>
+  <button type="button" data-dir="front">Front</button>
+  <button type="button" data-dir="top">Top</button>
+  <button type="button" data-dir="right">Side</button>
+  <span class="gap"></span>
+  <button id="edges" type="button" aria-pressed="false">Edges</button>
+</div>
+<div id="status" class="chrome" role="status">Loading the part view…</div>
+<script>
+(() => {
+  'use strict';
+  const PROTOCOL = '2026-01-26';
+  const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js';
+  const $ = (id) => document.getElementById(id);
+  // Directions in the flow frame: x along the flow, y up, z across. Front looks at the nose.
+  const DIRS = { iso: [-1, 0.8, 1.4], front: [-1, 0, 0], back: [1, 0, 0], top: [0, 1, 0.001],
+    bottom: [0, -1, 0.001], left: [0, 0, -1], right: [0, 0, 1] };
+
+  const pending = new Map();
+  let nextId = 1;
+  let hostContext = {};
+  const send = (message) => window.parent.postMessage(message, '*');
+  function request(method, params) {
+    const id = 'cad-' + nextId++;
+    send({ jsonrpc: '2.0', id, method, params });
+    return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+  }
+  const notify = (method, params) => send({ jsonrpc: '2.0', method, params });
+  const respond = (id, result) => send({ jsonrpc: '2.0', id, result });
+  const fail = (id, message) => send({ jsonrpc: '2.0', id, error: { code: -32603, message } });
+  async function callServer(name, args) {
+    const result = await request('tools/call', { name, arguments: args });
+    if (!result || result.isError) {
+      throw new Error(((result && result.content) || []).map((c) => c.text || '').join('\n') || name + ' failed');
+    }
+    return result.structuredContent || {};
+  }
+  function showStatus(text) { $('status').hidden = !text; $('status').textContent = text || ''; }
+  const num = (v) => Number(v).toPrecision(4).replace(/\.?0+$/, '').replace(/\.?0+e/, 'e');
+
+  let T = null, renderer = null, scene = null, camera = null, root = null;
+  let mesh = null, wire = null, helpers = null;
+  let current = null, direction = 'iso', edges = false;
+  let resolveReady;
+  const ready = new Promise((resolve) => { resolveReady = resolve; });
+
+  let appliedVariables = [];
+  function applyTheme() {
+    const variables = (hostContext.styles && hostContext.styles.variables) || {};
+    const rootEl = document.documentElement;
+    appliedVariables.forEach((name) => { if (!(name in variables)) rootEl.style.removeProperty(name); });
+    appliedVariables = [];
+    for (const [name, value] of Object.entries(variables)) {
+      if (/^--[A-Za-z0-9-]+$/.test(name) && typeof value === 'string') { rootEl.style.setProperty(name, value); appliedVariables.push(name); }
+    }
+    const theme = hostContext.theme === 'dark' || hostContext.theme === 'light' ? hostContext.theme : null;
+    rootEl.style.colorScheme = theme || 'light dark';
+    if (renderer) { renderer.setClearColor(new T.Color(getComputedStyle(document.body).backgroundColor)); requestRender(); }
+  }
+
+  const orbit = { target: null, radius: 3, theta: 0, phi: 1 };
+  let renderQueued = false;
+  function requestRender() {
+    if (renderQueued || !renderer) return;
+    renderQueued = true;
+    requestAnimationFrame(() => { renderQueued = false; renderer.render(scene, camera); });
+  }
+  // Spherical camera around the target with y up: theta about y, phi from +y.
+  function placeCamera() {
+    const t = orbit.target, sp = Math.sin(orbit.phi);
+    camera.position.set(t.x + orbit.radius * sp * Math.sin(orbit.theta), t.y + orbit.radius * Math.cos(orbit.phi),
+      t.z + orbit.radius * sp * Math.cos(orbit.theta));
+    camera.lookAt(t);
+    requestRender();
+  }
+  function resize() {
+    if (!renderer) return;
+    const box = $('stage').getBoundingClientRect();
+    renderer.setSize(Math.max(1, box.width), Math.max(1, box.height), false);
+    camera.aspect = Math.max(1, box.width) / Math.max(1, box.height);
+    camera.updateProjectionMatrix();
+    requestRender();
+  }
+  function createScene() {
+    renderer = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    $('stage').appendChild(renderer.domElement);
+    scene = new T.Scene();
+    root = new T.Group(); scene.add(root);
+    scene.add(new T.HemisphereLight(0xffffff, 0x445566, 1.6));
+    const sun = new T.DirectionalLight(0xffffff, 1.6); sun.position.set(-2, 3, 4); scene.add(sun);
+    camera = new T.PerspectiveCamera(35, 1, 0.01, 1000);
+    orbit.target = new T.Vector3();
+    new ResizeObserver(resize).observe($('stage'));
+    attachControls(renderer.domElement);
+    applyTheme(); resize();
+  }
+  function attachControls(el) {
+    const pointers = new Map(); let pinch = 0;
+    el.addEventListener('pointerdown', (e) => { el.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); });
+    el.addEventListener('pointerup', (e) => { pointers.delete(e.pointerId); pinch = 0; scheduleReport(); });
+    el.addEventListener('pointercancel', (e) => { pointers.delete(e.pointerId); pinch = 0; });
+    el.addEventListener('pointermove', (e) => {
+      const last = pointers.get(e.pointerId); if (!last || !camera) return;
+      const dx = e.clientX - last.x, dy = e.clientY - last.y;
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()]; const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (pinch) { orbit.radius *= pinch / d; } pinch = d; placeCamera(); return;
+      }
+      if (e.shiftKey || e.buttons === 4 || e.buttons === 2) {
+        const s = orbit.radius / 600;
+        const right = new T.Vector3().setFromMatrixColumn(camera.matrix, 0);
+        const up = new T.Vector3().setFromMatrixColumn(camera.matrix, 1);
+        orbit.target.addScaledVector(right, -dx * s).addScaledVector(up, dy * s);
+      } else {
+        orbit.theta -= dx * 0.008;
+        orbit.phi = Math.min(Math.PI - 0.01, Math.max(0.01, orbit.phi - dy * 0.008));
+      }
+      direction = 'custom'; markDirection(); placeCamera();
+    });
+    el.addEventListener('wheel', (e) => { e.preventDefault(); orbit.radius *= Math.exp(e.deltaY * 0.001); placeCamera(); scheduleReport(); }, { passive: false });
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  function lookFrom(dir) {
+    const v = DIRS[dir]; if (!v || !current) return;
+    const n = Math.hypot(...v);
+    orbit.phi = Math.acos(v[1] / n);
+    orbit.theta = Math.atan2(v[0], v[2]);
+    const size = current.size, lo = current.lower;
+    orbit.target.set(lo[0] + size[0] / 2, lo[1] + size[1] / 2, lo[2] + size[2] / 2);
+    orbit.radius = Math.max(...size) * 2.6;
+    direction = dir; markDirection(); placeCamera(); scheduleReport(); saveView();
+  }
+  function markDirection() {
+    document.querySelectorAll('#bar [data-dir]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.dir === direction)));
+  }
+  function setEdges(on) {
+    edges = !!on; $('edges').setAttribute('aria-pressed', String(edges));
+    if (wire) wire.visible = edges;
+    requestRender(); scheduleReport(); saveView();
+  }
+  function saveView() {
+    if (!current || direction === 'custom') return;
+    callServer('remember_part_view', { part: current.part, direction, edges }).catch(() => {});
+  }
+
+  function drawHelpers() {
+    if (helpers) { root.remove(helpers); }
+    helpers = new T.Group();
+    const size = current.size, lo = current.lower, L = Math.max(...size);
+    const start = new T.Vector3(lo[0] - 0.9 * L, lo[1] + size[1] / 2, lo[2] + size[2] / 2);
+    helpers.add(new T.ArrowHelper(new T.Vector3(1, 0, 0), start, 0.6 * L, 0x2f6bff, 0.12 * L, 0.06 * L));
+    const axes = new T.AxesHelper(0.25 * L); axes.position.set(lo[0], lo[1], lo[2]); helpers.add(axes);
+    root.add(helpers);
+  }
+  async function loadMesh() {
+    const chunks = []; let first = 0, total = 0;
+    while (first !== null) {
+      const part = await callServer('part_mesh', { part: current.part, first });
+      const bin = atob(part.positions); const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      chunks.push(new Float32Array(bytes.buffer)); total += chunks[chunks.length - 1].length;
+      first = part.next;
+    }
+    const positions = new Float32Array(total); let at = 0;
+    chunks.forEach((c) => { positions.set(c, at); at += c.length; });
+    if (mesh) { root.remove(mesh); mesh.geometry.dispose(); root.remove(wire); wire.geometry.dispose(); }
+    const geometry = new T.BufferGeometry();
+    geometry.setAttribute('position', new T.BufferAttribute(positions, 3));
+    geometry.computeVertexNormals();
+    mesh = new T.Mesh(geometry, new T.MeshStandardMaterial({ color: 0x9aa7b8, metalness: 0.15, roughness: 0.55, side: T.DoubleSide }));
+    wire = new T.LineSegments(new T.EdgesGeometry(geometry, 20), new T.LineBasicMaterial({ color: 0x1f2328 }));
+    wire.visible = edges;
+    root.add(mesh); root.add(wire);
+    requestRender();
+  }
+
+  function renderPanel() {
+    const c = current;
+    $('title').textContent = c.title || c.name;
+    const rows = [['Size', c.size.map(num).join(' × ')], ['Volume', num(c.volume)], ['Area', num(c.area)],
+      ['Solids', String(c.solids)], ['Triangles', c.triangles.toLocaleString()], ['STL', c.stl]];
+    $('stats').replaceChildren(...rows.flatMap(([k, v]) => { const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = v; return [dt, dd]; }));
+    const warn = !c.valid ? 'The shape is not a valid solid.' : c.solids !== 1 ? 'It has ' + c.solids + ' solids.' : '';
+    $('warn').hidden = !warn; $('warn').textContent = warn;
+  }
+  let panelFolded = false;
+  function foldPanel(fold) {
+    panelFolded = fold; $('panel-body').hidden = fold;
+    $('toggle-panel').textContent = fold ? 'Show' : 'Hide';
+    $('toggle-panel').setAttribute('aria-expanded', String(!fold));
+  }
+  $('toggle-panel').addEventListener('click', () => foldPanel(!panelFolded));
+  document.querySelectorAll('#bar [data-dir]').forEach((b) => b.addEventListener('click', () => lookFrom(b.dataset.dir)));
+  $('edges').addEventListener('click', () => setEdges(!edges));
+
+  let reportTimer = null, sentKey = '';
+  function state() {
+    return { part: current.part, name: current.name, size: current.size, volume: current.volume, direction, edges };
+  }
+  function report() {
+    reportTimer = null; if (!current) return;
+    const s = state();
+    const text = 'Part view of ' + s.name + ' (' + s.part + '): size ' + s.size.map(num).join(' x ') + ', volume '
+      + num(s.volume) + ', looking from ' + s.direction + (s.edges ? ', edges drawn' : '') + '.';
+    if (text === sentKey) return;
+    sentKey = text;
+    request('ui/update-model-context', { content: [{ type: 'text', text }], structuredContent: s }).catch(() => { sentKey = ''; });
+  }
+  function scheduleReport() { if (!reportTimer) reportTimer = setTimeout(report, 150); }
+
+  const TOOLS = [{ name: 'look_from', description: 'Turn the part view to look from a side: front (at the nose, against the flow), back, top, bottom, left, right or iso. edges true draws the triangle edges.',
+    inputSchema: { type: 'object', properties: { direction: { type: 'string', enum: Object.keys(DIRS) }, edges: { type: 'boolean' } } } }];
+  const textResult = (text, structuredContent) => ({ content: [{ type: 'text', text }], structuredContent });
+  const errorResult = (text) => ({ content: [{ type: 'text', text }], isError: true });
+  async function runTool(name, args) {
+    await ready;
+    if (name !== 'look_from') return errorResult('The part view has no tool ' + name + '.');
+    if (args.direction !== undefined && !DIRS[args.direction]) return errorResult('direction is one of ' + Object.keys(DIRS).join(', ') + '.');
+    if (args.direction) lookFrom(args.direction);
+    if (typeof args.edges === 'boolean') setEdges(args.edges);
+    return textResult('The view looks from ' + direction + (edges ? ' with edges drawn' : '') + '.', state());
+  }
+
+  async function show(data) {
+    current = data;
+    const saved = data.view || {};
+    edges = !!saved.edges; $('edges').setAttribute('aria-pressed', String(edges));
+    renderPanel();
+    if (!panelFolded && window.matchMedia('(max-width: 560px)').matches) foldPanel(true);
+    drawHelpers();
+    showStatus('Loading the part…');
+    await loadMesh();
+    showStatus('');
+    lookFrom(DIRS[saved.direction] ? saved.direction : 'iso');
+    resolveReady();
+  }
+  let three = null;
+  function loadThree() {
+    if (!three) three = import(THREE_URL).then((module) => { T = module; createScene(); });
+    return three;
+  }
+  async function onToolResult(params) {
+    if (!params) return;
+    if (params.isError) { showStatus(((params.content || []).map((c) => c.text || '').join('\n')) || 'The part could not be shown.'); return; }
+    const data = params.structuredContent;
+    if (!data || !data.part || !data.size) return;
+    try { await loadThree(); await show(data); }
+    catch (error) { showStatus('The part could not be drawn: ' + ((error && error.message) || error) + '. Its numbers are in the conversation.'); }
+  }
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window.parent) return;
+    const data = event.data;
+    if (!data || data.jsonrpc !== '2.0') return;
+    if (data.id !== undefined && pending.has(data.id) && !data.method) {
+      const entry = pending.get(data.id); pending.delete(data.id);
+      if (data.error) entry.reject(new Error(data.error.message || 'request failed')); else entry.resolve(data.result);
+      return;
+    }
+    switch (data.method) {
+      case 'ui/notifications/tool-result': onToolResult(data.params); break;
+      case 'ui/notifications/tool-cancelled': showStatus('The call that opens this view was cancelled.'); break;
+      case 'ui/notifications/host-context-changed': hostContext = Object.assign({}, hostContext, data.params || {}); applyTheme(); break;
+      case 'ui/resource-teardown': respond(data.id, {}); break;
+      case 'tools/list': respond(data.id, { tools: TOOLS }); break;
+      case 'tools/call': {
+        const params = data.params || {};
+        runTool(params.name, params.arguments || {}).then((r) => respond(data.id, r),
+          (error) => respond(data.id, errorResult(String((error && error.message) || error))));
+        break;
+      }
+      case 'ping': respond(data.id, {}); break;
+      default: if (data.id !== undefined && data.method) fail(data.id, 'Method not found: ' + data.method);
+    }
+  });
+
+  loadThree().catch((error) => showStatus('three.js could not be loaded from jsDelivr (' + ((error && error.message) || error) + '). The part numbers are still in the conversation.'));
+  request('ui/initialize', {
+    appInfo: { name: 'cad-part', version: '1.0.0' },
+    appCapabilities: { tools: { listChanged: false }, availableDisplayModes: ['inline', 'fullscreen'] },
+    protocolVersion: PROTOCOL,
+  }).then((result) => {
+    hostContext = (result && result.hostContext) || {};
+    applyTheme();
+    notify('ui/notifications/initialized', {});
+    notify('ui/notifications/size-changed', { height: 520 });
+  }).catch((error) => showStatus('The host did not start the view: ' + ((error && error.message) || 'unknown error') + '.'));
+
+  window.cadView = { state: () => (current ? state() : null), ready };
+})();
+</script>
+</body>
+</html>

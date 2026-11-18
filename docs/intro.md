@@ -80,7 +80,8 @@ includes an actual compression round-trip check and troubleshooting steps.
 | `clio-geoscience` | Geospatial, terrain and seismic analysis, a 3D globe and NASA Earthdata |
 | `clio-electronics` | Circuit simulation with the installed SPICE simulator, with waveform plots |
 | `clio-home` | Your Home Assistant: sensors and their history, devices and automations |
-| `clio-fabrication` | Slicing models for 3D printing with the installed slicer, layer by layer |
+| `clio-fabrication` | CAD parts from code, and slicing them for 3D printing with the installed slicer, layer by layer |
+| `clio-fluids` | Flow simulations around a CAD part with Xcompact3d on a cluster, followed live |
 | `clio-research` | Literature, a PDF viewer, public datasets and operator catalogues |
 
 In Claude Code, a bundle installs its member servers and matching skills. Install a server alone

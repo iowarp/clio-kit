@@ -1,0 +1,83 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/cad-mcp",
+  "title": "CLIO Cad",
+  "description": "Model solid parts with build123d code, export STL and STEP, and rotate them in an interactive 3D view.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.12.7",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "cad"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "build_part",
+      "description": "Model a part: run build123d code (from build123d import * is already done; assign the finished shape to result), export part.stl and part.step to <out_dir>/<name>, and open it in an interactive 3D view the person can rotate. Returns the size, bounds, volume, area, solid count and validity, and the file paths. Building the same name again replaces that part. See part_examples for worked scripts."
+    },
+    {
+      "name": "show_part",
+      "description": "Open a part build_part made in the interactive 3D view again."
+    },
+    {
+      "name": "part_mesh",
+      "description": "Triangles of a part for the 3D view to draw. Called by the view itself."
+    },
+    {
+      "name": "remember_part_view",
+      "description": "Save the direction the part view looks from. Called by the view itself."
+    },
+    {
+      "name": "list_parts",
+      "description": "The parts built in a folder (default the parts folder), with size and volume."
+    },
+    {
+      "name": "part_examples",
+      "description": "Worked build123d scripts to start from: naca_wing_section, ahmed_car_body, cylinder, pipe_bend. Give name for one script; empty lists them all."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "ui://cad/part",
+      "name": "cad_part",
+      "description": "An interactive 3D view of a part (three.js)."
+    },
+    {
+      "uri": "cad://examples",
+      "name": "examples_resource",
+      "description": "Worked build123d scripts."
+    },
+    {
+      "uri": "cad://capabilities",
+      "name": "capabilities",
+      "description": "Describe what the CAD MCP server can do."
+    }
+  ],
+  "tags": [
+    "cad",
+    "build123d",
+    "step",
+    "stl",
+    "parametric",
+    "mcp-apps"
+  ],
+  "scope": "scientific"
+}

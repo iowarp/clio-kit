@@ -1,0 +1,54 @@
+[project]
+name = "cad-mcp"
+version = "1.0.0"
+description = "Model solid parts with build123d code, export STL and STEP, and rotate them in an interactive 3D view."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+authors = [
+    { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
+]
+keywords = ["MCP", "CAD", "build123d", "OpenCascade", "STEP", "STL", "parametric"]
+dependencies = [
+    "fastmcp>=4.1.2,<5",
+    "build123d>=0.9",
+    "numpy>=1.26",
+]
+
+[project.urls]
+Homepage = "https://toolkit.iowarp.ai/"
+Repository = "https://github.com/iowarp/clio-kit"
+
+[project.scripts]
+cad-mcp = "cad_mcp.server:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.0",
+    "pip>=26.1.2",
+    "pip-audit>=2.10.0",
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.1.0",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/cad_mcp"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.mypy]
+ignore_missing_imports = true

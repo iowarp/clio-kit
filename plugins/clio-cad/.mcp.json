@@ -1,0 +1,9 @@
+{
+  "clio-cad": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "cad"
+    ]
+  }
+}

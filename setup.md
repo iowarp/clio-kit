@@ -53,7 +53,8 @@ Use the user's stated work to select a bundle. Ask only if the work is unknown.
 | Geospatial, terrain, seismic data, a 3D globe, NASA Earthdata | `clio-geoscience` |
 | Circuit simulation (ngspice or LTspice installed) | `clio-electronics` |
 | Home Assistant (its address and a long-lived token) | `clio-home` |
-| Slicing a model for a 3D printer (PrusaSlicer or OrcaSlicer installed) | `clio-fabrication` |
+| Modelling a part in CAD, or slicing it for a 3D printer (PrusaSlicer or OrcaSlicer installed) | `clio-fabrication` |
+| Flow simulation around a part (Xcompact3d built on a cluster) | `clio-fluids` |
 | Papers, a PDF viewer and dataset discovery | `clio-research` |
 
 ### Client configuration and skill locations

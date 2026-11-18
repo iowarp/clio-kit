@@ -1,0 +1,77 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/xcompact3d-mcp",
+  "title": "CLIO Xcompact3D",
+  "description": "Set up Xcompact3d flow simulations around a CAD body, follow them live and read the forces back.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.12.7",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "xcompact3d"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "prepare_case",
+      "description": "Write an Xcompact3d run directory for the flow past a body given as an STL. The body is scaled so reference_length (default its length along x) is 1, turned nose-up by angle_deg about +z, and placed upstream in a box with a uniform inflow along +x, a convective outflow and periodic sides. span 'periodic' treats an extruded section (a wing section, a cylinder) as spanning the periodic z direction; 'free' puts a 3D body (a car, a finite wing) in the middle; 'auto' decides from the shape. Returns the grid, time step, snapshot size, the run.sh to start it, relay_job (a job spec for a batch launcher such as clio-relay run) and view (a clio.view-descriptor.v1 for ParaView's open_view)."
+    },
+    {
+      "name": "check_case",
+      "description": "How far a run is: the time step and simulated time from its log, the snapshots written, the seconds per step and left, whether the body mask was loaded and whether the run failed or diverged, with the log's last lines and the view descriptor."
+    },
+    {
+      "name": "read_forces",
+      "description": "Drag and lift coefficients on the body over the run: mean, rms, extremes, lift to drag, the dominant lift frequency and its Strouhal number on the body length and on the frontal height, plus the time series (at most 400 points) for a chart. The first discard_fraction of the run (the start-up) is left out of the statistics."
+    },
+    {
+      "name": "build_instructions",
+      "description": "How to build the patched Xcompact3d this server prepares cases for: the needs, the two patch scripts (written to patch_dir when given) and the build commands."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "xcompact3d://build",
+      "name": "build_guide",
+      "description": "How to build the patched Xcompact3d."
+    },
+    {
+      "uri": "xcompact3d://capabilities",
+      "name": "capabilities",
+      "description": "Describe what the xcompact3d MCP server can do."
+    }
+  ],
+  "resource_templates": [
+    {
+      "uri_template": "xcompact3d://patches/{name}",
+      "name": "patch_script",
+      "description": "One of the two patch scripts: clio_vtx_patch.py or clio_geometry_patch.py."
+    }
+  ],
+  "tags": [
+    "cfd",
+    "xcompact3d",
+    "aerodynamics",
+    "immersed-boundary",
+    "adios2",
+    "hpc"
+  ],
+  "scope": "scientific"
+}

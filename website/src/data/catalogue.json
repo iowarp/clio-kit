@@ -540,6 +540,105 @@
       }
     },
     {
+      "id": "mcp/cad",
+      "kind": "mcp",
+      "name": "cad",
+      "title": "CAD",
+      "description": "Model solid parts with build123d code, export STL and STEP, and rotate them in an interactive 3D view.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Fabrication",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/cad",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "cad",
+        "build123d",
+        "step",
+        "stl",
+        "parametric",
+        "mcp-apps"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/cad",
+      "evidence": "Locked runtime",
+      "icon": "📐",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-cad",
+      "summary": "Model solid parts with build123d code, export STL and STEP, and rotate them in an interactive 3D view.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "cad"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "cad"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "cad"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "cad"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "cad"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "cad"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "cad"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/chronolog",
       "kind": "mcp",
       "name": "chronolog",
@@ -3358,6 +3457,105 @@
           "args": [
             "mcp-server",
             "web"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/xcompact3d",
+      "kind": "mcp",
+      "name": "xcompact3d",
+      "title": "Xcompact3d",
+      "description": "Set up Xcompact3d flow simulations around a CAD body, follow them live and read the forces back.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Fluids",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/xcompact3d",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "cfd",
+        "xcompact3d",
+        "aerodynamics",
+        "immersed-boundary",
+        "adios2",
+        "hpc"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/xcompact3d",
+      "evidence": "Locked runtime",
+      "icon": "🌀",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-xcompact3d",
+      "summary": "Set up Xcompact3d flow simulations around a CAD body, follow them live and read the forces back.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "xcompact3d"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "xcompact3d"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "xcompact3d"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "xcompact3d"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "xcompact3d"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "xcompact3d"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "xcompact3d"
           ]
         }
       }
@@ -7669,18 +7867,20 @@
       "kind": "plugin",
       "name": "clio-fabrication",
       "title": "Make a part",
-      "description": "Slice a 3D model for a printer and check it layer by layer before printing.",
+      "description": "Model a part in CAD, slice it for a printer and check it layer by layer before printing.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "category": "Fabrication",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-fabrication/.claude-plugin/plugin.json",
       "members": [
+        "mcp/cad",
         "mcp/slicer",
         "skill/slicing"
       ],
       "servers": [
+        "clio-cad",
         "clio-slicer"
       ],
       "tags": [],
@@ -7695,7 +7895,7 @@
       "license": "BSD-3-Clause",
       "docs": "/docs/marketplace",
       "evidence": "Membership from manifest",
-      "outcome": "Slice a model with the slicer you have and check every layer before printing.",
+      "outcome": "Model a part in CAD, slice it with the slicer you have and check every layer before printing.",
       "componentTypes": [
         "mcp",
         "skill"
@@ -7712,7 +7912,55 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Slice a 3D model for a printer and check it layer by layer before printing."
+      "summary": "Model a part in CAD, slice it for a printer and check it layer by layer before printing."
+    },
+    {
+      "id": "workflow/clio-fluids",
+      "kind": "plugin",
+      "name": "clio-fluids",
+      "title": "See how air flows past it",
+      "description": "Set up a flow simulation around a CAD body, run it on a cluster and read the forces back.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Fluids",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "plugins/clio-fluids/.claude-plugin/plugin.json",
+      "members": [
+        "mcp/xcompact3d"
+      ],
+      "servers": [
+        "clio-xcompact3d"
+      ],
+      "tags": [],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace",
+      "evidence": "Membership from manifest",
+      "outcome": "Simulate the flow around a CAD part on a cluster, watch it live in ParaView and read the forces.",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-fluids",
+      "role": "Workflow plugin",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      },
+      "summary": "Set up a flow simulation around a CAD body, run it on a cluster and read the forces back."
     },
     {
       "id": "workflow/clio-geoscience",
