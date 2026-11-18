@@ -57,7 +57,9 @@ def _te_input(
         "('var,op,value,distance', e.g. 'ivt,>=,250,0' for atmospheric rivers or a Z500 anomaly for "
         "blocks), keep objects of at least min_area_km2, and link them in time with a minimum lifetime "
         "and overlap. derive_magnitude computes the field as |(a, b)| first (IVT from the two flux "
-        "components). Writes the stitched object field (NetCDF)."
+        "components). Writes the stitched object field (NetCDF). The server finds its TempestExtremes "
+        "build itself (TEMPESTEXTREMES_BIN or PATH), which a shell may not see; when none is installed "
+        "the call returns backend_unavailable."
     ),
     annotations=WRITES,
     tags={"weather", "tracking", "atmospheric river", "blocking"},
