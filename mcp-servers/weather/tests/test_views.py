@@ -119,3 +119,23 @@ def test_a_route_view_is_general_and_carries_its_context(tmp_path: Path) -> None
     stops = view["layers"][2]
     assert stops["idField"] == stops["labelField"] == "waypoint"
     assert view["action"]["event"]["name"] == "mission.replan"
+
+
+def test_grid_view_prefers_a_plain_map_to_one_slice_of_many(tmp_path):
+    lat = np.arange(30.0, 50.0, 1.0)
+    lon = np.arange(-10.0, 5.0, 1.0)
+    per_model = xr.DataArray(
+        np.ones((3, lat.size, lon.size)),
+        dims=("model", "lat", "lon"),
+        coords={"model": ["a", "b", "c"], "lat": lat, "lon": lon},
+    )
+    fields = xr.Dataset(
+        {
+            "change": per_model,
+            "multi_model_mean": per_model.mean("model"),
+            "spread": per_model.std("model"),
+        }
+    )
+    layer = views.grid_view("grid", tmp_path / "m.nc", fields)["layers"][0]
+    assert layer["variable"] == "multi_model_mean"
+    assert layer["label"] == "multi model mean"

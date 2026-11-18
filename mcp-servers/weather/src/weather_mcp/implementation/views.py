@@ -167,19 +167,30 @@ def grid_view(
     ]
     if not (horizontal and mapped):
         return None
+    # A field with another dimension besides time (a model, a member, a level) shows
+    # one slice of it, which the view cannot name; a plain map of the same file wins.
+    plain = [name for name in mapped if not _extra_dims(dataset[name])]
+    variable = (plain or mapped)[0]
     layer = {
         "id": "field",
         "kind": "grid",
-        "label": label,
+        "label": variable.replace("_", " ") if variable != label else label,
         "gridUri": str(path),
-        "variable": mapped[0],
+        "variable": variable,
     }
-    span = _zero_span(dataset[mapped[0]])
+    span = _zero_span(dataset[variable])
     if span:
         # Values either side of zero (a bias, an anomaly): a diverging scale centred on 0.
         layer["colormap"] = "balance"
         layer["valueRange"] = [-span, span]
     return {"component": "clio.layered-map.v1", "title": label, "layers": [layer]}
+
+
+def _extra_dims(array: Any) -> list[str]:
+    """Dimensions of a field other than its horizontal axes and time."""
+
+    plain = {"latitude", "longitude", "lat", "lon", "time", "valid_time"}
+    return [str(dim) for dim in array.dims if str(dim) not in plain]
 
 
 def grid_file_view(role: str, path: Path, title: str = "") -> dict[str, Any] | None:

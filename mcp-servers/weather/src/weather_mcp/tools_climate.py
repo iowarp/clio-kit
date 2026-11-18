@@ -644,7 +644,7 @@ def cmip_change(
     ]
     spread = float(changes["change"].std()) if len(changes) > 1 else 0.0
     return result(
-        f"{experiment} {variable} change {future[0]}-{future[1]} vs {historical[0]}-{historical[1]}: multi-model mean {changes['change'].mean():+.2f}, spread (sd) {spread:.2f} across {len(changes)} models.",
+        f"{experiment} {variable} change {future[0]}-{future[1]} vs {historical[0]}-{historical[1]}: multi-model mean {changes['change'].mean():+.3g}, spread (sd) {spread:.3g} across {len(changes)} models.",
         outputs,
         changes=changes.to_dict("records"),
         multi_model_mean=float(changes["change"].mean()),
