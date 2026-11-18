@@ -14,6 +14,10 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # the worker imports its libraries where it uses them
+    import xarray as xr
 
 MODELS = {
     "fcn": (
@@ -93,12 +97,58 @@ def forecast(request: dict) -> dict:
     }
 
 
+def _fields(names, values, lat, lon) -> xr.Dataset:
+    """Variables on a grid, with 10 m wind speed added when both components are there."""
+    import numpy as np
+    import xarray as xr
+
+    if np.ndim(lat) == 1:
+        dims, coords = ("lat", "lon"), {"lat": np.asarray(lat), "lon": np.asarray(lon)}
+    else:
+        dims = ("y", "x")
+        coords = {"lat": (dims, np.asarray(lat)), "lon": (dims, np.asarray(lon))}
+    ds = xr.Dataset(
+        {str(n): (dims, v) for n, v in zip(names, values, strict=True)}, coords=coords
+    )
+    if "u10m" in ds and "v10m" in ds:
+        ds["wind_speed"] = np.hypot(ds["u10m"], ds["v10m"]).assign_attrs(
+            units="m s-1", long_name="10 m wind speed"
+        )
+    return ds
+
+
+def _regular(ds: xr.Dataset, step: float) -> xr.Dataset:
+    """A curvilinear field on a regular lat-lon grid of ``step`` degrees (linear)."""
+    import numpy as np
+    import xarray as xr
+    from scipy.interpolate import griddata
+
+    lat2, lon2 = ds["lat"].values, ds["lon"].values
+    lats = np.arange(np.ceil(lat2.min() / step) * step, lat2.max(), step)
+    lons = np.arange(np.ceil(lon2.min() / step) * step, lon2.max(), step)
+    glon, glat = np.meshgrid(lons, lats)
+    points = np.column_stack([lon2.ravel(), lat2.ravel()])
+    out = xr.Dataset(coords={"lat": lats, "lon": lons})
+    for name, var in ds.data_vars.items():
+        values = griddata(points, var.values.ravel(), (glon, glat), method="linear")
+        out[name] = (("lat", "lon"), values.astype("float32"), var.attrs)
+    return out
+
+
 def downscale(request: dict) -> dict:
+    """CorrDiff Taiwan from a coarse source; the coarse input and the 2 km output.
+
+    The input is fetched at lead 0 and interpolated onto the model's own input grid,
+    as the model expects (the global field was passed before, and the model refused
+    it: "Coordinate systems for required dim lon are not the same"). Three files: the
+    model's curvilinear output, the same on a regular grid for maps, and the coarse
+    input it was given, so the two can be compared on one map.
+    """
     import importlib
+    from collections import OrderedDict
 
     import numpy as np
     import torch
-    import xarray as xr
     from earth2studio.data import fetch_data
     from earth2studio.models.dx import CorrDiffTaiwan
 
@@ -107,33 +157,45 @@ def downscale(request: dict) -> dict:
     model.number_of_samples = int(request.get("samples", 1))
     smod, scls = SOURCES[request["source"]]
     data = getattr(importlib.import_module(smod), scls)()
-    coords = model.input_coords()
-    x, c = fetch_data(
+    ic = model.input_coords()
+    x, _ = fetch_data(
         source=data,
         time=np.array([np.datetime64(request["time"])]),
-        variable=coords["variable"],
+        variable=ic["variable"],
+        lead_time=np.array([np.timedelta64(0, "h")]),
         device=device,
+        # Earth2Studio 0.20 reads the target grid from ``_lat``/``_lon``.
+        interp_to=OrderedDict(_lat=ic["lat"], _lon=ic["lon"]),
+        interp_method="linear",
+    )
+    x = x[:, 0]  # (time as batch, variable, lat, lon)
+    coords = OrderedDict(
+        batch=np.arange(x.shape[0]),
+        variable=ic["variable"],
+        lat=ic["lat"],
+        lon=ic["lon"],
     )
     with torch.no_grad():
-        y, yc = model(x, c)
-    da = xr.DataArray(
-        y.cpu().numpy(),
-        coords={k: v for k, v in yc.items() if k not in ("lat", "lon")},
-        dims=list(yc.keys()),
-    )
-    da = (
-        da.assign_coords(
-            lat=(("ilat", "ilon"), yc["lat"]), lon=(("ilat", "ilon"), yc["lon"])
-        )
-        if np.ndim(yc["lat"]) == 2
-        else da
-    )
+        y, yc = model(x, coords)
+    fine = y.reshape(-1, *y.shape[-3:]).cpu().numpy()
     out = Path(request["output"])
     out.parent.mkdir(parents=True, exist_ok=True)
-    da.to_dataset(name="downscaled").to_netcdf(out)
+    native = _fields(list(yc["variable"]), fine[0], yc["lat"], yc["lon"])
+    if fine.shape[0] > 1:  # more samples: their spread, beside the first
+        for i, name in enumerate(yc["variable"]):
+            native[f"{name}_spread"] = (native[str(name)].dims, fine[:, i].std(axis=0))
+    native.to_netcdf(out)
+    mapped = out.with_name(out.stem + "-map.nc")
+    _regular(native, 0.02).to_netcdf(mapped)
+    coarse = out.with_name(out.stem + "-coarse.nc")
+    _fields(list(ic["variable"]), x[0].cpu().numpy(), ic["lat"], ic["lon"]).to_netcdf(
+        coarse
+    )
     return {
         "status": "success",
         "output": str(out),
+        "map_output": str(mapped),
+        "coarse_output": str(coarse),
         "model": "CorrDiffTaiwan",
         "citation": "Mardani et al. 2023 (arXiv:2309.15214); NVIDIA CorrDiff inference package (NGC)",
         "device": str(device),

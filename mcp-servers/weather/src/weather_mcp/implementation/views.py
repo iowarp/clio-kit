@@ -248,3 +248,35 @@ def route_view(
         },
         "actionLabel": "Ask to replan",
     }
+
+
+def fields_view(
+    title: str,
+    fields: list[tuple[Path, str, str]],
+    *,
+    value_range: tuple[float, float] | None = None,
+    unit: str = "",
+    colormap: str = "viridis",
+) -> dict[str, Any]:
+    """Several gridded fields on one map, as layers to switch between and compare.
+
+    For the same quantity at different resolutions or from different sources (a coarse
+    input and its downscaled field, two models): one value range, so a colour means
+    the same in every layer. ``fields`` are (file, variable, label).
+    """
+    layers = []
+    for index, (path, variable, label) in enumerate(fields):
+        layer: dict[str, Any] = {
+            "id": f"field-{index + 1}",
+            "kind": "grid",
+            "label": label,
+            "gridUri": str(path),
+            "variable": variable,
+            "colormap": colormap,
+        }
+        if value_range is not None:
+            layer["valueRange"] = [float(value_range[0]), float(value_range[1])]
+        if unit:
+            layer["unit"] = unit
+        layers.append(layer)
+    return {"component": "clio.layered-map.v1", "title": title, "layers": layers}

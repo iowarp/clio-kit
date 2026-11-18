@@ -16,6 +16,7 @@ from .implementation.common import (
     Output,
     Source,
     WeatherToolError,
+    local_file_source,
     media_type,
     output_path,
     result,
@@ -362,17 +363,64 @@ def downscale(
         },
         notes=[CHECKPOINT_LICENCES["corrdiff"]],
     )
+    mapped = Path(reply["map_output"])
+    coarse = Path(reply["coarse_output"])
+    for extra in (mapped, coarse):
+        write_provenance(
+            extra,
+            tool="downscale",
+            sources=[local_file_source(target)],
+            method={"from": target.name, "model": "CorrDiffTaiwan"},
+        )
+    peaks = _wind_peaks(coarse, mapped)
+    view = None
+    if peaks:
+        top = max(peaks.values())
+        view = views.fields_view(
+            f"10 m wind, {time}: coarse input and CorrDiff 2 km",
+            [
+                (coarse, "wind_speed", f"Coarse input ({source})"),
+                (mapped, "wind_speed", "CorrDiff 2 km"),
+            ],
+            value_range=(0.0, float(np.ceil(top))),
+            unit="m/s",
+        )
+    peak_note = (
+        f" Peak 10 m wind {peaks['coarse']:.1f} m/s coarse, {peaks['fine']:.1f} m/s downscaled."
+        if peaks
+        else ""
+    )
     return result(
-        f"CorrDiffTaiwan at {time} ({samples} sample(s)) on {reply['device']}.",
+        f"CorrDiffTaiwan at {time} ({samples} sample(s)) on {reply['device']}.{peak_note}",
         [
+            Output(target, "grid", media_type(target), sidecar),
             Output(
-                target,
+                mapped,
                 "grid",
-                media_type(target),
-                sidecar,
-                view=views.grid_file_view("grid", target),
-            )
+                media_type(mapped),
+                mapped.with_name(mapped.name + ".provenance.json"),
+                view=view,
+            ),
+            Output(
+                coarse,
+                "grid",
+                media_type(coarse),
+                coarse.with_name(coarse.name + ".provenance.json"),
+            ),
         ],
         device=reply["device"],
         region=region,
+        peak_wind=peaks,
     )
+
+
+def _wind_peaks(coarse: Path, fine: Path) -> dict[str, float]:
+    """The highest 10 m wind speed in the coarse input and the downscaled field."""
+    import xarray as xr
+
+    peaks: dict[str, float] = {}
+    for key, path in (("coarse", coarse), ("fine", fine)):
+        with xr.open_dataset(path) as ds:
+            if "wind_speed" in ds:
+                peaks[key] = float(ds["wind_speed"].max())
+    return peaks if len(peaks) == 2 else {}

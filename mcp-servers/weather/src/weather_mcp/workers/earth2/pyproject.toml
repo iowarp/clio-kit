@@ -11,6 +11,9 @@ license = "Apache-2.0"
 dependencies = [
     "earth2studio[fcn,dlwp,corrdiff,data]==0.20.0",
     "torch>=2.5",
+    # From the same index as torch: a torchvision built for another torch has no
+    # native operators (CorrDiff failed with "operator torchvision::nms does not exist").
+    "torchvision",
 ]
 
 [tool.uv]
@@ -23,3 +26,4 @@ explicit = true
 
 [tool.uv.sources]
 torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
