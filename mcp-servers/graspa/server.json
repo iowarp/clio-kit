@@ -1,0 +1,68 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/graspa-mcp",
+  "title": "CLIO Graspa",
+  "description": "Gas adsorption in MOFs and zeolites by grand-canonical Monte Carlo with gRASPA: run, prepare for...",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.12.7",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "graspa"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "run_graspa",
+      "description": "Compute the adsorption uptake of one gas (CO2, H2O or N2) in a framework CIF at a temperature (K) and pressure (Pa) by grand-canonical Monte Carlo with gRASPA, here. The cell is replicated so each width is at least twice the cutoff; the force field is UFF-like Lennard-Jones with TraPPE-style rigid adsorbates; framework charges 'none' (default) or 'cif'. Writes the run folder (inputs, gRASPA output, run.json, result.json) and reports the uptake in mol/kg with its block-average error bar and molecules per unit cell. Needs gRASPA and a GPU here (binary_missing otherwise; use prepare_graspa)."
+    },
+    {
+      "name": "prepare_graspa",
+      "description": "Write a gRASPA run folder (framework CIF, force field, adsorbate, simulation.input with the unit cells, run.json) for one adsorbate at a temperature and pressure, without running it: for a GPU node elsewhere (a Slurm job that runs gRASPA in the folder with stdout saved to graspa_stdout.txt). Same settings as run_graspa."
+    },
+    {
+      "name": "read_graspa",
+      "description": "Read a finished gRASPA run folder (made by prepare_graspa or run_graspa, run here or on another machine): the uptake in mol/kg with its error bar, molecules per unit cell, mg/g, g/L and the Henry coefficient when gRASPA printed them. Writes result.json in the folder."
+    },
+    {
+      "name": "rank_frameworks",
+      "description": "Rank frameworks from gRASPA results (result.json files or folders holding them; one adsorbate): by uptake at the adsorption condition, or, with a desorption condition, by working capacity (uptake at adsorption minus at desorption). Repeats are averaged; a framework without a completed run at every requested condition is excluded with the reason. Writes ranking.csv; top_fraction selects the best share."
+    },
+    {
+      "name": "graspa_status",
+      "description": "Whether the gRASPA executable is available here, where it was found (GRASPA_COMMAND, CHEMGRAPH_GRASPA_EXECUTABLE or PATH), and how to get it."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "graspa://capabilities",
+      "name": "capabilities",
+      "description": "Describe what the graspa MCP server can do."
+    }
+  ],
+  "tags": [
+    "chemistry",
+    "adsorption",
+    "gcmc",
+    "mof",
+    "graspa"
+  ],
+  "scope": "scientific"
+}

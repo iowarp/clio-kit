@@ -30,7 +30,15 @@ runs:
       run: |
         git config --global url.https://github.com/.insteadOf git@github.com:
         cd mcp-servers/${{ inputs.mcp }}
-        uv sync --frozen --all-extras --dev --python "${{ inputs.python-version }}"
+        # Extras declared as conflicting under [tool.uv] cannot be installed together, so
+        # such a server (ase: MACE and UMA pin different e3nn) is checked without extras.
+        # Its calculators build their own environment per extra at run time.
+        if grep -q '^conflicts *=' pyproject.toml; then
+          echo "::notice::${{ inputs.mcp }} declares conflicting extras; syncing without extras"
+          uv sync --frozen --dev --python "${{ inputs.python-version }}"
+        else
+          uv sync --frozen --all-extras --dev --python "${{ inputs.python-version }}"
+        fi
         if [ -n "${{ inputs.dev-packages }}" ]; then
           uv pip install ${{ inputs.dev-packages }}
         fi

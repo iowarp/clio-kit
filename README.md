@@ -2,11 +2,16 @@
 
 <!-- mcp-name: io.github.iowarp/adios-mcp -->
 <!-- mcp-name: io.github.iowarp/arxiv-mcp -->
+<!-- mcp-name: io.github.iowarp/ase-mcp -->
+<!-- mcp-name: io.github.iowarp/avogadro-mcp -->
 <!-- mcp-name: io.github.iowarp/chronolog-mcp -->
 <!-- mcp-name: io.github.iowarp/compression-mcp -->
 <!-- mcp-name: io.github.iowarp/darshan-mcp -->
+<!-- mcp-name: io.github.iowarp/decimer-mcp -->
 <!-- mcp-name: io.github.iowarp/earthdata-mcp -->
+<!-- mcp-name: io.github.iowarp/fdmnes-mcp -->
 <!-- mcp-name: io.github.iowarp/geo-mcp -->
+<!-- mcp-name: io.github.iowarp/graspa-mcp -->
 <!-- mcp-name: io.github.iowarp/hdf5-mcp -->
 <!-- mcp-name: io.github.iowarp/home-assistant-mcp -->
 <!-- mcp-name: io.github.iowarp/jarvis-mcp -->
@@ -21,7 +26,9 @@
 <!-- mcp-name: io.github.iowarp/plot-mcp -->
 <!-- mcp-name: io.github.iowarp/ocean-mcp -->
 <!-- mcp-name: io.github.iowarp/seismology-mcp -->
+<!-- mcp-name: io.github.iowarp/pubchem-mcp -->
 <!-- mcp-name: io.github.iowarp/scientific-catalog-mcp -->
+<!-- mcp-name: io.github.iowarp/seismology-mcp -->
 <!-- mcp-name: io.github.iowarp/slicer-mcp -->
 <!-- mcp-name: io.github.iowarp/slurm-mcp -->
 <!-- mcp-name: io.github.iowarp/spack-mcp -->
@@ -179,7 +186,7 @@ uv tool install --force --reinstall --editable .
 # If uv's executable directory is not on PATH:
 uv tool update-shell
 
-# List all 31 available MCP servers
+# List all 37 available MCP servers
 clio-kit mcp-servers
 
 # Run an individual server
@@ -227,6 +234,7 @@ These are broad workflow plugins. Each combines its MCP servers and skills.
 | `clio-fabrication` | Slice a model for a 3D printer and check its layers | slicer |
 | `clio-electronics` | Simulate a circuit and plot its waveforms | spice |
 | `clio-home` | Read your home's sensors, control devices and write automations | home-assistant |
+| `clio-chemistry` | Find a compound, build structures, compute energies, spectra and adsorption | pubchem, decimer, ase, avogadro, fdmnes, graspa |
 | `clio-research` | Find papers, read them, and find datasets | arxiv, ndp, pdf, scientific-catalog, web |
 
 Some servers require additional system software. See [setup and prerequisites](setup.md#native-backend-setup).
@@ -471,11 +479,16 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 |:---|:---:|:---:|:---|:---|
 | **`adios`** | 2.3.2 | Data I/O | Read data using ADIOS2 engine | `clio-kit mcp-server adios` |
 | **`arxiv`** | 2.2.8 | Research | Fetch research papers from ArXiv | `clio-kit mcp-server arxiv` |
+| **`ase`** | 1.0.0 | Chemistry | Molecular energies, optimizations, vibrations, thermochemistry and IR with xTB, MACE, UMA, NWChem or ORCA | `clio-kit mcp-server ase` |
+| **`avogadro`** | 1.0.0 | Chemistry | Build and edit structures in Avogadro 2, streamed into a view; edits and selections come back as files | `clio-kit mcp-server avogadro` |
 | **`chronolog`** | 2.0.6 | Logging | Log and retrieve data from ChronoLog | `clio-kit mcp-server chronolog` |
 | **`compression`** | 2.2.8 | Utilities | File compression with gzip | `clio-kit mcp-server compression` |
 | **`darshan`** | 2.2.8 | Performance | I/O performance trace analysis | `clio-kit mcp-server darshan` |
+| **`decimer`** | 1.0.0 | Chemistry | Read a drawn chemical structure from an image as SMILES (DECIMER) | `clio-kit mcp-server decimer` |
 | **`earthdata`** | 1.0.0 | Earth Science | Search and download NASA Earthdata datasets (runs earthdata-mcp-server 0.6.0) | `clio-kit mcp-server earthdata` |
+| **`fdmnes`** | 1.0.0 | Spectroscopy | XANES spectra of crystals and molecules with FDMNES; normalize and compare spectra | `clio-kit mcp-server fdmnes` |
 | **`geo`** | 2.4.0 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
+| **`graspa`** | 1.0.0 | Chemistry | Gas adsorption uptake in MOFs and zeolites by GCMC with gRASPA; rank frameworks | `clio-kit mcp-server graspa` |
 | **`hdf5`** | 2.3.1 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
 | **`home-assistant`** | 1.0.0 | Home | Your Home Assistant's sensors, devices and automations (runs ha-mcp 9.2.0) | `clio-kit mcp-server home-assistant` |
 | **`jarvis`** | 3.7.7 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |
@@ -492,6 +505,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`weather`** | 1.0.0 | Weather & climate | Ensembles, heat waves, soundings, scores, ARs, cyclones, CMIP6, AI forecasts | `clio-kit mcp-server weather` |
 | **`grids`** | 1.0.0 | Modeling | Edit model bathymetry and land masks in an interactive editor; replayable edit logs | `clio-kit mcp-server grids` |
 | **`copernicus`** | 1.0.0 | Data access | Copernicus Marine and Climate Data Store search, subsets and downloads (runs copernicus-mcp 0.7.2) | `clio-kit mcp-server copernicus` |
+| **`pubchem`** | 1.0.0 | Chemistry | Resolve compound names in PubChem (candidates when ambiguous) and fetch 3D structures | `clio-kit mcp-server pubchem` |
 | **`seismology`** | 2.3.4 | Seismology | Analyze SAC waveforms and archives | `clio-kit mcp-server seismology` |
 | **`scientific-catalog`** | 1.1.7 | Discovery | Operator-owned scientific dataset discovery | `clio-kit mcp-server scientific-catalog` |
 | **`slicer`** | 1.0.0 | 3D Printing | Slice models with the installed PrusaSlicer or OrcaSlicer and view toolpaths layer by layer | `clio-kit mcp-server slicer` |

@@ -1,0 +1,9 @@
+{
+  "clio-decimer": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "decimer"
+    ]
+  }
+}
