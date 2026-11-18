@@ -32,6 +32,8 @@ EXPECTED_TOOLS = {
     "export_animation",
     "export_scene",
     "scene_state",
+    "watch_steps",
+    "measure_over_time",
 }
 
 

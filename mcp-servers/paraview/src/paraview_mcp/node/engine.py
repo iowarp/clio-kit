@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import copy
 import difflib
-import glob
 import os
 from collections.abc import Callable
 from pathlib import Path
@@ -24,6 +23,8 @@ from .errors import CommandError, _expand
 from .frames import FrameClock, volume_grids
 from .reading import SceneReading
 from .scripts import SceneScripts, forget_made
+from .sources import SourceGrowth
+from .sources import set_property as _set_property
 
 MUTATING = {
     "open_view",
@@ -37,7 +38,8 @@ MUTATING = {
     "run_scene_script",
 }
 READING = {"inspect_selection", "measure_field", "capture", "export_artifact"}
-READING |= {"export_scene", "scene_state", "export_animation"}
+READING |= {"export_scene", "scene_state", "export_animation", "steps"}
+READING |= {"measure_over_time"}
 
 
 REPRESENTATIONS = (
@@ -52,33 +54,6 @@ REPRESENTATIONS = (
 )
 
 
-def _set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
-    """Set ``key`` on a filter. ``"SliceType.Normal"`` (or ``{"SliceType": {...}}``)
-    reaches into the proxy a property holds, such as a Slice's plane."""
-    head, _, rest = key.partition(".")
-    names = proxy.ListProperties()
-    if head not in names:
-        close = difflib.get_close_matches(head, names, n=5)
-        raise CommandError(
-            "unknown_property",
-            f"{owner} has no property {head!r}."
-            + (f" Close matches: {', '.join(close)}." if close else "")
-            + f" Its properties are: {', '.join(names)}.",
-        )
-    if not rest and not isinstance(value, dict):
-        setattr(proxy, head, value)
-        return
-    inner = getattr(proxy, head)
-    if not hasattr(inner, "ListProperties"):
-        raise CommandError(
-            "unknown_property",
-            f"{owner}.{head} is a plain value, so {key!r} cannot be set; give {head} itself.",
-        )
-    settings = {rest: value} if rest else value
-    for name, part in settings.items():
-        _set_property(inner, f"{owner}.{head}", name, part)
-
-
 def _close_presets(name: str) -> str:
     from paraview import servermanager
 
@@ -88,11 +63,7 @@ def _close_presets(name: str) -> str:
     return f" Close matches: {', '.join(close)}." if close else ""
 
 
-def _is_pattern(path: str) -> bool:
-    return any(ch in path for ch in "*?[")
-
-
-class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation):
+class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceGrowth):
     """Holds the render view, the live scene and the proxies that show it."""
 
     def __init__(
@@ -118,6 +89,9 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation):
         self.scene: dict[str, Any] | None = None
         self.proxies: dict[str, Any] = {}
         self._growth: dict[str, Any] = {}
+        self._seen: dict[float, float] = {}
+        self._seen_scene: str | None = None
+        self.last_growth: float | None = None
         self.listeners: list[Callable[[str], None]] = []
         self.changes = ChangeLog()
 
@@ -204,28 +178,10 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation):
 
             colors.forget(servermanager, self.view)
 
-    def _files(self, item: dict[str, Any]) -> list[str] | str:
-        path = item["path"]
-        if not _is_pattern(path):
-            if not os.path.exists(path):
-                raise CommandError("not_found", f"There is no file at {path}.")
-            return path
-        files = sorted(glob.glob(path))
-        if not files:
-            raise CommandError("not_found", f"No file matches {path}.")
-        return files
-
     def _make(self, item: dict[str, Any]) -> Any:
         simple = self.simple
         if item["kind"] == "reader":
-            files = self._files(item)
-            proxy = simple.OpenDataFile(files)
-            if proxy is None:
-                raise CommandError(
-                    "no_reader", f"ParaView has no reader for {item['path']}."
-                )
-            self._growth[item["id"]] = self._growth_key(item)
-            return proxy
+            return self._make_reader(item)
         if item["kind"] == "session":
             proxy = simple.FindSource(item["label"])
             if proxy is None:
@@ -284,6 +240,10 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation):
                         f"ParaView has no colour preset {display['colormap']!r}."
                         + _close_presets(display["colormap"]),
                     )
+            if display.get("color_range"):
+                # A range set by hand holds through any later change to the display.
+                low, high = display["color_range"]
+                colors.set_range(simple, self.scene or {}, color_by, (low, high))
         elif rep.ColorArrayName.GetAssociation() not in (None, "NONE"):
             # A reader that colours nothing (a PDB's molecule) reports no association;
             # ParaView's ColorBy(None) cannot clear that, and there is nothing to clear.
@@ -356,48 +316,6 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation):
             "follow_latest": scene["time"]["follow_latest"],
             "newer_steps": len(steps) - 1 - index,
         }
-
-    def _growth_key(self, item: dict[str, Any]) -> Any:
-        path = item["path"]
-        if _is_pattern(path):
-            return tuple(sorted(glob.glob(path)))
-        try:
-            stat = os.stat(path)
-        except OSError:
-            return None
-        return (stat.st_size, stat.st_mtime_ns)
-
-    def check_growth(self) -> dict[str, Any] | None:
-        """Re-read the time list of growing sources; follow the latest step."""
-        scene = self.scene
-        if scene is None or not (scene.get("dataset") or {}).get("growing"):
-            return None
-        before = len(self.timesteps())
-        changed = False
-        for item in scene["objects"]:
-            if item["kind"] != "reader" or item["id"] not in self.proxies:
-                continue
-            key = self._growth_key(item)
-            if key == self._growth.get(item["id"]):
-                continue
-            self._growth[item["id"]] = key
-            changed = True
-            proxy = self.proxies[item["id"]]
-            files = self._files(item)
-            for name in ("FileNames", "FileName"):
-                if name in proxy.ListProperties():
-                    # Setting the same value is not a change; clear it first so
-                    # the reader re-reads its index (a .series file, say).
-                    setattr(proxy, name, [] if name == "FileNames" else "")
-                    setattr(proxy, name, files)
-                    break
-            proxy.UpdatePipelineInformation()
-        if not changed:
-            return None
-        self._apply_time(scene)
-        after = len(self.timesteps())
-        self.commit("growth")
-        return {"new_steps": after - before, **self.time_summary()}
 
     # -- camera and view mode -----------------------------------------------
     def geometry_mb(self) -> float:
@@ -496,6 +414,10 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation):
         scene: str | None = None,
         growing: bool = False,
         new: bool = False,
+        format: str | None = None,
+        reader: str | None = None,
+        reader_properties: dict[str, Any] | None = None,
+        descriptor: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         if scene is None and path is None and self.session:
             return self._open_session()
@@ -510,8 +432,17 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation):
             path = _expand(path)
         scene_id = scene or manifest.scene_id_for(path or "")
         if self.scene is not None and self.scene["scene"] == scene_id and not new:
+            self._update_dataset(self.scene, growing, descriptor)
             return self.summary()
         saved = None if new else manifest.read(self.root, scene_id)
+        if saved is not None and (reader or reader_properties):
+            # A saved scene read its data another way; the descriptor's reader wins.
+            known = saved.get("dataset") or {}
+            if (known.get("reader"), known.get("reader_properties")) != (
+                reader,
+                reader_properties or None,
+            ):
+                saved = None
         if saved is None and path is None:
             raise CommandError(
                 "unknown_scene",
@@ -520,12 +451,27 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation):
             )
         self._clear()
         if saved is not None:
+            self._update_dataset(saved, growing, descriptor)
             self.scene = saved
             self._build(saved)
             return self.summary(restored=True)
-        dataset = {"path": path, "growing": bool(growing)}
+        dataset: dict[str, Any] = {"path": path, "growing": bool(growing)}
+        reading: dict[str, Any] = {
+            "format": format,
+            "reader": reader,
+            "reader_properties": reader_properties or None,
+        }
+        dataset.update({k: v for k, v in reading.items() if v})
+        if descriptor:
+            dataset["descriptor"] = descriptor
         self.scene = manifest.new_scene(scene_id, dataset)
-        item = {"id": "o1", "kind": "reader", "path": path, "label": None}
+        item: dict[str, Any] = {
+            "id": "o1",
+            "kind": "reader",
+            "path": path,
+            "label": None,
+        }
+        item.update({k: v for k, v in reading.items() if v and k != "format"})
         self.scene["next_id"] = 2
         proxy = self._make(item)
         item["label"] = os.path.basename(path.rstrip("/")) if path else "data"
@@ -535,6 +481,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation):
         self._show(item, proxy, apply=False)
         self._apply_time(self.scene)
         self.view.ResetCamera(False)
+        self._first_view((descriptor or {}).get("display"))
         self.update_view_mode()
         return self.summary()
 
@@ -691,11 +638,14 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation):
                 )
             display["representation"] = representation
         if color_by is not None:
+            before = display.get("color_by")
             display["color_by"] = (
                 None
                 if color_by in ("", "none", "solid")
                 else [data.find_association(proxy, color_by), color_by]
             )
+            if display["color_by"] != before:
+                display["color_range"] = None
             if display["color_by"]:
                 display["solid_color"] = None
         if solid_color is not None:

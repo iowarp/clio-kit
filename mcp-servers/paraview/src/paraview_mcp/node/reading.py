@@ -12,6 +12,9 @@ from typing import Any
 from . import data, manifest
 from .errors import CommandError, _expand
 
+#: The most steps one measure_over_time returns; a longer run takes a stride.
+MAX_SERIES = 1000
+
 
 class SceneReading:
     """Mixed into the engine: selection, measurement, capture, export, state."""
@@ -38,6 +41,12 @@ class SceneReading:
     def _probe_visible(self, world: list[float]) -> dict[str, Any] | None:
         raise NotImplementedError
 
+    def timesteps(self) -> list[float]:
+        raise NotImplementedError
+
+    def _apply_time(self, scene: dict[str, Any]) -> None:
+        raise NotImplementedError
+
     def cmd_inspect_selection(
         self, position: list[float] | None = None
     ) -> dict[str, Any]:
@@ -54,13 +63,8 @@ class SceneReading:
         fresh = self._probe_visible(picked["world_position"])
         return {"selection": fresh, "source": "view"}
 
-    def cmd_measure_field(
-        self,
-        field: str,
-        object: str | None = None,
-        bins: int = 16,
-        component: int | None = None,
-    ) -> dict[str, Any]:
+    def _carrier(self, field: str, object: str | None) -> dict[str, Any]:
+        """The scene object to measure: ``object``, else the first that has ``field``."""
         scene = self.require_scene()
         item = manifest.find_object(scene, object) if object else None
         if object and item is None:
@@ -73,12 +77,63 @@ class SceneReading:
                 or field in self.proxies[o["id"]].CellData.keys()
             ]
             item = carrying[0] if carrying else scene["objects"][0]
+        return item
+
+    def cmd_measure_field(
+        self,
+        field: str,
+        object: str | None = None,
+        bins: int = 16,
+        component: int | None = None,
+    ) -> dict[str, Any]:
+        item = self._carrier(field, object)
         stats = data.measure(self.proxies[item["id"]], field, bins, component)
         return {
             "object": item["id"],
             "label": item.get("label"),
             "time": self.time_summary().get("time"),
             **stats,
+        }
+
+    def cmd_measure_over_time(
+        self,
+        field: str,
+        object: str | None = None,
+        component: int | None = None,
+        start: int | None = None,
+        end: int | None = None,
+        stride: int = 1,
+    ) -> dict[str, Any]:
+        """Statistics of ``field`` at each time step from ``start`` to ``end``. The view
+        stays on its own step: the time is moved only while measuring."""
+        scene = self.require_scene()
+        item = self._carrier(field, object)
+        proxy = self.proxies[item["id"]]
+        steps: list[float | None] = list(self.timesteps()) or [None]
+        last = len(steps) - 1
+        first = max(0, min(int(start or 0), last))
+        final = last if end is None else max(first, min(int(end), last))
+        picked = list(range(first, final + 1, max(1, int(stride))))[-MAX_SERIES:]
+        animation = self.simple.GetAnimationScene()
+        series = []
+        try:
+            for index in picked:
+                if steps[index] is not None:
+                    animation.AnimationTime = steps[index]
+                stats = data.measure(proxy, field, 1, component)
+                stats.pop("histogram", None)
+                series.append({"index": index, "time": steps[index], **stats})
+        finally:
+            self._apply_time(scene)
+        head = series[0] if series else {}
+        return {
+            "object": item["id"],
+            "label": item.get("label"),
+            "field": field,
+            "association": head.get("association"),
+            "component": head.get("component"),
+            "steps": len(steps) if steps != [None] else 0,
+            "series": series,
         }
 
     def _render_png(self, target: Path, width: int, height: int, **extra: Any) -> bytes:

@@ -8,21 +8,25 @@ every scene tool is passed to it as one command.
 
 from __future__ import annotations
 
+import asyncio
 import atexit
 import base64
 from importlib import resources
 from typing import Annotated, Any, Literal
 
-from fastmcp import FastMCP
+from fastmcp import Context, FastMCP
 from fastmcp.apps import AppConfig
 from fastmcp.exceptions import ToolError
 from fastmcp.tools import ToolResult
+from fastmcp.utilities.tasks import TaskConfig
+from fastmcp_tasks import TasksExtension
 from mcp.types import ImageContent, TextContent
 from pydantic import Field
 
-from . import present
+from . import follow, present
 from .attach import Attacher
 from .config import Target, from_environment
+from .descriptor import ViewDescriptor
 from .errors import ParaViewError
 from .link import LinkError
 
@@ -45,6 +49,8 @@ VIEW_STATE = [
         "key": "follow_latest",
         "description": "Whether the view follows the newest step.",
     },
+    {"key": "newer_steps", "description": "Steps newer than the shown one."},
+    {"key": "growing", "description": "Whether the source is still being written."},
     {
         "key": "selection",
         "description": "The point the person picked, with its values.",
@@ -64,10 +70,15 @@ mcp: FastMCP = FastMCP(
         "open_view opens a dataset (paths are on the machine where ParaView runs) "
         "and returns a scene id; keep it in later open_view calls to reopen the "
         "same scene. Read numbers with measure_field and inspect_selection, and "
-        "look with capture, before making a claim. Where ParaView runs is the "
-        "connector's setting, not a tool."
+        "look with capture, before making a claim. For a source still being written "
+        "(a running simulation), pass growing in open_view's view descriptor; the view "
+        "follows the newest step, and watch_steps reports each new step as it is "
+        "written. Where ParaView runs is the connector's setting, not a tool."
     ),
 )
+# Background tasks (the MCP tasks extension) for watch_steps; a client that does not
+# negotiate them calls every tool directly, as before.
+mcp.add_extension(TasksExtension())
 
 _attacher: Attacher | None = None
 
@@ -141,6 +152,38 @@ def _text(text: str) -> TextContent:
     return TextContent(type="text", text=text)
 
 
+def open_arguments(
+    path: str | None,
+    scene: str | None,
+    growing: bool,
+    new: bool,
+    view: ViewDescriptor | None,
+) -> dict[str, Any]:
+    """The node's open_view arguments, from the plain arguments and a view descriptor."""
+    args: dict[str, Any] = {
+        "path": path,
+        "scene": scene,
+        "growing": growing,
+        "new": new,
+    }
+    if view is None:
+        return args
+    if path is not None and path != view.path:
+        raise ToolError(
+            f"open_view got path {path} and a view descriptor for {view.path}; give "
+            "one of them. [bad_arguments]"
+        )
+    args.update(
+        path=view.path,
+        growing=growing or view.growing,
+        format=view.format,
+        reader=view.reader,
+        reader_properties=view.reader_properties or None,
+        descriptor=view.extras(),
+    )
+    return args
+
+
 @mcp.tool(
     app=AppConfig(resource_uri=VIEW_URI),
     annotations={"title": "Open a ParaView view", "openWorldHint": True},
@@ -164,14 +207,23 @@ def open_view(
     new: Annotated[
         bool, Field(description="Start a fresh scene even if one is saved.")
     ] = False,
+    view: Annotated[
+        ViewDescriptor | None,
+        Field(
+            description="A view descriptor: the path or pattern, the format, the "
+            "ParaView reader and its properties, and whether the source is still "
+            "being written. Use it instead of path when a run reported one."
+        ),
+    ] = None,
 ) -> ToolResult:
     """Open a dataset or restore a saved scene, and show it in a live ParaView view.
 
     With neither path nor scene, it shows the ParaView session already running
-    where ParaView is, or the current scene.
+    where ParaView is, or the current scene. A growing source is followed: the view
+    moves to each new step unless the person has parked it on one.
     """
     summary, link = command(
-        "open_view", {"path": path, "scene": scene, "growing": growing, "new": new}
+        "open_view", open_arguments(path, scene, growing, new, view)
     )
     text = present.scene_text(summary, _where())
     return ToolResult(
@@ -226,6 +278,57 @@ def set_timestep(
         "set_timestep", {"index": index, "time": time, "latest": latest}
     )
     return present.time_line(result["time"])
+
+
+@mcp.tool(
+    task=TaskConfig(mode="optional"),
+    annotations={"title": "Watch new time steps", "readOnlyHint": True},
+)
+async def watch_steps(
+    ctx: Context,
+    idle_seconds: Annotated[
+        float,
+        Field(ge=5, le=86400, description="Stop after this long with no new step."),
+    ] = 300.0,
+    max_seconds: Annotated[
+        float | None,
+        Field(ge=1, le=604800, description="Stop after this long in any case."),
+    ] = None,
+    after: Annotated[
+        int | None,
+        Field(
+            ge=0,
+            description="Report steps from this index on; default: the steps written "
+            "from now.",
+        ),
+    ] = None,
+) -> ToolResult:
+    """Report each new time step of the open scene's growing source as it is written,
+    as progress: run as a background task, each step is the task's status; called
+    directly, each step is a progress notification and the call lasts until it ends,
+    so give max_seconds. Progress counts the steps written, against the view
+    descriptor's expected_steps when it gives them. It ends once those are written,
+    when no step comes for idle_seconds, after max_seconds, or when the source is
+    not growing, and returns every step it saw. The view follows the newest step
+    unless the person parked it."""
+
+    async def fetch(index: int) -> dict[str, Any]:
+        result, _ = await asyncio.to_thread(command, "steps", {"after": index})
+        return result
+
+    async def report(written: int, expected: int | None, message: str) -> None:
+        await ctx.report_progress(written, expected, message)
+
+    outcome = await follow.watch(
+        fetch,
+        report,
+        after=after,
+        idle_seconds=idle_seconds,
+        max_seconds=max_seconds,
+    )
+    return ToolResult(
+        content=[_text(follow.watch_text(outcome))], structured_content=outcome
+    )
 
 
 @mcp.tool(annotations={"title": "Move the camera"})
@@ -310,6 +413,38 @@ def measure_field(
     )
     return ToolResult(
         content=[_text(present.measure_text(result))], structured_content=result
+    )
+
+
+@mcp.tool(annotations={"title": "Measure a field over time", "readOnlyHint": True})
+def measure_over_time(
+    field: Annotated[str, Field(description="Field (array) name.")],
+    object: Annotated[
+        str | None, Field(description="Scene object id or label; default: the dataset.")
+    ] = None,
+    component: Annotated[
+        int | None, Field(description="Vector component; default: magnitude.")
+    ] = None,
+    start: Annotated[int | None, Field(ge=0, description="First step index.")] = None,
+    end: Annotated[int | None, Field(ge=0, description="Last step index.")] = None,
+    stride: Annotated[int, Field(ge=1, description="Measure every nth step.")] = 1,
+) -> ToolResult:
+    """Exact statistics (min, max, mean, std, median) of a field at each time step: the
+    series to plot or compare over a run. The view stays on its step."""
+    result, _ = command(
+        "measure_over_time",
+        {
+            "field": field,
+            "object": object,
+            "component": component,
+            "start": start,
+            "end": end,
+            "stride": stride,
+        },
+        timeout=3600.0,
+    )
+    return ToolResult(
+        content=[_text(present.series_text(result))], structured_content=result
     )
 
 

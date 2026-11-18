@@ -74,11 +74,13 @@ Building a scene is free; managing its view is tooled
 
 | Tool | What it does |
 | --- | --- |
-| `open_view` | Opens a dataset (a glob opens a file series; `growing` follows one still being written), or restores a scene by id, and returns the live view |
+| `open_view` | Opens a dataset (a glob opens a file series; `growing` follows one still being written), or a view descriptor (`view`), or restores a scene by id, and returns the live view |
 | `run_scene_script` | Builds or changes the scene with `paraview.simple` code run inside it: readers (a second dataset too), filters, colours. It is saved with the scene and replayed on restore |
 | `set_timestep` | Moves in time or follows the latest step |
+| `watch_steps` | Watches a growing source: reports each new step as progress and ends when the run stops or reaches its expected steps (an MCP task where the host supports them) |
 | `set_camera`, `fit_camera` | Move the camera |
 | `inspect_selection`, `measure_field` | Exact values: what the person picked, a field's statistics and histogram |
+| `measure_over_time` | A field's statistics at each time step, the series to plot over a run |
 | `capture` | A PNG rendered by ParaView at the camera the view last reported |
 | `export_artifact`, `export_animation`, `export_scene` | A figure; a video of the time steps as the view shows them (MP4 with ffmpeg, else OGG); or the scene manifest and a ParaView state file |
 | `scene_state` | Where it is attached, the dataset, the pipeline, time and view |
@@ -87,6 +89,24 @@ Each tool is one command, applied whole: it commits or it rolls back. A failing
 scene script leaves nothing behind. Paths are paths on the machine where
 ParaView runs. There is no connect tool: where ParaView runs is the connector's
 setting.
+
+## A source that grows
+
+A solver still writing its output (an ADIOS2 BP read with `ADIOS2VTXReader`, or a
+file series) opens with `growing`. A view descriptor says the same in one object,
+`clio.view-descriptor.v1` ([schema](src/paraview_mcp/schemas/view-descriptor.v1.json)):
+the path and reader, `follow` (how often to look and how many steps the run will
+write) and `display` (the first view: a slice or contour, coloured by an array over
+a fixed range with a colour map). A display part ParaView cannot show is left out
+and named in the dataset's note; the open stands.
+
+The server re-reads the reader's time list as the source grows. A view that
+follows the latest step moves to each new one; a view the person or agent moved
+to an earlier step stays there and says how many newer steps exist, until it
+follows again (`set_timestep` with `latest`). Each step reaches the view's model
+context, and `watch_steps` reports it as task progress, "Step k of N", so any MCP
+host can show a run advancing. When the run ends, `measure_over_time` gives the
+statistics of a field at every step.
 
 ## The view
 

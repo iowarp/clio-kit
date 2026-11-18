@@ -304,6 +304,247 @@ def _wait_steps(client, steps: int) -> dict:
     raise AssertionError(f"the series never reached {steps} steps")
 
 
+def test_a_view_descriptor_names_the_reader_and_steps_report_growth(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """RL44: the descriptor's reader reads a growing series; ``steps`` re-reads its
+    time list at once, and a field is measured at every step afterwards."""
+    attacher, data = attached
+    client = attacher.ensure().client
+    series = data / "described"
+    series.mkdir()
+    for step in range(2):
+        write_vti(series / f"out_{step:03d}.vti", shift=step)
+    pattern = str(series / "out_*.vti")
+    with pytest.raises(ParaViewError) as caught:
+        client.command(
+            "open_view",
+            {"path": pattern, "reader": "XMLImageDataRaeder", "new": True},
+        )
+    assert caught.value.code == "unknown_reader"
+    assert "XMLImageDataReader" in str(caught.value)
+    opened = client.command(
+        "open_view",
+        {
+            "path": pattern,
+            "growing": True,
+            "new": True,
+            "format": "vti",
+            "reader": "XMLImageDataReader",
+            "reader_properties": {"PointArrayStatus": ["p"]},
+        },
+    )
+    assert opened["dataset"]["reader"] == "XMLImageDataReader"
+    assert opened["dataset"]["format"] == "vti"
+    assert opened["time"]["steps"] == 2
+    first = client.command("steps", {"after": 0})
+    assert [s["index"] for s in first["steps"]] == [0, 1]
+    assert all(s["seen"] for s in first["steps"]) and first["growing"]
+    write_vti(series / "out_002.vti", shift=2)
+    grown = client.command("steps", {"after": 2})
+    assert [s["index"] for s in grown["steps"]] == [2]
+    assert grown["time"]["index"] == 2 and grown["time"]["follow_latest"]
+    assert grown["last_growth"] is not None
+    client.command("set_timestep", {"index": 0})
+    write_vti(series / "out_003.vti", shift=3)
+    parked = client.command("steps", {"after": 3})
+    assert [s["index"] for s in parked["steps"]] == [3]
+    assert parked["time"]["index"] == 0 and parked["time"]["newer_steps"] == 3
+    measured = client.command("measure_over_time", {"field": "p"})
+    means = [round(row["mean"], 3) for row in measured["series"]]
+    assert means == [10.5, 11.5, 12.5, 13.5]
+    assert [row["index"] for row in measured["series"]] == [0, 1, 2, 3]
+    assert client.command("scene_state", {})["time"]["index"] == 0
+    strided = client.command(
+        "measure_over_time", {"field": "p", "start": 1, "stride": 2}
+    )
+    assert strided["series"] and [row["index"] for row in strided["series"]] == [1, 3]
+
+
+def test_a_descriptor_display_gives_the_first_view(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """The display part of a view descriptor: a slice of the data, coloured by its
+    array over a fixed range, with the data itself as an outline."""
+    attacher, data = attached
+    client = attacher.ensure().client
+    write_vti(data / "shown.vti")
+    opened = client.command(
+        "open_view",
+        {
+            "path": str(data / "shown.vti"),
+            "new": True,
+            "descriptor": {
+                "name": "pressure",
+                "display": {
+                    "array": "p",
+                    "association": "POINTS",
+                    "representation": "Slice",
+                    "slice_normal": [0, 0, 1],
+                    "color_map": "Viridis (matplotlib)",
+                    "range": [0, 30],
+                },
+            },
+        },
+    )
+    objects = opened["objects"]
+    assert [o["id"] for o in objects] == ["o1", "o2"]
+    assert objects[0]["display"]["representation"] == "Outline"
+    assert objects[1]["display"]["color_by"] == ["POINTS", "p"]
+    assert objects[1]["display"]["color_range"] == [0.0, 30.0]
+    # ParaView 6 names the preset without its "(matplotlib)" qualifier.
+    assert objects[1]["display"]["colormap"] == "Viridis"
+    assert objects[1]["data"]["arrays"][0]["range"] == [3.5, 17.5]
+    assert opened["dataset"]["descriptor"]["name"] == "pressure"
+    assert "display_note" not in opened["dataset"]
+    write_vti(data / "unknown_map.vti")
+    partly = client.command(
+        "open_view",
+        {
+            "path": str(data / "unknown_map.vti"),
+            "new": True,
+            "descriptor": {
+                "display": {"array": "p", "color_map": "No Such Map", "range": [1, 2]}
+            },
+        },
+    )
+    # The rest of the display holds; the unknown preset is left out and said so.
+    assert partly["objects"][0]["display"]["color_range"] == [1.0, 2.0]
+    assert not partly["objects"][0]["display"]["colormap"]
+    assert "No Such Map" in partly["dataset"]["display_note"]
+
+
+def test_a_followed_source_grows_free_colour_maps_and_keeps_fixed_ones(
+    attached: tuple[Attacher, Path],
+) -> None:
+    _, data = attached
+    report = _pvpython_script(
+        "growth_colour_check.py", str(data / "growth"), prefix="GROWTH="
+    )
+    assert report["new_steps"] >= 1
+    low, high = report["before"]["free"]
+    assert report["after"]["free"][0] == low
+    assert report["after"]["free"][1] > 1.5 * high
+    assert report["before"]["fixed"] == report["after"]["fixed"] == [0.0, 100.0]
+
+
+BP_WRITER = '''
+import os, sys, time
+import numpy as np
+import adios2
+
+path, steps, ready = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+n = 8
+xml = f"""<?xml version="1.0"?>
+<VTKFile type="ImageData" version="0.1" byte_order="LittleEndian">
+  <ImageData WholeExtent="0 {n-1} 0 {n-1} 0 {n-1}" Origin="0 0 0" Spacing="1 1 1">
+    <Piece Extent="0 {n-1} 0 {n-1} 0 {n-1}">
+      <PointData Scalars="p">
+        <DataArray Name="p" />
+        <DataArray Name="TIME">time</DataArray>
+      </PointData>
+    </Piece>
+  </ImageData>
+</VTKFile>"""
+z, y, x = np.meshgrid(np.arange(n), np.arange(n), np.arange(n), indexing="ij")
+with adios2.Stream(path, "w") as s:
+    for step in range(steps):
+        while step >= ready and not os.path.exists(f"{path}.go{step}"):
+            time.sleep(0.1)
+        s.begin_step()
+        if step == 0:
+            s.write_attribute("vtk.xml", xml)
+        p = (x + y + z + step).astype(np.float64)
+        s.write("p", p, list(p.shape), [0, 0, 0], list(p.shape))
+        s.write("time", np.array([0.5 * step]))
+        s.end_step()
+        print("wrote", step, flush=True)
+'''
+
+
+@pytest.mark.skipif(
+    not os.environ.get("PARAVIEW_TEST_ADIOS2_PYTHON"),
+    reason="set PARAVIEW_TEST_ADIOS2_PYTHON to a Python with adios2 and numpy",
+)
+def test_a_growing_adios2_bp_output_is_followed_then_parked(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """RL44 against the solvers' format: an ADIOS2 BP5 output, read by
+    ADIOS2VTXReader through its ``vtk.xml`` attribute, gains steps while a writer
+    holds it open. The view and a slice of it follow; a parked view stays put."""
+    import subprocess
+
+    attacher, data = attached
+    client = attacher.ensure().client
+    bp = data / "run.bp"
+    script = data / "bp_writer.py"
+    script.write_text(BP_WRITER)
+    env = {k: v for k, v in os.environ.items() if k != "LD_LIBRARY_PATH"}
+    writer = subprocess.Popen(
+        [os.environ["PARAVIEW_TEST_ADIOS2_PYTHON"], str(script), str(bp), "4", "2"],
+        stdout=subprocess.PIPE,
+        text=True,
+        env=env,
+    )
+
+    def written(step: int) -> None:
+        assert writer.stdout is not None
+        while True:
+            line = writer.stdout.readline()
+            assert line, f"the writer stopped before step {step}"
+            if line.strip() == f"wrote {step}":
+                return
+
+    try:
+        written(1)
+        opened = client.command(
+            "open_view",
+            {
+                "path": str(bp),
+                "new": True,
+                "growing": True,
+                "format": "adios2-bp5",
+                "reader": "ADIOS2VTXReader",
+                "descriptor": {
+                    "path_kind": "directory",
+                    "follow": {"signal": "reader-time-steps", "expected_steps": 4},
+                    "display": {
+                        "array": "p",
+                        "representation": "Slice",
+                        "slice_normal": [0, 0, 1],
+                        "range": [0, 30],
+                    },
+                },
+            },
+        )
+        assert opened["dataset"]["reader"] == "ADIOS2VTXReader"
+        assert opened["time"]["steps"] == 2
+        assert [o["id"] for o in opened["objects"]] == ["o1", "o2"]
+        Path(f"{bp}.go2").touch()
+        written(2)
+        grown = client.command("steps", {"after": 2})
+        assert [s["index"] for s in grown["steps"]] == [2]
+        assert grown["follow"]["expected_steps"] == 4
+        assert grown["time"]["index"] == 2 and grown["time"]["follow_latest"]
+        state = client.command("scene_state", {})
+        # The slice moved with the view: p = x + y + z + 2 on the plane z = 3.5.
+        assert state["objects"][1]["data"]["arrays"][0]["range"] == [5.5, 19.5]
+        client.command("set_timestep", {"index": 0})
+        Path(f"{bp}.go3").touch()
+        written(3)
+        parked = client.command("steps", {"after": 3})
+        assert [s["index"] for s in parked["steps"]] == [3]
+        assert parked["time"]["index"] == 0 and parked["time"]["newer_steps"] == 3
+        assert writer.wait(timeout=60) == 0
+        measured = client.command("measure_over_time", {"field": "p"})
+        means = [round(row["mean"], 3) for row in measured["series"]]
+        assert means == [10.5, 11.5, 12.5, 13.5]
+        assert client.command("scene_state", {})["time"]["index"] == 0
+    finally:
+        writer.kill()
+        writer.wait()
+
+
 def test_a_colour_range_set_by_hand_holds_and_is_restored(
     attached: tuple[Attacher, Path],
 ) -> None:
@@ -338,6 +579,7 @@ def test_a_colour_range_set_by_hand_holds_and_is_restored(
     assert ranges == {
         "color": [100.0, 200.0],
         "opacity": [100.0, 200.0],
+        "kept": [100.0, 200.0],
         "solid": [1.0, 0.5, 0.0],
         "solid_coloured_by": "",
     }

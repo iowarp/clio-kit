@@ -133,6 +133,8 @@ def scene_text(summary: dict[str, Any], where: str) -> str:
     lines.append(f"Scene {summary['scene']} {where}{restored}: {source}.")
     if dataset.get("growing"):
         lines.append("The source is marked as still growing; new steps are picked up.")
+    if dataset.get("display_note"):
+        lines.append(dataset["display_note"])
     lines.append("Objects:")
     for item in summary.get("objects") or []:
         lines.append(f"- {object_line(item)}")
@@ -185,6 +187,40 @@ def measure_text(result: dict[str, Any]) -> str:
         f"{_num(result['mean'])}, median {_num(result['median'])}, std "
         f"{_num(result['std'])}.\nHistogram: {bins}."
     )
+
+
+#: Lines of a series written out in text; the structured result has every step.
+SERIES_LINES = 40
+
+
+def series_text(result: dict[str, Any]) -> str:
+    """A field's statistics at each time step."""
+    series = result.get("series") or []
+    head = (
+        f"{result['field']} ({str(result.get('association') or '?').lower()}, "
+        f"{result.get('component')}) on {result['object']} {result.get('label') or ''}"
+    ).strip()
+    if not series:
+        return f"{head}: no step was measured."
+    lines = [f"{head}, over {len(series)} of {result.get('steps', 0)} step(s):"]
+    every = max(1, -(-len(series) // SERIES_LINES))
+    shown = series[::every]
+    for row in shown:
+        where = f"step {row['index'] + 1}" + (
+            f" (time {_num(row['time'])})" if row.get("time") is not None else ""
+        )
+        if "min" not in row:
+            lines.append(f"- {where}: {row.get('message', 'no values')}")
+            continue
+        lines.append(
+            f"- {where}: min {_num(row['min'])}, max {_num(row['max'])}, mean "
+            f"{_num(row['mean'])}, std {_num(row['std'])}"
+        )
+    if every > 1:
+        lines.append(
+            f"Every {every}th step is written here; the structured result has all of them."
+        )
+    return "\n".join(lines)
 
 
 def changes_lines(changes: list[dict[str, Any]]) -> list[str]:

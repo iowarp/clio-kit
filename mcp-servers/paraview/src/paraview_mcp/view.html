@@ -119,6 +119,7 @@
       else line += ', parked by the person; ' + t.newer_steps + ' newer step(s) exist, latest time ' + t.latest_time + '.';
       parts.push(line);
     }
+    if (state.growing) parts.push('The source is still being written; new steps are read as they appear.');
     const pipeline = state.pipeline || state.representation || [];
     if (pipeline.length) {
       parts.push('Pipeline: ' + pipeline.map(objectText).join('; ') + '.');
@@ -177,6 +178,7 @@
       latest_time: t.latest_time === undefined ? null : t.latest_time,
       newer_steps: t.newer_steps || 0,
       follow_latest: t.follow_latest !== false,
+      growing: !!state.growing,
       selection: state.selection,
       representation: state.representation,
       pipeline: state.pipeline || [],

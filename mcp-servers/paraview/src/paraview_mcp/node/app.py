@@ -362,6 +362,7 @@ class NodeApp:
         return {
             "scene": scene["scene"],
             "dataset": (scene.get("dataset") or {}).get("path"),
+            "growing": bool((scene.get("dataset") or {}).get("growing")),
             "time": self.engine.time_summary(),
             "selection": None
             if not selection
