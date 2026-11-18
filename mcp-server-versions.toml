@@ -243,6 +243,15 @@ environment = ["HOMEASSISTANT_URL", "HOMEASSISTANT_TOKEN"]
 [prerequisites.spice]
 note = "Needs ngspice or LTspice installed on this machine; ltspice-mcp finds it and never downloads one."
 
+[prerequisites.copernicus]
+note = "Runs copernicus-mcp 0.7.2 as published. Copernicus Marine needs a free account (COPERNICUSMARINE_SERVICE_USERNAME, COPERNICUSMARINE_SERVICE_PASSWORD); Climate Data Store tools appear once CDSAPI_KEY is set."
+
+[prerequisites.ocean]
+note = "Marine heatwave and eddy tracking build separate worker environments with uv on first use (marEx, AGPL-3.0-or-later; py-eddy-tracker, GPL-3.0, on Python 3.10)."
+
+[prerequisites.weather]
+executable-environment = ["TEMPESTEXTREMES_BIN"]
+note = "Object and cyclone tracking need TempestExtremes built from source (TEMPESTEXTREMES_BIN); AI forecasts build a large Earth2Studio environment on first use and need a CUDA GPU unless allow_cpu."
 [prerequisites.avogadro]
 executables = ["Xvfb", "x11vnc"]
 executable-environment = ["AVOGADRO_COMMAND"]
@@ -258,16 +267,6 @@ note = "run_graspa needs gRASPA on a GPU node (spack install graspa +cuda or +ro
 
 [prerequisites.decimer]
 note = "The first image_to_smiles downloads the DECIMER model weights (about 285 MiB)."
-
-[prerequisites.copernicus]
-note = "Runs copernicus-mcp 0.7.2 as published. Copernicus Marine needs a free account (COPERNICUSMARINE_SERVICE_USERNAME, COPERNICUSMARINE_SERVICE_PASSWORD); Climate Data Store tools appear once CDSAPI_KEY is set."
-
-[prerequisites.ocean]
-note = "Marine heatwave and eddy tracking build separate worker environments with uv on first use (marEx, AGPL-3.0-or-later; py-eddy-tracker, GPL-3.0, on Python 3.10)."
-
-[prerequisites.weather]
-executable-environment = ["TEMPESTEXTREMES_BIN"]
-note = "Object and cyclone tracking need TempestExtremes built from source (TEMPESTEXTREMES_BIN); AI forecasts build a large Earth2Studio environment on first use and need a CUDA GPU unless allow_cpu."
 
 [prerequisites.chronolog]
 note = "Scientific backend requires a workflow check; a handshake alone is insufficient."

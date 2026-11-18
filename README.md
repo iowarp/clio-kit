@@ -26,8 +26,8 @@
 <!-- mcp-name: io.github.iowarp/parquet-mcp -->
 <!-- mcp-name: io.github.iowarp/pdf-mcp -->
 <!-- mcp-name: io.github.iowarp/plot-mcp -->
-<!-- mcp-name: io.github.iowarp/pubchem-mcp -->
 <!-- mcp-name: io.github.iowarp/ocean-mcp -->
+<!-- mcp-name: io.github.iowarp/pubchem-mcp -->
 <!-- mcp-name: io.github.iowarp/scientific-catalog-mcp -->
 <!-- mcp-name: io.github.iowarp/seismology-mcp -->
 <!-- mcp-name: io.github.iowarp/slicer-mcp -->
@@ -504,11 +504,11 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`parquet`** | 2.3.1 | Data I/O | Read Parquet file columns | `clio-kit mcp-server parquet` |
 | **`pdf`** | 1.0.0 | Research | Read papers in an interactive PDF viewer (runs the MCP Apps PDF server 2.0.4) | `clio-kit mcp-server pdf` |
 | **`plot`** | 2.2.8 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |
-| **`pubchem`** | 1.0.0 | Chemistry | Resolve compound names in PubChem (candidates when ambiguous) and fetch 3D structures | `clio-kit mcp-server pubchem` |
 | **`ocean`** | 1.0.0 | Oceanography | CTD, Argo, gliders, TEOS-10, sections, tides, eddies, heatwaves, MOM6 checks | `clio-kit mcp-server ocean` |
 | **`weather`** | 1.0.0 | Weather & climate | Ensembles, heat waves, soundings, scores, ARs, cyclones, CMIP6, AI forecasts | `clio-kit mcp-server weather` |
 | **`grids`** | 1.0.0 | Modeling | Edit model bathymetry and land masks in an interactive editor; replayable edit logs | `clio-kit mcp-server grids` |
 | **`copernicus`** | 1.0.0 | Data access | Copernicus Marine and Climate Data Store search, subsets and downloads (runs copernicus-mcp 0.7.2) | `clio-kit mcp-server copernicus` |
+| **`pubchem`** | 1.0.0 | Chemistry | Resolve compound names in PubChem (candidates when ambiguous) and fetch 3D structures | `clio-kit mcp-server pubchem` |
 | **`seismology`** | 2.3.4 | Seismology | Analyze SAC waveforms and archives | `clio-kit mcp-server seismology` |
 | **`scientific-catalog`** | 1.1.7 | Discovery | Operator-owned scientific dataset discovery | `clio-kit mcp-server scientific-catalog` |
 | **`slicer`** | 1.0.0 | 3D Printing | Slice models with the installed PrusaSlicer or OrcaSlicer and view toolpaths layer by layer | `clio-kit mcp-server slicer` |
