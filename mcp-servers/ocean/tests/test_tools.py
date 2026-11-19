@@ -376,3 +376,25 @@ async def test_a_section_shows_where_its_casts_were_taken(tmp_path: Path) -> Non
         table = pd.read_parquet(stations["path"])
         assert list(table["profile"]) == ["p1", "p2"]
         assert table["latitude"].notna().all()
+
+
+def test_track_paths_say_where_each_track_began_and_drifted() -> None:
+    from ocean_mcp.tools_altimetry import track_paths
+
+    tracks = pd.DataFrame(
+        {
+            "track": ["A1"] * 3 + ["C2"] * 2,
+            "polarity": ["anticyclonic"] * 3 + ["cyclonic"] * 2,
+            "time": pd.to_datetime(
+                ["2026-07-01", "2026-07-20", "2026-08-09", "2026-07-01", "2026-07-11"]
+            ),
+            "longitude": [-87.6, -88.2, -88.9, -85.0, -85.0],
+            "latitude": [26.4, 26.8, 27.1, 24.6, 24.0],
+        }
+    )
+    rows = track_paths(tracks)
+    assert [row["track"] for row in rows] == ["A1", "C2"]  # longest first
+    first = rows[0]
+    assert first["start"] == "2026-07-01" and first["days"] == 40
+    assert first["start_position"] == [-87.6, 26.4]
+    assert first["drift_east_km"] < -100 < 0 < first["drift_north_km"]
