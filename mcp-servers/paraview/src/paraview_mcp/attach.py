@@ -111,6 +111,30 @@ PYINFO = (
     "'libc':list(platform.libc_ver())}))"
 )
 
+GL_PROBE = (
+    "from paraview.simple import *\n"
+    "v=CreateRenderView();Show(Sphere(),v);Render(v)\n"
+    "print('CLIO_GL='+('ok' if v.GetRenderWindow().SupportsOpenGL() else 'no'))"
+)
+
+
+def gl_probe_script(pvpython: str) -> str:
+    """Shell lines that report whether offscreen rendering works natively.
+
+    Login and compute nodes often have no X server, EGL or system OSMesa. The
+    Kitware binaries ship their own OSMesa behind the launcher's ``--mesa``
+    switch, so the probe tries that when native rendering fails.
+    """
+    pv = shlex.quote(pvpython)
+    probe = shlex.quote(GL_PROBE)
+    return (
+        f"if {pv} --force-offscreen-rendering -c {probe} 2>/dev/null "
+        "| grep -q '^CLIO_GL=ok'; then echo CLIO_GLMODE=native\n"
+        f"elif {pv} --mesa --force-offscreen-rendering -c {probe} 2>/dev/null "
+        "| grep -q '^CLIO_GL=ok'; then echo CLIO_GLMODE=mesa\n"
+        "else echo CLIO_GLMODE=none; fi"
+    )
+
 
 def platform_tags(info: dict[str, Any]) -> tuple[list[str], str]:
     """pip ``--platform`` values and the uv ``--python-platform`` for pvpython."""
@@ -284,6 +308,11 @@ class Attacher:
         env = json.loads(marks["ENV"]) if marks.get("ENV") else None
         if env is None or env.get("pvpython") != pvpython:
             env = self._interrogate(transport, pvpython)
+        if "gl_args" not in env:
+            env["gl_args"] = self._gl_args(transport, pvpython)
+            if env.get("built"):
+                self._write_env(transport, folder, env)
+        gl_args = [str(a) for a in env.get("gl_args") or []]
         built_from = None
         if not env.get("built"):
             built_from = self._build(transport, folder, env, pvpython)
@@ -295,13 +324,16 @@ class Attacher:
         if uploaded:
             self._upload(transport, folder, bundle)
         node = json.loads(marks["NODE"]) if marks.get("NODE") else None
+        # The rendering switch rides on the node's hash, so a node half started
+        # without it is replaced rather than reused.
+        node_hash = "+".join([code_hash, *(a.lstrip("-") for a in gl_args)])
         link = None
-        if node is not None and self._matches(node, code_hash):
+        if node is not None and self._matches(node, node_hash):
             link = self._try_link(transport, folder, node, pvpython, env)
         if link is None:
             if node is not None:
                 self._stop_node(transport, folder, node)
-            node = self._start_node(transport, folder, pvpython, code_hash)
+            node = self._start_node(transport, folder, pvpython, node_hash, gl_args)
             link = self._try_link(transport, folder, node, pvpython, env)
         if link is None:
             raise ParaViewError(
@@ -354,6 +386,12 @@ class Attacher:
             )
         info = json.loads(marks["PYINFO"])
         return {"pvpython": pvpython, "paraview": number, "pyinfo": info}
+
+    def _gl_args(self, transport: Transport, pvpython: str) -> list[str]:
+        """Launcher switches pvpython needs to render offscreen on this host."""
+        done = transport.run(gl_probe_script(pvpython), timeout=300)
+        mode = parse_markers(done.stdout).get("GLMODE")
+        return ["--mesa"] if mode == "mesa" else []
 
     def _build(
         self, transport: Transport, folder: str, env: dict[str, Any], pvpython: str
@@ -437,11 +475,17 @@ class Attacher:
         transport.run(script + "exit 0", timeout=60)
 
     def _start_node(
-        self, transport: Transport, folder: str, pvpython: str, code_hash: str
+        self,
+        transport: Transport,
+        folder: str,
+        pvpython: str,
+        code_hash: str,
+        gl_args: list[str] | None = None,
     ) -> dict[str, Any]:
         settings = self.settings
         f = shlex.quote(folder)
         args = [
+            *(gl_args or []),
             "--dr",
             "--force-offscreen-rendering",
             f"{folder}/code/run_node.py",
