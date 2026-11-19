@@ -61,6 +61,10 @@ which a host that confines the servers it launches lets them write):
   binaries ship. A `prepare` line that brings its own GL libraries is probed
   on its own.
 - `node.json`: the running node half's port and token, readable only by you.
+  A node half answers only inside its own network namespace. When a host runs
+  each server in its own sandbox and another sandbox's node half still holds
+  the folder, the front leaves it alone and runs its own as
+  `node-<namespace>.json`.
 - `scenes/<id>/manifest.json`: each scene, written after every committed
   command.
 

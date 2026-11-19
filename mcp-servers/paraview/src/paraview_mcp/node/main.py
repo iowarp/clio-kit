@@ -7,6 +7,8 @@ Run by the front as::
 It writes ``<folder>/node.json`` (mode 0600) with its pid, port and token once
 the port is listening, keeps its scene when the link drops, and shuts down
 after ``--idle-seconds`` with no link, writing the scene manifest first.
+``--name`` picks another record and lock name, for a second node half in a
+network namespace that cannot reach the first one.
 """
 
 from __future__ import annotations
@@ -39,10 +41,19 @@ def write_private(path: Path, payload: dict[str, Any]) -> None:
     os.replace(temporary, path)
 
 
-def _lock(root: Path) -> Any:
+def network_namespace() -> str:
+    """This process's network namespace id on Linux, else empty."""
+    try:
+        link = os.readlink("/proc/self/ns/net")
+    except OSError:
+        return ""
+    return "".join(ch for ch in link if ch.isdigit())
+
+
+def _lock(root: Path, name: str = "node") -> Any:
     import fcntl
 
-    handle = open(root / "node.lock", "w")  # noqa: SIM115 - held for the process life
+    handle = open(root / f"{name}.lock", "w")  # noqa: SIM115 - held for the process life
     try:
         fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
@@ -54,6 +65,7 @@ def _lock(root: Path) -> Any:
 def parse(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="clio-paraview-node")
     parser.add_argument("--root", required=True, type=Path)
+    parser.add_argument("--name", default="node")
     parser.add_argument("--idle-seconds", type=float, default=1800.0)
     parser.add_argument("--threshold-mb", type=float, default=None)
     parser.add_argument("--pvserver-port", type=int, default=11111)
@@ -67,7 +79,7 @@ def main(argv: list[str] | None = None) -> None:
     root: Path = args.root.resolve()
     root.mkdir(parents=True, exist_ok=True)
     os.chmod(root, 0o700)
-    lock = _lock(root)
+    lock = _lock(root, args.name)
     site = root / "site"
     if site.is_dir():
         # ParaView's own packages (wslink, aiohttp) stay first on the path.
@@ -95,7 +107,7 @@ def main(argv: list[str] | None = None) -> None:
     token = secrets.token_urlsafe(32)
     node = NodeApp(engine, token)
     server = node.server
-    record_path = root / "node.json"
+    record_path = root / f"{args.name}.json"
 
     def ready(**_kwargs: Any) -> None:
         write_private(
@@ -108,6 +120,7 @@ def main(argv: list[str] | None = None) -> None:
                 "session": session,
                 "threshold_mb": threshold,
                 "idle_seconds": args.idle_seconds,
+                "net": network_namespace(),
                 "started": time.time(),
             },
         )

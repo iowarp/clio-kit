@@ -6,6 +6,8 @@ where ParaView runs:
 - ``site/``: trame, trame-vtk and trame-vuetify, built for that machine's pvpython;
 - ``code/``: the node half's code, copied over the same connection;
 - ``node.json``: the running node half's pid, port and token (mode 0600);
+  ``node-<namespace>.json`` when a server in another network namespace already
+  runs one here;
 - ``scenes/<id>/manifest.json``: each scene, written after every commit.
 """
 
@@ -100,8 +102,41 @@ echo "CLIO_PVPYTHON=$(command -v pvpython 2>/dev/null || true)"
 [ -f "$D/env.json" ] && echo "CLIO_ENV=$(cat "$D/env.json")"
 [ -f "$D/code/HASH" ] && echo "CLIO_CODE=$(cat "$D/code/HASH")"
 [ -f "$D/node.json" ] && echo "CLIO_NODE=$(cat "$D/node.json")"
+# A node half answers only inside its own network namespace, as sandboxed servers have.
+NS=$(readlink /proc/self/ns/net 2>/dev/null | tr -cd 0-9)
+echo "CLIO_NS=$NS"
+if [ -n "$NS" ]; then
+  [ -f "$D/node-$NS.json" ] && echo "CLIO_OWNNODE=$(cat "$D/node-$NS.json")"
+  if [ -f "$D/node.lock" ] && command -v flock >/dev/null 2>&1; then
+    if flock -n "$D/node.lock" true; then echo "CLIO_LOCKED=0"; else echo "CLIO_LOCKED=1"; fi
+  fi
+fi
 exit 0
 """
+
+
+def node_slot(marks: dict[str, str]) -> tuple[str, dict[str, Any] | None]:
+    """The record name this front uses, and the node half it names, if any.
+
+    A node half answers only inside its own network namespace, and its pid
+    means nothing outside its pid namespace. A host that confines each server
+    it launches in fresh namespaces can leave a node half another server
+    started holding the folder. That one is never linked to or stopped: this
+    front runs its own beside it, under ``node-<namespace>``.
+    """
+    node = json.loads(marks["NODE"]) if marks.get("NODE") else None
+    ns = marks.get("NS", "")
+    if not ns:
+        return "node", node
+    if marks.get("OWNNODE"):
+        return f"node-{ns}", json.loads(marks["OWNNODE"])
+    held = marks.get("LOCKED") == "1"
+    theirs = node is not None and str(node.get("net") or ns) != ns
+    if theirs and not held:
+        return "node", None
+    if theirs or (node is None and held):
+        return f"node-{ns}", None
+    return "node", node
 
 
 PYINFO = (
@@ -327,7 +362,7 @@ class Attacher:
         uploaded = marks.get("CODE") != code_hash
         if uploaded:
             self._upload(transport, folder, bundle)
-        node = json.loads(marks["NODE"]) if marks.get("NODE") else None
+        slot, node = node_slot(marks)
         # The rendering switch rides on the node's hash, so a node half started
         # without it is replaced rather than reused.
         node_hash = "+".join([code_hash, *(a.lstrip("-") for a in gl_args)])
@@ -336,14 +371,16 @@ class Attacher:
             link = self._try_link(transport, folder, node, pvpython, env)
         if link is None:
             if node is not None:
-                self._stop_node(transport, folder, node)
-            node = self._start_node(transport, folder, pvpython, node_hash, gl_args)
+                self._stop_node(transport, folder, node, slot)
+            node = self._start_node(
+                transport, folder, pvpython, node_hash, gl_args, slot
+            )
             link = self._try_link(transport, folder, node, pvpython, env)
         if link is None:
             raise ParaViewError(
                 "node_unhealthy",
                 f"The ParaView node half started {transport.where} but does not "
-                f"answer. Its log is {folder}/node.log.",
+                f"answer. Its log is {folder}/{slot}.log.",
             )
         link.built_from = built_from or env.get("built")
         link.built_now = built_from is not None
@@ -469,11 +506,15 @@ class Attacher:
             )
 
     def _stop_node(
-        self, transport: Transport, folder: str, node: dict[str, Any]
+        self,
+        transport: Transport,
+        folder: str,
+        node: dict[str, Any],
+        slot: str = "node",
     ) -> None:
         pid = int(node.get("pid") or 0)
         f = shlex.quote(folder)
-        script = f"rm -f {f}/node.json\n"
+        script = f"rm -f {f}/{slot}.json\n"
         if pid > 0:
             script += f"kill {pid} 2>/dev/null; sleep 1; kill -9 {pid} 2>/dev/null\n"
         transport.run(script + "exit 0", timeout=60)
@@ -485,6 +526,7 @@ class Attacher:
         pvpython: str,
         code_hash: str,
         gl_args: list[str] | None = None,
+        slot: str = "node",
     ) -> dict[str, Any]:
         settings = self.settings
         f = shlex.quote(folder)
@@ -495,6 +537,8 @@ class Attacher:
             f"{folder}/code/run_node.py",
             "--root",
             folder,
+            "--name",
+            slot,
             "--idle-seconds",
             str(settings.idle_seconds),
             "--pvserver-port",
@@ -506,9 +550,9 @@ class Attacher:
             args += ["--threshold-mb", str(settings.threshold_mb)]
         command = " ".join(shlex.quote(a) for a in [pvpython, *args])
         transport.run(
-            f"rm -f {f}/node.json\ncd {f}\n"
+            f"rm -f {f}/{slot}.json\ncd {f}\n"
             f"if command -v setsid >/dev/null 2>&1; then S=setsid; else S=; fi\n"
-            f"nohup $S {command} > {f}/node.log 2>&1 < /dev/null &\n"
+            f"nohup $S {command} > {f}/{slot}.log 2>&1 < /dev/null &\n"
             "exit 0",
             timeout=60,
         )
@@ -516,8 +560,8 @@ class Attacher:
         while time.monotonic() < deadline:
             time.sleep(1.0)
             done = transport.run(
-                f"cat {f}/node.json 2>/dev/null; echo; "
-                f"grep -c 'Traceback\\|another node half' {f}/node.log 2>/dev/null || true",
+                f"cat {f}/{slot}.json 2>/dev/null; echo; "
+                f"grep -c 'Traceback\\|another node half' {f}/{slot}.log 2>/dev/null || true",
                 timeout=60,
             )
             lines = [line for line in done.stdout.splitlines() if line.strip()]
@@ -526,7 +570,7 @@ class Attacher:
                 if node.get("code_hash") == code_hash:
                     return node
             if lines and lines[-1].isdigit() and int(lines[-1]) > 0:
-                log = transport.run(f"tail -n 25 {f}/node.log", timeout=60)
+                log = transport.run(f"tail -n 25 {f}/{slot}.log", timeout=60)
                 raise ParaViewError(
                     "node_failed",
                     f"The ParaView node half failed to start {transport.where}: "
@@ -535,7 +579,7 @@ class Attacher:
         raise ParaViewError(
             "node_start_timeout",
             f"The ParaView node half did not start {transport.where} within "
-            f"{settings.start_timeout:g} s. Its log is {folder}/node.log.",
+            f"{settings.start_timeout:g} s. Its log is {folder}/{slot}.log.",
         )
 
     def _try_link(

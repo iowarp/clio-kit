@@ -153,6 +153,31 @@ def test_parse_markers() -> None:
     assert marks == {"DIR": "/h/.clio", "PVPYTHON": "", "X": "a=b"}
 
 
+def test_node_slot_leaves_another_namespaces_node_half_alone() -> None:
+    ours = '{"pid": 7, "net": "11"}'
+    theirs = '{"pid": 29, "net": "22"}'
+    # No namespace id (not Linux): the one shared record, as before.
+    assert attach.node_slot({"NODE": theirs}) == ("node", {"pid": 29, "net": "22"})
+    # Our own node half, or one from before the record named its namespace.
+    assert attach.node_slot({"NS": "11", "NODE": ours, "LOCKED": "1"})[0] == "node"
+    assert attach.node_slot({"NS": "11", "NODE": '{"pid": 7}'})[0] == "node"
+    # Another namespace's node half still holds the folder: run our own beside it.
+    assert attach.node_slot({"NS": "11", "NODE": theirs, "LOCKED": "1"}) == (
+        "node-11",
+        None,
+    )
+    assert attach.node_slot({"NS": "11", "LOCKED": "1"}) == ("node-11", None)
+    # Its record is stale and the lock is free: take the shared record over.
+    assert attach.node_slot({"NS": "11", "NODE": theirs, "LOCKED": "0"}) == (
+        "node",
+        None,
+    )
+    # Ours already runs beside it.
+    assert attach.node_slot(
+        {"NS": "11", "NODE": theirs, "LOCKED": "1", "OWNNODE": ours}
+    ) == ("node-11", {"pid": 7, "net": "11"})
+
+
 @pytest.mark.parametrize(
     ("stderr", "code"),
     [
