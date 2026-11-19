@@ -362,6 +362,8 @@ class NodeApp:
                 if scene["view"].get("reason") == "volume"
                 else "Switched: an image slice is drawn on the ParaView machine"
                 if scene["view"].get("reason") == "slice"
+                else "Switched: a growing source is drawn on the ParaView machine"
+                if scene["view"].get("reason") == "growing"
                 else f"Switched: geometry {size:.1f} MB, over {engine.threshold_mb:g} MB"
             )
         time_state = engine.time_summary()

@@ -93,6 +93,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         self.proxies: dict[str, Any] = {}
         self._growth: dict[str, Any] = {}
         self._settling: dict[str, tuple[Any, float]] = {}
+        self._held: dict[str, int] = {}
         self._seen: dict[float, float] = {}
         self._seen_scene: str | None = None
         self.last_growth: float | None = None
@@ -206,7 +207,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
                 self.simple.Delete(proxy)
             except Exception as exc:  # noqa: BLE001 - a proxy already gone needs no delete
                 print(f"clearing {object_id}: {exc}", flush=True)
-        for state in (self._growth, self._settling):
+        for state in (self._growth, self._settling, self._held):
             for object_id in [k for k in state if k not in keep]:
                 del state[object_id]
         if not self.session:
@@ -374,8 +375,11 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         The browser's renderer draws surfaces, lines and points, but not a volume nor an
         image slice (the ``Slice`` ParaView picks for a flat image grid: its image-slice
         mapper has no browser counterpart, so the view drew nothing but the colour legend).
-        A visible object shown either way is drawn by ParaView; ``reason`` says why the view
-        is remote (``volume``, ``slice`` or ``geometry``) so the view and the agent can say so.
+        A visible object shown either way is drawn by ParaView. So is a growing source:
+        drawn in the browser, each new step resends all of its geometry, and steps that
+        land faster than that leave the view blank until they stop. ``reason`` says why the
+        view is remote (``volume``, ``slice``, ``growing`` or ``geometry``) so the view and
+        the agent can say so.
         """
         scene = self.scene
         if scene is None:
@@ -394,6 +398,8 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
             if "Volume" in shown
             else "slice"
             if "Slice" in shown
+            else "growing"
+            if (scene.get("dataset") or {}).get("growing")
             else "geometry"
             if size > self.threshold_mb
             else None

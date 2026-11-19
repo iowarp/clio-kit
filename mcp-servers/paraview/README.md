@@ -127,7 +127,10 @@ hold yet, and waits forever for data that is not on disk. A writer adds data,
 metadata and index in that order, but a reader on another machine of a shared
 file system can see them land in any order. So the server reads a growing BP5
 folder only when its index, metadata, meta-metadata and data agree, and keeps the
-steps it has until they do.
+steps it has until they do. The reader gets a copy of the folder whose index
+holds only the steps whose data is surely on disk: each step once the next one
+starts, and the last once the folder stops changing. A run that writes a step
+every second is followed one step behind, without waiting for it to pause.
 
 Scene scripts run on ParaView 6, which drops the " (matplotlib)" qualifier from
 colour preset names: `ApplyPreset("Viridis (matplotlib)")` applies "Viridis", and

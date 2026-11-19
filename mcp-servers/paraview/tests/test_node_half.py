@@ -737,6 +737,9 @@ def test_a_volume_is_drawn_on_the_paraview_machine(tmp_path: Path) -> None:
     # A flat grid opens as an image slice, which the browser cannot draw either.
     assert seen["flat"]["representation"] == "Slice"
     assert seen["flat"]["mode"] == "remote" and seen["flat"]["reason"] == "slice"
+    # A growing source is followed as images, one per new step.
+    assert seen["growing"]["mode"] == "remote"
+    assert seen["growing"]["reason"] == "growing"
 
 
 def test_the_panel_runs_the_same_commands(tmp_path: Path) -> None:

@@ -20,13 +20,14 @@ import glob
 import os
 import time
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
-from . import bp5
+from . import bp5, manifest
 from .errors import CommandError
 
-#: Seconds a grown BP5 folder must stay unchanged before it is read, when its data
-#: may still be short of the last step.
+#: Seconds a grown BP5 folder must stay unchanged before its last step is read,
+#: when its data may still be short of that step.
 SETTLE = 1.0
 
 
@@ -104,10 +105,12 @@ class SourceGrowth:
 
     simple: Any
     view: Any
+    root: Path
     scene: dict[str, Any] | None
     proxies: dict[str, Any]
     _growth: dict[str, Any]
     _settling: dict[str, tuple[Any, float]]
+    _held: dict[str, int]
     _seen: dict[float, float]
     _seen_scene: str | None
     last_growth: float | None
@@ -222,17 +225,52 @@ class SourceGrowth:
         path = item["path"]
         return not is_pattern(path) and bp5.is_bp(path, item.get("reader"))
 
+    def _follow_index(self, item: dict[str, Any], steps: int) -> str:
+        """The copy of a growing BP5 folder the reader is given, with ``steps`` steps."""
+        scene = self.require_scene()
+        name = os.path.basename(item["path"].rstrip("/")) or "data.bp"
+        folder = manifest.scene_dir(self.root, scene["scene"]) / "follow" / item["id"]
+        target = str(folder / name)
+        bp5.write_index(item["path"], target, steps)
+        self._held[item["id"]] = steps
+        return target
+
+    def _bp5_whole(self, item: dict[str, Any], key: Any) -> int | None:
+        """How many steps of a grown BP5 folder can be read now, if more than the
+        reader has: every whole step, and the last once the folder has stopped
+        changing for ``SETTLE`` seconds."""
+        state = bp5.check(item["path"])
+        held = self._held[item["id"]]
+        if state.reason or state.steps <= held:
+            self._settling.pop(item["id"], None)
+            return None
+        whole = bp5.whole_steps(state)
+        if whole < state.steps:
+            now = time.monotonic()
+            seen = self._settling.get(item["id"])
+            if seen is None or seen[0] != key:
+                self._settling[item["id"]] = (key, now)
+            elif now - seen[1] >= SETTLE:
+                whole = state.steps
+        if whole == state.steps:
+            self._settling.pop(item["id"], None)
+        return whole if whole > held else None
+
     def _make_reader(self, item: dict[str, Any]) -> Any:
         files = self._files(item)
+        self._held.pop(item["id"], None)
         if self._bp5(item):
-            reason = bp5.check(item["path"]).reason
-            if reason:
+            state = bp5.check(item["path"])
+            if state.reason:
                 raise CommandError(
                     "not_ready",
-                    f"{item['path']} cannot be read yet: {reason}. Open it once its "
-                    "writer has written a whole step; open_view with growing set "
+                    f"{item['path']} cannot be read yet: {state.reason}. Open it once "
+                    "its writer has written a whole step; open_view with growing set "
                     "waits for that while the folder is still changing.",
                 )
+            if state.steps and ((self.scene or {}).get("dataset") or {}).get("growing"):
+                # open_view waited for the folder to settle, so every step is read.
+                files = self._follow_index(item, state.steps)
         name = item.get("reader")
         if not name:
             proxy = self.simple.OpenDataFile(files)
@@ -352,19 +390,29 @@ class SourceGrowth:
             if item["kind"] != "reader" or item["id"] not in self.proxies:
                 continue
             key = disk_key(item["path"])
-            if key == self._growth.get(item["id"]):
-                continue
-            if self._bp5(item) and not self._bp5_settled(item, key):
-                continue
-            self._growth[item["id"]] = key
-            changed = True
             proxy = self.proxies[item["id"]]
+            if item["id"] in self._held:
+                # A growing BP5 folder: its reader reads a copy whose index holds
+                # only the steps whose data is surely on disk.
+                whole = self._bp5_whole(item, key)
+                if whole is None:
+                    continue
+                self._growth[item["id"]] = key
+                files: list[str] | str = self._follow_index(item, whole)
+            else:
+                if key == self._growth.get(item["id"]):
+                    continue
+                if self._bp5(item) and not self._bp5_settled(item, key):
+                    continue
+                self._growth[item["id"]] = key
+                files = self._files(item)
+            changed = True
             if is_pattern(item["path"]):
-                self._point_reader(proxy, item, self._files(item), reset=True)
+                self._point_reader(proxy, item, files, reset=True)
             elif not self.simple.ReloadFiles(proxy):
                 # A folder or file written in place, such as an ADIOS2 BP output:
                 # the reader re-opens it. Resetting the name is the fallback.
-                self._point_reader(proxy, item, self._files(item), reset=True)
+                self._point_reader(proxy, item, files, reset=True)
             proxy.UpdatePipelineInformation()
         if not changed:
             return None

@@ -35,7 +35,7 @@ owns the scene and serves its live view. The script sees:
   colouring, opacity, visibility, solid colour.
 - Colour maps are snapshotted as for any commit.
 - The view mode is chosen from what is shown: a volume or an image slice is drawn by
-  ParaView.
+  ParaView, and so is a growing source, so each new step arrives as one image.
 - The live view redraws the same proxies with no reload.
 
 **Failure:** a script that raises removes every source and view it created, the scene

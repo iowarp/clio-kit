@@ -12,8 +12,11 @@ last block.
 
 The index does not give the size of a step's last block, so a data file that
 reaches into it may still be short. ``Readiness.clear`` says the data reaches a
-whole block estimate past it; otherwise a caller waits for the folder to stop
-changing for a moment before reading it.
+whole block estimate past it. Otherwise the data holds every step but the last
+(it reaches into the last, so past the end of the one before), and
+``write_index`` gives a reader a copy of the folder whose index stops there; the
+last step is read once the folder stops changing for a moment. A writer that adds
+a step every second rarely stops, and its data ends where its last step ends.
 
 Other formats (BP4, a single file) are not checked: ``check`` reports them ready.
 """
@@ -116,7 +119,7 @@ def check(path: str) -> Readiness:
         return Readiness("its meta-metadata (mmd.0) is not written yet", False)
     starts = _starts(last, writers)
     if starts is None:
-        return Readiness()
+        return Readiness(steps=count)
     before = _starts(steps[-2], writers) if count > 1 else None
     clear = True
     for subfile in sorted(
@@ -142,6 +145,46 @@ def check(path: str) -> Readiness:
         if not gaps or size < positions[-1] + 2 * max(gaps):
             clear = False
     return Readiness(None, clear, count)
+
+
+def whole_steps(state: Readiness) -> int:
+    """How many steps the data surely holds: all, when it clearly holds the last;
+    otherwise all but the last."""
+    return state.steps if state.clear else max(state.steps - 1, 0)
+
+
+def _cut(index: bytes, steps: int) -> int:
+    """Where the index ends after its first ``steps`` step records."""
+    pos, seen = HEADER, 0
+    while pos + 9 <= len(index):
+        kind = index[pos : pos + 1]
+        (length,) = struct.unpack_from("<Q", index, pos + 1)
+        end = pos + 9 + length
+        if end > len(index) or length % 8:
+            break
+        if kind == STEP:
+            if seen == steps:
+                break
+            seen += 1
+        pos = end
+    return pos
+
+
+def write_index(path: str, folder: str, steps: int) -> None:
+    """Make ``folder`` show the BP5 output at ``path`` up to its first ``steps``
+    steps: links to its files, and its index cut after that step. A reader given
+    ``folder`` cannot reach a step whose data may not be on disk yet."""
+    os.makedirs(folder, exist_ok=True)
+    for name in os.listdir(path):
+        link = os.path.join(folder, name)
+        if name != "md.idx" and not os.path.lexists(link):
+            os.symlink(os.path.join(path, name), link)
+    with open(os.path.join(path, "md.idx"), "rb") as handle:
+        index = handle.read()
+    part = f"{folder.rstrip('/')}.idx"
+    with open(part, "wb") as handle:
+        handle.write(index[: _cut(index, steps)])
+    os.replace(part, os.path.join(folder, "md.idx"))
 
 
 def source_readiness(

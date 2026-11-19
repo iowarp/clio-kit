@@ -95,6 +95,8 @@ def view_line(view: dict[str, Any]) -> str:
         extra += "; a volume is shown, which only ParaView draws"
     if mode == "remote" and view.get("reason") == "slice" and not view.get("pinned"):
         extra += "; an image slice is shown, which only ParaView draws"
+    if mode == "remote" and view.get("reason") == "growing" and not view.get("pinned"):
+        extra += "; the source is growing, so each new step arrives as one image"
     if view.get("pinned"):
         extra += "; chosen by hand in the view"
     return f"View: {how}{extra}{frame_note(view)}."
