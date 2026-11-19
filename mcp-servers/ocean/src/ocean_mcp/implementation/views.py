@@ -140,6 +140,7 @@ def crossings_view(
             "longitudeField": "longitude",
             "idField": "track",
             "trackField": "track",
+            "timeField": "time",
         },
     ]
     if crossings is not None:
