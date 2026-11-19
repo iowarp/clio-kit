@@ -306,6 +306,14 @@ def test_present_scene_text_names_the_scene_and_keeps_no_secret() -> None:
     assert "scene='wave-1'" in text
 
 
+def test_scene_text_names_an_empty_scene() -> None:
+    text = present.scene_text(
+        {"scene": "empty", "dataset": {}, "objects": [], "time": {}, "view": {}},
+        "on node08",
+    )
+    assert "an empty scene; add sources with run_scene_script" in text
+
+
 def test_measure_text() -> None:
     text = present.measure_text(
         {

@@ -37,7 +37,9 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
   ParaView in its other conversations: a node half left by another sandbox,
   which cannot be reached or stopped from outside it, is left alone and the
   front runs its own beside it. Each node half clears the records of node
-  halves whose sandbox has gone, so they do not accumulate.
+  halves whose sandbox has gone, so they do not accumulate. `open_view` with
+  no path and no running ParaView session opens an empty scene that
+  `run_scene_script` fills, instead of failing with `no_dataset`.
 - **paraview 3.1.0, ParaView controls in the view**: the live view gains a
   compact left tool rail: a pipeline browser (show, hide, select, remove), an
   Add filter palette (Contour, Slice, Clip, Threshold, Glyph, Stream Tracer,

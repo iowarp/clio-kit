@@ -31,7 +31,7 @@
   "tools": [
     {
       "name": "open_view",
-      "description": "Open a dataset or restore a saved scene, and show it in a live ParaView view.\n\nWith neither path nor scene, it shows the ParaView session already running\nwhere ParaView is, or the current scene."
+      "description": "Open a dataset or restore a saved scene, and show it in a live ParaView view.\n\nWith neither path nor scene, it shows the ParaView session already running\nwhere ParaView is, or the current scene, or else an empty scene that\nrun_scene_script can fill with sources."
     },
     {
       "name": "create_filter",

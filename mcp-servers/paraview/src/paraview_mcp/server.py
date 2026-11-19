@@ -219,7 +219,8 @@ def open_view(
     """Open a dataset or restore a saved scene, and show it in a live ParaView view.
 
     With neither path nor scene, it shows the ParaView session already running
-    where ParaView is, or the current scene. A growing source is followed: the view
+    where ParaView is, or the current scene, or else an empty scene that
+    run_scene_script can fill with sources. A growing source is followed: the view
     moves to each new step unless the person has parked it on one.
     """
     summary, link = command(

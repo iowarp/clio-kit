@@ -26,6 +26,8 @@ from .scripts import SceneScripts, forget_made
 from .sources import SourceGrowth
 from .sources import set_property as _set_property
 
+EMPTY_SCENE = "empty"
+
 MUTATING = {
     "open_view",
     "create_filter",
@@ -155,7 +157,8 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         if self.scene is None:
             raise CommandError(
                 "no_scene",
-                "No scene is open. Call open_view with a dataset path first.",
+                "No scene is open. Call open_view first, with a dataset path, or "
+                "with no path for an empty scene.",
             )
         return self.scene
 
@@ -422,12 +425,9 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         if scene is None and path is None and self.session:
             return self._open_session()
         if scene is None and path is None:
-            if self.scene is not None:
+            if self.scene is not None and not new:
                 return self.summary()
-            raise CommandError(
-                "no_dataset",
-                "open_view needs a dataset path on this machine, or a scene id.",
-            )
+            return self._open_empty(new)
         if path is not None:
             path = _expand(path)
         scene_id = scene or manifest.scene_id_for(path or "")
@@ -482,6 +482,20 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         self._apply_time(self.scene)
         self.view.ResetCamera(False)
         self._first_view((descriptor or {}).get("display"))
+        self.update_view_mode()
+        return self.summary()
+
+    def _open_empty(self, new: bool) -> dict[str, Any]:
+        """A scene with no dataset, for sources a scene script makes."""
+        self._clear()
+        saved = None if new else manifest.read(self.root, EMPTY_SCENE)
+        if saved is not None:
+            self.scene = saved
+            self._build(saved)
+            return self.summary(restored=True)
+        self.scene = manifest.new_scene(EMPTY_SCENE, {})
+        self._apply_time(self.scene)
+        self.view.ResetCamera(False)
         self.update_view_mode()
         return self.summary()
 

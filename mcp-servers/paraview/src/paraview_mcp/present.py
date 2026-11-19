@@ -131,6 +131,11 @@ def scene_text(summary: dict[str, Any], where: str) -> str:
         else ""
     )
     lines.append(f"Scene {summary['scene']} {where}{restored}: {source}.")
+    if not source:
+        lines[-1] = (
+            f"Scene {summary['scene']} {where}{restored}: an empty scene; "
+            "add sources with run_scene_script."
+        )
     if dataset.get("growing"):
         lines.append("The source is marked as still growing; new steps are picked up.")
     if dataset.get("display_note"):
