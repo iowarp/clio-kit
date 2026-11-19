@@ -8,6 +8,8 @@ import os
 from typing import Optional, Any, Dict, List
 import traceback
 
+from .row_filter import filter_rows
+
 
 def filter_data(
     file_path: str, filter_conditions: Dict[str, Any], output_file: Optional[str] = None
@@ -237,11 +239,11 @@ def advanced_filter(
     file_path: str, query_string: str, output_file: Optional[str] = None
 ) -> dict:
     """
-    Filter data using pandas query string.
+    Filter data using a query-style condition (see row_filter.filter_rows).
 
     Args:
         file_path: Path to the data file
-        query_string: Pandas query string
+        query_string: Condition such as "age > 30 and salary > 50000"
         output_file: Optional output file path
 
     Returns:
@@ -261,7 +263,7 @@ def advanced_filter(
 
         # Apply query filter
         try:
-            filtered_df = df.query(query_string)
+            filtered_df = filter_rows(df, query_string)
         except Exception as e:
             return {
                 "success": False,

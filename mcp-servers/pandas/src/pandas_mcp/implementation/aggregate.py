@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
+from .row_filter import filter_rows
+
 AGGREGATE_OPERATIONS = (
     "sum",
     "mean",
@@ -100,7 +102,7 @@ def aggregate(
     rows_filtered_out = 0
     if filter_condition:
         try:
-            kept = df.query(filter_condition)
+            kept = filter_rows(df, filter_condition)
         except Exception as exc:
             raise ValueError(f"Filter condition error: {exc}") from exc
         rows_filtered_out = len(df) - len(kept)

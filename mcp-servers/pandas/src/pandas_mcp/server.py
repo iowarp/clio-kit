@@ -872,7 +872,7 @@ async def groupby_operations_tool(
     ],
     filter_condition: Annotated[
         Optional[str],
-        Field(description="Optional pandas query string to filter before grouping"),
+        Field(description="Optional row filter, e.g. 'age > 30'; no @ names or calls"),
     ] = None,
     output_file: Annotated[
         Optional[str],
@@ -951,7 +951,7 @@ async def aggregate_tool(
     filter_condition: Annotated[
         Optional[str],
         Field(
-            description="Optional pandas query applied after duplicate removal, e.g. 'revenue < 50000 and units > 0'"
+            description="Optional row filter applied after duplicate removal, e.g. 'revenue < 50000 and units > 0'. Supports column names (backticks for names with spaces), constants, comparisons, in/not in, and/or/not and arithmetic on columns; no @ references or function calls"
         ),
     ] = None,
     drop_duplicates: Annotated[
