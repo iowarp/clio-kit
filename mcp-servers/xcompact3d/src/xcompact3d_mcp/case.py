@@ -481,6 +481,8 @@ def relay_job(plan: CasePlan) -> dict[str, Any]:
         "arguments": [str(Path(plan.run_dir) / "run.sh")],
         "directory": plan.run_dir,
         "resources": {"node_count": 1, "process_count": plan.decomposition["nprocs"]},
+        # run.sh starts mpirun itself; a per-rank launcher would start nprocs copies.
+        "launcher": "single",
     }
 
 
