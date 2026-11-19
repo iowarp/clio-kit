@@ -93,6 +93,23 @@
     return entry && typeof entry.url === 'string' ? entry.url : null;
   }
 
+  // A dropped link (the page was starved, the network blinked) reloads the frame on
+  // its own, backing off to 30 s; the scene is kept on the ParaView side.
+  let retries = 0;
+  let retryTimer = null;
+  let linkUp = false;
+  function scheduleReconnect() {
+    if (retryTimer) return;
+    const wait = Math.min(30000, 1000 * 2 ** retries);
+    retries += 1;
+    retryTimer = setTimeout(() => {
+      retryTimer = null;
+      loadFrame();
+      // A page that never reaches ParaView reports nothing; try again.
+      setTimeout(() => { if (!linkUp) scheduleReconnect(); }, 15000);
+    }, wait);
+  }
+
   function loadFrame() {
     if (!serviceUrl) {
       showStatus('This host did not give the view its ParaView service, so the live view cannot open here. '
@@ -218,8 +235,17 @@
       } else if (data.type === 'clio.paraview.ready') {
         sendTheme();
       } else if (data.type === 'clio.paraview.link') {
-        if (data.up) statusBox.hidden = true;
-        else showStatus('Lost the link to ParaView. The scene is kept there; the next ParaView action reconnects it.', true);
+        if (data.up) {
+          linkUp = true;
+          statusBox.hidden = true;
+          retries = 0;
+          clearTimeout(retryTimer);
+          retryTimer = null;
+        } else {
+          linkUp = false;
+          showStatus('Lost the link to ParaView. The scene is kept there; reconnecting.', true);
+          scheduleReconnect();
+        }
       }
       return;
     }
