@@ -74,6 +74,7 @@ from .statistics import (
     format_statistics,
 )
 from .config import get_config
+from .slice_spec import parse_slice_spec
 from .resources import ResourceManager, LazyHDF5Proxy, discover_hdf5_files_in_roots
 
 
@@ -965,7 +966,7 @@ async def hdf5_batch_read(
 
     Args:
         paths: Comma-separated dataset paths or JSON array
-        slice_spec: Optional slice specification
+        slice_spec: Optional selection for every dataset, e.g. "0:10, :, 5"
         ctx: Context for progress reporting
 
     Returns:
@@ -984,13 +985,12 @@ async def hdf5_batch_read(
         logger.info(f"Reading {len(path_list)} datasets in parallel")
         await ctx.report_progress(0, len(path_list), "Starting batch read")
 
-    # Parse slice
     slice_obj = None
     if slice_spec:
         try:
-            slice_obj = eval(f"np.s_[{slice_spec}]")
-        except Exception:
-            raise ToolError(f"Invalid slice specification: {slice_spec}")
+            slice_obj = parse_slice_spec(slice_spec)
+        except ValueError as error:
+            raise ToolError(str(error)) from error
 
     # Parallel batch reading
     results = {}
