@@ -117,6 +117,33 @@ def _times(path: Path) -> pd.DatetimeIndex | None:
     return None
 
 
+def _varies_in_time(path: Path, fields: list[str]) -> bool:
+    """Whether any field a segment reads from this file has a time dimension.
+
+    Tidal harmonics (amplitude and phase) and other fixed fields carry no time
+    dimension and apply to the whole run, so their files are not date-checked.
+    An unreadable file, or one whose fields are not found, counts as varying so
+    the date check reports it.
+    """
+    try:
+        with xr.open_dataset(path, decode_times=False) as ds:
+            # MOM6 reads field "v" of segment N as "v" or "v_segment_00N".
+            found = [
+                ds[name]
+                for name in ds.variables
+                if any(name == v or name.startswith(f"{v}_segment") for v in fields)
+            ]
+            if not found:
+                return True
+            return any(
+                d in ("time", "Time", "valid_time") or "time" in d.lower()
+                for da in found
+                for d in da.dims
+            )
+    except Exception:  # noqa: BLE001 - the date check reports an unreadable file
+        return True
+
+
 def run_window(
     namelists: dict[str, dict[str, str]],
 ) -> tuple[pd.Timestamp | None, pd.Timestamp | None, str]:
@@ -208,8 +235,12 @@ def preflight(
         data = params.get(f"{key}_DATA", "")
         if not data:
             missing.append(f"{key}_DATA not set")
-        files = sorted(set(re.findall(r"file:([^\s(,]+)\(", data)))
-        segments.append({"segment": key, "position": params[key], "files": files})
+        refs = re.findall(r"file:([^\s(,]+)\(([^)\s]+)\)", data)
+        files = sorted({f for f, _ in refs})
+        fields = {f: sorted({v for g, v in refs if g == f}) for f in files}
+        segments.append(
+            {"segment": key, "position": params[key], "files": files, "fields": fields}
+        )
         missing.extend(f"{key}: {f} absent" for f in files if not (inputs / f).exists())
     extra = (
         sorted(
@@ -236,8 +267,12 @@ def preflight(
         checks.append(Check("dates_cover_run", "not_checked", source))
     else:
         gaps = []
+        constant: list[str] = []
         for seg in segments:
             for f in seg["files"]:
+                if not _varies_in_time(inputs / f, seg["fields"].get(f, [])):
+                    constant.append(f)  # harmonics or fixed fields apply to every step
+                    continue
                 times = _times(inputs / f)
                 if times is None or len(times) == 0:
                     gaps.append(f"{f}: no readable time axis")
@@ -260,7 +295,12 @@ def preflight(
             Check(
                 "dates_cover_run",
                 "failed" if gaps else "passed",
-                f"run {start} to {end} ({source})",
+                f"run {start} to {end} ({source})"
+                + (
+                    f"; constant in time, so not date-checked: {', '.join(sorted(set(constant)))}"
+                    if constant
+                    else ""
+                ),
                 gaps,
             )
         )

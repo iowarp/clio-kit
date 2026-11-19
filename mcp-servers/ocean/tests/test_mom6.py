@@ -85,6 +85,50 @@ def test_short_boundary_files_fail_the_dates_check(tmp_path: Path) -> None:
     assert "run needs" in dates.items[0]
 
 
+def test_tidal_harmonics_are_not_date_checked(tmp_path: Path) -> None:
+    run = make_run(tmp_path, channel=False)
+    inputs = run / "INPUT"
+    # Amplitude and phase per constituent, with the single time record tidal
+    # files usually carry: constant in time, they apply to the whole run.
+    xr.Dataset(
+        {
+            "zamp_segment_001": (("nz", "nx"), np.ones((8, 24))),
+            "zphase_segment_001": (("nz", "nx"), np.zeros((8, 24))),
+        },
+        coords={"time": pd.date_range("2020-01-01", periods=1)},
+    ).to_netcdf(inputs / "tides_obc_segment_001.nc")
+    text = (
+        (run / "MOM_input")
+        .read_text()
+        .replace(
+            'file:forcing_obc_segment_001.nc(u_segment_001)"',
+            "file:forcing_obc_segment_001.nc(u_segment_001),"
+            'SSHamp=file:tides_obc_segment_001.nc(zamp),SSHphase=file:tides_obc_segment_001.nc(zphase)"',
+        )
+    )
+    (run / "MOM_input").write_text(
+        text.replace("(zamp)", "(zamp_segment_001)").replace(
+            "(zphase)", "(zphase_segment_001)"
+        )
+    )
+    checks, _ = mom6.preflight(run, input_dir=None, kept_cells=[])
+    dates = next(c for c in checks if c.name == "dates_cover_run")
+    assert dates.status == "passed", dates.items
+    assert "tides_obc_segment_001.nc" in dates.detail
+
+
+def test_time_varying_field_with_one_record_still_fails(tmp_path: Path) -> None:
+    run = make_run(tmp_path, channel=False)
+    xr.Dataset(
+        {"u_segment_001": (("time",), np.zeros(1))},
+        coords={"time": pd.date_range("2020-01-01", periods=1)},
+    ).to_netcdf(run / "INPUT" / "forcing_obc_segment_001.nc", mode="w")
+    checks, _ = mom6.preflight(run, input_dir=None, kept_cells=[])
+    dates = next(c for c in checks if c.name == "dates_cover_run")
+    assert dates.status == "failed"
+    assert any("forcing_obc_segment_001.nc" in item for item in dates.items)
+
+
 async def test_tool_reports_partial_with_failed_checks(tmp_path: Path) -> None:
     out = await call("mom6_preflight", run_dir=str(make_run(tmp_path, channel=True)))
     assert out["status"] == "partial" and out["outcome"] == "checks_failed"
