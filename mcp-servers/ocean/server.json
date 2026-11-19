@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.12.7",
+      "version": "2.13.0",
       "transport": {
         "type": "stdio"
       },
@@ -63,7 +63,7 @@
     },
     {
       "name": "overturning",
-      "description": "Meridional overturning streamfunction (Sv) on the model's own grid, in depth or density space, from a per-cell meridional transport (MOM6 vmo kg/s or vh m3/s) or a velocity v; plus the time series of its maximum at a chosen latitude (e.g. 26.5 N)."
+      "description": "Meridional overturning streamfunction (Sv) in depth or density space, on a grid whose rows are latitude lines (regular or MOM6-style), from a per-cell meridional transport (vmo kg/s or vh m3/s) or a velocity v, within a basin_mask or the whole file; plus the time series of its maximum at a chosen latitude (e.g. 26.5 N). A curvilinear grid is refused with the reason."
     },
     {
       "name": "harmonics",
