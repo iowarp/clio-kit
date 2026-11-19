@@ -56,8 +56,7 @@ and skill plugins through dependencies rather than copying their content.
 | `clio-geoscience` | Inspect maps, terrain, waveforms and Earth-science datasets | earthdata, geo, seismology, terrain |
 | `clio-electronics` | Simulate a circuit and plot its waveforms | spice |
 | `clio-home` | Read your home's sensors, control devices and write automations | home-assistant |
-| `clio-fabrication` | Model a part in CAD, slice it for a 3D printer and check its layers | cad, slicer |
-| `clio-fluids` | Simulate the flow around a CAD part on a cluster and read the forces | xcompact3d |
+| `clio-fabrication` | Slice a model for a 3D printer and check its layers | slicer |
 | `clio-research` | Find papers, read them and find research datasets | arxiv, ndp, pdf, scientific-catalog, web |
 
 ```bash

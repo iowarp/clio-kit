@@ -15,11 +15,6 @@ schema-version = 1
 # moves to each new step and a parked view reports newer steps, watch_steps
 # reports each step as MCP task progress, and measure_over_time adds field
 # statistics per step; it adds fastmcp[tasks].
-# cad 1.0.0 is a new server: it runs build123d code in its own process, exports
-# STL and STEP and shows the part in an MCP Apps view (ui://cad/part); it joins
-# clio-fabrication. xcompact3d 1.0.0 is a new server: it prepares an Xcompact3d
-# run of the flow past an STL body (immersed boundary, ADIOS2 snapshots, a job spec
-# and a growing view descriptor) and reads the forces back; clio-fluids is new.
 # slicer 1.0.0 is a new server: it slices STL, 3MF and STEP models with the
 # PrusaSlicer or OrcaSlicer already installed (never downloaded) and shows the
 # toolpaths layer by layer in an MCP Apps view (ui://slicer/layers).
@@ -33,7 +28,7 @@ schema-version = 1
 # spice earthdata-mcp-server, ha-mcp and ltspice-mcp (Python). Two primary bundles are
 # new, clio-electronics and clio-home; clio-geoscience and clio-research gain members.
 [mcp-registry-release]
-publish = ["adios", "arxiv", "ase", "avogadro", "cad", "chronolog", "compression", "darshan", "decimer", "earthdata", "fdmnes", "geo", "graspa", "hdf5", "home-assistant", "jarvis", "lmod", "ndp", "node-hardware", "pandas", "parallel-sort", "paraview", "parquet", "pdf", "plot", "pubchem", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "spice", "terrain", "web", "xcompact3d"]
+publish = ["adios", "arxiv", "ase", "avogadro", "chronolog", "compression", "darshan", "decimer", "earthdata", "fdmnes", "geo", "graspa", "hdf5", "home-assistant", "jarvis", "lmod", "ndp", "node-hardware", "pandas", "parallel-sort", "paraview", "parquet", "pdf", "plot", "pubchem", "scientific-catalog", "seismology", "slicer", "slurm", "spack", "spice", "terrain", "web"]
 
 # Generated website metadata must not depend on the wall clock. Advance this
 # date intentionally whenever current contract metadata is regenerated.
@@ -83,14 +78,9 @@ description = "Inspect and map geospatial features, terrain, waveforms and NASA 
 servers = ["earthdata", "geo", "seismology", "terrain"]
 
 [bundles.clio-fabrication]
-version = "1.1.0"
-description = "Model a part in CAD, slice it for a printer and check it layer by layer before printing."
-servers = ["cad", "slicer"]
-
-[bundles.clio-fluids]
 version = "1.0.0"
-description = "Set up a flow simulation around a CAD body, run it on a cluster and read the forces back."
-servers = ["xcompact3d"]
+description = "Slice a 3D model for a printer and check it layer by layer before printing."
+servers = ["slicer"]
 
 [bundles.clio-electronics]
 version = "1.0.0"
@@ -133,7 +123,6 @@ adios = "2.3.2"
 arxiv = "2.2.8"
 ase = "1.0.0"
 avogadro = "1.0.0"
-cad = "1.0.0"
 chronolog = "2.0.6"
 compression = "2.2.8"
 darshan = "2.2.8"
@@ -163,7 +152,6 @@ spack = "2.3.4"
 spice = "1.0.0"
 terrain = "2.2.8"
 web = "2.1.6"
-xcompact3d = "1.0.0"
 
 [workflows.clio-dataset-report]
 version = "1.0.0"
@@ -205,8 +193,6 @@ decimer = "🖼️"
 fdmnes = "🔬"
 graspa = "🫧"
 pubchem = "⚗️"
-cad = "📐"
-xcompact3d = "🌀"
 
 # Declarative doctor checks; these do not execute server code.
 
@@ -236,9 +222,6 @@ note = "Needs ParaView 6 (pvpython) on this machine or on the SSH host in PARAVI
 [prerequisites.slicer]
 executable-environment = ["SLICER_BIN"]
 note = "Needs PrusaSlicer or OrcaSlicer installed on this machine (on PATH, or SLICER_BIN naming it); it never downloads a slicer."
-
-[prerequisites.xcompact3d]
-note = "Prepares cases on this machine; running them needs the patched Xcompact3d built with ADIOS2 where the run goes (see the build_instructions tool), usually a cluster reached through a batch launcher."
 
 [prerequisites.pdf]
 note = "Needs Node.js 20 or newer (node and npm) on this machine; the first start installs the locked server with npm."

@@ -1,9 +1,0 @@
-{
-  "clio-xcompact3d": {
-    "command": "clio-kit",
-    "args": [
-      "mcp-server",
-      "xcompact3d"
-    ]
-  }
-}

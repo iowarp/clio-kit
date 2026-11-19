@@ -69,23 +69,6 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
-      "name": "clio-cad",
-      "source": "./plugins/clio-cad",
-      "description": "Model solid parts with build123d code, export STL and STEP, and rotate them in an interactive 3D view.",
-      "version": "1.0.0",
-      "category": "scientific",
-      "keywords": [
-        "cad",
-        "build123d",
-        "step",
-        "stl",
-        "parametric",
-        "mcp-apps"
-      ],
-      "license": "BSD-3-Clause",
-      "repository": "https://github.com/iowarp/clio-kit"
-    },
-    {
       "name": "clio-chronolog",
       "source": "./plugins/clio-chronolog",
       "description": "Record and retrieve agent interactions in a ChronoLog log store.",
@@ -531,23 +514,6 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
-      "name": "clio-xcompact3d",
-      "source": "./plugins/clio-xcompact3d",
-      "description": "Set up Xcompact3d flow simulations around a CAD body, follow them live and read the forces back.",
-      "version": "1.0.0",
-      "category": "scientific",
-      "keywords": [
-        "cfd",
-        "xcompact3d",
-        "aerodynamics",
-        "immersed-boundary",
-        "adios2",
-        "hpc"
-      ],
-      "license": "BSD-3-Clause",
-      "repository": "https://github.com/iowarp/clio-kit"
-    },
-    {
       "name": "clio-hpc-skills",
       "source": "./skills/clio-hpc-skills",
       "description": "Skills for the clio-hpc workflow: install a code, wrap it in a pipeline, submit it, and follow it on a cluster.",
@@ -747,38 +713,16 @@
     {
       "name": "clio-fabrication",
       "source": "./plugins/clio-fabrication",
-      "description": "Model a part in CAD, slice it for a printer and check it layer by layer before printing.",
-      "version": "1.1.0",
-      "category": "workflow",
-      "keywords": [
-        "3d-printing",
-        "build123d",
-        "cad",
-        "g-code",
-        "mcp-apps",
-        "orcaslicer",
-        "parametric",
-        "prusaslicer",
-        "slicer",
-        "step",
-        "stl"
-      ],
-      "license": "BSD-3-Clause",
-      "repository": "https://github.com/iowarp/clio-kit"
-    },
-    {
-      "name": "clio-fluids",
-      "source": "./plugins/clio-fluids",
-      "description": "Set up a flow simulation around a CAD body, run it on a cluster and read the forces back.",
+      "description": "Slice a 3D model for a printer and check it layer by layer before printing.",
       "version": "1.0.0",
       "category": "workflow",
       "keywords": [
-        "adios2",
-        "aerodynamics",
-        "cfd",
-        "hpc",
-        "immersed-boundary",
-        "xcompact3d"
+        "3d-printing",
+        "g-code",
+        "mcp-apps",
+        "orcaslicer",
+        "prusaslicer",
+        "slicer"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"

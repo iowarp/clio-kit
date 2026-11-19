@@ -28,13 +28,6 @@
         "avogadro"
       ]
     },
-    "clio-cad": {
-      "command": "clio-kit",
-      "args": [
-        "mcp-server",
-        "cad"
-      ]
-    },
     "clio-chronolog": {
       "command": "clio-kit",
       "args": [
@@ -236,13 +229,6 @@
       "args": [
         "mcp-server",
         "web"
-      ]
-    },
-    "clio-xcompact3d": {
-      "command": "clio-kit",
-      "args": [
-        "mcp-server",
-        "xcompact3d"
       ]
     }
   }

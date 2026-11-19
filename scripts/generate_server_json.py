@@ -59,7 +59,6 @@ STABLE_VERSION_PATTERN = re.compile(r"[1-9][0-9]*\.[0-9]+\.[0-9]+")
 SERVER_TAGS: dict[str, list[str]] = {
     "adios": ["scientific-computing", "adios2", "bp5", "data-io", "hpc"],
     "arxiv": ["research", "arxiv", "papers", "literature-search"],
-    "cad": ["cad", "build123d", "step", "stl", "parametric", "mcp-apps"],
     "chronolog": ["logging", "distributed-systems", "hpc", "time-series"],
     "compression": ["compression", "gzip", "file-operations", "data-management"],
     "darshan": ["io-profiling", "performance-analysis", "hpc", "darshan"],
@@ -95,14 +94,6 @@ SERVER_TAGS: dict[str, list[str]] = {
     ],
     "terrain": ["terrain", "dem", "point-cloud", "geospatial"],
     "web": ["web", "fetch", "search", "agentic-web"],
-    "xcompact3d": [
-        "cfd",
-        "xcompact3d",
-        "aerodynamics",
-        "immersed-boundary",
-        "adios2",
-        "hpc",
-    ],
     "earthdata": ["nasa", "earthdata", "remote-sensing", "datasets", "earth-science"],
     "home-assistant": ["home-assistant", "smart-home", "sensors", "automation", "iot"],
     "pdf": ["pdf", "papers", "arxiv", "viewer", "mcp-apps"],

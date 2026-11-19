@@ -1,7 +1,7 @@
 {
   "name": "clio-fabrication",
-  "description": "Model a part in CAD, slice it for a printer and check it layer by layer before printing.",
-  "version": "1.1.0",
+  "description": "Slice a 3D model for a printer and check it layer by layer before printing.",
+  "version": "1.0.0",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",
@@ -11,7 +11,6 @@
   "repository": "https://github.com/iowarp/clio-kit",
   "license": "BSD-3-Clause",
   "dependencies": [
-    "clio-cad",
     "clio-slicer"
   ]
 }
