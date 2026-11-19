@@ -530,14 +530,14 @@ async def test_every_output_gets_a_provenance_sidecar(site: Site) -> None:
     ]
     assert (
         record["schema"] == "clio.provenance/1"
-        and record["server"] == "geoservices 1.0.0"
+        and record["server"] == "geoservices 1.1.0"
     )
     assert (
         record["sources"][0]["kind"] == "service"
         and record["sources"][0]["reference"] == url
     )
     assert record["sources"][0]["subset"]["where"] == "YEAR=2021"
-    assert record["software"]["geoservices-mcp"] == "1.0.0"
+    assert record["software"]["geoservices-mcp"] == "1.1.0"
 
 
 async def test_oversized_pages_are_halved_and_reported(
@@ -566,21 +566,23 @@ async def test_an_http_error_reports_its_body(site: Site) -> None:
         )
 
 
-async def test_a_read_over_the_byte_budget_is_refused_with_numbers(
+async def test_a_read_over_the_byte_budget_stops_with_the_way_through(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    import re
+
     from geoservices_mcp.implementation import raster as raster_impl
 
     tile = tmp_path / "big.tif"
     _tile(tile, "EPSG:26910", 760000, 4300000, 5.0)
     monkeypatch.setattr(raster_impl, "MAX_READ_BYTES", 1000)
-    with pytest.raises(
-        ToolError, match=r"would fetch about .* GB of full-resolution data"
-    ):
-        await call(
-            "read_raster_window",
-            {"sources": [str(tile)], "bbox": [-120.02, 38.80, -120.005, 38.81]},
-        )
+    args = {"sources": [str(tile)], "bbox": [-120.02, 38.80, -120.005, 38.81]}
+    with pytest.raises(ToolError, match=r"would fetch about .* GB") as stopped:
+        await call("read_raster_window", args)
+    # The caller decides: the message names the budget that lets the same read through.
+    needed = int(re.search(r"max_read_bytes=(\d+)", str(stopped.value)).group(1))
+    result = await call("read_raster_window", args | {"max_read_bytes": needed})
+    assert result["shape"][0] > 0 and result["shape"][1] > 0
 
 
 # --- read deadline ------------------------------------------------------------------------

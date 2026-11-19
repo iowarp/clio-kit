@@ -41,7 +41,7 @@ load_dotenv()
 
 mcp: FastMCP = FastMCP(
     "geoservices",
-    version="1.0.0",
+    version="1.1.0",
     instructions=(
         "Fetch geospatial data from where it is served, bounded by a region given as "
         "[west, south, east, north] in degrees. Start with describe_geo_service to learn "
@@ -258,6 +258,13 @@ async def read_raster_window_tool(
         str | None, Field(description="Output CRS, e.g. EPSG:32610.")
     ] = None,
     output_path: Annotated[str | None, Field(description="Output file name.")] = None,
+    max_read_bytes: Annotated[
+        int | None,
+        Field(
+            description="Full-resolution bytes this read may fetch (default about 1.5 GB). "
+            "Raise it when a read stops over budget and fetching that much is wanted."
+        ),
+    ] = None,
 ) -> dict[str, Any]:
     """Bounded raster read by region."""
     try:
@@ -287,6 +294,7 @@ async def read_raster_window_tool(
                         staged,
                         max_cells=max_cells,
                         dst_crs=dst_crs,
+                        max_read_bytes=max_read_bytes,
                     ),
                 )
             finally:
@@ -303,7 +311,12 @@ async def read_raster_window_tool(
                 "read_raster_window",
                 path,
                 lambda staged: raster.read_window(
-                    items, region, staged, max_cells=max_cells, dst_crs=dst_crs
+                    items,
+                    region,
+                    staged,
+                    max_cells=max_cells,
+                    dst_crs=dst_crs,
+                    max_read_bytes=max_read_bytes,
                 ),
             )
         sidecar = write_provenance(
