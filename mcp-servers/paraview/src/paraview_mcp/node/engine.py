@@ -14,7 +14,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from . import colors, data, manifest
+from . import colors, compat, data, manifest
 from .animation import SceneAnimation
 from .camera import CameraCommands
 from .changes import ChangeLog, describe
@@ -81,6 +81,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         # the camera (a new scene fits it; a restored one applies its saved camera), so
         # that reset would undo a restored camera (FN-O3).
         simple._DisableFirstRenderCameraReset()
+        compat.install()
         self.root = root
         self.threshold_mb = float(threshold_mb)
         self.session = session
@@ -91,6 +92,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         self.scene: dict[str, Any] | None = None
         self.proxies: dict[str, Any] = {}
         self._growth: dict[str, Any] = {}
+        self._settling: dict[str, tuple[Any, float]] = {}
         self._seen: dict[float, float] = {}
         self._seen_scene: str | None = None
         self.last_growth: float | None = None
@@ -176,6 +178,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
             except Exception as exc:  # noqa: BLE001 - a proxy already gone needs no delete
                 print(f"clearing {object_id}: {exc}", flush=True)
         self._growth.clear()
+        self._settling.clear()
         if not self.session:
             from paraview import servermanager
 

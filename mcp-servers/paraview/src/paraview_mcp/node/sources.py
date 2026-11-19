@@ -22,7 +22,12 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from . import bp5
 from .errors import CommandError
+
+#: Seconds a grown BP5 folder must stay unchanged before it is read, when its data
+#: may still be short of the last step.
+SETTLE = 1.0
 
 
 def set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
@@ -102,6 +107,7 @@ class SourceGrowth:
     scene: dict[str, Any] | None
     proxies: dict[str, Any]
     _growth: dict[str, Any]
+    _settling: dict[str, tuple[Any, float]]
     _seen: dict[float, float]
     _seen_scene: str | None
     last_growth: float | None
@@ -212,8 +218,21 @@ class SourceGrowth:
             raise CommandError("not_found", f"No file matches {path}.")
         return files
 
+    def _bp5(self, item: dict[str, Any]) -> bool:
+        path = item["path"]
+        return not is_pattern(path) and bp5.is_bp(path, item.get("reader"))
+
     def _make_reader(self, item: dict[str, Any]) -> Any:
         files = self._files(item)
+        if self._bp5(item):
+            reason = bp5.check(item["path"]).reason
+            if reason:
+                raise CommandError(
+                    "not_ready",
+                    f"{item['path']} cannot be read yet: {reason}. Open it once its "
+                    "writer has written a whole step; open_view with growing set "
+                    "waits for that while the folder is still changing.",
+                )
         name = item.get("reader")
         if not name:
             proxy = self.simple.OpenDataFile(files)
@@ -300,6 +319,27 @@ class SourceGrowth:
             rep = self.simple.GetDisplayProperties(proxy, self.view)
             rep.RescaleTransferFunctionToDataRange(True, False)
 
+    def _bp5_settled(self, item: dict[str, Any], key: Any) -> bool:
+        """Whether a grown BP5 folder can be re-read: its files agree, and its data
+        clearly holds the last step or nothing has changed for ``SETTLE`` seconds.
+        Until then the reader keeps the steps it has."""
+        state = bp5.check(item["path"])
+        if state.reason:
+            self._settling.pop(item["id"], None)
+            return False
+        if state.clear:
+            self._settling.pop(item["id"], None)
+            return True
+        now = time.monotonic()
+        seen = self._settling.get(item["id"])
+        if seen is None or seen[0] != key:
+            self._settling[item["id"]] = (key, now)
+            return False
+        if now - seen[1] < SETTLE:
+            return False
+        self._settling.pop(item["id"], None)
+        return True
+
     def check_growth(self) -> dict[str, Any] | None:
         """Re-read the time list of growing sources; follow the latest step."""
         scene = self.scene
@@ -313,6 +353,8 @@ class SourceGrowth:
                 continue
             key = disk_key(item["path"])
             if key == self._growth.get(item["id"]):
+                continue
+            if self._bp5(item) and not self._bp5_settled(item, key):
                 continue
             self._growth[item["id"]] = key
             changed = True

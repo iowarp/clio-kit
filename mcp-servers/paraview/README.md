@@ -118,6 +118,21 @@ context, and `watch_steps` reports it as task progress, "Step k of N", so any MC
 host can show a run advancing. When the run ends, `measure_over_time` gives the
 statistics of a field at every step.
 
+A growing source can be opened as soon as the run starts. While it is not there
+yet, or an ADIOS2 BP5 folder has no whole step on disk, `open_view` waits as long
+as the folder keeps changing, and says why it cannot be read once nothing has
+changed for 90 seconds. ParaView's ADIOS2 reader takes the process down on a BP5
+folder whose index (`md.idx`) names a step that its metadata (`md.0`) does not
+hold yet, and waits forever for data that is not on disk. A writer adds data,
+metadata and index in that order, but a reader on another machine of a shared
+file system can see them land in any order. So the server reads a growing BP5
+folder only when its index, metadata, meta-metadata and data agree, and keeps the
+steps it has until they do.
+
+Scene scripts run on ParaView 6, which drops the " (matplotlib)" qualifier from
+colour preset names: `ApplyPreset("Viridis (matplotlib)")` applies "Viridis", and
+`ColorBy(display, None)` on a display that colours by nothing does nothing.
+
 ## The view
 
 `open_view` carries the MCP Apps view `ui://paraview/view`. It is a small page

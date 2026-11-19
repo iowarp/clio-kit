@@ -16,12 +16,19 @@ from collections.abc import Callable
 from typing import Any
 
 from . import manifest
+from .bp5 import source_readiness
 from .changes import lines as change_lines
 from .engine import CommandError, Engine
+from .errors import _expand
 from .panel import MODE_LABELS, build
 from .serializers import register_serializers
+from .sources import SETTLE, is_pattern
 from .theme import FALLBACK_CSS, THEME_JS, apply_to_view
 from .workbench import Workbench
+
+#: Seconds a growing source may show no change on disk before open_view stops
+#: waiting for it to become readable.
+SOURCE_STALL = 90.0
 
 TOKEN_HEADERS = ("X-Clio-Service-Token",)
 END_INTERACTION_EVENT = 45  # vtkCommand::EndInteractionEvent
@@ -272,6 +279,7 @@ class NodeApp:
                 {"error": {"code": "bad_request", "message": "Malformed command."}}, 400
             )
         try:
+            await self._await_source(name, args)
             with self.server.state:
                 result = self.engine.run(name, args, by=by)
         except CommandError as exc:
@@ -291,6 +299,43 @@ class NodeApp:
         if name in ("set_camera", "fit_camera"):
             self.view.push_camera()
         return self._json({"result": result})
+
+    async def _await_source(self, name: str, args: dict[str, Any]) -> None:
+        """Before a growing source is opened, wait until it can be read: until it is
+        there and, for an ADIOS2 BP5 folder, until a whole step is on disk. The wait
+        lets the node go on answering. It ends when the source is readable, or once
+        nothing on disk has changed for ``SOURCE_STALL`` seconds; open_view then says
+        why the source cannot be read."""
+        if name != "open_view" or not args.get("growing") or not args.get("path"):
+            return
+        path = _expand(str(args["path"]))
+        scene = self.engine.scene
+        if (
+            scene
+            and (scene.get("dataset") or {}).get("path") == path
+            and not args.get("new")
+        ):
+            return
+        pattern = is_pattern(path)
+        reader = args.get("reader")
+        last: Any = object()
+        changed = start = time.monotonic()
+        said = None
+        while True:
+            reason, clear, key = source_readiness(path, reader, pattern)
+            now = time.monotonic()
+            if key != last:
+                last, changed = key, now
+            if reason is None and (clear or now - changed >= SETTLE):
+                break
+            if now - changed >= SOURCE_STALL:
+                break
+            if reason and reason != said:
+                said = reason
+                print(f"waiting for {path}: {reason}", flush=True)
+            await asyncio.sleep(0.5)
+        if said:
+            print(f"waited {time.monotonic() - start:.1f}s for {path}", flush=True)
 
     # -- reacting to the scene -------------------------------------------------
     def _on_scene_change(self, reason: str) -> None:

@@ -221,7 +221,10 @@ def open_view(
     With neither path nor scene, it shows the ParaView session already running
     where ParaView is, or the current scene, or else an empty scene that
     run_scene_script can fill with sources. A growing source is followed: the view
-    moves to each new step unless the person has parked it on one.
+    moves to each new step unless the person has parked it on one. A growing source
+    that cannot be read yet (not there yet, or an ADIOS2 BP5 folder before its first
+    whole step) is waited for while it changes on disk, so open it as soon as the
+    run starts.
     """
     summary, link = command(
         "open_view", open_arguments(path, scene, growing, new, view)
@@ -257,7 +260,9 @@ def run_scene_script(
     filters, colours, anything paraview.simple can do. It runs in the scene the person
     sees, so the live view, captures and the saved scene include what it makes. It applies
     whole or not at all; a failing script leaves nothing behind. The step is saved with the
-    scene and replayed when the scene is restored."""
+    scene and replayed when the scene is restored. Names are those of the ParaView that
+    runs it: ParaView 6 colour presets drop " (matplotlib)" (either form works), and a
+    scalar bar's range labels are AddRangeLabels."""
     result, _ = command("run_scene_script", {"code": code, "label": label})
     return present.script_text(result, _where())
 
