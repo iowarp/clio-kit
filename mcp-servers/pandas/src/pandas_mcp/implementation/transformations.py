@@ -9,6 +9,8 @@ from typing import Any, Literal, Optional, List, Dict
 from typing_extensions import TypedDict
 import traceback
 
+from .row_filter import filter_rows
+
 
 class GroupByInfo(TypedDict):
     """Parameters and outcome summary of a groupby aggregation."""
@@ -69,7 +71,7 @@ def groupby_operations(
         # Apply filter if provided
         if filter_condition:
             try:
-                df = df.query(filter_condition)
+                df = filter_rows(df, filter_condition)
             except Exception as e:
                 return {
                     "success": False,
