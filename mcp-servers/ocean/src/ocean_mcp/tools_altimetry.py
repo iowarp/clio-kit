@@ -260,7 +260,13 @@ def track_crossings(
     # The crossings alone are empty when none crossed; the person checks a count of
     # zero against the tracks and the field they were tested on, so show all three.
     out.view = views.crossings_view(
-        Path(tracks), Path(field), variable, out.path if len(first) else None, name
+        Path(tracks),
+        Path(field),
+        variable,
+        out.path if len(first) else None,
+        name,
+        level=level,
+        category=next((c for c in views.TRACK_KIND if c in table), None),
     )
     return result(
         f"{len(first)} of {total} tracks reach the {side} side of {variable} = {level:g}.",

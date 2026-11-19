@@ -55,6 +55,8 @@ def _numeric(table: Any) -> list[str]:
     ]
 
 
+#: Columns telling kinds of track apart (an eddy's polarity), coloured by category.
+TRACK_KIND = ("polarity",)
 #: Columns naming the track a row belongs to (eddies, storms, floats, particles).
 TRACK_ID = ("track", "particle", "storm", "sid", "float", "platform")
 
@@ -102,6 +104,8 @@ def table_view(
             "trackField": track,
             "timeField": "time",
         }
+        if kind := _first(columns, TRACK_KIND):
+            layer["categoryField"] = kind
     else:
         feature = _first(columns, FEATURE_ID)
         if not feature:
@@ -119,18 +123,33 @@ def table_view(
 
 
 def crossings_view(
-    tracks: Path, field: Path, variable: str, crossings: Path | None, title: str = ""
+    tracks: Path,
+    field: Path,
+    variable: str,
+    crossings: Path | None,
+    title: str = "",
+    *,
+    level: float | None = None,
+    category: str | None = None,
 ) -> dict[str, Any]:
-    """Tracks tested against a field: the field, every track, and the first crossings."""
+    """Tracks tested against a field: the field, every track, and the first crossings.
 
+    The field is drawn on a diverging scale centred on the tested ``level``, so the
+    contour the count depends on (an isobath) is the scale's neutral line.
+    """
+
+    grid: dict[str, Any] = {
+        "id": "field",
+        "kind": "grid",
+        "label": variable,
+        "gridUri": str(field),
+        "variable": variable,
+    }
+    if level is not None:
+        span = 2 * max(abs(level), 100.0)
+        grid |= {"colormap": "balance", "valueRange": [level - span, level + span]}
     layers: list[dict[str, Any]] = [
-        {
-            "id": "field",
-            "kind": "grid",
-            "label": variable,
-            "gridUri": str(field),
-            "variable": variable,
-        },
+        grid,
         {
             "id": "tracks",
             "kind": "tracks",
@@ -141,6 +160,7 @@ def crossings_view(
             "idField": "track",
             "trackField": "track",
             "timeField": "time",
+            **({"categoryField": category} if category else {}),
         },
     ]
     if crossings is not None:
