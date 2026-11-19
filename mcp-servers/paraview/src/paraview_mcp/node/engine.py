@@ -148,12 +148,39 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
             listener(reason)
 
     def _rollback(self, before: dict[str, Any] | None) -> None:
+        keep = self._kept_readers(before)
         self.scene = before
-        self._clear()
+        self._clear(keep)
         if before is not None:
-            self._build(before)
+            self._build(before, keep)
         for listener in list(self.listeners):
             listener("rollback")
+
+    def _kept_readers(self, before: dict[str, Any] | None) -> dict[str, Any]:
+        """BP5 readers a rollback keeps open rather than re-opening. A BP5 folder a
+        writer is still filling may not be safe to open again at this moment, and
+        the reader already holds the steps it read; what a failed command built on
+        it is rebuilt."""
+        if before is None or self.scene is None:
+            return {}
+        fields = ("path", "reader", "reader_properties")
+        current = {item["id"]: item for item in self.scene["objects"]}
+        live = {id(proxy) for proxy in self.simple.GetSources().values()}
+        kept: dict[str, Any] = {}
+        for item in before["objects"]:
+            proxy = self.proxies.get(item["id"])
+            now = current.get(item["id"])
+            if (
+                proxy is not None
+                and id(proxy) in live
+                and now is not None
+                and item.get("kind") == "reader"
+                and now.get("kind") == "reader"
+                and self._bp5(item)
+                and all(item.get(f) == now.get(f) for f in fields)
+            ):
+                kept[item["id"]] = proxy
+        return kept
 
     def require_scene(self) -> dict[str, Any]:
         if self.scene is None:
@@ -165,11 +192,13 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         return self.scene
 
     # -- building ----------------------------------------------------------
-    def _clear(self) -> None:
+    def _clear(self, keep: dict[str, Any] | None = None) -> None:
+        keep = keep or {}
         for object_id in reversed(list(self.proxies)):
             proxy = self.proxies.pop(object_id)
             item = manifest.find_object(self.scene, object_id) if self.scene else None
-            if item is not None and item["kind"] == "session":
+            kept = keep.get(object_id) is proxy
+            if kept or (item is not None and item["kind"] == "session"):
                 self.simple.Hide(proxy, self.view)
                 continue
             try:
@@ -177,8 +206,9 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
                 self.simple.Delete(proxy)
             except Exception as exc:  # noqa: BLE001 - a proxy already gone needs no delete
                 print(f"clearing {object_id}: {exc}", flush=True)
-        self._growth.clear()
-        self._settling.clear()
+        for state in (self._growth, self._settling):
+            for object_id in [k for k in state if k not in keep]:
+                del state[object_id]
         if not self.session:
             from paraview import servermanager
 
@@ -263,15 +293,21 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         if not display.get("visible", True):
             simple.Hide(proxy, self.view)
 
-    def _build(self, scene: dict[str, Any]) -> None:
+    def _build(
+        self, scene: dict[str, Any], reuse: dict[str, Any] | None = None
+    ) -> None:
         made: dict[str, Any] = {}
+        reuse = reuse or {}
         for item in scene["objects"]:
             if item.get("kind") == "script":
                 made.update(self.replay_script(item))
                 continue
-            proxy = (
-                made.pop(item["id"]) if item.get("kind") == "made" else self._make(item)
-            )
+            if item.get("kind") == "made":
+                proxy = made.pop(item["id"])
+            elif item["id"] in reuse:
+                proxy = reuse[item["id"]]
+            else:
+                proxy = self._make(item)
             self.proxies[item["id"]] = proxy
             self._show(item, proxy, apply="display" in item)
         self._apply_time(scene)
