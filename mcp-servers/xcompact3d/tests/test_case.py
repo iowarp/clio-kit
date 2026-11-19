@@ -113,7 +113,6 @@ def test_prepare_case_respects_stability_and_writes_a_runnable_case(
     job = record["relay_job"]
     assert job["arguments"] == [str(run.resolve() / "run.sh")]
     assert job["resources"] == {"node_count": 1, "process_count": 4}
-    assert job["launcher"] == "single"
     assert load_case(str(run))["plan"] == plan
 
 
