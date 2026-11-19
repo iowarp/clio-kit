@@ -99,6 +99,24 @@
       "repository": "https://github.com/iowarp/clio-kit"
     },
     {
+      "name": "clio-copernicus",
+      "source": "./plugins/clio-copernicus",
+      "description": "Search, subset and download Copernicus Marine and Climate Data Store products, with provenance and resumable jobs.",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "copernicus",
+        "cmems",
+        "cds",
+        "era5",
+        "ocean",
+        "climate",
+        "reanalysis"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
       "name": "clio-darshan",
       "source": "./plugins/clio-darshan",
       "description": "Darshan I/O profiler MCP server for analyzing I/O trace files",
@@ -165,13 +183,48 @@
       "name": "clio-geo",
       "source": "./plugins/clio-geo",
       "description": "MCP server for rendering GeoJSON vector layers into map images with basemaps",
-      "version": "2.4.0",
+      "version": "2.4.1",
       "category": "scientific",
       "keywords": [
         "geospatial",
         "mapping",
         "geojson",
         "visualization"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
+      "name": "clio-geoprocess",
+      "source": "./plugins/clio-geoprocess",
+      "description": "Core geospatial operations: reproject, clip, dissolve and overlay, zonal statistics and raster differencing",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "geospatial",
+        "gis",
+        "overlay",
+        "zonal-statistics",
+        "reprojection",
+        "raster"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
+      "name": "clio-geoservices",
+      "source": "./plugins/clio-geoservices",
+      "description": "Fetch geospatial data where it is served: ArcGIS REST, OGC WFS and WCS, STAC, remote rasters and EPT/COPC lidar, by region",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "geospatial",
+        "arcgis",
+        "ogc",
+        "stac",
+        "cog",
+        "lidar",
+        "point-cloud"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -188,6 +241,23 @@
         "gcmc",
         "mof",
         "graspa"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
+      "name": "clio-grids",
+      "source": "./plugins/clio-grids",
+      "description": "MCP server for hand edits to 2-D model grids (bathymetry, land masks, topography): an interactive editor, an ordered edit list located by longitude and latitude, and replay onto a regenerated grid with content hashes",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "grid",
+        "bathymetry",
+        "land-mask",
+        "topography",
+        "model",
+        "mcp-apps"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -256,7 +326,7 @@
       "name": "clio-ndp",
       "source": "./plugins/clio-ndp",
       "description": "National Data Platform (NDP) MCP server for searching and discovering datasets across multiple CKAN instances",
-      "version": "2.2.9",
+      "version": "2.2.10",
       "category": "scientific",
       "keywords": [
         "datasets",
@@ -277,6 +347,25 @@
         "hardware-monitoring",
         "system-info",
         "performance"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
+      "name": "clio-ocean",
+      "source": "./plugins/clio-ocean",
+      "description": "MCP server for ocean analysis: CTD casts, TEOS-10, water masses, Argo and glider profiles, sections, transports, tides, eddies, particles, marine heatwaves and model checks, each result with a provenance record",
+      "version": "1.0.0",
+      "category": "scientific",
+      "keywords": [
+        "oceanography",
+        "argo",
+        "ctd",
+        "teos-10",
+        "tides",
+        "eddies",
+        "marine-heatwave",
+        "mom6"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -487,82 +576,13 @@
       "name": "clio-terrain",
       "source": "./plugins/clio-terrain",
       "description": "MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding",
-      "version": "2.2.8",
+      "version": "2.3.0",
       "category": "scientific",
       "keywords": [
         "terrain",
         "dem",
         "point-cloud",
         "geospatial"
-      ],
-      "license": "BSD-3-Clause",
-      "repository": "https://github.com/iowarp/clio-kit"
-    },
-    {
-      "name": "clio-web",
-      "source": "./plugins/clio-web",
-      "description": "Provider-fixed web search plus transparent URL, DOI, and document fetching",
-      "version": "2.1.6",
-      "category": "general",
-      "keywords": [
-        "web",
-        "fetch",
-        "search",
-        "agentic-web"
-      ],
-      "license": "BSD-3-Clause",
-      "repository": "https://github.com/iowarp/clio-kit"
-    },
-    {
-      "name": "clio-copernicus",
-      "source": "./plugins/clio-copernicus",
-      "description": "Search, subset and download Copernicus Marine and Climate Data Store products, with provenance and resumable jobs.",
-      "version": "1.0.0",
-      "category": "scientific",
-      "keywords": [
-        "copernicus",
-        "cmems",
-        "cds",
-        "era5",
-        "ocean",
-        "climate",
-        "reanalysis"
-      ],
-      "license": "BSD-3-Clause",
-      "repository": "https://github.com/iowarp/clio-kit"
-    },
-    {
-      "name": "clio-grids",
-      "source": "./plugins/clio-grids",
-      "description": "MCP server for hand edits to 2-D model grids (bathymetry, land masks, topography): an interactive editor, an ordered edit list located by longitude and latitude, and replay onto a regenerated grid with content hashes",
-      "version": "1.0.0",
-      "category": "scientific",
-      "keywords": [
-        "grid",
-        "bathymetry",
-        "land-mask",
-        "topography",
-        "model",
-        "mcp-apps"
-      ],
-      "license": "BSD-3-Clause",
-      "repository": "https://github.com/iowarp/clio-kit"
-    },
-    {
-      "name": "clio-ocean",
-      "source": "./plugins/clio-ocean",
-      "description": "MCP server for ocean analysis: CTD casts, TEOS-10, water masses, Argo and glider profiles, sections, transports, tides, eddies, particles, marine heatwaves and model checks, each result with a provenance record",
-      "version": "1.0.0",
-      "category": "scientific",
-      "keywords": [
-        "oceanography",
-        "argo",
-        "ctd",
-        "teos-10",
-        "tides",
-        "eddies",
-        "marine-heatwave",
-        "mom6"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -582,6 +602,21 @@
         "cyclone",
         "cmip6",
         "verification"
+      ],
+      "license": "BSD-3-Clause",
+      "repository": "https://github.com/iowarp/clio-kit"
+    },
+    {
+      "name": "clio-web",
+      "source": "./plugins/clio-web",
+      "description": "Provider-fixed web search plus transparent URL, DOI, and document fetching",
+      "version": "2.1.6",
+      "category": "general",
+      "keywords": [
+        "web",
+        "fetch",
+        "search",
+        "agentic-web"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"
@@ -744,8 +779,8 @@
     {
       "name": "clio-geoscience-skills",
       "source": "./skills/clio-geoscience-skills",
-      "description": "Skills for the clio-geoscience workflow: maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data.",
-      "version": "1.2.0",
+      "description": "Skills for the clio-geoscience workflow: maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data.",
+      "version": "1.3.0",
       "category": "skills",
       "keywords": [
         "coordinate-systems",
@@ -758,10 +793,11 @@
     {
       "name": "clio-geoscience",
       "source": "./plugins/clio-geoscience",
-      "description": "Maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data.",
-      "version": "1.2.0",
+      "description": "Maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data.",
+      "version": "1.3.0",
       "category": "workflow",
       "keywords": [
+        "arcgis",
         "argo",
         "bathymetry",
         "cape",
@@ -770,6 +806,7 @@
         "climate",
         "cmems",
         "cmip6",
+        "cog",
         "copernicus",
         "ctd",
         "cyclone",
@@ -783,8 +820,10 @@
         "era5",
         "geojson",
         "geospatial",
+        "gis",
         "grid",
         "land-mask",
+        "lidar",
         "mapping",
         "marine-heatwave",
         "mcp-apps",
@@ -793,11 +832,16 @@
         "nasa",
         "ocean",
         "oceanography",
+        "ogc",
+        "overlay",
         "point-cloud",
+        "raster",
         "reanalysis",
         "remote-sensing",
+        "reprojection",
         "sac",
         "seismology",
+        "stac",
         "teos-10",
         "terrain",
         "tides",
@@ -805,7 +849,8 @@
         "verification",
         "visualization",
         "waveform",
-        "weather"
+        "weather",
+        "zonal-statistics"
       ],
       "license": "BSD-3-Clause",
       "repository": "https://github.com/iowarp/clio-kit"

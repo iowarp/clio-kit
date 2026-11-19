@@ -65,6 +65,12 @@
       "description": "Describe what the ase MCP server can do."
     }
   ],
+  "prompts": [
+    {
+      "name": "optimize_and_check",
+      "description": "Guided optimization with a frequency check."
+    }
+  ],
   "tags": [
     "chemistry",
     "ase",

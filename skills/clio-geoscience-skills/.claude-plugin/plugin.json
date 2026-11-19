@@ -1,7 +1,7 @@
 {
   "name": "clio-geoscience-skills",
-  "description": "Skills for the clio-geoscience workflow: maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data.",
-  "version": "1.2.0",
+  "description": "Skills for the clio-geoscience workflow: maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data.",
+  "version": "1.3.0",
   "author": {
     "name": "IoWarp Team - Gnosis Research Center",
     "email": "grc@illinoistech.edu",

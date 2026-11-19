@@ -1,0 +1,75 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/geoprocess-mcp",
+  "title": "CLIO Geoprocess",
+  "description": "Core geospatial operations: reproject, clip, dissolve and overlay, zonal statistics and raster...",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.12.7",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "geoprocess"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "reproject",
+      "description": "Reproject a vector file (GeoJSON, shapefile, GeoPackage, zipped shapefile) or a raster (GeoTIFF, VRT, IMG) to another CRS, e.g. EPSG:32610 or EPSG:4326. Rasters take an optional resolution and resampling (nearest for categories, bilinear or average for continuous values). Reports source and target CRS and the raster's vertical datum when it declares one."
+    },
+    {
+      "name": "clip_features",
+      "description": "Clip vector features to a polygon layer (mask) or a bbox [west, south, east, north] in degrees, save GeoJSON, and report how many features remain and, for polygons, the covered area in hectares."
+    },
+    {
+      "name": "overlay_features",
+      "description": "Polygon overlay with honest areas. operation=dissolve merges overlapping polygons (optionally per attribute 'by'), so the total is the area covered, and reports how much overlap was removed. intersection, union, difference, symmetric_difference and identity combine 'source' with 'other'. Areas are in hectares computed in an equal-area CRS."
+    },
+    {
+      "name": "zonal_statistics",
+      "description": "Summarise a raster inside polygons (count, min, max, mean, std, sum and the share of each zone with data), optionally grouped by an attribute, or sample it at point features (nearest cell, or the mean within buffer_m metres). Zones are rasterized on the raster's own grid."
+    },
+    {
+      "name": "raster_difference",
+      "description": "Subtract one raster from another (first minus second) on the first raster's grid, e.g. two DEMs for elevation change or snow depth, save the difference GeoTIFF and report its statistics, overlap, net volume for projected grids, and caveats when vertical datums, units or resolutions differ."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "geoprocess://capabilities",
+      "name": "capabilities",
+      "description": "Operations, formats and conventions."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "habitat_area",
+      "description": "Guided workflow: covered habitat area inside a boundary."
+    }
+  ],
+  "tags": [
+    "geospatial",
+    "gis",
+    "overlay",
+    "zonal-statistics",
+    "reprojection",
+    "raster"
+  ],
+  "scope": "scientific"
+}

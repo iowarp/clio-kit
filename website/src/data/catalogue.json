@@ -1232,7 +1232,7 @@
       "description": "MCP server for rendering GeoJSON vector layers into map images with basemaps",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.4.0",
+      "version": "2.4.1",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/geo",
@@ -1317,6 +1317,205 @@
           "args": [
             "mcp-server",
             "geo"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/geoprocess",
+      "kind": "mcp",
+      "name": "geoprocess",
+      "title": "Geoprocess",
+      "description": "Core geospatial operations: reproject, clip, dissolve and overlay, zonal statistics and raster differencing",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/geoprocess",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "geospatial",
+        "gis",
+        "overlay",
+        "zonal-statistics",
+        "reprojection",
+        "raster"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/geoprocess",
+      "evidence": "Locked runtime",
+      "icon": "📐",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-geoprocess",
+      "summary": "Core geospatial operations: reproject, clip, dissolve and overlay, zonal statistics and raster differencing",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "geoprocess"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/geoservices",
+      "kind": "mcp",
+      "name": "geoservices",
+      "title": "Geoservices",
+      "description": "Fetch geospatial data where it is served: ArcGIS REST, OGC WFS and WCS, STAC, remote rasters and EPT/COPC lidar, by region",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/geoservices",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "geospatial",
+        "arcgis",
+        "ogc",
+        "stac",
+        "cog",
+        "lidar",
+        "point-cloud"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/geoservices",
+      "evidence": "Locked runtime",
+      "icon": "🗺️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-geoservices",
+      "summary": "Fetch geospatial data where it is served: ArcGIS REST, OGC WFS and WCS, STAC, remote rasters and EPT/COPC lidar, by region",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "geoservices"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
           ]
         }
       }
@@ -1914,7 +2113,7 @@
       "description": "National Data Platform (NDP) MCP server for searching and discovering datasets across multiple CKAN instances",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.2.9",
+      "version": "2.2.10",
       "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/ndp",
@@ -3476,7 +3675,7 @@
       "description": "MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.2.8",
+      "version": "2.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/terrain",
@@ -4278,10 +4477,10 @@
       "kind": "collection",
       "name": "clio-geoscience-skills",
       "title": "Geoscience Skills",
-      "description": "Skills for the clio-geoscience workflow: maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data.",
+      "description": "Skills for the clio-geoscience workflow: maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-geoscience-skills",
@@ -4318,7 +4517,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Skills for the clio-geoscience workflow: maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data."
+      "summary": "Skills for the clio-geoscience workflow: maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data."
     },
     {
       "id": "plugin/clio-hpc-skills",
@@ -7139,7 +7338,7 @@
       "description": "Use when interpreting axis order, projections, distance units or vertical datums. Triggers on \"lat lon\", \"CRS\", \"UTM\", \"map offset\". Calls no tools. Not for executing map operations; use geospatial-map.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-geoscience-skills/skills/coordinate-systems/SKILL.md",
@@ -7329,7 +7528,7 @@
       "description": "Use when validating GeoJSON, querying spatial relationships, mapping features or analyzing terrain grids. Triggers on \"GeoJSON\", \"render a map\", \"DEM\", \"point cloud\". Not for CRS interpretation alone; use coordinate-systems.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-geoscience-skills/skills/geospatial-map/SKILL.md",
@@ -7594,7 +7793,7 @@
       "description": "Use when inspecting SAC waveforms or evaluating a saved earthquake event catalogue. Triggers on \"SAC\", \"waveform statistics\", \"b-value\", \"magnitude completeness\". Not for geospatial mapping; use geospatial-map.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-geoscience-skills/skills/seismic-analysis/SKILL.md",
@@ -8120,10 +8319,10 @@
       "kind": "plugin",
       "name": "clio-geoscience",
       "title": "Explore the physical world",
-      "description": "Maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data.",
+      "description": "Maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.2.0",
+      "version": "1.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-geoscience/.claude-plugin/plugin.json",
@@ -8131,6 +8330,8 @@
         "mcp/copernicus",
         "mcp/earthdata",
         "mcp/geo",
+        "mcp/geoprocess",
+        "mcp/geoservices",
         "mcp/grids",
         "mcp/ocean",
         "mcp/seismology",
@@ -8144,6 +8345,8 @@
         "clio-copernicus",
         "clio-earthdata",
         "clio-geo",
+        "clio-geoprocess",
+        "clio-geoservices",
         "clio-grids",
         "clio-ocean",
         "clio-seismology",
@@ -8179,7 +8382,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Maps, terrain, waveforms, ocean and weather data, model grids, NASA Earth data."
+      "summary": "Maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data."
     },
     {
       "id": "workflow/clio-home",
