@@ -132,7 +132,8 @@
     const t = state.time || {};
     if (t.steps > 1) {
       let line = 'Time step ' + (t.index + 1) + ' of ' + t.steps + ' (time ' + t.time + ')';
-      if (t.follow_latest) line += ', following the latest step.';
+      if (t.catching_up) line += ', catching up from the first step, then following the latest step.';
+      else if (t.follow_latest) line += ', following the latest step.';
       else line += ', parked by the person; ' + t.newer_steps + ' newer step(s) exist, latest time ' + t.latest_time + '.';
       parts.push(line);
     }
@@ -195,6 +196,7 @@
       latest_time: t.latest_time === undefined ? null : t.latest_time,
       newer_steps: t.newer_steps || 0,
       follow_latest: t.follow_latest !== false,
+      catching_up: !!t.catching_up,
       growing: !!state.growing,
       selection: state.selection,
       representation: state.representation,

@@ -113,7 +113,11 @@ and named in the dataset's note; the open stands.
 The server re-reads the reader's time list as the source grows. A view that
 follows the latest step moves to each new one; a view the person or agent moved
 to an earlier step stays there and says how many newer steps exist, until it
-follows again (`set_timestep` with `latest`). Each step reaches the view's model
+follows again (`set_timestep` with `latest`). A growing source opened once it
+already has steps catches up: when a view first connects it shows the first
+step, plays forward a few steps a second (a long history is strided to about 60
+frames), then follows the latest step. The view reports `catching_up` meanwhile;
+choosing a step ends it. Each step reaches the view's model
 context, and `watch_steps` reports it as task progress, "Step k of N", so any MCP
 host can show a run advancing. When the run ends, `measure_over_time` gives the
 statistics of a field at every step.

@@ -428,6 +428,21 @@ def test_a_followed_source_grows_free_colour_maps_and_keeps_fixed_ones(
     assert report["before"]["fixed"] == report["after"]["fixed"] == [0.0, 100.0]
 
 
+def test_a_growing_source_opened_late_catches_up_from_its_first_step(
+    attached: tuple[Attacher, Path],
+) -> None:
+    _, data = attached
+    report = _pvpython_script("replay_check.py", str(data / "replay"), prefix="REPLAY=")
+    assert report["opened"] == [2, False, True]
+    assert report["armed"] and report["started"]
+    assert report["first"] == [0, True, True]
+    assert report["going"] and report["second"] == [1, True, True]
+    assert report["ended"] and report["last"] == [2, False, True]
+    # It plays once per opening; a chosen step ends a catch-up and parks the view.
+    assert report["again"] is False
+    assert report["chosen"] == [1, False, False]
+
+
 BP_WRITER = '''
 import os, sys, time
 import numpy as np

@@ -32,6 +32,8 @@ def view_note(time_state: dict[str, Any]) -> str:
     steps = int(time_state.get("steps") or 0)
     if steps == 0:
         return "the data has no time steps yet"
+    if time_state.get("catching_up"):
+        return "the view is catching up from the first step, then follows it"
     if time_state.get("follow_latest"):
         return "the view follows it"
     return (

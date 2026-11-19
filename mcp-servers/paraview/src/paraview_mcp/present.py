@@ -70,6 +70,8 @@ def time_line(time_state: dict[str, Any]) -> str:
         f"Time: step {time_state['index'] + 1} of {steps} "
         f"(time {_num(time_state['time'])})"
     )
+    if time_state.get("catching_up"):
+        return line + ", catching up from the first step, then following the latest."
     if time_state.get("follow_latest"):
         return line + ", following the latest step."
     return (

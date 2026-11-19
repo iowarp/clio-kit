@@ -11,6 +11,11 @@ output is a folder). When that changes it re-reads the reader's time list. A
 view following the latest step moves to it; a view parked on a step stays
 there and reports how many newer steps exist. ``steps`` lists the steps with
 when each was first seen, so a caller can report each new one.
+
+A growing source opened once it already has steps catches up: when a view
+first connects, it shows the first step, plays forward a few steps a second,
+then follows the latest step. While it catches up the view still counts as
+following; a step chosen by the person or the agent ends the catch-up.
 """
 
 from __future__ import annotations
@@ -29,6 +34,13 @@ from .errors import CommandError
 #: Seconds a grown BP5 folder must stay unchanged before its last step is read,
 #: when its data may still be short of that step.
 SETTLE = 1.0
+#: A late-opened growing source's catch-up: seconds its first step is held, then
+#: seconds per later step; a longer history is strided to about REPLAY_STEPS.
+REPLAY_HOLD = 2.0
+REPLAY_SECONDS = 0.25
+REPLAY_STEPS = 60
+#: Seconds a catch-up waits for a view that went away before it jumps to the latest.
+REPLAY_ALONE = 10.0
 
 
 def set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
@@ -113,6 +125,8 @@ class SourceGrowth:
     _held: dict[str, int]
     _seen: dict[float, float]
     _seen_scene: str | None
+    _replay: int | None
+    _replay_armed: str | None
     last_growth: float | None
 
     # Provided by the engine.
@@ -424,6 +438,46 @@ class SourceGrowth:
         after = len(self.timesteps())
         self.commit("growth")
         return {"new_steps": after - before, **self.time_summary()}
+
+    # -- catching up from the first step ---------------------------------------
+    def arm_replay(self) -> None:
+        """A growing source just opened catches up when a view first connects."""
+        scene = self.scene
+        self._replay = None
+        growing = scene is not None and (scene.get("dataset") or {}).get("growing")
+        self._replay_armed = scene["scene"] if scene is not None and growing else None
+
+    @property
+    def replay_armed(self) -> bool:
+        return self._replay_armed is not None
+
+    def start_replay(self) -> bool:
+        """Show the first step of an armed source; the view still follows."""
+        scene = self.scene
+        armed, self._replay_armed = self._replay_armed, None
+        if scene is None or armed != scene["scene"] or self._replay is not None:
+            return False
+        if not scene["time"].get("follow_latest", True) or len(self.timesteps()) < 2:
+            return False
+        self._replay = 0
+        self._apply_time(scene)
+        self.commit("replay")
+        return True
+
+    def replay_tick(self, finish: bool = False) -> bool:
+        """Move a catch-up forward; at the latest step, or with ``finish``, it ends
+        and the view follows the latest step. Returns whether it goes on."""
+        scene = self.scene
+        if self._replay is None or scene is None:
+            self._replay = None
+            return False
+        steps = len(self.timesteps())
+        stride = max(1, -(-(steps - 1) // REPLAY_STEPS))
+        index = self._replay + stride
+        self._replay = None if finish or index >= steps - 1 else index
+        self._apply_time(scene)
+        self.commit("replay")
+        return self._replay is not None
 
     def cmd_steps(self, after: int = 0) -> dict[str, Any]:
         """The scene's time steps from index ``after`` on, each with when it was first

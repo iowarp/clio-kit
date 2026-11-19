@@ -50,6 +50,11 @@ VIEW_STATE = [
         "description": "Whether the view follows the newest step.",
     },
     {"key": "newer_steps", "description": "Steps newer than the shown one."},
+    {
+        "key": "catching_up",
+        "description": "Whether a source opened late is playing from its first step "
+        "to the latest before following it.",
+    },
     {"key": "growing", "description": "Whether the source is still being written."},
     {
         "key": "selection",

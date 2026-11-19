@@ -96,6 +96,8 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         self._held: dict[str, int] = {}
         self._seen: dict[float, float] = {}
         self._seen_scene: str | None = None
+        self._replay: int | None = None
+        self._replay_armed: str | None = None
         self.last_growth: float | None = None
         self.listeners: list[Callable[[str], None]] = []
         self.changes = ChangeLog()
@@ -122,6 +124,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
             self.scene or {}
         ).get("scene"):
             self.changes.clear()
+            self.arm_replay()
         change = describe(name, args, result, self.scene)
         if change is not None:
             self.changes.record(by, *change)
@@ -338,7 +341,10 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
             time_state["index"] = 0
             return
         if time_state.get("follow_latest", True):
-            time_state["index"] = len(steps) - 1
+            # A catch-up from the first step shows its own step while following.
+            time_state["index"] = (
+                len(steps) - 1 if self._replay is None else self._replay
+            )
         index = max(0, min(int(time_state.get("index", 0)), len(steps) - 1))
         time_state["index"] = index
         animation.AnimationTime = steps[index]
@@ -358,6 +364,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
             "latest_time": steps[-1],
             "follow_latest": scene["time"]["follow_latest"],
             "newer_steps": len(steps) - 1 - index,
+            "catching_up": self._replay is not None,
         }
 
     # -- camera and view mode -----------------------------------------------
@@ -743,6 +750,8 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         steps = self.timesteps()
         if not steps:
             raise CommandError("no_time", "This scene's data has no time steps.")
+        # A chosen step ends a catch-up from the first step.
+        self._replay = self._replay_armed = None
         if latest:
             scene["time"].update(follow_latest=True, index=len(steps) - 1)
         elif time is not None:

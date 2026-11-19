@@ -22,7 +22,7 @@ from .engine import CommandError, Engine
 from .errors import _expand
 from .panel import MODE_LABELS, build
 from .serializers import register_serializers
-from .sources import SETTLE, is_pattern
+from .sources import REPLAY_ALONE, REPLAY_HOLD, REPLAY_SECONDS, SETTLE, is_pattern
 from .theme import FALLBACK_CSS, THEME_JS, apply_to_view
 from .workbench import Workbench
 
@@ -118,6 +118,7 @@ class NodeApp:
         self.server = server or get_server("clio-paraview", client_type="vue3")
         self.last_link = time.monotonic()
         self.sockets = 0
+        self._replay: asyncio.Future[None] | None = None
         self.view: Any = None
         self.link_note = ""
         self._build()
@@ -138,6 +139,7 @@ class NodeApp:
             clio_steps=0,
             clio_index=0,
             clio_follow=True,
+            clio_catching=False,
             clio_newer=0,
             clio_mode_note="",
             clio_theme="light",
@@ -231,6 +233,10 @@ class NodeApp:
         websocket = request.headers.get("Upgrade", "").lower() == "websocket"
         if websocket:
             self.sockets += 1
+            if self.engine.replay_armed and (
+                self._replay is None or self._replay.done()
+            ):
+                self._replay = asyncio.ensure_future(self._replaying())
         # The view frames trame from a sandboxed, opaque-origin page, so its
         # module scripts and fetches are cross-origin.
         cross_origin = not request.path.startswith("/clio/") and not websocket
@@ -370,6 +376,7 @@ class NodeApp:
         state.clio_steps = time_state.get("steps", 0)
         state.clio_index = time_state.get("index", 0)
         state.clio_follow = time_state.get("follow_latest", True)
+        state.clio_catching = time_state.get("catching_up", False)
         state.clio_newer = time_state.get("newer_steps", 0)
         self.bench.refresh(reason)
         if reason not in ("selection", "camera"):
@@ -514,6 +521,31 @@ class NodeApp:
                     self.engine.check_growth()
             except Exception as exc:  # noqa: BLE001 - keep watching; say why
                 print(f"growth check failed: {exc}", flush=True)
+
+    async def _replaying(self) -> None:
+        """Catch a late-opened growing source up from its first step while a view
+        watches; with no view for REPLAY_ALONE seconds it jumps to the latest."""
+        engine = self.engine
+        try:
+            with self.server.state:
+                if not engine.start_replay():
+                    return
+            print(f"catching up from step 1 of {len(engine.timesteps())}", flush=True)
+            await asyncio.sleep(REPLAY_HOLD)
+            alone = 0.0
+            going = True
+            while going:
+                await asyncio.sleep(REPLAY_SECONDS)
+                alone = 0.0 if self.sockets > 0 else alone + REPLAY_SECONDS
+                if 0 < alone < REPLAY_ALONE:
+                    continue
+                with self.server.state:
+                    going = engine.replay_tick(finish=alone >= REPLAY_ALONE)
+            print(f"caught up; following step {len(engine.timesteps())}", flush=True)
+        except Exception as exc:  # noqa: BLE001 - the view follows the latest step
+            print(f"catch-up failed: {exc}", flush=True)
+            with self.server.state:
+                engine.replay_tick(finish=True)
 
     def idle_for(self) -> float:
         """Seconds since the last request, or zero while a view is connected."""
