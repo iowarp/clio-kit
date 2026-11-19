@@ -57,6 +57,12 @@
       "description": "Describe what the graspa MCP server can do."
     }
   ],
+  "prompts": [
+    {
+      "name": "adsorption_uptake",
+      "description": "Guided adsorption uptake of a gas in a framework."
+    }
+  ],
   "tags": [
     "chemistry",
     "adsorption",

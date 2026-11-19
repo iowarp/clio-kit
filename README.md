@@ -11,6 +11,8 @@
 <!-- mcp-name: io.github.iowarp/earthdata-mcp -->
 <!-- mcp-name: io.github.iowarp/fdmnes-mcp -->
 <!-- mcp-name: io.github.iowarp/geo-mcp -->
+<!-- mcp-name: io.github.iowarp/geoprocess-mcp -->
+<!-- mcp-name: io.github.iowarp/geoservices-mcp -->
 <!-- mcp-name: io.github.iowarp/graspa-mcp -->
 <!-- mcp-name: io.github.iowarp/hdf5-mcp -->
 <!-- mcp-name: io.github.iowarp/home-assistant-mcp -->
@@ -25,7 +27,6 @@
 <!-- mcp-name: io.github.iowarp/pdf-mcp -->
 <!-- mcp-name: io.github.iowarp/plot-mcp -->
 <!-- mcp-name: io.github.iowarp/ocean-mcp -->
-<!-- mcp-name: io.github.iowarp/seismology-mcp -->
 <!-- mcp-name: io.github.iowarp/pubchem-mcp -->
 <!-- mcp-name: io.github.iowarp/scientific-catalog-mcp -->
 <!-- mcp-name: io.github.iowarp/seismology-mcp -->
@@ -186,7 +187,7 @@ uv tool install --force --reinstall --editable .
 # If uv's executable directory is not on PATH:
 uv tool update-shell
 
-# List all 37 available MCP servers
+# List all 39 available MCP servers
 clio-kit mcp-servers
 
 # Run an individual server
@@ -230,7 +231,7 @@ These are broad workflow plugins. Each combines its MCP servers and skills.
 | `clio-performance` | Diagnose slow jobs and inspect logs | darshan, chronolog, parallel-sort |
 | `clio-scientific-io` | Explore scientific data files | hdf5, adios, parquet, compression |
 | `clio-analysis` | Analyze results, create figures and open live 3D views | pandas, plot, paraview |
-| `clio-geoscience` | Work with maps, a 3D globe, terrain, waveforms, ocean data and models, model grids, and NASA Earthdata | geo, terrain, seismology, ocean, weather, grids, copernicus, earthdata |
+| `clio-geoscience` | Work with maps, a 3D globe, terrain, geoprocessing and OGC services, waveforms, ocean data and models, model grids, and NASA Earthdata | geo, geoservices, geoprocess, terrain, seismology, ocean, weather, grids, copernicus, earthdata |
 | `clio-fabrication` | Slice a model for a 3D printer and check its layers | slicer |
 | `clio-electronics` | Simulate a circuit and plot its waveforms | spice |
 | `clio-home` | Read your home's sensors, control devices and write automations | home-assistant |
@@ -488,12 +489,14 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`earthdata`** | 1.0.0 | Earth Science | Search and download NASA Earthdata datasets (runs earthdata-mcp-server 0.6.0) | `clio-kit mcp-server earthdata` |
 | **`fdmnes`** | 1.0.0 | Spectroscopy | XANES spectra of crystals and molecules with FDMNES; normalize and compare spectra | `clio-kit mcp-server fdmnes` |
 | **`geo`** | 2.4.0 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
+| **`geoprocess`** | 1.0.0 | Geospatial | Reproject, clip, overlay, zonal statistics and raster differences | `clio-kit mcp-server geoprocess` |
+| **`geoservices`** | 1.0.0 | Geospatial | Fetch ArcGIS, OGC, STAC, remote raster and lidar data by region | `clio-kit mcp-server geoservices` |
 | **`graspa`** | 1.0.0 | Chemistry | Gas adsorption uptake in MOFs and zeolites by GCMC with gRASPA; rank frameworks | `clio-kit mcp-server graspa` |
 | **`hdf5`** | 2.3.1 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
 | **`home-assistant`** | 1.0.0 | Home | Your Home Assistant's sensors, devices and automations (runs ha-mcp 9.2.0) | `clio-kit mcp-server home-assistant` |
 | **`jarvis`** | 3.7.7 | Workflow | Durable pipeline, bounded package discovery, progress, artifact, and service-runtime management | `clio-kit mcp-server jarvis` |
 | **`lmod`** | 3.0.4 | Environment | Environment module management | `clio-kit mcp-server lmod` |
-| **`ndp`** | 2.2.9 | Data Protocol | Search and discover datasets across CKAN instances | `clio-kit mcp-server ndp` |
+| **`ndp`** | 2.2.10 | Data Protocol | Search and discover datasets across CKAN instances | `clio-kit mcp-server ndp` |
 | **`node-hardware`** | 2.3.3 | System | System hardware information | `clio-kit mcp-server node-hardware` |
 | **`pandas`** | 2.4.1 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
 | **`parallel-sort`** | 2.3.3 | Computing | Large file sorting | `clio-kit mcp-server parallel-sort` |
@@ -512,7 +515,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`slurm`** | 3.1.1 | HPC | Job submission and management | `clio-kit mcp-server slurm` |
 | **`spack`** | 2.3.4 | Package Management | Structured package discovery, installation, and location | `clio-kit mcp-server spack` |
 | **`spice`** | 1.0.0 | Electronics | Simulate circuits with ngspice or LTspice and plot waveforms (runs ltspice-mcp 0.8.0) | `clio-kit mcp-server spice` |
-| **`terrain`** | 2.2.8 | Geospatial | Analyze DEMs and terrain point clouds | `clio-kit mcp-server terrain` |
+| **`terrain`** | 2.3.0 | Geospatial | Analyze DEMs and terrain point clouds | `clio-kit mcp-server terrain` |
 | **`web`** | 2.1.6 | Web | Web search and URL fetch, with queryable, cancellable fetch tasks; DOI and document conversion need a remote service | `clio-kit mcp-server web` |
 
 </div>

@@ -116,6 +116,18 @@ class TestSearchDatasetsTool:
     """Test the search_datasets MCP tool handler."""
 
     @pytest.mark.asyncio
+    async def test_query_is_the_same_as_search_term(self, search_datasets_fn):
+        mock = AsyncMock(return_value=[Dataset(id="1", name="fire", title="Fire")])
+        with patch("ndp_mcp.server.ndp_client.search_datasets_advanced", new=mock):
+            result = await search_datasets_fn(query="wildfire perimeters")
+        assert result["count"] == 1
+        assert mock.call_args.kwargs.get("search_term") == "wildfire perimeters" or (
+            "wildfire perimeters" in str(mock.call_args)
+        )
+        with pytest.raises(ToolError, match="not two different values"):
+            await search_datasets_fn(query="a", search_term="b")
+
+    @pytest.mark.asyncio
     async def test_search_datasets_simple_search(self, search_datasets_fn):
         """Test simple search with terms."""
         mock_datasets = [
@@ -348,6 +360,20 @@ class TestGetDatasetDetailsTool:
     """Test the get_dataset_details MCP tool handler."""
 
     @pytest.mark.asyncio
+    async def test_dataset_id_is_the_same_as_dataset_identifier(self, get_dataset_details_fn):
+        mock_dataset = Dataset(id="abc", name="abc_data", title="ABC")
+        with patch(
+            "ndp_mcp.server.ndp_client.search_datasets_advanced",
+            new=AsyncMock(return_value=[mock_dataset]),
+        ):
+            result = await get_dataset_details_fn(dataset_id="abc")
+        assert result["identifier_used"]["value"] == "abc"
+        with pytest.raises(ToolError, match="not two different values"):
+            await get_dataset_details_fn(dataset_identifier="abc", dataset_id="xyz")
+        with pytest.raises(ToolError, match="Give the dataset's id"):
+            await get_dataset_details_fn()
+
+    @pytest.mark.asyncio
     async def test_get_dataset_details_by_id(self, get_dataset_details_fn):
         """Test getting dataset details by ID."""
         mock_dataset = Dataset(
@@ -546,7 +572,7 @@ class TestReleaseRegressions:
         from fastmcp import Client
 
         async with Client(server.mcp) as client:
-            assert client.server_info.version == "2.2.9"
+            assert client.server_info.version == "2.2.10"
 
 
 class TestBackendSelection:

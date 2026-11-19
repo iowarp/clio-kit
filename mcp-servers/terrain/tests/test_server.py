@@ -146,7 +146,47 @@ async def test_capabilities_resource_payload() -> None:
 
     payload = json.loads(contents[0].text)
     assert payload["tools"] == ["dem_terrain", "pointcloud_read"]
-    assert "geotiff" in payload["dem_formats"]["optional"]
+    assert payload["dem_formats"]["geotiff"] == "supported (rasterio)"
+    assert payload["pointcloud_formats"]["las_laz"] == "supported (laspy with lazrs)"
+
+
+@pytest.mark.asyncio
+async def test_default_install_reads_geotiff_dem_and_laz_points(tmp_path: Path) -> None:
+    """GeoTIFF and LAZ are base formats: no extra needed, as a launcher install has none."""
+    import laspy
+    import rasterio
+    from rasterio.transform import from_origin
+
+    dem = tmp_path / "dem.tif"
+    grid = np.tile(np.arange(30, dtype="float32") * 0.5 + 1900.0, (20, 1))
+    with rasterio.open(
+        dem,
+        "w",
+        driver="GTiff",
+        height=20,
+        width=30,
+        count=1,
+        dtype="float32",
+        crs="EPSG:26910",
+        transform=from_origin(750000, 4320000, 1, 1),
+    ) as out:
+        out.write(grid, 1)
+    header = laspy.LasHeader(point_format=3, version="1.4")
+    header.scales = [0.01, 0.01, 0.01]
+    cloud = laspy.LasData(header)
+    cloud.x = np.array([0.0, 1.0, 2.0, 3.0])
+    cloud.y = np.array([0.0, 1.0, 2.0, 3.0])
+    cloud.z = np.array([10.0, 11.0, 12.0, 13.0])
+    laz = tmp_path / "points.laz"
+    cloud.write(laz)
+    async with Client(mcp) as client:
+        analysed = (await client.call_tool("dem_terrain", {"filepath": str(dem)})).data
+        gridded = (
+            await client.call_tool("pointcloud_read", {"filepath": str(laz)})
+        ).data
+    assert analysed["shape"] == [20, 30]
+    assert analysed["elevation"]["min"] == pytest.approx(1900.0)
+    assert gridded["point_count"] == 4
 
 
 @pytest.mark.asyncio

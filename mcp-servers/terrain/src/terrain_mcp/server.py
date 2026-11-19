@@ -5,9 +5,8 @@ Generic terrain-analysis tools: analyze a Digital Elevation Model (DEM) for
 elevation, slope, aspect, and site suitability; and read an x/y/z point cloud,
 gridding it into a DEM-like surface for downstream analysis.
 
-Base formats (CSV / NPY / NPZ) work with only numpy installed. GeoTIFF DEMs
-need the optional ``rasterio`` extra and LAS/LAZ point clouds need the optional
-``laspy`` extra; both are handled gracefully with an actionable error message.
+CSV / NPY / NPZ, GeoTIFF DEMs (rasterio) and LAS/LAZ point clouds (laspy with
+the lazrs backend) are all supported by a default install.
 """
 
 import logging
@@ -35,14 +34,14 @@ load_dotenv()
 
 mcp: FastMCP = FastMCP(
     "terrain",
-    version="2.2.8",
+    version="2.3.0",
     instructions=(
         "Generic terrain analysis over gridded elevation data and point clouds. "
         "Use dem_terrain to analyze a Digital Elevation Model for elevation, slope, "
         "aspect, and site suitability against elevation/slope criteria. Use "
         "pointcloud_read to read an x/y/z point cloud and grid it into a DEM-like "
         "surface (optionally writing a CSV DEM you can then feed to dem_terrain). "
-        "Base CSV/NPY/NPZ formats always work; GeoTIFF and LAS/LAZ need optional extras."
+        "CSV/NPY/NPZ, GeoTIFF DEMs and LAS/LAZ point clouds are all supported."
     ),
 )
 
@@ -53,7 +52,7 @@ mcp: FastMCP = FastMCP(
     description=(
         "Analyze a Digital Elevation Model grid for elevation, slope, aspect, and "
         "site suitability. Accepts CSV numeric grids, NPY, and NPZ (with a 'dem' "
-        "array); GeoTIFF requires the optional rasterio extra. Returns grid shape, "
+        "array), and GeoTIFF. Returns grid shape, "
         "summary statistics, suitability counts, and representative suitable cells."
     ),
     annotations={
@@ -66,7 +65,7 @@ mcp: FastMCP = FastMCP(
 async def dem_terrain_tool(
     filepath: Annotated[
         str,
-        Field(description="Path to the DEM (CSV/NPY/NPZ, or GeoTIFF with rasterio)."),
+        Field(description="Path to the DEM (CSV/NPY/NPZ or GeoTIFF)."),
     ],
     cell_size: Annotated[
         float, Field(description="Ground distance between grid cells. Must be > 0.")
@@ -112,8 +111,8 @@ async def dem_terrain_tool(
     title="Grid Points",
     description=(
         "Read an x/y/z point cloud and grid it into a DEM-like surface by averaging "
-        "z per cell. Accepts CSV with x,y,z columns, NPY, and NPZ; LAS/LAZ requires "
-        "the optional laspy extra. Optionally writes the gridded surface to a CSV DEM "
+        "z per cell. Accepts CSV with x,y,z columns, NPY, NPZ and LAS/LAZ. "
+        "Optionally writes the gridded surface to a CSV DEM "
         "for downstream dem_terrain analysis. Returns point/grid stats and bounds."
     ),
     annotations={
@@ -126,9 +125,7 @@ async def dem_terrain_tool(
 async def pointcloud_read_tool(
     filepath: Annotated[
         str,
-        Field(
-            description="Path to the point cloud (CSV/NPY/NPZ, or LAS/LAZ with laspy)."
-        ),
+        Field(description="Path to the point cloud (CSV/NPY/NPZ or LAS/LAZ)."),
     ],
     grid_cell_size: Annotated[
         float, Field(description="Size of each output grid cell. Must be > 0.")
@@ -165,11 +162,11 @@ def terrain_capabilities() -> dict[str, Any]:
         "tools": ["dem_terrain", "pointcloud_read"],
         "dem_formats": {
             "always_available": ["csv", "npy", "npz"],
-            "optional": {"geotiff": "requires the 'geotiff' extra (rasterio)"},
+            "geotiff": "supported (rasterio)",
         },
         "pointcloud_formats": {
             "always_available": ["csv", "npy", "npz"],
-            "optional": {"las_laz": "requires the 'laz' extra (laspy)"},
+            "las_laz": "supported (laspy with lazrs)",
         },
         "limits": {
             "max_dem_cells": 2_000_000,

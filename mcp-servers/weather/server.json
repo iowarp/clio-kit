@@ -67,7 +67,7 @@
     },
     {
       "name": "detect_blobs",
-      "description": "TempestExtremes DetectBlobs then StitchBlobs on a gridded field: tag cells passing a threshold ('var,op,value,distance', e.g. 'ivt,>=,250,0' for atmospheric rivers or a Z500 anomaly for blocks), keep objects of at least min_area_km2, and link them in time with a minimum lifetime and overlap. derive_magnitude computes the field as |(a, b)| first (IVT from the two flux components). Writes the stitched object field (NetCDF)."
+      "description": "TempestExtremes DetectBlobs then StitchBlobs on a gridded field: tag cells passing a threshold ('var,op,value,distance', e.g. 'ivt,>=,250,0' for atmospheric rivers or a Z500 anomaly for blocks), keep objects of at least min_area_km2, and link them in time with a minimum lifetime and overlap. derive_magnitude computes the field as |(a, b)| first (IVT from the two flux components). Writes the stitched object field (NetCDF). The server finds its TempestExtremes build itself (TEMPESTEXTREMES_BIN or PATH), which a shell may not see; when none is installed the call returns backend_unavailable."
     },
     {
       "name": "stitch_blobs",
@@ -107,7 +107,7 @@
     },
     {
       "name": "ibtracs_fetch",
-      "description": "Best track of a tropical cyclone from IBTrACS v04r01 (NOAA NCEI), by storm id (SID) or by name and season; subset 'last3years', 'ACTIVE' or a basin ('NA', 'WP', 'EP', 'NI', 'SI', 'SP', 'SA') to keep the download small. Times, positions, pressure and wind."
+      "description": "Best track of a tropical cyclone from IBTrACS v04r01 (NOAA NCEI), by storm id (SID) or by name and season; subset 'last3years', 'ACTIVE' or a basin ('NA', 'WP', 'EP', 'NI', 'SI', 'SP', 'SA') to keep the download small. Times, positions, pressure and wind: the WMO agency's values, or JTWC's where the WMO agency has none (provisional tracks), with the agency of each row and both agencies' columns (WMO winds are 10-minute means, JTWC's 1-minute)."
     },
     {
       "name": "track_score",

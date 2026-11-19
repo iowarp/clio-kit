@@ -35,11 +35,11 @@
     },
     {
       "name": "open_in_avogadro",
-      "description": "Open Avogadro in a view, with a structure file (XYZ, SDF/MOL, PDB, CIF, CJSON, \u2026) or empty to build from scratch. The person works in it; when they choose Extensions > CLIO > Send to CLIO, the view tells you, and read_avogadro writes what they sent. Starts Avogadro the first time (seconds)."
+      "description": "Open Avogadro in a view, with a structure file (XYZ, SDF/MOL, PDB, CIF, CJSON, \u2026) or empty to build from scratch. The person works in it; read_avogadro reads what is open, with their selection. Starts Avogadro the first time (seconds)."
     },
     {
       "name": "read_avogadro",
-      "description": "What the person last sent from Avogadro (Extensions > CLIO > Send to CLIO), written as an XYZ structure file plus Avogadro's CJSON under output_dir/chemistry/avogadro/, with its formula and the atoms they had selected (0-based indices, file order)."
+      "description": "The molecule open in Avogadro now, with the person's edits and the atoms they have selected (0-based indices, file order), written as an XYZ structure file plus Avogadro's CJSON under output_dir/chemistry/avogadro/. An Avogadro too old to report its molecule gives what the person last sent with Extensions > CLIO > Send to CLIO."
     },
     {
       "name": "avogadro_snapshot",
@@ -55,6 +55,12 @@
       "uri": "ui://avogadro/view",
       "name": "avogadro_view",
       "description": "Avogadro 2, streamed through the host's service route."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "build_in_avogadro",
+      "description": "Guided hand-building of a structure in Avogadro."
     }
   ],
   "tags": [
