@@ -398,3 +398,27 @@ def test_track_paths_say_where_each_track_began_and_drifted() -> None:
     assert first["start"] == "2026-07-01" and first["days"] == 40
     assert first["start_position"] == [-87.6, 26.4]
     assert first["drift_east_km"] < -100 < 0 < first["drift_north_km"]
+
+
+async def test_overturning_refuses_a_curvilinear_grid(tmp_path: Path) -> None:
+    import xarray as xr
+
+    j, i, lev = 3, 4, 2
+    lat = np.add.outer(np.linspace(20, 30, j), np.linspace(0, 2, i))  # rows tilt
+    lon = np.add.outer(np.zeros(j), np.linspace(-80, -10, i))
+    ds = xr.Dataset(
+        {"vmo": (("lev", "j", "i"), np.ones((lev, j, i)))},
+        coords={
+            "lev": [10.0, 100.0],
+            "latitude": (("j", "i"), lat),
+            "longitude": (("j", "i"), lon),
+        },
+    )
+    path = tmp_path / "curvi.nc"
+    ds.to_netcdf(path)
+    async with Client(mcp) as client:
+        with pytest.raises(ToolError, match="unsupported_grid"):
+            await client.call_tool(
+                "overturning",
+                {"grid": str(path), "transport_variable": "vmo", "output_dir": str(tmp_path)},
+            )
