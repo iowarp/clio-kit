@@ -46,7 +46,7 @@ class TestServerMain:
             call_args = mock_mcp.run.call_args
             if call_args and call_args[1]:
                 assert call_args[1].get("transport") == "http"
-                assert call_args[1].get("host") == "0.0.0.0"
+                assert call_args[1].get("host") == "127.0.0.1"
                 assert call_args[1].get("port") == 8000
 
     @patch.dict(os.environ, {}, clear=False)

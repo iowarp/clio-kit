@@ -828,7 +828,7 @@ if __name__ == "__main__":
                 with patch.dict(os.environ, {"MCP_TRANSPORT": "http"}):
                     server.main()
                     mock_mcp.run.assert_called_with(
-                        transport="http", host="0.0.0.0", port=8000
+                        transport="http", host="127.0.0.1", port=8000
                     )
 
     def test_module_level_constants(self):

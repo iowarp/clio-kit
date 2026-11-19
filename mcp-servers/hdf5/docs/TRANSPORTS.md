@@ -30,7 +30,7 @@ clio-kit mcp-server hdf5 -- --transport http --host 127.0.0.1 --port 8765
 ```
 
 Connect an HTTP-capable MCP client to `http://127.0.0.1:8765/mcp`.
-Pass `--host` explicitly: the CLI otherwise defaults to `0.0.0.0`.
+The CLI listens on `127.0.0.1` unless `--host` says otherwise.
 `MCP_TRANSPORT=http` selects the same transport; CLI `--transport` takes
 precedence. This server does not define custom `/health` or `/stats` routes.
 It does not configure authentication; deployments beyond a local interface

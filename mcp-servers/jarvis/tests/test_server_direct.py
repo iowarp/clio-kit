@@ -1902,7 +1902,7 @@ class TestMainFunctionDirect:
 
             mock_profile.assert_called_once_with("user")
             mock_run.assert_called_once_with(
-                transport="http", host="0.0.0.0", port=9001
+                transport="http", host="127.0.0.1", port=9001
             )
 
     def test_admin_server_entrypoint_applies_admin_profile_and_runs_stdio(self):
@@ -1973,7 +1973,7 @@ class TestMainFunctionDirect:
 
             mock_profile.assert_called_once_with("admin")
             mock_run.assert_called_once_with(
-                transport="http", host="0.0.0.0", port=8000
+                transport="http", host="127.0.0.1", port=8000
             )
 
     def test_admin_server_rejects_missing_spack_command(self, tmp_path):

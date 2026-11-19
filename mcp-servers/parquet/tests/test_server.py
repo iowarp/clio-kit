@@ -63,7 +63,7 @@ class TestServerMain:
             with patch.object(server.mcp, "run") as mock_run:
                 server.main()
                 mock_run.assert_called_once_with(
-                    transport="http", host="0.0.0.0", port=9000
+                    transport="http", host="127.0.0.1", port=9000
                 )
 
 

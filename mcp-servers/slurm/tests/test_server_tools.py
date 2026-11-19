@@ -458,8 +458,8 @@ def test_server_main_function():
     ):
         try:
             server.main()
-            # The host defaults to 0.0.0.0, not localhost
-            mock_run.assert_called_with(transport="http", host="0.0.0.0", port=9000)
+            # The host defaults to loopback (127.0.0.1)
+            mock_run.assert_called_with(transport="http", host="127.0.0.1", port=9000)
         except SystemExit:
             pass  # May exit normally
 
@@ -1147,7 +1147,7 @@ def test_server_main_with_sse_host_variations():
     """Test main function with HTTP transport and different host configurations."""
     from slurm_mcp import server
 
-    # Test HTTP with default host (0.0.0.0) and custom port
+    # Test HTTP with default host (127.0.0.1) and custom port
     with patch("sys.argv", ["slurm-mcp", "--transport", "http", "--port", "8080"]):
         with patch.object(server.mcp, "run") as mock_run:
             with patch("builtins.print"):
@@ -1155,7 +1155,9 @@ def test_server_main_with_sse_host_variations():
                     server.main()
                 except SystemExit:
                     pass
-                mock_run.assert_called_with(transport="http", host="0.0.0.0", port=8080)
+                mock_run.assert_called_with(
+                    transport="http", host="127.0.0.1", port=8080
+                )
 
     # Test HTTP with custom host and default port
     with patch("sys.argv", ["slurm-mcp", "--transport", "http", "--host", "localhost"]):

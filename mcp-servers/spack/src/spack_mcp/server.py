@@ -308,7 +308,7 @@ def main() -> None:
         default=None,
         help="Absolute or user-relative path to the audited Spack executable.",
     )
-    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
     if args.spack_command is not None:

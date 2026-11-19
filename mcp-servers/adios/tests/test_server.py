@@ -238,7 +238,7 @@ class TestMainFunction:
             main()
 
             mock_mcp.run.assert_called_once_with(
-                transport="http", host="0.0.0.0", port=8000
+                transport="http", host="127.0.0.1", port=8000
             )
 
     def test_main_custom_host_port_via_args(self):
@@ -293,7 +293,7 @@ class TestMainFunction:
             main()
 
             mock_mcp.run.assert_called_once_with(
-                transport="http", host="0.0.0.0", port=8000
+                transport="http", host="127.0.0.1", port=8000
             )
 
     def test_main_args_override_env(self):
