@@ -285,3 +285,144 @@ async def test_particles_say_what_their_spread_means_and_can_diffuse(
     assert spread["median_displacement_km"] == pytest.approx(43.2, rel=0.2)
     with pytest.raises(ToolError, match="out_of_range"):
         await call("particles", start="2020-06-01", **common)
+
+
+def _glider_like(tmp_path: Path) -> Path:
+    """Two transect casts on pressure levels, one sample flagged as a spike."""
+    rows = []
+    for k, profile in enumerate(("p1", "p2")):
+        for pressure in (5.0, 15.0, 25.0, 35.0):
+            rows.append(
+                {
+                    "profile": profile,
+                    "time": pd.Timestamp("2020-09-15", tz="UTC")
+                    + pd.Timedelta(hours=k),
+                    "latitude": 17.9,
+                    "longitude": -64.8 + 0.05 * k,
+                    "pressure": pressure,
+                    "temperature": 28.0 - pressure / 10,
+                    "salinity": 35.5,
+                    "transect": 18,
+                    "suspect": "temperature spike"
+                    if (k, pressure) == (1, 15.0)
+                    else "",
+                }
+            )
+    path = tmp_path / "glider.parquet"
+    pd.DataFrame(rows).to_parquet(path, index=False)
+    return path
+
+
+async def test_a_section_drops_the_samples_a_fetch_flagged(tmp_path: Path) -> None:
+    profiles = _glider_like(tmp_path)
+    out = await call(
+        "section", variables=["CT"], profiles=str(profiles), output_dir=str(tmp_path)
+    )
+    assert out["suspect_dropped"] == {"temperature spike": 1}
+    assert "1 suspect samples dropped" in out["summary"]
+    kept = await call(
+        "section",
+        variables=["CT"],
+        profiles=str(profiles),
+        keep_suspect=True,
+        name="kept",
+        output_dir=str(tmp_path),
+    )
+    assert kept["suspect_dropped"] == {}
+
+
+async def test_teos10_reports_a_non_finite_n2_instead_of_failing(
+    tmp_path: Path,
+) -> None:
+    rows = [
+        {
+            "profile": "p1",
+            "time": pd.Timestamp("2020-09-15", tz="UTC"),
+            "latitude": 17.9,
+            "longitude": -64.8,
+            "pressure": pressure,
+            "temperature": 28.0 - pressure / 10,
+            "salinity": 35.5,
+        }
+        # A repeated pressure gives a zero layer thickness and an infinite N².
+        for pressure in (5.0, 15.0, 15.0, 25.0, 35.0)
+    ]
+    path = tmp_path / "dup.parquet"
+    pd.DataFrame(rows).to_parquet(path, index=False)
+    out = await call(
+        "teos10", profiles=str(path), buoyancy_frequency=True, output_dir=str(tmp_path)
+    )
+    assert out["N2_max"] is None or np.isfinite(out["N2_max"])
+    assert out["N2_non_finite"] >= 0
+
+
+async def test_a_section_shows_where_its_casts_were_taken(tmp_path: Path) -> None:
+    profiles = _glider_like(tmp_path)
+    for kwargs in ({}, {"horizontal_step_km": 1.0, "name": "regridded"}):
+        out = await call(
+            "section",
+            variables=["CT"],
+            profiles=str(profiles),
+            output_dir=str(tmp_path),
+            **kwargs,
+        )
+        section, stations = out["outputs"]
+        assert stations["role"] == "positions"
+        (layer,) = stations["view"]["layers"]
+        assert layer["idField"] == "profile"
+        # The section's stations and the map's casts are one selection by profile.
+        assert section["view"]["selection"] == stations["view"]["selection"]
+        assert section["view"]["selectionField"] == "profile"
+        table = pd.read_parquet(stations["path"])
+        assert list(table["profile"]) == ["p1", "p2"]
+        assert table["latitude"].notna().all()
+
+
+def test_track_paths_say_where_each_track_began_and_drifted() -> None:
+    from ocean_mcp.tools_altimetry import track_paths
+
+    tracks = pd.DataFrame(
+        {
+            "track": ["A1"] * 3 + ["C2"] * 2,
+            "polarity": ["anticyclonic"] * 3 + ["cyclonic"] * 2,
+            "time": pd.to_datetime(
+                ["2026-07-01", "2026-07-20", "2026-08-09", "2026-07-01", "2026-07-11"]
+            ),
+            "longitude": [-87.6, -88.2, -88.9, -85.0, -85.0],
+            "latitude": [26.4, 26.8, 27.1, 24.6, 24.0],
+        }
+    )
+    rows = track_paths(tracks)
+    assert [row["track"] for row in rows] == ["A1", "C2"]  # longest first
+    first = rows[0]
+    assert first["start"] == "2026-07-01" and first["days"] == 40
+    assert first["start_position"] == [-87.6, 26.4]
+    assert first["drift_east_km"] < -100 < 0 < first["drift_north_km"]
+
+
+async def test_overturning_refuses_a_curvilinear_grid(tmp_path: Path) -> None:
+    import xarray as xr
+
+    j, i, lev = 3, 4, 2
+    lat = np.add.outer(np.linspace(20, 30, j), np.linspace(0, 2, i))  # rows tilt
+    lon = np.add.outer(np.zeros(j), np.linspace(-80, -10, i))
+    ds = xr.Dataset(
+        {"vmo": (("lev", "j", "i"), np.ones((lev, j, i)))},
+        coords={
+            "lev": [10.0, 100.0],
+            "latitude": (("j", "i"), lat),
+            "longitude": (("j", "i"), lon),
+        },
+    )
+    path = tmp_path / "curvi.nc"
+    ds.to_netcdf(path)
+    async with Client(mcp) as client:
+        with pytest.raises(ToolError, match="unsupported_grid"):
+            await client.call_tool(
+                "overturning",
+                {
+                    "grid": str(path),
+                    "transport_variable": "vmo",
+                    "output_dir": str(tmp_path),
+                },
+            )

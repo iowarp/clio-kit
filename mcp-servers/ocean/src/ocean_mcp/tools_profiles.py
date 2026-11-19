@@ -156,7 +156,10 @@ def teos10(
         outputs.append(
             _save_table(n2, Path(profiles).stem + "-n2", "profiles", output_dir, **prov)
         )
-        numbers["N2_max"] = float(n2["N2"].max())
+        values = n2["N2"].to_numpy(dtype=float)
+        finite = np.isfinite(values)
+        numbers["N2_max"] = float(values[finite].max()) if finite.any() else None
+        numbers["N2_non_finite"] = int((~finite).sum())
     return result(
         f"TEOS-10 for {table['profile'].nunique()} profiles: CT {numbers['CT_range'][0]:.2f} to {numbers['CT_range'][1]:.2f} °C, "
         f"sigma0 {numbers['sigma0_range'][0]:.2f} to {numbers['sigma0_range'][1]:.2f} kg m-3.",
@@ -282,6 +285,75 @@ def argo_fetch(
     )
 
 
+def _save_positions(
+    table: pd.DataFrame, dataset_id: str, output_dir: str | None, src: Source
+) -> Output:
+    """One row per profile (where and when it was taken, and its transect), on a map."""
+
+    columns = ["profile", "time", "latitude", "longitude", "transect"]
+    positions = (
+        table[[c for c in columns if c in table]]
+        .groupby("profile", as_index=False, sort=False)
+        .first()
+    )
+    if "transect" in positions:
+        positions["leg"] = [
+            f"transect {int(t)}" if t >= 0 else "between transects"
+            for t in positions["transect"]
+        ]
+    path = output_path(f"{dataset_id}_positions", ".parquet", output_dir)
+    positions.to_parquet(path, index=False)
+    sidecar = write_provenance(
+        path,
+        tool="glider_fetch",
+        sources=[src],
+        method={"positions": "first sample of each profile"},
+        packages=("erddapy",),
+    )
+    view = views.positions_view(
+        path, positions, dataset_id, title=f"{dataset_id} track"
+    )
+    return Output(
+        path, "positions", media_type(path), sidecar, rows=len(positions), view=view
+    )
+
+
+def _save_stations(
+    ds: Any, name: str, output_dir: str | None, src: list[Source]
+) -> Output:
+    """The section's casts (profile, position, distance along it), on a map."""
+
+    if "station_profile" in ds:  # regridded: the casts are kept as stations
+        along = ds["distance"].values.astype(float)
+        distance = ds["station_distance"].values.astype(float)
+        stations = pd.DataFrame(
+            {
+                "profile": ds["station_profile"].values.astype(str),
+                "latitude": np.interp(distance, along, ds["latitude"].values),
+                "longitude": np.interp(distance, along, ds["longitude"].values),
+                "distance_km": distance,
+            }
+        )
+    else:
+        stations = pd.DataFrame(
+            {
+                "profile": ds["profile"].values.astype(str),
+                "latitude": ds["latitude"].values.astype(float),
+                "longitude": ds["longitude"].values.astype(float),
+                "distance_km": ds["distance"].values.astype(float),
+            }
+        )
+    path = output_path(f"{name}_stations", ".parquet", output_dir)
+    stations.to_parquet(path, index=False)
+    sidecar = write_provenance(
+        path, tool="section", sources=src, method={"stations": "the section's casts"}
+    )
+    view = views.positions_view(path, stations, name, title=f"{name} stations")
+    return Output(
+        path, "positions", media_type(path), sidecar, rows=len(stations), view=view
+    )
+
+
 @mcp.tool(
     name="glider_fetch",
     title="Fetch Glider",
@@ -343,10 +415,15 @@ def glider_fetch(
         packages=("erddapy", "gsw"),
     )
     transects = sorted(int(t) for t in table["transect"].unique() if t >= 0)
+    track = _save_positions(table, dataset_id, output_dir, src)
+    if out.view is not None and track.view is not None:
+        # A deployment is a track first: its profiles and where they were taken are one
+        # selection, so picking a profile on either view picks it on the other.
+        out.view = {**out.view, **views.profile_selection(dataset_id)}
     return result(
         f"Deployment {dataset_id}: {table['profile'].nunique()} profiles in {len(transects)} transects; "
         f"{int((table['suspect'] != '').sum())} samples flagged.",
-        [out],
+        [out, track],
         transects=transects,
         flagged=flagged[:200],
         **profile_summary(table),
@@ -544,15 +621,31 @@ def section(
     time: Annotated[
         str | None, Field(description="Time to take from a gridded field (nearest).")
     ] = None,
+    keep_suspect: Annotated[
+        bool,
+        Field(
+            description="Keep samples a fetch flagged in its 'suspect' column (default: drop them)."
+        ),
+    ] = False,
     name: Annotated[str, Field(description="Name for the output.")] = "section",
     output_dir: Annotated[
         str | None, Field(description="Directory for outputs.")
     ] = None,
 ) -> dict[str, Any]:
+    dropped: dict[str, int] = {}
     if profiles:
         table = read_profiles(profiles)
         for column, value in (profile_filter or {}).items():
             table = table[table[column] == value]
+        if not keep_suspect and "suspect" in table:
+            flagged = table["suspect"].fillna("").astype(str) != ""
+            dropped = {
+                str(reason): int(count)
+                for reason, count in table.loc[flagged, "suspect"]
+                .value_counts()
+                .items()
+            }
+            table = table[~flagged]
         if (
             any(v in ("SA", "CT", "sigma0", "pt0") for v in variables)
             and "SA" not in table
@@ -573,6 +666,8 @@ def section(
             "pressure_step_dbar": pressure_step,
             "horizontal_step_km": horizontal_step_km,
             "filter": profile_filter,
+            "suspect_samples": "kept" if keep_suspect else "dropped",
+            "suspect_dropped": dropped,
             "interpolation": "linear in pressure, no extrapolation",
         }
     elif grid and path:
@@ -599,10 +694,21 @@ def section(
         method=method,
         packages=("xarray", "gsw"),
     )
+    outputs = [out]
+    if profiles and out.view is not None:
+        stations = _save_stations(ds, name, output_dir, src)
+        if stations.view is not None:
+            # The section and where its casts were taken are one selection: picking a
+            # station on either view picks it on the other.
+            out.view = {**out.view, **views.profile_selection(name)}
+            outputs.append(stations)
     summary = sections.section_summary(ds)
+    removed = sum(dropped.values())
+    note = f"; {removed} suspect samples dropped" if removed else ""
     return result(
-        f"Section '{name}': {summary['columns']} columns over {summary['length_km']:.0f} km, variables {', '.join(summary['variables'])}.",
-        [out],
+        f"Section '{name}': {summary['columns']} columns over {summary['length_km']:.0f} km, variables {', '.join(summary['variables'])}{note}.",
+        outputs,
         **summary,
+        suspect_dropped=dropped,
         path=json.loads(ds.attrs["path"]),
     )

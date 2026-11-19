@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 from pydantic import Field
@@ -138,7 +139,50 @@ def eddy_track(
         identified=reply["identified"],
         tracks=int(tracks["track"].nunique()) if len(tracks) else 0,
         tracks_by_polarity={str(k): int(v) for k, v in polarity.items()},
+        track_paths=track_paths(tracks),
     )
+
+
+#: Most tracks whose start, end and drift a result lists (longest first).
+MAX_TRACK_PATHS = 40
+
+
+def track_paths(tracks: pd.DataFrame) -> list[dict[str, Any]]:
+    """Where each track began and ended, how long it lived and how far it drifted.
+
+    A track's origin is what ties it to a known eddy source, so it is read here
+    rather than left in the table: longest tracks first, at most MAX_TRACK_PATHS.
+    """
+
+    if not len(tracks):
+        return []
+    rows = []
+    for track, group in tracks.sort_values("time").groupby("track", sort=False):
+        first, last = group.iloc[0], group.iloc[-1]
+        lat = np.radians((first["latitude"] + last["latitude"]) / 2)
+        east_km = (last["longitude"] - first["longitude"]) * 111.32 * np.cos(lat)
+        north_km = (last["latitude"] - first["latitude"]) * 110.57
+        rows.append(
+            {
+                "track": str(track),
+                "polarity": str(first.get("polarity", "")),
+                "start": first["time"].strftime("%Y-%m-%d"),
+                "end": last["time"].strftime("%Y-%m-%d"),
+                "days": int((last["time"] - first["time"]).days) + 1,
+                "start_position": [
+                    round(float(first["longitude"]), 2),
+                    round(float(first["latitude"]), 2),
+                ],
+                "end_position": [
+                    round(float(last["longitude"]), 2),
+                    round(float(last["latitude"]), 2),
+                ],
+                "drift_east_km": round(float(east_km)),
+                "drift_north_km": round(float(north_km)),
+            }
+        )
+    rows.sort(key=lambda row: -row["days"])
+    return rows[:MAX_TRACK_PATHS]
 
 
 @mcp.tool(
@@ -213,6 +257,17 @@ def track_crossings(
         packages=("xarray",),
     )
     total = int(table["track"].nunique())
+    # The crossings alone are empty when none crossed; the person checks a count of
+    # zero against the tracks and the field they were tested on, so show all three.
+    out.view = views.crossings_view(
+        Path(tracks),
+        Path(field),
+        variable,
+        out.path if len(first) else None,
+        name,
+        level=level,
+        category=next((c for c in views.TRACK_KIND if c in table), None),
+    )
     return result(
         f"{len(first)} of {total} tracks reach the {side} side of {variable} = {level:g}.",
         [out],

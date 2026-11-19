@@ -136,9 +136,10 @@ def transport(
     name="overturning",
     title="Overturning",
     description=(
-        "Meridional overturning streamfunction (Sv) on the model's own grid, in depth or density space, "
-        "from a per-cell meridional transport (MOM6 vmo kg/s or vh m3/s) or a velocity v; plus the "
-        "time series of its maximum at a chosen latitude (e.g. 26.5 N)."
+        "Meridional overturning streamfunction (Sv) in depth or density space, on a grid whose rows "
+        "are latitude lines (regular or MOM6-style), from a per-cell meridional transport (vmo kg/s "
+        "or vh m3/s) or a velocity v, within a basin_mask or the whole file; plus the time series of its maximum "
+        "at a chosen latitude (e.g. 26.5 N). A curvilinear grid is refused with the reason."
     ),
     annotations=WRITES,
     tags={"ocean", "overturning", "AMOC", "model"},

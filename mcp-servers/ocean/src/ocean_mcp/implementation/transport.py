@@ -139,6 +139,16 @@ def overturning(
     lon_name, lat_name, vertical, _time_name = _coord_names(ds)
     if vertical is None:
         raise OceanToolError("bad_input", "overturning needs a vertical coordinate")
+    if lat_name in ds and ds[lat_name].ndim > 1:
+        # Summing a row of a curvilinear grid is not a sum along a latitude line, and
+        # a global grid needs a basin mask; either would give a wrong number silently.
+        raise OceanToolError(
+            "unsupported_grid",
+            "overturning sums along grid rows, which are latitude lines only on a "
+            "regular or MOM6-style grid; this grid's latitude is 2-D (curvilinear). "
+            "Trace a section along the latitude through its cell faces instead, "
+            "masking the basin, or regrid first",
+        )
     if transport:
         da = ds[transport]
         units = str(da.attrs.get("units", "")).replace(" ", "")

@@ -334,6 +334,33 @@ def test_drift_flags_a_warming_level() -> None:
     assert not states[500.0]
 
 
+def test_drift_kinetic_energy_on_staggered_grids() -> None:
+    # MOM6 puts u on (yh, xq) and v on (yq, xh); each is averaged on its own grid.
+    t = pd.date_range("2000-01-01", periods=5, freq="D")
+    zl = np.array([2.5])
+    xh, xq = np.arange(60.0), np.arange(61.0)
+    yh, yq = np.arange(55.0), np.arange(56.0)
+    ds = xr.Dataset(
+        {
+            "thetao": (("time", "zl", "yh", "xh"), np.full((5, 1, 55, 60), 10.0)),
+            "uo": (("time", "zl", "yh", "xq"), np.full((5, 1, 55, 61), 0.2)),
+            "vo": (("time", "zl", "yq", "xh"), np.full((5, 1, 56, 60), 0.1)),
+        },
+        coords={"time": t, "zl": zl, "xh": xh, "xq": xq, "yh": yh, "yq": yq},
+    )
+    series, _ = model_checks.drift(
+        ds,
+        temperature="thetao",
+        salinity=None,
+        u="uo",
+        v="vo",
+        window=5,
+        tolerance={"default": 0.01},
+    )
+    assert len(series) == 5
+    assert np.allclose(series["kinetic_energy"], 0.5 * (0.2**2 + 0.1**2))
+
+
 def test_colocate_reports_known_bias(velocity_grid: Path) -> None:
     ds = xr.open_dataset(velocity_grid)
     obs = pd.DataFrame(

@@ -117,6 +117,33 @@ def _times(path: Path) -> pd.DatetimeIndex | None:
     return None
 
 
+def _varies_in_time(path: Path, fields: list[str]) -> bool:
+    """Whether any field a segment reads from this file has a time dimension.
+
+    Tidal harmonics (amplitude and phase) and other fixed fields carry no time
+    dimension and apply to the whole run, so their files are not date-checked.
+    An unreadable file, or one whose fields are not found, counts as varying so
+    the date check reports it.
+    """
+    try:
+        with xr.open_dataset(path, decode_times=False) as ds:
+            # MOM6 reads field "v" of segment N as "v" or "v_segment_00N".
+            found = [
+                ds[name]
+                for name in ds.variables
+                if any(name == v or name.startswith(f"{v}_segment") for v in fields)
+            ]
+            if not found:
+                return True
+            return any(
+                d in ("time", "Time", "valid_time") or "time" in d.lower()
+                for da in found
+                for d in da.dims
+            )
+    except Exception:  # noqa: BLE001 - the date check reports an unreadable file
+        return True
+
+
 def run_window(
     namelists: dict[str, dict[str, str]],
 ) -> tuple[pd.Timestamp | None, pd.Timestamp | None, str]:
@@ -144,6 +171,39 @@ def run_window(
         )
         return start, end, f"input.nml &{group}"
     return None, None, "input.nml has no date_init/current_date"
+
+
+#: Parameters that turn on a surface boundary-layer scheme in MOM6.
+PBL_SCHEMES = ("ENERGETICS_SFC_PBL", "USE_KPP", "BULKMIXEDLAYER")
+
+
+def _true(value: str | None) -> bool:
+    return str(value or "").strip().upper() in ("TRUE", "T", ".TRUE.")
+
+
+def surface_mixing_check(params: dict[str, str]) -> Check:
+    """Surface buoyancy forcing on, with a scheme to carry it below the top layer."""
+
+    buoy = params.get("BUOY_CONFIG", "").strip().lower()
+    if buoy in ("", "zero", "none"):
+        return Check(
+            "surface_mixing", "not_checked", "no surface buoyancy forcing (BUOY_CONFIG)"
+        )
+    on = [name for name in PBL_SCHEMES if _true(params.get(name))]
+    if on:
+        return Check(
+            "surface_mixing", "passed", f"surface boundary layer: {', '.join(on)}"
+        )
+    pen = params.get("PEN_SW_NBANDS", "")
+    detail = (
+        f"BUOY_CONFIG = {params.get('BUOY_CONFIG')} applies heat and fresh-water fluxes, "
+        f"but no surface boundary-layer scheme is on ({', '.join(PBL_SCHEMES)} all unset or "
+        f"False); vertical mixing is the background KD = {params.get('KD', 'default')}, so the "
+        "fluxes stay in the top layer and the surface drifts (warms under summer heating)"
+    )
+    if not pen or pen.strip() in ("0",):
+        detail += "; shortwave is absorbed at the surface (no PEN_SW_NBANDS)"
+    return Check("surface_mixing", "failed", detail, [name for name in PBL_SCHEMES])
 
 
 def preflight(
@@ -175,8 +235,12 @@ def preflight(
         data = params.get(f"{key}_DATA", "")
         if not data:
             missing.append(f"{key}_DATA not set")
-        files = sorted(set(re.findall(r"file:([^\s(,]+)\(", data)))
-        segments.append({"segment": key, "position": params[key], "files": files})
+        refs = re.findall(r"file:([^\s(,]+)\(([^)\s]+)\)", data)
+        files = sorted({f for f, _ in refs})
+        fields = {f: sorted({v for g, v in refs if g == f}) for f in files}
+        segments.append(
+            {"segment": key, "position": params[key], "files": files, "fields": fields}
+        )
         missing.extend(f"{key}: {f} absent" for f in files if not (inputs / f).exists())
     extra = (
         sorted(
@@ -203,8 +267,12 @@ def preflight(
         checks.append(Check("dates_cover_run", "not_checked", source))
     else:
         gaps = []
+        constant: list[str] = []
         for seg in segments:
             for f in seg["files"]:
+                if not _varies_in_time(inputs / f, seg["fields"].get(f, [])):
+                    constant.append(f)  # harmonics or fixed fields apply to every step
+                    continue
                 times = _times(inputs / f)
                 if times is None or len(times) == 0:
                     gaps.append(f"{f}: no readable time axis")
@@ -227,7 +295,12 @@ def preflight(
             Check(
                 "dates_cover_run",
                 "failed" if gaps else "passed",
-                f"run {start} to {end} ({source})",
+                f"run {start} to {end} ({source})"
+                + (
+                    f"; constant in time, so not date-checked: {', '.join(sorted(set(constant)))}"
+                    if constant
+                    else ""
+                ),
                 gaps,
             )
         )
@@ -346,6 +419,10 @@ def preflight(
                 issues,
             )
         )
+    # 6. Surface forcing that nothing mixes down: with heat and fresh-water fluxes
+    # applied and no surface boundary-layer scheme, every flux stays in the top layer.
+    checks.append(surface_mixing_check(params))
+
     facts["parameters_read"] = {
         k: params[k]
         for k in sorted(params)
