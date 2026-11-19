@@ -8,7 +8,8 @@ It writes ``<folder>/node.json`` (mode 0600) with its pid, port and token once
 the port is listening, keeps its scene when the link drops, and shuts down
 after ``--idle-seconds`` with no link, writing the scene manifest first.
 ``--name`` picks another record and lock name, for a second node half in a
-network namespace that cannot reach the first one.
+network namespace that cannot reach the first one. Each start removes the
+``node-<ns>`` slots of node halves that have gone.
 """
 
 from __future__ import annotations
@@ -62,6 +63,40 @@ def _lock(root: Path, name: str = "node") -> Any:
     return handle
 
 
+def prune_slots(root: Path, own: str, min_age: float = 60.0) -> list[str]:
+    """Remove ``node-<ns>`` slots whose node half has gone, so they do not pile up.
+
+    A slot is gone when nobody holds its lock. Slots touched in the last
+    ``min_age`` seconds are left alone, since their node may still be starting.
+    """
+    import fcntl
+
+    removed = []
+    for lock_path in sorted(root.glob("node-*.lock")):
+        name = lock_path.stem
+        if name == own:
+            continue
+        try:
+            if time.time() - lock_path.stat().st_mtime < min_age:
+                continue
+            handle = open(lock_path, "a")  # noqa: SIM115 - closed below
+        except OSError:
+            continue
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            handle.close()
+            continue
+        for suffix in (".json", ".log", ".lock"):
+            try:
+                (root / f"{name}{suffix}").unlink()
+            except FileNotFoundError:
+                pass
+        handle.close()
+        removed.append(name)
+    return removed
+
+
 def parse(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="clio-paraview-node")
     parser.add_argument("--root", required=True, type=Path)
@@ -80,6 +115,9 @@ def main(argv: list[str] | None = None) -> None:
     root.mkdir(parents=True, exist_ok=True)
     os.chmod(root, 0o700)
     lock = _lock(root, args.name)
+    pruned = prune_slots(root, args.name)
+    if pruned:
+        print(f"removed slots of node halves that have gone: {pruned}", flush=True)
     site = root / "site"
     if site.is_dir():
         # ParaView's own packages (wslink, aiohttp) stay first on the path.

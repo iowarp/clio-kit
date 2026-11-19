@@ -36,7 +36,8 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
   over). A host that runs each server in its own sandbox no longer blocks
   ParaView in its other conversations: a node half left by another sandbox,
   which cannot be reached or stopped from outside it, is left alone and the
-  front runs its own beside it.
+  front runs its own beside it. Each node half clears the records of node
+  halves whose sandbox has gone, so they do not accumulate.
 - **paraview 3.1.0, ParaView controls in the view**: the live view gains a
   compact left tool rail: a pipeline browser (show, hide, select, remove), an
   Add filter palette (Contour, Slice, Clip, Threshold, Glyph, Stream Tracer,

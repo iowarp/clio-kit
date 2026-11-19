@@ -336,6 +336,28 @@ def test_scene_ids_are_stable_per_path() -> None:
     assert a.startswith("wave-")
 
 
+def test_prune_slots_removes_only_unheld_old_slots(tmp_path: Path) -> None:
+    fcntl = pytest.importorskip("fcntl")
+    import time
+
+    from paraview_mcp.node.main import prune_slots
+
+    old = time.time() - 3600
+    for name in ("node-1", "node-2", "node-3", "node"):
+        for suffix in (".json", ".log", ".lock"):
+            (tmp_path / f"{name}{suffix}").write_text("")
+            if name != "node-3":
+                os.utime(tmp_path / f"{name}{suffix}", (old, old))
+    with open(tmp_path / "node-2.lock", "a") as held:
+        fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        assert prune_slots(tmp_path, "node-9") == ["node-1"]
+    assert not (tmp_path / "node-1.json").exists()
+    assert not (tmp_path / "node-1.lock").exists()
+    assert (tmp_path / "node-2.json").exists()
+    assert (tmp_path / "node-3.json").exists()
+    assert (tmp_path / "node.json").exists()
+
+
 def test_manifest_round_trip(tmp_path: Path) -> None:
     from paraview_mcp.node import manifest
 
