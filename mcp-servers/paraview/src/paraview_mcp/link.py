@@ -9,6 +9,10 @@ from typing import Any
 
 from .errors import ParaViewError
 
+# The link is loopback only: a client's HTTP_PROXY must not carry it, since an
+# egress proxy cannot reach this machine's 127.0.0.1 and answers 502.
+_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
 
 class LinkError(Exception):
     """The node half could not be reached over the link.
@@ -48,7 +52,7 @@ class NodeClient:
             },
         )
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with _OPENER.open(request, timeout=timeout) as response:
                 return json.loads(response.read())
         except urllib.error.HTTPError as exc:
             try:
