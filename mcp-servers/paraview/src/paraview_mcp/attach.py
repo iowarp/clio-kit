@@ -308,8 +308,12 @@ class Attacher:
         env = json.loads(marks["ENV"]) if marks.get("ENV") else None
         if env is None or env.get("pvpython") != pvpython:
             env = self._interrogate(transport, pvpython)
-        if "gl_args" not in env:
+        # A prepare line can bring its own GL libraries, so the probe result is
+        # kept per prepare line.
+        gl_for = settings.target.prepare or ""
+        if "gl_args" not in env or env.get("gl_for") != gl_for:
             env["gl_args"] = self._gl_args(transport, pvpython)
+            env["gl_for"] = gl_for
             if env.get("built"):
                 self._write_env(transport, folder, env)
         gl_args = [str(a) for a in env.get("gl_args") or []]

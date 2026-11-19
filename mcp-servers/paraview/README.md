@@ -54,6 +54,12 @@ which a host that confines the servers it launches lets them write):
   home folder on a cluster. If neither can, the message names the command to
   run from a machine that can.
 - `code/`: the node half, copied over the same connection.
+- `env.json`: what the front learned about that `pvpython`, including whether
+  it renders offscreen as it is. Login and compute nodes often have no X
+  server, EGL or system OSMesa; the front then starts the node half with the
+  ParaView launcher's `--mesa` switch, which uses the OSMesa that the Kitware
+  binaries ship. A `prepare` line that brings its own GL libraries is probed
+  on its own.
 - `node.json`: the running node half's port and token, readable only by you.
 - `scenes/<id>/manifest.json`: each scene, written after every committed
   command.
