@@ -488,7 +488,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`decimer`** | 1.0.0 | Chemistry | Read a drawn chemical structure from an image as SMILES (DECIMER) | `clio-kit mcp-server decimer` |
 | **`earthdata`** | 1.0.0 | Earth Science | Search and download NASA Earthdata datasets (runs earthdata-mcp-server 0.6.0) | `clio-kit mcp-server earthdata` |
 | **`fdmnes`** | 1.0.0 | Spectroscopy | XANES spectra of crystals and molecules with FDMNES; normalize and compare spectra | `clio-kit mcp-server fdmnes` |
-| **`geo`** | 2.4.0 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
+| **`geo`** | 2.4.1 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
 | **`geoprocess`** | 1.0.0 | Geospatial | Reproject, clip, overlay, zonal statistics and raster differences | `clio-kit mcp-server geoprocess` |
 | **`geoservices`** | 1.0.0 | Geospatial | Fetch ArcGIS, OGC, STAC, remote raster and lidar data by region | `clio-kit mcp-server geoservices` |
 | **`graspa`** | 1.0.0 | Chemistry | Gas adsorption uptake in MOFs and zeolites by GCMC with gRASPA; rank frameworks | `clio-kit mcp-server graspa` |
