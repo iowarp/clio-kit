@@ -167,3 +167,24 @@ def test_a_glider_track_is_a_map_linked_to_its_profiles(tmp_path: Path) -> None:
     assert view["selection"] == {"path": "/selection/ru29-2020-profile"}
     assert view["selectionField"] == "profile"
     assert views.positions_view(path, positions.drop(columns="latitude"), "k") is None
+
+
+def test_a_crossings_view_shows_the_field_and_every_track_even_with_none(
+    tmp_path: Path,
+) -> None:
+    view = views.crossings_view(
+        tmp_path / "tracks.parquet", tmp_path / "etopo.nc", "z", None, "shelf"
+    )
+    kinds = [layer["kind"] for layer in view["layers"]]
+    assert kinds == [
+        "grid",
+        "tracks",
+    ]  # nothing crossed: still the tracks and the field
+    with_points = views.crossings_view(
+        tmp_path / "tracks.parquet", tmp_path / "etopo.nc", "z", tmp_path / "c.parquet"
+    )
+    assert [layer["kind"] for layer in with_points["layers"]] == [
+        "grid",
+        "tracks",
+        "points",
+    ]

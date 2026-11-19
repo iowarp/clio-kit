@@ -420,5 +420,9 @@ async def test_overturning_refuses_a_curvilinear_grid(tmp_path: Path) -> None:
         with pytest.raises(ToolError, match="unsupported_grid"):
             await client.call_tool(
                 "overturning",
-                {"grid": str(path), "transport_variable": "vmo", "output_dir": str(tmp_path)},
+                {
+                    "grid": str(path),
+                    "transport_variable": "vmo",
+                    "output_dir": str(tmp_path),
+                },
             )

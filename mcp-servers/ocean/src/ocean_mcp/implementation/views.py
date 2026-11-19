@@ -118,6 +118,49 @@ def table_view(
     return {"component": "clio.layered-map.v1", "title": label, "layers": [layer]}
 
 
+def crossings_view(
+    tracks: Path, field: Path, variable: str, crossings: Path | None, title: str = ""
+) -> dict[str, Any]:
+    """Tracks tested against a field: the field, every track, and the first crossings."""
+
+    layers: list[dict[str, Any]] = [
+        {
+            "id": "field",
+            "kind": "grid",
+            "label": variable,
+            "gridUri": str(field),
+            "variable": variable,
+        },
+        {
+            "id": "tracks",
+            "kind": "tracks",
+            "label": "tracks",
+            "dataUri": str(tracks),
+            "latitudeField": "latitude",
+            "longitudeField": "longitude",
+            "idField": "track",
+            "trackField": "track",
+        },
+    ]
+    if crossings is not None:
+        layers.append(
+            {
+                "id": "crossings",
+                "kind": "points",
+                "label": "first crossings",
+                "dataUri": str(crossings),
+                "latitudeField": "latitude",
+                "longitudeField": "longitude",
+                "idField": "track",
+            }
+        )
+    return {
+        "component": "clio.layered-map.v1",
+        "title": title or "crossings",
+        "layers": layers,
+    }
+
+
 def profile_selection(key: str) -> dict[str, Any]:
     """The selection binding that links a dataset's profile views by profile id."""
 
