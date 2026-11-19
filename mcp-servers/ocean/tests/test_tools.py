@@ -354,3 +354,25 @@ async def test_teos10_reports_a_non_finite_n2_instead_of_failing(
     )
     assert out["N2_max"] is None or np.isfinite(out["N2_max"])
     assert out["N2_non_finite"] >= 0
+
+
+async def test_a_section_shows_where_its_casts_were_taken(tmp_path: Path) -> None:
+    profiles = _glider_like(tmp_path)
+    for kwargs in ({}, {"horizontal_step_km": 1.0, "name": "regridded"}):
+        out = await call(
+            "section",
+            variables=["CT"],
+            profiles=str(profiles),
+            output_dir=str(tmp_path),
+            **kwargs,
+        )
+        section, stations = out["outputs"]
+        assert stations["role"] == "positions"
+        (layer,) = stations["view"]["layers"]
+        assert layer["idField"] == "profile"
+        # The section's stations and the map's casts are one selection by profile.
+        assert section["view"]["selection"] == stations["view"]["selection"]
+        assert section["view"]["selectionField"] == "profile"
+        table = pd.read_parquet(stations["path"])
+        assert list(table["profile"]) == ["p1", "p2"]
+        assert table["latitude"].notna().all()

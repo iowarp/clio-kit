@@ -318,6 +318,42 @@ def _save_positions(
     )
 
 
+def _save_stations(
+    ds: Any, name: str, output_dir: str | None, src: list[Source]
+) -> Output:
+    """The section's casts (profile, position, distance along it), on a map."""
+
+    if "station_profile" in ds:  # regridded: the casts are kept as stations
+        along = ds["distance"].values.astype(float)
+        distance = ds["station_distance"].values.astype(float)
+        stations = pd.DataFrame(
+            {
+                "profile": ds["station_profile"].values.astype(str),
+                "latitude": np.interp(distance, along, ds["latitude"].values),
+                "longitude": np.interp(distance, along, ds["longitude"].values),
+                "distance_km": distance,
+            }
+        )
+    else:
+        stations = pd.DataFrame(
+            {
+                "profile": ds["profile"].values.astype(str),
+                "latitude": ds["latitude"].values.astype(float),
+                "longitude": ds["longitude"].values.astype(float),
+                "distance_km": ds["distance"].values.astype(float),
+            }
+        )
+    path = output_path(f"{name}_stations", ".parquet", output_dir)
+    stations.to_parquet(path, index=False)
+    sidecar = write_provenance(
+        path, tool="section", sources=src, method={"stations": "the section's casts"}
+    )
+    view = views.positions_view(path, stations, name, title=f"{name} stations")
+    return Output(
+        path, "positions", media_type(path), sidecar, rows=len(stations), view=view
+    )
+
+
 @mcp.tool(
     name="glider_fetch",
     title="Fetch Glider",
@@ -658,12 +694,20 @@ def section(
         method=method,
         packages=("xarray", "gsw"),
     )
+    outputs = [out]
+    if profiles and out.view is not None:
+        stations = _save_stations(ds, name, output_dir, src)
+        if stations.view is not None:
+            # The section and where its casts were taken are one selection: picking a
+            # station on either view picks it on the other.
+            out.view = {**out.view, **views.profile_selection(name)}
+            outputs.append(stations)
     summary = sections.section_summary(ds)
     removed = sum(dropped.values())
     note = f"; {removed} suspect samples dropped" if removed else ""
     return result(
         f"Section '{name}': {summary['columns']} columns over {summary['length_km']:.0f} km, variables {', '.join(summary['variables'])}{note}.",
-        [out],
+        outputs,
         **summary,
         suspect_dropped=dropped,
         path=json.loads(ds.attrs["path"]),
