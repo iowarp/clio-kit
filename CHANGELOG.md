@@ -4,6 +4,8 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
 
 ## Unreleased
 
+## 2.13.0 - 2026-11-19
+
 - **globe server removed**: the plain 3D globe (the MCP Apps map example,
   `@modelcontextprotocol/server-map`) only framed a named region and could not
   draw points or GeoJSON. Geo's `show_on_globe` replaces it; `clio-geoscience`
