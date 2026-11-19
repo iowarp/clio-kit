@@ -46,10 +46,15 @@ def drift(
             else da.mean((lon, lat))
         )
     if u and v:
-        ke = 0.5 * (ds[u] ** 2 + ds[v] ** 2)
-        # u and v may sit on different (staggered) grids; average each over its own horizontal dims.
-        horizontal = [d for d in ke.dims if d not in (vertical, time)]
-        series["kinetic_energy"] = ke.mean(horizontal)
+        # u and v may sit on different (staggered) grids, so each squared
+        # component is averaged over its own horizontal dims before adding;
+        # adding them first would broadcast one grid against the other.
+        def _horizontal_mean(da: xr.DataArray) -> xr.DataArray:
+            return da.mean([d for d in da.dims if d not in (vertical, time)])
+
+        series["kinetic_energy"] = 0.5 * (
+            _horizontal_mean(ds[u] ** 2) + _horizontal_mean(ds[v] ** 2)
+        )
     frame = xr.Dataset(series).to_dataframe().reset_index()
     verdicts = []
     groups = (
