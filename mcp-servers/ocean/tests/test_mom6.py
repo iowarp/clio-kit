@@ -97,3 +97,28 @@ def test_missing_input_raises_typed(tmp_path: Path) -> None:
 
     with pytest.raises(OceanToolError, match="no MOM_input"):
         mom6.preflight(tmp_path, input_dir=None, kept_cells=[])
+
+
+def test_surface_forcing_without_a_boundary_layer_scheme_fails() -> None:
+    forced = {"BUOY_CONFIG": "file", "KD": "1.0E-05"}
+    check = mom6.surface_mixing_check(forced)
+    assert check.status == "failed" and "top layer" in check.detail
+    assert "shortwave is absorbed at the surface" in check.detail
+    assert (
+        mom6.surface_mixing_check({**forced, "ENERGETICS_SFC_PBL": "True"}).status
+        == "passed"
+    )
+    assert mom6.surface_mixing_check({**forced, "USE_KPP": "T"}).status == "passed"
+    assert mom6.surface_mixing_check({"BUOY_CONFIG": "zero"}).status == "not_checked"
+    assert mom6.surface_mixing_check({}).status == "not_checked"
+
+
+def test_the_live_tasmania_configuration_is_caught() -> None:
+    # The keys of the forced 20-day Tasmania run that warmed 2 °C too fast.
+    params = {
+        "BUOY_CONFIG": "file",
+        "WIND_CONFIG": "file",
+        "KD": "1.0E-05",
+        "KV": "1.0E-04",
+    }
+    assert mom6.surface_mixing_check(params).status == "failed"

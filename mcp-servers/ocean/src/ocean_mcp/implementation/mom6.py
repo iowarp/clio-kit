@@ -146,6 +146,39 @@ def run_window(
     return None, None, "input.nml has no date_init/current_date"
 
 
+#: Parameters that turn on a surface boundary-layer scheme in MOM6.
+PBL_SCHEMES = ("ENERGETICS_SFC_PBL", "USE_KPP", "BULKMIXEDLAYER")
+
+
+def _true(value: str | None) -> bool:
+    return str(value or "").strip().upper() in ("TRUE", "T", ".TRUE.")
+
+
+def surface_mixing_check(params: dict[str, str]) -> Check:
+    """Surface buoyancy forcing on, with a scheme to carry it below the top layer."""
+
+    buoy = params.get("BUOY_CONFIG", "").strip().lower()
+    if buoy in ("", "zero", "none"):
+        return Check(
+            "surface_mixing", "not_checked", "no surface buoyancy forcing (BUOY_CONFIG)"
+        )
+    on = [name for name in PBL_SCHEMES if _true(params.get(name))]
+    if on:
+        return Check(
+            "surface_mixing", "passed", f"surface boundary layer: {', '.join(on)}"
+        )
+    pen = params.get("PEN_SW_NBANDS", "")
+    detail = (
+        f"BUOY_CONFIG = {params.get('BUOY_CONFIG')} applies heat and fresh-water fluxes, "
+        f"but no surface boundary-layer scheme is on ({', '.join(PBL_SCHEMES)} all unset or "
+        f"False); vertical mixing is the background KD = {params.get('KD', 'default')}, so the "
+        "fluxes stay in the top layer and the surface drifts (warms under summer heating)"
+    )
+    if not pen or pen.strip() in ("0",):
+        detail += "; shortwave is absorbed at the surface (no PEN_SW_NBANDS)"
+    return Check("surface_mixing", "failed", detail, [name for name in PBL_SCHEMES])
+
+
 def preflight(
     run_dir: Path,
     *,
@@ -346,6 +379,10 @@ def preflight(
                 issues,
             )
         )
+    # 6. Surface forcing that nothing mixes down: with heat and fresh-water fluxes
+    # applied and no surface boundary-layer scheme, every flux stays in the top layer.
+    checks.append(surface_mixing_check(params))
+
     facts["parameters_read"] = {
         k: params[k]
         for k in sorted(params)
