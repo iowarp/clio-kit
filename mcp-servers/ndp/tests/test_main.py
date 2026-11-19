@@ -31,7 +31,7 @@ class TestMainFunction:
             with patch("sys.argv", ["ndp-mcp", "--transport", "http"]):
                 main()
 
-            mock_run.assert_called_once_with(transport="http", host="0.0.0.0", port=8000)
+            mock_run.assert_called_once_with(transport="http", host="127.0.0.1", port=8000)
 
     def test_main_custom_host_and_port(self):
         """Test main function with custom host and port."""
@@ -51,7 +51,7 @@ class TestMainFunction:
                 with patch.dict("os.environ", {"MCP_TRANSPORT": "http"}):
                     main()
 
-            mock_run.assert_called_once_with(transport="http", host="0.0.0.0", port=8000)
+            mock_run.assert_called_once_with(transport="http", host="127.0.0.1", port=8000)
 
 
 class TestModuleExecution:

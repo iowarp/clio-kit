@@ -479,7 +479,7 @@ def test_admin_entrypoint_sets_validated_spack_command_from_environment_transpor
         runpy.run_module("spack_mcp.admin_server", run_name="__main__")
 
         assert Path(os.environ["SPACK_MCP_COMMAND"]) == command.resolve()
-        assert observed == [{"transport": "http", "host": "0.0.0.0", "port": 8000}]
+        assert observed == [{"transport": "http", "host": "127.0.0.1", "port": 8000}]
     finally:
         importlib.reload(server)
 
@@ -509,6 +509,6 @@ def test_user_entrypoint_sets_command_and_runs_http(
         runpy.run_module("spack_mcp.user_server", run_name="__main__")
 
         assert Path(os.environ["SPACK_MCP_COMMAND"]) == command.resolve()
-        assert observed == [{"transport": "http", "host": "0.0.0.0", "port": 8000}]
+        assert observed == [{"transport": "http", "host": "127.0.0.1", "port": 8000}]
     finally:
         importlib.reload(server)

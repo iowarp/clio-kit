@@ -127,8 +127,8 @@ Add to your Claude Desktop config file:
 ### Environment Variables
 
 - `MCP_TRANSPORT` - Transport type: `stdio` (default) or `http`
-For HTTP, pass `--host 127.0.0.1 --port 8000` explicitly and connect to `/mcp`.
-The CLI defaults to `0.0.0.0` when no host is given.
+For HTTP, pass `--port 8000` and connect to `/mcp`. The CLI listens on
+`127.0.0.1` unless `--host` says otherwise; the server has no authentication.
 
 ## Performance Features
 
