@@ -1,7 +1,7 @@
 {
   "canonicalization": "json-sort-keys-compact-utf8-v1",
   "contract_id": "clio-kit-spack-user-v3",
-  "contract_sha256": "75dcd40e36f3b8e5352ac6136db67772190327119dc453730e599052b3f9a99b",
+  "contract_sha256": "0a8151a36321a75082ef128758a309a8bb79bda3dc9a567fba13f4474303edde",
   "profile": "user",
   "projection": "mcp-agent-tool-schema-v1",
   "schema_version": "clio-kit.mcp-user-contract.v1",
@@ -401,7 +401,7 @@
         "openWorldHint": true,
         "readOnlyHint": false
       },
-      "description": "Set up a CLIO Spack on a clio-relay site that reuses what the site already has. It shallow-clones the Spack release the site runs (pinned by commit) into <site_home>/spack, points upstreams.yaml at the site install tree, runs compiler find, registers build tools with external find --not-buildable, sets packages:mpi:buildable:false and records module-only MPIs as candidate externals. MPI is never externalized from PATH. Config lives in the checkout and SPACK_DISABLE_LOCAL_CONFIG keeps ~/.spack out. Idempotent; it never installs, builds or installs jarvis-cd. The first call returns the relay exec call and the approval text; the second, with relay_result, returns the report, including the JARVIS_SPACK_ROOT and JARVIS_SPACK_CONFIG to export.",
+      "description": "Set up a CLIO Spack on a clio-relay site that reuses what the site already has. It shallow-clones the Spack release the site runs (pinned by commit) into <site_home>/spack, points upstreams.yaml at the site install tree, runs compiler find, registers build tools with external find --not-buildable, sets packages:mpi:buildable:false and records module-only MPIs as candidate externals. MPI is never externalized from PATH. Config lives in the checkout and SPACK_DISABLE_LOCAL_CONFIG keeps ~/.spack out. Idempotent; it never installs, builds or installs jarvis-cd. The first call returns the relay exec call (with a spack plan that a guarded relay site asks the person to approve) and the approval text; the second, with relay_result, returns the report, including the JARVIS_SPACK_ROOT and JARVIS_SPACK_CONFIG to export. needs_approval means retry the same exec once the person answers; declined means stop.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -458,7 +458,7 @@
               }
             ],
             "default": null,
-            "description": "The CLIO Spack checkout; default <site_home>/spack."
+            "description": "The CLIO Spack checkout; default <site_home>/spack. On a guarded relay site queries run only the Spack its guard lists (default .clio-relay/spack/bin/spack)."
           },
           "site": {
             "description": "The clio-relay site id, such as ares",
@@ -528,6 +528,55 @@
             "default": null,
             "description": "What the person approves before the relay exec call."
           },
+          "ask": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "description": "A pending clio-relay ask the person answers before exec runs.",
+                "properties": {
+                  "ask_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "message": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "page": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The relay ask the person answers (needs_approval)."
+          },
           "error": {
             "anyOf": [
               {
@@ -569,6 +618,31 @@
                       },
                       "max_output_bytes": {
                         "type": "integer"
+                      },
+                      "plan": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "description": "The plan clio-relay's guard asks the person to approve before a non-read command.",
+                            "properties": {
+                              "kind": {
+                                "type": "string"
+                              },
+                              "summary": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "summary"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null
                       },
                       "site": {
                         "type": "string"
@@ -783,9 +857,11 @@
           "status": {
             "enum": [
               "relay_call_required",
+              "needs_approval",
               "done",
               "failed",
-              "refused"
+              "refused",
+              "declined"
             ],
             "type": "string"
           },
@@ -1014,7 +1090,7 @@
         "openWorldHint": true,
         "readOnlyHint": true
       },
-      "description": "Research a clio-relay site's CLIO Spack (prepared by spack_prepare_site): find (installed and upstream packages, --json), info (one recipe), spec (spack spec -I -l: what is installed, upstream, external or still to build) or modules (module -t avail). Read-only, short login-node work. The first call returns the relay exec call; the second, with relay_result, returns the parsed answer.",
+      "description": "Research a clio-relay site's CLIO Spack (prepared by spack_prepare_site): find (installed and upstream packages, --json), info (one recipe), spec (spack spec -I -l: what is installed, upstream, external or still to build) or modules (module -t avail). Read-only, short login-node work; Spack runs as env SPACK_DISABLE_LOCAL_CONFIG=1 <spack> <verb>, the shape clio-relay's guard accepts. The first call returns the relay exec call; the second, with relay_result, returns the parsed answer.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
@@ -1050,7 +1126,7 @@
               }
             ],
             "default": null,
-            "description": "The CLIO Spack checkout; default <site_home>/spack."
+            "description": "The CLIO Spack checkout; default <site_home>/spack. On a guarded relay site queries run only the Spack its guard lists (default .clio-relay/spack/bin/spack)."
           },
           "site": {
             "description": "The clio-relay site id, such as ares",
@@ -1085,6 +1161,54 @@
         "additionalProperties": false,
         "description": "Result of spack_site_query, either the relay call to make or the parsed answer.",
         "properties": {
+          "ask": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "description": "A pending clio-relay ask the person answers before exec runs.",
+                "properties": {
+                  "ask_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "message": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "page": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
           "error": {
             "anyOf": [
               {
@@ -1379,6 +1503,31 @@
                       "max_output_bytes": {
                         "type": "integer"
                       },
+                      "plan": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "description": "The plan clio-relay's guard asks the person to approve before a non-read command.",
+                            "properties": {
+                              "kind": {
+                                "type": "string"
+                              },
+                              "summary": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "summary"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null
+                      },
                       "site": {
                         "type": "string"
                       },
@@ -1505,9 +1654,11 @@
           "status": {
             "enum": [
               "relay_call_required",
+              "needs_approval",
               "done",
               "failed",
-              "refused"
+              "refused",
+              "declined"
             ],
             "type": "string"
           },
@@ -1534,5 +1685,5 @@
       "title": "Research Site Spack"
     }
   ],
-  "wire_sha256": "26acc6e49a9927ec1e00ccbc88ae7bf9fba1a21a3002dbe64db034db4b3d2687"
+  "wire_sha256": "e060197ef71fa4b1a8ae847bfa13826756799cf6910834a0436637fa24735bd6"
 }

@@ -98,13 +98,26 @@ _LOGIN_NODE_NOTE: Final = (
     "(jarvis ppl install ... +submit)."
 )
 _GUARDED_NOTE: Final = (
-    "clio-relay refused this command. On a Secure (guarded) site relay exec runs only "
-    "its read-only list, which has no bash, git or spack, so the CLIO Spack can't be "
-    "prepared or queried through exec there yet. Tell the person; don't work around "
-    "the guard."
+    "clio-relay's guard refused this command. A Secure (guarded) site runs Spack "
+    "queries only as `env SPACK_DISABLE_LOCAL_CONFIG=1 <spack> find|info|spec` with the "
+    "Spack its guard lists (default .clio-relay/spack/bin/spack), and other commands "
+    "only with an approved plan. Tell the person; don't work around the guard."
 )
+_DECLINED_NOTE: Final = "The person did not approve this on the relay ask. Stop; don't retry."
+PLAN_TIMEOUT_S: Final = 900.0
 
-SiteStatus = Literal["relay_call_required", "done", "failed", "refused"]
+SiteStatus = Literal[
+    "relay_call_required", "needs_approval", "done", "failed", "refused", "declined"
+]
+
+
+class RelayExecPlan(BaseModel):
+    """The plan clio-relay's guard asks the person to approve before a non-read command."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str
+    summary: str
 
 
 class RelayExecArguments(BaseModel):
@@ -116,6 +129,17 @@ class RelayExecArguments(BaseModel):
     command: list[str]
     timeout_s: float
     max_output_bytes: int
+    plan: RelayExecPlan | None = None
+
+
+class RelayAsk(BaseModel):
+    """A pending clio-relay ask the person answers before exec runs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    ask_id: str | None = None
+    message: str | None = None
+    page: str | None = None
 
 
 class RelayCall(BaseModel):
@@ -237,6 +261,9 @@ class SpackPrepareSiteResult(BaseModel):
         default=None,
         description="What the person approves before the relay exec call.",
     )
+    ask: RelayAsk | None = Field(
+        default=None, description="The relay ask the person answers (needs_approval)."
+    )
     next_step: str
     login_node: str = _LOGIN_NODE_NOTE
     report: SitePrepareReport | None = None
@@ -255,6 +282,7 @@ class SpackSiteQueryResult(BaseModel):
     query: Literal["find", "info", "spec", "modules"]
     status: SiteStatus
     relay_call: RelayCall | None = None
+    ask: RelayAsk | None = None
     next_step: str
     login_node: str = _LOGIN_NODE_NOTE
     find: SpackFindResult | None = None
@@ -311,13 +339,23 @@ def prepare_site(
         site_scripts.POLICY_PY,
         *tools,
     ]
+    release = f"v{spack_version}" if spack_version else "at the site Spack's release"
     call = RelayCall(
         arguments=RelayExecArguments(
-            site=site, command=command, timeout_s=900, max_output_bytes=262_144
+            site=site,
+            command=command,
+            timeout_s=PLAN_TIMEOUT_S,
+            max_output_bytes=262_144,
+            plan=RelayExecPlan(
+                kind="spack",
+                summary=(
+                    f"Prepare the CLIO Spack {spack_version or '(the site Spack release)'} "
+                    f"at {spack_root}"
+                ),
+            ),
         )
     )
     if relay_result is None:
-        release = f"v{spack_version}" if spack_version else "at the site Spack's release"
         source = (
             f"upstream: the install tree of the site Spack at {upstream}"
             if upstream
@@ -335,15 +373,21 @@ def prepare_site(
                 "No install, no build, nothing left running. ~/.spack is not read or changed."
             ),
             next_step=(
-                "Ask the person with `approval`, call clio-relay exec with "
-                "relay_call.arguments unchanged, then call spack_prepare_site again with the "
-                "same arguments and relay_result set to the exec structured result."
+                "Call clio-relay exec with relay_call.arguments unchanged (command and plan). "
+                "A guarded site asks the person with the plan itself; on another site ask "
+                "the person with `approval` first. Then call spack_prepare_site again with "
+                "the same arguments and relay_result set to the exec structured result."
             ),
         )
     outcome = _relay_outcome(relay_result, command)
-    if isinstance(outcome, str):
+    if isinstance(outcome, _Refused):
         return SpackPrepareSiteResult(
-            site=site, status="refused", error=outcome, next_step="Tell the person; stop."
+            site=site,
+            status=outcome.status,
+            relay_call=call if outcome.status == "needs_approval" else None,
+            ask=outcome.ask,
+            error=outcome.error,
+            next_step=outcome.next_step("spack_prepare_site"),
         )
     marks = _marks(outcome.stdout)
     errors = marks.get("error", [])
@@ -383,7 +427,6 @@ def site_query(
     site = _site_id(site)
     home = _site_path(site_home, "site_home")
     spack_root = _site_path(root, "root") if root else f"{home}/spack"
-    config_dir = f"{home}/spack-config"
     term = None if spec is None else _validated_spec(spec)
     if query in {"info", "spec"} and term is None:
         raise _invalid(f"spack {query} needs spec")
@@ -400,15 +443,14 @@ def site_query(
             "info": ["info", term or ""],
             "spec": ["spec", "-I", "-l", term or ""],
         }[query]
-        command = [
-            "bash",
-            "-c",
-            site_scripts.QUERY_SCRIPT,
-            _SCRIPT_NAME,
-            spack_root,
-            config_dir,
-            *verb,
-        ]
+        # clio-relay's exec runs from $HOME without a shell, so a ~/ path is given
+        # home-relative; the guard matches the Spack program by exact string.
+        program = (
+            f"{spack_root[2:]}/bin/spack"
+            if spack_root.startswith("~/")
+            else (f"{spack_root}/bin/spack")
+        )
+        command = ["env", "SPACK_DISABLE_LOCAL_CONFIG=1", program, *verb]
         timeout = 600.0 if query == "spec" else 120.0
         limit = 2_097_152 if query == "find" else 262_144
     call = RelayCall(
@@ -429,9 +471,24 @@ def site_query(
             ),
         )
     outcome = _relay_outcome(relay_result, command)
-    if isinstance(outcome, str):
+    if isinstance(outcome, _Refused):
         return SpackSiteQueryResult(
-            site=site, query=query, status="refused", error=outcome, next_step="Tell the person."
+            site=site,
+            query=query,
+            status=outcome.status,
+            relay_call=call if outcome.status == "needs_approval" else None,
+            ask=outcome.ask,
+            error=outcome.error,
+            next_step=outcome.next_step("spack_site_query"),
+        )
+    if query != "modules" and outcome.returncode == 127:
+        return SpackSiteQueryResult(
+            site=site,
+            query=query,
+            status="failed",
+            error=f"no CLIO Spack at {spack_root} on {site}",
+            stderr_tail=_tail(outcome.stderr),
+            next_step="Run spack_prepare_site for this site first.",
         )
     try:
         parsed = _parse_query(query, term, outcome)
@@ -549,7 +606,26 @@ def _parse_modules(term: str | None, text: str) -> SiteModulesResult:
     return SiteModulesResult(query=term, modules=modules)
 
 
-def _relay_outcome(relay_result: dict[str, Any], command: list[str]) -> _CommandResult | str:
+class _Refused(BaseModel):
+    """clio-relay answered with a refusal instead of running the command."""
+
+    status: Literal["needs_approval", "declined", "refused"]
+    error: str
+    ask: RelayAsk | None = None
+
+    def next_step(self, tool: str) -> str:
+        if self.status == "needs_approval":
+            return (
+                "clio-relay asked the person to approve the plan (see ask). Once they "
+                "answer, call clio-relay exec again with the same relay_call.arguments "
+                f"(command and plan), then call {tool} again with relay_result."
+            )
+        if self.status == "declined":
+            return _DECLINED_NOTE
+        return "Tell the person; stop."
+
+
+def _relay_outcome(relay_result: dict[str, Any], command: list[str]) -> _CommandResult | _Refused:
     """Read clio-relay's exec structured result, refusing one for another command."""
     payload: Any = relay_result
     if isinstance(payload.get("structuredContent"), dict):
@@ -558,8 +634,30 @@ def _relay_outcome(relay_result: dict[str, Any], command: list[str]) -> _Command
     if isinstance(refusal, dict):
         reason = str(refusal.get("reason", "refused"))
         message = str(refusal.get("message", ""))
+        data: dict[str, Any] = refusal.get("data") or {}
+        if not isinstance(data, dict):
+            data = {}
+        ask_id = data.get("ask_id")
+        error = f"relay: {reason}: {message}".strip()
+        if reason == "needs_approval":
+            asks = [item for item in data.get("asks") or [] if isinstance(item, dict)]
+            match = next((item for item in asks if item.get("ask_id") == ask_id), None)
+            first: dict[str, Any] = match or (asks[0] if asks else {})
+            return _Refused(
+                status="needs_approval",
+                error=error,
+                ask=RelayAsk(
+                    ask_id=None if ask_id is None else str(ask_id),
+                    message=None if first.get("message") is None else str(first["message"]),
+                    page=None if first.get("page") is None else str(first["page"]),
+                ),
+            )
+        if reason == "policy_refused" and ask_id is not None:
+            return _Refused(
+                status="declined", error=error, ask=RelayAsk(ask_id=str(ask_id), message=message)
+            )
         prefix = _GUARDED_NOTE + " " if reason == "policy_refused" else ""
-        return f"{prefix}relay: {reason}: {message}".strip()
+        return _Refused(status="refused", error=prefix + error)
     argv = payload.get("argv")
     if argv is not None and list(argv) != command:
         raise _invalid("relay_result is for a different command; pass this call's exec result")

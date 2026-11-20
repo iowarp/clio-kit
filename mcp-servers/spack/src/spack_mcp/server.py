@@ -233,7 +233,12 @@ _SiteHome = Annotated[
 ]
 _Root = Annotated[
     str | None,
-    Field(description="The CLIO Spack checkout; default <site_home>/spack."),
+    Field(
+        description=(
+            "The CLIO Spack checkout; default <site_home>/spack. On a guarded relay site "
+            "queries run only the Spack its guard lists (default .clio-relay/spack/bin/spack)."
+        )
+    ),
 ]
 
 
@@ -249,8 +254,11 @@ _Root = Annotated[
         "externals. MPI is never externalized from PATH. Config lives in the checkout "
         "and SPACK_DISABLE_LOCAL_CONFIG keeps ~/.spack out. Idempotent; it never "
         "installs, builds or installs jarvis-cd. The first call returns the relay exec "
-        "call and the approval text; the second, with relay_result, returns the "
-        "report, including the JARVIS_SPACK_ROOT and JARVIS_SPACK_CONFIG to export."
+        "call (with a spack plan that a guarded relay site asks the person to approve) "
+        "and the approval text; the second, with relay_result, returns the report, "
+        "including the JARVIS_SPACK_ROOT and JARVIS_SPACK_CONFIG to export. "
+        "needs_approval means retry the same exec once the person answers; declined "
+        "means stop."
     ),
     annotations={
         "readOnlyHint": False,
@@ -313,9 +321,10 @@ async def spack_prepare_site_tool(
         "Research a clio-relay site's CLIO Spack (prepared by spack_prepare_site): "
         "find (installed and upstream packages, --json), info (one recipe), spec "
         "(spack spec -I -l: what is installed, upstream, external or still to build) "
-        "or modules (module -t avail). Read-only, short login-node work. The first "
-        "call returns the relay exec call; the second, with relay_result, returns "
-        "the parsed answer."
+        "or modules (module -t avail). Read-only, short login-node work; Spack runs as "
+        "env SPACK_DISABLE_LOCAL_CONFIG=1 <spack> <verb>, the shape clio-relay's guard "
+        "accepts. The first call returns the relay exec call; the second, with "
+        "relay_result, returns the parsed answer."
     ),
     annotations={
         "readOnlyHint": True,

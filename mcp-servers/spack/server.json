@@ -47,11 +47,11 @@
     },
     {
       "name": "spack_prepare_site",
-      "description": "Set up a CLIO Spack on a clio-relay site that reuses what the site already has. It shallow-clones the Spack release the site runs (pinned by commit) into <site_home>/spack, points upstreams.yaml at the site install tree, runs compiler find, registers build tools with external find --not-buildable, sets packages:mpi:buildable:false and records module-only MPIs as candidate externals. MPI is never externalized from PATH. Config lives in the checkout and SPACK_DISABLE_LOCAL_CONFIG keeps ~/.spack out. Idempotent; it never installs, builds or installs jarvis-cd. The first call returns the relay exec call and the approval text; the second, with relay_result, returns the report, including the JARVIS_SPACK_ROOT and JARVIS_SPACK_CONFIG to export."
+      "description": "Set up a CLIO Spack on a clio-relay site that reuses what the site already has. It shallow-clones the Spack release the site runs (pinned by commit) into <site_home>/spack, points upstreams.yaml at the site install tree, runs compiler find, registers build tools with external find --not-buildable, sets packages:mpi:buildable:false and records module-only MPIs as candidate externals. MPI is never externalized from PATH. Config lives in the checkout and SPACK_DISABLE_LOCAL_CONFIG keeps ~/.spack out. Idempotent; it never installs, builds or installs jarvis-cd. The first call returns the relay exec call (with a spack plan that a guarded relay site asks the person to approve) and the approval text; the second, with relay_result, returns the report, including the JARVIS_SPACK_ROOT and JARVIS_SPACK_CONFIG to export. needs_approval means retry the same exec once the person answers; declined means stop."
     },
     {
       "name": "spack_site_query",
-      "description": "Research a clio-relay site's CLIO Spack (prepared by spack_prepare_site): find (installed and upstream packages, --json), info (one recipe), spec (spack spec -I -l: what is installed, upstream, external or still to build) or modules (module -t avail). Read-only, short login-node work. The first call returns the relay exec call; the second, with relay_result, returns the parsed answer."
+      "description": "Research a clio-relay site's CLIO Spack (prepared by spack_prepare_site): find (installed and upstream packages, --json), info (one recipe), spec (spack spec -I -l: what is installed, upstream, external or still to build) or modules (module -t avail). Read-only, short login-node work; Spack runs as env SPACK_DISABLE_LOCAL_CONFIG=1 <spack> <verb>, the shape clio-relay's guard accepts. The first call returns the relay exec call; the second, with relay_result, returns the parsed answer."
     }
   ],
   "resources": [

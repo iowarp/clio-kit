@@ -77,8 +77,8 @@ rerun (each step reports `present`, `unchanged` or `written`):
 
 All of this config lives in the clone's own `etc/spack` (Spack's site scope).
 Every command runs with `SPACK_DISABLE_LOCAL_CONFIG=1`, which in Spack 0.23
-drops both the system and the user scopes, and with
-`SPACK_USER_CONFIG_PATH`/`SPACK_USER_CACHE_PATH` set to
+drops both the system and the user scopes; the prepare script also sets
+`SPACK_USER_CONFIG_PATH`/`SPACK_USER_CACHE_PATH` to
 `<site_home>/spack-config`, so the person's `~/.spack` and `~/spack` never leak
 in. The report ends with what jarvis-cd must be told:
 
@@ -92,15 +92,32 @@ JARVIS_SPACK_CONFIG=<site_home>/spack-config
 `spack_site_query(site, query)` researches the CLIO Spack: `find` (installed
 and upstream packages), `info` (one recipe), `spec` (`spack spec -I -l`: which
 nodes are installed, upstream, external or still to build) and `modules`
-(`module -t avail`). The first `spec` on a fresh clone downloads the clingo
-bootstrap binary (about 8 MB) into `<root>/var/clio/bootstrap`.
+(`module -t avail`). The research verbs run Spack directly, with no shell, as
+`["env", "SPACK_DISABLE_LOCAL_CONFIG=1", ".clio-relay/spack/bin/spack", "find",
+"--json", term]` (the same shape for `info` and `spec`). The Spack path is
+relative to home because relay's exec runs from `$HOME`; a `~/` root is given
+that way, and an absolute root only works on a guarded site whose guard lists
+it. The CLIO config is in the clone's site scope and its caches are pinned
+under `<root>/var/clio`, so `SPACK_DISABLE_LOCAL_CONFIG=1` alone is enough.
+The first `spec` on a fresh clone downloads the clingo bootstrap binary (about
+8 MB) into `<root>/var/clio/bootstrap`. If the clone is missing, the exec
+exits 127 and the tool says to run `spack_prepare_site` first.
 
 Login nodes are shared, so both tools do only light, short work there: git
 clone, writing config, `compiler find`, `external find`, `find`, `info` and
 `spec`. They never run `spack install` or a build, and nothing outlives the
-relay call (relay's exec kills the process group when it ends). On a Secure
-(guarded) relay site, exec allows only its read-only list, which has no `bash`,
-`git` or `spack`; the tools then return `status: refused` and the agent tells
+relay call (relay's exec kills the process group when it ends).
+
+On a Secure (guarded) relay site, the research argv is on relay's read-only
+list: `env` may set only `SPACK_DISABLE_LOCAL_CONFIG=1`, and `-C`, `-e`, `-D`
+are refused. `spack_prepare_site` sends its `bash -c` script with
+`plan={"kind": "spack", "summary": "Prepare the CLIO Spack <version> at
+~/.clio-relay/spack"}` and a 900 s timeout, so relay asks the person to approve
+that exact argv once. If the client cannot show relay's ask, relay returns
+`needs_approval` with an `ask_id`; the tool returns `status: needs_approval`
+with the same `relay_call`, which the agent sends again unchanged once the
+person has answered. A declined ask comes back as `status: declined`, and the
+agent stops. Any other guard refusal is `status: refused`, and the agent tells
 the person instead of working around the guard.
 
 ## Recipe discovery

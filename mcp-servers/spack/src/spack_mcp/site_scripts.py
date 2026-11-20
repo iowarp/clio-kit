@@ -1,17 +1,18 @@
-"""Bash run through clio-relay ``exec`` on a site's login node.
+"""Bash that spack_prepare_site runs through clio-relay ``exec`` on a login node.
 
-Both scripts do light, short work only: a shallow git clone, writing config,
-``compiler find``, ``external find``, ``find``, ``info`` and ``spec``. Neither
-installs, builds or leaves a process behind. Relay runs the argv under
-``setsid`` from ``$HOME`` and kills the process group when the call ends.
+It does light, short work only: a shallow git clone, writing config,
+``compiler find`` and ``external find``. It never installs, builds or leaves a
+process behind. Relay runs the argv under ``setsid`` from ``$HOME`` and kills
+the process group when the call ends. Research queries need no script: they
+run Spack directly as ``env SPACK_DISABLE_LOCAL_CONFIG=1 <spack> find|info|spec``,
+the shape clio-relay's guard accepts.
 """
 
 from __future__ import annotations
 
 from typing import Final
 
-# Shared by both scripts: expand ``~``, isolate Spack from ~/.spack, and refuse
-# an unexpected Spack verb. Only an explicit verb list ever reaches Spack.
+# Expand ``~`` and isolate Spack from ~/.spack.
 _ISOLATION: Final = r"""
 set -u
 umask 022
@@ -279,17 +280,3 @@ report = {
 }
 print("@@report\t" + json.dumps(report, sort_keys=True))
 """
-
-QUERY_SCRIPT: Final = (
-    _ISOLATION
-    + r"""
-ROOT=$(home_path "$1"); CONFIG=$(home_path "$2"); shift 2
-isolate "$CONFIG"
-[ -x "$ROOT/bin/spack" ] || fail "no CLIO Spack at $ROOT; run spack_prepare_site first" 64
-case "${1-}" in
-  find|info|spec) ;;
-  *) fail "spack ${1-} is not a research verb" 64 ;;
-esac
-exec "$ROOT/bin/spack" "$@"
-"""
-)
