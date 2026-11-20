@@ -591,7 +591,7 @@ async def load_data_tool(
     file_format: Annotated[
         Optional[str],
         Field(
-            description="File format (csv, excel, json, parquet, hdf5); auto-detected if omitted"
+            description="File format (csv, excel, json, parquet; HDF5 is read by the hdf5 server); auto-detected if omitted"
         ),
     ] = None,
     sheet_name: Annotated[
