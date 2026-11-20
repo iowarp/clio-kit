@@ -339,6 +339,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command == "serve":
         import uvicorn
 
+        from clio_agentic_search.api.access import api_token, is_loopback_host
+
+        if not is_loopback_host(args.host) and api_token() is None:
+            print(
+                f"refusing to serve on {args.host}: set CLIO_API_TOKEN so callers on the "
+                "network must authenticate, or bind 127.0.0.1",
+                file=sys.stderr,
+            )
+            return 2
+
         uvicorn.run(
             "clio_agentic_search.api.app:app",
             host=args.host,
