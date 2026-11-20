@@ -1600,6 +1600,14 @@
       "version": "1.0.0",
       "category": "workflow",
       "license": "BSD-3-Clause"
+    },
+    {
+      "name": "clio-core-skills",
+      "source": "./skills/clio-core-skills",
+      "description": "CLIO Core developer skills: gpu_vector kernels, writing runtime modules, and composing storage systems.",
+      "version": "1.0.0",
+      "category": "skills",
+      "license": "BSD-3-Clause"
     }
   ]
 }
