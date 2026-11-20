@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-SERVER_VERSION = "3.2.0"
+SERVER_VERSION = "3.3.0"
 DEFAULT_IDLE_SECONDS = 1800.0
 DEFAULT_PVSERVER_PORT = 11111
 # Pinned to the versions this server was qualified with.
@@ -49,6 +49,10 @@ class Settings:
     idle_seconds: float = DEFAULT_IDLE_SECONDS
     threshold_mb: float | None = None
     pvserver_port: int = DEFAULT_PVSERVER_PORT
+    #: host:port of a running pvserver to join; the data is read on its machine.
+    pvserver: str | None = None
+    #: The ParaView version to fetch for this machine when none of it is installed.
+    version: str | None = None
     connect_timeout: int = 15
     start_timeout: float = 180.0
     #: How long a node half that is alive but not answering (busy rendering) is waited
@@ -75,6 +79,8 @@ def from_environment() -> Settings:
         idle_seconds=float(idle if idle is not None else DEFAULT_IDLE_SECONDS),
         threshold_mb=_float("PARAVIEW_REMOTE_RENDER_THRESHOLD_MB", None),
         pvserver_port=int(port if port is not None else DEFAULT_PVSERVER_PORT),
+        pvserver=_clean(os.environ.get("PARAVIEW_PVSERVER")),
+        version=_clean(os.environ.get("PARAVIEW_VERSION")),
         start_timeout=float(_float("PARAVIEW_START_TIMEOUT", 180.0) or 180.0),
         busy_timeout=float(_float("PARAVIEW_BUSY_TIMEOUT", 300.0) or 300.0),
     )

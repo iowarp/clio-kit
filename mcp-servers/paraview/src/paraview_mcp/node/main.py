@@ -51,13 +51,26 @@ def network_namespace() -> str:
     return "".join(ch for ch in link if ch.isdigit())
 
 
-def _lock(root: Path, name: str = "node") -> Any:
-    import fcntl
-
-    handle = open(root / f"{name}.lock", "w")  # noqa: SIM115 - held for the process life
+def _try_lock(handle: Any) -> bool:
+    """Take ``handle``'s lock without waiting; False when another process holds it."""
     try:
-        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        if os.name == "nt":
+            import msvcrt
+
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
+        return False
+    return True
+
+
+def _lock(root: Path, name: str = "node") -> Any:
+    handle = open(root / f"{name}.lock", "a")  # noqa: SIM115 - held for the process life
+    if not _try_lock(handle):
         print("another node half is running in this folder", flush=True)
         sys.exit(3)
     return handle
@@ -69,8 +82,6 @@ def prune_slots(root: Path, own: str, min_age: float = 60.0) -> list[str]:
     A slot is gone when nobody holds its lock. Slots touched in the last
     ``min_age`` seconds are left alone, since their node may still be starting.
     """
-    import fcntl
-
     removed = []
     for lock_path in sorted(root.glob("node-*.lock")):
         name = lock_path.stem
@@ -82,17 +93,16 @@ def prune_slots(root: Path, own: str, min_age: float = 60.0) -> list[str]:
             handle = open(lock_path, "a")  # noqa: SIM115 - closed below
         except OSError:
             continue
-        try:
-            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
+        if not _try_lock(handle):
             handle.close()
             continue
+        # A held lock blocks removing its file on Windows; let it go first.
+        handle.close()
         for suffix in (".json", ".log", ".lock"):
             try:
                 (root / f"{name}{suffix}").unlink()
-            except FileNotFoundError:
+            except OSError:
                 pass
-        handle.close()
         removed.append(name)
     return removed
 
@@ -104,6 +114,11 @@ def parse(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--idle-seconds", type=float, default=1800.0)
     parser.add_argument("--threshold-mb", type=float, default=None)
     parser.add_argument("--pvserver-port", type=int, default=11111)
+    parser.add_argument(
+        "--pvserver",
+        default="",
+        help="host:port of a pvserver to join; the data is read on its machine",
+    )
     parser.add_argument("--code-hash", default="")
     parser.add_argument("--growth-interval", type=float, default=2.0)
     return parser.parse_args(argv)
@@ -113,7 +128,8 @@ def main(argv: list[str] | None = None) -> None:
     args = parse(argv)
     root: Path = args.root.resolve()
     root.mkdir(parents=True, exist_ok=True)
-    os.chmod(root, 0o700)
+    if os.name != "nt":
+        os.chmod(root, 0o700)
     lock = _lock(root, args.name)
     pruned = prune_slots(root, args.name)
     if pruned:
@@ -130,7 +146,20 @@ def main(argv: list[str] | None = None) -> None:
     from paraview import simple
 
     session = None
-    if _pvserver_listening(args.pvserver_port):
+    if args.pvserver:
+        host, _, port = args.pvserver.rpartition(":")
+        # A pvserver serves one client, so it is joined without a probe first.
+        try:
+            joined = simple.Connect(host or "localhost", int(port))
+        except Exception as exc:  # noqa: BLE001 - reported to the front
+            joined, reason = None, f"{type(exc).__name__}: {exc}"
+        else:
+            reason = "it did not answer, or its ParaView version is not this one"
+        if not joined:
+            print(f"pvserver join failed: {args.pvserver}: {reason}", flush=True)
+            sys.exit(4)
+        session = args.pvserver
+    elif _pvserver_listening(args.pvserver_port):
         simple.Connect("localhost", args.pvserver_port)
         session = f"localhost:{args.pvserver_port}"
     threshold = args.threshold_mb
@@ -141,7 +170,12 @@ def main(argv: list[str] | None = None) -> None:
     from .app import NodeApp
     from .engine import Engine
 
-    engine = Engine(root, threshold_mb=threshold, session=session)
+    engine = Engine(
+        root,
+        threshold_mb=threshold,
+        session=session,
+        data_on_server=bool(args.pvserver),
+    )
     token = secrets.token_urlsafe(32)
     node = NodeApp(engine, token)
     server = node.server

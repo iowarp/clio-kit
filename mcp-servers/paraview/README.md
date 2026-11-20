@@ -31,6 +31,8 @@ these from the values the person (or the agent) gives:
 | `PARAVIEW_ADDRESS` | Empty for this machine; otherwise an SSH host name (an alias from `~/.ssh/config` works) |
 | `PARAVIEW_VIA` | A jump host, used when `~/.ssh/config` gives the host no `ProxyJump` |
 | `PARAVIEW_PREPARE` | A shell line run first, for example `module load paraview`, so that `pvpython` is on the PATH |
+| `PARAVIEW_PVSERVER` | A running `pvserver` to join, as `host:port` from where the node half runs, for example a relay's local port for a `pvserver` in a cluster job. Empty: join one on port 11111 of that machine if it listens |
+| `PARAVIEW_VERSION` | The ParaView version the node half must run, for example `5.13.1` to match that `pvserver`. Empty: any `pvpython` found |
 
 `ssh ares; ssh ares-compute-08` is the address `ares-compute-08` via `ares`.
 The front runs the system `ssh` with `BatchMode=yes` and your own keys, agent
@@ -49,7 +51,7 @@ which a host that confines the servers it launches lets them write):
 
 - `site/`: trame, trame-vtk and trame-vuetify (pinned in `config.py`),
   installed for the Python of that machine's
-  `pvpython` (ParaView 6.0 or later, Python 3.12). If the machine cannot reach
+  `pvpython` (ParaView 5.13 or later, Python 3.10 or later). If the machine cannot reach
   the package index, the front builds it from the jump host, which shares the
   home folder on a cluster. If neither can, the message names the command to
   run from a machine that can.
@@ -74,6 +76,29 @@ newest older one. The node half runs detached:
 when the link drops it keeps the scene, and with no link for thirty minutes it
 writes the scene manifest and exits. If a `pvserver` listens on port 11111 of
 that machine, the node half joins it as a client and shows that session.
+
+### Joining a pvserver
+
+With `PARAVIEW_PVSERVER` set, the node half connects to that `pvserver` and
+renders there. Datasets are then read on the server's machine: paths, globs and
+the steps of a growing source are checked in the server's own file system, so
+a cluster job's output never crosses to this machine, only the rendered view.
+Follow indexes for a growing BP5 source are written under the server's
+`~/.clio/paraview/follow/`. The client and the server must run the same
+ParaView version; set `PARAVIEW_VERSION` to it and the front refuses any other
+`pvpython` with `paraview_version_mismatch`.
+
+### ParaView on this machine
+
+When `PARAVIEW_ADDRESS` is empty and the `pvpython` on the PATH is not the
+`PARAVIEW_VERSION` asked for (or there is none), the front fetches Kitware's
+official binaries for that version into clio-kit's cache
+(`$CLIO_KIT_CACHE_DIR/paraview-client/`, else `<user cache>/clio-kit/paraview-client/`),
+checks the archive's SHA-256 against the one pinned in `client.py`, and uses
+its `pvpython`. The fetch starts in the background when the server starts; an
+attach before it finishes says so and asks to try again shortly. Pinned builds:
+5.13.1 for Windows x86-64. On Windows the node half runs natively, without
+`ssh` or a shell; delete the cache folder to remove the fetched client.
 
 ## Tools
 

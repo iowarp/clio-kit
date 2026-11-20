@@ -20,6 +20,15 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
   `set_style` and `get_view`, follows the host's theme, and is saved under a
   view id so a reopen shows the same layers, re-reading files. The agent reads
   only layer names, counts and bounds; the GeoJSON goes to the view.
+- **paraview 3.3.0, joins a running pvserver**: `PARAVIEW_PVSERVER` names a
+  `pvserver` (`host:port`, such as a relay's local port for one running in a
+  cluster job) for the node half to join. Datasets, globs and the steps of a
+  growing source are then read and checked on the server's machine, so only
+  the rendered view crosses. `PARAVIEW_VERSION` pins the ParaView the node
+  half must run; when this machine has no `pvpython` of that version, the
+  server fetches Kitware's official binaries into clio-kit's cache, checked
+  against a pinned SHA-256 (5.13.1 for Windows x86-64). The node half runs
+  ParaView 5.13 and Python 3.10 as well as 6.x, and natively on Windows.
 - **paraview 3.2.0, a view that follows a growing source**: `open_view` takes
   a `view` descriptor (`clio.view-descriptor.v1`, vendored from clio-jarvis)
   naming the reader, its properties, how to follow and the first display. As

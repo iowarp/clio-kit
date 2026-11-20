@@ -19,7 +19,7 @@ from .animation import SceneAnimation
 from .camera import CameraCommands
 from .changes import ChangeLog, describe
 from .data import DataError
-from .errors import CommandError, _expand
+from .errors import CommandError
 from .frames import FrameClock, volume_grids
 from .reading import SceneReading
 from .scripts import SceneScripts, forget_made
@@ -73,8 +73,11 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         root: Path,
         threshold_mb: float = 20.0,
         session: str | None = None,
+        data_on_server: bool = False,
     ) -> None:
         from paraview import simple
+
+        from .datafs import LocalDisk, ServerDisk
 
         self.simple = simple
         # paraview.simple resets the camera on a process's first Render. The engine owns
@@ -85,6 +88,8 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         self.root = root
         self.threshold_mb = float(threshold_mb)
         self.session = session
+        # A joined pvserver on another machine reads the data there.
+        self.disk = ServerDisk() if data_on_server else LocalDisk()
         self.view = simple.CreateRenderView()
         self.view.OrientationAxesVisibility = 1
         simple.SetActiveView(self.view)
@@ -481,7 +486,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
                 return self.summary()
             return self._open_empty(new)
         if path is not None:
-            path = _expand(path)
+            path = self.disk.expand(path)
         scene_id = scene or manifest.scene_id_for(path or "")
         if self.scene is not None and self.scene["scene"] == scene_id and not new:
             self._update_dataset(self.scene, growing, descriptor)

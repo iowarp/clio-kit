@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from . import config
+from . import client, config, native
 from .config import Settings
 from .errors import ParaViewError, no_paraview
 from .link import LinkError, NodeClient
@@ -176,6 +176,8 @@ def platform_tags(info: dict[str, Any]) -> tuple[list[str], str]:
     machine = info.get("machine") or "x86_64"
     machine = {"amd64": "x86_64", "arm64": "aarch64"}.get(machine.lower(), machine)
     plat = str(info.get("platform", ""))
+    if plat.startswith("win"):
+        return (["win_amd64"], "x86_64-pc-windows-msvc")
     if plat.startswith("macosx"):
         tag_machine = "arm64" if machine == "aarch64" else machine
         return ([f"macosx_11_0_{tag_machine}"], f"{machine}-apple-darwin")
@@ -258,6 +260,8 @@ class Attacher:
         self.lock = threading.RLock()
         self._stop = threading.Event()
         self._heart: threading.Thread | None = None
+        #: ParaView runs on this Windows machine: steps run in Python, not a shell.
+        self._native = False
 
     # -- public ----------------------------------------------------------------
     def ensure(self) -> Link:
@@ -285,8 +289,12 @@ class Attacher:
             "address": target.address,
             "via": target.via,
             "prepare": target.prepare,
+            "pvserver": self.settings.pvserver,
             "attached": link is not None,
         }
+        if self.settings.version:
+            out["paraview_version"] = self.settings.version
+            out["paraview_client"] = client.installed(self.settings.version)
         if link is not None:
             out.update(
                 folder=link.folder,
@@ -323,26 +331,40 @@ class Attacher:
         settings = self.settings
         timings: dict[str, float] = {"connect": time.monotonic() - started}
         folder_here = None if transport.remote else local_folder(config.SERVER_VERSION)
-        probe = transport.run(
-            probe_script(config.SERVER_VERSION, folder_here), timeout=120
-        )
-        marks = parse_markers(probe.stdout)
+        self._native = not transport.remote and native.wanted()
+        probe_err = ""
+        if self._native:
+            marks = native.probe(str(folder_here))
+        else:
+            probe = transport.run(
+                probe_script(config.SERVER_VERSION, folder_here), timeout=120
+            )
+            marks = parse_markers(probe.stdout)
+            probe_err = probe.stderr.strip() or probe.stdout.strip()
         folder = marks.get("DIR")
         pvpython = marks.get("PVPYTHON") or ""
         if not folder:
             raise ParaViewError(
                 "probe_failed",
-                f"Could not prepare the ParaView folder {transport.where}: "
-                f"{probe.stderr.strip() or probe.stdout.strip()}",
+                f"Could not prepare the ParaView folder {transport.where}: {probe_err}",
             )
+        env = json.loads(marks["ENV"]) if marks.get("ENV") else None
+        if not transport.remote and settings.version:
+            pvpython = self._local_pvpython(pvpython, env)
         if not pvpython:
             detail = ""
-            if settings.target.prepare and probe.stderr.strip():
-                detail = f"The prepare line said: {probe.stderr.strip()[-300:]}"
+            if settings.target.prepare and probe_err:
+                detail = f"The prepare line said: {probe_err[-300:]}"
             raise no_paraview(transport.where, detail)
-        env = json.loads(marks["ENV"]) if marks.get("ENV") else None
         if env is None or env.get("pvpython") != pvpython:
             env = self._interrogate(transport, pvpython)
+        if settings.version and env.get("paraview") != settings.version:
+            raise ParaViewError(
+                "paraview_version_mismatch",
+                f"The ParaView {transport.where} is {env.get('paraview')}, and "
+                f"{settings.version} is wanted: a ParaView joins only a server of its "
+                "own version.",
+            )
         # A prepare line can bring its own GL libraries, so the probe result is
         # kept per prepare line.
         gl_for = settings.target.prepare or ""
@@ -366,6 +388,9 @@ class Attacher:
         # The rendering switch rides on the node's hash, so a node half started
         # without it is replaced rather than reused.
         node_hash = "+".join([code_hash, *(a.lstrip("-") for a in gl_args)])
+        if settings.pvserver:
+            # A node half joins one pvserver for its life; another one needs a new node.
+            node_hash += "+pv=" + settings.pvserver
         link = None
         if node is not None and self._matches(node, node_hash):
             link = self._try_link(transport, folder, node, pvpython, env)
@@ -399,13 +424,31 @@ class Attacher:
         threshold = settings.threshold_mb
         return threshold is None or node.get("threshold_mb") == threshold
 
+    def _local_pvpython(self, found: str, env: dict[str, Any] | None) -> str:
+        """The pvpython of the wanted version here: one already fetched, the one on
+        PATH when it is that version, else one fetched now."""
+        want = str(self.settings.version)
+        fetched = client.installed(want)
+        if fetched:
+            return fetched
+        if found:
+            known = (
+                env.get("paraview") if env and env.get("pvpython") == found else None
+            )
+            if (known or native.version_of(found)) == want:
+                return found
+        return client.ensure(want)
+
     def _interrogate(self, transport: Transport, pvpython: str) -> dict[str, Any]:
         pv = shlex.quote(pvpython)
-        done = transport.run(
-            f"{pv} --version 2>/dev/null | head -n1 | sed 's/^/CLIO_VERSION=/'\n"
-            f"{pv} --dr -c {shlex.quote(PYINFO)} 2>/dev/null | grep '^CLIO_'",
-            timeout=180,
-        )
+        if self._native:
+            done = native.interrogate(pvpython, PYINFO)
+        else:
+            done = transport.run(
+                f"{pv} --version 2>/dev/null | head -n1 | sed 's/^/CLIO_VERSION=/'\n"
+                f"{pv} --dr -c {shlex.quote(PYINFO)} 2>/dev/null | grep '^CLIO_'",
+                timeout=180,
+            )
         marks = parse_markers(done.stdout)
         if "PYINFO" not in marks:
             raise ParaViewError(
@@ -416,20 +459,23 @@ class Attacher:
         version_text = marks.get("VERSION", "")
         number = version_text.rsplit(" ", 1)[-1]
         try:
-            major = int(number.split(".")[0])
+            major, minor = (int(p) for p in (number.split(".") + ["0"])[:2])
         except ValueError:
-            major = 0
-        if major < 6:
+            major, minor = 0, 0
+        if (major, minor) < (5, 13):
             raise ParaViewError(
                 "paraview_too_old",
                 f"The ParaView {transport.where} is {version_text or 'unknown'}; "
-                "ParaView 6.0 or later is required.",
+                "ParaView 5.13 or later is required.",
             )
         info = json.loads(marks["PYINFO"])
         return {"pvpython": pvpython, "paraview": number, "pyinfo": info}
 
     def _gl_args(self, transport: Transport, pvpython: str) -> list[str]:
         """Launcher switches pvpython needs to render offscreen on this host."""
+        if self._native:
+            # Windows builds render offscreen through the desktop's own OpenGL.
+            return []
         done = transport.run(gl_probe_script(pvpython), timeout=300)
         mode = parse_markers(done.stdout).get("GLMODE")
         return ["--mesa"] if mode == "mesa" else []
@@ -438,7 +484,10 @@ class Attacher:
         self, transport: Transport, folder: str, env: dict[str, Any], pvpython: str
     ) -> str:
         script = build_script(folder, env["pyinfo"], pvpython)
-        done = transport.run(script, timeout=900)
+        if self._native:
+            done = native.build(folder, env["pyinfo"], pvpython)
+        else:
+            done = transport.run(script, timeout=900)
         if parse_markers(done.stdout).get("BUILD") == "ok":
             return "node"
         failures = [f"{transport.where}: {_tail(done)}"]
@@ -487,18 +536,24 @@ class Attacher:
         self, transport: Transport, folder: str, env: dict[str, Any]
     ) -> None:
         payload = json.dumps(env).encode()
+        if self._native:
+            native.write_env(folder, env)
+            return
         transport.run(
             f"cat > {shlex.quote(folder)}/env.json", stdin=payload, timeout=60
         )
 
     def _upload(self, transport: Transport, folder: str, bundle: bytes) -> None:
         f = shlex.quote(folder)
-        done = transport.run(
-            f"rm -rf {f}/code.new && mkdir -p {f}/code.new && "
-            f"tar -xzf - -C {f}/code.new && rm -rf {f}/code && mv {f}/code.new {f}/code",
-            stdin=bundle,
-            timeout=120,
-        )
+        if self._native:
+            done = native.upload(folder, bundle)
+        else:
+            done = transport.run(
+                f"rm -rf {f}/code.new && mkdir -p {f}/code.new && tar -xzf - -C "
+                f"{f}/code.new && rm -rf {f}/code && mv {f}/code.new {f}/code",
+                stdin=bundle,
+                timeout=120,
+            )
         if done.code != 0:
             raise ParaViewError(
                 "upload_failed",
@@ -513,6 +568,9 @@ class Attacher:
         slot: str = "node",
     ) -> None:
         pid = int(node.get("pid") or 0)
+        if self._native:
+            native.stop(folder, pid, slot)
+            return
         f = shlex.quote(folder)
         script = f"rm -f {f}/{slot}.json\n"
         if pid > 0:
@@ -548,6 +606,10 @@ class Attacher:
         ]
         if settings.threshold_mb is not None:
             args += ["--threshold-mb", str(settings.threshold_mb)]
+        if settings.pvserver:
+            args += ["--pvserver", settings.pvserver]
+        if self._native:
+            return self._start_native(folder, [pvpython, *args], code_hash, slot)
         command = " ".join(shlex.quote(a) for a in [pvpython, *args])
         transport.run(
             f"rm -f {f}/{slot}.json\ncd {f}\n"
@@ -561,7 +623,8 @@ class Attacher:
             time.sleep(1.0)
             done = transport.run(
                 f"cat {f}/{slot}.json 2>/dev/null; echo; "
-                f"grep -c 'Traceback\\|another node half' {f}/{slot}.log 2>/dev/null || true",
+                f"grep -c 'Traceback\\|another node half\\|pvserver join failed' "
+                f"{f}/{slot}.log 2>/dev/null || true",
                 timeout=60,
             )
             lines = [line for line in done.stdout.splitlines() if line.strip()]
@@ -579,6 +642,29 @@ class Attacher:
         raise ParaViewError(
             "node_start_timeout",
             f"The ParaView node half did not start {transport.where} within "
+            f"{settings.start_timeout:g} s. Its log is {folder}/{slot}.log.",
+        )
+
+    def _start_native(
+        self, folder: str, command: list[str], code_hash: str, slot: str
+    ) -> dict[str, Any]:
+        settings = self.settings
+        native.start(folder, command, slot)
+        deadline = time.monotonic() + settings.start_timeout
+        while time.monotonic() < deadline:
+            time.sleep(1.0)
+            node, failed = native.started(folder, slot)
+            if node is not None and node.get("code_hash") == code_hash:
+                return node
+            if failed is not None:
+                raise ParaViewError(
+                    "node_failed",
+                    f"The ParaView node half failed to start on this machine: "
+                    f"{failed[-1500:]}",
+                )
+        raise ParaViewError(
+            "node_start_timeout",
+            f"The ParaView node half did not start on this machine within "
             f"{settings.start_timeout:g} s. Its log is {folder}/{slot}.log.",
         )
 

@@ -68,7 +68,7 @@ VIEW_STATE = [
 
 mcp: FastMCP = FastMCP(
     "paraview",
-    version="3.2.0",  # keep equal to mcp-server-versions.toml and SERVER_VERSION
+    version="3.3.0",  # keep equal to mcp-server-versions.toml and SERVER_VERSION
     instructions=(
         "Open, look at and measure 3D scientific data in ParaView, on this machine "
         "or on another one over SSH, and show it to the person in a live view. "
@@ -618,7 +618,31 @@ def view_resource() -> str:
     return resources.files("paraview_mcp").joinpath("view.html").read_text("utf-8")
 
 
+def _warm_client() -> None:
+    """Start fetching the ParaView a joined server needs, when this machine lacks it,
+    so the first attach waits less."""
+    import shutil
+
+    from . import client, native
+    from .errors import ParaViewError
+
+    settings = from_environment()
+    want = settings.version
+    if not want or settings.target.remote or client.installed(want):
+        return
+    found = shutil.which("pvpython")
+    if found and native.version_of(found) == want:
+        return
+    try:
+        client.start(want)
+    except ParaViewError:
+        pass  # the attach reports it
+
+
 def main() -> None:
+    import threading
+
+    threading.Thread(target=_warm_client, daemon=True).start()
     mcp.run(transport="stdio")
 
 

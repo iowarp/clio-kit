@@ -16,10 +16,8 @@ from collections.abc import Callable
 from typing import Any
 
 from . import manifest
-from .bp5 import source_readiness
 from .changes import lines as change_lines
 from .engine import CommandError, Engine
-from .errors import _expand
 from .panel import MODE_LABELS, build
 from .serializers import register_serializers
 from .sources import REPLAY_ALONE, REPLAY_HOLD, REPLAY_SECONDS, SETTLE, is_pattern
@@ -314,7 +312,7 @@ class NodeApp:
         why the source cannot be read."""
         if name != "open_view" or not args.get("growing") or not args.get("path"):
             return
-        path = _expand(str(args["path"]))
+        path = self.engine.disk.expand(str(args["path"]))
         scene = self.engine.scene
         if (
             scene
@@ -328,7 +326,9 @@ class NodeApp:
         changed = start = time.monotonic()
         said = None
         while True:
-            reason, clear, key = source_readiness(path, reader, pattern)
+            reason, clear, key = self.engine.disk.source_readiness(
+                path, reader, pattern
+            )
             now = time.monotonic()
             if key != last:
                 last, changed = key, now

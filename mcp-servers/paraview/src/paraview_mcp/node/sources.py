@@ -21,14 +21,14 @@ following; a step chosen by the person or the agent ends the catch-up.
 from __future__ import annotations
 
 import difflib
-import glob
 import os
 import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from . import bp5, manifest
+from .datafs import LocalDisk
+from .disk import is_pattern, whole_steps
 from .errors import CommandError
 
 #: Seconds a grown BP5 folder must stay unchanged before its last step is read,
@@ -70,10 +70,6 @@ def set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
         set_property(inner, f"{owner}.{head}", name, part)
 
 
-def is_pattern(path: str) -> bool:
-    return any(ch in path for ch in "*?[")
-
-
 def preset_name(name: str) -> str | None:
     """ParaView's name for colour preset ``name``: the name itself, or the same
     name without a qualifier such as " (matplotlib)", which ParaView 6 drops
@@ -90,34 +86,13 @@ def preset_name(name: str) -> str | None:
     return None
 
 
-def _stat(path: str) -> tuple[int, int] | None:
-    try:
-        stat = os.stat(path)
-    except OSError:
-        return None
-    return (stat.st_size, stat.st_mtime_ns)
-
-
-def disk_key(path: str) -> Any:
-    """What is on disk for ``path``, to tell when a source has grown: each matched
-    file (or each entry of a folder) with its size and modification time."""
-    if is_pattern(path):
-        return tuple((name, _stat(name)) for name in sorted(glob.glob(path)))
-    if os.path.isdir(path):
-        try:
-            names = sorted(os.listdir(path))
-        except OSError:
-            return None
-        return tuple((name, _stat(os.path.join(path, name))) for name in names)
-    return _stat(path)
-
-
 class SourceGrowth:
     """Mixed into the engine: making readers and following a growing source."""
 
     simple: Any
     view: Any
     root: Path
+    disk: LocalDisk
     scene: dict[str, Any] | None
     proxies: dict[str, Any]
     _growth: dict[str, Any]
@@ -226,26 +201,23 @@ class SourceGrowth:
 
     def _files(self, item: dict[str, Any]) -> list[str] | str:
         path = item["path"]
-        if not is_pattern(path):
-            if not os.path.exists(path):
-                raise CommandError("not_found", f"There is no file at {path}.")
-            return path
-        files = sorted(glob.glob(path))
+        files = self.disk.files(path)
         if not files:
-            raise CommandError("not_found", f"No file matches {path}.")
+            if is_pattern(path):
+                raise CommandError("not_found", f"No file matches {path}.")
+            raise CommandError("not_found", f"There is no file at {path}.")
         return files
 
     def _bp5(self, item: dict[str, Any]) -> bool:
         path = item["path"]
-        return not is_pattern(path) and bp5.is_bp(path, item.get("reader"))
+        return not is_pattern(path) and self.disk.is_bp(path, item.get("reader"))
 
     def _follow_index(self, item: dict[str, Any], steps: int) -> str:
         """The copy of a growing BP5 folder the reader is given, with ``steps`` steps."""
         scene = self.require_scene()
         name = os.path.basename(item["path"].rstrip("/")) or "data.bp"
-        folder = manifest.scene_dir(self.root, scene["scene"]) / "follow" / item["id"]
-        target = str(folder / name)
-        bp5.write_index(item["path"], target, steps)
+        folder = self.disk.follow_folder(self.root, scene["scene"], item["id"], name)
+        target = self.disk.write_index(item["path"], folder, steps)
         self._held[item["id"]] = steps
         return target
 
@@ -253,12 +225,12 @@ class SourceGrowth:
         """How many steps of a grown BP5 folder can be read now, if more than the
         reader has: every whole step, and the last once the folder has stopped
         changing for ``SETTLE`` seconds."""
-        state = bp5.check(item["path"])
+        state = self.disk.check(item["path"])
         held = self._held[item["id"]]
         if state.reason or state.steps <= held:
             self._settling.pop(item["id"], None)
             return None
-        whole = bp5.whole_steps(state)
+        whole = whole_steps(state)
         if whole < state.steps:
             now = time.monotonic()
             seen = self._settling.get(item["id"])
@@ -274,7 +246,7 @@ class SourceGrowth:
         files = self._files(item)
         self._held.pop(item["id"], None)
         if self._bp5(item):
-            state = bp5.check(item["path"])
+            state = self.disk.check(item["path"])
             if state.reason:
                 raise CommandError(
                     "not_ready",
@@ -311,7 +283,7 @@ class SourceGrowth:
         for key, value in (item.get("reader_properties") or {}).items():
             set_property(proxy, name or proxy.GetXMLName(), key, value)
         proxy.UpdatePipelineInformation()
-        self._growth[item["id"]] = disk_key(item["path"])
+        self._growth[item["id"]] = self.disk.disk_key(item["path"])
         return proxy
 
     @staticmethod
@@ -375,7 +347,7 @@ class SourceGrowth:
         """Whether a grown BP5 folder can be re-read: its files agree, and its data
         clearly holds the last step or nothing has changed for ``SETTLE`` seconds.
         Until then the reader keeps the steps it has."""
-        state = bp5.check(item["path"])
+        state = self.disk.check(item["path"])
         if state.reason:
             self._settling.pop(item["id"], None)
             return False
@@ -403,7 +375,7 @@ class SourceGrowth:
         for item in scene["objects"]:
             if item["kind"] != "reader" or item["id"] not in self.proxies:
                 continue
-            key = disk_key(item["path"])
+            key = self.disk.disk_key(item["path"])
             proxy = self.proxies[item["id"]]
             if item["id"] in self._held:
                 # A growing BP5 folder: its reader reads a copy whose index holds
