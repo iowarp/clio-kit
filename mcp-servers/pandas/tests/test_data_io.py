@@ -160,20 +160,14 @@ class TestLoadDataFile:
         assert result["success"]
         assert len(result["data"]) == 10
 
-    def test_load_hdf5_file(self, temp_hdf5_file):
-        """Test loading HDF5 file"""
-        result = load_data_file(temp_hdf5_file, file_format="hdf5")
+    @pytest.mark.parametrize("file_format", ["hdf5", None])
+    def test_load_refuses_hdf5(self, temp_hdf5_file, file_format):
+        """HDF5 goes through PyTables, which unpickles data from the file."""
+        result = load_data_file(temp_hdf5_file, file_format=file_format)
 
-        assert result["success"]
-        assert result["file_format"] == "hdf5"
-        assert len(result["data"]) == 50
-
-    def test_load_hdf5_with_nrows(self, temp_hdf5_file):
-        """Test loading HDF5 file with row limit"""
-        result = load_data_file(temp_hdf5_file, file_format="hdf5", nrows=10)
-
-        assert result["success"]
-        assert len(result["data"]) == 10
+        assert not result["success"]
+        assert result["error_type"] == "UnsupportedFormat"
+        assert "hdf5 server" in result["error"]
 
     def test_load_auto_detect_format(self, temp_csv_file):
         """Test auto-detection of file format"""

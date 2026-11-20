@@ -21,7 +21,9 @@ def load_data_file(
 
     Args:
         file_path: Path to the data file
-        file_format: File format (csv, excel, json, parquet, hdf5)
+        file_format: File format (csv, excel, json, parquet). HDF5 is not read
+            here: pandas' read_hdf can run code stored in the file; use the
+            hdf5 server.
         sheet_name: Sheet name for Excel files
         encoding: File encoding
         columns: Specific columns to load
@@ -51,6 +53,17 @@ def load_data_file(
                 ".hdf5": "hdf5",
             }
             file_format = format_map.get(file_extension, "csv")
+        if file_format == "hdf5":
+            # read_hdf goes through PyTables, which unpickles object columns and
+            # attributes from the file, so a crafted file runs code when loaded.
+            return {
+                "success": False,
+                "error": (
+                    "HDF5 files are not loaded by the pandas server: pandas' read_hdf "
+                    "can run code stored in the file. Read HDF5 with the hdf5 server."
+                ),
+                "error_type": "UnsupportedFormat",
+            }
 
         # Load data based on format
         if file_format == "csv":
@@ -72,10 +85,6 @@ def load_data_file(
                 df = df[columns]
         elif file_format == "parquet":
             df = pd.read_parquet(file_path, columns=columns)
-            if nrows:
-                df = df.head(nrows)
-        elif file_format == "hdf5":
-            df = pd.read_hdf(file_path, key="data", columns=columns)
             if nrows:
                 df = df.head(nrows)
         else:
