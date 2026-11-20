@@ -73,6 +73,9 @@ WORKFLOWS = {
 SUMMARIES = {
     "bibliography": "Assemble verified citations, BibTeX records and research reading lists.",
     "chart-select": "Choose a chart type, axes, bins and color scale that suit scientific data.",
+    "gpu-vector": "Write and tune GPU kernels over CLIO's paged out-of-core vector, validated resident and out of core.",
+    "chimod-dev": "Build or extend a CLIO Core runtime module: tasks, runtime, client, codegen, CMake and tests.",
+    "storage-compose": "Compose CLIO Core's shipped modules into a storage system and state what it guarantees.",
     "cluster-run": "Resolve software with Spack, configure a JARVIS pipeline and follow its execution.",
     "coordinate-systems": "Interpret axis order, map projections, distance units and vertical datums correctly.",
     "data-clean": "Profile missing values, duplicates and outliers, and set validation rules before analysis.",
