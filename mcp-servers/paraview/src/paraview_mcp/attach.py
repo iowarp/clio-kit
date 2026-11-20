@@ -285,7 +285,12 @@ class Attacher:
         target = self.settings.target
         link = self.link
         out: dict[str, Any] = {
-            "where": target.describe(),
+            "where": (
+                f"on the ParaView server at {self.settings.pvserver}, through "
+                f"a client {target.describe()}"
+                if self.settings.pvserver
+                else target.describe()
+            ),
             "address": target.address,
             "via": target.via,
             "prepare": target.prepare,

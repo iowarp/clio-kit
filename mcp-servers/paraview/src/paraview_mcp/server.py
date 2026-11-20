@@ -150,7 +150,10 @@ def _paths(**access: str) -> dict[str, Any]:
 
 
 def _where() -> str:
-    return attacher().settings.target.describe()
+    settings = attacher().settings
+    if settings.pvserver:
+        return f"on the ParaView server at {settings.pvserver}"
+    return settings.target.describe()
 
 
 def _text(text: str) -> TextContent:

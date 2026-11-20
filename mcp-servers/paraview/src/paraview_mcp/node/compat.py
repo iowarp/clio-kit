@@ -28,21 +28,27 @@ def install() -> None:
 
     from .sources import preset_name
 
-    apply_preset = servermanager.TransferFunctionProxy.ApplyPreset
+    # ParaView 5.13 has neither proxy class, nor the breakage they mend.
+    lut_class = getattr(servermanager, "TransferFunctionProxy", None)
+    if lut_class is not None:
+        apply_preset = lut_class.ApplyPreset
 
-    def ApplyPreset(self: Any, presetName: str, rescale: bool = True) -> Any:
-        name = preset_name(str(presetName)) if isinstance(presetName, str) else None
-        return apply_preset(self, name or presetName, rescale)
+        def ApplyPreset(self: Any, presetName: str, rescale: bool = True) -> Any:
+            name = preset_name(str(presetName)) if isinstance(presetName, str) else None
+            return apply_preset(self, name or presetName, rescale)
 
-    color_by = servermanager.RepresentationProxy.ColorBy
+        ApplyPreset.__doc__ = apply_preset.__doc__
+        lut_class.ApplyPreset = ApplyPreset
 
-    def ColorBy(self: Any, value: Any = None, separate: bool = False) -> Any:
-        if value is None and self.ColorArrayName.GetAssociation() in (None, "NONE"):
-            return None
-        return color_by(self, value, separate)
+    display_class = getattr(servermanager, "RepresentationProxy", None)
+    if display_class is not None:
+        color_by = display_class.ColorBy
 
-    ApplyPreset.__doc__ = apply_preset.__doc__
-    ColorBy.__doc__ = color_by.__doc__
-    servermanager.TransferFunctionProxy.ApplyPreset = ApplyPreset
-    servermanager.RepresentationProxy.ColorBy = ColorBy
+        def ColorBy(self: Any, value: Any = None, separate: bool = False) -> Any:
+            if value is None and self.ColorArrayName.GetAssociation() in (None, "NONE"):
+                return None
+            return color_by(self, value, separate)
+
+        ColorBy.__doc__ = color_by.__doc__
+        display_class.ColorBy = ColorBy
     _installed = True

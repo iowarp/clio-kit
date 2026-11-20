@@ -83,6 +83,10 @@ def preset_name(name: str) -> str | None:
         for known in names:
             if known.lower() == wanted.lower():
                 return known
+    # ParaView 5.13 still qualifies them: "Viridis" is "Viridis (matplotlib)".
+    for known in names:
+        if known.split(" (", 1)[0].strip().lower() == bare.lower():
+            return known
     return None
 
 

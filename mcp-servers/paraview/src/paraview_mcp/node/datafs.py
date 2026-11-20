@@ -20,7 +20,7 @@ from .errors import CommandError
 # Runs inside the server. SOURCE is disk.py; the module is registered so its
 # dataclass resolves its own annotations.
 _SERVER_SCRIPT = """
-import json, sys, types
+import sys, types
 from vtkmodules.vtkCommonCore import vtkStringArray
 try:
     from vtkmodules.vtkParallelCore import vtkMultiProcessController
@@ -112,7 +112,7 @@ class ServerDisk(LocalDisk):
         self._calls += 1
         # The call number makes every script new, so the source always runs again.
         self._proxy.Script = (
-            f"# call {self._calls}\n"
+            f"# call {self._calls}\nimport json\n"
             f"NAME = {self._name!r}\n"
             f"SOURCE = {self._source!r}\n"
             f"OP = {op!r}\n"
