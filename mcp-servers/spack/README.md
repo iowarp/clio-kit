@@ -69,9 +69,11 @@ rerun (each step reports `present`, `unchanged` or `written`):
 - runs `spack compiler find` and `spack external find --not-buildable` for
   build tools only. MPI is never externalized from PATH and is refused as a
   build tool;
-- sets `packages:mpi:buildable:false` and records module-only MPIs (MPI
-  modules outside the site Spack's own module trees, such as Ares's
-  `mpich/4.1.1`) as candidate externals with `modules:`.
+- sets `packages:mpi:buildable:false` and records module MPIs (MPI modules
+  outside the site Spack's own module trees, such as Ares's `mpich/4.1.1`) as
+  candidate externals with both `prefix:` and `modules:`. The prefix comes from
+  a light `module load` and `command -v mpiexec` in a throwaway login shell; a
+  module whose prefix cannot be found is reported as a warning and not recorded.
 
 All of this config lives in the clone's own `etc/spack` (Spack's site scope).
 Every command runs with `SPACK_DISABLE_LOCAL_CONFIG=1`, which in Spack 0.23

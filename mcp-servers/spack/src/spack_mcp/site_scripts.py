@@ -143,6 +143,20 @@ if [ -z "$MODPATHS" ]; then
   MODPATHS=$(timeout 30 bash -lc 'printf "\n@@MP=%s\n" "${MODULEPATH-}"' </dev/null 2>/dev/null \
     | sed -n 's/^@@MP=//p')
 fi
+# A module MPI's install prefix: the bin/ its module puts first on PATH. Only a
+# light ``module load`` in a throwaway login shell; nothing is built or kept.
+mpi_prefix() {
+  timeout 30 bash -lc '
+    before=":$PATH:"
+    module use "$1" >/dev/null 2>&1
+    module load "$2" >/dev/null 2>&1 || exit 1
+    exe=$(command -v mpiexec || command -v mpirun) || exit 1
+    case "$exe" in /*/bin/mpiexec|/*/bin/mpirun) ;; *) exit 1 ;; esac
+    case "$before" in *":${exe%/*}:"*) exit 1 ;; esac
+    printf "\n@@PREFIX=%s\n" "${exe%/bin/*}"
+  ' _ "$1" "$2" </dev/null 2>/dev/null | sed -n 's/^@@PREFIX=//p' | tail -n 1
+}
+TAB=$'\t'
 CANDIDATES=""
 IFS=: read -r -a DIRS <<< "$MODPATHS"
 for dir in "${DIRS[@]}"; do
@@ -159,9 +173,15 @@ for dir in "${DIRS[@]}"; do
       base=${file##*/}; version=${base%.lua}
       case "$version" in .*|default|*[!A-Za-z0-9._-]*) continue ;; esac
       case "$version" in [0-9]*) ;; *) continue ;; esac
-      CANDIDATES="$CANDIDATES$name $version $name/$version $dir
+      module="$name/$version"
+      prefix=$(mpi_prefix "$dir" "$module")
+      if [ -z "$prefix" ] || [ ! -d "$prefix" ]; then
+        say warning "MPI module $module ($dir): module load gave no mpiexec prefix; not recorded"
+        continue
+      fi
+      CANDIDATES="$CANDIDATES$name$TAB$version$TAB$module$TAB$prefix
 "
-      say mpi_module "$name/$version $dir"
+      say mpi_module "$module $prefix $dir"
     done
   done
 done
@@ -178,7 +198,8 @@ rm -f "$POLICY_FILE"
 )
 
 # Run by the CLIO Spack's own ``spack python``: set ``packages:mpi:buildable:false``,
-# record module-only MPIs as externals so they can be offered as a choice, and
+# record module MPIs as externals with both ``prefix:`` and ``modules:`` (jarvis
+# needs the prefix and loads the module) so they can be offered as a choice, and
 # report what the merged configuration and the upstream database contain.
 POLICY_PY: Final = r"""
 import copy, json, os
@@ -192,17 +213,29 @@ if mpi.get("buildable") is not False:
     changed.append("packages:mpi:buildable:false")
 added = []
 for line in os.environ.get("CLIO_MPI_CANDIDATES", "").splitlines():
-    parts = line.split(" ", 3)
-    if len(parts) != 4:
+    parts = line.split("\t")
+    if len(parts) != 4 or not parts[3]:
         continue
-    name, version, module, directory = parts
+    name, version, module, prefix = parts
     spec = name + "@" + version
     externals = packages.setdefault(name, {}).setdefault("externals", [])
-    if any(str(item.get("spec", "")).split()[0] == spec for item in externals):
+    same = [i for i in externals if str(i.get("spec", "")).split()[:1] == [spec]]
+    if not same:
+        externals.append({"spec": spec, "prefix": prefix, "modules": [module]})
+        added.append(spec)
+        changed.append("packages:" + name + ":externals " + spec)
         continue
-    externals.append({"spec": spec, "modules": [module]})
-    added.append(spec)
-    changed.append("packages:" + name + ":externals " + spec)
+    item = same[0]
+    modules = list(item.get("modules", []) or [])
+    if not item.get("prefix"):
+        item["prefix"] = prefix
+        changed.append("packages:" + name + ":externals " + spec + " prefix")
+    elif item["prefix"] != prefix:
+        kept = item["prefix"]
+        print("@@warning\t%s keeps prefix %s; module load gives %s" % (spec, kept, prefix))
+    if module not in modules:
+        item["modules"] = modules + [module]
+        changed.append("packages:" + name + ":externals " + spec + " modules")
 if changed:
     spack.config.CONFIG.update_config("packages", packages, scope=site)
     for item in changed:
