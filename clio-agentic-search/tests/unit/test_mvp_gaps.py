@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import patch
 
@@ -105,13 +108,20 @@ class TestFileFiltering:
 
 
 class TestCORSMiddleware:
-    def test_cors_headers_present(self) -> None:
-        client = TestClient(app)
-        response = client.options(
-            "/health",
-            headers={"Origin": "http://localhost:3000", "Access-Control-Request-Method": "GET"},
+    def test_cors_headers_for_a_configured_origin(self) -> None:
+        # CORS origins are read when the app is built, so build it in a fresh process.
+        script = (
+            "from fastapi.testclient import TestClient\n"
+            "from clio_agentic_search.api.app import app\n"
+            "r = TestClient(app, base_url='http://127.0.0.1').options('/health', headers={"
+            "'Origin': 'http://localhost:3000', 'Access-Control-Request-Method': 'GET'})\n"
+            "print(r.headers.get('access-control-allow-origin'))\n"
         )
-        assert "access-control-allow-origin" in response.headers
+        env = {**os.environ, "CLIO_CORS_ORIGINS": "http://localhost:3000"}
+        output = subprocess.run(
+            [sys.executable, "-c", script], env=env, capture_output=True, text=True, check=True
+        ).stdout
+        assert output.strip() == "http://localhost:3000"
 
 
 # --- Gap 3: CLI serve command ---

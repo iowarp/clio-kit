@@ -66,7 +66,9 @@ uv run clio index --namespace local_fs
 |----------|---------|-------------|
 | `CLIO_LOCAL_ROOT` | `.` | Root directory for local filesystem connector |
 | `CLIO_STORAGE_PATH` | `.clio-agentic-search.duckdb` | DuckDB database path |
-| `CLIO_CORS_ORIGINS` | `*` | Allowed CORS origins |
+| `CLIO_CORS_ORIGINS` | _(none)_ | Comma-separated browser origins allowed to read responses |
+| `CLIO_ALLOWED_HOSTS` | _(none)_ | Comma-separated `Host` names answered besides `localhost`, `127.0.0.1` and `::1` |
+| `CLIO_API_TOKEN` | _(unset)_ | When set, every request except `/health` needs `Authorization: Bearer <token>`; required by `serve` on a non-loopback `--host` |
 | `CLIO_OTEL_ENABLED` | `false` | Enable OpenTelemetry tracing (`1`/`true`/`yes`) |
 | `CLIO_ANN_BACKEND` | `exact` | ANN backend (`hnsw` when `[ann]` extra installed) |
 | `CLIO_CACHE_SHARDS` | `16` | Vector index shard count |

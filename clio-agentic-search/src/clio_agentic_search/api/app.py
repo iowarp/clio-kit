@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import os
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -16,6 +15,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from clio_agentic_search import __version__
+from clio_agentic_search.api.access import AccessMiddleware, cors_origins
 from clio_agentic_search.core.namespace_registry import NamespaceRegistry, build_default_registry
 from clio_agentic_search.jobs import JobCancelledError, get_job_queue, reset_job_queue
 from clio_agentic_search.retrieval.coordinator import RetrievalCoordinator
@@ -102,10 +102,12 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="clio-agentic-search", version=__version__, lifespan=_lifespan)
 
-cors_origins = os.environ.get("CLIO_CORS_ORIGINS", "*")
+# Host and token checks (api/access.py); CORS is added after, so it runs first and
+# answers a preflight from a configured origin before the token check.
+app.add_middleware(AccessMiddleware)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in cors_origins.split(",")],
+    allow_origins=cors_origins(),
     allow_methods=["*"],
     allow_headers=["*"],
 )
