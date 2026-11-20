@@ -140,6 +140,15 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\pandas run pandas-mcp --help
 
 </details>
 
+## File access
+
+Tools open only files under the server's working directory, under
+`CLIO_KIT_ARTIFACTS` when it is set, and under the folders listed in
+`PANDAS_MCP_ALLOWED_ROOTS` (separated by `:` on Linux and macOS, `;` on Windows). Below
+those folders, hidden files and folders (`.env`, `.ssh`, anything starting with
+`.`) are not opened. A path outside them, including through a symbolic link, is
+refused before the tool runs. Output files are held to the same folders.
+
 ## Capabilities
 
 `groupby_operations` accepts `output_file` and defaults to `<input>_grouped.csv`. It refuses existing output unless `overwrite=true` is explicitly requested. The input file is never a valid output destination.

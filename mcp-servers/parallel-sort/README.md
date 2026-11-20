@@ -147,6 +147,15 @@ uv --directory=$env:CLONE_DIR\clio-kit\mcp-servers\parallel-sort run parallel-so
  
 </details>
  
+## File access
+
+Tools open only files under the server's working directory, under
+`CLIO_KIT_ARTIFACTS` when it is set, and under the folders listed in
+`PARALLEL_SORT_MCP_ALLOWED_ROOTS` (separated by `:` on Linux and macOS, `;` on Windows). Below
+those folders, hidden files and folders (`.env`, `.ssh`, anything starting with
+`.`) are not opened. A path outside them, including through a symbolic link, is
+refused before the tool runs. Output files are held to the same folders.
+
 ## Capabilities
 
 Sorting and filtering return previews of at most 100 lines and 16,384 UTF-8 bytes. Check `truncated` and `total_result_lines`. Set `output_file` to save every result line; without it, a truncated result has not been saved.
