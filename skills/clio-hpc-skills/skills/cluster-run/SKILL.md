@@ -52,7 +52,11 @@ installed. Reach for it before concluding the software is unavailable.
 
 **3. Install only if it is missing.**
 
-Call `clio-spack:spack_install` with an explicit concretization choice. Skip this
+Install through a JARVIS install job (`jarvis ppl install +submit`), which
+builds on a compute node, never on the login node. On a clio-relay site, prepare
+the CLIO Spack first with `clio-spack:spack_prepare_site` and check what would
+be built with `clio-spack:spack_site_query`. If JARVIS reports a choice it
+cannot make, such as several MPIs, ask the person. Skip this
 entirely when step 2 already found a match — installing is slow and runs
 synchronously, and reinstalling a package that is present wastes the wait.
 

@@ -17,7 +17,7 @@ finishes."
 
 Expected:
 
-- `spack_find` is called before `spack_install`, and a zero-match result is
+- `spack_find` is called before any install job, and a zero-match result is
   treated as a successful answer rather than retried.
 - `spack_locate`'s `output.load_spec` is passed into `jarvis_run`'s
   `input.spack_specs` byte-for-byte, with no path derived from the prefix.

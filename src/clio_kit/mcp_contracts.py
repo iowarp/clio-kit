@@ -148,20 +148,15 @@ USER_CONTRACT_SPECS: Final = (
         ),
     ),
     UserContractSpec(
-        contract_id="clio-kit-spack-user-v2.3",
-        artifact_name="spack-user-v2.3.json",
+        contract_id="clio-kit-spack-user-v3",
+        artifact_name="spack-user-v3.json",
         server_name="spack",
         distribution_name="spack-mcp",
         entry_command="spack-mcp",
         profile_environment="SPACK_MCP_PROFILE",
         expected_tools=frozenset(
-            {
-                "spack_find",
-                "spack_install",
-                "spack_locate",
-                "spack_search",
-                "spack_info",
-            }
+            "spack_find spack_locate spack_search spack_info "
+            "spack_prepare_site spack_site_query".split()
         ),
     ),
     UserContractSpec(
@@ -194,6 +189,7 @@ HISTORICAL_USER_CONTRACT_ARTIFACTS: Final = (
     "spack-user-v2.json",
     "spack-user-v2.1.json",
     "spack-user-v2.2.json",
+    "spack-user-v2.3.json",
 )
 
 
