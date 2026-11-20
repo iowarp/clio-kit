@@ -13,6 +13,7 @@ from fastmcp.exceptions import ToolError
 from readability import Document as ReadabilityDocument
 
 from web_mcp.document_service import likely_convertible_url
+from web_mcp.public_http import BlockedHostError, public_transport
 
 REASON_BLOCKED_HOST = "blocked_private_host"
 
@@ -183,7 +184,12 @@ def looks_like_text(body: bytes) -> bool:
 
 
 def assert_allowed_url(url: str, *, allow_private_hosts: bool) -> None:
-    """Reject local and non-routable literal targets unless explicitly allowed."""
+    """Reject local and non-routable literal targets unless explicitly allowed.
+
+    This is the early check on the URL's text. Other spellings of an address
+    (``127.1``, ``2130706433``) and names that resolve to one are refused where
+    the connection is made (:class:`web_mcp.public_http.PublicOnlyBackend`).
+    """
     if allow_private_hosts:
         return
     host = (urlparse(url).hostname or "").strip().strip("[]").lower()
@@ -221,47 +227,56 @@ async def download(
     allow_private_hosts: bool,
 ) -> tuple[bytes, str | None, int, str]:
     """Stream a URL within size limits while validating every redirect hop."""
-    async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
+    transport = None if allow_private_hosts else public_transport()
+    async with httpx.AsyncClient(
+        timeout=timeout, follow_redirects=False, transport=transport
+    ) as client:
         current = httpx.URL(url)
         for _hop in range(_MAX_REDIRECTS + 1):
             assert_allowed_url(str(current), allow_private_hosts=allow_private_hosts)
-            async with client.stream("GET", current) as response:
-                if response.is_redirect and "location" in response.headers:
-                    current = current.join(response.headers["location"])
-                    continue
-                response.raise_for_status()
-                content_type = response.headers.get("content-type")
-                mime, _ = split_content_type(content_type)
-                effective_cap = (
-                    max_document_bytes
-                    if likely_convertible_url(content_type, str(response.url))
-                    or (mime and not is_html(mime) and not is_text(mime))
-                    else max_bytes
-                )
-                content_length = response.headers.get("content-length")
-                if content_length:
-                    try:
-                        advertised = int(content_length)
-                    except ValueError:
-                        advertised = 0
-                    if advertised > effective_cap:
-                        raise ToolError(
-                            f"Resource is {advertised} bytes, which exceeds the fetch size "
-                            f"limit of {effective_cap} bytes. Increase max_bytes intentionally "
-                            "or select a smaller resource."
-                        )
-                chunks: list[bytes] = []
-                total = 0
-                async for chunk in response.aiter_bytes(chunk_size=64 * 1024):
-                    if not chunk:
+            try:
+                async with client.stream("GET", current) as response:
+                    if response.is_redirect and "location" in response.headers:
+                        current = current.join(response.headers["location"])
                         continue
-                    total += len(chunk)
-                    if total > effective_cap:
-                        raise ToolError(
-                            f"Resource exceeded the fetch size limit of {effective_cap} bytes "
-                            "while downloading. Increase max_bytes intentionally or select "
-                            "a smaller resource."
-                        )
-                    chunks.append(chunk)
-                return b"".join(chunks), content_type, response.status_code, str(response.url)
+                    response.raise_for_status()
+                    content_type = response.headers.get("content-type")
+                    mime, _ = split_content_type(content_type)
+                    effective_cap = (
+                        max_document_bytes
+                        if likely_convertible_url(content_type, str(response.url))
+                        or (mime and not is_html(mime) and not is_text(mime))
+                        else max_bytes
+                    )
+                    content_length = response.headers.get("content-length")
+                    if content_length:
+                        try:
+                            advertised = int(content_length)
+                        except ValueError:
+                            advertised = 0
+                        if advertised > effective_cap:
+                            raise ToolError(
+                                f"Resource is {advertised} bytes, which exceeds the fetch size "
+                                f"limit of {effective_cap} bytes. Increase max_bytes intentionally "
+                                "or select a smaller resource."
+                            )
+                    chunks: list[bytes] = []
+                    total = 0
+                    async for chunk in response.aiter_bytes(chunk_size=64 * 1024):
+                        if not chunk:
+                            continue
+                        total += len(chunk)
+                        if total > effective_cap:
+                            raise ToolError(
+                                f"Resource exceeded the fetch size limit of {effective_cap} bytes "
+                                "while downloading. Increase max_bytes intentionally or select "
+                                "a smaller resource."
+                            )
+                        chunks.append(chunk)
+                    return b"".join(chunks), content_type, response.status_code, str(response.url)
+            except BlockedHostError as exc:
+                raise ToolError(
+                    f"fetch blocked {exc} (reason={REASON_BLOCKED_HOST}). Set "
+                    "WEB_ALLOW_PRIVATE_HOSTS=true to permit internal fetches."
+                ) from exc
     raise ToolError(f"fetch exceeded {_MAX_REDIRECTS} redirects for {url!r}.")
