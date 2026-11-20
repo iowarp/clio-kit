@@ -43,7 +43,7 @@
     },
     {
       "name": "query_arcgis_features",
-      "description": "Query an ArcGIS FeatureServer layer (with optional lon/lat bbox and where clause) and write the returned features to a local GeoJSON file. The saved FeatureCollection can be fed directly into render_feature_map, points_in_polygons, or bounding_box."
+      "description": "Query an ArcGIS FeatureServer layer (with optional lon/lat bbox and where clause) and write the returned features to a local GeoJSON file. The saved FeatureCollection can be fed directly into render_feature_map, points_in_polygons, or bounding_box. Hosts on loopback or private networks are refused unless GEO_ALLOW_PRIVATE_HOSTS is set."
     },
     {
       "name": "geocode",
