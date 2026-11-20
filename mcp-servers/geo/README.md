@@ -159,8 +159,7 @@ uv run --frozen python tests/browser/run_standin.py --out /tmp/geo-globe [--widt
 **Tags**: bbox, geojson, geospatial, region
 
 ### `query_arcgis_features`
-**Description**: Query an ArcGIS FeatureServer layer (with optional lon/lat bbox and where clause) and write the returned features to a local GeoJSON file. The saved FeatureCollection can be fed directly into render_feature_map, points_in_polygons, or bounding_box.
-**Hints**: read-only, idempotent
+**Description**: Query an ArcGIS FeatureServer layer (with optional lon/lat bbox and where clause) and write the returned features to a local GeoJSON file. The saved FeatureCollection can be fed directly into render_feature_map, points_in_polygons, or bounding_box. Hosts on loopback or private networks are refused unless GEO_ALLOW_PRIVATE_HOSTS is set.
 **Tags**: arcgis, features, geojson, geospatial, retrieval
 
 ### `geocode`

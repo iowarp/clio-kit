@@ -21,11 +21,47 @@ from typing import Any
 
 import httpx
 
+from .public_http import BlockedHostError, assert_public_url, public_transport
+
 # Network timeouts (seconds) for the FeatureServer query.
 _HTTP_CONNECT_TIMEOUT_S = 8.0
 _HTTP_READ_TIMEOUT_S = 30.0
 # Upper bound that keeps tool payloads small enough for agent traces.
 _MAX_ARCGIS_FEATURES = 200
+_MAX_REDIRECTS = 5
+#: Set to a true value to query ArcGIS servers on private networks (ArcGIS Enterprise).
+_ALLOW_PRIVATE_ENV = "GEO_ALLOW_PRIVATE_HOSTS"
+
+
+def _allow_private_hosts() -> bool:
+    return os.environ.get(_ALLOW_PRIVATE_ENV, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _arcgis_client(timeout: httpx.Timeout) -> httpx.AsyncClient:
+    """A client that reaches only public addresses (unless allowed) and follows no redirects."""
+    transport = None if _allow_private_hosts() else public_transport()
+    return httpx.AsyncClient(timeout=timeout, follow_redirects=False, transport=transport)
+
+
+async def _arcgis_get(
+    client: httpx.AsyncClient, url: str, params: dict[str, Any]
+) -> httpx.Response:
+    """GET ``url``, following redirects only to the same host, each one checked."""
+    current = httpx.URL(url)
+    host = current.host
+    for _hop in range(_MAX_REDIRECTS + 1):
+        if not _allow_private_hosts():
+            await assert_public_url(str(current))
+        first = current == httpx.URL(url)
+        response = await client.get(str(current), params=params if first else None)
+        if not (response.is_redirect and "location" in response.headers):
+            return response
+        current = current.join(response.headers["location"])
+        if current.host != host:
+            raise ArcGISQueryError(
+                f"ArcGIS redirected to another host ({current.host}); not followed"
+            )
+    raise ArcGISQueryError(f"ArcGIS redirected more than {_MAX_REDIRECTS} times")
 
 
 class ArcGISQueryError(ValueError):
@@ -281,10 +317,15 @@ async def query_arcgis_features(
 
     timeout = httpx.Timeout(_HTTP_READ_TIMEOUT_S, connect=_HTTP_CONNECT_TIMEOUT_S)
     try:
-        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
-            response = await client.get(query_url, params=params)
+        async with _arcgis_client(timeout) as client:
+            response = await _arcgis_get(client, query_url, params)
             response.raise_for_status()
             decoded = response.json()
+    except BlockedHostError as exc:
+        raise ArcGISQueryError(
+            f"Refusing to query {exc}. Set {_ALLOW_PRIVATE_ENV}=true to query an ArcGIS "
+            "server on a private network."
+        ) from exc
     except (httpx.HTTPError, ValueError) as exc:
         raise ArcGISQueryError(f"Could not query ArcGIS FeatureServer resource: {exc}") from exc
 
@@ -301,13 +342,13 @@ async def query_arcgis_features(
     # saved file fetch native GeoJSON so downstream renderers get real geometry.
     geo_collection: dict[str, Any] = collection
     try:
-        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
-            geo_resp = await client.get(query_url, params={**params, "f": "geojson"})
+        async with _arcgis_client(timeout) as client:
+            geo_resp = await _arcgis_get(client, query_url, {**params, "f": "geojson"})
             geo_resp.raise_for_status()
             candidate = geo_resp.json()
             if isinstance(candidate, dict) and candidate.get("type") == "FeatureCollection":
                 geo_collection = candidate
-    except (httpx.HTTPError, ValueError):
+    except (httpx.HTTPError, ValueError, BlockedHostError, ArcGISQueryError):
         geo_collection = collection
 
     resolved_output.write_text(

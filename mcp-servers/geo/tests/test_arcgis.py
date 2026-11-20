@@ -57,6 +57,9 @@ _GEOJSON: dict[str, Any] = {
 
 
 class _FakeResponse:
+    is_redirect = False
+    headers: dict[str, str] = {}
+
     def __init__(self, payload: Any, url: str) -> None:
         self._payload = payload
         self.url = url
@@ -108,6 +111,13 @@ def fake_http(monkeypatch: pytest.MonkeyPatch) -> type[_FakeAsyncClient]:
     _FakeAsyncClient.geojson_payload = _GEOJSON
     _FakeAsyncClient.geojson_raises = None
     monkeypatch.setattr(arcgis.httpx, "AsyncClient", _FakeAsyncClient)
+
+    # The fake hosts do not resolve; test_arcgis_hosts.py covers the host check.
+    async def _no_check(url: str) -> None:
+        return None
+
+    monkeypatch.setattr(arcgis, "assert_public_url", _no_check)
+    monkeypatch.setattr(arcgis, "public_transport", lambda: None)
     return _FakeAsyncClient
 
 

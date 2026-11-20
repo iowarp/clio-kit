@@ -340,9 +340,10 @@ async def bounding_box_tool(
         "Query an ArcGIS FeatureServer layer (with optional lon/lat bbox and where "
         "clause) and write the returned features to a local GeoJSON file. The saved "
         "FeatureCollection can be fed directly into render_feature_map, "
-        "points_in_polygons, or bounding_box."
+        "points_in_polygons, or bounding_box. Hosts on loopback or private networks are "
+        "refused unless GEO_ALLOW_PRIVATE_HOSTS is set."
     ),
-    annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
+    annotations={"readOnlyHint": False, "destructiveHint": False, "openWorldHint": True},
     tags={"geospatial", "arcgis", "features", "geojson", "retrieval"},
 )
 async def query_arcgis_features_tool(
