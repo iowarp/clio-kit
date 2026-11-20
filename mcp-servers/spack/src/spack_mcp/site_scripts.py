@@ -42,6 +42,9 @@ PREPARE_SCRIPT: Final = (
 SITE=$(home_path "$1"); ROOT=$(home_path "$2"); CONFIG=$(home_path "$3")
 VERSION=$4; PINS=$5; TREE=$(home_path "$6"); MODPATHS=$7; MPI_NAMES=$8; POLICY=$9
 shift 9
+COMPILER=$1; BUILD_JOBS=$2
+shift 2
+case "$BUILD_JOBS" in ""|*[!0-9]*) fail "bad build_jobs $BUILD_JOBS" ;; esac
 isolate "$CONFIG"
 mkdir -p "$CONFIG" || fail "cannot create $CONFIG"
 say config_dir "$CONFIG"
@@ -116,13 +119,15 @@ if [ -n "$SITE" ]; then
     fi
   } | put upstreams.yaml
 fi
-put config.yaml <<'EOF'
-config:
-  misc_cache: $spack/var/clio/misc-cache
-  test_stage: $spack/var/clio/test-stage
-  build_stage:
-  - $tempdir/$user/clio-spack-stage
-EOF
+# Spack builds with min(build_jobs, the CPUs the process may use), so a high
+# build_jobs means every CPU the install job was given.
+printf '%s\n' 'config:' \
+  '  misc_cache: $spack/var/clio/misc-cache' \
+  '  test_stage: $spack/var/clio/test-stage' \
+  '  build_stage:' \
+  '  - $tempdir/$user/clio-spack-stage' \
+  "  build_jobs: $BUILD_JOBS" | put config.yaml
+say build_jobs "$BUILD_JOBS"
 put concretizer.yaml <<'EOF'
 concretizer:
   reuse: true
@@ -187,6 +192,9 @@ for dir in "${DIRS[@]}"; do
   done
 done
 export CLIO_MPI_CANDIDATES="$CANDIDATES"
+export CLIO_COMPILER="$COMPILER"
+mkdir -p "$ROOT/var/clio" || fail "cannot create $ROOT/var/clio"
+export CLIO_COMPILER_CHOICE="$ROOT/var/clio/compiler-choice"
 
 # spack python -c compiles one statement only, so run the policy from a file.
 POLICY_FILE=$(mktemp "$CONFIG/.clio-policy.XXXXXX.py") || fail "cannot write in $CONFIG"
@@ -194,14 +202,15 @@ printf '%s\n' "$POLICY" > "$POLICY_FILE"
 timeout 120 "$SPACK" python "$POLICY_FILE"
 STATUS=$?
 rm -f "$POLICY_FILE"
-[ "$STATUS" -eq 0 ] || fail "writing the Spack MPI policy failed"
+[ "$STATUS" -eq 0 ] || fail "writing the Spack MPI and compiler policy failed"
 """
 )
 
 # Run by the CLIO Spack's own ``spack python``: set ``packages:mpi:buildable:false``,
 # record module MPIs as externals with both ``prefix:`` and ``modules:`` (jarvis
-# needs the prefix and loads the module) so they can be offered as a choice, and
-# report what the merged configuration and the upstream database contain.
+# needs the prefix and loads the module) so they can be offered as a choice, write
+# the ``packages:all:compiler`` preference, and report what the merged
+# configuration and the upstream database contain.
 POLICY_PY: Final = r"""
 import copy, json, os
 import spack.config, spack.store
@@ -237,6 +246,107 @@ for line in os.environ.get("CLIO_MPI_CANDIDATES", "").splitlines():
     if module not in modules:
         item["modules"] = modules + [module]
         changed.append("packages:" + name + ":externals " + spec + " modules")
+
+# packages:all:compiler, Spack 0.23's compiler preference: full toolchains (cc, cxx
+# and fc) first, the one the upstream MPI was built with ahead, then the rest in
+# Spack's default family order, newest first. A person's choice goes first.
+import spack.spec, spack.version
+FAMILY = ["gcc", "clang", "oneapi", "xl", "nag", "fj", "aocc"]
+toolchains = []
+for entry in spack.config.get("compilers", []) or []:
+    compiler = entry.get("compiler", {}) if isinstance(entry, dict) else {}
+    if not compiler.get("spec"):
+        continue
+    name, _, version = str(compiler["spec"]).partition("@")
+    version = version.lstrip("=")
+    paths = compiler.get("paths", {}) or {}
+    key = name + "@" + version
+    if any(item["spec"] == key for item in toolchains):
+        continue
+    toolchains.append({
+        "spec": key,
+        "cc": paths.get("cc"), "cxx": paths.get("cxx"), "fc": paths.get("fc"),
+        "full": all(paths.get(lang) for lang in ("cc", "cxx", "fc")),
+        "built_upstream_mpi": False,
+    })
+mpi_specs = []
+try:
+    mpi_specs = list(spack.store.STORE.db.query("mpi"))
+except Exception as exc:
+    print("@@warning\tcould not list installed MPIs: %s" % exc)
+for spec in mpi_specs:
+    try:
+        built = spec.compiler.name + "@" + str(spec.compiler.version)
+    except Exception:
+        continue
+    for item in toolchains:
+        if item["spec"] == built:
+            item["built_upstream_mpi"] = True
+toolchains.sort(key=lambda item: spack.version.Version(item["spec"].split("@")[1]), reverse=True)
+toolchains.sort(key=lambda item: (
+    not item["full"],
+    not item["built_upstream_mpi"],
+    FAMILY.index(item["spec"].split("@")[0]) if item["spec"].split("@")[0] in FAMILY else 99,
+))
+def matching(text):
+    wanted = spack.spec.CompilerSpec(text)
+    return [i for i in toolchains if spack.spec.CompilerSpec(i["spec"]).satisfies(wanted)]
+request = os.environ.get("CLIO_COMPILER", "").strip()
+choice_file = os.environ["CLIO_COMPILER_CHOICE"]
+chosen, source, candidates = None, "", []
+if request == "auto":
+    if os.path.exists(choice_file):
+        os.remove(choice_file)
+    request = ""
+if request:
+    found = matching(request)
+    if len(found) != 1:
+        names = ", ".join(i["spec"] for i in toolchains) or "none"
+        what = "matches no" if not found else "matches more than one"
+        print("@@error\tcompiler %s %s compiler Spack found (found: %s)" % (request, what, names))
+        raise SystemExit(2)
+    chosen, source = found[0], "person"
+    with open(choice_file, "w") as stream:
+        stream.write(chosen["spec"] + "\n")
+elif os.path.exists(choice_file):
+    earlier = open(choice_file).read().strip()
+    found = [i for i in toolchains if i["spec"] == earlier]
+    if found:
+        chosen, source = found[0], "person_earlier"
+    else:
+        print("@@warning\tthe earlier compiler choice %s is gone; choosing again" % earlier)
+        os.remove(choice_file)
+if chosen is None and toolchains:
+    full = [i for i in toolchains if i["full"]]
+    qualifying = [i for i in full if i["built_upstream_mpi"]] or full
+    if len(qualifying) == 1:
+        chosen = qualifying[0]
+        source = "upstream_mpi" if chosen["built_upstream_mpi"] else "only_full_toolchain"
+    elif qualifying:
+        chosen, source, candidates = qualifying[0], "default", [i["spec"] for i in qualifying]
+    else:
+        chosen, source = toolchains[0], "no_full_toolchain"
+        print("@@warning\tno compiler has cc, cxx and fc; Fortran packages cannot build")
+if chosen is not None and not chosen["full"] and source.startswith("person"):
+    print("@@warning\t%s has no Fortran compiler; Fortran packages cannot build" % chosen["spec"])
+order = []
+if chosen is not None:
+    order = [chosen["spec"]] + [i["spec"] for i in toolchains if i is not chosen]
+everything = packages.setdefault("all", {})
+if order and list(everything.get("compiler", []) or []) != order:
+    everything["compiler"] = order
+    changed.append("packages:all:compiler " + ",".join(order))
+if not everything:
+    del packages["all"]
+compiler_report = {
+    "chosen": chosen["spec"] if chosen else None,
+    "source": source or None,
+    "full_toolchain": bool(chosen and chosen["full"]),
+    "order": order,
+    "toolchains": toolchains,
+    "choice_needed": bool(candidates),
+    "candidates": candidates,
+}
 if changed:
     spack.config.CONFIG.update_config("packages", packages, scope=site)
     for item in changed:
@@ -266,6 +376,7 @@ try:
             "hash": spec.dag_hash(7),
             "prefix": str(spec.prefix),
             "upstream": bool(spec.installed_upstream),
+            "compiler": spec.compiler.name + "@" + str(spec.compiler.version),
         })
 except Exception as exc:
     print("@@warning\tcould not list installed MPIs: %s" % exc)
@@ -277,6 +388,7 @@ report = {
     "installed_mpis": mpis,
     "mpi_externals_added": added,
     "upstreams": sorted((spack.config.get("upstreams", {}) or {}).keys()),
+    "compiler": compiler_report,
 }
 print("@@report\t" + json.dumps(report, sort_keys=True))
 """

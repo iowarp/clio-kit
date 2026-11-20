@@ -73,7 +73,27 @@ rerun (each step reports `present`, `unchanged` or `written`):
   outside the site Spack's own module trees, such as Ares's `mpich/4.1.1`) as
   candidate externals with both `prefix:` and `modules:`. The prefix comes from
   a light `module load` and `command -v mpiexec` in a throwaway login shell; a
-  module whose prefix cannot be found is reported as a warning and not recorded.
+  module whose prefix cannot be found is reported as a warning and not recorded;
+- writes `packages:all:compiler`, Spack 0.23's compiler preference (0.23 has
+  no language virtuals, and without it the solver takes the newest compiler,
+  even one with no Fortran). Full toolchains (`cc`, `cxx` and `fc` all set)
+  come first, the one the upstream MPI was built with ahead, then the rest. On
+  Ares this is `[gcc@11.4.0, gcc@12.3.0, clang@14.0.0]`, because gcc 12 and
+  clang 14 have no Fortran there. `compiler=` puts the person's choice first.
+  That choice is remembered in `<root>/var/clio/compiler-choice` until
+  `compiler="auto"` drops it. Use `compiler=` when several full toolchains
+  qualify (`report.compiler.choice_needed`, which goes to the person once, like
+  the MPI choice), and to fix a build that failed in a compiler check. No
+  package gets a hand pin;
+- writes `build_jobs` into `config.yaml`. The default is 1024, and Spack uses
+  `min(build_jobs, CPUs the job may use)`, so a build gets every CPU of its
+  install job. It is not remembered between runs.
+
+`report.compiler` returns `chosen`, `source` (`person`, `person_earlier`,
+`upstream_mpi`, `only_full_toolchain`, `default` or `no_full_toolchain`),
+`full_toolchain`, `order`, `toolchains` (each with its `cc`/`cxx`/`fc` and
+whether an installed MPI was built with it), `choice_needed` and `candidates`.
+`report.build_jobs` and each `installed_mpis[].compiler` are reported too.
 
 All of this config lives in the clone's own `etc/spack` (Spack's site scope).
 Every command runs with `SPACK_DISABLE_LOCAL_CONFIG=1`, which in Spack 0.23

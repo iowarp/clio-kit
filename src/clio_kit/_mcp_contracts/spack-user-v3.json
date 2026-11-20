@@ -1,7 +1,7 @@
 {
   "canonicalization": "json-sort-keys-compact-utf8-v1",
   "contract_id": "clio-kit-spack-user-v3",
-  "contract_sha256": "0a8151a36321a75082ef128758a309a8bb79bda3dc9a567fba13f4474303edde",
+  "contract_sha256": "6da9a9b157baa3e88c1c65e2715d143cab9673ef74e259251738cc638b8a328b",
   "profile": "user",
   "projection": "mcp-agent-tool-schema-v1",
   "schema_version": "clio-kit.mcp-user-contract.v1",
@@ -401,10 +401,22 @@
         "openWorldHint": true,
         "readOnlyHint": false
       },
-      "description": "Set up a CLIO Spack on a clio-relay site that reuses what the site already has. It shallow-clones the Spack release the site runs (pinned by commit) into <site_home>/spack, points upstreams.yaml at the site install tree, runs compiler find, registers build tools with external find --not-buildable, sets packages:mpi:buildable:false and records module-only MPIs as candidate externals. MPI is never externalized from PATH. Config lives in the checkout and SPACK_DISABLE_LOCAL_CONFIG keeps ~/.spack out. Idempotent; it never installs, builds or installs jarvis-cd. The first call returns the relay exec call (with a spack plan that a guarded relay site asks the person to approve) and the approval text; the second, with relay_result, returns the report, including the JARVIS_SPACK_ROOT and JARVIS_SPACK_CONFIG to export. needs_approval means retry the same exec once the person answers; declined means stop.",
+      "description": "Set up a CLIO Spack on a clio-relay site that reuses what the site already has. It shallow-clones the Spack release the site runs (pinned by commit) into <site_home>/spack, points upstreams.yaml at the site install tree, runs compiler find, registers build tools with external find --not-buildable, sets packages:mpi:buildable:false, records module-only MPIs as candidate externals and writes packages:all:compiler with full toolchains (cc, cxx, fc) first, the upstream MPI's compiler ahead, plus build_jobs. When several full toolchains qualify, report.compiler.choice_needed asks the person once. MPI is never externalized from PATH. Config lives in the checkout and SPACK_DISABLE_LOCAL_CONFIG keeps ~/.spack out. Idempotent; it never installs, builds or installs jarvis-cd. The first call returns the relay exec call (with a spack plan that a guarded relay site asks the person to approve) and the approval text; the second, with relay_result, returns the report, including the JARVIS_SPACK_ROOT and JARVIS_SPACK_CONFIG to export. needs_approval means retry the same exec once the person answers; declined means stop.",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {
+          "build_jobs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "config:build_jobs; default every CPU the install job may use (Spack takes min(build_jobs, available CPUs))."
+          },
           "build_tools": {
             "anyOf": [
               {
@@ -419,6 +431,18 @@
             ],
             "default": null,
             "description": "Build tools for external find; default a fixed list, never MPI."
+          },
+          "compiler": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Compiler to put first in packages:all:compiler, such as gcc@11.4.0: the person's choice when report.compiler.choice_needed, or the fix for a build that failed in a compiler check. auto drops an earlier choice. Default: full toolchains (cc, cxx, fc) first, the upstream MPI's compiler ahead."
           },
           "module_paths": {
             "anyOf": [
@@ -687,6 +711,10 @@
                 "additionalProperties": false,
                 "description": "What spack_prepare_site found and wrote on the site.",
                 "properties": {
+                  "build_jobs": {
+                    "description": "config:build_jobs in the CLIO Spack. Spack builds with min(build_jobs, CPUs the job may use); 1024 means every CPU the job was given.",
+                    "type": "integer"
+                  },
                   "clone": {
                     "enum": [
                       "cloned",
@@ -704,6 +732,126 @@
                       }
                     ],
                     "default": null
+                  },
+                  "compiler": {
+                    "additionalProperties": false,
+                    "description": "The compiler preference written as packages:all:compiler (Spack 0.23 semantics).",
+                    "properties": {
+                      "candidates": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "choice_needed": {
+                        "default": false,
+                        "description": "More than one full toolchain qualifies. Ask the person once to pick from candidates, then prepare again with compiler set.",
+                        "type": "boolean"
+                      },
+                      "chosen": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "description": "First in packages:all:compiler; the solver prefers it."
+                      },
+                      "full_toolchain": {
+                        "default": false,
+                        "type": "boolean"
+                      },
+                      "order": {
+                        "description": "packages:all:compiler.",
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "source": {
+                        "anyOf": [
+                          {
+                            "enum": [
+                              "person",
+                              "person_earlier",
+                              "upstream_mpi",
+                              "only_full_toolchain",
+                              "default",
+                              "no_full_toolchain"
+                            ],
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null,
+                        "description": "person: the compiler input; person_earlier: an earlier compiler input; upstream_mpi: the only full toolchain an installed MPI was built with; only_full_toolchain: the only one with cc, cxx and fc; default: several qualify (ask the person); no_full_toolchain: nothing has Fortran."
+                      },
+                      "toolchains": {
+                        "items": {
+                          "additionalProperties": false,
+                          "description": "One compiler spack compiler find registered.",
+                          "properties": {
+                            "built_upstream_mpi": {
+                              "description": "An installed MPI was built with it.",
+                              "type": "boolean"
+                            },
+                            "cc": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "default": null
+                            },
+                            "cxx": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "default": null
+                            },
+                            "fc": {
+                              "anyOf": [
+                                {
+                                  "type": "string"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ],
+                              "default": null
+                            },
+                            "full": {
+                              "description": "cc, cxx and fc are all set.",
+                              "type": "boolean"
+                            },
+                            "spec": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "spec",
+                            "full",
+                            "built_upstream_mpi"
+                          ],
+                          "type": "object"
+                        },
+                        "type": "array"
+                      }
+                    },
+                    "type": "object"
                   },
                   "compilers": {
                     "items": {
@@ -836,6 +984,8 @@
                   "pinned",
                   "clone",
                   "mpi_buildable",
+                  "compiler",
+                  "build_jobs",
                   "jarvis"
                 ],
                 "type": "object"
@@ -1685,5 +1835,5 @@
       "title": "Research Site Spack"
     }
   ],
-  "wire_sha256": "e060197ef71fa4b1a8ae847bfa13826756799cf6910834a0436637fa24735bd6"
+  "wire_sha256": "52905639a764b7bb4a902d2c03e3bae2a82cd1cb319500e9a4d80459b1981eee"
 }

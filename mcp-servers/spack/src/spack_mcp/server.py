@@ -33,11 +33,10 @@ from spack_mcp.discovery import (
 from spack_mcp.provisioning import SpackInstallResult, install_spec
 from spack_mcp.site import (
     DEFAULT_SITE_HOME,
-    SpackPrepareSiteResult,
-    SpackSiteQueryResult,
     prepare_site,
     site_query,
 )
+from spack_mcp.site_models import SpackPrepareSiteResult, SpackSiteQueryResult
 
 mcp: FastMCP = FastMCP(
     "spack",
@@ -250,8 +249,11 @@ _Root = Annotated[
         "has. It shallow-clones the Spack release the site runs (pinned by commit) "
         "into <site_home>/spack, points upstreams.yaml at the site install tree, runs "
         "compiler find, registers build tools with external find --not-buildable, "
-        "sets packages:mpi:buildable:false and records module-only MPIs as candidate "
-        "externals. MPI is never externalized from PATH. Config lives in the checkout "
+        "sets packages:mpi:buildable:false, records module-only MPIs as candidate "
+        "externals and writes packages:all:compiler with full toolchains (cc, cxx, fc) "
+        "first, the upstream MPI's compiler ahead, plus build_jobs. When several full "
+        "toolchains qualify, report.compiler.choice_needed asks the person once. "
+        "MPI is never externalized from PATH. Config lives in the checkout "
         "and SPACK_DISABLE_LOCAL_CONFIG keeps ~/.spack out. Idempotent; it never "
         "installs, builds or installs jarvis-cd. The first call returns the relay exec "
         "call (with a spack plan that a guarded relay site asks the person to approve) "
@@ -297,6 +299,26 @@ async def spack_prepare_site_tool(
         list[str] | None,
         Field(description="Build tools for external find; default a fixed list, never MPI."),
     ] = None,
+    compiler: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Compiler to put first in packages:all:compiler, such as gcc@11.4.0: the "
+                "person's choice when report.compiler.choice_needed, or the fix for a build "
+                "that failed in a compiler check. auto drops an earlier choice. Default: "
+                "full toolchains (cc, cxx, fc) first, the upstream MPI's compiler ahead."
+            )
+        ),
+    ] = None,
+    build_jobs: Annotated[
+        int | None,
+        Field(
+            description=(
+                "config:build_jobs; default every CPU the install job may use (Spack takes "
+                "min(build_jobs, available CPUs))."
+            )
+        ),
+    ] = None,
     relay_result: _RelayResult = None,
 ) -> SpackPrepareSiteResult:
     """Plan or read the relay exec that prepares a CLIO Spack on one site."""
@@ -310,6 +332,8 @@ async def spack_prepare_site_tool(
         site_install_tree=site_install_tree,
         module_paths=module_paths,
         build_tools=build_tools,
+        compiler=compiler,
+        build_jobs=build_jobs,
         relay_result=relay_result,
     )
 

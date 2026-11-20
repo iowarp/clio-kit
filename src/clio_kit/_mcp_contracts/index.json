@@ -20,12 +20,12 @@
     },
     {
       "artifact": "spack-user-v3.json",
-      "artifact_sha256": "cbd796b68e9fce2b2cebe7390af35ea9bb82a707e82a2baf224019c39db78516",
+      "artifact_sha256": "71a9eb290bb2df9d1e67a9dc25a59b827dc49966df0d8dde8ffeb10b7801aa19",
       "contract_id": "clio-kit-spack-user-v3",
-      "contract_sha256": "0a8151a36321a75082ef128758a309a8bb79bda3dc9a567fba13f4474303edde",
+      "contract_sha256": "6da9a9b157baa3e88c1c65e2715d143cab9673ef74e259251738cc638b8a328b",
       "profile": "user",
       "server_name": "spack",
-      "wire_sha256": "e060197ef71fa4b1a8ae847bfa13826756799cf6910834a0436637fa24735bd6"
+      "wire_sha256": "52905639a764b7bb4a902d2c03e3bae2a82cd1cb319500e9a4d80459b1981eee"
     },
     {
       "artifact": "scientific-catalog-user-v1.1.json",
