@@ -4473,6 +4473,53 @@
       "summary": "Verify a Clio Coder source change against its contract, smoke, boundary and application tests."
     },
     {
+      "id": "plugin/clio-core-skills",
+      "kind": "collection",
+      "name": "clio-core-skills",
+      "title": "Core Skills",
+      "description": "CLIO Core developer skills: gpu_vector kernels, writing runtime modules, and composing storage systems.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Scientific computing",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "./skills/clio-core-skills",
+      "members": [
+        "skill/chimod-dev",
+        "skill/gpu-vector",
+        "skill/storage-compose"
+      ],
+      "servers": [],
+      "tags": [],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/plugins",
+      "evidence": "See validation coverage",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-core-skills",
+      "role": "Component collection",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      },
+      "summary": "CLIO Core developer skills: gpu_vector kernels, writing runtime modules, and composing storage systems."
+    },
+    {
       "id": "plugin/clio-geoscience-skills",
       "kind": "collection",
       "name": "clio-geoscience-skills",
@@ -5923,6 +5970,41 @@
       ],
       "installation": "portable-skill",
       "summary": "Choose a chart type, axes, bins and color scale that suit scientific data."
+    },
+    {
+      "id": "skill/chimod-dev",
+      "kind": "skill",
+      "name": "chimod-dev",
+      "title": "Developing a CLIO Core module (chimod)",
+      "description": "Use when creating or changing a CLIO Core runtime module (chimod): clio_mod.yaml methods, task structs, the runtime container and client, codegen, CMake, compose registration, tests, or a new CTE interposer layer. Triggers on \"new chimod\", \"add a method to the module\", \"clio_mod.yaml\", \"clio-run refresh\", \"CreateParams\", \"CoreInterposer\", \"TaskResume\". Not for choosing or configuring the shipped modules; use storage-compose. Not for GPU paged-vector kernels; use gpu-vector.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/chimod-dev/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Build or extend a CLIO Core runtime module: tasks, runtime, client, codegen, CMake and tests."
     },
     {
       "id": "skill/clio-kit-archify",
@@ -7559,6 +7641,41 @@
       "summary": "Validate GeoJSON, query spatial relationships, map features and analyze terrain grids."
     },
     {
+      "id": "skill/gpu-vector",
+      "kind": "skill",
+      "name": "gpu-vector",
+      "title": "Programming the gpu_vector paged vector",
+      "description": "Use when writing, porting, optimizing or debugging GPU kernels over CLIO's paged out-of-core vector (gv::Vector / gv::DeviceVector): layout, page and cache sizing, fetch/hold/flush placement, eviction safety, multi-node generations, tier policy. Triggers on \"gpu_vector\", \"gv::Vector\", \"DeviceVector\", \"CoFetch\", \"HoldPage\", \"out-of-core kernel\", \"CLIO_COROC_RUN\", \"ReorganizeHint\". Not for writing a runtime module; use chimod-dev. Not for wiring tiers into a deployment; use storage-compose.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/gpu-vector/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Write and tune GPU kernels over CLIO's paged out-of-core vector, validated resident and out of core."
+    },
+    {
       "id": "skill/io-performance",
       "kind": "skill",
       "name": "io-performance",
@@ -8008,6 +8125,41 @@
       ],
       "installation": "portable-skill",
       "summary": "Check installed Spack packages and available or saved module environments."
+    },
+    {
+      "id": "skill/storage-compose",
+      "kind": "skill",
+      "name": "storage-compose",
+      "title": "Composing a storage system from CLIO Core modules",
+      "description": "Use when designing, configuring or reviewing a CLIO Core storage deployment: choosing which shipped modules to compose (bdev, safe_bdev, CTE cores, write-back/write-thru caches, replication, shm cache, indexer, compressor, stream, filesystem, CAE), ordering the chain, and stating its consistency and fault tolerance. Triggers on \"compose section\", \"clio_default.yaml\", \"next_pool_id\", \"replication_factor\", \"is this durable\", \"what survives a crash\". Not for writing a new module; use chimod-dev.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/storage-compose/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Compose CLIO Core's shipped modules into a storage system and state what it guarantees."
     },
     {
       "id": "skill/storage-format",

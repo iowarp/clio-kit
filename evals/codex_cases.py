@@ -129,6 +129,25 @@ CASES = [
         kind="slurm",
     ),
     case(
+        "storage-compose",
+        "Write a CLIO Core compose section for one node with DRAM and an NVMe file tier where data fsynced by the application must survive a runtime crash. State what an acknowledged put means and what a kill -9 can lose. Do not start a runtime.",
+        facts=(
+            r"(?i)persistence_level",
+            r"(?i)metadata_log_path",
+            r"(?i)fsync|SyncTag",
+        ),
+    ),
+    case(
+        "chimod-dev",
+        "Plan a new CLIO Core chimod named counter with one Increment method returning the new value. List the files to write, the clio_mod.yaml contents, the codegen command and how the test initializes the runtime. Do not build anything.",
+        facts=(r"(?i)clio_run refresh", r"(?i)kIncrement:\s*1\d", r"(?i)CLIO_INIT"),
+    ),
+    case(
+        "gpu-vector",
+        "A gpu_vector kernel matches its baseline with the page cache larger than the data, and its log shows evictions=0. Is it correct out of core? Say what run would show that and which verbs must follow each write.",
+        facts=(r"(?i)evict", r"(?i)Flush", r"(?i)Unpin"),
+    ),
+    case(
         "research-survey",
         "Using arXiv MCP, retrieve two papers about lossless speculative decoding and compare their actual claims. Cite verified identifiers and distinguish abstract-only inspection from full-text reading. Do not claim dataset availability without evidence.",
         servers=("arxiv",),
