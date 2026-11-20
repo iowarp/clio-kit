@@ -134,7 +134,9 @@ RATCHET_BASELINE: dict[str, int] = {
     # tree verified via `wc -l`, not carried over from develop's number: 923.
     # #376 (v3.7.2 mint): one more historical-artifact entry
     # (jarvis-user-v3.7.1.json) as v3.7.1 retires to historical; 923 -> 924.
-    "src/clio_kit/mcp_contracts.py": 924,
+    # spack v3 mint (spack_prepare_site/spack_site_query added, spack_install
+    # moved to admin): spack-user-v2.3.json retires to historical; 924 -> 926.
+    "src/clio_kit/mcp_contracts.py": 926,
     # release/2.10.2: merging fix/execution-output-artifacts (#252 --
     # execution_output_artifact_events/_hash_regular_file, terminal
     # execution-output declarations) alongside the v3.7 content-read mint's

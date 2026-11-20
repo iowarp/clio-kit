@@ -95,13 +95,14 @@ def test_contract_probe_uses_a_fresh_isolated_child_environment(
             },
         ),
         (
-            "clio-kit-spack-user-v2.3",
+            "clio-kit-spack-user-v3",
             {
                 "spack_find",
-                "spack_install",
                 "spack_locate",
                 "spack_search",
                 "spack_info",
+                "spack_prepare_site",
+                "spack_site_query",
             },
         ),
         (
@@ -192,7 +193,7 @@ def test_previous_scientific_catalog_contract_remains_loadable() -> None:
 
 def test_spack_contract_requires_load_spec_without_exposing_load() -> None:
     """Spack locate returns JARVIS's reload input without a fake load operation."""
-    artifact = load_mcp_user_contract("clio-kit-spack-user-v2.3")
+    artifact = load_mcp_user_contract("clio-kit-spack-user-v3")
     tools = {
         cast(str, tool["name"]): cast(JSON, tool)
         for tool in cast(list[JSON], artifact["tools"])
@@ -200,11 +201,13 @@ def test_spack_contract_requires_load_spec_without_exposing_load() -> None:
 
     assert set(tools) == {
         "spack_find",
-        "spack_install",
         "spack_locate",
         "spack_search",
         "spack_info",
+        "spack_prepare_site",
+        "spack_site_query",
     }
+    assert "spack_install" not in tools
     assert "spack_load" not in tools
     output_schema = cast(JSON, tools["spack_locate"]["outputSchema"])
     properties = cast(JSON, output_schema["properties"])
@@ -229,9 +232,10 @@ def test_spack_surface_validator_accepts_described_required_load_spec() -> None:
     )
     tools: list[JSON] = [
         {"name": "spack_find"},
-        {"name": "spack_install"},
         {"name": "spack_search"},
         {"name": "spack_info"},
+        {"name": "spack_prepare_site"},
+        {"name": "spack_site_query"},
         {
             "name": "spack_locate",
             "outputSchema": {
@@ -693,7 +697,7 @@ def test_contract_cli_lists_and_prints_verified_artifacts() -> None:
     runner = CliRunner()
 
     listed = runner.invoke(main, ["mcp-contracts"])
-    shown = runner.invoke(main, ["mcp-contract", "clio-kit-spack-user-v2.3"])
+    shown = runner.invoke(main, ["mcp-contract", "clio-kit-spack-user-v3"])
 
     assert listed.exit_code == 0, listed.output
     assert "clio-kit-jarvis-user-v3.6" in listed.output
@@ -702,6 +706,7 @@ def test_contract_cli_lists_and_prints_verified_artifacts() -> None:
     assert "clio-kit-jarvis-user-v3.3" in listed.output
     assert "clio-kit-jarvis-user-v3.2" in listed.output
     assert "clio-kit-slurm-user-v3" in listed.output
+    assert "clio-kit-spack-user-v3" in listed.output
     assert "clio-kit-spack-user-v2.3" in listed.output
     assert "clio-kit-spack-user-v2.2" in listed.output
     assert "clio-kit-spack-user-v2.1" in listed.output
@@ -709,7 +714,7 @@ def test_contract_cli_lists_and_prints_verified_artifacts() -> None:
     assert "clio-kit-scientific-catalog-user-v1.1" in listed.output
     assert "clio-kit-scientific-catalog-user-v1" in listed.output
     assert shown.exit_code == 0, shown.output
-    assert json.loads(shown.output)["contract_id"] == "clio-kit-spack-user-v2.3"
+    assert json.loads(shown.output)["contract_id"] == "clio-kit-spack-user-v3"
 
 
 @pytest.mark.parametrize(

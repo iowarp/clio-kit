@@ -472,7 +472,10 @@ def classify_recipe_availability(base_name: str) -> RecipeAvailability:
                     available=True,
                     repo=repo.name,
                     repos_searched=sorted(r.name for r in repos),
-                    message=f"recipe available in repo {repo.name!r} via spack_install",
+                    message=(
+                        f"recipe available in repo {repo.name!r}; install it through a "
+                        "jarvis install job (spack_install is admin-only)"
+                    ),
                 )
     repo_names = sorted(r.name for r in repos)
     if unreadable:
