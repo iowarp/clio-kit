@@ -42,6 +42,7 @@ from .implementation.memory_optimization import optimize_memory_usage
 from .implementation.filtering import filter_data
 from .implementation.validation import validate_data, hypothesis_testing
 from .implementation.aggregate import aggregate
+from .path_policy import AllowedRootsMiddleware
 
 
 # --- Structured result shapes (drive real MCP outputSchema declarations) ----
@@ -535,11 +536,9 @@ class ProfileCsvResult(TypedDict):
     message: str
 
 
-# Set up logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "pandas",
     version="2.4.1",  # keep equal to clio-server.toml (tests/test_release_regressions.py)
@@ -553,6 +552,7 @@ mcp: FastMCP = FastMCP(
         "groupby_operations, pivot_table, filter_data and time_series_operations "
         "write CSV files beside the input."
     ),
+    middleware=[AllowedRootsMiddleware()],  # file paths stay in the allowed folders
 )
 
 

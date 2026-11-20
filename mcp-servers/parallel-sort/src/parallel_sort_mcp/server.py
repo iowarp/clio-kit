@@ -11,6 +11,7 @@ from fastmcp.prompts import Message
 from dotenv import load_dotenv
 import logging
 from . import mcp_handlers
+from .path_policy import AllowedRootsMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -29,6 +30,7 @@ mcp: FastMCP = FastMCP(
         "Sorts large files using parallel algorithms. "
         "Configure sort parameters, execute sorts with progress tracking, and verify results."
     ),
+    middleware=[AllowedRootsMiddleware()],  # file paths stay in the allowed folders
 )
 
 
