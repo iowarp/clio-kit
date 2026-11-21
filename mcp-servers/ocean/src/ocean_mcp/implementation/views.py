@@ -273,7 +273,7 @@ def grid_view(
     # one slice of it, which the view cannot name; a plain map of the same file wins.
     plain = [name for name in mapped if not _extra_dims(dataset[name])]
     variable = (plain or mapped)[0]
-    layer = {
+    layer: dict[str, Any] = {
         "id": "field",
         "kind": "grid",
         "label": variable.replace("_", " ") if variable != label else label,
