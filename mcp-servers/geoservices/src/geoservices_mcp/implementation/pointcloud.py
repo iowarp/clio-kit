@@ -110,7 +110,7 @@ def ept_subset(
     root = [float(v) for v in meta["bounds"]]
     want = list(
         Transformer.from_crs("EPSG:4326", crs, always_xy=True).transform_bounds(
-            *region.as_list(), densify_pts=21
+            region.west, region.south, region.east, region.north, densify_pts=21
         )
     )
     max_points = max(1_000, min(int(max_points), 20_000_000))
@@ -219,7 +219,9 @@ def copc_subset(
             raise GeoServiceError("The COPC file declares no CRS")
         want = Transformer.from_crs(
             "EPSG:4326", crs_obj, always_xy=True
-        ).transform_bounds(*region.as_list(), densify_pts=21)
+        ).transform_bounds(
+            region.west, region.south, region.east, region.north, densify_pts=21
+        )
         bounds = laspy.copc.Bounds(
             mins=np.array([want[0], want[1]]), maxs=np.array([want[2], want[3]])
         )

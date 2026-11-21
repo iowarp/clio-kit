@@ -242,7 +242,7 @@ def _to_wgs84(native: list[float], crs: str, labels: list[str]) -> list[float]:
     if crs == "EPSG:4326":
         return native
     box = Transformer.from_crs(crs, "EPSG:4326", always_xy=True).transform_bounds(
-        *native, densify_pts=21
+        native[0], native[1], native[2], native[3], densify_pts=21
     )
     return [round(v, 6) for v in box]
 
@@ -262,12 +262,14 @@ def wcs_subset(url: str, coverage_id: str, region: Region, out: Path) -> dict[st
     else:
         x0, y0, x1, y1 = Transformer.from_crs(
             "EPSG:4326", crs, always_xy=True
-        ).transform_bounds(*region.as_list(), densify_pts=21)
+        ).transform_bounds(
+            region.west, region.south, region.east, region.north, densify_pts=21
+        )
     xl, yl = (
         (labels[1], labels[0]) if _lat_first(crs, labels) else (labels[0], labels[1])
     )
     base, extra = _base(url)
-    params = [
+    params: list[tuple[str, str | int | float | bool | None]] = [
         *extra.items(),
         ("service", "WCS"),
         ("version", "2.0.1"),
