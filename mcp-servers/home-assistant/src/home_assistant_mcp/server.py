@@ -9,7 +9,8 @@ ha-mcp's own name and version. Arguments after the server name pass through.
 
 The upstream command runs as its own program (``exec`` on POSIX, a child process
 on Windows, where ``exec`` cannot keep the client's stdio), so this wrapper never
-imports it.
+imports it. ``server.mcp`` describes it for the repository's metadata checks
+by asking the running upstream command (see :mod:`home_assistant_mcp.metadata`).
 """
 
 from __future__ import annotations
@@ -20,6 +21,10 @@ import sys
 import sysconfig
 from collections.abc import Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .metadata import UpstreamServer
 
 #: The upstream distribution this server runs, as pinned in pyproject.toml.
 UPSTREAM = "ha-mcp"
@@ -48,6 +53,29 @@ def main() -> None:
     if os.name == "nt":
         raise SystemExit(subprocess.call(argv))
     os.execv(argv[0], argv)
+
+
+def metadata_env() -> dict[str, str]:
+    """What the upstream command needs added to its environment to list everything.
+
+    ha-mcp exits at startup without a Home Assistant URL and token. Listing its
+    tools contacts no Home Assistant, so placeholders show the full surface; these
+    match ``probe-environment`` in ``mcp-server-versions.toml``.
+    """
+    return {
+        "HOMEASSISTANT_URL": "http://127.0.0.1:9",
+        "HOMEASSISTANT_TOKEN": "listing-needs-no-home",
+        "HA_MCP_DISABLE_SETTINGS_UI": "1",
+    }
+
+
+def __getattr__(name: str) -> UpstreamServer:
+    """``mcp``: the upstream server's advertised metadata, read on first use."""
+    if name != "mcp":
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    from .metadata import UpstreamServer
+
+    return UpstreamServer(command([]), metadata_env())
 
 
 if __name__ == "__main__":
