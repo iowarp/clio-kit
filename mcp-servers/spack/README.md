@@ -11,7 +11,6 @@ spack_find
 spack_locate
 spack_search
 spack_info
-spack_prepare_site
 spack_site_query
 ```
 
@@ -40,105 +39,60 @@ remain structured MCP errors.
 
 ## Sites reached through clio-relay
 
-On an HPC site, CLIO uses its own Spack that reuses what the site already has
+On an HPC site, CLIO uses a JARVIS Spack that reuses what the site already has
 (the site Spack's install tree and modules, such as a site MPI that spans
-nodes) and builds the rest. This server never opens an SSH connection itself.
-`spack_prepare_site` and `spack_site_query` work in two calls:
+nodes) and builds the rest. This server never opens an SSH connection itself,
+and it does not prepare that Spack.
 
-1. Called without `relay_result`, the tool returns `relay_call`: the clio-relay
+Site preparation belongs to jarvis-cd: clio-relay runs `jarvis spack prepare`
+on the site (see jarvis-cd `docs/spack.md`). It clones the Spack release the
+site runs into `JARVIS_SPACK_ROOT` (`<site_home>/spack`), writes the clone's
+`etc/spack` site scope (upstreams, build-tool externals, module MPIs as
+candidates, `packages:mpi:buildable:false`, the compiler preference and
+`build_jobs`) and records the result as `jarvis.spack-site-prep.v1` in
+`<root>/var/jarvis/site-prep.json`. It exits 0 when prepared, 3 with
+`ambiguous_compiler` when several full toolchains qualify (the person picks
+one, once, and the agent reruns it with `--compiler` or `--answers`) and 5 on a
+refusal. `jarvis spack prepare --compiler` is also the lever to fix a build that
+failed in a compiler check. An unreleased build of this server had a
+`spack_prepare_site` tool for this; it was removed so that there is one path.
+
+`spack_site_query(site, query)` researches that Spack in two calls:
+
+1. Called without `relay_result`, it returns `relay_call`: the clio-relay
    `exec` arguments (`site`, an argv `command`, `timeout_s`,
-   `max_output_bytes`). `spack_prepare_site` also returns `approval`, the text
-   to show the person before anything is written.
+   `max_output_bytes`).
 2. The agent calls clio-relay `exec` with those arguments unchanged, then calls
    the tool again with the same arguments and `relay_result` set to the exec
    structured result. The tool checks that the result belongs to the planned
    argv and parses it.
 
-`spack_prepare_site(site, site_spack=...)` does the following, and is safe to
-rerun (each step reports `present`, `unchanged` or `written`):
+Its queries are `find` (installed and upstream packages), `info` (one recipe),
+`spec` (`spack spec -I -l`: which nodes are installed, upstream, external or
+still to build) and `modules` (`module -t avail`). The research verbs run Spack
+directly, with no shell, as `["env", "SPACK_DISABLE_LOCAL_CONFIG=1",
+".clio-relay/spack/bin/spack", "find", "--json", term]` (the same shape for
+`info` and `spec`). The Spack path is relative to home because relay's exec
+runs from `$HOME`; a `~/` root is given that way, and an absolute root only
+works on a guarded site whose guard lists it. The prepared config is in the
+clone's site scope, so `SPACK_DISABLE_LOCAL_CONFIG=1` alone keeps the person's
+`~/.spack` out. If the clone is missing, the exec exits 127 and the tool says to
+prepare the site through relay with `jarvis spack prepare` first.
 
-- shallow-clones the Spack release the site runs (read from the site Spack,
-  or `spack_version`) into `<site_home>/spack`, and checks the release's
-  pinned commit;
-- writes `upstreams.yaml` pointing at the site install tree (asked from the
-  site Spack) and its Lmod/Tcl module trees;
-- writes `config.yaml` (caches under `<root>/var/clio`, build stage under
-  `$tempdir/$user`), `concretizer.yaml` (`reuse: true`) and `bootstrap.yaml`
-  (bootstrap root under `<root>/var/clio`, binary bootstrap only, never a
-  clingo source build);
-- runs `spack compiler find` and `spack external find --not-buildable` for
-  build tools only. MPI is never externalized from PATH and is refused as a
-  build tool;
-- sets `packages:mpi:buildable:false` and records module MPIs (MPI modules
-  outside the site Spack's own module trees, such as Ares's `mpich/4.1.1`) as
-  candidate externals with both `prefix:` and `modules:`. The prefix comes from
-  a light `module load` and `command -v mpiexec` in a throwaway login shell; a
-  module whose prefix cannot be found is reported as a warning and not recorded;
-- writes `packages:all:compiler`, Spack 0.23's compiler preference (0.23 has
-  no language virtuals, and without it the solver takes the newest compiler,
-  even one with no Fortran). Full toolchains (`cc`, `cxx` and `fc` all set)
-  come first, the one the upstream MPI was built with ahead, then the rest. On
-  Ares this is `[gcc@11.4.0, gcc@12.3.0, clang@14.0.0]`, because gcc 12 and
-  clang 14 have no Fortran there. `compiler=` puts the person's choice first.
-  That choice is remembered in `<root>/var/clio/compiler-choice` until
-  `compiler="auto"` drops it. Use `compiler=` when several full toolchains
-  qualify (`report.compiler.choice_needed`, which goes to the person once, like
-  the MPI choice), and to fix a build that failed in a compiler check. No
-  package gets a hand pin;
-- writes `build_jobs` into `config.yaml`. The default is 1024, and Spack uses
-  `min(build_jobs, CPUs the job may use)`, so a build gets every CPU of its
-  install job. It is not remembered between runs.
-
-`report.compiler` returns `chosen`, `source` (`person`, `person_earlier`,
-`upstream_mpi`, `only_full_toolchain`, `default` or `no_full_toolchain`),
-`full_toolchain`, `order`, `toolchains` (each with its `cc`/`cxx`/`fc` and
-whether an installed MPI was built with it), `choice_needed` and `candidates`.
-`report.build_jobs` and each `installed_mpis[].compiler` are reported too.
-
-All of this config lives in the clone's own `etc/spack` (Spack's site scope).
-Every command runs with `SPACK_DISABLE_LOCAL_CONFIG=1`, which in Spack 0.23
-drops both the system and the user scopes; the prepare script also sets
-`SPACK_USER_CONFIG_PATH`/`SPACK_USER_CACHE_PATH` to
-`<site_home>/spack-config`, so the person's `~/.spack` and `~/spack` never leak
-in. The report ends with what jarvis-cd must be told:
-
-```text
-JARVIS_SPACK_ROOT=<site_home>/spack
-JARVIS_SPACK_CONFIG=<site_home>/spack-config
-```
-
-`spack_prepare_site` does not install jarvis-cd; clio-relay bootstraps it.
-
-`spack_site_query(site, query)` researches the CLIO Spack: `find` (installed
-and upstream packages), `info` (one recipe), `spec` (`spack spec -I -l`: which
-nodes are installed, upstream, external or still to build) and `modules`
-(`module -t avail`). The research verbs run Spack directly, with no shell, as
-`["env", "SPACK_DISABLE_LOCAL_CONFIG=1", ".clio-relay/spack/bin/spack", "find",
-"--json", term]` (the same shape for `info` and `spec`). The Spack path is
-relative to home because relay's exec runs from `$HOME`; a `~/` root is given
-that way, and an absolute root only works on a guarded site whose guard lists
-it. The CLIO config is in the clone's site scope and its caches are pinned
-under `<root>/var/clio`, so `SPACK_DISABLE_LOCAL_CONFIG=1` alone is enough.
-The first `spec` on a fresh clone downloads the clingo bootstrap binary (about
-8 MB) into `<root>/var/clio/bootstrap`. If the clone is missing, the exec
-exits 127 and the tool says to run `spack_prepare_site` first.
-
-Login nodes are shared, so both tools do only light, short work there: git
-clone, writing config, `compiler find`, `external find`, `find`, `info` and
-`spec`. They never run `spack install` or a build, and nothing outlives the
-relay call (relay's exec kills the process group when it ends).
+Login nodes are shared, so the tool does only light, short work there: `find`,
+`info`, `spec` and `module avail`. It never runs `spack install` or a build,
+and nothing outlives the relay call (relay's exec kills the process group when
+it ends).
 
 On a Secure (guarded) relay site, the research argv is on relay's read-only
 list: `env` may set only `SPACK_DISABLE_LOCAL_CONFIG=1`, and `-C`, `-e`, `-D`
-are refused. `spack_prepare_site` sends its `bash -c` script with
-`plan={"kind": "spack", "summary": "Prepare the CLIO Spack <version> at
-~/.clio-relay/spack"}` and a 900 s timeout, so relay asks the person to approve
-that exact argv once. If the client cannot show relay's ask, relay returns
-`needs_approval` with an `ask_id`; the tool returns `status: needs_approval`
-with the same `relay_call`, which the agent sends again unchanged once the
-person has answered. A declined ask comes back as `status: declined`, and the
-agent stops. Any other guard refusal is `status: refused`, and the agent tells
-the person instead of working around the guard.
+are refused. If relay still asks the person and the client cannot show the
+ask, relay returns `needs_approval` with an `ask_id`; the tool returns
+`status: needs_approval` with the same `relay_call`, which the agent sends again
+unchanged once the person has answered. A declined ask comes back as
+`status: declined`, and the agent stops. Any other guard refusal is
+`status: refused`, and the agent tells the person instead of working around
+the guard.
 
 ## Recipe discovery
 
@@ -211,9 +165,11 @@ recovery affordance:
 ### Breaking change in the v2.3 -> v3 registry contract
 
 `spack_install` moved from the default (user) profile to the admin profile,
-and the user profile gained `spack_prepare_site` and `spack_site_query`. An
+and the user profile gained `spack_site_query`. An
 agent that called `spack_install` on the default server must route installs
-to a jarvis install job, or run the server with `--profile admin`.
+to a jarvis install job, or run the server with `--profile admin`. Site
+preparation (`spack_prepare_site` in unreleased builds of v3) moved to
+`jarvis spack prepare`, run through clio-relay.
 
 ### Breaking change in the v2.1 -> v2.2 registry contract
 

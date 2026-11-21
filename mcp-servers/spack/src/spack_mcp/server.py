@@ -31,26 +31,22 @@ from spack_mcp.discovery import (
     search_packages,
 )
 from spack_mcp.provisioning import SpackInstallResult, install_spec
-from spack_mcp.site import (
-    DEFAULT_SITE_HOME,
-    prepare_site,
-    site_query,
-)
-from spack_mcp.site_models import SpackPrepareSiteResult, SpackSiteQueryResult
+from spack_mcp.site import DEFAULT_SITE_HOME, site_query
+from spack_mcp.site_models import SpackSiteQueryResult
 
 mcp: FastMCP = FastMCP(
     "spack",
     version="3.0.0",
     instructions=(
         "Discover, locate, search and describe Spack packages using structured "
-        "results. For a remote HPC site, spack_prepare_site sets up a CLIO Spack "
-        "that reuses the site's Spack as an upstream, and spack_site_query "
-        "researches it (find, info, spec, modules). Both reach the site only "
-        "through clio-relay: each returns a relay exec call to make, then parses "
-        "its result on a second call. They do light login-node work only and "
-        "never install or build. Packages are installed by jarvis install jobs "
+        "results. On a remote HPC site, the JARVIS Spack is prepared by `jarvis "
+        "spack prepare`, run through clio-relay; spack_site_query researches it "
+        "(find, info, spec, modules). It reaches the site only through clio-relay: "
+        "it returns a relay exec call to make, then parses its result on a second "
+        "call. It does light login-node work only and never installs or builds. "
+        "Packages are installed by jarvis install jobs "
         "(jarvis ppl install ... +submit); choices jarvis can't resolve, such as "
-        "several MPIs, go to the person. spack_install is an admin tool for a "
+        "several MPIs or compilers, go to the person. spack_install is an admin tool for a "
         "local Spack. A find with no installed matches succeeds with "
         "count=0 and packages=[]; locating an absent package returns the "
         "structured not_installed error, enriched with whether a recipe is "
@@ -70,7 +66,6 @@ USER_TOOLS = {
     "spack_locate",
     "spack_search",
     "spack_info",
-    "spack_prepare_site",
     "spack_site_query",
 }
 ADMIN_TOOLS = {"spack_environment", "spack_install"}
@@ -234,7 +229,7 @@ _Root = Annotated[
     str | None,
     Field(
         description=(
-            "The CLIO Spack checkout; default <site_home>/spack. On a guarded relay site "
+            "The JARVIS Spack checkout; default <site_home>/spack. On a guarded relay site "
             "queries run only the Spack its guard lists (default .clio-relay/spack/bin/spack)."
         )
     ),
@@ -242,107 +237,11 @@ _Root = Annotated[
 
 
 @mcp.tool(
-    name="spack_prepare_site",
-    title="Prepare Site Spack",
-    description=(
-        "Set up a CLIO Spack on a clio-relay site that reuses what the site already "
-        "has. It shallow-clones the Spack release the site runs (pinned by commit) "
-        "into <site_home>/spack, points upstreams.yaml at the site install tree, runs "
-        "compiler find, registers build tools with external find --not-buildable, "
-        "sets packages:mpi:buildable:false, records module-only MPIs as candidate "
-        "externals and writes packages:all:compiler with full toolchains (cc, cxx, fc) "
-        "first, the upstream MPI's compiler ahead, plus build_jobs. When several full "
-        "toolchains qualify, report.compiler.choice_needed asks the person once. "
-        "MPI is never externalized from PATH. Config lives in the checkout "
-        "and SPACK_DISABLE_LOCAL_CONFIG keeps ~/.spack out. Idempotent; it never "
-        "installs, builds or installs jarvis-cd. The first call returns the relay exec "
-        "call (with a spack plan that a guarded relay site asks the person to approve) "
-        "and the approval text; the second, with relay_result, returns the report, "
-        "including the JARVIS_SPACK_ROOT and JARVIS_SPACK_CONFIG to export. "
-        "needs_approval means retry the same exec once the person answers; declined "
-        "means stop."
-    ),
-    annotations={
-        "readOnlyHint": False,
-        "destructiveHint": False,
-        "idempotentHint": True,
-        "openWorldHint": True,
-    },
-    tags={"spack", "site", "user"},
-)
-async def spack_prepare_site_tool(
-    site: Annotated[str, Field(description="The clio-relay site id, such as ares")],
-    site_spack: Annotated[
-        str | None,
-        Field(
-            description=(
-                "The site's own Spack root, such as /mnt/repo/software/spack/spack. "
-                "Empty when the site has no Spack; then give spack_version."
-            )
-        ),
-    ] = None,
-    site_home: _SiteHome = DEFAULT_SITE_HOME,
-    root: _Root = None,
-    spack_version: Annotated[
-        str | None,
-        Field(description="Spack release to clone; default the site Spack's release."),
-    ] = None,
-    site_install_tree: Annotated[
-        str | None,
-        Field(description="The site install tree; default asks the site Spack."),
-    ] = None,
-    module_paths: Annotated[
-        list[str] | None,
-        Field(description="Module directories to scan for MPIs; default MODULEPATH."),
-    ] = None,
-    build_tools: Annotated[
-        list[str] | None,
-        Field(description="Build tools for external find; default a fixed list, never MPI."),
-    ] = None,
-    compiler: Annotated[
-        str | None,
-        Field(
-            description=(
-                "Compiler to put first in packages:all:compiler, such as gcc@11.4.0: the "
-                "person's choice when report.compiler.choice_needed, or the fix for a build "
-                "that failed in a compiler check. auto drops an earlier choice. Default: "
-                "full toolchains (cc, cxx, fc) first, the upstream MPI's compiler ahead."
-            )
-        ),
-    ] = None,
-    build_jobs: Annotated[
-        int | None,
-        Field(
-            description=(
-                "config:build_jobs; default every CPU the install job may use (Spack takes "
-                "min(build_jobs, available CPUs))."
-            )
-        ),
-    ] = None,
-    relay_result: _RelayResult = None,
-) -> SpackPrepareSiteResult:
-    """Plan or read the relay exec that prepares a CLIO Spack on one site."""
-    return await _call_backend(
-        prepare_site,
-        site,
-        site_spack=site_spack,
-        site_home=site_home,
-        root=root,
-        spack_version=spack_version,
-        site_install_tree=site_install_tree,
-        module_paths=module_paths,
-        build_tools=build_tools,
-        compiler=compiler,
-        build_jobs=build_jobs,
-        relay_result=relay_result,
-    )
-
-
-@mcp.tool(
     name="spack_site_query",
     title="Research Site Spack",
     description=(
-        "Research a clio-relay site's CLIO Spack (prepared by spack_prepare_site): "
+        "Research a clio-relay site's JARVIS Spack (prepared by `jarvis spack "
+        "prepare` through relay): "
         "find (installed and upstream packages, --json), info (one recipe), spec "
         "(spack spec -I -l: what is installed, upstream, external or still to build) "
         "or modules (module -t avail). Read-only, short login-node work; Spack runs as "
@@ -369,7 +268,7 @@ async def spack_site_query_tool(
     root: _Root = None,
     relay_result: _RelayResult = None,
 ) -> SpackSiteQueryResult:
-    """Plan or read one read-only research command on a site's CLIO Spack."""
+    """Plan or read one read-only research command on a site's JARVIS Spack."""
     return await _call_backend(
         site_query,
         site,
@@ -405,7 +304,8 @@ async def spack_environment_tool(specs: list[str]) -> SpackEnvironmentResult:
 def spack_capabilities() -> dict[str, object]:
     """Describe the stateless Spack contract exposed by this server."""
     return {
-        "operations": ["find", "locate", "search", "info", "prepare_site", "site_query"],
+        "operations": ["find", "locate", "search", "info", "site_query"],
+        "site_preparation": "jarvis spack prepare (through clio-relay)",
         "admin_operations": ["environment", "install"],
         "stateful_load_exposed": False,
         "runtime_owner": "jarvis_run",
@@ -419,8 +319,10 @@ def prepare_spack_package(spec: str) -> list[Message]:
     """Guide an agent through the provisioning loop: research, then a jarvis install."""
     return [
         Message(
-            f"Prepare Spack package {spec!r}. On a remote site, make sure the CLIO "
-            "Spack exists with spack_prepare_site, then research with spack_site_query: "
+            f"Prepare Spack package {spec!r}. On a remote site, make sure the JARVIS "
+            "Spack was prepared (relay runs `jarvis spack prepare`; it exits 3 with "
+            "ambiguous_compiler when the person must pick a compiler), then research "
+            "with spack_site_query: "
             "find to see what the site has, info for versions and variants, spec to see "
             "what would still be built. Locally, use spack_find (or spack_locate), "
             "spack_search and spack_info. Install through a jarvis install job "

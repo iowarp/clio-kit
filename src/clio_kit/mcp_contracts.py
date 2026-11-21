@@ -155,8 +155,7 @@ USER_CONTRACT_SPECS: Final = (
         entry_command="spack-mcp",
         profile_environment="SPACK_MCP_PROFILE",
         expected_tools=frozenset(
-            "spack_find spack_locate spack_search spack_info "
-            "spack_prepare_site spack_site_query".split()
+            "spack_find spack_locate spack_search spack_info spack_site_query".split()
         ),
     ),
     UserContractSpec(

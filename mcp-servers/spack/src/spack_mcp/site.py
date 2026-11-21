@@ -1,4 +1,4 @@
-"""Prepare and research a CLIO Spack on a remote site, reached only through clio-relay.
+"""Research a site's JARVIS Spack on a remote site, reached only through clio-relay.
 
 This server never opens its own connection to a site. Each remote tool works in
 two calls. The first call returns the exact clio-relay ``exec`` call to make.
@@ -6,21 +6,20 @@ After the agent makes that relay call (with the normal approval), the second
 call gets the same arguments plus ``relay_result`` (the ``exec`` tool's
 structured result) and returns the parsed answer.
 
-Login nodes are shared, so the commands stay light and short. They clone, write
-config, and run ``compiler find``, ``external find``, ``find``, ``info`` and
-``spec``. They never install or build, and nothing outlives the relay call.
-Package installs run as jarvis install jobs (``jarvis ppl install ... +submit``).
+Login nodes are shared, so the commands stay light and short: ``find``, ``info``,
+``spec`` and ``module avail``. They never install or build, and nothing outlives
+the relay call. The Spack itself is prepared by ``jarvis spack prepare`` (run
+through clio-relay), and packages are installed by jarvis install jobs
+(``jarvis ppl install ... +submit``).
 """
 
 from __future__ import annotations
 
-import json
 import re
 from typing import Any, Final, Literal, cast
 
 from pydantic import BaseModel
 
-from . import site_scripts
 from .backend import (
     _FIND_NO_MATCH_DIAGNOSTIC,
     SpackBackendError,
@@ -32,17 +31,11 @@ from .backend import (
 )
 from .discovery import SpackInfoResult, _parse_spack_info_output
 from .site_models import (
-    ALL_CPUS_BUILD_JOBS,
-    JarvisSpackSettings,
     RelayAsk,
     RelayCall,
     RelayExecArguments,
-    RelayExecPlan,
-    SiteCompilerChoice,
     SiteModule,
     SiteModulesResult,
-    SitePrepareReport,
-    SpackPrepareSiteResult,
     SpackSiteQueryResult,
     SpackSpecNode,
     SpackSpecResult,
@@ -50,57 +43,9 @@ from .site_models import (
 
 DEFAULT_SITE_HOME: Final = "~/.clio-relay"
 
-# Spack release tags checked against github.com/spack/spack. A release missing
-# here is still cloned at its tag; the report then says it is not pinned.
-SPACK_RELEASE_PINS: Final = {
-    "0.21.3": "6467ddefa3aa41629f9ca04dffab24b01e7d20b2",
-    "0.22.2": "594a376c521cc746978571b1181a47bbcff30a21",
-    "0.22.5": "8c37ed4534414d99501a91e64e40718e271ff8a2",
-    "0.23.0": "c6d4037758140fe15913c29e80cd1547f388ae51",
-    "0.23.1": "2bfcc69fa870d3c6919be87593f22647981b648a",
-    "1.0.2": "734c5db2121b01c373eed6538e452f18887e9e44",
-    "1.1.0": "0c2be44e4ece21eb091ad5de4c97716b7c6d4c87",
-}
-
-# Executable-only build tools. MPI is never externalized from PATH.
-DEFAULT_BUILD_TOOLS: Final = (
-    "autoconf",
-    "automake",
-    "bison",
-    "cmake",
-    "diffutils",
-    "findutils",
-    "flex",
-    "gawk",
-    "git",
-    "gmake",
-    "libtool",
-    "m4",
-    "ninja",
-    "perl",
-    "pkgconf",
-    "tar",
-)
-MPI_PACKAGES: Final = (
-    "cray-mpich",
-    "hpcx-mpi",
-    "intel-mpi",
-    "intel-oneapi-mpi",
-    "mpi",
-    "mpich",
-    "mpt",
-    "msmpi",
-    "mvapich",
-    "mvapich2",
-    "openmpi",
-    "spectrum-mpi",
-)
-_SCRIPT_NAME: Final = "clio-spack"
 _PACKAGE_NAME: Final = re.compile(r"^[a-z0-9][a-z0-9_.-]{0,99}$")
 _MODULE_QUERY: Final = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_./+-]{0,199}$")
-_RELEASE: Final = re.compile(r"^\d+\.\d+(?:\.\d+)?$")
 _SITE_ID: Final = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,99}$")
-_COMPILER: Final = re.compile(r"^(?:auto|[a-z][a-z0-9_-]{0,49}(?:@=?[0-9][A-Za-z0-9._:-]{0,49})?)$")
 _SPEC_LINE: Final = re.compile(
     r"^(?P<status>\[\+\]|\[\^\]|\[e\]| - )\s+(?P<hash>[a-z0-9]{7,32})\s{2}"
     r"(?P<indent>\s*)(?P<dep>\^?)(?P<spec>\S.*)$"
@@ -113,154 +58,6 @@ _GUARDED_NOTE: Final = (
     "only with an approved plan. Tell the person; don't work around the guard."
 )
 _DECLINED_NOTE: Final = "The person did not approve this on the relay ask. Stop; don't retry."
-PLAN_TIMEOUT_S: Final = 900.0
-
-
-def prepare_site(
-    site: str,
-    *,
-    site_spack: str | None,
-    site_home: str = DEFAULT_SITE_HOME,
-    root: str | None = None,
-    spack_version: str | None = None,
-    site_install_tree: str | None = None,
-    module_paths: list[str] | None = None,
-    build_tools: list[str] | None = None,
-    compiler: str | None = None,
-    build_jobs: int | None = None,
-    relay_result: dict[str, Any] | None = None,
-) -> SpackPrepareSiteResult:
-    """Plan the relay exec that prepares a CLIO Spack, or parse its result."""
-    site = _site_id(site)
-    home = _site_path(site_home, "site_home")
-    spack_root = _site_path(root, "root") if root else f"{home}/spack"
-    config_dir = f"{home}/spack-config"
-    upstream = _site_path(site_spack, "site_spack") if site_spack else ""
-    tree = _site_path(site_install_tree, "site_install_tree") if site_install_tree else ""
-    if spack_version is not None and not _RELEASE.fullmatch(spack_version):
-        raise _invalid("spack_version must be a Spack release such as 0.23.1")
-    if not upstream and spack_version is None:
-        raise _invalid("give site_spack, or spack_version when the site has no Spack")
-    tools = list(DEFAULT_BUILD_TOOLS if build_tools is None else build_tools)
-    for tool in tools:
-        if not _PACKAGE_NAME.fullmatch(tool):
-            raise _invalid(f"build tool {tool!r} is not a Spack package name")
-        if tool in MPI_PACKAGES:
-            raise _invalid(f"{tool} is an MPI; MPI is never externalized from PATH")
-    paths = [_site_path(path, "module_paths") for path in module_paths or []]
-    choice = (compiler or "").strip()
-    if choice and not _COMPILER.fullmatch(choice):
-        raise _invalid("compiler must be a Spack compiler spec such as gcc@11.4.0, or auto")
-    jobs = ALL_CPUS_BUILD_JOBS if build_jobs is None else build_jobs
-    if not 1 <= jobs <= ALL_CPUS_BUILD_JOBS:
-        raise _invalid(f"build_jobs must be between 1 and {ALL_CPUS_BUILD_JOBS}")
-    command = [
-        "bash",
-        "-c",
-        site_scripts.PREPARE_SCRIPT,
-        _SCRIPT_NAME,
-        upstream,
-        spack_root,
-        config_dir,
-        spack_version or "",
-        " ".join(f"{name}={sha}" for name, sha in sorted(SPACK_RELEASE_PINS.items())),
-        tree,
-        ":".join(paths),
-        " ".join(name for name in MPI_PACKAGES if name != "mpi"),
-        site_scripts.POLICY_PY,
-        choice,
-        str(jobs),
-        *tools,
-    ]
-    release = f"v{spack_version}" if spack_version else "at the site Spack's release"
-    call = RelayCall(
-        arguments=RelayExecArguments(
-            site=site,
-            command=command,
-            timeout_s=PLAN_TIMEOUT_S,
-            max_output_bytes=262_144,
-            plan=RelayExecPlan(
-                kind="spack",
-                summary=(
-                    f"Prepare the CLIO Spack {spack_version or '(the site Spack release)'} "
-                    f"at {spack_root}"
-                ),
-            ),
-        )
-    )
-    if relay_result is None:
-        source = (
-            f"upstream: the install tree of the site Spack at {upstream}"
-            if upstream
-            else "no site Spack upstream"
-        )
-        compiler_text = (
-            f"prefer compiler {choice} (the person's choice)"
-            if choice and choice != "auto"
-            else "prefer full compiler toolchains (cc, cxx, fc), the upstream MPI's first"
-        )
-        jobs_text = "all job CPUs" if build_jobs is None else str(jobs)
-        return SpackPrepareSiteResult(
-            site=site,
-            status="relay_call_required",
-            relay_call=call,
-            approval=(
-                f"Prepare a CLIO Spack on {site}: shallow-clone Spack {release} into "
-                f"{spack_root} unless it is there; write its etc/spack config ({source}, "
-                "concretizer reuse, packages:mpi:buildable:false, packages:all:compiler "
-                f"to {compiler_text}, build_jobs {jobs_text}); run spack compiler find "
-                f"and spack external find --not-buildable {' '.join(tools) or '(none)'}. "
-                "No install, no build, nothing left running. ~/.spack is not read or changed."
-            ),
-            next_step=(
-                "Call clio-relay exec with relay_call.arguments unchanged (command and plan). "
-                "A guarded site asks the person with the plan itself; on another site ask "
-                "the person with `approval` first. Then call spack_prepare_site again with "
-                "the same arguments and relay_result set to the exec structured result."
-            ),
-        )
-    outcome = _relay_outcome(relay_result, command)
-    if isinstance(outcome, _Refused):
-        return SpackPrepareSiteResult(
-            site=site,
-            status=outcome.status,
-            relay_call=call if outcome.status == "needs_approval" else None,
-            ask=outcome.ask,
-            error=outcome.error,
-            next_step=outcome.next_step("spack_prepare_site"),
-        )
-    marks = _marks(outcome.stdout)
-    errors = marks.get("error", [])
-    if outcome.returncode != 0 or errors or "report" not in marks:
-        return SpackPrepareSiteResult(
-            site=site,
-            status="failed",
-            error="; ".join(errors) or _exit_text(outcome),
-            stderr_tail=_tail(outcome.stderr),
-            next_step=(
-                "Show the person the error. Nothing was installed. Re-running is safe "
-                "once the cause is fixed."
-            ),
-        )
-    report = _prepare_report(marks)
-    steps = []
-    if report.compiler.choice_needed:
-        steps.append(
-            "Several full compiler toolchains qualify: ask the person once to pick one of "
-            "report.compiler.candidates, then call spack_prepare_site again with compiler "
-            "set to it."
-        )
-    elif not report.compiler.full_toolchain:
-        steps.append("No chosen compiler has Fortran; tell the person before Fortran builds.")
-    steps.append(
-        "Research with spack_site_query (find, info, spec, modules). Install through a "
-        "jarvis install job with report.jarvis.environment exported; when jarvis "
-        "raises an install issue such as ambiguous_provider, ask the person. If a build "
-        "fails in a compiler check, prepare again with compiler set to a full toolchain."
-    )
-    return SpackPrepareSiteResult(
-        site=site, status="done", report=report, next_step=" ".join(steps)
-    )
 
 
 def site_query(
@@ -335,9 +132,12 @@ def site_query(
             site=site,
             query=query,
             status="failed",
-            error=f"no CLIO Spack at {spack_root} on {site}",
+            error=f"no JARVIS Spack at {spack_root} on {site}",
             stderr_tail=_tail(outcome.stderr),
-            next_step="Run spack_prepare_site for this site first.",
+            next_step=(
+                "Prepare the site's JARVIS Spack first: through clio-relay, run "
+                "`jarvis spack prepare` (see jarvis docs/spack.md)."
+            ),
         )
     try:
         parsed = _parse_query(query, term, outcome)
@@ -465,9 +265,9 @@ class _Refused(BaseModel):
     def next_step(self, tool: str) -> str:
         if self.status == "needs_approval":
             return (
-                "clio-relay asked the person to approve the plan (see ask). Once they "
-                "answer, call clio-relay exec again with the same relay_call.arguments "
-                f"(command and plan), then call {tool} again with relay_result."
+                "clio-relay asked the person to approve the command (see ask). Once they "
+                "answer, call clio-relay exec again with the same relay_call.arguments, "
+                f"then call {tool} again with relay_result."
             )
         if self.status == "declined":
             return _DECLINED_NOTE
@@ -533,52 +333,6 @@ def _marks(stdout: str) -> dict[str, list[str]]:
             key, value = line[2:].split("\t", 1)
             marks.setdefault(key, []).append(value)
     return marks
-
-
-def _prepare_report(marks: dict[str, list[str]]) -> SitePrepareReport:
-    def first(key: str) -> str | None:
-        values = marks.get(key)
-        return values[0] if values else None
-
-    data = cast(dict[str, Any], json.loads(marks["report"][-1]))
-    root = first("root") or ""
-    config_dir = first("config_dir") or ""
-    candidates = [value.split(" ", 1)[0] for value in marks.get("mpi_module", [])]
-    return SitePrepareReport(
-        root=root,
-        config_dir=config_dir,
-        spack_version=first("version") or "",
-        commit=first("commit") or None,
-        pinned=first("pinned") is not None,
-        clone=cast(Any, first("clone") or "present"),
-        site_spack=first("site_spack"),
-        site_version=first("site_version"),
-        upstream=first("upstream"),
-        config_changes=[
-            value.split(" ", 1)[1]
-            for value in marks.get("config", [])
-            if value.startswith("written ")
-        ],
-        compilers=[str(item) for item in data.get("compilers", [])],
-        externals=cast(dict[str, list[dict[str, Any]]], data.get("externals", {})),
-        mpi_buildable=bool(data.get("mpi_buildable", True)),
-        reuse=data.get("reuse"),
-        installed_mpis=cast(list[dict[str, Any]], data.get("installed_mpis", [])),
-        mpi_module_candidates=candidates,
-        warnings=marks.get("warning", []),
-        compiler=SiteCompilerChoice.model_validate(data.get("compiler") or {}),
-        build_jobs=int(first("build_jobs") or ALL_CPUS_BUILD_JOBS),
-        jarvis=JarvisSpackSettings(
-            environment={"JARVIS_SPACK_ROOT": root, "JARVIS_SPACK_CONFIG": config_dir},
-            note=(
-                "jarvis-cd reads JARVIS_SPACK_ROOT (falling back to SPACK_ROOT) and "
-                "JARVIS_SPACK_CONFIG. The CLIO Spack keeps its own config, including the "
-                f"packages:all:compiler preference, in {root}/etc/spack (the site scope; "
-                "SPACK_DISABLE_LOCAL_CONFIG drops the user scope) and its caches under "
-                f"{root}/var/clio, so the user's ~/.spack and ~/spack never leak in."
-            ),
-        ),
-    )
 
 
 def _site_id(site: str) -> str:

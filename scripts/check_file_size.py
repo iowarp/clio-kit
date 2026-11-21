@@ -111,7 +111,7 @@ RATCHET_BASELINE: dict[str, int] = {
     # (jarvis_get_execution's artifacts filter gained content_max_bytes, a
     # deliberate wire-visible additive change); one more historical-artifact
     # entry (jarvis-user-v3.6.json) recorded, 931 -> 932.
-    "src/clio_kit/mcp_contracts.py": 914,
+    "src/clio_kit/mcp_contracts.py": 913,
     "src/clio_kit/env_cache.py": 712,
     "mcp-servers/darshan/src/darshan_mcp/capabilities/darshan_parser.py": 828,
     "mcp-servers/parquet/src/parquet_mcp/capabilities/parquet_handler.py": 931,

@@ -101,7 +101,6 @@ def test_contract_probe_uses_a_fresh_isolated_child_environment(
                 "spack_locate",
                 "spack_search",
                 "spack_info",
-                "spack_prepare_site",
                 "spack_site_query",
             },
         ),
@@ -204,7 +203,6 @@ def test_spack_contract_requires_load_spec_without_exposing_load() -> None:
         "spack_locate",
         "spack_search",
         "spack_info",
-        "spack_prepare_site",
         "spack_site_query",
     }
     assert "spack_install" not in tools
@@ -234,7 +232,6 @@ def test_spack_surface_validator_accepts_described_required_load_spec() -> None:
         {"name": "spack_find"},
         {"name": "spack_search"},
         {"name": "spack_info"},
-        {"name": "spack_prepare_site"},
         {"name": "spack_site_query"},
         {
             "name": "spack_locate",
