@@ -1,8 +1,8 @@
 # RECIPES.md: complete compose sections
 
 Each recipe is a whole `compose:` list, ordered bottom-up, with its guarantees
-stated. Copy the full comments for any key from
-`context-runtime/config/clio_default.yaml`. Paths use `${CLIO_STORAGE_ROOT}`,
+stated. Each module's skill (`clio-bdev`, `clio-cte-core`, ...) has the full
+key table. Paths use `${CLIO_STORAGE_ROOT}`,
 which defaults to `~/.clio` and is overridden by `clio-run start --disk`.
 
 ## R1: scratch only (no durability, fastest)
@@ -176,7 +176,7 @@ Directories homed on a node that never returns are lost even with replication.
 - **CAE:** compose `clio_cae_core` at 400.0 last, with
   `next_pool_id: "564.0"` and `allowed_roots` listing the data directories.
 - **GPU-resident tier for gpu_vector:** add an `hbm` device to the **volatile**
-  core (540.0) at score 1.0, with no `read_cache`. It is an ordinary tier. The
+  core (540.0) at score 1.0. It is an ordinary tier. The
   gpu_vector page cache is a separate thing, sized by the vector; see the
   gpu-vector skill.
 - **gpu_vector checkpoints:** compose `clio_cte_checkpoint` with

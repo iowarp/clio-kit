@@ -2,15 +2,15 @@
 
 State a deployment's guarantees in these terms and no looser ones. Each row
 assumes the dev default chain unless noted. "Owner" is the container that
-`hash(tag, blob)` selects. There is exactly one owner per blob, and it serializes
-that blob's writes.
+`hash(tag, blob)` selects. There is exactly one owner per blob. It serializes
+the writes that reach it; under write-back, a write reaches it at flush time.
 
 ## What an acknowledged put means
 
 | top of chain | ack means |
 |---|---|
 | persistent core directly (512) | bytes written to the owner's tier device (not fdatasynced); WAL record flushed to the OS |
-| write-back cache (default) | bytes in the owner's **volatile** core. Not yet on persistent storage |
+| write-back cache (default) | bytes in the **writing node's** volatile core. Not yet on persistent storage, and not yet visible to readers on other nodes |
 | write-thru cache | bytes written through replication to the persistent core |
 | replication, `replication_factor = N > 1` | primary plus N-1 remote copies written (remote copies are synchronous) |
 | safe_bdev tier | parity current for every touched stripe |
@@ -46,7 +46,7 @@ nothing.
 | failure | lost (dev default: write-back, replication_factor 1) | how to shrink it |
 |---|---|---|
 | client process crash | the client's unsent writes. With clio-fs, its write-behind staging | fsync before relying on a write |
-| runtime crash (`kill -9`) | dirty volatile copies not yet flushed: up to ~`flush_period_ms` of writes, plus anything not fsynced | write-thru, a lower `flush_period_ms`, or fsync |
+| runtime crash (`kill -9`) | dirty volatile copies on that node not yet flushed, for any blob written there (owned there or not): up to ~`flush_period_ms` of writes, plus anything not fsynced | write-thru, a lower `flush_period_ms`, or fsync |
 | power loss on a node | the above, plus device writes not yet fdatasynced and WAL records not yet fsynced (≤ `flush_metadata_period_ms`) | fsync; `safe_bdev` with `intent_sync: true` |
 | one disk of a node | everything on that device | `safe_bdev` (`max_failures` ≥ 1), or `num_replicas` ≥ 1 |
 | a whole node, temporarily | **availability** of every blob it owns, until it returns. Data comes back on restart | `replication_factor` ≥ 2 plus `failover_to_successor: true` |
@@ -55,7 +55,7 @@ nothing.
 
 Data that is dropped **by design** at restart or under pressure:
 - the volatile core, and anything still dirty in it
-- `read_cache` copies and `REPLICA_CACHE` copies
+- `REPLICA_CACHE` copies (the 563 cache's node-local copies)
 - blobs written as droppable, when space is needed
 - clean shm-cache entries
 - the replication hand-back record, if `handoff_log_path` is unset and the
@@ -63,10 +63,13 @@ Data that is dropped **by design** at restart or under pressure:
 
 ## Consistency
 
-- **Same blob, any nodes.** Writes and reads go to the blob's owner. The
-  write-back cache keeps the one dirty copy on the owner, so a reader on any
-  node sees the latest acked write. The exception is a reader served from a
-  stale cache, below.
+- **Same blob, any nodes.** Reads go to the blob's owner. Under write-back, a
+  write is buffered on the node that made it and reaches the owner only when
+  that node flushes. So a reader on another node sees an acked write only
+  after the writer's `SyncTag`/fsync or the next periodic flush. Readers on
+  the writing node see it at once. Writers on different nodes are not
+  serialized against each other until their flushes reach the owner. For cross-node read-after-write, fsync after
+  writing or use write-thru (which writes through before the ack).
 - **Caches above the owner:**
   - **shm cache.** The home invalidates the nodes caching an entry before it
     applies a change. With `invalidate_on_flush: true` (the default chain), the

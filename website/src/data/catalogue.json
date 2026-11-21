@@ -4477,7 +4477,7 @@
       "kind": "collection",
       "name": "clio-core-skills",
       "title": "Core Skills",
-      "description": "CLIO Core developer skills: gpu_vector kernels, writing runtime modules, and composing storage systems.",
+      "description": "CLIO Core skills: one per shipped module (runtime, block devices, CTE core, caches, replication, compressor, indexer, filesystem, CAE), composing them into a storage system, writing new ChiMods, and gpu_vector kernels.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.0",
@@ -4486,6 +4486,15 @@
       "path": "./skills/clio-core-skills",
       "members": [
         "skill/chimod-dev",
+        "skill/clio-bdev",
+        "skill/clio-cae",
+        "skill/clio-compressor",
+        "skill/clio-cte-caches",
+        "skill/clio-cte-core",
+        "skill/clio-fs",
+        "skill/clio-indexer",
+        "skill/clio-replication",
+        "skill/clio-runtime-config",
         "skill/gpu-vector",
         "skill/storage-compose"
       ],
@@ -4517,7 +4526,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "CLIO Core developer skills: gpu_vector kernels, writing runtime modules, and composing storage systems."
+      "summary": "CLIO Core skills."
     },
     {
       "id": "plugin/clio-geoscience-skills",
@@ -5975,8 +5984,8 @@
       "id": "skill/chimod-dev",
       "kind": "skill",
       "name": "chimod-dev",
-      "title": "Developing a CLIO Core module (chimod)",
-      "description": "Use when creating or changing a CLIO Core runtime module (chimod): clio_mod.yaml methods, task structs, the runtime container and client, codegen, CMake, compose registration, tests, or a new CTE interposer layer. Triggers on \"new chimod\", \"add a method to the module\", \"clio_mod.yaml\", \"clio-run refresh\", \"CreateParams\", \"CoreInterposer\", \"TaskResume\". Not for choosing or configuring the shipped modules; use storage-compose. Not for GPU paged-vector kernels; use gpu-vector.",
+      "title": "Developing a CLIO Core module (ChiMod)",
+      "description": "Use when writing your own CLIO Core runtime module (ChiMod) outside the clio-core repo: install with headers, clio_mod.yaml, tasks, runtime, client, codegen, CMake, loading, testing, or a CTE interposer layer. Triggers on \"new chimod\", \"custom module\", \"add a method\", \"clio_mod.yaml\", \"clio-run refresh\", \"CreateParams\", \"CLIO_REPO_PATH\", \"CoreInterposer\". Not for configuring shipped modules; use storage-compose. Not for GPU paged-vector kernels; use gpu-vector.",
       "publisher": "clio-kit",
       "origin": "Maintained",
       "version": "1.0.0",
@@ -6005,6 +6014,251 @@
       ],
       "installation": "portable-skill",
       "summary": "Build or extend a CLIO Core runtime module: tasks, runtime, client, codegen, CMake and tests."
+    },
+    {
+      "id": "skill/clio-bdev",
+      "kind": "skill",
+      "name": "clio-bdev",
+      "title": "clio-bdev: block devices and the safe_bdev array",
+      "description": "Use when configuring CLIO Core block devices: a clio_bdev pool (ram, file, hbm, pinned, noop, s3, gcs, daos), a CTE storage tier entry, capacity, persistence_level, alloc_log and --fresh, or a clio_safe_bdev erasure-coded array (members, parity, max_failures, rebuild). Triggers on \"bdev_type\", \"capacity_limit\", \"alloc_log\", \"persistence_level\", \"safe_bdev\", \"parity disk\", \"S3 tier\". Not for designing the whole chain (use storage-compose) or CTE core keys (use clio-cte-core).",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-bdev/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Configure CLIO block devices and CTE tiers, allocator durability and the erasure-coded safe_bdev array."
+    },
+    {
+      "id": "skill/clio-cae",
+      "kind": "skill",
+      "name": "clio-cae",
+      "title": "Context Assimilation Engine (`clio_cae_core`, `clio_cae_summarizer`)",
+      "description": "Use when importing external data into CLIO Core with the Context Assimilation Engine: writing OMNI files, running clio-cae, calling ParseOmni or clio_cee context_bundle from Python/C++, choosing sources (file, HDF5, HTTP, S3, GCS, Globus), allowed_roots, or composing the LLM summarizer (401.0). Triggers on \"OMNI file\", \"clio-cae\", \"assimilate\", \"ParseOmni\", \"context_bundle\", \"label_matches\", \"summarizer\". Not for searching imported data (use clio-indexer) or chain ordering (use storage-compose).",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-cae/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Import files, HDF5 datasets and cloud objects into CLIO with OMNI files and clio-cae, plus the LLM summarizer."
+    },
+    {
+      "id": "skill/clio-compressor",
+      "kind": "skill",
+      "name": "clio-compressor",
+      "title": "clio-compressor: transparent blob compression",
+      "description": "Use when enabling, configuring or debugging clio_cte_compressor (pool 562.0): building with CLIO_CTE_ENABLE_COMPRESS or Spack +compress, default_compress and presets, static vs dynamic (model-chosen) codecs, GPU codecs, chain placement, and stored vs logical size. Triggers on \"compress my blobs\", \"default_compress\", \"zstd\", \"lz4\", \"kCompressDynamic\", \"562.0\", \"compression ratio\". Not for choosing or ordering the whole chain; use storage-compose. Not for the blob API itself; use clio-cte-core.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-compressor/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Compress CTE blobs transparently: build it, pick codecs, set defaults and place it in the chain."
+    },
+    {
+      "id": "skill/clio-cte-caches",
+      "kind": "skill",
+      "name": "clio-cte-caches",
+      "title": "CTE cache modules",
+      "description": "Use when choosing, composing, tuning or debugging a CLIO Core CTE cache module: write-back (567.0), write-thru, the shared-memory cache (568.0) or the node-copy cache (563.0). Covers keys, chain order, ack and fsync semantics, staleness and loss per failure. Triggers on \"write-back cache\", \"flush_period_ms\", \"fsync is slow\", \"lost writes after crash\", \"md_only\", \"invalidate_on_flush\", \"stale size on another node\". Not for the core or chain design; use clio-cte-core or storage-compose.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-cte-caches/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Choose and tune the CTE write-back, write-thru, shared-memory and node-copy caches, and what each loses on failure."
+    },
+    {
+      "id": "skill/clio-cte-core",
+      "kind": "skill",
+      "name": "clio-cte-core",
+      "title": "CTE core (`clio_cte_core`)",
+      "description": "Use when configuring, calling or debugging the Context Transfer Engine core (clio_cte_core): the persistent core at 512.0, the volatile core at 540.0, tiers, scores, the metadata WAL and the C++/Python blob API (Tag, PutBlob, GetBlob, TagQuery, SyncTag) every chain speaks. Triggers on \"clio_cte_core\", \"512.0\", \"540.0\", \"PutBlob rc=11\", \"metadata_log_path\", \"clio_cte_core_ext\", \"persistence_level\". Not for choosing or ordering the chain; use storage-compose. Not for bdev keys; use clio-bdev.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-cte-core/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Configure and call the CTE core: tiers, scores, the metadata log and the C++ and Python blob API."
+    },
+    {
+      "id": "skill/clio-fs",
+      "kind": "skill",
+      "name": "clio-fs",
+      "title": "clio-fs: files over the Context Transfer Engine",
+      "description": "Use when mounting, configuring or debugging the CLIO Core POSIX file layer: the filesystem ChiMod (560.0), the stream ChiMod (565.0), the clio_cte_fuse mount on Linux/Windows/macOS, the checkpoint fault handler (566.0), and the LD_PRELOAD/MPI-IO/HDF5/ADIOS2 adapters. Triggers on \"clio_cte_fuse\", \"mount CLIO\", \"metadata_log_path\", \"CLIO_FUSE_\", \"fsync EIO\", \"case_insensitive\", \"stream pool\". Not for chain design or blob APIs; use storage-compose or clio-cte-core.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-fs/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Mount CLIO as a POSIX filesystem and configure its filesystem and stream modules, fsync guarantees and adapters."
+    },
+    {
+      "id": "skill/clio-indexer",
+      "kind": "skill",
+      "name": "clio-indexer",
+      "title": "Indexer: keyword search over blob contents (`clio_cte_indexer`)",
+      "description": "Use when configuring, scoping, debugging or calling the CLIO Core keyword search index (clio_cte_indexer, pool 564.0): BM25 SemanticSearch over blob contents from Python (clio_cte_core_ext, or clio_cee context_query with a prompt) or C++, index persistence, memory growth, ReindexScan. Triggers on \"SemanticSearch\", \"search my files\", \"context_query prompt\", \"564.0\", \"index_log_path\", \"indexer OOM\". Not for ingesting data (use clio-cae) or ordering the chain (use storage-compose).",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-indexer/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Search CTE blob contents with the BM25 indexer: scope it, persist it, bound its memory and query it from Python."
     },
     {
       "id": "skill/clio-kit-archify",
@@ -7370,6 +7624,76 @@
       ],
       "installation": "portable-skill",
       "summary": "Merge finished worktree branches through a throwaway integration branch, testing after each merge."
+    },
+    {
+      "id": "skill/clio-replication",
+      "kind": "skill",
+      "name": "clio-replication",
+      "title": "clio-replication: durable copies and node failover",
+      "description": "Use when configuring, reasoning about or testing clio_cte_replication (pool 561.0): replication_factor and remote copies on successor nodes, failover_to_successor, hand-back after a node returns, handoff_log_path, on-node replicas, and node or disk loss. Triggers on \"replication_factor\", \"remote_copies\", \"failover_to_successor\", \"hand-back\", \"survive a node\", \"561.0\". Not for choosing or ordering the whole chain; use storage-compose. Not for core tiers or WAL; use clio-cte-core.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-replication/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Keep copies of CTE data on successor nodes, with failover and hand-back, and know what survives node loss."
+    },
+    {
+      "id": "skill/clio-runtime-config",
+      "kind": "skill",
+      "name": "clio-runtime-config",
+      "title": "Running and configuring the Context Runtime",
+      "description": "Use when installing, starting, configuring or troubleshooting the CLIO Core Context Runtime itself: where clio.yaml comes from, networking/runtime/swim/viz keys, compose entry basics, CLIO_* environment variables, clio-run start/stop/status/compose, --fresh, multi-node hostfiles, Docker, client connection. Triggers on \"clio-run start\", \"~/.clio/clio.yaml\", \"CLIO_SERVER_CONF\", \"hostfile\", \"port 9413\", \"runtime not running\". Not for designing a storage chain; use storage-compose.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-runtime-config/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Run and configure the CLIO Context Runtime: config file, environment variables, the clio-run CLI, multi-node and Docker."
     },
     {
       "id": "skill/cluster-run",

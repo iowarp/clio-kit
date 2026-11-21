@@ -1,6 +1,6 @@
 ---
 name: chimod-dev
-description: 'Use when creating or changing a CLIO Core runtime module (chimod): clio_mod.yaml methods, task structs, the runtime container and client, codegen, CMake, compose registration, tests, or a new CTE interposer layer. Triggers on "new chimod", "add a method to the module", "clio_mod.yaml", "clio-run refresh", "CreateParams", "CoreInterposer", "TaskResume". Not for choosing or configuring the shipped modules; use storage-compose. Not for GPU paged-vector kernels; use gpu-vector.'
+description: 'Use when writing your own CLIO Core runtime module (ChiMod) outside the clio-core repo: install with headers, clio_mod.yaml, tasks, runtime, client, codegen, CMake, loading, testing, or a CTE interposer layer. Triggers on "new chimod", "custom module", "add a method", "clio_mod.yaml", "clio-run refresh", "CreateParams", "CLIO_REPO_PATH", "CoreInterposer". Not for configuring shipped modules; use storage-compose. Not for GPU paged-vector kernels; use gpu-vector.'
 metadata:
   bundle: clio-core
   servers: none
@@ -8,116 +8,154 @@ metadata:
   eval-status: scenarios-recorded
 ---
 
-# Developing a CLIO Core module (chimod)
+# Developing a CLIO Core module (ChiMod)
 
-A chimod is a shared library loaded by the Context Runtime. Each instance is a
-**pool**, with one **container** per node. Clients submit **tasks**, which are
-serialized structs naming a method id. The runtime routes each task to a
-container, and the container runs the matching handler as a coroutine.
+A ChiMod is a shared library that the Context Runtime loads at startup. Each
+instance of it is a **pool**, with one **container** per node when composed
+`local`. Clients send **tasks**: structs that name a method id and carry IN
+and OUT fields. The runtime routes each task to a container, which runs the
+matching handler as a coroutine on a worker thread.
 
-Source paths are relative to the root of the
-[iowarp/clio-core](https://github.com/iowarp/clio-core) repository. Facts here
-were checked against `dev` at 86efd1a7e (2026-11-20).
+This skill is self-contained: you do not need a clio-core checkout. Facts were
+checked against clio-core `dev` (bd1dc3183); source paths in parentheses are
+provenance for maintainers only.
 
 ## Files in this skill
 
 | file | read when |
 |---|---|
-| **REFERENCE.md** | writing any file of the module: layout, YAML schema, codegen, task anatomy, runtime, client, CMake, loading, tests, GPU tasks |
-| **INTERPOSER.md** | the module sits in the CTE data path (cache, encoding, replication-like layers that speak the core's Put/Get interface) |
+| **TEMPLATE.md** | creating a module: every file of a compilable out-of-tree module (`clio_repo.yaml`, `clio_mod.yaml`, tasks, client, runtime, CMake, test, compose), the generated code, the build commands |
+| **REFERENCE.md** | writing handler or client code: Task fields, PoolQuery kinds, Future, coroutine macros, yield, locks, return codes, bulk transfers, periodic tasks, Monitor, loading rules, CMake functions |
+| **INTERPOSER.md** | the module sits in the CTE data path and speaks the core's Put/Get interface (cache, encoding, accounting, replication-like layers) |
 
-## Copy a working module, not the docs
+## 1. Install CLIO Core with headers
 
-Start from `context-runtime/modules/MOD_NAME/`, the template and test module.
-It compiles, it is regenerated with the current tools, and it exercises
-every feature: coroutines, subtasks, CoMutex, collectives and large outputs.
+The pip wheel (`pip install iowarp-core`) ships the libraries, the `clio-run`
+CLI (including `clio-run refresh`, the code generator) and the Python
+bindings, but **no C++ headers and no CMake package**. You cannot compile a
+module against it. Use one of these, which run a full `cmake --install` and so
+ship `include/clio_runtime/...`, `include/clio_ctp/...`, the admin and CTE
+headers, and `lib/cmake/clio-core/clio-coreConfig.cmake`:
 
-Do not start from `context-runtime/test/unit/external-chimod/`. No CMake builds
-it, and it does not compile against the current headers. For a data-path layer, copy `replication`, which is
-the reference interposer.
+| route | command | notes |
+|---|---|---|
+| conda | `conda install -c iowarp -c conda-forge iowarp-core` | Linux, macOS. Use `$CONDA_PREFIX` as the prefix |
+| Spack | `spack install iowarp` (package from the repo's `installers/spack` repo) | variants select optional parts |
+| .deb / .rpm | release assets of github.com/iowarp/clio-core | installs to `/usr`; pulls `libzmq3-dev`, `libyaml-cpp-dev`, `libmsgpack-dev`, `libsodium-dev` |
+| source | `cmake --preset=release -DCLIO_CTP_ENABLE_LIBPRESSIO=OFF && cmake --build build && cmake --install build --prefix <p>` | the only route on Windows (preset `windows-release`). Keep the LibPressio flag: without it a build without compression installs a broken package config (see Debugging) |
 
-## Workflow
+The `iowarp/deploy-cpu` Docker image is **not** enough: it copies
+`/usr/local/lib`, `bin` and `share` but not `/usr/local/include`. Use
+`iowarp/deps-cpu` (dependencies only) and a source install inside it.
 
-1. **Name the methods and their routing first.** For each method, decide:
-   - its inputs and outputs
-   - which container must run it: local, by hash of a key, a specific
-     container, or broadcast
-   - whether it waits on other pools
-   - whether it is periodic
-2. **Write `clio_mod.yaml`** with ids. Ids 0-9 are inherited (`kCreate: 0`,
-   `kDestroy: 1`, `kMonitor: 9`). Your methods start at 10. An interposer's own
-   verbs start at **100**.
-3. **Run codegen:** `clio-run refresh <repo_dir>`, where `<repo_dir>` holds
-   `clio_repo.yaml` listing your module. Commit the generated
-   `autogen/*_methods.h` and `src/autogen/*_lib_exec.cc`. CMake never runs the
-   generator, so re-run it after **every** change to `clio_mod.yaml`.
-4. **Write the tasks header.** Write `CreateParams` with `chimod_lib_name` and
-   `LoadConfig` if the pool is composed from YAML. Then write one task struct
-   per method, with `SerializeIn`, `SerializeOut`, `Copy` and `AggregateOut`.
-5. **Write the runtime.** It needs a handler per method, a `Client client_`
-   member, `GetWorkRemaining()`, and `CLIO_TASK_CC(<ns>::Runtime)` at the end
-   of the .cc file.
-6. **Write the client.** It needs `AsyncCreate` (sent to `kAdminPoolId`) and one
-   `AsyncX` per method, each returning a `Future`.
-7. **Write the CMake.** Call `add_clio_module_client` and
-   `add_clio_module_runtime`, and add the directory to the repo's
-   `CMakeLists.txt`.
-8. **Write the tests.** Use `simple_test.h` and `clio::run::CLIO_INIT(kClient,
-   true)`. Assert that Create's return code is 0 before anything else. Register
-   the test with `CLIO_REPO_PATH` set so that the runtime finds your library.
-9. **If the module has config, document it.** Add the default compose entry, or
-   at least commented-out keys, to `context-runtime/config/clio_default.yaml`.
-   Then update the module's compose-key table under `site/pages/modules/`.
-10. **Build everything, with no `--target`, after any task-struct change.**
-    Task layout is an ABI shared by client and runtime: a half-rebuilt tree
-    reads fields at stale offsets and returns plausible garbage, not a crash.
+**One install for both build and run.** A module records a fingerprint of the
+runtime headers and coroutine/GPU options it was compiled against, and a
+runtime with a different fingerprint refuses to load it. So run the module
+with the `clio-run` from the same install whose headers you compiled against,
+not with a pip `clio-run` beside a conda install.
 
-## Non-negotiable rules
+## 2. Workflow
 
-- **Pool queries.**
-  - Never pass a null `PoolQuery`. Use `Local()` when unsure, and `Dynamic()`
-    for Create.
-  - Send `CreateTask` to `clio::run::kAdminPoolId`, not to your pool, because
-    Create is the admin's GetOrCreatePool.
-  - Pool names are always supplied by the caller. Never derive one from
-    `pool_id_`, which is not yet set.
-  - The admin pool is named `admin`.
-- **Never hand-write what autogen defines:** `Run`, `SaveTask`/`LoadTask` and
-  friends, `NewTask`, `NewCopyTask`, `AggregateOut`/`AggregateIn` dispatch.
+1. **Decide each method's contract first**: inputs, outputs, which container
+   must run it (local, by key hash, one container, all), whether it awaits
+   other pools, whether it is periodic.
+2. **Copy TEMPLATE.md** and rename `myorg`/`counter`. Keep the directory name,
+   `module_name` and header stem identical.
+3. **Write `clio_mod.yaml`**: top-level `k<Name>: <id>` keys. Ids 0-9 are
+   inherited (`kCreate: 0`, `kDestroy: 1`, `kMonitor: 9`, unused ones `-1`);
+   yours start at 10. An interposer's own verbs start at 100.
+4. **Generate**: `clio-run refresh <dir with clio_repo.yaml>`. It writes
+   `include/<ns>/<mod>/autogen/<mod>_methods.h` and
+   `src/autogen/<mod>_lib_exec.cc`. CMake never runs it: re-run after every
+   `clio_mod.yaml` change, and commit the output. Then apply the one-line
+   `sed` fix of TEMPLATE.md section 13 (step 1b): releases whose generator
+   predates clio-core PR #1418 write four signatures that do not match the
+   `Container` base. The fix is harmless on a fixed generator.
+5. **Write the tasks header**: `CreateParams` (with `chimod_lib_name`,
+   `serialize`, `LoadConfig`), `CreateTask`/`DestroyTask`/`MonitorTask`
+   aliases, and one struct per method with a default constructor,
+   `SerializeIn`, `SerializeOut`, `Copy` and `AggregateOut`.
+6. **Write the runtime**: one handler per method returning
+   `clio::run::TaskResume`, a `Client client_` member, `using CreateParams`,
+   `GetWorkRemaining()`, the autogen override declarations, and
+   `CLIO_TASK_CC(<ns>::<mod>::Runtime)` at the end of the .cc.
+7. **Write the client**: `AsyncCreate` sent to `clio::run::kAdminPoolId`, one
+   `Async<Name>` per method returning a `Future`. Define them in a .cc.
+8. **CMake**: `find_package(clio-core CONFIG REQUIRED)`, then
+   `add_clio_module_client` / `add_clio_module_runtime`, linking
+   `clio::run::admin_client` / `clio::run::admin_runtime` yourself.
+9. **Test** with a plain `main()` (TEMPLATE.md section 11): `CLIO_INIT(kClient,
+   true)`, check Create's rc is 0 before anything else, then call your
+   methods. Run it with `CLIO_REPO_PATH` = your library directory,
+   `CLIO_TEST_MODE=1`, a private `CLIO_PORT`. Repeat with `CLIO_FORCE_NET=1`.
+10. **Load it into a real runtime**: start `clio-run start` with
+    `CLIO_REPO_PATH` set (or install the library next to the runtime library),
+    then `clio-run compose start <file.yaml>`.
+11. **After any task-struct change, rebuild everything** (client, runtime and
+    every program that uses the client). The struct layout is shared by both
+    sides; a half-rebuilt set reads fields at stale offsets and returns
+    plausible garbage, not a crash.
+
+## 3. Rules
+
+- **Routing.** Never use `PoolQuery::Null()` (the task fails with rc -1001).
+  Use `Local()` when unsure and `Dynamic()` for Create. Create goes to
+  `kAdminPoolId`, takes an explicit non-null pool id and a caller-chosen pool
+  name, and is get-or-create by that name.
+- **Never hand-write what the generator writes** (`Init`, `Run`, `SaveTask`,
+  `LoadTask`, `AllocLoadTask`, `Local*Task`, `NewTask`, `NewCopyTask`,
+  `AggregateOut`/`AggregateIn` dispatch), except in an interposer, whose
+  forwarding dispatch is hand-written and kept out of `clio_repo.yaml`.
 - **`AggregateOut` touches OUT/INOUT fields only and never calls `Copy()`.**
-  This is enforced by `test_aggregate_out_contract`.
-- **Handler shape.** Handlers return `clio::run::TaskResume`, with bodies
-  wrapped in `CLIO_TASK_BODY_BEGIN`/`END`. Use `CLIO_CO_AWAIT` and
-  `CLIO_CO_RETURN`, never raw `co_await`, so that the Boost-fiber build also
-  works.
-- **Blocking.**
-  - Never block a worker with sleep, a blocking syscall or a spin.
-  - Wait with `CLIO_CO_AWAIT(future)`, or `task->Yield()`.
-  - Long or blocking I/O goes on a dedicated thread pool, as the CAE reference
-    reader does.
-- **Locks.** Use `CoMutex` or `CoRwLock` through `ScopedCoMutex`. Never log
-  inside lock or unlock paths.
-- **Naming.** Name queue ids and priorities as constants, never raw integers.
-  Timing prints are in ms.
-- **Dependencies.**
-  - OS headers and OS calls belong in `context-transport-primitives`. Use the
-    `ctp::SystemInfo` wrappers.
-  - Store `GetInstance()` in a local pointer before using it.
-  - Never use `thread_local`.
-- **Style.**
-  - Every new C/C++ file gets the BSD-3 license header.
-  - Every function gets a doxygen docstring and stays under 100 lines.
-  - No stubs or mock code.
-- **GPU compiler macros.** Use only `CTP_IS_GPU`, `CTP_IS_HOST` and
-  `CTP_IS_GPU_COMPILER`, never `__CUDACC__` and friends.
+  `Copy` overwrites the origin's identity and corrupts a live runtime.
+- **Create reads params through `CreatePoolFields`**:
+  `task.template Cast<clio::run::admin::CreatePoolFields>()->GetParamsAs<CreateParams>()`.
+  Calling `task->GetParams()` is undefined for composed pools.
+- **Handlers** wrap their body in `CLIO_TASK_BODY_BEGIN`/`END` and use
+  `CLIO_CO_AWAIT`/`CLIO_CO_RETURN`, never raw `co_await`, so both coroutine
+  back ends build.
+- **Never block a worker**: no sleep, blocking syscall or spin. Await a
+  future, or `CLIO_CO_AWAIT(clio::run::yield(us))` with `us > 0`. Put long
+  blocking I/O on a thread pool you own.
+- **Locks**: `CoMutex`/`CoRwLock` via their scoped guards; short sections; not
+  held across an await; never log inside lock/unlock.
+- **Other pools you call** are composed before yours and reached through
+  their `Client`, stored as a member.
+- **Test framework**: plain `main()` or your own; never Catch2 with runtime
+  initialization (it segfaults). The runtime's `simple_test.h` is not installed.
 
-## Debugging a new module
+## 4. Debugging a new module
 
-| symptom | cause |
-|---|---|
-| Create rc ≠ 0, "module not found" | library not on `CLIO_REPO_PATH` or next to `libclio_run_cxx`; or `chimod_lib_name` ≠ compose `mod_name` |
-| handler never runs, task returns at once | method id missing from the regenerated `lib_exec.cc` (codegen not re-run) |
-| output fields come back zero or garbage | field not in `SerializeOut`, or a stale half-rebuilt tree |
-| broadcast result has only one container's data | `AggregateOut` overwrites instead of merging |
-| works locally, wrong across nodes | a field missing from `SerializeIn`. The local path skips serialization; force the network path with `clio_add_force_net_test` |
-| hang | a handler blocked the worker, or awaited a pool composed after it |
+| symptom | cause | fix |
+|---|---|---|
+| Create rc 22 (`EINVAL`), log `ChiMod '<name>' not found` | library not found, or `chimod_lib_name` != compose `mod_name` | put the dir on `CLIO_REPO_PATH` before the runtime starts; check the name; `CTP_LOG_LEVEL=debug` shows the scan |
+| log `Skipping ChiMod ...: ABI fingerprint ... does not match` | built against headers of another version or build options | rebuild against the install whose `clio-run` you run |
+| log `Skipping duplicate ChiMod` | an older copy earlier in the search path wins | remove it, or put your dir first |
+| Windows: rc 22 although the DLL is on `CLIO_REPO_PATH` | a DLL it imports (for example your `*_client.dll`) is not on the DLL search path | add the dir to `PATH` too, or install next to `clio_run_cxx.dll` |
+| CMake: `no declaration matches '...Runtime::SaveTask(...)'` (also `LoadTask`, `LocalLoadTask`, `LocalSaveTask`) | generator bug before clio-core PR #1418: `task_ptr` by value | the `sed` fix after every refresh (TEMPLATE.md section 13) |
+| Windows CMake: `Could not find ... "yaml-cpp"` | the install has the dependency DLLs but not their CMake packages | add `<clio-core build>/vcpkg_installed/x64-windows` to `CMAKE_PREFIX_PATH` |
+| Windows: test exits 127 at once | Debug build against a Release install, or `<prefix>/bin` not on `PATH` | build `--config Release`; add `<prefix>/bin` to `PATH` |
+| CMake: `if given arguments: "AND" "NOT" "TARGET" "LibPressio::libpressio" ... Unknown arguments` in `iowarp-coreConfig.cmake` | the install was configured without compression and without `-DCLIO_CTP_ENABLE_LIBPRESSIO=OFF` | reinstall with that flag, or edit that line of the installed file to read `if(OFF AND NOT TARGET LibPressio::libpressio` |
+| CMake: `Missing clio_mod.yaml` or wrong target names | file missing, or `namespace:`/`module_name:` appears in a comment first | remove those words from comments |
+| CMake: `src/autogen/..._lib_exec.cc` not found | generator not run | `clio-run refresh <dir>` before configuring |
+| handler never runs, task returns rc 0 at once | method missing from the generated dispatch | re-run `clio-run refresh` after editing `clio_mod.yaml` |
+| link error: undefined handler or task method | struct/handler name does not match `k<Name>` | `kFoo` needs `FooTask` and `Runtime::Foo` |
+| OUT field zero or garbage | not in `SerializeOut`, or half-rebuilt tree | add it; rebuild everything |
+| right on one node, wrong across nodes | field missing from `SerializeIn` (the local path skips serialization) | add it; test with `CLIO_FORCE_NET=1` |
+| broadcast result has one container's data | `AggregateOut` overwrites instead of merging | reduce (sum, max, concat) |
+| test hangs or attaches to the wrong runtime | a runtime already listens on `CLIO_PORT` without your module | use a private `CLIO_PORT` and `CLIO_TEST_MODE=1` |
+| hang inside a handler | worker blocked, a lock held across an await, or a pool awaited that was composed after yours | see Rules |
+
+## 5. Contributing the module upstream to clio-core
+
+Only for a module that will live inside the clio-core repository. There,
+modules sit under a component directory (for example
+`context-transfer-engine/<mod>/`) listed in that component's `clio_repo.yaml`
+and added with `add_subdirectory`; the in-tree build links admin and bdev
+automatically. Every C/C++ file gets the repository's BSD-3 license header and
+doxygen docstrings, functions stay under 100 lines, and tests use the
+in-tree `simple_test.h` registered with `CLIO_REPO_PATH` and a
+`clio_add_force_net_test` variant. If the module has compose keys, add its
+default entry (or the keys, commented out) to
+`context-runtime/config/clio_default.yaml`, and document every key on its page
+under `site/pages/modules/`. An out-of-tree module needs none of this.

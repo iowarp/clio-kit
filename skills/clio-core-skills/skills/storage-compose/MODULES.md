@@ -1,5 +1,8 @@
 # MODULES.md: the modules CLIO Core ships
 
+A one-screen summary per module, for choosing. Each module's own skill has
+every key, its client API and its failure behavior (see SKILL.md).
+
 Every entry in `compose:` has `mod_name` (the module's `chimod_lib_name`),
 `pool_name`, `pool_query` (always `local` for these), and `pool_id`. Every other
 key is passed to the module's `CreateParams::LoadConfig`. Default pool ids are
@@ -23,7 +26,7 @@ and client that names it moves too.
 | 564.0 | `clio_cte_indexer` | yes |
 | 565.0 | `clio_cte_stream` | yes |
 | 566.0 | `clio_cte_checkpoint` | no |
-| 566.0 | `clio_cte_core_persist_write_thru` | no. **Collides with checkpoint**: give one an explicit other id. |
+| 566.0 | `clio_cte_core_persist_write_thru` | no. **Collides with checkpoint**, which must keep 566.0: give write-thru another id (e.g. 569.0). |
 | 567.0 | `clio_cte_core_persist_write_back` | yes |
 | 568.0 | `clio_cte_core_shm_cache_writethru` | yes |
 
@@ -35,7 +38,7 @@ for duplicate ids yourself.
 
 ## Runtime layer (`clio::run`)
 
-### admin (`context-runtime/modules/admin`)
+### admin (`clio_admin`)
 - Always present. Creates and destroys pools, stops the runtime, runs
   heartbeats and SWIM, and handles recovery and migration.
 - Warm restart re-composes pools from `<conf_dir>/restart/*.yaml`.
@@ -111,9 +114,10 @@ for duplicate ids yourself.
     next restart.
 - **Storage keys** (`storage[]`): `path`, `bdev_type`, `capacity_limit`,
   `score` (0 slow to 1 fast; -1 auto), `persistence_level`
-  (`volatile|temporary|long_term`), `read_cache` (memory tiers only: holds read
-  copies, never primaries, never WAL'd), `growth_unit`, `existing_pool_id`,
-  `existing_pool_module`.
+  (`volatile|temporary|long_term`), `growth_unit`, `existing_pool_id`,
+  `existing_pool_module`. A tier entry cannot set `alloc_log`, `io_depth` or
+  `alignment`; compose the bdev yourself and attach it with
+  `existing_pool_id` when you need them.
   - Bdev pool ids are `<core major + device index>.<1 + node>`.
 - **Other keys:**
   - `dpe.dpe_type`: `max_bw` (prefers the hottest tier whose score is at most
@@ -121,7 +125,9 @@ for duplicate ids yourself.
   - `targets.neighborhood`: persistent tiers of the next N-1 nodes are also
     registered. Memory tiers are always node-local.
   - `targets.failover_to_successor`.
-  - `performance.metadata_log_path`, `transaction_log_capacity`,
+  - `performance.metadata_log_path` (a file prefix, not a directory: the
+    snapshot is `<path>`, the WAL shards `<path>.blob.N` and `<path>.tag.N`),
+    `transaction_log_capacity`,
     `flush_metadata_period_ms` (5000), `fsync_mode` (`durable|deferred`),
     `stat_targets_period_ms`.
   - At the top level: `organizer` (`none|frecency|grayscott|...`),
@@ -151,12 +157,14 @@ for duplicate ids yourself.
 - Sits over two disconnected cores: `next_volatile` (required) and
   `next_persistent` (optional; omit it for a volatile-only cache).
 - **Writes:**
-  - A put lands in the volatile core on the blob's **owner node** and is acked
-    there. Puts sent from other nodes are forwarded to the owner, so two nodes
-    never hold diverging dirty copies.
+  - A put is buffered in the volatile core of the node **that made it**, and
+    acked there. A flush later lands the dirty ranges on the blob's owner.
+  - Appends, replaces and conditional puts are the exception: they are applied
+    at the owner.
+  - Reads go to the owner. **Another node does not see an unflushed write**
+    until the writer's node flushes it (`SyncTag`, fsync, or a periodic
+    flush).
   - Partial writes first fetch the rest of the blob from persistent.
-  - Appends, replaces and conditional puts write the copy out and run on
-    persistent.
 - **Flushing:**
   - Dirty ranges, and only those, are flushed through `next_persistent`.
   - A flush runs periodically (`flush_period_ms`, 10000), when the cache is
@@ -173,6 +181,8 @@ for duplicate ids yourself.
   invalidates sharers once per range.
 
 ### core_persist_write_thru (`clio_cte_core_persist_write_thru`, 566.0)
+- **Give it an explicit id** (for example `569.0`): 566.0 belongs to
+  checkpoint, which `gv::Vector::Copy` always addresses at 566.0.
 - Takes the same keys as write-back. `flush_period_ms` and
   `fallback_to_persistent` are ignored.
 - **Ack:** only after the persistent write. The volatile copy is optional and
@@ -220,8 +230,7 @@ for duplicate ids yourself.
   `half_life_ms`, `nospace_wait_ms`.
 - **No WAL of its own.** Dirty entries are never evicted. `SyncTag` waits on
   its log, and a flush error sticks to the tag.
-- Design notes: `context-transfer-engine/core_shm_cache_writethru/DESIGN.md`
-  and `HANDOFF.md`.
+- Full key table and coherence rules: the `clio-cte-caches` skill.
 
 ### indexer (`clio_cte_indexer`, 564.0): search
 - Owns `SemanticSearch` (BM25 term index); the core no longer serves it.
@@ -253,8 +262,8 @@ for duplicate ids yourself.
   Every 1 ms, each node ships its batch to the home, where the batch is ordered
   and copied into pages. `Flush` waits for this node's appends to merge.
 - **Keys:** `next_pool_id` (the chain top), `staging_pool_id` (default:
-  replication, durable and uncached), `log_path`. **Without `log_path`, file
-  sizes do not survive a restart.**
+  replication, durable and uncached), `log_path`. **Without `log_path`, stream sizes are not logged**; clio-fs
+  then falls back to the size saved in each file's inode record at restart.
 - The filesystem creates the stream pool if it is not composed. Compose it
   before the filesystem to configure it.
 
@@ -283,8 +292,8 @@ for duplicate ids yourself.
 ### checkpoint (`clio_cte_checkpoint`, 566.0)
 - The fault handler behind `gv::Vector::Copy`'s lazy copy-on-write.
 - A miss on the copy tag materializes the blob from the source tag.
-- Only `next_pool_id`. Compose it only for gpu_vector checkpoints, and move it
-  off 566.0 if write-thru is also composed.
+- Only `next_pool_id`. Compose it only for gpu_vector checkpoints. It must
+  stay at 566.0 (`Vector::Copy` hard-codes it), so move write-thru instead.
 
 ### cache (`clio_cte_cache`, 563.0): node-local copy layer
 - Built, but not in the default chain: the write-back cache and the shm cache
@@ -299,14 +308,13 @@ for duplicate ids yourself.
 ## CAE: Context Assimilation Engine (`clio::cae`)
 
 ### core (`clio_cae_core`, 400.0)
-- **Ingest:** `ParseOmni` imports files and HDF5 into CTE tags. CEE calls it.
-  The `reference` format records source extents instead of copying: a CTE miss
-  reads straight from the source file (zero-copy assimilation).
+- **Ingest:** `ParseOmni` imports files, HDF5 and s3/gs objects into CTE
+  tags. `clio-cae` and CEE call it. Full OMNI format: the `clio-cae` skill.
 - **Routing:** it forwards its data path to `next_pool_id`. Point that at the
   chain top (564.0), so that imported data is indexed.
 - **Security:** `allowed_roots` restricts the paths CAE may read and write.
   The runtime does not authenticate clients, so set it.
-- **Never at 512.0** (method-id collision).
+- **Never at 512.0:** CAE method ids 10-13 are the core's ids 10-13.
 
 ### summarizer (`clio_cae_summarizer`, 401.0)
 - An interposer that calls an LLM (`label_api: ollama|openai`) for puts

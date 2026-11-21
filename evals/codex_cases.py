@@ -138,9 +138,85 @@ CASES = [
         ),
     ),
     case(
+        "clio-runtime-config",
+        "I pip installed iowarp-core on two machines. The runtime runs on host A with the default config. On host B I set CLIO_X=TCP and my Python client hangs for 30 seconds, then cannot connect. What is wrong and how do I configure both sides? Do not start a runtime.",
+        facts=(
+            r"(?i)CLIO_IPC_MODE",
+            r"(?i)CLIO_SERVER_ADDR",
+            r"(?i)CLIO_BIND_ADDR|0\.0\.0\.0",
+        ),
+    ),
+    case(
+        "clio-bdev",
+        "I have three NVMe drives on one node. Give me a CLIO Core compose config where my CTE data survives one drive dying, and explain how to test it. Do not start a runtime.",
+        facts=(
+            r"(?i)clio_safe_bdev|safe_bdev",
+            r"(?i)max_failures",
+            r"(?i)persistence_level",
+        ),
+    ),
+    case(
+        "clio-cte-core",
+        "I pip-installed iowarp-core, gave the CTE core at 512.0 an NVMe file tier, and now every PutBlob from Python returns 11. What is wrong and how do I fix the config? Do not start a runtime.",
+        facts=(
+            r"(?i)persistence_level",
+            r"(?i)target",
+        ),
+    ),
+    case(
+        "clio-cte-caches",
+        "With the default CLIO Core config my CTE writes vanished after the node rebooted. What does an acknowledged put mean, and how do I make writes durable? Do not start a runtime.",
+        facts=(
+            r"(?i)write-back|write_back",
+            r"(?i)fsync|SyncTag",
+            r"(?i)flush_period_ms",
+        ),
+    ),
+    case(
+        "clio-replication",
+        "We run CLIO Core with replication_factor 2 on 4 nodes. When one node dies, reads of its blobs hang 30 s and then fail. What is wrong? Do not start a runtime.",
+        facts=(
+            r"(?i)failover_to_successor",
+            r"(?i)CLIO_NET_DEAD_FAIL_FAST|CLIO_PROBE_SILENCE_S",
+        ),
+    ),
+    case(
+        "clio-compressor",
+        "I pip-installed iowarp-core. How do I get zstd compression on everything written through my CLIO filesystem mount? Do not build or start anything.",
+        facts=(
+            r"(?i)CLIO_CTE_ENABLE_COMPRESS|\+compress",
+            r"(?i)default_compress",
+        ),
+    ),
+    case(
+        "clio-indexer",
+        "SemanticSearch from Python with clio_cte_core_ext over TCP always returns an empty list on my pip install of iowarp-core. Why, and how do I search my blobs by keyword? Do not start a runtime.",
+        facts=(
+            r"(?i)564",
+            r"(?i)CLIO_CTE_POOL",
+        ),
+    ),
+    case(
+        "clio-fs",
+        "I pip-installed iowarp-core on a 4-node Linux cluster. How do I mount the CLIO filesystem on every node, and what does fsync guarantee if a node dies? Do not mount anything.",
+        facts=(
+            r"(?i)clio_cte_fuse",
+            r"(?i)fsync",
+            r"(?i)EIO",
+        ),
+    ),
+    case(
+        "clio-cae",
+        "Write a CLIO OMNI file that imports /data/sim.h5, only the HDF5 datasets under /fields, and show the command that runs it. Do not run it.",
+        facts=(
+            r"(?i)include_patterns",
+            r"(?i)clio-cae|ParseOmni",
+        ),
+    ),
+    case(
         "chimod-dev",
         "Plan a new CLIO Core chimod named counter with one Increment method returning the new value. List the files to write, the clio_mod.yaml contents, the codegen command and how the test initializes the runtime. Do not build anything.",
-        facts=(r"(?i)clio_run refresh", r"(?i)kIncrement:\s*1\d", r"(?i)CLIO_INIT"),
+        facts=(r"(?i)clio[-_]run refresh", r"(?i)kIncrement:\s*1\d", r"(?i)CLIO_INIT"),
     ),
     case(
         "gpu-vector",

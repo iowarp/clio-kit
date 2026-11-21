@@ -16,12 +16,11 @@ path is a **chain**: the modules above the CTE cores all use the core's own
 Put/Get task interface and forward to the pool named by `next_pool_id`. A client
 addresses the top of the chain and does not need to know what is below it.
 
-Source paths are relative to the root of the
-[iowarp/clio-core](https://github.com/iowarp/clio-core) repository. Facts here
-were checked against `dev` at 86efd1a7e (2026-11-20). The authoritative,
-commented reference for every key is
-`context-runtime/config/clio_default.yaml`. Read it alongside this skill, and
-trust it over this skill wherever they disagree.
+Facts here were checked against clio-core `dev` at bd1dc3183 (2026-11-21).
+The runtime reads the file named by `CLIO_SERVER_CONF`, else
+`~/.clio/clio.yaml`. A pip install copies the shipped, commented default
+(`<site-packages>/iowarp_core/data/clio_default.yaml`) to `~/.clio/clio.yaml`
+the first time Python imports `iowarp_core`. Start from that file.
 
 ## Files in this skill
 
@@ -30,6 +29,25 @@ trust it over this skill wherever they disagree.
 | **MODULES.md** | choosing modules. Purpose, default pool id, key settings, and caveats for each module. |
 | **GUARANTEES.md** | before telling anyone what is durable, consistent or available. What an ack means, what fsync means, and what is lost to each failure. |
 | **RECIPES.md** | writing the YAML. Six complete deployments, from scratch-only to replicated filesystem. |
+
+## Module skills
+
+This skill designs the chain. Each module's full key table, client API and
+failure behavior is in its own skill; load it when you write that module's
+entry.
+
+| skill | covers |
+|---|---|
+| `clio-runtime-config` | the config file outside `compose:`, environment variables, the `clio-run` CLI, multi-node and Docker, the admin module |
+| `clio-bdev` | `clio_bdev` (301.0 and every tier device) and the erasure-coded `clio_safe_bdev` |
+| `clio-cte-core` | the CTE core (512.0 persistent, 540.0 volatile), and the C++ and Python blob API every chain speaks |
+| `clio-cte-caches` | write-back (567.0), write-thru, the shm cache (568.0) and the plain cache (563.0) |
+| `clio-replication` | `clio_cte_replication` (561.0) and node-loss availability |
+| `clio-compressor` | `clio_cte_compressor` (562.0) |
+| `clio-indexer` | `clio_cte_indexer` (564.0) and search |
+| `clio-fs` | filesystem (560.0), stream (565.0), checkpoint, and mounting with FUSE |
+| `clio-cae` | ingest: CAE core (400.0), the summarizer (401.0) and OMNI files |
+| `chimod-dev` | writing a module the shipped ones do not cover |
 
 ## The default chain (dev)
 
@@ -102,6 +120,11 @@ clients / CAE 400 / filesystem 560 / stream 565
   `pool_query: local`.
 - Keep `num_replicas: 0` over a `safe_bdev` tier. The array already survives
   disk loss, so a second copy on the same array only doubles each fsynced byte.
+- **Point clients at the top of the chain.** A client attached by shared
+  memory binds to the shm cache's entry pool (564.0 by default). A TCP or IPC
+  client binds to 512.0 and **skips every layer above it** (caches,
+  replication, indexer). Set `CLIO_CTE_POOL=564.0` (or your chain top) before
+  the client initializes.
 - `MultiPutBlob` routes by its *first* put. A multi-node caller must ensure
   every put in the batch maps to the same owner container.
 - SWIM failure detection is **off** by default, and that is the
