@@ -10,6 +10,10 @@ after ``--idle-seconds`` with no link, writing the scene manifest first.
 ``--name`` picks another record and lock name, for a second node half in a
 network namespace that cannot reach the first one. Each start removes the
 ``node-<ns>`` slots of node halves that have gone.
+
+A front that cannot signal it, such as one confined in another sandbox, asks it
+to stop by writing ``<name>.stop`` in the folder; it then saves its scene and
+lets go of its lock.
 """
 
 from __future__ import annotations
@@ -98,7 +102,7 @@ def prune_slots(root: Path, own: str, min_age: float = 60.0) -> list[str]:
             continue
         # A held lock blocks removing its file on Windows; let it go first.
         handle.close()
-        for suffix in (".json", ".log", ".lock"):
+        for suffix in (".json", ".log", ".stop", ".lock"):
             try:
                 (root / f"{name}{suffix}").unlink()
             except OSError:
@@ -131,6 +135,9 @@ def main(argv: list[str] | None = None) -> None:
     if os.name != "nt":
         os.chmod(root, 0o700)
     lock = _lock(root, args.name)
+    stop_path = root / f"{args.name}.stop"
+    # A request left for a node half that had already gone is not for this one.
+    stop_path.unlink(missing_ok=True)
     pruned = prune_slots(root, args.name)
     if pruned:
         print(f"removed slots of node halves that have gone: {pruned}", flush=True)
@@ -200,6 +207,7 @@ def main(argv: list[str] | None = None) -> None:
         loop = asyncio.get_event_loop()
         loop.create_task(node.watch_growth(args.growth_interval))
         loop.create_task(idle(node, args.idle_seconds, record_path, lock))
+        loop.create_task(watch_stop(node, stop_path, record_path, lock))
 
     server.controller.on_server_ready.add(ready)
     server.start(
@@ -213,26 +221,39 @@ def main(argv: list[str] | None = None) -> None:
     )
 
 
-async def idle(node: Any, limit: float, record_path: Path, lock: Any) -> None:
-    """Shut down after ``limit`` seconds with no link, saving the scene first."""
+def shut_down(node: Any, record_path: Path, lock: Any, why: str) -> None:
+    """Save the scene, drop the record and the lock, and exit."""
     from . import manifest
 
+    engine = node.engine
+    if engine.scene is not None:
+        engine.scene["camera"] = engine.read_camera()
+        manifest.write(engine.root, engine.scene)
+    print(f"{why}: shutting down", flush=True)
+    try:
+        record_path.unlink()
+    except FileNotFoundError:
+        pass
+    lock.close()
+    os._exit(0)
+
+
+async def idle(node: Any, limit: float, record_path: Path, lock: Any) -> None:
+    """Shut down after ``limit`` seconds with no link, saving the scene first."""
     step = max(0.5, min(30.0, limit / 4))
     while True:
         await asyncio.sleep(step)
-        if node.idle_for() < limit:
-            continue
-        engine = node.engine
-        if engine.scene is not None:
-            engine.scene["camera"] = engine.read_camera()
-            manifest.write(engine.root, engine.scene)
-        print(f"no link for {limit:g} s: shutting down", flush=True)
-        try:
-            record_path.unlink()
-        except FileNotFoundError:
-            pass
-        lock.close()
-        os._exit(0)
+        if node.idle_for() >= limit:
+            shut_down(node, record_path, lock, f"no link for {limit:g} s")
+
+
+async def watch_stop(node: Any, stop_path: Path, record_path: Path, lock: Any) -> None:
+    """Shut down when a front asks by writing ``stop_path``."""
+    while True:
+        await asyncio.sleep(0.5)
+        if stop_path.exists():
+            stop_path.unlink(missing_ok=True)
+            shut_down(node, record_path, lock, "a front asked this node half to stop")
 
 
 if __name__ == "__main__":

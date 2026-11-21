@@ -423,7 +423,10 @@ class Attacher:
             link = self._try_link(transport, folder, node, pvpython, env)
         if link is None:
             if node is not None:
-                self._stop_node(transport, folder, node, slot)
+                freed = self._stop_node(transport, folder, node, slot)
+                if not freed and slot == "node":
+                    # Another sandbox's node half would not let go: run beside it.
+                    slot = native.own_slot()
             node = self._start_node(
                 transport, folder, pvpython, node_hash, gl_args, slot
             )
@@ -606,16 +609,17 @@ class Attacher:
         folder: str,
         node: dict[str, Any],
         slot: str = "node",
-    ) -> None:
+    ) -> bool:
+        """Stop a node half; whether its slot is free for a new one."""
         pid = int(node.get("pid") or 0)
         if self._native:
-            native.stop(folder, pid, slot)
-            return
+            return native.stop(folder, pid, slot)
         f = shlex.quote(folder)
         script = f"rm -f {f}/{slot}.json\n"
         if pid > 0:
             script += f"kill {pid} 2>/dev/null; sleep 1; kill -9 {pid} 2>/dev/null\n"
         transport.run(script + "exit 0", timeout=60)
+        return True
 
     def _start_node(
         self,

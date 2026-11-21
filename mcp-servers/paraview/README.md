@@ -79,7 +79,10 @@ as CLIO does for the servers it confines, else clio-kit's own data folder,
   A node half answers only inside its own network namespace. When a host runs
   each server in its own sandbox and another sandbox's node half still holds
   the folder, the front leaves it alone and runs its own as
-  `node-<namespace>.json`.
+  `node-<namespace>.json`. On Windows, where a sandboxed server cannot signal
+  a node half started from another sandbox, the front asks it to stop by
+  writing `node.stop`, which the node half watches. If it still holds the
+  folder after that, the front runs its own beside it as `node-w<pid>.json`.
 - `scenes/<id>/manifest.json`: each scene, written after every committed
   command.
 

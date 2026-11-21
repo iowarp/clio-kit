@@ -178,6 +178,29 @@ def test_node_slot_leaves_another_namespaces_node_half_alone() -> None:
     ) == ("node-11", {"pid": 7, "net": "11"})
 
 
+def test_native_stop_asks_a_node_half_it_cannot_signal(tmp_path: Path) -> None:
+    from paraview_mcp import native
+    from paraview_mcp.node.main import _try_lock
+
+    folder = str(tmp_path)
+    marks = native.probe(folder)
+    assert marks["NS"] == f"w{os.getpid()}" and marks["LOCKED"] == "0"
+    # Another sandbox's node half holds the folder and has lost its record.
+    held = open(tmp_path / "node.lock", "a")  # noqa: SIM115 - closed below
+    assert _try_lock(held)
+    try:
+        marks = native.probe(folder)
+        assert marks["LOCKED"] == "1" and not native.lock_free(folder, "node")
+        assert attach.node_slot(marks) == (native.own_slot(), None)
+        # It neither answers a signal nor reads the request: the slot stays taken.
+        assert native.stop(folder, 0, "node", wait=0.5) is False
+        assert (tmp_path / "node.stop").exists()
+    finally:
+        held.close()
+    assert native.stop(folder, 0, "node", wait=0.5) is True
+    assert not (tmp_path / "node.stop").exists()
+
+
 @pytest.mark.parametrize(
     ("stderr", "code"),
     [

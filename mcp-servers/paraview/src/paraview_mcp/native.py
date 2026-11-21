@@ -17,6 +17,7 @@ import signal
 import subprocess
 import sys
 import tarfile
+import time
 from pathlib import Path
 from typing import Any
 
@@ -38,8 +39,44 @@ def _read(path: Path) -> str | None:
         return None
 
 
+def own_slot() -> str:
+    """This front's own record name, used when another holds the folder's node."""
+    return f"node-w{os.getpid()}"
+
+
+def lock_free(folder: str, slot: str) -> bool:
+    """Whether no node half holds ``<slot>.lock``."""
+    from .node.main import _try_lock
+
+    path = Path(folder) / f"{slot}.lock"
+    if not path.exists():
+        return True
+    try:
+        handle = open(path, "a")  # noqa: SIM115 - closed below
+    except OSError:
+        return False
+    try:
+        if not _try_lock(handle):
+            return False
+        if os.name == "nt":
+            import msvcrt
+
+            # Let go at once, so the node half about to start can take it.
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        return True
+    finally:
+        handle.close()
+
+
 def probe(folder: str) -> dict[str, str]:
-    """The probe script's markers: the folder, pvpython on PATH and the records."""
+    """The probe script's markers: the folder, pvpython on PATH and the records.
+
+    Windows has no network namespaces, but a host may confine each server it
+    starts in its own sandbox, from which another sandbox's node half cannot be
+    signalled. Each front's ``NS`` is therefore its own, so ``node_slot`` runs
+    it beside a node half whose record has gone while its lock is still held.
+    """
     root = Path(folder)
     root.mkdir(parents=True, exist_ok=True)
     scenes = root / "scenes"
@@ -53,11 +90,18 @@ def probe(folder: str) -> dict[str, str]:
         )
         if older:
             shutil.copytree(older[0], scenes)
-    marks = {"DIR": str(root), "PVPYTHON": shutil.which("pvpython") or "", "NS": ""}
+    own = own_slot()
+    marks = {
+        "DIR": str(root),
+        "PVPYTHON": shutil.which("pvpython") or "",
+        "NS": own.removeprefix("node-"),
+        "LOCKED": "0" if lock_free(folder, "node") else "1",
+    }
     for key, name in (
         ("ENV", "env.json"),
         ("CODE", "code/HASH"),
         ("NODE", "node.json"),
+        ("OWNNODE", f"{own}.json"),
     ):
         text = _read(root / name)
         if text:
@@ -170,13 +214,28 @@ def upload(folder: str, bundle: bytes) -> Completed:
     return Completed(0, "", "")
 
 
-def stop(folder: str, pid: int, slot: str) -> None:
-    (Path(folder) / f"{slot}.json").unlink(missing_ok=True)
+def stop(folder: str, pid: int, slot: str, wait: float = 15.0) -> bool:
+    """Stop the node half in ``slot``; whether its lock was let go within ``wait``.
+
+    A signal does not cross into another sandbox, so the node half is also asked
+    through ``<slot>.stop``, which it watches.
+    """
+    root = Path(folder)
+    (root / f"{slot}.json").unlink(missing_ok=True)
+    if not lock_free(folder, slot):
+        (root / f"{slot}.stop").write_text("stop", "utf-8")
     if pid > 0:
         try:
             os.kill(pid, signal.SIGTERM)
         except OSError:
             pass
+    deadline = time.monotonic() + wait
+    while not lock_free(folder, slot):
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.5)
+    (root / f"{slot}.stop").unlink(missing_ok=True)
+    return True
 
 
 def start(folder: str, command: list[str], slot: str) -> None:
