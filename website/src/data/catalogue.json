@@ -1428,7 +1428,7 @@
       "description": "Fetch geospatial data where it is served: ArcGIS REST, OGC WFS and WCS, STAC, remote rasters and EPT/COPC lidar, by region",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/geoservices",
