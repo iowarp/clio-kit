@@ -129,7 +129,7 @@ class TestServerInitialization:
         assert server.os is not None
         assert server.httpx is not None
         assert server.FastMCP is not None
-        assert server.BaseModel is not None
+        assert server.TypedDict is not None
         assert server.Field is not None
         assert server.ToolError is not None
         assert server.Message is not None
