@@ -67,15 +67,6 @@ jobs:
           uv sync --frozen
         fi
 
-    - name: Pre-sync MCP server environments
-      run: |
-        for dir in mcp-servers/*/; do
-          if [ -f "$dir/pyproject.toml" ]; then
-            echo "Syncing $(basename $dir)..."
-            (cd "$dir" && uv sync --frozen --all-extras --dev) || echo "Warning: sync failed for $(basename $dir)"
-          fi
-        done
-
     # Generate and build documentation
     - name: Generate Docusaurus documentation
       run: |

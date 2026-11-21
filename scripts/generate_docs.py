@@ -4,6 +4,7 @@ Script to automatically generate Docusaurus markdown files for MCP documentation
 Creates 4 simple sections: General Info, Installation, Available Tools, Examples
 """
 
+import os
 import sys
 import subprocess
 import re
@@ -44,10 +45,31 @@ def read_documentation_updated(inventory: dict[str, object]) -> str:
 class MCPDataExtractor:
     """Extract MCP data from project files."""
 
-    def __init__(self, server_versions: Dict[str, str], updated_date: str, icons=None):
+    def __init__(
+        self,
+        server_versions: Dict[str, str],
+        updated_date: str,
+        icons=None,
+        upstream=None,
+    ):
         self.server_versions = server_versions
         self.updated_date = updated_date
         self.icons = icons or {}
+        # [upstream.<name>] rows; a server that refuses to start unconfigured
+        # declares the placeholder environment its tool listing needs.
+        self.upstream = upstream or {}
+
+    def _probe_environment(self, name: str) -> Dict[str, str]:
+        """Return the declared ``probe-environment`` for server ``name``.
+
+        Wrapped upstream servers such as home-assistant exit at startup without
+        their connection settings; listing tools needs only placeholders.
+        """
+        row = self.upstream.get(name)
+        if not isinstance(row, dict):
+            return {}
+        env = row.get("probe-environment", {})
+        return {str(key): str(value) for key, value in env.items()}
 
     def extract_mcp_data(self, mcps_dir: Path) -> Dict:
         """Extract data for all MCPs in the directory."""
@@ -83,12 +105,9 @@ class MCPDataExtractor:
         else:
             return None
 
-        name = (
-            project_info.get("name", mcp_dir.name)
-            .replace("-mcp", "")
-            .replace("_", " ")
-            .title()
-        )
+        # The folder is the catalogue id (mcp/<folder>) the website looks the
+        # page up by; a package name such as copernicus-kit-mcp is not.
+        name = mcp_dir.name.replace("_", " ").title()
         description = project_info.get("description", f"{name} MCP server")
         version = self.server_versions[mcp_dir.name]
         keywords = project_info.get("keywords", [])
@@ -206,6 +225,7 @@ class MCPDataExtractor:
             result = subprocess.run(
                 command,
                 cwd=str(mcp_dir),
+                env={**os.environ, **self._probe_environment(mcp_dir.name)},
                 capture_output=True,
                 text=True,
                 timeout=180 if descriptor.is_file() else 30,
@@ -530,7 +550,10 @@ def main():
 
         # Extract MCP data using each public agent-contract version.
         extractor = MCPDataExtractor(
-            server_versions, updated_date, inventory.get("icons")
+            server_versions,
+            updated_date,
+            inventory.get("icons"),
+            inventory.get("upstream"),
         )
         mcps_data = extractor.extract_mcp_data(mcps_dir)
 
