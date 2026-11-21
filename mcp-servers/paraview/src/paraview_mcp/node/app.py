@@ -88,6 +88,23 @@ BRIDGE_JS = r"""
       if (!box || !window.ResizeObserver) { setTimeout(watch, 200); return; }
       new ResizeObserver(ask).observe(box);
     })();
+    // A remote picture can land well after the page starts (a pvserver over a
+    // forwarded link), and again after each resize; say when a full-size one shows
+    // for the current size, so a host that looked early and saw nothing looks again.
+    var drawnAt = '';
+    (function watchPicture() {
+      var box = document.querySelector('.clio-view');
+      if (!box) { setTimeout(watchPicture, 200); return; }
+      box.addEventListener('load', function (e) {
+        var img = e.target;
+        if (!img || img.tagName !== 'IMG') return;
+        var rect = img.getBoundingClientRect();
+        var size = Math.round(rect.width) + 'x' + Math.round(rect.height);
+        if (size === drawnAt || rect.width < 1 || img.naturalWidth < rect.width * 0.9) return;
+        drawnAt = size;
+        post({ type: 'clio.paraview.drawn' });
+      }, true);
+    })();
   }
   start();
 })();

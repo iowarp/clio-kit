@@ -236,6 +236,10 @@
         schedule();
       } else if (data.type === 'clio.paraview.ready') {
         sendTheme();
+      } else if (data.type === 'clio.paraview.drawn') {
+        // Report the state again: a host that read the view blank looks once more.
+        sentText = '';
+        schedule();
       } else if (data.type === 'clio.paraview.link') {
         if (data.up) {
           linkUp = true;
