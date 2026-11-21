@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import glob
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import xarray as xr
@@ -80,7 +80,8 @@ def _grib_runs(paths: list[str], variables: list[str] | None) -> xr.Dataset:
         return xr.concat(
             runs, dim="time", join="outer", coords="minimal", compat="override"
         )
-    return xr.combine_by_coords(runs, combine_attrs="drop_conflicts")
+    # Datasets in, a Dataset out; the stub's union also covers DataArray inputs.
+    return cast(xr.Dataset, xr.combine_by_coords(runs, combine_attrs="drop_conflicts"))
 
 
 def open_grid(path: str, variables: list[str] | None = None) -> xr.Dataset:

@@ -85,6 +85,12 @@
       "description": "The live ParaView view: trame, framed through the host's service route."
     }
   ],
+  "prompts": [
+    {
+      "name": "explore_dataset",
+      "description": "Open a dataset in a live ParaView view, measure it, and show what it holds."
+    }
+  ],
   "tags": [
     "scientific-visualization",
     "paraview",

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import json
 import tempfile
 import tomllib
 from pathlib import Path
@@ -66,3 +68,24 @@ def test_cds_tools_appear_with_a_cds_key() -> None:
         "cds_submit_request",
         "cds_download_request_result",
     } <= names
+
+
+def test_mcp_describes_what_the_upstream_server_advertises() -> None:
+    # scripts/extract_mcp_metadata.py reads server.mcp; it must agree with server.json.
+    described = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))
+    mcp = server.mcp
+
+    async def listing() -> tuple[list[str], list[str], list[str]]:
+        tools = await mcp.list_tools()
+        resources = await mcp.list_resources()
+        prompts = await mcp.list_prompts()
+        return (
+            sorted(t.name for t in tools),
+            sorted(r.uri for r in resources),
+            sorted(p.name for p in prompts),
+        )
+
+    tools, resources, prompts = asyncio.run(listing())
+    assert tools == sorted(t["name"] for t in described["tools"])
+    assert resources == sorted(r["uri"] for r in described.get("resources", []))
+    assert prompts == sorted(p["name"] for p in described.get("prompts", []))

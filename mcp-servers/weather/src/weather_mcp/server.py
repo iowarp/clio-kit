@@ -1,7 +1,7 @@
 """Weather MCP server: fields, ensembles, soundings, verification, objects and climate.
 
-Tools live in modules that register on the shared app; importing them here
-puts them on the server.
+Tools live in modules, and the resources and prompts in ``guide``; each registers
+on the shared app, so importing them here puts them on the server.
 """
 
 from __future__ import annotations
@@ -11,7 +11,8 @@ import logging
 
 from dotenv import load_dotenv
 
-from . import (  # noqa: F401 - importing registers the tools
+from . import (  # noqa: F401 - importing registers the tools, resources and prompts
+    guide,
     tools_ai,
     tools_climate,
     tools_forecast,

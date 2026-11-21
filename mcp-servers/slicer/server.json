@@ -74,6 +74,12 @@
       "description": "Describe what the slicer MCP server can do."
     }
   ],
+  "prompts": [
+    {
+      "name": "plan_print",
+      "description": "Slice a model for a printer, look at the layers, and weigh a faster or stronger option."
+    }
+  ],
   "tags": [
     "3d-printing",
     "slicer",

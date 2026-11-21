@@ -25,9 +25,9 @@ from typing import Any
 from fastmcp import Client
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from test_grids import bathymetry  # noqa: E402
+from test_grids import bathymetry
 
-from grids_mcp.server import EDITOR_URI, mcp  # noqa: E402
+from grids_mcp.server import EDITOR_URI, mcp
 
 HERE = Path(__file__).resolve().parent
 
@@ -58,7 +58,11 @@ async def call(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     return {
         "isError": result.is_error,
         "structuredContent": result.structured_content,
-        "content": [{"type": "text", "text": c.text} for c in result.content if hasattr(c, "text")],
+        "content": [
+            {"type": "text", "text": c.text}
+            for c in result.content
+            if hasattr(c, "text")
+        ],
     }
 
 
@@ -92,21 +96,32 @@ def main() -> None:
             self.end_headers()
             self.wfile.write(data)
 
-        def do_GET(self) -> None:  # noqa: N802
+        def do_GET(self) -> None:
             self._send(editor if self.path == "/editor.html" else host, "text/html")
 
-        def do_POST(self) -> None:  # noqa: N802
+        def do_POST(self) -> None:
             params = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-            self._send(json.dumps(asyncio.run(call(params["name"], params["arguments"]))),
-                       "application/json")
+            self._send(
+                json.dumps(asyncio.run(call(params["name"], params["arguments"]))),
+                "application/json",
+            )
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     try:
         run = subprocess.run(
-            ["node", str(HERE / "standin.mjs"), f"http://127.0.0.1:{server.server_port}/",
-             str(out), str(args.width), str(args.height)],
-            check=False, capture_output=True, text=True, timeout=300,
+            [
+                "node",
+                str(HERE / "standin.mjs"),
+                f"http://127.0.0.1:{server.server_port}/",
+                str(out),
+                str(args.width),
+                str(args.height),
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=300,
         )
     finally:
         server.shutdown()
@@ -115,8 +130,11 @@ def main() -> None:
         print(run.stderr, file=sys.stderr)
         sys.exit(run.returncode)
     log = json.loads((out / "topo.edited.nc.edits.json").read_text())
-    summary = {"edits": [(e["op"], e["cells_changed"]) for e in log["edits"]],
-               "base_hash": log["base"]["hash"], "result_hash": log["result"]["hash"]}
+    summary = {
+        "edits": [(e["op"], e["cells_changed"]) for e in log["edits"]],
+        "base_hash": log["base"]["hash"],
+        "result_hash": log["result"]["hash"],
+    }
     (out / "summary.json").write_text(json.dumps(summary, indent=2))
     print(json.dumps(summary))
 

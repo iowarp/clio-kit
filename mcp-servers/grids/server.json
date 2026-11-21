@@ -53,6 +53,12 @@
       "description": "An editor for a 2-D grid: draw a box or pick cells, choose an edit, apply."
     }
   ],
+  "prompts": [
+    {
+      "name": "clean_bathymetry",
+      "description": "Find and fix the usual problems in a model bathymetry, with a replayable edit log."
+    }
+  ],
   "tags": [
     "grid",
     "bathymetry",

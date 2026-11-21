@@ -1,7 +1,7 @@
 """Ocean MCP server: observations, sections, circulation, events and model checks.
 
-The tools live in four modules that register on the shared app; importing
-them here is what puts them on the server.
+The tools live in five modules, and the resources and prompts in ``guide``; each
+registers on the shared app, so importing them here is what puts them on the server.
 """
 
 from __future__ import annotations
@@ -11,7 +11,8 @@ import logging
 
 from dotenv import load_dotenv
 
-from . import (  # noqa: F401 - importing registers the tools
+from . import (  # noqa: F401 - importing registers the tools, resources and prompts
+    guide,
     tools_altimetry,
     tools_circulation,
     tools_events,

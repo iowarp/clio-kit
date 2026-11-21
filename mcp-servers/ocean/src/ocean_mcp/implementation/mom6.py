@@ -131,12 +131,14 @@ def _varies_in_time(path: Path, fields: list[str]) -> bool:
             found = [
                 ds[name]
                 for name in ds.variables
-                if any(name == v or name.startswith(f"{v}_segment") for v in fields)
+                if any(
+                    name == v or str(name).startswith(f"{v}_segment") for v in fields
+                )
             ]
             if not found:
                 return True
             return any(
-                d in ("time", "Time", "valid_time") or "time" in d.lower()
+                d in ("time", "Time", "valid_time") or "time" in str(d).lower()
                 for da in found
                 for d in da.dims
             )
@@ -226,7 +228,7 @@ def preflight(
     # 1. Open boundaries: every declared segment has a data string and its files exist.
     n_seg = int(float(params.get("OBC_NUMBER_OF_SEGMENTS", 0)))
     missing: list[str] = []
-    segments = []
+    segments: list[dict[str, Any]] = []
     for k in range(1, n_seg + 1):
         key = f"OBC_SEGMENT_{k:03d}"
         if key not in params:

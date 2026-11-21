@@ -67,7 +67,9 @@ def extent_wgs84(
 
     try:
         transformer = Transformer.from_crs(crs, "EPSG:4326", always_xy=True)
-        box = transformer.transform_bounds(*values, densify_pts=21)
+        box = transformer.transform_bounds(
+            values[0], values[1], values[2], values[3], densify_pts=21
+        )
     except Exception as exc:  # noqa: BLE001 - pyproj raises several unrelated types
         return None, f"the declared extent could not be transformed from {crs}: {exc}"
     if any(not math.isfinite(v) for v in box):
