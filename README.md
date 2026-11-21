@@ -490,7 +490,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`fdmnes`** | 1.0.0 | Spectroscopy | XANES spectra of crystals and molecules with FDMNES; normalize and compare spectra | `clio-kit mcp-server fdmnes` |
 | **`geo`** | 2.4.1 | Geospatial | Render GeoJSON vector layers with basemaps | `clio-kit mcp-server geo` |
 | **`geoprocess`** | 1.0.0 | Geospatial | Reproject, clip, overlay, zonal statistics and raster differences | `clio-kit mcp-server geoprocess` |
-| **`geoservices`** | 1.0.0 | Geospatial | Fetch ArcGIS, OGC, STAC, remote raster and lidar data by region | `clio-kit mcp-server geoservices` |
+| **`geoservices`** | 1.1.0 | Geospatial | Fetch ArcGIS, OGC, STAC, remote raster and lidar data by region | `clio-kit mcp-server geoservices` |
 | **`graspa`** | 1.0.0 | Chemistry | Gas adsorption uptake in MOFs and zeolites by GCMC with gRASPA; rank frameworks | `clio-kit mcp-server graspa` |
 | **`hdf5`** | 2.3.1 | Data I/O | HPC-optimized scientific data with 27 tools, AI insights, caching, streaming | `clio-kit mcp-server hdf5` |
 | **`home-assistant`** | 1.0.0 | Home | Your Home Assistant's sensors, devices and automations (runs ha-mcp 9.2.0) | `clio-kit mcp-server home-assistant` |
