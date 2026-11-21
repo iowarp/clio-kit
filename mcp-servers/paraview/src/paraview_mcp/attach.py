@@ -50,6 +50,38 @@ main()
 """
 
 
+_JOIN_FAILED = "pvserver join failed: "
+
+
+def _whole_lines(text: str, limit: int = 1500) -> str:
+    """The end of ``text`` within ``limit`` characters, cut only between lines."""
+    kept: list[str] = []
+    size = 0
+    for line in reversed(text.strip().splitlines()):
+        if kept and size + len(line) + 1 > limit:
+            break
+        kept.append(line if len(line) <= limit else "…" + line[-limit:])
+        size += len(line) + 1
+    return "\n".join(reversed(kept))
+
+
+def start_failure(where: str, log: str) -> ParaViewError:
+    """The typed error for a node half whose log shows it stopped while starting."""
+    for line in log.splitlines():
+        if _JOIN_FAILED in line:
+            target, _, reason = line.split(_JOIN_FAILED, 1)[1].partition(": ")
+            return ParaViewError(
+                "pvserver_join_failed",
+                f"The ParaView node half started {where} but could not join the "
+                f"pvserver at {target}: {reason or 'no reason given'}. Check that "
+                "the pvserver is still running and that its forwarded port is open.",
+            )
+    return ParaViewError(
+        "node_failed",
+        f"The ParaView node half failed to start {where}:\n{_whole_lines(log)}",
+    )
+
+
 def code_bundle() -> tuple[bytes, str]:
     """The node half's code as a gzip tarball, and its content hash."""
     files = sorted(p for p in NODE_SOURCE.glob("*.py"))
@@ -678,11 +710,7 @@ class Attacher:
                     return node
             if lines and lines[-1].isdigit() and int(lines[-1]) > 0:
                 log = transport.run(f"tail -n 25 {f}/{slot}.log", timeout=60)
-                raise ParaViewError(
-                    "node_failed",
-                    f"The ParaView node half failed to start {transport.where}: "
-                    f"{log.stdout.strip()[-1500:]}",
-                )
+                raise start_failure(transport.where, log.stdout)
         raise ParaViewError(
             "node_start_timeout",
             f"The ParaView node half did not start {transport.where} within "
@@ -701,11 +729,7 @@ class Attacher:
             if node is not None and node.get("code_hash") == code_hash:
                 return node
             if failed is not None:
-                raise ParaViewError(
-                    "node_failed",
-                    f"The ParaView node half failed to start on this machine: "
-                    f"{failed[-1500:]}",
-                )
+                raise start_failure("on this machine", failed)
         raise ParaViewError(
             "node_start_timeout",
             f"The ParaView node half did not start on this machine within "
