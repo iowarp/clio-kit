@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import tomllib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
@@ -25,6 +26,17 @@ from mcp import Client, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def read_upstream_servers() -> dict[str, dict]:
+    """Return the ``[upstream.<name>]`` rows of mcp-server-versions.toml.
+
+    These servers run a third-party release exactly as published, so their
+    protocol era and their required configuration are the upstream's.
+    """
+    with (ROOT / "mcp-server-versions.toml").open("rb") as handle:
+        upstream = tomllib.load(handle).get("upstream", {})
+    return {name: row for name, row in upstream.items() if isinstance(row, dict)}
 
 
 class Acceptance:
@@ -39,6 +51,7 @@ class Acceptance:
         )
         self.records: list[dict] = []
         self.launcher = output / "installed" / "bin" / "clio-kit"
+        self.upstream = read_upstream_servers()
 
     def command(self, name: str, args: list[str], *, cwd: Path = ROOT) -> str:
         result = subprocess.run(
@@ -63,20 +76,35 @@ class Acceptance:
         )
 
     async def session(
-        self, name: str, args: list[str], calls: list[tuple[str, dict]] | None = None
+        self,
+        name: str,
+        args: list[str],
+        calls: list[tuple[str, dict]] | None = None,
+        *,
+        mode: str | None = None,
+        environment: dict[str, str] | None = None,
     ) -> list[dict]:
+        """Connect to a launched server, list its tools and make ``calls``.
+
+        ``mode`` overrides the selected protocol era for this session and
+        ``environment`` adds variables to the server's environment.
+        """
+        if mode is None:
+            # Runtime fixtures exercise language-neutral negotiation;
+            # shipped Python servers must support the selected era.
+            mode = "auto" if args[0] == "server" else self.protocol_mode
+        env = {**self.environment, **(environment or {})}
+
         async def exchange() -> list[dict]:
             with (self.output / f"{name}.stderr").open("w") as errors:
                 async with Client(
                     stdio_client(
                         StdioServerParameters(
-                            command=str(self.launcher), args=args, env=self.environment
+                            command=str(self.launcher), args=args, env=env
                         ),
                         errlog=errors,
                     ),
-                    # Runtime fixtures exercise language-neutral negotiation;
-                    # shipped Python servers must support the selected era.
-                    mode="auto" if args[0] == "server" else self.protocol_mode,
+                    mode=mode,
                 ) as client:
                     tools = []
                     cursor = None
@@ -582,7 +610,28 @@ class Acceptance:
                 "all-server-inventory", [str(self.launcher), "mcp-servers"]
             )
             for name in re.findall(r"^\s+- ([a-z0-9-]+)$", inventory, re.M):
-                await self.session("connect-" + name, ["mcp-server", name])
+                await self.connect(name)
+
+    async def connect(self, name: str) -> None:
+        """List a shipped server's tools in a real session.
+
+        A server that runs an upstream release as published negotiates the era
+        that release supports, and gets the placeholder configuration it
+        declares so that it starts; listing tools contacts no service.
+        """
+        upstream = self.upstream.get(name)
+        if upstream is None:
+            await self.session("connect-" + name, ["mcp-server", name])
+            return
+        await self.session(
+            "connect-" + name,
+            ["mcp-server", name],
+            mode="auto",
+            environment={
+                str(key): str(value)
+                for key, value in upstream.get("probe-environment", {}).items()
+            },
+        )
 
 
 def main() -> None:

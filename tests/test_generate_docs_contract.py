@@ -203,5 +203,44 @@ def test_partial_metadata_extraction_cannot_publish_an_incomplete_site(
 def test_ci_runs_documentation_generator_in_its_locked_package_environment():
     workflow = (
         Path(__file__).resolve().parents[1] / ".github/workflows/docs-and-website.yml"
-    ).read_text()
+    ).read_text(encoding="utf-8")
     assert "uv run --frozen python scripts/generate_docs.py" in workflow
+
+
+def test_inspection_receives_the_declared_probe_environment(tmp_path, monkeypatch):
+    server = tmp_path / "home-assistant"
+    server.mkdir()
+    (server / "clio-server.toml").write_text('name = "home-assistant"\n')
+    extractor = GENERATOR.MCPDataExtractor(
+        {"home-assistant": "1.0.0"},
+        "2026-09-10",
+        upstream={"home-assistant": {"probe-environment": {"HOMEASSISTANT_URL": "x"}}},
+    )
+    seen = {}
+
+    def run(command, **kwargs):
+        seen.update(kwargs["env"])
+        return GENERATOR.subprocess.CompletedProcess(command, 0, '{"tools": []}', "")
+
+    monkeypatch.setattr(GENERATOR.subprocess, "run", run)
+    assert extractor._extract_tools_from_server(server) == []
+    assert seen["HOMEASSISTANT_URL"] == "x"
+
+
+def test_ci_does_not_sync_conflicting_server_extras():
+    workflow = (
+        Path(__file__).resolve().parents[1] / ".github/workflows/docs-and-website.yml"
+    ).read_text(encoding="utf-8")
+    assert "--all-extras" not in workflow
+
+
+def test_page_name_is_the_catalogue_folder_not_the_package(tmp_path, monkeypatch):
+    server = tmp_path / "copernicus"
+    server.mkdir()
+    (server / "clio-server.toml").write_text(
+        'name = "copernicus"\nruntime = "python"\n'
+    )
+    (server / "pyproject.toml").write_text('[project]\nname = "copernicus-kit-mcp"\n')
+    extractor = GENERATOR.MCPDataExtractor({"copernicus": "0.7.2"}, "2026-09-10")
+    monkeypatch.setattr(extractor, "_extract_tools_from_server", lambda _: [])
+    assert extractor._extract_single_mcp_data(server)["name"] == "Copernicus"
