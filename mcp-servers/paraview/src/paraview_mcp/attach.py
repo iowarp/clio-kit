@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import os
 import shlex
 import tarfile
 import threading
@@ -32,6 +33,14 @@ from .transport import Completed, Transport, transport_for
 
 #: SSH failures that a forwarded pvserver endpoint would avoid.
 _SSH_CODES = frozenset({"ssh_failed", "unreachable", "forward_failed"})
+
+#: Installer output that means the folder refused the write, not the index.
+_WRITE_DENIED = (
+    "Access is denied",
+    "os error 5",
+    "Permission denied",
+    "PermissionError",
+)
 
 NODE_SOURCE = Path(__file__).resolve().parent / "node"
 RUN_NODE = """import os, sys
@@ -79,10 +88,15 @@ def parse_markers(text: str) -> dict[str, str]:
 def local_folder(version: str) -> str:
     """The node half's folder on this machine: clio-kit's own data folder.
 
-    On another machine it is ``~/.clio/paraview/<version>/``. Here it sits in
-    clio-kit's data folder, which a host that confines the servers it launches
-    (CLIO's write fence) lets them write.
+    On another machine it is ``~/.clio/paraview/<version>/``. Here it sits under
+    ``CLIO_KIT_CACHE_DIR`` when the host sets it, as the ParaView client does,
+    else in clio-kit's data folder. A host that confines the servers it launches
+    grants and keeps that cache folder; inside a Windows AppContainer the data
+    folder resolves to a per-launch profile the fence does not let them write.
     """
+    configured = os.environ.get("CLIO_KIT_CACHE_DIR", "").strip()
+    if configured:
+        return str(Path(configured).expanduser() / "paraview-node" / version)
     import platformdirs
 
     base = platformdirs.user_data_dir("clio-kit", appauthor=False)
@@ -531,13 +545,26 @@ class Attacher:
                 helper.close()
         pip_plats, _ = platform_tags(env["pyinfo"])
         packages = " ".join(config.NODE_PACKAGES)
+        joined = "; ".join(failures)
+        if any(mark in joined for mark in _WRITE_DENIED):
+            raise ParaViewError(
+                "node_folder_unwritable",
+                "Could not install trame, trame-vtk and trame-vuetify for the ParaView "
+                f"{transport.where}: writing into {folder} was denied. A host that "
+                "confines this server must let it write there; set CLIO_KIT_CACHE_DIR "
+                f"to a folder it may write and keep. ({joined})",
+            )
         raise ParaViewError(
             "no_package_index",
             "Could not install trame, trame-vtk and trame-vuetify for the ParaView "
-            f"{transport.where}: neither it"
-            + (f" nor the jump host {jump}" if jump else "")
-            + " could reach the Python package index. ("
-            + "; ".join(failures)
+            f"{transport.where}: "
+            + (
+                f"neither it nor the jump host {jump} could reach"
+                if jump
+                else "it could not reach"
+            )
+            + " the Python package index. ("
+            + joined
             + ") Install them from a machine that can, into the same folder: pip "
             f"install --target {folder}/site --python-version "
             f"{env['pyinfo']['python']} "

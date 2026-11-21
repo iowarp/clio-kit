@@ -57,15 +57,17 @@ Test knobs: `PARAVIEW_IDLE_SECONDS` (node half idle shutdown, default 1800),
 ## The first attach on a machine
 
 The front prepares `~/.clio/paraview/<server version>/` there (on this machine,
-clio-kit's own data folder, `<user data>/clio-kit/paraview/<server version>/`,
-which a host that confines the servers it launches lets them write):
+`$CLIO_KIT_CACHE_DIR/paraview-node/<server version>/` when the host sets it,
+as CLIO does for the servers it confines, else clio-kit's own data folder,
+`<user data>/clio-kit/paraview/<server version>/`):
 
 - `site/`: trame, trame-vtk and trame-vuetify (pinned in `config.py`),
   installed for the Python of that machine's
   `pvpython` (ParaView 5.13 or later, Python 3.10 or later). If the machine cannot reach
   the package index, the front builds it from the jump host, which shares the
   home folder on a cluster. If neither can, the message names the command to
-  run from a machine that can.
+  run from a machine that can. If the folder refuses the write, the error is
+  `node_folder_unwritable` and names the folder.
 - `code/`: the node half, copied over the same connection.
 - `env.json`: what the front learned about that `pvpython`, including whether
   it renders offscreen as it is. Login and compute nodes often have no X

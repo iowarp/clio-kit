@@ -121,9 +121,13 @@ def build(folder: str, pyinfo: dict[str, Any], pvpython: str | None) -> Complete
     ]  # fmt: skip
     attempts: list[list[str]] = []
     uv = shutil.which("uv")
+    cache = Path(folder) / "uv-cache"
     if uv:
+        # A confined host may not grant uv's own profile cache; a cache in this
+        # folder keeps every staged file in territory this server may write.
         attempts.append(
             [uv, "pip", "install", "--quiet", "--target", str(target),
+             "--cache-dir", str(cache), "--link-mode", "copy",
              "--python-version", pyver, "--python-platform", uv_plat, *packages]
         )  # fmt: skip
     attempts.append([sys.executable, "-m", "pip", *pip])
@@ -136,9 +140,11 @@ def build(folder: str, pyinfo: dict[str, Any], pvpython: str | None) -> Complete
             site = Path(folder) / "site"
             shutil.rmtree(site, ignore_errors=True)
             target.rename(site)
+            shutil.rmtree(cache, ignore_errors=True)
             return Completed(0, "CLIO_BUILD=ok", "")
         errors.append(f"{Path(command[0]).name}: {done.stderr.strip()[-300:]}")
     shutil.rmtree(target, ignore_errors=True)
+    shutil.rmtree(cache, ignore_errors=True)
     return Completed(3, "CLIO_BUILD=failed", "; ".join(errors))
 
 

@@ -214,6 +214,7 @@ def test_local_attach_without_pvpython_fails_clearly(
     # AQ35: a PATH with no pvpython on it.
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.delenv("XDG_DATA_HOME", raising=False)
+    monkeypatch.delenv("CLIO_KIT_CACHE_DIR", raising=False)
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
     attacher = attach.Attacher(Settings(target=Target()))
     with pytest.raises(ParaViewError) as caught:
@@ -226,6 +227,15 @@ def test_local_attach_without_pvpython_fails_clearly(
     assert attach.local_folder(config.SERVER_VERSION) == str(folder)
     assert folder.is_dir()
     assert oct(os.stat(folder).st_mode)[-3:] == "700"
+
+
+def test_local_folder_follows_the_host_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A confining host grants CLIO_KIT_CACHE_DIR, not the per-launch profile.
+    monkeypatch.setenv("CLIO_KIT_CACHE_DIR", str(tmp_path))
+    expected = tmp_path / "paraview-node" / config.SERVER_VERSION
+    assert attach.local_folder(config.SERVER_VERSION) == str(expected)
 
 
 async def test_scene_tool_without_paraview_returns_the_message(
