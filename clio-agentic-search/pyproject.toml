@@ -75,6 +75,9 @@ python_version = "3.11"
 strict = true
 mypy_path = "src"
 packages = ["clio_agentic_search"]
+# mypy 2.4's native parser misreads opentelemetry.trace (now installed via
+# fastapi), reporting set_tracer_provider/get_tracer as missing.
+native_parser = false
 
 [[tool.mypy.overrides]]
 module = [
