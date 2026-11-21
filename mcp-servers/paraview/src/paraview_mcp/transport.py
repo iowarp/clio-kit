@@ -3,8 +3,10 @@
 ``LocalTransport`` runs shell scripts on this machine. ``SshTransport`` holds
 one system ``ssh`` connection (a control master, with the person's own keys,
 agent and ``~/.ssh/config``) and runs every script and the one port forward
-over it. It never asks for a password: ``BatchMode=yes`` makes a host that
-wants interactive sign-in fail at once.
+over it. Where ssh has no control master (OpenSSH for Windows), each script is
+its own ``ssh`` and the forward is a dedicated ``ssh -N -L``. It never asks for
+a password: ``BatchMode=yes`` makes a host that wants interactive sign-in fail
+at once.
 """
 
 from __future__ import annotations
@@ -139,8 +141,24 @@ def classify_ssh_failure(host: str, stderr: str) -> ParaViewError:
     return ParaViewError("ssh_failed", f"ssh to {host} failed: {tail}")
 
 
+#: What ssh prints when this platform cannot hold a control master socket.
+_NO_MULTIPLEX = ("getsockname failed", "not a socket", "controlpath too long")
+
+
+def _port_open(port: int) -> bool:
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=1):
+            return True
+    except OSError:
+        return False
+
+
 class SshTransport:
-    """One control-master ``ssh`` to the ParaView host; scripts reuse it."""
+    """One control-master ``ssh`` to the ParaView host; scripts reuse it.
+
+    Without control master support each script opens its own connection and the
+    port forward is its own ``ssh -N -L`` process.
+    """
 
     remote = True
 
@@ -157,6 +175,10 @@ class SshTransport:
         self.log = self.folder / "master.log"
         self.master: subprocess.Popen[bytes] | None = None
         self.forwards: list[tuple[int, int]] = []
+        #: OpenSSH for Windows has no control master (no Unix sockets).
+        self.multiplex = os.name != "nt"
+        self.tunnels: list[subprocess.Popen[bytes]] = []
+        self._jump: list[str] | None = None
 
     @property
     def where(self) -> str:
@@ -167,7 +189,7 @@ class SshTransport:
             raise ParaViewError(
                 "no_ssh", "The ssh command is not installed on this machine."
             )
-        return [
+        base = [
             self.ssh,
             "-o",
             "BatchMode=yes",
@@ -177,11 +199,22 @@ class SshTransport:
             "ServerAliveInterval=15",
             "-o",
             "ServerAliveCountMax=3",
-            "-o",
+        ]
+        if self.multiplex:
             # Relative to the folder every ssh here runs in: a host's temporary
             # folder can be too deep for a Unix socket path (about 104 bytes).
-            f"ControlPath={self.socket.name}",
-        ]
+            base += ["-o", f"ControlPath={self.socket.name}"]
+        return base
+
+    def _jump_args(self) -> list[str]:
+        """``-J via`` unless ``~/.ssh/config`` already gives this host a jump."""
+        if self._jump is None:
+            self._jump = (
+                []
+                if self.config_jump() or not self.target.via
+                else ["-J", self.target.via]
+            )
+        return self._jump
 
     def config_jump(self) -> str | None:
         """The ProxyJump ``~/.ssh/config`` gives this host, if any."""
@@ -204,9 +237,9 @@ class SshTransport:
         return self.config_jump() or self.target.via
 
     def open(self) -> None:
-        jump = (
-            [] if self.config_jump() or not self.target.via else ["-J", self.target.via]
-        )
+        if not self.multiplex:
+            self._open_plain()
+            return
         command = [
             *self._base(),
             "-o",
@@ -216,7 +249,7 @@ class SshTransport:
             "-o",
             "ExitOnForwardFailure=yes",
             "-N",
-            *jump,
+            *self._jump_args(),
             self.host,
         ]
         with open(self.log, "wb") as log:
@@ -232,6 +265,11 @@ class SshTransport:
         while time.monotonic() < deadline:
             if self.master.poll() is not None:
                 stderr = self.log.read_text("utf-8", "replace")
+                if any(mark in stderr.lower() for mark in _NO_MULTIPLEX):
+                    self.master = None
+                    self.multiplex = False
+                    self._open_plain()
+                    return
                 self.close()
                 raise classify_ssh_failure(self.host, stderr)
             if self.socket.exists() and self._check():
@@ -243,6 +281,30 @@ class SshTransport:
             f"ssh to {self.host} did not finish connecting in "
             f"{2 * self.connect_timeout + 10} s.",
         )
+
+    def _open_plain(self) -> None:
+        """Check the host signs in, since there is no master to hold open."""
+        try:
+            done = subprocess.run(
+                [*self._base(), *self._jump_args(), self.host, "true"],
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                timeout=2 * self.connect_timeout + 10,
+                check=False,
+                cwd=self.folder,
+            )
+        except subprocess.TimeoutExpired as exc:
+            self.close()
+            raise ParaViewError(
+                "unreachable",
+                f"ssh to {self.host} did not finish connecting in "
+                f"{2 * self.connect_timeout + 10} s.",
+            ) from exc
+        if done.returncode != 0:
+            self.close()
+            raise classify_ssh_failure(
+                self.host, done.stderr.decode("utf-8", "replace")
+            )
 
     def _check(self) -> bool:
         done = subprocess.run(
@@ -258,10 +320,10 @@ class SshTransport:
         self, script: str, stdin: bytes | None = None, timeout: float = 600.0
     ) -> Completed:
         full = with_prepare(self.target.prepare, script)
+        reuse = ["-o", "ControlMaster=no"] if self.multiplex else self._jump_args()
         command = [
             *self._base(),
-            "-o",
-            "ControlMaster=no",
+            *reuse,
             self.host,
             "bash -lc " + shlex.quote(full),
         ]
@@ -286,6 +348,8 @@ class SshTransport:
 
     def forward(self, remote_port: int, local_port: int | None = None) -> int:
         """Forward one loopback port here to the node half's loopback port."""
+        if not self.multiplex:
+            return self._forward_plain(remote_port, local_port)
         for local, remote in list(self.forwards):
             subprocess.run(
                 [
@@ -326,13 +390,73 @@ class SshTransport:
         self.forwards.append((port, remote_port))
         return port
 
+    def _stop_tunnels(self) -> None:
+        for tunnel in self.tunnels:
+            if tunnel.poll() is None:
+                tunnel.kill()
+                try:
+                    tunnel.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    pass
+        self.tunnels.clear()
+        self.forwards.clear()
+
+    def _forward_plain(self, remote_port: int, local_port: int | None) -> int:
+        """A dedicated ``ssh -N -L`` that lives as long as this transport."""
+        self._stop_tunnels()
+        port = local_port or free_port()
+        log_path = self.folder / f"forward-{port}.log"
+        command = [
+            *self._base(),
+            "-o",
+            "ExitOnForwardFailure=yes",
+            "-N",
+            "-L",
+            f"127.0.0.1:{port}:127.0.0.1:{remote_port}",
+            *self._jump_args(),
+            self.host,
+        ]
+        with open(log_path, "wb") as log:
+            tunnel = subprocess.Popen(
+                command,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=log,
+                start_new_session=True,
+                cwd=self.folder,
+            )
+        self.tunnels.append(tunnel)
+        deadline = time.monotonic() + 2 * self.connect_timeout + 10
+        while time.monotonic() < deadline:
+            if tunnel.poll() is not None:
+                stderr = log_path.read_text("utf-8", "replace").strip()
+                self._stop_tunnels()
+                raise ParaViewError(
+                    "forward_failed",
+                    f"Could not forward a local port to {self.host}: {stderr}",
+                )
+            if _port_open(port):
+                self.forwards.append((port, remote_port))
+                return port
+            time.sleep(0.2)
+        self._stop_tunnels()
+        raise ParaViewError(
+            "forward_failed",
+            f"The port forward to {self.host} did not open in "
+            f"{2 * self.connect_timeout + 10} s.",
+        )
+
     def alive(self) -> bool:
+        if not self.multiplex:
+            return all(tunnel.poll() is None for tunnel in self.tunnels)
         return self.master is not None and self.master.poll() is None and self._check()
 
     def processes(self) -> list[int]:
-        return [self.master.pid] if self.master is not None else []
+        pids = [tunnel.pid for tunnel in self.tunnels]
+        return ([self.master.pid] if self.master is not None else []) + pids
 
     def close(self) -> None:
+        self._stop_tunnels()
         if self.master is not None and self.master.poll() is None:
             subprocess.run(
                 [*self._base(), "-O", "exit", self.host],

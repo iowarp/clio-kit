@@ -18,7 +18,9 @@ schema-version = 1
 # (PARAVIEW_PVSERVER, such as a relay's local port for one in a cluster job) and
 # reads the data on the server's machine, runs ParaView 5.13 and Python 3.10 as
 # well as 6.x, runs natively on Windows, and fetches the ParaView version a server
-# needs (PARAVIEW_VERSION) from Kitware when none is installed.
+# needs (PARAVIEW_VERSION) from Kitware when none is installed. Over SSH from
+# Windows, whose OpenSSH has no control master, each step is its own ssh and the
+# forward its own ssh -N -L.
 # slicer 1.0.0 is a new server: it slices STL, 3MF and STEP models with the
 # PrusaSlicer or OrcaSlicer already installed (never downloaded) and shows the
 # toolpaths layer by layer in an MCP Apps view (ui://slicer/layers).

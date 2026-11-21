@@ -21,7 +21,17 @@ HOW_TO_POINT = (
     "('Where ParaView runs') to its SSH host name, and `via` ('Jump host') if it is "
     "reached through another host; to use one on this machine, set `prepare` "
     "('Command to run first') to a line that puts pvpython on the PATH, for example "
-    "'module load paraview' or 'export PATH=/opt/paraview/bin:$PATH'."
+    "'module load paraview' or 'export PATH=/opt/paraview/bin:$PATH'. To join a "
+    "pvserver whose port something already forwards to this machine (a job "
+    "service's forward, for example), set `pvserver` to that local host:port and "
+    "leave `address` empty: the client then runs here and needs no SSH of its own."
+)
+
+#: Added to SSH failures when the connector also names a pvserver.
+PREFER_FORWARD = (
+    " The connector names a pvserver: if its port is already forwarded to this "
+    "machine, set `pvserver` to that local host:port and clear `address` and `via`, "
+    "so ParaView joins it here instead of over a second SSH connection."
 )
 
 

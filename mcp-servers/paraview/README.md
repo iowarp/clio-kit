@@ -37,7 +37,18 @@ these from the values the person (or the agent) gives:
 `ssh ares; ssh ares-compute-08` is the address `ares-compute-08` via `ares`.
 The front runs the system `ssh` with `BatchMode=yes` and your own keys, agent
 and config. A host that asks for a password or a one-time code fails at once
-with a message saying interactive sign-in is needed; nothing waits.
+with a message saying interactive sign-in is needed; nothing waits. Where the
+system `ssh` holds one control master, every step and the port forward share
+it. OpenSSH for Windows has no control master, so there each step is its own
+`ssh` (through the jump host when there is one) and the forward is a dedicated
+`ssh -N -L` that lives as long as the link.
+
+When something else already forwards a `pvserver`'s port to this machine, for
+example a job service that starts `pvserver` in a cluster job and forwards its
+port here, use that forward: set `PARAVIEW_PVSERVER` to its local `host:port`
+and leave `PARAVIEW_ADDRESS` and `PARAVIEW_VIA` empty. The client then runs on
+this machine and the connector opens no SSH of its own. An SSH failure while a
+`pvserver` is named says so.
 
 Test knobs: `PARAVIEW_IDLE_SECONDS` (node half idle shutdown, default 1800),
 `PARAVIEW_REMOTE_RENDER_THRESHOLD_MB` (default: ParaView's own setting, 20),

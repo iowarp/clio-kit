@@ -26,9 +26,12 @@ from typing import Any
 
 from . import client, config, native
 from .config import Settings
-from .errors import ParaViewError, no_paraview
+from .errors import PREFER_FORWARD, ParaViewError, no_paraview
 from .link import LinkError, NodeClient
 from .transport import Completed, Transport, transport_for
+
+#: SSH failures that a forwarded pvserver endpoint would avoid.
+_SSH_CODES = frozenset({"ssh_failed", "unreachable", "forward_failed"})
 
 NODE_SOURCE = Path(__file__).resolve().parent / "node"
 RUN_NODE = """import os, sys
@@ -328,6 +331,11 @@ class Attacher:
         try:
             transport.open()
             return self._attach_over(transport, started)
+        except ParaViewError as exc:
+            transport.close()
+            if transport.remote and settings.pvserver and exc.code in _SSH_CODES:
+                raise ParaViewError(exc.code, exc.message + PREFER_FORWARD) from exc
+            raise
         except BaseException:
             transport.close()
             raise
