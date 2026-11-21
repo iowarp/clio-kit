@@ -114,6 +114,19 @@
       "description": "Errors of forecast cyclone tracks (one or many models) against a best track: great-circle position error, central pressure and wind errors by model and lead time."
     }
   ],
+  "resources": [
+    {
+      "uri": "weather://capabilities",
+      "name": "capabilities",
+      "description": "The tools grouped by job, the data source of each fetch, what needs a GPU or an external program, and what every output carries."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "ensemble_risk",
+      "description": "Turn the latest ECMWF ensemble into a probability of exceeding a threshold at a place."
+    }
+  ],
   "tags": [
     "weather",
     "climate",
