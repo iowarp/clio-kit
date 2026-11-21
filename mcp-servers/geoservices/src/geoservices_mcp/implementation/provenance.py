@@ -21,7 +21,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 PROVENANCE_SCHEMA = "clio.provenance/1"
 SERVER_NAME = "geoservices"
-SERVER_VERSION = "1.0.0"
+SERVER_VERSION = "1.1.0"
 
 
 def package_versions(names: Iterable[str]) -> dict[str, str]:
