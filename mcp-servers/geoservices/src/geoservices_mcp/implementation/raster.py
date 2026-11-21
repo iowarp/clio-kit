@@ -20,7 +20,9 @@ from .common import GeoServiceError, Region
 MAX_SOURCES = 64
 #: Full-resolution bytes one read may fetch. Sources without overviews must be read at
 #: native resolution even for a coarse result, so a whole-basin window of a 0.5 m mosaic
-#: would fetch tens of gigabytes; refuse that with the numbers instead of hanging.
+#: would fetch tens of gigabytes. Past this default a read stops with the numbers and
+#: the way through (``max_read_bytes``): whether to fetch that much is the caller's
+#: decision, not this server's.
 MAX_READ_BYTES = int(
     os.environ.get("GEOSERVICES_MAX_READ_BYTES", str(1536 * 1024 * 1024))
 )
@@ -58,6 +60,7 @@ def read_window(
     max_cells: int = DEFAULT_MAX_CELLS,
     dst_crs: str | None = None,
     band: int = 1,
+    max_read_bytes: int | None = None,
 ) -> dict[str, Any]:
     """Mosaic the part of ``sources`` inside ``region`` into one GeoTIFF."""
     import rasterio
@@ -125,7 +128,15 @@ def read_window(
             else:  # approximate the native cell size in the target CRS
                 b = transform_bounds(first.crs, target, *first.bounds)
                 native_res = (b[2] - b[0]) / first.width
-            _check_read_budget(used, want, target, native_res, band, max_cells)
+            _check_read_budget(
+                used,
+                want,
+                target,
+                native_res,
+                band,
+                max_cells,
+                max_read_bytes or MAX_READ_BYTES,
+            )
             width = (want[2] - want[0]) / native_res
             height = (want[3] - want[1]) / native_res
             factor = max(1.0, math.sqrt(width * height / max_cells))
@@ -316,8 +327,9 @@ def _check_read_budget(
     native_res: float,
     band: int,
     max_cells: int,
+    budget: int,
 ) -> None:
-    """Refuse a read whose full-resolution fetch would exceed MAX_READ_BYTES."""
+    """Stop a read whose full-resolution fetch would exceed ``budget``, saying how to go on."""
     from rasterio.warp import transform_bounds
 
     width = (want[2] - want[0]) / native_res
@@ -338,17 +350,21 @@ def _check_read_budget(
         read_factor = max(usable)
         smallest_factor = min(smallest_factor, read_factor)
         total += cells / (read_factor**2) * np.dtype(ds.dtypes[band - 1]).itemsize
-    if total > MAX_READ_BYTES:
+    if total > budget:
         area_km2 = (
             (want[2] - want[0]) * (want[3] - want[1]) / 1e6
             if target.is_projected
             else None
         )
-        fits = MAX_READ_BYTES / max(total, 1) * (area_km2 or 0)
+        fits = budget / max(total, 1) * (area_km2 or 0)
+        needed = math.ceil(total / 2**20) * 2**20
         raise GeoServiceError(
             f"This window would fetch about {total / 1e9:.1f} GB of full-resolution data "
             f"(the source has {'no overviews' if smallest_factor == 1 else 'only coarse overviews'} "
-            "at this scale, so every native block is read even for a coarse result). Read a "
+            "at this scale, so every native block is read even for a coarse result), more "
+            f"than this call's budget of {budget / 1e9:.1f} GB. To read it anyway, call again "
+            f"with max_read_bytes={needed}; in a conversation with a person, ask them first "
+            "when that is a large transfer. Or read a "
             + (
                 f"smaller region (about {fits:.0f} km\u00b2 fits) "
                 if area_km2
