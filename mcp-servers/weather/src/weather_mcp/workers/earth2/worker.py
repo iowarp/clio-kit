@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 if TYPE_CHECKING:  # the worker imports its libraries where it uses them
     import xarray as xr
@@ -102,6 +102,7 @@ def _fields(names, values, lat, lon) -> xr.Dataset:
     import numpy as np
     import xarray as xr
 
+    coords: dict[str, object]
     if np.ndim(lat) == 1:
         dims, coords = ("lat", "lon"), {"lat": np.asarray(lat), "lon": np.asarray(lon)}
     else:
@@ -111,7 +112,10 @@ def _fields(names, values, lat, lon) -> xr.Dataset:
         {str(n): (dims, v) for n, v in zip(names, values, strict=True)}, coords=coords
     )
     if "u10m" in ds and "v10m" in ds:
-        ds["wind_speed"] = np.hypot(ds["u10m"], ds["v10m"]).assign_attrs(
+        # np.hypot of two DataArrays returns a DataArray (__array_ufunc__); numpy's
+        # stub only knows the ndarray result.
+        speed = cast("xr.DataArray", np.hypot(ds["u10m"], ds["v10m"]))
+        ds["wind_speed"] = speed.assign_attrs(
             units="m s-1", long_name="10 m wind speed"
         )
     return ds

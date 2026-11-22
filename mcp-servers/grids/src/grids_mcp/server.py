@@ -23,6 +23,7 @@ import numpy as np
 from fastmcp import FastMCP
 from fastmcp.apps import AppConfig
 from fastmcp.exceptions import ToolError
+from fastmcp.prompts import Message
 from fastmcp.tools import ToolResult
 from mcp.types import TextContent
 from pydantic import Field
@@ -361,6 +362,24 @@ async def grid_window_tool(
 )
 def editor_resource() -> str:
     return resources.files("grids_mcp").joinpath("editor.html").read_text("utf-8")
+
+
+@mcp.prompt(tags={"grid", "bathymetry", "workflow"})
+def clean_bathymetry(path: str, variable: str | None = None) -> list[Message]:
+    """Find and fix the usual problems in a model bathymetry, with a replayable edit log."""
+    field = f" (variable {variable})" if variable else ""
+    return [
+        Message(
+            f"Open the bathymetry at {path}{field} with grid_open and look at its shape, "
+            "extent and value range. Look for what breaks an ocean model: wet cells cut "
+            "off from the open ocean, cells shallower than the model's minimum depth, and "
+            "spurious land or sea in straits and along the coast. Propose each fix as a "
+            "grid_edit edit (fill_enclosed, clip with wet, or set over a box or points), "
+            "with a note saying why, and apply them in one ordered list. Report the cells "
+            "each edit changed, the output path and the edit log, and say that grid_replay "
+            "reapplies the log to a regenerated grid."
+        )
+    ]
 
 
 def main() -> None:

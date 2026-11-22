@@ -147,3 +147,16 @@ def test_box_across_the_dateline_and_window_stride(tmp_path: Path) -> None:
     assert sorted(set(grid.lon[mask].tolist())) == [180.0]
     view = editing.window(grid, np.arange(9 * 12.0).reshape(9, 12), 8)
     assert view["shape"] == [5, 6] and view["stride"] == [2, 2]
+
+
+async def test_the_clean_bathymetry_prompt_walks_the_tools() -> None:
+    async with Client(mcp) as client:
+        prompts = {prompt.name for prompt in await client.list_prompts()}
+        result = await client.get_prompt(
+            "clean_bathymetry", {"path": "/runs/topo.nc", "variable": "depth"}
+        )
+    assert prompts == {"clean_bathymetry"}
+    text = result.messages[0].content.text
+    assert "/runs/topo.nc" in text and "variable depth" in text
+    for name in ("grid_open", "grid_edit", "fill_enclosed", "grid_replay"):
+        assert name in text

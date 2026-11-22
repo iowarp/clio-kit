@@ -13,6 +13,7 @@ from typing import Annotated, Any, TypeVar
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
+from fastmcp.prompts import Message
 from fastmcp.tools import ToolResult
 from mcp.types import TextContent
 from pydantic import Field
@@ -206,6 +207,22 @@ def capabilities() -> dict[str, Any]:
         ],
         "printer_control": "none: slicing and viewing only",
     }
+
+
+@mcp.prompt(tags={"3d-printing", "slicer", "workflow"})
+def plan_print(model: str, printer: str, material: str = "PLA") -> list[Message]:
+    """Slice a model for a printer, look at the layers, and weigh a faster or stronger option."""
+    return [
+        Message(
+            f"Plan a print of {model} on a {printer} in {material}. Use list_printers to "
+            "find the printer preset and its qualities and materials, then slice it and "
+            "report the presets chosen, print time, filament and the slicer's warnings. "
+            "Open the layers with show_slice and use layer_stats to say where the time "
+            "goes. Slice once more with one change worth weighing (another layer height, "
+            "infill or supports), put the two side by side with compare_slices, and "
+            "recommend one. Export the G-code only when asked; no printer is controlled."
+        )
+    ]
 
 
 def main() -> None:

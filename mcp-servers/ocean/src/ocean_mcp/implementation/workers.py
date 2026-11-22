@@ -60,6 +60,8 @@ def run_worker(name: str, request: dict[str, Any], timeout_s: float) -> dict[str
     env = dict(os.environ)
     env["UV_PROJECT_ENVIRONMENT"] = str(_environment_root(name))
     env.pop("VIRTUAL_ENV", None)
+    # The worker pins its own interpreter (.python-version); the server's must not leak in.
+    env.pop("UV_PYTHON", None)
     uv = _uv()
     sync = subprocess.run(
         [uv, "sync", "--frozen", "--project", str(project), "--quiet"],

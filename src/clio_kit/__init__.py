@@ -527,6 +527,10 @@ def _locked_server_runtime(
         child_environment["UV_CACHE_DIR"] = str((cache_root / "uv-cache").resolve())
         child_environment["UV_PRERELEASE"] = "allow"
         child_environment.pop("VIRTUAL_ENV", None)
+        # The server's own requires-python (and .python-version) choose its
+        # interpreter. A caller's UV_PYTHON, such as the one setup-uv exports,
+        # names the launcher's Python and would refuse a server pinned below it.
+        child_environment.pop("UV_PYTHON", None)
     return _LockedServerRuntime(
         server=server_path.name,
         runtime=runtime,

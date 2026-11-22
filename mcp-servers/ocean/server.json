@@ -134,6 +134,24 @@
       "description": "Check a regional MOM6 run directory before running: open-boundary segments in MOM_input match the segment files; boundary and initial files cover the run dates in input.nml; the land mask has no isolated wet cells or one-cell channels (except cells the scientist kept); MINIMUM_DEPTH agrees with the bathymetry; LAYOUT fits the mask table. Each check passes, fails or says why it could not run."
     }
   ],
+  "resources": [
+    {
+      "uri": "ocean://capabilities",
+      "name": "capabilities",
+      "description": "The tools grouped by job, the data they fetch or read, and what every output carries."
+    },
+    {
+      "uri": "ocean://water-masses",
+      "name": "water_masses",
+      "description": "The built-in water-mass definitions water_masses assigns against, with citations."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "water_mass_census",
+      "description": "Fetch Argo profiles in a region and period, and say which water masses they hold."
+    }
+  ],
   "tags": [
     "oceanography",
     "argo",

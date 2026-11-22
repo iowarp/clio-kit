@@ -204,3 +204,16 @@ async def test_layer_stats_export_and_compare(
     assert gcode_result.structured_content["bytes"] > 100_000
     assert "[export_exists]" in str(exists.value)
     assert compared.structured_content["slices"][1]["print_time_s_change"] == 0.0
+
+
+async def test_the_plan_print_prompt_walks_the_tools() -> None:
+    async with Client(mcp) as client:
+        prompts = {prompt.name for prompt in await client.list_prompts()}
+        result = await client.get_prompt(
+            "plan_print", {"model": "bracket.stl", "printer": "Prusa MK4"}
+        )
+    assert prompts == {"plan_print"}
+    text = result.messages[0].content.text
+    assert "bracket.stl" in text and "Prusa MK4" in text and "PLA" in text
+    for name in ("list_printers", "slice", "show_slice", "layer_stats", "compare_slices"):
+        assert name in text

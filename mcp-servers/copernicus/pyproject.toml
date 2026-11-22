@@ -38,3 +38,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/copernicus_kit_mcp"]
+
+[tool.uv]
+# copernicus-mcp 0.7.2 (latest) caps mcp<1.28 and pyarrow<22. mcp<1.30.0 carries
+# CVE-2026-59951, CVE-2026-115563 and CVE-2026-116684/5/6; pyarrow<23.0.1 carries
+# PYSEC-2026-113. Override both caps until upstream lifts them.
+override-dependencies = ["mcp>=1.30.0,<2", "pyarrow>=23.0.1"]

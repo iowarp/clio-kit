@@ -9,7 +9,9 @@ copernicus-mcp's own name and version. Arguments after the server name pass thro
 
 The upstream command runs as its own program (``exec`` on POSIX, a child process
 on Windows, where ``exec`` cannot keep the client's stdio), so this wrapper never
-imports it.
+imports it. The repository's metadata checks describe it by asking the
+running upstream command what it advertises (``command`` and ``metadata_env``;
+see ``scripts/upstream_metadata.py``).
 """
 
 from __future__ import annotations
@@ -18,6 +20,7 @@ import os
 import subprocess
 import sys
 import sysconfig
+import tempfile
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -50,6 +53,21 @@ def main() -> None:
     if os.name == "nt":
         raise SystemExit(subprocess.call(argv))
     os.execv(argv[0], argv)
+
+
+def metadata_env() -> dict[str, str]:
+    """What the upstream command needs added to its environment to list everything.
+
+    Upstream offers its CDS tools only once a CDS key resolves; listing tools sends
+    nothing to the CDS, so a placeholder key shows the full surface. Its job database
+    and cache go to a fresh temporary directory rather than the home directory.
+    """
+    state = Path(tempfile.mkdtemp(prefix="copernicus-mcp-metadata-"))
+    return {
+        "CDSAPI_KEY": "00000000-0000-0000-0000-000000000000",
+        "COPERNICUS_MCP_CACHE_DIR": str(state / "cache"),
+        "COPERNICUS_MCP_STATE_DB": str(state / "state.sqlite"),
+    }
 
 
 if __name__ == "__main__":

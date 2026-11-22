@@ -41,6 +41,24 @@ def find_server_module() -> str:
     return entry_point.split(":")[0]
 
 
+def server_object(module: Any) -> Any:
+    """The module's FastMCP object, or an upstream wrapper's advertised metadata.
+
+    A wrapper of an [upstream] server has no ``mcp``; it exposes ``command`` and
+    ``metadata_env``, and the running upstream server is asked instead.
+    """
+    mcp = getattr(module, "mcp", None)
+    if mcp is not None:
+        return mcp
+    command = getattr(module, "command", None)
+    environment = getattr(module, "metadata_env", None)
+    if callable(command) and callable(environment):
+        from upstream_metadata import UpstreamServer
+
+        return UpstreamServer(command([]), environment())
+    raise RuntimeError(f"{module.__name__} has no mcp object and is not a wrapper")
+
+
 async def extract(module_path: str) -> dict[str, Any]:
     """Import the server and extract all metadata."""
     module = importlib.import_module(module_path)
@@ -50,7 +68,7 @@ async def extract(module_path: str) -> dict[str, Any]:
         if not isinstance(metadata_profile, str) or not callable(profile_applier):
             raise RuntimeError("invalid MCP_METADATA_PROFILE contract")
         cast(Callable[[str], None], profile_applier)(metadata_profile)
-    mcp = getattr(module, "mcp")
+    mcp = server_object(module)
 
     tools = await mcp.list_tools()
     resources = await mcp.list_resources()

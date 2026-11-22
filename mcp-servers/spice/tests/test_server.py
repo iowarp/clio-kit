@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
 import tomllib
 from pathlib import Path
 
@@ -49,3 +52,24 @@ def test_the_waveform_view_passes_through() -> None:
     (content,) = replies[2]["result"]["contents"]
     assert content["mimeType"] == "text/html;profile=mcp-app"
     assert "<html" in content["text"].lower()
+
+
+def test_mcp_describes_what_the_upstream_server_advertises() -> None:
+    # What scripts/extract_mcp_metadata.py reports must agree with server.json.
+    described = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))
+    extracted = subprocess.run(
+        [sys.executable, str(ROOT.parents[1] / "scripts" / "extract_mcp_metadata.py")],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+        timeout=600,
+    )
+    listing = json.loads(extracted.stdout)
+    tools = sorted(t["name"] for t in listing["tools"])
+    resources = sorted(r["uri"] for r in listing["resources"])
+    prompts = sorted(p["name"] for p in listing["prompts"])
+    assert tools == sorted(t["name"] for t in described["tools"])
+    assert resources == sorted(r["uri"] for r in described.get("resources", []))
+    assert prompts == sorted(p["name"] for p in described.get("prompts", []))

@@ -70,7 +70,7 @@ async def run_with_deadline(
 
     try:
         return await asyncio.wait_for(asyncio.to_thread(run), timeout=deadline)
-    except TimeoutError:
+    except (TimeoutError, asyncio.TimeoutError):  # distinct classes on Python 3.10
         with lock:
             abandoned.set()
             staging.unlink(missing_ok=True)
