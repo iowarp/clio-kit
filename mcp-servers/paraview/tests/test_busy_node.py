@@ -129,7 +129,7 @@ class _JobNode:
             def log_message(self, *_args: object) -> None:
                 pass
 
-            def do_POST(self) -> None:  # noqa: N802 - the stdlib's name
+            def do_POST(self) -> None:
                 body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
                 if self.path == "/clio/cancel":
                     outer.cancelled.append(body["job"])

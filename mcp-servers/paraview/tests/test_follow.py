@@ -142,7 +142,7 @@ async def test_a_writer_that_closes_its_output_finishes_the_watch() -> None:
     finished once the disk has been still a moment, long before a stall."""
     results = [_source(steps_result(2), 0.0, True, 0.0)]
     results += [_source(steps_result(3), 1.0, True, 1.0)]
-    results += [_source(steps_result(3), 2.0, False, 2.0 + t) for t in range(0, 40)]
+    results += [_source(steps_result(3), 2.0, False, 2.0 + t) for t in range(40)]
     run = _Run(results)
     outcome = await run.watch(idle_seconds=600)
     assert outcome["ended"] == "finished"

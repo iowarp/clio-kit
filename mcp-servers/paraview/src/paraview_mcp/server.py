@@ -400,8 +400,7 @@ async def run_scene_script(
     scene and replayed when the scene is restored. Names are those of the ParaView that
     runs it: ParaView 6 colour presets drop " (matplotlib)" (either form works), and a
     scalar bar's range labels are AddRangeLabels."""
-    result, _ = await run(
-        ctx,"run_scene_script", {"code": code, "label": label})
+    result, _ = await run(ctx, "run_scene_script", {"code": code, "label": label})
     return present.script_text(result, _where())
 
 
@@ -420,8 +419,7 @@ async def set_timestep(
 ) -> str:
     """Show another time step, or follow the latest one."""
     result, _ = await run(
-        ctx,
-        "set_timestep", {"index": index, "time": time, "latest": latest}
+        ctx, "set_timestep", {"index": index, "time": time, "latest": latest}
     )
     return present.time_line(result["time"])
 
@@ -542,8 +540,7 @@ async def fit_camera(
     ] = None,
 ) -> str:
     """Point the camera so everything, or one object, fills the view."""
-    result, _ = await run(
-        ctx,"fit_camera", {"object": object})
+    result, _ = await run(ctx, "fit_camera", {"object": object})
     return present.camera_text(result["camera"])
 
 
@@ -560,8 +557,7 @@ async def inspect_selection(
     ] = None,
 ) -> str:
     """Exact field values at the point the person picked in the view."""
-    result, _ = await run(
-        ctx,"inspect_selection", {"position": position})
+    result, _ = await run(ctx, "inspect_selection", {"position": position})
     if result.get("selection") is None:
         return result.get("message") or "Nothing is at that position."
     return present.selection_line(result["selection"])
@@ -631,8 +627,7 @@ async def capture(
 ) -> list[Any]:
     """A PNG rendered by ParaView at the camera the view last reported. The text
     says when the frame is blank, so look before describing it."""
-    result, _ = await run(
-        ctx,"capture", {"width": width, "height": height})
+    result, _ = await run(ctx, "capture", {"width": width, "height": height})
     return [
         _text(
             present.blank_warning(result.get("drawn"))
@@ -729,8 +724,7 @@ async def export_scene(
     ] = None,
 ) -> ToolResult:
     """Write the scene manifest, and a ParaView state file beside it."""
-    result, _ = await run(
-        ctx,"export_scene", {"path": path})
+    result, _ = await run(ctx, "export_scene", {"path": path})
     return ToolResult(
         content=[
             _text(
@@ -745,8 +739,7 @@ async def export_scene(
 @mcp.tool(annotations={"title": "Describe the ParaView scene", "readOnlyHint": True})
 async def scene_state(ctx: Context) -> ToolResult:
     """Where ParaView is attached, the dataset, the pipeline, time and view."""
-    result, _ = await run(
-        ctx,"scene_state", {})
+    result, _ = await run(ctx, "scene_state", {})
     attachment = attacher().describe()
     lines = [
         f"Attached {attachment['where']}: ParaView {attachment.get('paraview')} "

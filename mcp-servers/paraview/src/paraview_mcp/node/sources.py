@@ -109,6 +109,7 @@ class SourceGrowth:
     last_growth: float | None
     _disk_seen: dict[str, Any]
     disk_changed: float | None
+
     # Provided by the engine.
     def require_scene(self) -> dict[str, Any]:
         raise NotImplementedError

@@ -426,6 +426,7 @@ def test_a_long_measure_reports_its_steps_and_is_cancelled_on_the_node(
     again = client.command("measure_over_time", {"field": "p", "stride": 10})
     assert [row["index"] for row in again["series"]] == [0, 10, 20]
 
+
 def test_a_descriptor_display_gives_the_first_view(
     attached: tuple[Attacher, Path],
 ) -> None:

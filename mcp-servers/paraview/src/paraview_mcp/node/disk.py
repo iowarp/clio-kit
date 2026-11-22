@@ -202,9 +202,12 @@ def writing(key: Any) -> bool | None:
     """What a ``disk_key`` says of a BP folder's writer (``writer_active``)."""
     if isinstance(key, (list, tuple)) and key:
         last = key[-1]
-        if isinstance(last, (list, tuple)) and len(last) == 2:
-            if last[0] == WRITER_ACTIVE:
-                return bool(last[1])
+        if (
+            isinstance(last, (list, tuple))
+            and len(last) == 2
+            and last[0] == WRITER_ACTIVE
+        ):
+            return bool(last[1])
     return None
 
 

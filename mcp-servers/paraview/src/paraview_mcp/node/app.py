@@ -59,6 +59,7 @@ def say_progress(**progress: Any) -> None:
     if job is not None:
         job.progress = progress
 
+
 TOKEN_HEADERS = ("X-Clio-Service-Token",)
 END_INTERACTION_EVENT = 45  # vtkCommand::EndInteractionEvent
 
