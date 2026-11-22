@@ -419,6 +419,21 @@ def test_a_descriptor_display_gives_the_first_view(
     assert objects[1]["data"]["arrays"][0]["range"] == [3.5, 17.5]
     assert opened["dataset"]["descriptor"]["name"] == "pressure"
     assert "display_note" not in opened["dataset"]
+    # The slice opens face on, whichever way it is cut.
+    write_vti(data / "side.vti")
+    client.command(
+        "open_view",
+        {
+            "path": str(data / "side.vti"),
+            "new": True,
+            "descriptor": {"display": {"representation": "Slice", "slice_normal": [0, 1, 0]}},
+        },
+    )
+    camera = client.command("fit_camera", {})["camera"]
+    offset = [p - f for p, f in zip(camera["position"], camera["focal_point"])]
+    assert offset[1] > 0
+    assert abs(offset[0]) < 1e-6 and abs(offset[2]) < 1e-6
+    assert camera["view_up"] == [0.0, 0.0, 1.0]
     write_vti(data / "unknown_map.vti")
     partly = client.command(
         "open_view",

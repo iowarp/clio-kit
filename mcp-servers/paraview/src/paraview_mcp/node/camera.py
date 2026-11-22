@@ -135,6 +135,26 @@ class CameraCommands:
         )
         self.view.ResetCamera(False)
 
+    def face(self, normal: Any) -> None:
+        """Look at a plane with this normal face on, then fit the scene, so a slice
+        does not open edge-on to the camera."""
+        n = [float(v) for v in normal]
+        length = sum(v * v for v in n) ** 0.5
+        if length == 0:
+            return
+        look = [-v / length for v in n]
+        up = (0.0, 1.0, 0.0) if abs(look[2]) > 0.9 else (0.0, 0.0, 1.0)
+        current = self.read_camera()
+        focal = current["focal_point"]
+        self.apply_camera(
+            {
+                "position": [f - d for f, d in zip(focal, look)],
+                "focal_point": focal,
+                "view_up": list(up),
+            }
+        )
+        self.view.ResetCamera(False)
+
     def cmd_fit_camera(self, object: str | None = None) -> dict[str, Any]:
         scene = self.require_scene()
         if object is None:

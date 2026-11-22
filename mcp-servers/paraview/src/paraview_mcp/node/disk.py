@@ -345,7 +345,8 @@ def source_readiness(
     path: str, reader: str | None, pattern: bool
 ) -> tuple[str | None, bool, Any]:
     """For a growing source about to be opened: why it cannot be read yet (or None),
-    whether it can be read without waiting for it to settle, and what is on disk."""
+    whether it can be read without waiting for it to settle (a BP5 folder can once
+    one step in it is surely whole), and what is on disk."""
     key = disk_key(path)
     if pattern:
         return (None if key else "no file matches it yet"), True, key
@@ -354,7 +355,7 @@ def source_readiness(
     if not is_bp(path, reader):
         return None, True, key
     state = check(path)
-    return state.reason, state.clear, key
+    return state.reason, state.clear or whole_steps(state) > 0, key
 
 
 def dispatch(op: str, args: dict[str, Any]) -> Any:

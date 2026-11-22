@@ -126,6 +126,7 @@ class SourceGrowth:
 
     cmd_create_filter: Callable[..., dict[str, Any]]
     cmd_set_representation: Callable[..., dict[str, Any]]
+    face: Callable[[Any], None]
 
     @staticmethod
     def _update_dataset(
@@ -187,6 +188,8 @@ class SourceGrowth:
         if made:
             target = made["object"]["id"]
             attempt(lambda: self.cmd_set_representation("o1", representation="Outline"))
+            if kind == "Slice":
+                attempt(lambda: self.face(self.proxies[target].SliceType.Normal))
         if array:
             colour: dict[str, Any] = {"color_by": array, "scalar_bar": True}
             if display.get("range"):
@@ -259,8 +262,9 @@ class SourceGrowth:
                     "waits for that while the folder is still changing.",
                 )
             if state.steps and ((self.scene or {}).get("dataset") or {}).get("growing"):
-                # open_view waited for the folder to settle, so every step is read.
-                files = self._follow_index(item, state.steps)
+                # A writer still writing its newest step: open on the steps surely
+                # on disk, and the follow adds the newest once it is whole.
+                files = self._follow_index(item, whole_steps(state) or state.steps)
         name = item.get("reader")
         if not name:
             proxy = self.simple.OpenDataFile(files)

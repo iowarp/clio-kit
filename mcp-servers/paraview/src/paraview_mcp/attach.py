@@ -616,6 +616,13 @@ class Attacher:
             detail = ""
             if settings.target.prepare and probe_err:
                 detail = f"The prepare line said: {probe_err[-300:]}"
+            fetchable = sorted(v for v, m in client.BUILDS if m == client.machine())
+            if not transport.remote and not settings.version and fetchable:
+                detail += (
+                    f"{' ' if detail else ''}To fetch Kitware's ParaView to this "
+                    f"machine instead, set `version` ('ParaView version') to "
+                    f"{' or '.join(fetchable)}; it must match any pvserver it joins."
+                )
             raise no_paraview(transport.where, detail)
         if env is None or env.get("pvpython") != pvpython:
             env = self._interrogate(transport, pvpython)
@@ -660,11 +667,19 @@ class Attacher:
             link = self._try_link(transport, folder, node, pvpython, env)
         if link is None and not opening and self.had_link:
             if node is not None and self._matches(node, node_hash):
+                waiting = (
+                    f" It joined the pvserver at {settings.pvserver}: if that has "
+                    "ended (its job finished, say), the node half may be waiting on "
+                    "it, and open_view with a running pvserver starts a new one."
+                    if settings.pvserver
+                    else ""
+                )
                 raise ParaViewError(
                     "node_unreachable",
                     f"The ParaView node half {transport.where} is still running but "
                     "did not answer, so nothing was done. It may be busy with a "
-                    "long render; retry, or call open_view to open the view again.",
+                    "long render; retry, or call open_view to open the view again."
+                    + waiting,
                 )
             # The node half this front was linked to has gone: say why, rather
             # than show an empty scene in its place.

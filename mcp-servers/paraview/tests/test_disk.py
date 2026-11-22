@@ -164,6 +164,20 @@ def test_a_cached_miss_is_looked_up_again_after_listing_once(
     assert disk._size(str(bp / "gone")) == -1
 
 
+def test_a_growing_bp5_opens_once_one_step_is_surely_whole(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A solver writes its next step most of the time: open_view must not wait for
+    the folder to stand still, only for a step it can show whole."""
+    _, bp = _run(tmp_path)
+    for steps, clear, opens in [(3, False, True), (1, False, False), (1, True, True)]:
+        state = disk.Readiness(None, clear, steps)
+        monkeypatch.setattr(disk, "check", lambda path, state=state: state)
+        reason, can_open, _ = disk.source_readiness(str(bp), "ADIOS2VTXReader", False)
+        assert reason is None and can_open is opens
+        assert disk.whole_steps(state) == (steps if clear else steps - 1)
+
+
 def test_sizes_and_times_are_read_through_an_open_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -286,6 +286,25 @@ def test_local_attach_without_pvpython_fails_clearly(
     assert oct(os.stat(folder).st_mode)[-3:] == "700"
 
 
+@pytest.mark.parametrize(
+    ("machine", "hinted"), [("windows-x86_64", True), ("linux-riscv64", False)]
+)
+def test_no_paraview_here_names_a_version_it_can_fetch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, machine: str, hinted: bool
+) -> None:
+    # Nothing by hand: a machine with a pinned build learns the knob that fetches it.
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("XDG_DATA_HOME", raising=False)
+    monkeypatch.delenv("CLIO_KIT_CACHE_DIR", raising=False)
+    monkeypatch.setenv("PATH", "/usr/bin:/bin")
+    monkeypatch.setattr(attach.client, "machine", lambda: machine)
+    attacher = attach.Attacher(Settings(target=Target()))
+    with pytest.raises(ParaViewError) as caught:
+        attacher.ensure()
+    assert caught.value.code == "no_paraview"
+    assert ("set `version` ('ParaView version') to 5.13.1" in caught.value.message) is hinted
+
+
 def test_local_folder_follows_the_host_cache(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
