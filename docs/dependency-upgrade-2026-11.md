@@ -48,7 +48,7 @@ Python version.
 
 | Package | Where | Notes |
 |---|---|---|
-| ruff 0.15/0.16 -> 0.17.6 | launcher, clio-agentic-search, 21 servers | 0.16 grew the implicit default rule set from 59 to 413 rules, so projects without a `select` jumped to 10-307 findings. Those 17 servers and the launcher now pin `select = ["E4", "E7", "E9", "F"]`, the pre-0.16 defaults. 0.16 also formats Markdown code blocks, which needed a one-line fix in parallel-sort's `USAGE_GUIDE.md`. |
+| ruff 0.15/0.16 -> 0.17.6 | launcher, clio-agentic-search, 21 servers | 0.16 grew the implicit default rule set from 59 to 413 rules, so projects without a `select` jumped to 10-307 findings. Those 17 servers and the launcher now pin `select = ["E4", "E7", "E9", "F"]`, the pre-0.16 defaults. Ruff reads the nearest `[tool.ruff]` table, so the six servers that had none (copernicus, geoprocess, geoservices, grids, ocean, weather) now carry an explicit table. That keeps them on ruff's own defaults instead of inheriting the launcher's selection. 0.16 also formats Markdown code blocks, which needed a one-line fix in parallel-sort's `USAGE_GUIDE.md`. |
 | mypy 1.19/1.20 -> 2.4.1 | adios, arxiv, compression, hdf5, jarvis, ndp, plot, clio-agentic-search | 2.0 turns on `--local-partial-types` and `--strict-bytes` by default, and 2.4 makes the native parser the default. clio-agentic-search raised its cap to `<3` and sets `native_parser = false` (see fastapi). |
 | pyarrow 23 -> 25/26 | parquet; pandas (25 -> 26 on Python 3.11+) | See the shared table. |
 | google-genai 1.75 -> 2.33 / 3.6.1 | chronolog | 3.0 defaults to the `v1` API and the `httpx2` client. The package is declared but never imported under `chronolog/src`. |
@@ -100,10 +100,9 @@ and `pytest tests`. Each failing server was also run on unchanged `main`.
   exits without Home Assistant credentials. `main` stops at the same point.
   A first cold run also timed out the Go fixture while the go1.25 toolchain
   downloaded; it passed on the re-run and on `main`.
-- **Servers.** 31 of 38 pass everything. The remaining failures are identical
-  on `main`:
+- **Servers.** 31 of 38 pass everything. grids failed ruff on `main` and now
+  passes. The remaining failures are identical on `main`:
   - geoservices, ocean and weather mypy (pyproj and xarray typing);
-  - grids ruff (`RUF100` in `tests/browser/run_standin.py`);
   - one root-only permission test each in jarvis, spack and parallel-sort;
   - ndp `test_module_imports` (`server.BaseModel`).
 - **Python 3.10 and 3.11 spot checks.** hdf5 (237 passed) and parquet (294
@@ -120,6 +119,189 @@ and `pytest tests`. Each failing server was also run on unchanged `main`.
   `Copernicus-Kit`, which doesn't exist. With broken Markdown links set to
   warn, the upgraded dependencies compile, and only the copernicus page fails,
   as on `main`.
+
+## Adopted from the new versions
+
+These changes are low-risk and clearly useful, so each went in as its own
+commit. Every affected server's suite was run in its own locked
+environment.
+
+| Commit | What and why | Verified |
+|---|---|---|
+| `test: read MCP SDK v2 snake_case tool fields` | fastmcp 4.2 raises `FastMCPDeprecationWarning` on the camelCase aliases that MCP SDK v2 renamed. Tests now read `read_only_hint`, `destructive_hint`, `open_world_hint` and `input_schema`, which exist on both fastmcp lanes (4.1.8 and 4.2.4). | arxiv, darshan, hdf5, paraview, slurm, spack and web pass with no deprecation warnings. |
+| `fix: use pandas day_of_year/day_of_week ahead of pandas 4` | pandas 3.1 deprecates `dayofyear` and `dayofweek` on `DatetimeIndex` and `Timestamp`, and pandas 4 removes them. ocean's marine-heatwave climatology and weather's climatology and verification computed day-of-year in server code. | ocean 64, weather 42 and pandas 370 tests pass, with no `Pandas4Warning`. |
+| `test(clio-agentic-search): use httpx2 for the test clients` | Starlette 1.x deprecates `TestClient` on `httpx` and asks for `httpx2`, which mcp 2.3 and huggingface-hub 2 already use. | 106 tests pass; strict mypy is clean. |
+| `test(clio-agentic-search): set pytest-asyncio's fixture loop scope` | pytest-asyncio 1.5 warns until `asyncio_default_fixture_loop_scope` is set. It is now set to `"function"`, the existing default. | 106 tests pass with no warnings. |
+| `fix(ruff): stop config-less servers inheriting the launcher's lint selection` | Fixes a regression from the ruff 0.17 commit on this branch (see Majors taken). | ruff check and format pass for the six servers. ocean had picked up an E712 error by inheriting the root rules. |
+| `style(grids): clear ruff findings in the browser stand-in script` | Removes four unused `noqa` directives and formats one test helper. | grids' ruff check and format pass for the first time; its 6 tests pass. |
+
+Nothing was adopted from fastmcp's new `Skill` API, because no server uses
+the deprecated 4.1 skills API. The NumPy 2.5 shape and dtype deprecation
+warnings come from inside ase and xarray, not from server code.
+
+## Decisions for the user
+
+Each item lists the value, the risk and a recommendation. None of these is
+implemented on this branch.
+
+### Platform and pins
+
+1. **Drop Python 3.10 from the servers that still declare it.**
+   - Value: Python 3.10 reached end of life in October 2026. Dropping it ends
+     the per-interpreter lock forks, so every server gets the same fastmcp
+     4.2.4, starlette 1.10, numpy 2.5, pandas 3.1 and pyarrow 26. It also
+     unlocks the APIs below that need 3.11 or 3.12 or later.
+   - Risk: users on 3.10 lose new releases. `requires-python`, the CI matrix
+     and `tests/test_server_python_pin.py` all change together.
+   - Recommendation: do it in the release after 2.13, raising
+     `requires-python` to `>=3.11` and dropping 3.10 from the
+     `quality_control.yml` matrix. The `.python-version` pins (3.12/3.13)
+     don't need to change.
+2. **ocean: Parcels 4 with xarray 2026.x.**
+   - Value: Parcels 4 is pure Python on xarray, dask and zarr 3 and writes
+     Parquet. xarray 2026 brings zarr v3, `StringDType`, Arrow PyCapsule
+     export and `DataTree` `apply_ufunc`.
+   - Risk: a rewrite with API removals (`open_raw_zarr`, mesh and `fieldset`
+     arguments). It is slower above about 100,000 particles and is described
+     upstream as an early release. ocean's particle-tracking tools and the
+     zarr v2 output they write would both change.
+   - Recommendation: keep `parcels==3.1.4` and `xarray<2026` for now. Follow
+     the v3-to-v4 migration guide on a dedicated branch, with a regression
+     fixture comparing trajectories, once Parcels 4.1 lands.
+3. **clio-agentic-search: torch 2.15 (CUDA 13).**
+   - Value: current torch, unified with Python 3.15 and later.
+   - Risk: the Linux wheels move from CUDA 12 to CUDA 13 (cuda-bindings 13),
+     which raises the NVIDIA driver floor. GPU users on older drivers would
+     break.
+   - Recommendation: stay on 2.10 (CUDA 12) until the deployment hosts'
+     drivers are confirmed. A CPU-only index, as ase uses, would take the
+     CUDA question out entirely for CPU deployments.
+4. **decimer: tensorflow 2.21.**
+   - Value: a current TensorFlow with security and bug fixes.
+   - Risk: DECIMER pins `tensorflow==2.20.0` through an override. Its model
+     loading can't be tested offline here, because `test_decimer_live`
+     skips.
+   - Recommendation: bump the pin and the override together in a branch
+     whose CI can run the live test with the DECIMER models cached.
+5. **web: readability-lxml 0.9.**
+   - Value: lxml 6 support and cleaner extraction, because hidden and
+     `<noscript>` content is stripped.
+   - Risk: the resolve downgrades chardet from 7.7 to 5.2 and cssselect from
+     1.6 to 1.3, and the extracted text changes.
+   - Recommendation: hold until readability-lxml relaxes those
+     requirements, or accept them after checking web's extraction fixtures.
+6. **web: pytest-asyncio 2.0.**
+   - Value and risk: unknown; only `2.0.0a1` exists.
+   - Recommendation: wait for the final release.
+
+### New features worth adopting (design-level)
+
+7. **clio-agentic-search storage on duckdb 2.0.**
+   - Value: the `con.appender()` context manager (`append_row`/`append_rows`)
+     for bulk loads, async Parquet and CSV I/O, and the `VARIANT` type for
+     metadata. Embeddings currently go in as `vector_json` text; storing
+     them as `FLOAT[]` would allow `array_cosine_similarity` in SQL.
+   - Risk: today's writes are `INSERT OR REPLACE` upserts, and the appender
+     only appends. Adopting it needs a staging table and a `MERGE`, or a
+     delete-then-append. A vector-column change is a schema migration, and
+     files written by 2.0 can't be opened by duckdb 1.x.
+   - Recommendation: benchmark the appender with a staging table in
+     `DuckDBStore`, then decide. Do the `FLOAT[]` migration with a version
+     marker in the store.
+8. **clio-agentic-search embeddings on sentence-transformers 6.x.**
+   - Value: `encode_query()`/`encode_document()` apply each model's
+     asymmetric prompts, which improves retrieval quality for models that
+     define them. `model.compile()` speeds up `encode()`. `MultiVectorEncoder`
+     adds ColBERT-style late interaction.
+   - Risk: switching to query/document encoding changes the vectors, so
+     existing indexes would need re-embedding. `compile()` adds warm-up time.
+   - Recommendation: adopt `encode_query`/`encode_document` together with a
+     stored embedder version that forces a re-index. Measure `compile()` on
+     the benchmark suite first.
+9. **MCP 2026-07-28 protocol features (fastmcp 4.2, mcp 2.3).**
+   - Value:
+     - Output schemas and `structuredContent` on every tool; several servers
+       already return `ToolResult`.
+     - Elicitation, with multi-select and URL mode, for confirmation gates
+       such as copernicus's size confirmation and jarvis's or slurm's
+       destructive operations.
+     - `Annotated[T, Depends(fn)]` injection.
+     - `ErrorHandlingMiddleware` for consistent error mapping.
+     - Background-task TTL.
+     - `SkillsDirectoryProvider` to serve this repository's portable skills
+       over MCP.
+   - Risk: behaviour that clients can see. Elicitation depends on client
+     support, and output schemas turn mismatched payloads into validation
+     errors (see the jarvis note below). The tasks extension (SEP-2663) is
+     not confirmed in mcp 2.3.
+   - Recommendation: start with output schemas on the servers with stable
+     contracts (jarvis, slurm, spack already pin contracts), then
+     elicitation for the existing confirm-twice flows.
+10. **Data-format servers on pyarrow 26.**
+    - Value:
+      - `RecordBatchFileReader.count_rows()`.
+      - CSV `WriteOptions(eol=, null_string=)`.
+      - `ParseOptions(pad_short_rows=, ignore_extra_columns=)` for messy
+        CSVs (pandas, parquet).
+      - Parquet bloom-filter write options.
+      - Up to 50% faster Parquet column reads, which comes for free.
+    - Risk: 26 is only on Python 3.11 and later while 3.10 is supported (see
+      item 1).
+    - Recommendation: adopt after item 1.
+11. **pydantic 2.14.**
+    - Value: the `MISSING` sentinel separates "not provided" from `None` in
+      tool arguments. Validation and serialization speedups and
+      constant-time `SecretStr` comparison come for free.
+    - Risk: a model-by-model API change. The 2.14.2 alias-as-extra rule can
+      reject payloads under `extra='forbid'`.
+    - Recommendation: use `MISSING` in new tools. Audit `extra='forbid'`
+      models that use aliases.
+12. **Starlette 1.x in the clio-agentic-search HTTP API.**
+    - Value: `max_body_size=` on the app and routes bounds request bodies,
+      which hardens the jobs API. There is also an experimental
+      `OpenTelemetryMiddleware` and `GZipMiddleware(exclude_content_types=)`.
+    - Risk: choosing a size limit could reject legitimate large ingest
+      requests.
+    - Recommendation: set `max_body_size` to the largest supported ingest
+      payload.
+13. **ruff 0.16/0.17 rules.**
+    - Value: newly stable checks include `PLR1708`, `RUF036`, `RUF068`,
+      `FURB192`, `LOG004`, `PLE0304`, `ISC004` and `RUF071`. ruff's new
+      413-rule default set would catch much more than E4/E7/E9/F.
+    - Risk: the launcher and the 17 servers pinned to the old defaults have
+      10-307 findings each.
+    - Recommendation: adopt the new defaults one server at a time, fixing
+      findings per commit, starting with the servers already at 0 findings
+      under the new defaults (ndp, spack, scientific-catalog, web).
+14. **NumPy 2.5.**
+    - Value: `np.sort(..., descending=True)`, a `searchsorted` up to 20x
+      faster, and faster `axis=None` reductions.
+    - Risk: needs Python 3.12 or later, so it's only usable where servers
+      require 3.12.
+    - Recommendation: revisit after item 1.
+
+### Existing issues found while verifying (not caused by the upgrade)
+
+15. **Unenforced pytest marks.**
+    - avogadro and ocean mark tests with `pytest.mark.timeout`, but
+      `pytest-timeout` isn't installed, so those timeouts never apply.
+    - parquet uses an unregistered `slow` mark.
+    - Recommendation: add `pytest-timeout` to those dev groups or drop the
+      marks, and register `slow`.
+16. **jarvis tool results don't match their output models.**
+    - Two contract-pin tests trigger pydantic serializer warnings:
+      `JarvisDescribePackageSearchResult` and
+      `JarvisProgressSnapshotDocument` are returned as plain dicts. There
+      were 6 such warnings on `main` with fastmcp 4.1.4 and 2 now.
+    - Recommendation: return the models, or relax the annotations, before
+      output schemas tighten.
+17. **Failures that are also on `main`.**
+    - mypy errors in geoservices (pyproj `transform_bounds`), ocean and
+      weather (xarray typing).
+    - Root-only permission tests in jarvis, spack and parallel-sort.
+    - ndp `test_module_imports`.
+    - The two website-build content errors.
+    - Recommendation: fix these in their own small PRs.
 
 ## Per-project direct dependencies
 
