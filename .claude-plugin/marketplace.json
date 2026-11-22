@@ -1600,6 +1600,14 @@
       "version": "1.0.0",
       "category": "workflow",
       "license": "BSD-3-Clause"
+    },
+    {
+      "name": "clio-core-skills",
+      "source": "./skills/clio-core-skills",
+      "description": "CLIO Core skills: one per shipped module (runtime, block devices, CTE core, caches, replication, compressor, indexer, filesystem, CAE), composing them into a storage system, writing new ChiMods, and gpu_vector kernels.",
+      "version": "1.0.0",
+      "category": "skills",
+      "license": "BSD-3-Clause"
     }
   ]
 }

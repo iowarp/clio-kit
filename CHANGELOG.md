@@ -4,6 +4,19 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
 
 ## Unreleased
 
+- **clio-core-skills, a new skill collection for CLIO Core**: `storage-compose`
+  chooses and orders the shipped modules into a `compose` section and states
+  what an acknowledged put means, when data is durable and what each failure
+  loses; `chimod-dev` writes and extends ChiMods and data-path operators;
+  `gpu-vector` writes and tunes kernels over the paged out-of-core vector.
+  One skill per shipped module documents every compose key, its client API
+  and what it loses per failure, for users without the CLIO Core source:
+  `clio-runtime-config`, `clio-bdev`, `clio-cte-core`, `clio-cte-caches`,
+  `clio-replication`, `clio-compressor`, `clio-indexer`, `clio-fs` and
+  `clio-cae`.
+  Install with `clio-kit skill install --bundle clio-core` or
+  `claude plugin install clio-core-skills@clio-kit`.
+
 ## 2.13.0 - 2026-11-19
 
 - **globe server removed**: the plain 3D globe (the MCP Apps map example,
