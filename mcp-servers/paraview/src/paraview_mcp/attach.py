@@ -509,7 +509,15 @@ class Attacher:
             if link is None:
                 return {"state": "closed", "text": "No ParaView node half is open."}
             try:
-                link.client.health()
+                health = link.client.health()
+                if health.get("lost"):
+                    gone = gone_error(
+                        json.dumps({"reason": health["lost"]}),
+                        "",
+                        link.transport.where,
+                        self.scene,
+                    )
+                    return {"state": "lost", "code": gone.code, "text": gone.message}
                 return {"state": "running", "text": "ParaView answers."}
             except LinkError as exc:
                 if exc.busy:
