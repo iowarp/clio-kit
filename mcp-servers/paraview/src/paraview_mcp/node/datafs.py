@@ -121,6 +121,7 @@ class ServerDisk(LocalDisk):
         self._reducer: Any = None
         self._mover: Any = None
         self._sent = False
+        self._answered = False
         self._calls = 0
 
     def call(self, op: str, **args: Any) -> Any:
@@ -171,11 +172,16 @@ class ServerDisk(LocalDisk):
         table = mover.GetOutputDataObject(0)
         column = table.GetColumnByName("r") if table is not None else None
         if column is None or column.GetNumberOfValues() < 1:
+            # Once it has answered, the server has Python: it went or failed.
             raise CommandError(
                 "server_disk",
-                "The ParaView server did not answer a look at its disk. Its "
+                "The ParaView server stopped answering looks at its disk; its "
+                "connection may have gone."
+                if self._answered
+                else "The ParaView server did not answer a look at its disk. Its "
                 "programmable sources need ParaView's Python on the server.",
             )
+        self._answered = True
         return json.loads(column.GetValue(0))
 
     def follow_folder(self, root: Path, scene_id: str, item_id: str, name: str) -> str:

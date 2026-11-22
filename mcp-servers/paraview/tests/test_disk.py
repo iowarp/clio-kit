@@ -14,6 +14,7 @@ from typing import Any
 import pytest
 
 from paraview_mcp.node import datafs, disk
+from paraview_mcp.node.errors import CommandError
 
 
 @pytest.fixture
@@ -399,5 +400,39 @@ def test_the_server_disk_sends_disk_py_once(
         assert there.disk_key(str(bp)) == first
         assert "SOURCE = None" in fake.scripts[3]
         assert "SOURCE = None" not in fake.scripts[4]
+    finally:
+        sys.modules.pop(there._name, None)
+
+
+def test_a_server_disk_that_stops_answering_does_not_blame_python(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The live run: a pvserver whose linger ends answers nothing. It answered
+    before, so it has Python; say it stopped, not that it needs Python."""
+    _, bp = _run(tmp_path)
+    _FakeServer(monkeypatch)
+    there = datafs.ServerDisk()
+    monkeypatch.delitem(sys.modules, there._name, raising=False)
+    try:
+        fresh = datafs.ServerDisk()
+        fresh._mover = types.SimpleNamespace(
+            UpdatePipeline=lambda: None,
+            GetClientSideObject=lambda: types.SimpleNamespace(
+                Modified=lambda: None, GetOutputDataObject=lambda p: None
+            ),
+        )
+        fresh._proxy = types.SimpleNamespace(Script="")
+        with pytest.raises(CommandError, match="need ParaView's Python"):
+            fresh.disk_key(str(bp))
+
+        there.disk_key(str(bp))
+        assert there._mover is not None
+        there._mover.GetClientSideObject = lambda: types.SimpleNamespace(
+            Modified=lambda: None, GetOutputDataObject=lambda p: None
+        )
+        there._mover.UpdatePipeline = lambda: None
+        with pytest.raises(CommandError, match="stopped answering") as gone:
+            there.disk_key(str(bp))
+        assert "Python" not in str(gone.value)
     finally:
         sys.modules.pop(there._name, None)
