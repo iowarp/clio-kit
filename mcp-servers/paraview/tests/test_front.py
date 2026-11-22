@@ -101,7 +101,7 @@ def test_a_call_whose_node_half_ends_under_it_says_why(
             self.link = SimpleNamespace(client=Client(error))
             self.state = state
 
-        def ensure(self, opening: bool = False) -> object:
+        def ensure(self, opening: bool = False, **_: object) -> object:
             return self.link
 
         def status(self) -> dict[str, str]:
@@ -570,9 +570,7 @@ class _FakeClient:
         self.calls: list[tuple[str, dict]] = []
         self.actors: list[str] = []
 
-    def command(
-        self, name: str, args: dict, timeout: float = 900.0, by: str = "agent"
-    ) -> dict:
+    def command(self, name: str, args: dict, by: str = "agent", **_: object) -> dict:
         self.calls.append((name, args))
         self.actors.append(by)
         return self.results[name]
@@ -597,7 +595,7 @@ class _FakeAttacher:
         self.scene = None
         self.opened: list[bool] = []
 
-    def ensure(self, opening: bool = False) -> _FakeLink:
+    def ensure(self, opening: bool = False, **_: object) -> _FakeLink:
         self.opened.append(opening)
         return self.link
 

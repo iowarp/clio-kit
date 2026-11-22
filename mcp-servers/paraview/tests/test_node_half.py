@@ -383,6 +383,49 @@ def test_a_view_descriptor_names_the_reader_and_steps_report_growth(
     assert strided["series"] and [row["index"] for row in strided["series"]] == [1, 3]
 
 
+def test_a_long_measure_reports_its_steps_and_is_cancelled_on_the_node(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """A call has no time limit: the node runs it as a job, the front asks after it
+    and hears how many steps are measured, and a cancel stops it on the node, which
+    then serves the next call as before."""
+    import threading
+
+    attacher, data = attached
+    client = attacher.ensure().client
+    series = data / "long"
+    series.mkdir()
+    for step in range(30):
+        write_vti(series / f"out_{step:03d}.vti", shift=step)
+    client.command("open_view", {"path": str(series / "out_*.vti"), "new": True})
+    client.command("set_timestep", {"index": 4})
+    seen: list[dict] = []
+    measured = client.command(
+        "measure_over_time", {"field": "p"}, progress=seen.append, wait=0.01
+    )
+    assert len(measured["series"]) == 30
+    counts = [note["done"] for note in seen if "done" in note]
+    assert counts and counts == sorted(counts) and seen[0]["total"] == 30
+    stop = threading.Event()
+
+    def cancel_once_started(note: dict) -> None:
+        if note.get("done"):
+            stop.set()
+
+    with pytest.raises(ParaViewError) as caught:
+        client.command(
+            "measure_over_time",
+            {"field": "p"},
+            stop=stop,
+            progress=cancel_once_started,
+            wait=0.01,
+        )
+    assert caught.value.code == "cancelled"
+    # The cancelled measure put the view back on its step, and the node goes on.
+    assert client.command("scene_state", {})["time"]["index"] == 4
+    again = client.command("measure_over_time", {"field": "p", "stride": 10})
+    assert [row["index"] for row in again["series"]] == [0, 10, 20]
+
 def test_a_descriptor_display_gives_the_first_view(
     attached: tuple[Attacher, Path],
 ) -> None:

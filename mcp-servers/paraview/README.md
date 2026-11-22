@@ -57,6 +57,13 @@ a starting node half is stopped only after this many seconds with no new line
 in its log; there is no overall limit, the start is reported as progress and
 the call can be cancelled. `PARAVIEW_START_TIMEOUT` is read as its old name).
 
+No call has a time limit. A call runs on the node half under a job id; the
+front asks after it every few seconds, reports what it has done ("measured 40
+of 120 steps", or the seconds elapsed) as MCP progress, and cancels it on the
+node when the host cancels the call. A node that holds its loop (a long render)
+is busy, not gone, and the wait says so; a node or `pvserver` that has ended
+fails the call at once with its reason.
+
 ## Views on several pvservers
 
 `open_view(pvserver="host:port")` draws a view on another running `pvserver`,
@@ -194,8 +201,13 @@ step, plays forward a few steps a second (a long history is strided to about 60
 frames), then follows the latest step. The view reports `catching_up` meanwhile;
 choosing a step ends it. Each step reaches the view's model
 context, and `watch_steps` reports it as task progress, "Step k of N", so any MCP
-host can show a run advancing. When the run ends, `measure_over_time` gives the
-statistics of a field at every step.
+host can show a run advancing. `watch_steps` lasts as long as the run: it ends
+when the expected steps are written, when the writer closes its ADIOS2 output,
+when the source is not marked as growing, or when it stalls (no new step and
+nothing changed on disk for `idle_seconds`, default 300, or three times the
+longest gap between steps if that is longer), or when the person cancels. It
+takes no time limit unless a person asks for one (`max_seconds`). When the run
+ends, `measure_over_time` gives the statistics of a field at every step.
 
 A growing source can be opened as soon as the run starts. While it is not there
 yet, or an ADIOS2 BP5 folder has no whole step on disk, `open_view` waits as long

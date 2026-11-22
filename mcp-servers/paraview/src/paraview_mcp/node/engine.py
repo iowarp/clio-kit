@@ -42,6 +42,9 @@ MUTATING = {
 READING = {"inspect_selection", "measure_field", "capture", "export_artifact"}
 READING |= {"export_scene", "scene_state", "export_animation", "steps"}
 READING |= {"measure_over_time"}
+#: Commands the node half runs a step at a time, giving its loop back between
+#: steps, each with its generator: they report progress and can be cancelled.
+STEPWISE = {"measure_over_time": "measuring_over_time", "export_animation": "animating"}
 
 
 REPRESENTATIONS = (
@@ -104,6 +107,9 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         self._replay: int | None = None
         self._replay_armed: str | None = None
         self.last_growth: float | None = None
+        #: Each reader's last look at the disk, and when what it saw last changed.
+        self._disk_seen: dict[str, Any] = {}
+        self.disk_changed: float | None = None
         self.listeners: list[Callable[[str], None]] = []
         self.changes = ChangeLog()
 
@@ -146,18 +152,18 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         except (AttributeError, ValueError, RuntimeError) as exc:
             raise CommandError("paraview_error", f"ParaView refused it: {exc}") from exc
 
-    def series(self, args: dict[str, Any]) -> Any:
-        """measure_over_time as steps for ``advance``; bad arguments are reported now,
-        the scene and field at the first step."""
-        return self._guard(self.measuring_over_time, args)
+    def series(self, name: str, args: dict[str, Any]) -> Any:
+        """A ``STEPWISE`` command as steps for ``advance``; bad arguments are reported
+        now, the rest at the first step."""
+        return self._guard(getattr(self, STEPWISE[name]), args)
 
-    def advance(self, steps: Any) -> dict[str, Any] | None:
-        """Measure one more step of ``series``: its result once done, else None."""
+    def advance(self, steps: Any) -> tuple[tuple[int, int] | None, Any]:
+        """One more step of ``series``: ``((done, total), None)`` while it goes on,
+        ``(None, result)`` once it is done."""
         try:
-            self._guard(lambda: next(steps), {})
+            return self._guard(lambda: next(steps), {}), None
         except StopIteration as done:
-            return done.value
-        return None
+            return None, done.value
 
     def commit(self, reason: str) -> None:
         """Write the manifest and tell the view that the scene changed."""

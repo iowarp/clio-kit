@@ -466,6 +466,11 @@ class Attacher:
         self.cancel = threading.Event()
         #: Told each new line a starting node half logs.
         self.progress: Callable[[str], None] | None = None
+        #: The running call's stop and progress, while ``ensure`` serves it.
+        self._call: tuple[threading.Event | None, Callable[[str], None] | None] = (
+            None,
+            None,
+        )
         #: Whether this front has had a node half; one that goes is then reported.
         self.had_link = False
         #: The last scene opened through this attacher, for the lost-node advice.
@@ -473,22 +478,33 @@ class Attacher:
         self.base = node_base(settings.pvserver)
 
     # -- public ----------------------------------------------------------------
-    def ensure(self, opening: bool = False) -> Link:
+    def ensure(
+        self,
+        opening: bool = False,
+        stop: threading.Event | None = None,
+        progress: Callable[[str], None] | None = None,
+    ) -> Link:
         """A healthy link, attaching first if there is none.
 
         Unless ``opening``, a node half that was linked and has gone raises the
-        reason it went, rather than starting an empty one in its place.
+        reason it went, rather than starting an empty one in its place. A node half
+        that is busy is waited for, with each wait told to ``progress``, until it
+        answers or ``stop`` is set.
         """
         with self.lock:
-            link = self.link
-            if link is not None:
-                if link.transport.alive() and self._answers(link.client):
-                    return link
-                self._drop()
-            self.link = self._attach(opening)
-            self.had_link = True
-            self._start_heartbeat()
-            return self.link
+            self._call = (stop, progress)
+            try:
+                link = self.link
+                if link is not None:
+                    if link.transport.alive() and self._answers(link.client):
+                        return link
+                    self._drop()
+                self.link = self._attach(opening)
+                self.had_link = True
+                self._start_heartbeat()
+                return self.link
+            finally:
+                self._call = (None, None)
 
     def close(self) -> None:
         self._stop.set()
@@ -1074,17 +1090,30 @@ class Attacher:
 
         A software volume render holds the node's loop for tens of seconds. A health
         check that times out then means "busy", not "gone": restarting it would lose
-        the open scene. Only a refused link, or one busy past ``busy_timeout``, fails.
+        the open scene. So a busy node half is waited for as long as it stays busy,
+        and the wait is said; only a refused link fails. The person ends the wait by
+        cancelling the call.
         """
-
-        deadline = time.monotonic() + self.settings.busy_timeout
+        stop, said = self._call
+        began = time.monotonic()
         while True:
             try:
                 client.health()
                 return True
             except LinkError as exc:
-                if not exc.busy or time.monotonic() >= deadline:
+                if not exc.busy:
                     return False
+            if self.cancel.is_set() or (stop is not None and stop.is_set()):
+                raise ParaViewError(
+                    "cancelled",
+                    "The call was cancelled while ParaView was busy; nothing was done.",
+                )
+            tell = said or self.progress
+            if tell is not None:
+                tell(
+                    f"ParaView has not answered for {time.monotonic() - began:.0f} s: "
+                    "it is busy (a long render holds it), not gone, so this waits"
+                )
 
     # -- keeping the link warm ----------------------------------------------------
     def _start_heartbeat(self) -> None:

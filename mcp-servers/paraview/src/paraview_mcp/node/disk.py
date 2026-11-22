@@ -56,6 +56,11 @@ from typing import Any
 
 HEADER = 64
 BP_VERSION_AT = 37
+#: Where a BP index header says whether its writer still has the output open, by BP
+#: version, as ADIOS2's own ``adios2_deactivate_bp`` reads it. Closing clears it.
+ACTIVE_AT = {4: 38, 5: 39}
+#: The entry ``disk_key`` adds for a BP folder: whether its writer still writes.
+WRITER_ACTIVE = "writer_active"
 STEP = b"s"
 WRITER_MAP = b"w"
 
@@ -173,9 +178,40 @@ def _stat(path: str) -> tuple[int, int] | None:
     return (stat.st_size, stat.st_mtime_ns)
 
 
+def writer_active(path: str) -> bool | None:
+    """Whether the ADIOS2 writer of the BP4 or BP5 folder ``path`` still has it open:
+    a run that ends closes its output, and the index header says so. None when
+    ``path`` is no such folder or its header is not written whole yet."""
+    try:
+        handle = _open(os.path.join(path, "md.idx"))
+    except OSError:
+        return None
+    try:
+        header = os.read(handle, HEADER)
+    except OSError:
+        return None
+    finally:
+        os.close(handle)
+    if len(header) < HEADER:
+        return None
+    at = ACTIVE_AT.get(header[BP_VERSION_AT])
+    return None if at is None else bool(header[at])
+
+
+def writing(key: Any) -> bool | None:
+    """What a ``disk_key`` says of a BP folder's writer (``writer_active``)."""
+    if isinstance(key, (list, tuple)) and key:
+        last = key[-1]
+        if isinstance(last, (list, tuple)) and len(last) == 2:
+            if last[0] == WRITER_ACTIVE:
+                return bool(last[1])
+    return None
+
+
 def disk_key(path: str) -> Any:
     """What is on disk for ``path``, to tell when a source has grown: each matched
-    file (or each entry of a folder) with its size and modification time."""
+    file (or each entry of a folder) with its size and modification time. A BP
+    folder's key ends with whether its writer still has it open (``writing``)."""
     if is_pattern(path):
         return tuple((name, _stat(name)) for name in sorted(glob.glob(path)))
     if os.path.isdir(path):
@@ -183,7 +219,9 @@ def disk_key(path: str) -> Any:
             names = sorted(os.listdir(path))
         except OSError:
             return None
-        return tuple((name, _stat(os.path.join(path, name))) for name in names)
+        key = tuple((name, _stat(os.path.join(path, name))) for name in names)
+        active = writer_active(path) if "md.idx" in names else None
+        return key if active is None else (*key, (WRITER_ACTIVE, active))
     return _stat(path)
 
 

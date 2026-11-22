@@ -179,6 +179,37 @@ def test_a_growing_bp5_opens_once_one_step_is_surely_whole(
         assert disk.whole_steps(state) == (steps if clear else steps - 1)
 
 
+def _bp_header(folder: Path, version: int, active: int) -> None:
+    header = bytearray(disk.HEADER)
+    header[disk.BP_VERSION_AT] = version
+    header[disk.ACTIVE_AT[version]] = active
+    (folder / "md.idx").write_bytes(bytes(header))
+
+
+def test_a_writer_that_closes_its_bp_output_is_seen(tmp_path: Path) -> None:
+    """A run that ends closes its ADIOS2 output and the index header says so:
+    watch_steps then ends as finished rather than waiting for a stall."""
+    bp = tmp_path / "data.bp5"
+    bp.mkdir()
+    assert disk.writer_active(str(bp)) is None
+    (bp / "md.idx").write_bytes(b"short")
+    assert disk.writer_active(str(bp)) is None
+    for version in (4, 5):
+        _bp_header(bp, version, 1)
+        assert disk.writer_active(str(bp)) is True
+        assert disk.writing(disk.disk_key(str(bp))) is True
+        _bp_header(bp, version, 0)
+        assert disk.writer_active(str(bp)) is False
+        key = disk.disk_key(str(bp))
+        assert disk.writing(key) is False
+        # The flag is part of what tells the source changed.
+        _bp_header(bp, version, 1)
+        assert disk.disk_key(str(bp)) != key
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    assert disk.writing(disk.disk_key(str(plain))) is None
+
+
 def test_sizes_and_times_are_read_through_an_open_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

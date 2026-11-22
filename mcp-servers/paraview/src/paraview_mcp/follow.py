@@ -5,9 +5,10 @@ steps from an index on, each with when it was first seen. ``watch`` polls it
 and reports every new step once, through ``report``: the tool sends that as
 MCP progress, which a client running the call as a task reads as the task's
 status, and a client calling it directly receives as progress notifications.
-It stops once the descriptor's ``expected_steps`` are written, when no step
-has come for ``idle_seconds``, after ``max_seconds``, or when the source is no
-longer marked as growing.
+It lasts as long as the run: it stops once the descriptor's ``expected_steps``
+are written, once the run closes its output, when the source is no longer
+marked as growing, or when the source stalls (no new step and nothing changed
+on disk for a while). There is no time limit unless a person sets one.
 """
 
 from __future__ import annotations
@@ -25,6 +26,12 @@ Report = Callable[[int, int | None, str], Awaitable[None]]
 POLL_SECONDS = 1.0
 #: The steps kept in the watch's result; the progress messages carried each one.
 KEEP = 200
+#: A source stalls after this many times its longest wait between two steps (and
+#: never before the watch's ``idle_seconds``): a slow run is not taken for stopped.
+STALL_FACTOR = 3.0
+#: Seconds a source whose writer closed it must stay unchanged before the watch
+#: ends, so the follow has read its last step.
+FINISH_GRACE = 15.0
 
 
 def view_note(time_state: dict[str, Any]) -> str:
@@ -91,9 +98,14 @@ async def watch(
     and return what was reported and why the watch ended.
 
     The progress reported is the number of steps written so far, against the total
-    the view descriptor expects when it gives one; the watch also ends once that
-    many are written. ``poll_seconds`` defaults to the descriptor's, else
-    ``POLL_SECONDS``."""
+    the view descriptor expects when it gives one. The watch lasts as long as the
+    run: it ends once the expected steps are written, once the run closes its output
+    (an ADIOS2 writer that finished), when the source is no longer marked as growing,
+    or when it stalls: no new step and nothing changed on disk for ``idle_seconds``,
+    or for ``STALL_FACTOR`` times the longest wait between two steps so far, if that
+    is longer. ``max_seconds`` ends it after that long in any case, for a person who
+    asked for a limit; there is none otherwise. ``poll_seconds`` defaults to the
+    descriptor's, else ``POLL_SECONDS``."""
     started = clock()
     result = await fetch(0 if after is None else max(0, after))
     following = len(result.get("steps") or []) if after is None else max(0, after)
@@ -105,6 +117,7 @@ async def watch(
     reported: list[dict[str, Any]] = []
     count = 0
     last_new = started
+    longest = 0.0
     while True:
         fresh = [s for s in result.get("steps") or [] if s["index"] >= following]
         for step in fresh:
@@ -113,16 +126,26 @@ async def watch(
             reported.append(step)
             message = step_message(step, result.get("time") or {}, expected)
             await report(following, expected, message)
-        if fresh:
-            last_new = clock()
         now = clock()
+        if fresh:
+            if count > len(fresh):
+                longest = max(longest, now - last_new)
+            last_new = now
         written = max(following, int((result.get("time") or {}).get("steps") or 0))
+        quiet = now - last_new
+        disk_quiet = _disk_quiet(result)
+        if disk_quiet is not None:
+            quiet = min(quiet, disk_quiet)
+        stall = max(float(idle_seconds), STALL_FACTOR * longest)
+        writing = (result.get("source") or {}).get("writing")
         if not result.get("growing"):
             reason = "not_growing"
         elif expected and written >= expected:
             reason = "complete"
-        elif now - last_new >= idle_seconds:
-            reason = "idle"
+        elif writing is False and quiet >= max(FINISH_GRACE, 3 * poll):
+            reason = "finished"
+        elif quiet >= stall:
+            reason = "stalled"
         elif max_seconds is not None and now - started >= max_seconds:
             reason = "max_seconds"
         else:
@@ -137,8 +160,18 @@ async def watch(
             "time": result.get("time") or {},
             "growing": bool(result.get("growing")),
             "expected_steps": expected,
+            "stall_seconds": round(stall, 1),
             "seconds": round(now - started, 1),
         }
+
+
+def _disk_quiet(result: dict[str, Any]) -> float | None:
+    """Seconds since the source last changed on disk, by the node's own clock."""
+    changed = (result.get("source") or {}).get("changed")
+    checked = result.get("checked")
+    if not changed or not checked:
+        return None
+    return max(0.0, float(checked) - float(changed))
 
 
 def watch_text(outcome: dict[str, Any]) -> str:
@@ -146,8 +179,10 @@ def watch_text(outcome: dict[str, Any]) -> str:
     why = {
         "not_growing": "the source is not marked as growing",
         "complete": f"all {outcome.get('expected_steps')} expected steps are written",
-        "idle": "no new step came for the idle time",
-        "max_seconds": "the time limit was reached",
+        "finished": "the run closed its output, so no step will follow",
+        "stalled": "no new step came and nothing changed on disk for "
+        f"{outcome.get('stall_seconds', 0):g} s",
+        "max_seconds": "the time limit the person set was reached",
     }[outcome["ended"]]
     count = outcome["new_steps"]
     head = f"Watched scene {outcome['scene']} for {outcome['seconds']:g} s: "

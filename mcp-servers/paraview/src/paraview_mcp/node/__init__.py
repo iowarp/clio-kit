@@ -5,4 +5,4 @@ with that machine's ``pvpython``. It imports ParaView only inside functions, so
 the front can ship it without ParaView installed.
 """
 
-NODE_PROTOCOL = 1
+NODE_PROTOCOL = 2

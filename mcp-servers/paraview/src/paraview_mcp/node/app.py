@@ -8,16 +8,18 @@ route adds it on the way through, so the browser never holds it.
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import hmac
 import json
 import os
 import time
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from typing import Any
 
 from . import manifest
 from .changes import lines as change_lines
-from .engine import CommandError, Engine
+from .engine import MUTATING, STEPWISE, CommandError, Engine
 from .panel import MODE_LABELS, build
 from .serializers import register_serializers
 from .sources import REPLAY_ALONE, REPLAY_HOLD, REPLAY_SECONDS, SETTLE, is_pattern
@@ -27,6 +29,35 @@ from .workbench import Workbench
 #: Seconds a growing source may show no change on disk before open_view stops
 #: waiting for it to become readable.
 SOURCE_STALL = 90.0
+#: Seconds a finished call's answer is kept, so a front whose copy was lost on the
+#: way gets it again instead of running the call twice.
+KEEP_ANSWER = 600.0
+#: The longest a front may ask a call's answer to be waited for in one request.
+MOST_WAIT = 60.0
+
+
+@dataclass
+class Job:
+    """One call a front sent with its own id: it runs on its own, and the front
+    asks how it goes until it ends. A call takes as long as its work does."""
+
+    started: float
+    progress: dict[str, Any] = field(default_factory=dict)
+    task: asyncio.Future[None] | None = None
+    #: The answer, as sent: body and status.
+    answer: tuple[bytes, int] | None = None
+    ended: float | None = None
+
+
+#: The job the running call belongs to, for its progress.
+_JOB: contextvars.ContextVar[Job | None] = contextvars.ContextVar("job", default=None)
+
+
+def say_progress(**progress: Any) -> None:
+    """How the running call goes, for the front that asks."""
+    job = _JOB.get()
+    if job is not None:
+        job.progress = progress
 
 TOKEN_HEADERS = ("X-Clio-Service-Token",)
 END_INTERACTION_EVENT = 45  # vtkCommand::EndInteractionEvent
@@ -154,6 +185,10 @@ class NodeApp:
         self.sockets = 0
         #: Commands that arrived and have not started their work yet.
         self.waiting = 0
+        #: Calls sent with their own id, by id.
+        self.jobs: dict[str, Job] = {}
+        #: Whether a video is being rendered in the scene's view.
+        self.animating = False
         self._replay: asyncio.Future[None] | None = None
         self.view: Any = None
         self.link_note = ""
@@ -257,6 +292,7 @@ class NodeApp:
         app.router.add_get("/clio/health", self._health)
         app.router.add_post("/clio/ping", self._ping)
         app.router.add_post("/clio/command", self._command)
+        app.router.add_post("/clio/cancel", self._cancel)
         # trame-client asks a launcher for its session before connecting. There
         # is none: an empty answer makes it connect to the WebSocket beside its
         # own page. (A sessionURL parameter would be lowercased by trame-client,
@@ -368,6 +404,86 @@ class NodeApp:
         return self._json({"ok": True})
 
     async def _command(self, request: Any) -> Any:
+        try:
+            body = await request.json()
+            if not isinstance(body, dict):
+                raise TypeError("the body is not an object")
+        except (ValueError, TypeError):
+            return self._json(
+                {"error": {"code": "bad_request", "message": "Malformed command."}}, 400
+            )
+        if body.get("job"):
+            return await self._job(str(body["job"]), body)
+        return await self._execute(body)
+
+    async def _job(self, job_id: str, body: dict[str, Any]) -> Any:
+        """Start the call with this id, or ask how it goes: its answer once it has
+        one, else after ``wait`` seconds a pending note with its progress."""
+        from aiohttp import web
+
+        now = time.monotonic()
+        for known, old in list(self.jobs.items()):
+            if old.ended is not None and now - old.ended > KEEP_ANSWER:
+                del self.jobs[known]
+        job = self.jobs.get(job_id)
+        if job is None:
+            job = self.jobs[job_id] = Job(started=now)
+            job.task = asyncio.ensure_future(self._run_job(job, body))
+        try:
+            wait = min(MOST_WAIT, max(0.0, float(body.get("wait") or 0)))
+        except (TypeError, ValueError):
+            wait = 0.0
+        if job.answer is None and wait and job.task is not None:
+            await asyncio.wait({job.task}, timeout=wait)
+        if job.answer is not None:
+            payload, status = job.answer
+            return web.Response(
+                body=payload, status=status, content_type="application/json"
+            )
+        return self._json(
+            {
+                "pending": True,
+                "seconds": round(time.monotonic() - job.started, 1),
+                "progress": job.progress,
+            }
+        )
+
+    async def _run_job(self, job: Job, body: dict[str, Any]) -> None:
+        _JOB.set(job)
+        try:
+            response = await self._execute(body)
+            job.answer = (bytes(response.body), int(response.status))
+        except asyncio.CancelledError:
+            job.answer = self._error_bytes(
+                "cancelled", "The call was cancelled before it ended.", 409
+            )
+        except Exception as exc:  # noqa: BLE001 - the front gets the failure
+            job.answer = self._error_bytes(
+                "node_error", f"{type(exc).__name__}: {exc}", 500
+            )
+        finally:
+            job.ended = time.monotonic()
+
+    @staticmethod
+    def _error_bytes(code: str, message: str, status: int) -> tuple[bytes, int]:
+        payload = {"error": {"code": code, "message": message}}
+        return json.dumps(payload).encode(), status
+
+    async def _cancel(self, request: Any) -> Any:
+        """Stop a running call: it ends at its next step with a ``cancelled`` error."""
+        try:
+            job = self.jobs.get(str((await request.json())["job"]))
+        except (ValueError, KeyError, TypeError):
+            return self._json(
+                {"error": {"code": "bad_request", "message": "Malformed cancel."}}, 400
+            )
+        if job is None:
+            return self._json({"ok": False, "known": False})
+        if job.answer is None and job.task is not None:
+            job.task.cancel()
+        return self._json({"ok": True, "known": True, "ended": job.answer is not None})
+
+    async def _execute(self, body: dict[str, Any]) -> Any:
         # Until its work starts, a command comes first: the follow and the catch-up
         # skip their turns, so each of the command's awaits returns at once rather
         # than after a step's round trips to a pvserver over a slow link.
@@ -381,13 +497,12 @@ class NodeApp:
                 self.waiting -= 1
 
         try:
-            return await self._run_command(request, started)
+            return await self._run_command(body, started)
         finally:
             started()
 
-    async def _run_command(self, request: Any, started: Any) -> Any:
+    async def _run_command(self, body: dict[str, Any], started: Any) -> Any:
         try:
-            body = await request.json()
             name = str(body["command"])
             args = dict(body.get("args") or {})
             # The front says whose call it is; anything else is the agent's.
@@ -416,9 +531,11 @@ class NodeApp:
             )
         try:
             await self._await_source(name, args)
+            if name in MUTATING:
+                await self._after_animation()
             started()
-            if name == "measure_over_time":
-                result = await self._measure_series(args)
+            if name in STEPWISE:
+                result = await self._stepwise(name, args)
             else:
                 with self.server.state:
                     result = self.engine.run(name, args, by=by)
@@ -461,23 +578,43 @@ class NodeApp:
             return went
         return self._json({"result": result})
 
-    async def _measure_series(self, args: dict[str, Any]) -> dict[str, Any]:
-        """measure_over_time a step at a time, giving the loop back between steps: a
-        long series must not hold up the view's follow, its step reports or health."""
+    async def _after_animation(self) -> None:
+        """While a video is rendered in the scene's view, changes to the scene wait
+        for it: between its frames they would move the camera or what it shows."""
+        while self.animating:
+            say_progress(note="waiting for the video being rendered")
+            await asyncio.sleep(0.2)
+
+    async def _stepwise(self, name: str, args: dict[str, Any]) -> dict[str, Any]:
+        """A ``STEPWISE`` command a step at a time, giving the loop back between
+        steps: a long series or video must not hold up the view's follow, its step
+        reports or health. Each step is reported as progress; a cancel ends it at
+        the next step, and the command undoes what it set up."""
         engine = self.engine
-        with self.server.state:
-            steps = engine.series(args)
-        while True:
-            if self.lost:
-                raise CommandError(
-                    "pvserver_lost",
-                    f"This ParaView view stopped while measuring: {self.lost}.",
-                )
+        animating = name == "export_animation"
+        self.animating = self.animating or animating
+        try:
             with self.server.state:
-                result = engine.advance(steps)
-            if result is not None:
-                return result
-            await asyncio.sleep(0)
+                steps = engine.series(name, args)
+            try:
+                while True:
+                    if self.lost:
+                        raise CommandError(
+                            "pvserver_lost",
+                            f"This ParaView view stopped during {name}: {self.lost}.",
+                        )
+                    with self.server.state:
+                        progress, result = engine.advance(steps)
+                    if progress is None:
+                        return dict(result)
+                    say_progress(done=progress[0], total=progress[1])
+                    await asyncio.sleep(0)
+            finally:
+                with self.server.state:
+                    steps.close()
+        finally:
+            if animating:
+                self.animating = False
 
     async def _await_source(self, name: str, args: dict[str, Any]) -> None:
         """Before a growing source is opened, wait until it can be read: until it is

@@ -103,7 +103,9 @@ async def test_each_new_step_is_reported_once_following_then_parked() -> None:
         (5, parked),
     ]
     assert run.totals == [None] * 4
-    assert outcome["ended"] == "idle"
+    assert outcome["ended"] == "stalled"
+    # Steps came a second apart, so the stall is the longer idle_seconds.
+    assert outcome["stall_seconds"] == 3
     assert outcome["new_steps"] == 3
     assert [s["index"] for s in outcome["steps"]] == [2, 3, 4]
     assert outcome["time"]["newer_steps"] == 1
@@ -112,8 +114,41 @@ async def test_each_new_step_is_reported_once_following_then_parked() -> None:
     assert run.fetched[-1] == 5
     text = follow.watch_text(outcome)
     assert "3 new step(s), step 3 (time 1) to step 5 (time 2)" in text
-    assert "no new step came for the idle time" in text
+    assert "no new step came and nothing changed on disk for 3 s" in text
     assert "\u00b7" not in text
+
+
+def _source(result: dict[str, Any], changed: float, writing: bool | None, at: float):
+    return {**result, "source": {"changed": changed, "writing": writing}, "checked": at}
+
+
+async def test_a_slow_run_is_not_taken_for_stalled_while_its_disk_changes() -> None:
+    """No step for longer than idle_seconds is no stall while the writer is still
+    writing: what is on disk keeps changing. Once it stops changing, it stalls."""
+    results = [_source(steps_result(2), 0.0, True, 0.0)]
+    # Ten polls with no new step, while the step being written grows on disk.
+    results += [_source(steps_result(2), t, True, t) for t in range(1, 11)]
+    results += [_source(steps_result(2), 10.0, True, 10.0 + t) for t in range(1, 30)]
+    run = _Run(results)
+    outcome = await run.watch(idle_seconds=5)
+    assert outcome["ended"] == "stalled"
+    # It stalled five seconds after the disk stopped changing, not after idle_seconds
+    # with no new step.
+    assert outcome["seconds"] == 15
+
+
+async def test_a_writer_that_closes_its_output_finishes_the_watch() -> None:
+    """An ADIOS2 writer that closes its output says the run ended: the watch ends as
+    finished once the disk has been still a moment, long before a stall."""
+    results = [_source(steps_result(2), 0.0, True, 0.0)]
+    results += [_source(steps_result(3), 1.0, True, 1.0)]
+    results += [_source(steps_result(3), 2.0, False, 2.0 + t) for t in range(0, 40)]
+    run = _Run(results)
+    outcome = await run.watch(idle_seconds=600)
+    assert outcome["ended"] == "finished"
+    assert outcome["new_steps"] == 1
+    assert outcome["seconds"] < 60
+    assert "the run closed its output" in follow.watch_text(outcome)
 
 
 async def test_expected_steps_give_the_total_and_end_the_watch_when_written() -> None:
@@ -233,9 +268,7 @@ class _GatedClient(_FakeClient):
         self.sequence = sequence
         self.gate = threading.Semaphore(0)
 
-    def command(
-        self, name: str, args: dict, timeout: float = 900.0, by: str = "agent"
-    ) -> dict:
+    def command(self, name: str, args: dict, by: str = "agent", **_: object) -> dict:
         assert name == "steps"
         self.calls.append((name, args))
         assert self.gate.acquire(timeout=20)
@@ -297,7 +330,7 @@ async def test_watch_steps_called_directly_sends_progress_notifications(
 
     client = _FakeClient({})
     sequence = [steps_result(1), steps_result(2), steps_result(2, growing=False)]
-    client.command = lambda name, args, timeout=900.0, by="agent": (  # type: ignore[method-assign]
+    client.command = lambda name, args, **_: (  # type: ignore[method-assign]
         sequence.pop(0) if len(sequence) > 1 else sequence[0]
     )
     monkeypatch.setattr(server, "_attachers", {"": _FakeAttacher(client)})
@@ -307,9 +340,10 @@ async def test_watch_steps_called_directly_sends_progress_notifications(
     async def progress(value: float, total: float | None, message: str | None) -> None:
         messages.append(message or "")
 
-    # A legacy (pre-2026) connection cannot negotiate tasks: the call runs directly.
+    # A legacy (pre-2026) connection cannot negotiate tasks: the call runs directly,
+    # with no time limit, until the watch ends by itself.
     async with Client(mcp, progress_handler=progress, mode="legacy") as mcp_client:
-        result = await mcp_client.call_tool("watch_steps", {"max_seconds": 30})
+        result = await mcp_client.call_tool("watch_steps", {})
     assert result.structured_content is not None
     assert result.structured_content["new_steps"] == 1
     assert any("Step 2 at time 0.5" in m for m in messages), messages

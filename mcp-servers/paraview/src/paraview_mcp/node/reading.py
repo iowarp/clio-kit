@@ -121,11 +121,11 @@ class SceneReading:
         start: int | None = None,
         end: int | None = None,
         stride: int = 1,
-    ) -> Generator[int, None, dict[str, Any]]:
-        """measure_over_time one step at a time: yields each step's index once it is
-        measured, so the node half can go on answering and following between steps,
-        and returns the series. Each step is measured at its own time; the view stays
-        on its step throughout."""
+    ) -> Generator[tuple[int, int], None, dict[str, Any]]:
+        """measure_over_time one step at a time: yields how many steps are measured
+        and how many there are, so the node half can go on answering and following
+        between steps, and returns the series. Each step is measured at its own time;
+        the view stays on its step throughout."""
         self.require_scene()
         item = self._carrier(field, object)
         proxy = self.proxies[item["id"]]
@@ -135,13 +135,13 @@ class SceneReading:
         final = last if end is None else max(first, min(int(end), last))
         picked = list(range(first, final + 1, max(1, int(stride))))[-MAX_SERIES:]
         series = []
-        for index in picked:
+        for done, index in enumerate(picked, 1):
             stats = data.measure(
                 proxy, field, 1, component, time=steps[index], histogram=False
             )
             stats.pop("histogram", None)
             series.append({"index": index, "time": steps[index], **stats})
-            yield index
+            yield done, len(picked)
         head = series[0] if series else {}
         return {
             "object": item["id"],

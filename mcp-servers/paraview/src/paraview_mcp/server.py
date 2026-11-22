@@ -11,6 +11,8 @@ from __future__ import annotations
 import asyncio
 import atexit
 import base64
+import threading
+from collections.abc import Callable
 from importlib import resources
 from typing import Annotated, Any, Literal
 
@@ -138,20 +140,30 @@ def actor() -> str:
 def command(
     name: str,
     args: dict[str, Any],
-    timeout: float = 900.0,
     opening: bool = False,
     key: str | None = None,
+    stop: threading.Event | None = None,
+    progress: Callable[[dict[str, Any]], None] | None = None,
 ) -> tuple[Any, Any]:
     """Run one scene command on the node half; return (result, link).
 
     Only ``opening`` (open_view) starts a node half where none runs. Any other
     command on a view whose node half has gone says why, instead of starting a
-    fresh one that shows nothing.
+    fresh one that shows nothing. A command takes as long as its work: ``progress``
+    hears how it goes, and ``stop`` cancels it.
     """
     clean = {k: v for k, v in args.items() if v is not None}
+
+    def waiting(note: str) -> None:
+        if progress is not None:
+            progress({"note": note})
+
     try:
-        link = attacher(key).ensure(opening=opening)
-        return link.client.command(name, clean, timeout=timeout, by=actor()), link
+        link = attacher(key).ensure(opening=opening, stop=stop, progress=waiting)
+        result = link.client.command(
+            name, clean, by=actor(), stop=stop, progress=progress
+        )
+        return result, link
     except ParaViewError as exc:
         raise _fail(exc) from exc
     except LinkError as exc:
@@ -166,6 +178,58 @@ def command(
             "the node. Call scene_state to see whether the change applied, then "
             f"retry. ({exc}) [link_lost]"
         ) from exc
+
+
+async def run(
+    ctx: Context,
+    name: str,
+    args: dict[str, Any],
+    opening: bool = False,
+    key: str | None = None,
+) -> tuple[Any, Any]:
+    """``command`` for a tool: it lasts as long as the work does, each step or wait
+    is reported as MCP progress (steps done of all of them where the command counts
+    them, else the seconds so far), and cancelling the tool call cancels it."""
+    loop = asyncio.get_running_loop()
+    stop = threading.Event()
+    began = loop.time()
+    last = [0.0]
+    #: Whether the command counts its steps; its progress is then those counts.
+    counting = [False]
+
+    def tell(value: float, total: float | None, message: str | None) -> None:
+        # Progress must grow; a note that does not move it is left out.
+        if value <= last[0]:
+            return
+        last[0] = value
+        asyncio.run_coroutine_threadsafe(
+            ctx.report_progress(value, total, message), loop
+        )
+
+    def progress(note: dict[str, Any]) -> None:
+        done, total = note.get("done"), note.get("total")
+        if isinstance(done, int) and isinstance(total, int) and total > 0:
+            counting[0] = True
+            tell(float(done), float(total), note.get("note"))
+        elif not counting[0]:
+            tell(round(loop.time() - began, 1), None, note.get("note"))
+
+    chosen = attacher(key)
+    if opening:
+        chosen.cancel.clear()
+        chosen.progress = lambda message: progress({"note": message})
+    try:
+        return await asyncio.to_thread(
+            command, name, args, opening, key, stop, progress
+        )
+    except asyncio.CancelledError:
+        stop.set()
+        if opening:
+            chosen.cancel.set()
+        raise
+    finally:
+        if opening:
+            chosen.progress = None
 
 
 def path_arguments(target: Target, **access: str) -> dict[str, Any]:
@@ -286,30 +350,13 @@ async def open_view(
     global _current
     key = _key(pvserver) if pvserver else _scene_keys.get(scene or "", _current)
     chosen = attacher(key)
-    loop = asyncio.get_running_loop()
-    chosen.cancel.clear()
-    began = loop.time()
-
-    def progress(message: str) -> None:
-        # Progress must grow; the seconds spent starting do.
-        asyncio.run_coroutine_threadsafe(
-            ctx.report_progress(round(loop.time() - began, 1), None, message), loop
-        )
-
-    chosen.progress = progress
-    try:
-        summary, link = await asyncio.to_thread(
-            command,
-            "open_view",
-            open_arguments(path, scene, growing, new, view),
-            opening=True,
-            key=key,
-        )
-    except asyncio.CancelledError:
-        chosen.cancel.set()
-        raise
-    finally:
-        chosen.progress = None
+    summary, link = await run(
+        ctx,
+        "open_view",
+        open_arguments(path, scene, growing, new, view),
+        opening=True,
+        key=key,
+    )
     _current = key
     _scene_keys[summary["scene"]] = key
     chosen.scene = summary["scene"]
@@ -330,7 +377,8 @@ async def open_view(
 
 
 @mcp.tool(annotations={"title": "Build the ParaView scene"})
-def run_scene_script(
+async def run_scene_script(
+    ctx: Context,
     code: Annotated[
         str,
         Field(
@@ -352,12 +400,14 @@ def run_scene_script(
     scene and replayed when the scene is restored. Names are those of the ParaView that
     runs it: ParaView 6 colour presets drop " (matplotlib)" (either form works), and a
     scalar bar's range labels are AddRangeLabels."""
-    result, _ = command("run_scene_script", {"code": code, "label": label})
+    result, _ = await run(
+        ctx,"run_scene_script", {"code": code, "label": label})
     return present.script_text(result, _where())
 
 
 @mcp.tool(annotations={"title": "Change the timestep"})
-def set_timestep(
+async def set_timestep(
+    ctx: Context,
     index: Annotated[
         int | None, Field(description="Step index; -1 is the last.")
     ] = None,
@@ -369,7 +419,8 @@ def set_timestep(
     ] = None,
 ) -> str:
     """Show another time step, or follow the latest one."""
-    result, _ = command(
+    result, _ = await run(
+        ctx,
         "set_timestep", {"index": index, "time": time, "latest": latest}
     )
     return present.time_line(result["time"])
@@ -383,11 +434,22 @@ async def watch_steps(
     ctx: Context,
     idle_seconds: Annotated[
         float,
-        Field(ge=5, le=86400, description="Stop after this long with no new step."),
+        Field(
+            ge=5,
+            le=86400,
+            description="The shortest stall that ends the watch: no new step and "
+            "nothing changing on disk for this long, or three times the longest gap "
+            "between steps so far, whichever is longer.",
+        ),
     ] = 300.0,
     max_seconds: Annotated[
         float | None,
-        Field(ge=1, le=604800, description="Stop after this long in any case."),
+        Field(
+            ge=1,
+            le=604800,
+            description="Only when the person asks for a time limit; omit it "
+            "otherwise. The watch ends by itself when the run does.",
+        ),
     ] = None,
     after: Annotated[
         int | None,
@@ -399,17 +461,26 @@ async def watch_steps(
     ] = None,
 ) -> ToolResult:
     """Report each new time step of the open scene's growing source as it is written,
-    as progress: run as a background task, each step is the task's status; called
-    directly, each step is a progress notification and the call lasts until it ends,
-    so give max_seconds. Progress counts the steps written, against the view
-    descriptor's expected_steps when it gives them. It ends once those are written,
-    when no step comes for idle_seconds, after max_seconds, or when the source is
-    not growing, and returns every step it saw. The view follows the newest step
-    unless the person parked it."""
+    until the run ends. Prefer running it as a background task: each step is then
+    the task's status. Called directly, each step is a progress notification and the
+    call lasts until the watch ends; cancelling it ends it. Progress counts the
+    steps written, against the view descriptor's expected_steps when it gives them.
+    It ends once those are written ("complete"), when the writer closes its output
+    ("finished"), when the source stalls ("stalled": no new step and nothing
+    changing on disk), when the source is not growing, or when the person cancels,
+    and returns every step it saw. The view follows the newest step unless the
+    person parked it."""
 
     async def fetch(index: int) -> dict[str, Any]:
-        result, _ = await asyncio.to_thread(command, "steps", {"after": index})
-        return result
+        stop = threading.Event()
+        try:
+            result, _ = await asyncio.to_thread(
+                command, "steps", {"after": index}, stop=stop
+            )
+        except asyncio.CancelledError:
+            stop.set()
+            raise
+        return dict(result)
 
     async def report(written: int, expected: int | None, message: str) -> None:
         await ctx.report_progress(written, expected, message)
@@ -427,7 +498,8 @@ async def watch_steps(
 
 
 @mcp.tool(annotations={"title": "Move the camera"})
-def set_camera(
+async def set_camera(
+    ctx: Context,
     position: Annotated[list[float] | None, Field(min_length=3, max_length=3)] = None,
     focal_point: Annotated[
         list[float] | None, Field(min_length=3, max_length=3)
@@ -445,7 +517,8 @@ def set_camera(
     ] = None,
 ) -> str:
     """Place the camera, or turn and zoom it from where it is."""
-    result, _ = command(
+    result, _ = await run(
+        ctx,
         "set_camera",
         {
             "position": position,
@@ -462,18 +535,21 @@ def set_camera(
 
 
 @mcp.tool(annotations={"title": "Fit the camera"})
-def fit_camera(
+async def fit_camera(
+    ctx: Context,
     object: Annotated[
         str | None, Field(description="Fit this object; default: everything.")
     ] = None,
 ) -> str:
     """Point the camera so everything, or one object, fills the view."""
-    result, _ = command("fit_camera", {"object": object})
+    result, _ = await run(
+        ctx,"fit_camera", {"object": object})
     return present.camera_text(result["camera"])
 
 
 @mcp.tool(annotations={"title": "Read the picked point", "readOnlyHint": True})
-def inspect_selection(
+async def inspect_selection(
+    ctx: Context,
     position: Annotated[
         list[float] | None,
         Field(
@@ -484,14 +560,16 @@ def inspect_selection(
     ] = None,
 ) -> str:
     """Exact field values at the point the person picked in the view."""
-    result, _ = command("inspect_selection", {"position": position})
+    result, _ = await run(
+        ctx,"inspect_selection", {"position": position})
     if result.get("selection") is None:
         return result.get("message") or "Nothing is at that position."
     return present.selection_line(result["selection"])
 
 
 @mcp.tool(annotations={"title": "Measure a field", "readOnlyHint": True})
-def measure_field(
+async def measure_field(
+    ctx: Context,
     field: Annotated[str, Field(description="Field (array) name.")],
     object: Annotated[
         str | None, Field(description="Scene object id or label; default: the dataset.")
@@ -502,7 +580,8 @@ def measure_field(
     ] = None,
 ) -> ToolResult:
     """Exact statistics and a histogram of a field at the current time step."""
-    result, _ = command(
+    result, _ = await run(
+        ctx,
         "measure_field",
         {"field": field, "object": object, "bins": bins, "component": component},
     )
@@ -512,7 +591,8 @@ def measure_field(
 
 
 @mcp.tool(annotations={"title": "Measure a field over time", "readOnlyHint": True})
-def measure_over_time(
+async def measure_over_time(
+    ctx: Context,
     field: Annotated[str, Field(description="Field (array) name.")],
     object: Annotated[
         str | None, Field(description="Scene object id or label; default: the dataset.")
@@ -526,7 +606,8 @@ def measure_over_time(
 ) -> ToolResult:
     """Exact statistics (min, max, mean, std, median) of a field at each time step: the
     series to plot or compare over a run. The view stays on its step."""
-    result, _ = command(
+    result, _ = await run(
+        ctx,
         "measure_over_time",
         {
             "field": field,
@@ -536,7 +617,6 @@ def measure_over_time(
             "end": end,
             "stride": stride,
         },
-        timeout=3600.0,
     )
     return ToolResult(
         content=[_text(present.series_text(result))], structured_content=result
@@ -544,13 +624,15 @@ def measure_over_time(
 
 
 @mcp.tool(annotations={"title": "Capture the view", "readOnlyHint": True})
-def capture(
+async def capture(
+    ctx: Context,
     width: Annotated[int, Field(ge=64, le=4096)] = 1280,
     height: Annotated[int, Field(ge=64, le=4096)] = 800,
 ) -> list[Any]:
     """A PNG rendered by ParaView at the camera the view last reported. The text
     says when the frame is blank, so look before describing it."""
-    result, _ = command("capture", {"width": width, "height": height})
+    result, _ = await run(
+        ctx,"capture", {"width": width, "height": height})
     return [
         _text(
             present.blank_warning(result.get("drawn"))
@@ -565,7 +647,8 @@ def capture(
 
 
 @mcp.tool(annotations={"title": "Export a figure"}, meta=_paths(path="write"))
-def export_artifact(
+async def export_artifact(
+    ctx: Context,
     path: Annotated[
         str | None,
         Field(description="Where to write the PNG on the ParaView machine."),
@@ -575,7 +658,8 @@ def export_artifact(
     transparent: bool = False,
 ) -> list[Any]:
     """Write a figure of the current view as a PNG file."""
-    result, _ = command(
+    result, _ = await run(
+        ctx,
         "export_artifact",
         {"path": path, "width": width, "height": height, "transparent": transparent},
     )
@@ -589,7 +673,8 @@ def export_artifact(
 
 
 @mcp.tool(annotations={"title": "Export an animation"}, meta=_paths(path="write"))
-def export_animation(
+async def export_animation(
+    ctx: Context,
     path: Annotated[
         str,
         Field(
@@ -619,7 +704,8 @@ def export_animation(
     scene's own view, at its camera, colours and filters. Use it for a clip to send around,
     and put it beside a live view on a dashboard so the dashboard still shows the motion
     when ParaView is not running."""
-    result, _ = command(
+    result, _ = await run(
+        ctx,
         "export_animation",
         {
             "path": path,
@@ -630,20 +716,21 @@ def export_animation(
             "end": end,
             "labels": labels,
         },
-        timeout=3600.0,
     )
     return present.animation_text(result)
 
 
 @mcp.tool(annotations={"title": "Export the scene"}, meta=_paths(path="write"))
-def export_scene(
+async def export_scene(
+    ctx: Context,
     path: Annotated[
         str | None,
         Field(description="Where to write the manifest JSON on the ParaView machine."),
     ] = None,
 ) -> ToolResult:
     """Write the scene manifest, and a ParaView state file beside it."""
-    result, _ = command("export_scene", {"path": path})
+    result, _ = await run(
+        ctx,"export_scene", {"path": path})
     return ToolResult(
         content=[
             _text(
@@ -656,9 +743,10 @@ def export_scene(
 
 
 @mcp.tool(annotations={"title": "Describe the ParaView scene", "readOnlyHint": True})
-def scene_state() -> ToolResult:
+async def scene_state(ctx: Context) -> ToolResult:
     """Where ParaView is attached, the dataset, the pipeline, time and view."""
-    result, _ = command("scene_state", {})
+    result, _ = await run(
+        ctx,"scene_state", {})
     attachment = attacher().describe()
     lines = [
         f"Attached {attachment['where']}: ParaView {attachment.get('paraview')} "

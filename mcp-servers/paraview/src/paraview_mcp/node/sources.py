@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from .datafs import LocalDisk
-from .disk import is_pattern, whole_steps
+from .disk import is_pattern, whole_steps, writing
 from .errors import CommandError
 
 #: Seconds a grown BP5 folder must stay unchanged before its last step is read,
@@ -107,7 +107,8 @@ class SourceGrowth:
     _replay: int | None
     _replay_armed: str | None
     last_growth: float | None
-
+    _disk_seen: dict[str, Any]
+    disk_changed: float | None
     # Provided by the engine.
     def require_scene(self) -> dict[str, Any]:
         raise NotImplementedError
@@ -384,6 +385,9 @@ class SourceGrowth:
             if item["kind"] != "reader" or item["id"] not in self.proxies:
                 continue
             key = self.disk.disk_key(item["path"])
+            if key != self._disk_seen.get(item["id"], self):
+                self._disk_seen[item["id"]] = key
+                self.disk_changed = time.time()
             proxy = self.proxies[item["id"]]
             if item["id"] in self._held:
                 # A growing BP5 folder: its reader reads a copy whose index holds
@@ -479,5 +483,16 @@ class SourceGrowth:
             ],
             "time": self.time_summary(),
             "last_growth": self.last_growth,
+            "source": self.source_state(),
             "checked": time.time(),
+        }
+
+    def source_state(self) -> dict[str, Any]:
+        """What the disk says of the growing source: when it last changed, and for an
+        ADIOS2 BP output, whether its writer still has it open (None: not known)."""
+        seen = [self._disk_seen[i] for i in self.proxies if i in self._disk_seen]
+        flags = [flag for flag in map(writing, seen) if flag is not None]
+        return {
+            "changed": self.disk_changed,
+            "writing": any(flags) if flags else None,
         }
