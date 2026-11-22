@@ -55,14 +55,21 @@ Test knobs: `PARAVIEW_IDLE_SECONDS` (node half idle shutdown, default 1800),
 `PARAVIEW_PVSERVER_PORT` (default 11111), `PARAVIEW_START_STALL` (default 120:
 a starting node half is stopped only after this many seconds with no new line
 in its log; there is no overall limit, the start is reported as progress and
-the call can be cancelled. `PARAVIEW_START_TIMEOUT` is read as its old name).
+the call can be cancelled. `PARAVIEW_START_TIMEOUT` is read as its old name),
+`PARAVIEW_SETUP_STALL` (default 600: a setup step, such as the folder probe, the
+offscreen rendering check or the trame install, is stopped only after printing
+nothing for this many seconds).
 
 No call has a time limit. A call runs on the node half under a job id; the
 front asks after it every few seconds, reports what it has done ("measured 40
 of 120 steps", or the seconds elapsed) as MCP progress, and cancels it on the
 node when the host cancels the call. A node that holds its loop (a long render)
 is busy, not gone, and the wait says so; a node or `pvserver` that has ended
-fails the call at once with its reason.
+fails the call at once with its reason. Setting up a machine works the same way:
+each step's last line is reported as progress for as long as it runs, a cancel
+stops it, and only a step that falls silent for `PARAVIEW_SETUP_STALL` seconds
+fails, as `setup_stalled`. `measure_over_time` returns every step it picks, however
+many there are.
 
 ## Views on several pvservers
 

@@ -10,6 +10,7 @@ to link instead.
 from __future__ import annotations
 
 import contextlib
+import itertools
 import json
 import os
 import shutil
@@ -440,6 +441,23 @@ def test_a_long_measure_reports_its_steps_and_is_cancelled_on_the_node(
     assert copied["label"] == "copy" and len(copied["series"]) == 3
     # Each step is measured at its own time downstream of a filter too.
     assert [round(row["mean"], 3) for row in copied["series"]] == [10.5, 20.5, 30.5]
+
+
+def test_a_series_longer_than_a_thousand_steps_comes_back_whole(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """measure_over_time returns every picked step, however many there are."""
+    attacher, data = attached
+    client = attacher.ensure().client
+    series = data / "many"
+    series.mkdir()
+    for step in range(1100):
+        write_vti(series / f"out_{step:04d}.vti", shift=step)
+    client.command("open_view", {"path": str(series / "out_*.vti"), "new": True})
+    measured = client.command("measure_over_time", {"field": "p"}, wait=1.0)
+    assert [row["index"] for row in measured["series"]] == list(range(1100))
+    means = [row["mean"] for row in measured["series"]]
+    assert all(abs(b - a - 1) < 1e-6 for a, b in itertools.pairwise(means))
 
 
 def test_a_descriptor_display_gives_the_first_view(

@@ -30,7 +30,7 @@ from . import client, config, native
 from .config import Settings
 from .errors import PREFER_FORWARD, ParaViewError, no_paraview
 from .link import LinkError, NodeClient
-from .transport import Completed, Transport, transport_for
+from .transport import Completed, Transport, Watch, transport_for
 
 #: SSH failures that a forwarded pvserver endpoint would avoid.
 _SSH_CODES = frozenset({"ssh_failed", "unreachable", "forward_failed"})
@@ -357,9 +357,11 @@ def gl_probe_script(pvpython: str) -> str:
     pv = shlex.quote(pvpython)
     probe = shlex.quote(GL_PROBE)
     return (
-        f"if {pv} --force-offscreen-rendering -c {probe} 2>/dev/null "
+        "echo 'Trying offscreen rendering' >&2\n"
+        f"if {pv} --force-offscreen-rendering -c {probe} "
         "| grep -q '^CLIO_GL=ok'; then echo CLIO_GLMODE=native\n"
-        f"elif {pv} --mesa --force-offscreen-rendering -c {probe} 2>/dev/null "
+        f"elif echo 'Trying the Mesa that ParaView ships' >&2; {pv} --mesa "
+        f"--force-offscreen-rendering -c {probe} "
         "| grep -q '^CLIO_GL=ok'; then echo CLIO_GLMODE=mesa\n"
         "else echo CLIO_GLMODE=none; fi"
     )
@@ -396,9 +398,10 @@ def build_script(folder: str, pyinfo: dict[str, Any], pvpython: str | None) -> s
     packages = " ".join(config.NODE_PACKAGES)
     plats = " ".join(f"--platform {p}" for p in pip_plats)
     pyver = pyinfo["python"]
+    # Not --quiet: each line an install prints is the sign it has not stalled.
     pip_args = (
-        f"install --quiet --disable-pip-version-check --no-input --timeout 20 "
-        f'--retries 1 --target "$T" --python-version {pyver} {plats} '
+        f"install --disable-pip-version-check --no-input --progress-bar off "
+        f'--timeout 20 --retries 1 --target "$T" --python-version {pyver} {plats} '
         f"--only-binary=:all: {packages}"
     )
     pv = shlex.quote(pvpython) if pvpython else '""'
@@ -408,13 +411,16 @@ T="$D/site.building.$$"
 rm -rf "$T"; mkdir -p "$T"
 ok=1
 if command -v uv >/dev/null 2>&1; then
-  UV_HTTP_TIMEOUT=20 uv pip install --quiet --target "$T" --python-version {pyver} \\
+  echo "Installing with uv" >&2
+  UV_HTTP_TIMEOUT=20 uv pip install --target "$T" --python-version {pyver} \\
     --python-platform {uv_plat} {packages} && ok=0
 fi
 if [ $ok -ne 0 ] && python3 -m pip --version >/dev/null 2>&1; then
+  echo "Installing with pip" >&2
   python3 -m pip {pip_args} && ok=0
 fi
 if [ $ok -ne 0 ] && [ -n {pv} ] && {pv} -m pip --version >/dev/null 2>&1; then
+  echo "Installing with pvpython's pip" >&2
   {pv} -m pip {pip_args} && ok=0
 fi
 if [ $ok -ne 0 ]; then rm -rf "$T"; echo "CLIO_BUILD=failed"; exit 3; fi
@@ -597,6 +603,7 @@ class Attacher:
         settings = self.settings
         target = settings.target
         transport = transport_for(target, settings.connect_timeout)
+        transport.watch = self._watch()
         try:
             transport.open()
             return self._attach_over(transport, started, opening)
@@ -622,7 +629,8 @@ class Attacher:
             marks = native.probe(str(folder_here), base)
         else:
             probe = transport.run(
-                probe_script(config.SERVER_VERSION, folder_here, base), timeout=120
+                probe_script(config.SERVER_VERSION, folder_here, base),
+                label="Checking the ParaView folder",
             )
             marks = parse_markers(probe.stdout)
             probe_err = probe.stderr.strip() or probe.stdout.strip()
@@ -753,19 +761,19 @@ class Attacher:
             known = (
                 env.get("paraview") if env and env.get("pvpython") == found else None
             )
-            if (known or native.version_of(found)) == want:
+            if (known or native.version_of(found, self._watch())) == want:
                 return found
         return client.ensure(want)
 
     def _interrogate(self, transport: Transport, pvpython: str) -> dict[str, Any]:
         pv = shlex.quote(pvpython)
         if self._native:
-            done = native.interrogate(pvpython, PYINFO)
+            done = native.interrogate(pvpython, PYINFO, self._watch())
         else:
             done = transport.run(
                 f"{pv} --version 2>/dev/null | head -n1 | sed 's/^/CLIO_VERSION=/'\n"
                 f"{pv} --dr -c {shlex.quote(PYINFO)} 2>/dev/null | grep '^CLIO_'",
-                timeout=180,
+                label="Asking pvpython its version",
             )
         marks = parse_markers(done.stdout)
         if "PYINFO" not in marks:
@@ -794,7 +802,9 @@ class Attacher:
         if self._native:
             # Windows builds render offscreen through the desktop's own OpenGL.
             return []
-        done = transport.run(gl_probe_script(pvpython), timeout=300)
+        done = transport.run(
+            gl_probe_script(pvpython), label="Checking offscreen rendering"
+        )
         mode = parse_markers(done.stdout).get("GLMODE")
         return ["--mesa"] if mode == "mesa" else []
 
@@ -802,10 +812,17 @@ class Attacher:
         self, transport: Transport, folder: str, env: dict[str, Any], pvpython: str
     ) -> str:
         script = build_script(folder, env["pyinfo"], pvpython)
-        if self._native:
-            done = native.build(folder, env["pyinfo"], pvpython)
-        else:
-            done = transport.run(script, timeout=900)
+        label = "Installing trame for the node half"
+        try:
+            if self._native:
+                done = native.build(folder, env["pyinfo"], pvpython, transport.watch)
+            else:
+                done = transport.run(script, label=label)
+        except ParaViewError as exc:
+            # A stalled install may still be done from the jump host; a cancel ends it.
+            if exc.code != "setup_stalled":
+                raise
+            done = Completed(1, "", exc.message)
         if parse_markers(done.stdout).get("BUILD") == "ok":
             return "node"
         failures = [f"{transport.where}: {_tail(done)}"]
@@ -815,13 +832,17 @@ class Attacher:
             from .transport import SshTransport
 
             helper = SshTransport(Target(address=jump), self.settings.connect_timeout)
+            helper.watch = transport.watch
             try:
                 helper.open()
                 done = helper.run(
-                    build_script(folder, env["pyinfo"], None), timeout=900
+                    build_script(folder, env["pyinfo"], None), label=label
                 )
                 if parse_markers(done.stdout).get("BUILD") == "ok":
-                    check = transport.run(f"test -d {shlex.quote(folder)}/site/trame")
+                    check = transport.run(
+                        f"test -d {shlex.quote(folder)}/site/trame",
+                        label="Checking the install is shared",
+                    )
                     if check.code == 0:
                         return f"jump host {jump}"
                     failures.append(
@@ -831,6 +852,8 @@ class Attacher:
                 else:
                     failures.append(f"{jump}: {_tail(done)}")
             except ParaViewError as exc:
+                if exc.code == "cancelled":
+                    raise
                 failures.append(f"{jump}: {exc.message}")
             finally:
                 helper.close()
@@ -871,7 +894,9 @@ class Attacher:
             native.write_env(folder, env)
             return
         transport.run(
-            f"cat > {shlex.quote(folder)}/env.json", stdin=payload, timeout=60
+            f"cat > {shlex.quote(folder)}/env.json",
+            stdin=payload,
+            label="Saving the ParaView facts",
         )
 
     def _upload(self, transport: Transport, folder: str, bundle: bytes) -> None:
@@ -883,7 +908,7 @@ class Attacher:
                 f"rm -rf {f}/code.new && mkdir -p {f}/code.new && tar -xzf - -C "
                 f"{f}/code.new && rm -rf {f}/code && mv {f}/code.new {f}/code",
                 stdin=bundle,
-                timeout=120,
+                label="Copying the node half",
             )
         if done.code != 0:
             raise ParaViewError(
@@ -906,7 +931,7 @@ class Attacher:
         script = f"rm -f {f}/{slot}.json\n"
         if pid > 0:
             script += f"kill {pid} 2>/dev/null; sleep 1; kill -9 {pid} 2>/dev/null\n"
-        transport.run(script + "exit 0", timeout=60)
+        transport.run(script + "exit 0", label="Stopping the old node half")
         return True
 
     def _start_node(
@@ -951,7 +976,7 @@ class Attacher:
             f"nohup $S {command} > {log} 2>&1 < /dev/null &\n"
             'echo "CLIO_PID=$!"\n'
             "exit 0",
-            timeout=60,
+            label="Starting the node half",
         )
         pid = parse_markers(begun.stdout).get("PID", "")
         pid = pid if pid.isdigit() else "0"
@@ -972,7 +997,7 @@ class Attacher:
                 f"echo \"CLIO_LAST=$(tail -n 1 {log} 2>/dev/null | tr -d '\\r' "
                 '| cut -c1-400)"\n'
                 "exit 0",
-                timeout=60,
+                label="Looking at the starting node half",
             )
             first = (done.stdout.splitlines() or [""])[0].strip()
             record = json.loads(first) if first.startswith("{") else None
@@ -982,7 +1007,9 @@ class Attacher:
             is_alive = marks.get("ALIVE") != "0"
             tail = ""
             if (failed.isdigit() and int(failed) > 0) or not is_alive:
-                tail = transport.run(f"tail -n 25 {log}", timeout=60).stdout
+                tail = transport.run(
+                    f"tail -n 25 {log}", label="Reading its log"
+                ).stdout
             return StartLook(
                 record=record,
                 failed=tail if failed.isdigit() and int(failed) > 0 else None,
@@ -994,7 +1021,7 @@ class Attacher:
 
         def stop() -> None:
             if pid != "0":
-                transport.run(f"kill {pid} 2>/dev/null; exit 0", timeout=60)
+                transport.run(f"kill {pid} 2>/dev/null; exit 0", label="Stopping it")
 
         return wait_for_start(
             look,
@@ -1054,7 +1081,7 @@ class Attacher:
             done = transport.run(
                 f"cat {f}/{slot}.lost.json 2>/dev/null; echo; echo CLIO_TAIL\n"
                 f"tail -n 25 {f}/{slot}.log 2>/dev/null; exit 0",
-                timeout=60,
+                label="Reading why the node half went",
             )
             note, _, tail = done.stdout.partition("CLIO_TAIL")
         return gone_error(note.strip(), tail.strip(), transport.where, self.scene)
@@ -1114,6 +1141,20 @@ class Attacher:
                     f"ParaView has not answered for {time.monotonic() - began:.0f} s: "
                     "it is busy (a long render holds it), not gone, so this waits"
                 )
+
+    def _watch(self) -> Watch:
+        """How setup steps are watched: the running call's cancel and progress."""
+
+        def cancelled() -> bool:
+            stop = self._call[0]
+            return self.cancel.is_set() or (stop is not None and stop.is_set())
+
+        def tell(text: str) -> None:
+            said = self._call[1] or self.progress
+            if said is not None:
+                said(text)
+
+        return Watch(self.settings.setup_stall, cancelled, tell)
 
     # -- keeping the link warm ----------------------------------------------------
     def _start_heartbeat(self) -> None:

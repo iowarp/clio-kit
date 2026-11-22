@@ -13,9 +13,6 @@ from typing import Any
 from . import data, manifest
 from .errors import CommandError, _expand
 
-#: The most steps one measure_over_time returns; a longer run takes a stride.
-MAX_SERIES = 1000
-
 
 class SceneReading:
     """Mixed into the engine: selection, measurement, capture, export, state."""
@@ -146,7 +143,8 @@ class SceneReading:
         last = len(steps) - 1
         first = max(0, min(int(start or 0), last))
         final = last if end is None else max(first, min(int(end), last))
-        picked = list(range(first, final + 1, max(1, int(stride))))[-MAX_SERIES:]
+        # Every picked step, however many: a series is never cut short.
+        picked = list(range(first, final + 1, max(1, int(stride))))
         series = []
         for done, index in enumerate(picked, 1):
             stats = data.measure(

@@ -14,12 +14,16 @@ from __future__ import annotations
 import os
 import shlex
 import shutil
+import signal
 import socket
 import subprocess
 import tempfile
+import threading
 import time
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import IO
 
 from .config import Target
 from .errors import ParaViewError
@@ -32,6 +36,135 @@ class Completed:
     code: int
     stdout: str
     stderr: str
+
+
+@dataclass
+class Watch:
+    """How a step is watched: there is no limit on its total time.
+
+    A step is stopped only when ``cancelled`` says the person cancelled, or when it
+    has printed nothing for ``stall`` seconds. While it runs, ``progress`` is told
+    how long it has run and the last line it printed.
+    """
+
+    stall: float = 600.0
+    cancelled: Callable[[], bool] = field(default=lambda: False)
+    progress: Callable[[str], None] | None = None
+
+
+def _end(process: subprocess.Popen[bytes]) -> None:
+    """Stop ``process`` and whatever it started."""
+    if process.poll() is not None:
+        return
+    try:
+        if os.name == "nt":
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(process.pid)],
+                capture_output=True,
+                check=False,
+            )
+        else:
+            os.killpg(process.pid, signal.SIGKILL)
+    except OSError:
+        process.kill()
+    try:
+        process.wait(5)
+    except subprocess.TimeoutExpired:
+        process.kill()
+
+
+def watched(
+    command: list[str],
+    watch: Watch,
+    label: str,
+    stdin: bytes | None = None,
+    cwd: str | Path | None = None,
+    every: float = 0.5,
+) -> Completed:
+    """Run ``command`` for as long as it keeps printing, as ``watch`` says.
+
+    Raises ``cancelled`` when the person cancels and ``setup_stalled`` after
+    ``watch.stall`` seconds with no output; either way the process is stopped.
+    """
+    process = subprocess.Popen(
+        command,
+        stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        cwd=cwd,
+        start_new_session=os.name != "nt",
+        creationflags=0x08000000 if os.name == "nt" else 0,
+    )
+    out: list[bytes] = []
+    err: list[bytes] = []
+    heard = [time.monotonic()]
+    last = [""]
+
+    def pump(stream: IO[bytes] | None, into: list[bytes]) -> None:
+        if stream is None:
+            return
+        for raw in iter(stream.readline, b""):
+            into.append(raw)
+            heard[0] = time.monotonic()
+            text = raw.decode("utf-8", "replace").strip()
+            if text:
+                last[0] = text[:300]
+        stream.close()
+
+    def feed() -> None:
+        try:
+            assert process.stdin is not None
+            process.stdin.write(stdin or b"")
+            process.stdin.close()
+        except OSError:
+            pass
+
+    threads = [
+        threading.Thread(target=pump, args=(process.stdout, out), daemon=True),
+        threading.Thread(target=pump, args=(process.stderr, err), daemon=True),
+    ]
+    if stdin is not None:
+        threads.append(threading.Thread(target=feed, daemon=True))
+    for thread in threads:
+        thread.start()
+    began = told = time.monotonic()
+    said = ""
+    while True:
+        try:
+            process.wait(every)
+            break
+        except subprocess.TimeoutExpired:
+            pass
+        now = time.monotonic()
+        if watch.cancelled():
+            _end(process)
+            raise ParaViewError(
+                "cancelled", f"{label} was cancelled after {now - began:.0f} s."
+            )
+        quiet = now - heard[0]
+        if quiet >= watch.stall:
+            _end(process)
+            raise ParaViewError(
+                "setup_stalled",
+                f"{label} printed nothing for {quiet:.0f} s, so it was stopped. "
+                f"It last said: {last[0] or '(nothing)'}",
+            )
+        if watch.progress is not None and (last[0] != said or now - told >= 5.0):
+            said, told = last[0], now
+            text = f"{label}, {now - began:.0f} s"
+            if last[0]:
+                text += f": {last[0]}"
+            if quiet >= 30:
+                text += f" (nothing new for {quiet:.0f} s)"
+            watch.progress(text)
+    for thread in threads:
+        # A child that keeps the pipes open after the step ends is not waited on.
+        thread.join(5)
+    return Completed(
+        process.returncode or 0,
+        b"".join(out).decode("utf-8", "replace"),
+        b"".join(err).decode("utf-8", "replace"),
+    )
 
 
 def free_port() -> int:
@@ -55,6 +188,7 @@ class LocalTransport:
 
     def __init__(self, target: Target) -> None:
         self.target = target
+        self.watch = Watch()
 
     @property
     def where(self) -> str:
@@ -64,26 +198,10 @@ class LocalTransport:
         """Nothing to open locally."""
 
     def run(
-        self, script: str, stdin: bytes | None = None, timeout: float = 600.0
+        self, script: str, stdin: bytes | None = None, label: str = "A setup step"
     ) -> Completed:
         full = with_prepare(self.target.prepare, script)
-        try:
-            done = subprocess.run(
-                ["bash", "-c", full],
-                input=stdin,
-                capture_output=True,
-                timeout=timeout,
-                check=False,
-            )
-        except subprocess.TimeoutExpired as exc:
-            raise ParaViewError(
-                "timed_out", f"A step on this machine took longer than {timeout:g} s."
-            ) from exc
-        return Completed(
-            done.returncode,
-            done.stdout.decode("utf-8", "replace"),
-            done.stderr.decode("utf-8", "replace"),
-        )
+        return watched(["bash", "-c", full], self.watch, f"{label} {self.where}", stdin)
 
     def forward(self, remote_port: int, local_port: int | None = None) -> int:
         return remote_port
@@ -168,6 +286,7 @@ class SshTransport:
         self.target = target
         self.host: str = target.address
         self.connect_timeout = connect_timeout
+        self.watch = Watch()
         self.ssh = shutil.which("ssh")
         self.folder = Path(tempfile.mkdtemp(prefix="clio-pv-"))
         os.chmod(self.folder, 0o700)
@@ -317,7 +436,7 @@ class SshTransport:
         return done.returncode == 0
 
     def run(
-        self, script: str, stdin: bytes | None = None, timeout: float = 600.0
+        self, script: str, stdin: bytes | None = None, label: str = "A setup step"
     ) -> Completed:
         full = with_prepare(self.target.prepare, script)
         reuse = ["-o", "ControlMaster=no"] if self.multiplex else self._jump_args()
@@ -327,23 +446,8 @@ class SshTransport:
             self.host,
             "bash -lc " + shlex.quote(full),
         ]
-        try:
-            done = subprocess.run(
-                command,
-                input=stdin,
-                capture_output=True,
-                timeout=timeout,
-                check=False,
-                cwd=self.folder,
-            )
-        except subprocess.TimeoutExpired as exc:
-            raise ParaViewError(
-                "timed_out", f"A step on {self.host} took longer than {timeout:g} s."
-            ) from exc
-        return Completed(
-            done.returncode,
-            done.stdout.decode("utf-8", "replace"),
-            done.stderr.decode("utf-8", "replace"),
+        return watched(
+            command, self.watch, f"{label} on {self.host}", stdin, self.folder
         )
 
     def forward(self, remote_port: int, local_port: int | None = None) -> int:

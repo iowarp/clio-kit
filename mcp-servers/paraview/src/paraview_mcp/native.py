@@ -22,7 +22,8 @@ from pathlib import Path
 from typing import Any
 
 from . import config
-from .transport import Completed
+from .errors import ParaViewError
+from .transport import Completed, Watch, watched
 
 CREATE_NEW_PROCESS_GROUP = 0x00000200
 CREATE_NO_WINDOW = 0x08000000
@@ -109,44 +110,44 @@ def probe(folder: str, base: str = "node") -> dict[str, str]:
     return marks
 
 
-def _run(command: list[str], timeout: float, cwd: str | None = None) -> Completed:
+def _run(command: list[str], watch: Watch, label: str) -> Completed:
+    """Run one step for as long as it keeps printing; a cancel ends it."""
     try:
-        done = subprocess.run(
-            command,
-            capture_output=True,
-            timeout=timeout,
-            check=False,
-            cwd=cwd,
-            stdin=subprocess.DEVNULL,
-            creationflags=CREATE_NO_WINDOW if os.name == "nt" else 0,
-        )
-    except (OSError, subprocess.TimeoutExpired) as exc:
+        return watched(command, watch, f"{label} on this machine")
+    except OSError as exc:
         return Completed(1, "", f"{type(exc).__name__}: {exc}")
-    return Completed(
-        done.returncode,
-        done.stdout.decode("utf-8", "replace"),
-        done.stderr.decode("utf-8", "replace"),
-    )
+    except ParaViewError as exc:
+        if exc.code != "setup_stalled":
+            raise
+        return Completed(1, "", exc.message)
 
 
-def interrogate(pvpython: str, pyinfo: str) -> Completed:
+def interrogate(pvpython: str, pyinfo: str, watch: Watch | None = None) -> Completed:
     """The version and Python facts, as the shell interrogation prints them."""
-    version = _run([pvpython, "--version"], 180)
-    info = _run([pvpython, "--dr", "-c", pyinfo], 180)
+    watch = watch or Watch()
+    version = _run([pvpython, "--version"], watch, "Asking pvpython its version")
+    info = _run([pvpython, "--dr", "-c", pyinfo], watch, "Asking pvpython its Python")
     first = (version.stdout.strip().splitlines() or [""])[0]
     lines = [f"CLIO_VERSION={first}"]
     lines += [line for line in info.stdout.splitlines() if line.startswith("CLIO_")]
     return Completed(info.code, "\n".join(lines), version.stderr + info.stderr)
 
 
-def version_of(pvpython: str) -> str:
+def version_of(pvpython: str, watch: Watch | None = None) -> str:
     """The ParaView version a pvpython reports, such as ``5.13.1``."""
-    done = _run([pvpython, "--version"], 180)
+    done = _run(
+        [pvpython, "--version"], watch or Watch(), "Asking pvpython its version"
+    )
     first = (done.stdout.strip().splitlines() or [""])[0]
     return first.rsplit(" ", 1)[-1]
 
 
-def build(folder: str, pyinfo: dict[str, Any], pvpython: str | None) -> Completed:
+def build(
+    folder: str,
+    pyinfo: dict[str, Any],
+    pvpython: str | None,
+    watch: Watch | None = None,
+) -> Completed:
     """Install the trame packages into ``folder/site`` for pvpython's Python."""
     from .attach import platform_tags
 
@@ -157,7 +158,7 @@ def build(folder: str, pyinfo: dict[str, Any], pvpython: str | None) -> Complete
     target.mkdir(parents=True)
     packages = list(config.NODE_PACKAGES)
     pip = [
-        "install", "--quiet", "--disable-pip-version-check", "--no-input",
+        "install", "--disable-pip-version-check", "--no-input", "--progress-bar", "off",
         "--timeout", "20", "--retries", "1", "--target", str(target),
         "--python-version", pyver,
         *(arg for p in pip_plats for arg in ("--platform", p)),
@@ -170,7 +171,7 @@ def build(folder: str, pyinfo: dict[str, Any], pvpython: str | None) -> Complete
         # A confined host may not grant uv's own profile cache; a cache in this
         # folder keeps every staged file in territory this server may write.
         attempts.append(
-            [uv, "pip", "install", "--quiet", "--target", str(target),
+            [uv, "pip", "install", "--target", str(target),
              "--cache-dir", str(cache), "--link-mode", "copy",
              "--python-version", pyver, "--python-platform", uv_plat, *packages]
         )  # fmt: skip
@@ -179,7 +180,7 @@ def build(folder: str, pyinfo: dict[str, Any], pvpython: str | None) -> Complete
         attempts.append([pvpython, "-m", "pip", *pip])
     errors = []
     for command in attempts:
-        done = _run(command, 900)
+        done = _run(command, watch or Watch(), "Installing trame for the node half")
         if done.code == 0:
             site = Path(folder) / "site"
             shutil.rmtree(site, ignore_errors=True)

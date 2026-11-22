@@ -58,6 +58,9 @@ class Settings:
     #: output, no record) before it is taken for stuck. There is no overall limit:
     #: a start that keeps progressing is waited for, and the wait can be cancelled.
     start_stall: float = 120.0
+    #: How long a setup step (a probe, a rendering check, an install) may print
+    #: nothing before it is taken for stuck. There is no overall limit either.
+    setup_stall: float = 600.0
 
 
 def _float(name: str, default: float | None) -> float | None:
@@ -85,4 +88,5 @@ def from_environment() -> Settings:
             _float("PARAVIEW_START_STALL", _float("PARAVIEW_START_TIMEOUT", 120.0))
             or 120.0
         ),
+        setup_stall=float(_float("PARAVIEW_SETUP_STALL", 600.0) or 600.0),
     )
