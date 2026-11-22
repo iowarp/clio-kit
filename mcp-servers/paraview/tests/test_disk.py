@@ -323,17 +323,38 @@ class _FakeServer:
             def __init__(self, Input: Source) -> None:
                 self.input = Input
                 self.table = Table()
+                self.ran: str | None = None
                 self.PassThrough: int | None = None
                 server.reducers += 1
 
             def UpdatePipeline(self) -> None:
+                if self.input.Script == self.ran:
+                    return  # nothing changed upstream, as in a pipeline
+                self.ran = self.input.Script
                 self.table = Table()
                 owner = types.SimpleNamespace(GetOutputDataObject=lambda p: self.table)
                 server.scripts.append(self.input.Script)
                 exec(self.input.Script, {"self": owner})  # noqa: S102
 
+            def GetDataInformation(self, port: int) -> Any:
+                return types.SimpleNamespace(
+                    GetDataSetType=lambda: 19, GetExtent=lambda: (0, -1, 0, -1, 0, -1)
+                )
+
+        class Mover:
+            def __init__(self, Input: Reducer) -> None:
+                self.input = Input
+                self.OutputDataType: int | None = None
+                self.WholeExtent: Any = None
+                server.movers += 1
+
+            def UpdatePipeline(self) -> None:
+                self.input.UpdatePipeline()
+
             def GetClientSideObject(self) -> Any:
-                return types.SimpleNamespace(GetOutputDataObject=lambda p: self.table)
+                return types.SimpleNamespace(
+                    GetOutputDataObject=lambda p: self.input.table
+                )
 
         core = types.ModuleType("vtkmodules.vtkCommonCore")
         core.vtkStringArray = Column  # type: ignore[attr-defined]
@@ -342,12 +363,15 @@ class _FakeServer:
         monkeypatch.setitem(sys.modules, "vtkmodules.vtkParallelCore", None)
         manager = types.ModuleType("paraview.servermanager")
         manager.sources = types.SimpleNamespace(ProgrammableSource=Source)  # type: ignore[attr-defined]
-        manager.filters = types.SimpleNamespace(ReductionFilter=Reducer)  # type: ignore[attr-defined]
+        manager.filters = types.SimpleNamespace(  # type: ignore[attr-defined]
+            ReductionFilter=Reducer, ClientServerMoveData=Mover
+        )
         package = types.ModuleType("paraview")
         package.servermanager = manager  # type: ignore[attr-defined]
         monkeypatch.setitem(sys.modules, "paraview", package)
         monkeypatch.setitem(sys.modules, "paraview.servermanager", manager)
         self.reducers = 0
+        self.movers = 0
         self.scripts: list[str] = []
 
 
@@ -365,7 +389,7 @@ def test_the_server_disk_sends_disk_py_once(
         first = there.disk_key(str(bp))
         assert there.disk_key(str(bp)) == first
         assert there.check(str(bp)) == datafs.LocalDisk().check(str(bp))
-        assert fake.reducers == 1 and len(fake.scripts) == 3
+        assert fake.reducers == 1 and fake.movers == 1 and len(fake.scripts) == 3
         assert "SOURCE = None" not in fake.scripts[0]
         assert all("SOURCE = None" in s for s in fake.scripts[1:])
         assert all(len(s) < 3000 for s in fake.scripts[1:])

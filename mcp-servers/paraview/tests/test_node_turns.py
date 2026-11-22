@@ -10,10 +10,10 @@ from paraview_mcp.node import app as node_app
 
 
 class _State:
-    def __enter__(self) -> _State:
+    def __enter__(self) -> Any:
         return self
 
-    def __exit__(self, *_: Any) -> bool:
+    def __exit__(self, *_: object) -> bool:
         return False
 
 

@@ -107,7 +107,7 @@ class ServerDisk(LocalDisk):
 
     Every call crosses the link to the pvserver, which may be a slow tunnel, so a
     call costs as few round trips as it can: disk.py goes over once (the server
-    keeps it loaded), and one reduction filter, made once, brings each answer
+    keeps it     loaded), and one reduction filter and one mover, made once, bring each answer
     back, where ``servermanager.Fetch`` would make and delete proxies each time.
     """
 
@@ -119,6 +119,7 @@ class ServerDisk(LocalDisk):
         self._name = "clio_paraview_disk_" + str(abs(hash(source)) % 10**12)
         self._proxy: Any = None
         self._reducer: Any = None
+        self._mover: Any = None
         self._sent = False
         self._calls = 0
 
@@ -153,8 +154,17 @@ class ServerDisk(LocalDisk):
             f"OP = {op!r}\n"
             f"ARGS = json.loads({json.dumps(args)!r})\n" + _SERVER_SCRIPT
         )
-        self._reducer.UpdatePipeline()
-        table = self._reducer.GetClientSideObject().GetOutputDataObject(0)
+        if self._mover is None:
+            # As Fetch does it, once: what moves the answer to this side.
+            self._reducer.UpdatePipeline()
+            info = self._reducer.GetDataInformation(0)
+            self._mover = servermanager.filters.ClientServerMoveData(
+                Input=self._reducer
+            )
+            self._mover.OutputDataType = info.GetDataSetType()
+            self._mover.WholeExtent = info.GetExtent()[:]
+        self._mover.UpdatePipeline()
+        table = self._mover.GetClientSideObject().GetOutputDataObject(0)
         column = table.GetColumnByName("r") if table is not None else None
         if column is None or column.GetNumberOfValues() < 1:
             raise CommandError(
