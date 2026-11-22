@@ -34,8 +34,13 @@ jobs:
         RUN_ALL=false
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-        elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+        elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ] \
+            && git cat-file -e "${{ github.event.before }}^{commit}" 2>/dev/null; then
           CHANGED=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }})
+        elif [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_name }}" != "main" ] \
+            && git rev-parse --verify -q origin/main >/dev/null; then
+          # A force-push leaves event.before unreachable: diff against main instead.
+          CHANGED=$(git diff --name-only origin/main...${{ github.sha }})
         else
           # workflow_dispatch, initial branch push, or no valid base — test everything
           RUN_ALL=true

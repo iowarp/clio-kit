@@ -1,11 +1,14 @@
-"""What the upstream server advertises, read from the running server over stdio.
+"""What a wrapped upstream server advertises, read from the running server over stdio.
 
-The repository's metadata scripts (``scripts/extract_mcp_metadata.py``) read a server
-module's ``mcp`` object. This wrapper never imports the upstream package, so
-``server.mcp`` is an :class:`UpstreamServer`: it starts the upstream command, asks it
-for its tools, resources, resource templates and prompts with plain JSON-RPC, and
-offers the answers through the same small interface a FastMCP instance does. The
-metadata is therefore exactly what a client of this server would be told.
+``extract_mcp_metadata.py`` reads a server module's ``mcp`` object. A server that runs
+a third-party MCP server as published ([upstream] in mcp-server-versions.toml) never
+imports that package, so it has no ``mcp``. It exposes ``command(argv)`` and
+``metadata_env()`` instead, and the extractor builds an :class:`UpstreamServer` from
+them: it starts the upstream command, asks it for its tools, resources, resource
+templates and prompts with plain JSON-RPC, and offers the answers through the same
+small interface a FastMCP instance does. The metadata is therefore exactly what a
+client of the server would be told. One copy serves every wrapper, so no wrapper
+carries more than its own launcher.
 """
 
 from __future__ import annotations

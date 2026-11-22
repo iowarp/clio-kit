@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
+import sys
+import subprocess
 import tomllib
 from pathlib import Path
 
@@ -51,21 +52,21 @@ def test_the_upstream_server_answers_with_its_own_name_and_tools() -> None:
 
 
 def test_mcp_describes_what_the_upstream_server_advertises() -> None:
-    # scripts/extract_mcp_metadata.py reads server.mcp; it must agree with server.json.
+    # What scripts/extract_mcp_metadata.py reports must agree with server.json.
     described = json.loads((ROOT / "server.json").read_text(encoding="utf-8"))
-    mcp = server.mcp
-
-    async def listing() -> tuple[list[str], list[str], list[str]]:
-        tools = await mcp.list_tools()
-        resources = await mcp.list_resources()
-        prompts = await mcp.list_prompts()
-        return (
-            sorted(t.name for t in tools),
-            sorted(r.uri for r in resources),
-            sorted(p.name for p in prompts),
-        )
-
-    tools, resources, prompts = asyncio.run(listing())
+    extracted = subprocess.run(
+        [sys.executable, str(ROOT.parents[1] / "scripts" / "extract_mcp_metadata.py")],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=True,
+        timeout=600,
+    )
+    listing = json.loads(extracted.stdout)
+    tools = sorted(t["name"] for t in listing["tools"])
+    resources = sorted(r["uri"] for r in listing["resources"])
+    prompts = sorted(p["name"] for p in listing["prompts"])
     assert tools == sorted(t["name"] for t in described["tools"])
     assert resources == sorted(r["uri"] for r in described.get("resources", []))
     assert prompts == sorted(p["name"] for p in described.get("prompts", []))

@@ -9,8 +9,9 @@ earthdata-mcp-server's own name and version. Arguments after the server name pas
 
 The upstream command runs as its own program (``exec`` on POSIX, a child process
 on Windows, where ``exec`` cannot keep the client's stdio), so this wrapper never
-imports it. ``server.mcp`` describes it for the repository's metadata checks
-by asking the running upstream command (see :mod:`earthdata_mcp.metadata`).
+imports it. The repository's metadata checks describe it by asking the
+running upstream command what it advertises (``command`` and ``metadata_env``;
+see ``scripts/upstream_metadata.py``).
 """
 
 from __future__ import annotations
@@ -21,10 +22,6 @@ import sys
 import sysconfig
 from collections.abc import Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from .metadata import UpstreamServer
 
 #: The upstream distribution this server runs, as pinned in pyproject.toml.
 UPSTREAM = "earthdata-mcp-server"
@@ -58,15 +55,6 @@ def main() -> None:
 def metadata_env() -> dict[str, str]:
     """What the upstream command needs added to its environment to list everything."""
     return {}
-
-
-def __getattr__(name: str) -> UpstreamServer:
-    """``mcp``: the upstream server's advertised metadata, read on first use."""
-    if name != "mcp":
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-    from .metadata import UpstreamServer
-
-    return UpstreamServer(command([]), metadata_env())
 
 
 if __name__ == "__main__":

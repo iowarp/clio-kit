@@ -141,7 +141,7 @@ def write_provenance(
     record = {
         "schema": PROVENANCE_SCHEMA,
         "output": output.name,
-        "created": dt.datetime.now(dt.UTC).isoformat(timespec="seconds"),
+        "created": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "server": f"{SERVER_NAME} {SERVER_VERSION}",
         "tool": tool,
         "sources": source_list,
