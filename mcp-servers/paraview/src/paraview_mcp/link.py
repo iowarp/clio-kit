@@ -9,9 +9,11 @@ import urllib.error
 import urllib.request
 import uuid
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from typing import Any
 
 from .errors import ParaViewError
+from .transport import Transport
 
 # The link is loopback only: a client's HTTP_PROXY must not carry it, since an
 # egress proxy cannot reach this machine's 127.0.0.1 and answers 502.
@@ -142,3 +144,25 @@ class NodeClient:
                     progress(dict(payload.get("progress") or {}))
                 continue
             return payload["result"]
+
+
+@dataclass
+class Link:
+    """A live attachment: the transport, the forwarded port and the client."""
+
+    transport: Transport
+    folder: str
+    local_port: int
+    client: NodeClient
+    node: dict[str, Any]
+    pvpython: str
+    paraview: str
+    built_from: str | None = None
+    built_now: bool = False
+    uploaded_now: bool = False
+    timings: dict[str, float] = field(default_factory=dict)
+    slot: str = "node"
+
+    @property
+    def token(self) -> str:
+        return str(self.node["token"])
