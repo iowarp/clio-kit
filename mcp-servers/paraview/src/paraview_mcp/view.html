@@ -43,6 +43,8 @@
   let sendTimer = null;
   let sentText = '';
   let opened = null;
+  // Set once ParaView stopped for good (its pvserver went); nothing reconnects then.
+  let stopped = '';
 
   function send(message) { window.parent.postMessage(message, '*'); }
   function request(method, params) {
@@ -211,7 +213,7 @@
   // At most ten context updates a second; the last state wins.
   function report() {
     sendTimer = null;
-    if (!latest) return;
+    if (!latest || stopped) return;
     const text = describe(latest);
     if (text === sentText) return;
     sentText = text;
@@ -240,7 +242,20 @@
         // Report the state again: a host that read the view blank looks once more.
         sentText = '';
         schedule();
+      } else if (data.type === 'clio.paraview.lost' && data.text) {
+        // ParaView stopped for good: say why, stop reconnecting, and tell the host.
+        stopped = String(data.text);
+        clearTimeout(retryTimer);
+        retryTimer = null;
+        frame.hidden = true;
+        showStatus(stopped);
+        sentText = stopped;
+        request('ui/update-model-context', {
+          content: [{ type: 'text', text: 'The ParaView view stopped and shows nothing now. ' + stopped }],
+          structuredContent: Object.assign(latest ? structured(latest) : {}, { stopped }),
+        }).catch(() => {});
       } else if (data.type === 'clio.paraview.link') {
+        if (stopped) return;
         if (data.up) {
           linkUp = true;
           statusBox.hidden = true;
@@ -275,7 +290,7 @@
         hostContext = Object.assign({}, hostContext, data.params || {});
         sendTheme();
         const url = serviceFrom(data.params);
-        if (url && url !== serviceUrl) { serviceUrl = url; loadFrame(); }
+        if (url && url !== serviceUrl) { serviceUrl = url; stopped = ''; loadFrame(); }
         break;
       }
       case 'ui/resource-teardown':

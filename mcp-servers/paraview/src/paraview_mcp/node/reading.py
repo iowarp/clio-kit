@@ -143,6 +143,33 @@ class SceneReading:
         )
         return target.read_bytes()
 
+    def drawn(
+        self, width: int = 320, height: int = 200, picture: Path | None = None
+    ) -> dict[str, Any]:
+        """How much of a frame of this size the scene really draws (drawn.py)."""
+        from paraview import servermanager
+
+        from . import drawn
+
+        scene = self.require_scene()
+        reps = [
+            rep
+            for rep in (
+                servermanager.GetRepresentation(proxy, self.view)
+                for proxy in self.proxies.values()
+            )
+            if rep is not None
+        ]
+        folder = manifest.scene_dir(self.root, scene["scene"]) / "captures"
+        return drawn.measure(
+            lambda path: self.simple.SaveScreenshot(
+                str(path), self.view, ImageResolution=[int(width), int(height)]
+            ),
+            reps,
+            folder,
+            picture,
+        )
+
     def cmd_capture(self, width: int = 1280, height: int = 800) -> dict[str, Any]:
         scene = self.require_scene()
         folder = manifest.scene_dir(self.root, scene["scene"]) / "captures"
@@ -161,6 +188,7 @@ class SceneReading:
             "view": dict(scene["view"]),
             "width": width,
             "height": height,
+            "drawn": self.drawn(width, height, Path(name)),
         }
 
     def cmd_export_artifact(

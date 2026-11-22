@@ -52,7 +52,30 @@ this machine and the connector opens no SSH of its own. An SSH failure while a
 
 Test knobs: `PARAVIEW_IDLE_SECONDS` (node half idle shutdown, default 1800),
 `PARAVIEW_REMOTE_RENDER_THRESHOLD_MB` (default: ParaView's own setting, 20),
-`PARAVIEW_PVSERVER_PORT` (default 11111), `PARAVIEW_START_TIMEOUT`.
+`PARAVIEW_PVSERVER_PORT` (default 11111), `PARAVIEW_START_STALL` (default 120:
+a starting node half is stopped only after this many seconds with no new line
+in its log; there is no overall limit, the start is reported as progress and
+the call can be cancelled. `PARAVIEW_START_TIMEOUT` is read as its old name).
+
+## Views on several pvservers
+
+`open_view(pvserver="host:port")` draws a view on another running `pvserver`,
+such as a second run's. Each `pvserver` has its own node half (`node-pv<hash>`
+records beside `node.json`), so the views already open stay open beside it;
+scene tools act on the view opened last. The view's reopen arguments carry the
+`pvserver`, so a host that restarts the server reopens each view on its own.
+
+## What the view really shows
+
+`open_view` renders a small test frame and says how much of it the data
+covers; `capture` does the same for its frame and leads with "This frame is
+blank" when nothing but the background shows. Both also report how many
+viewers are connected and how many pictures they have shown (remote rendering
+only). A node half watches its `pvserver` connection: when the `pvserver`
+goes (its job ended), the node half stops drawing, the live view says why and
+stops reconnecting, it leaves `<record>.lost.json`, and later scene tools fail
+with `pvserver_lost` instead of starting a node half that shows nothing. Each
+start keeps the previous log as `<record>.prev.log`.
 
 ## The first attach on a machine
 

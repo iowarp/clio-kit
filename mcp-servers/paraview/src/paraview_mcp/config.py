@@ -54,7 +54,10 @@ class Settings:
     #: The ParaView version to fetch for this machine when none of it is installed.
     version: str | None = None
     connect_timeout: int = 15
-    start_timeout: float = 180.0
+    #: How long a starting node half may show no sign of progress (no new log
+    #: output, no record) before it is taken for stuck. There is no overall limit:
+    #: a start that keeps progressing is waited for, and the wait can be cancelled.
+    start_stall: float = 120.0
     #: How long a node half that is alive but not answering (busy rendering) is waited
     #: for before it is taken for hung and restarted.
     busy_timeout: float = 300.0
@@ -81,6 +84,9 @@ def from_environment() -> Settings:
         pvserver_port=int(port if port is not None else DEFAULT_PVSERVER_PORT),
         pvserver=_clean(os.environ.get("PARAVIEW_PVSERVER")),
         version=_clean(os.environ.get("PARAVIEW_VERSION")),
-        start_timeout=float(_float("PARAVIEW_START_TIMEOUT", 180.0) or 180.0),
+        start_stall=float(
+            _float("PARAVIEW_START_STALL", _float("PARAVIEW_START_TIMEOUT", 120.0))
+            or 120.0
+        ),
         busy_timeout=float(_float("PARAVIEW_BUSY_TIMEOUT", 300.0) or 300.0),
     )

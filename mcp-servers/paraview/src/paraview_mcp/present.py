@@ -265,6 +265,59 @@ def capture_note(seconds: float | None, view: dict[str, Any]) -> str:
     return f" It took {seconds:g} s to draw" + (f", because{cause}." if cause else ".")
 
 
+def blank_warning(drawn: dict[str, Any] | None) -> str:
+    """A lead line when a rendered frame shows nothing but the background."""
+    if not drawn or drawn.get("blank") is not True:
+        return ""
+    why = drawn.get("note") or "the pipeline draws no pixel in it"
+    return (
+        f"This frame is blank: {why}. Do not describe a picture; check the camera "
+        "(fit_camera), what is visible (scene_state) and whether ParaView is still "
+        "running.\n"
+    )
+
+
+def drawn_text(drawn: dict[str, Any] | None, shown: dict[str, Any] | None) -> str:
+    """What a test frame drew, and what the live view's viewers really saw."""
+    parts = []
+    if drawn:
+        fraction = drawn.get("fraction")
+        if fraction is None:
+            parts.append(
+                "Whether the view draws anything is unknown: "
+                + str(drawn.get("note") or "the test frame failed")
+                + "."
+            )
+        elif drawn.get("blank"):
+            parts.append(
+                "A test frame came out blank"
+                + (f" ({drawn['note']})" if drawn.get("note") else "")
+                + ": nothing shows yet. Do not tell the person a picture is there."
+            )
+        else:
+            parts.append(
+                f"A test frame draws data over {fraction * 100:.0f}% of the view."
+            )
+    if shown:
+        if shown.get("lost"):
+            parts.append(f"The view stopped: {shown['lost']}.")
+        viewers = int(shown.get("viewers") or 0)
+        frames = int(shown.get("frames_shown") or 0)
+        if frames:
+            age = shown.get("last_frame_age")
+            parts.append(
+                f"{viewers} viewer(s) connected; {frames} picture(s) shown"
+                + (f", the last {age:g} s ago" if age is not None else "")
+                + "."
+            )
+        else:
+            parts.append(
+                f"{viewers} viewer(s) connected; no picture has been shown in a "
+                "viewer yet (a view drawn in the browser does not report pictures)."
+            )
+    return (" " + " ".join(parts)) if parts else ""
+
+
 def _hex(rgb: list[float]) -> str:
     return "#" + "".join(f"{round(float(v) * 255):02x}" for v in rgb)
 

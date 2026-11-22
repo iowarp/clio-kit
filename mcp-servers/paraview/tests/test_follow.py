@@ -163,7 +163,7 @@ async def test_open_view_takes_a_view_descriptor(
     from paraview_mcp import server
 
     client = _FakeClient({"open_view": SUMMARY})
-    monkeypatch.setattr(server, "_attacher", _FakeAttacher(client))
+    monkeypatch.setattr(server, "_attachers", {"": _FakeAttacher(client)})
     descriptor = {
         "path": "/scratch/run/out_*.vti",
         "format": "vti",
@@ -256,7 +256,7 @@ async def test_watch_steps_as_a_task_reports_each_step_as_its_status(
             steps_result(4, index=2, growing=False),
         ]
     )
-    monkeypatch.setattr(server, "_attacher", _FakeAttacher(client))
+    monkeypatch.setattr(server, "_attachers", {"": _FakeAttacher(client)})
     monkeypatch.setattr(follow, "POLL_SECONDS", 0.01)
     async with Client(mcp) as mcp_client:
         task = await call_tool_task(mcp_client, "watch_steps", {"idle_seconds": 60})
@@ -300,7 +300,7 @@ async def test_watch_steps_called_directly_sends_progress_notifications(
     client.command = lambda name, args, timeout=900.0, by="agent": (  # type: ignore[method-assign]
         sequence.pop(0) if len(sequence) > 1 else sequence[0]
     )
-    monkeypatch.setattr(server, "_attacher", _FakeAttacher(client))
+    monkeypatch.setattr(server, "_attachers", {"": _FakeAttacher(client)})
     monkeypatch.setattr(follow, "POLL_SECONDS", 0.01)
     messages: list[str] = []
 

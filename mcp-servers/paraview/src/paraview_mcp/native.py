@@ -39,9 +39,9 @@ def _read(path: Path) -> str | None:
         return None
 
 
-def own_slot() -> str:
+def own_slot(base: str = "node") -> str:
     """This front's own record name, used when another holds the folder's node."""
-    return f"node-w{os.getpid()}"
+    return f"{base}-w{os.getpid()}"
 
 
 def lock_free(folder: str, slot: str) -> bool:
@@ -69,7 +69,7 @@ def lock_free(folder: str, slot: str) -> bool:
         handle.close()
 
 
-def probe(folder: str) -> dict[str, str]:
+def probe(folder: str, base: str = "node") -> dict[str, str]:
     """The probe script's markers: the folder, pvpython on PATH and the records.
 
     Windows has no network namespaces, but a host may confine each server it
@@ -90,17 +90,17 @@ def probe(folder: str) -> dict[str, str]:
         )
         if older:
             shutil.copytree(older[0], scenes)
-    own = own_slot()
+    own = own_slot(base)
     marks = {
         "DIR": str(root),
         "PVPYTHON": shutil.which("pvpython") or "",
-        "NS": own.removeprefix("node-"),
-        "LOCKED": "0" if lock_free(folder, "node") else "1",
+        "NS": own.removeprefix(f"{base}-"),
+        "LOCKED": "0" if lock_free(folder, base) else "1",
     }
     for key, name in (
         ("ENV", "env.json"),
         ("CODE", "code/HASH"),
-        ("NODE", "node.json"),
+        ("NODE", f"{base}.json"),
         ("OWNNODE", f"{own}.json"),
     ):
         text = _read(root / name)
@@ -238,12 +238,23 @@ def stop(folder: str, pid: int, slot: str, wait: float = 15.0) -> bool:
     return True
 
 
-def start(folder: str, command: list[str], slot: str) -> None:
-    """Start the node half on its own, writing its output to ``<slot>.log``."""
+def start(folder: str, command: list[str], slot: str) -> subprocess.Popen[bytes]:
+    """Start the node half on its own, writing its output to ``<slot>.log``.
+
+    The last node half's log is kept as ``<slot>.prev.log``, so the reason it
+    stopped is still there to read after this one starts.
+    """
     root = Path(folder)
     (root / f"{slot}.json").unlink(missing_ok=True)
-    with open(root / f"{slot}.log", "wb") as log:
-        subprocess.Popen(
+    (root / f"{slot}.lost.json").unlink(missing_ok=True)
+    log_path = root / f"{slot}.log"
+    if log_path.exists():
+        try:
+            os.replace(log_path, root / f"{slot}.prev.log")
+        except OSError:
+            pass
+    with open(log_path, "wb") as log:
+        return subprocess.Popen(
             command,
             cwd=folder,
             stdin=subprocess.DEVNULL,
@@ -265,3 +276,14 @@ def started(folder: str, slot: str) -> tuple[dict[str, Any] | None, str | None]:
         for mark in ("Traceback", "another node half", "pvserver join failed")
     )
     return record, ("\n".join(log.splitlines()[-25:]) if failed else None)
+
+
+def log_tail(folder: str, slot: str, lines: int = 25) -> str:
+    """The end of ``<slot>.log``, or empty when there is none."""
+    log = _read(Path(folder) / f"{slot}.log") or ""
+    return "\n".join(log.splitlines()[-lines:])
+
+
+def lost_note(folder: str, slot: str) -> str:
+    """The note a node half left when its pvserver went, or empty."""
+    return _read(Path(folder) / f"{slot}.lost.json") or ""

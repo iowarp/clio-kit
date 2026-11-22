@@ -269,7 +269,7 @@ async def test_scene_tool_without_paraview_returns_the_message(
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
     monkeypatch.delenv("PARAVIEW_ADDRESS", raising=False)
-    monkeypatch.setattr(server, "_attacher", None)
+    monkeypatch.setattr(server, "_attachers", {})
     async with Client(mcp) as client:
         result = await client.call_tool(
             "open_view", {"path": "/data/x.vti"}, raise_on_error=False
@@ -490,10 +490,17 @@ class _FakeLink:
 
 class _FakeAttacher:
     def __init__(self, client: _FakeClient) -> None:
+        import threading
+
         self.link = _FakeLink(client)
         self.settings = Settings(target=Target("node", "login"))
+        self.cancel = threading.Event()
+        self.progress = None
+        self.scene = None
+        self.opened: list[bool] = []
 
-    def ensure(self) -> _FakeLink:
+    def ensure(self, opening: bool = False) -> _FakeLink:
+        self.opened.append(opening)
         return self.link
 
     def describe(self) -> dict:
@@ -557,7 +564,7 @@ async def test_tools_pass_one_command_and_keep_the_token_private(
             "inspect_selection": {"selection": None, "message": "Nothing is picked."},
         }
     )
-    monkeypatch.setattr(server, "_attacher", _FakeAttacher(client))
+    monkeypatch.setattr(server, "_attachers", {"": _FakeAttacher(client)})
     async with Client(mcp) as mcp_client:
         opened = await mcp_client.call_tool("open_view", {"path": "/d/cube.vti"})
         built = await mcp_client.call_tool(
@@ -600,7 +607,7 @@ async def test_a_call_the_host_marks_as_a_views_is_the_persons(
     from paraview_mcp import server
 
     client = _FakeClient({"set_timestep": {"time": {"steps": 1}}})
-    monkeypatch.setattr(server, "_attacher", _FakeAttacher(client))
+    monkeypatch.setattr(server, "_attachers", {"": _FakeAttacher(client)})
     async with Client(mcp) as mcp_client:
         await mcp_client.call_tool("set_timestep", {"index": 2})
         await mcp_client.call_tool(

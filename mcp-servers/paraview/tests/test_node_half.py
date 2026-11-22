@@ -105,7 +105,7 @@ def attached(
     assert PVPYTHON is not None
     os.environ["PATH"] = f"{Path(PVPYTHON).parent}:{os.environ['PATH']}"
     os.environ.setdefault("VTK_DEFAULT_OPENGL_WINDOW", "vtkOSOpenGLRenderWindow")
-    attacher = Attacher(Settings(target=Target(), start_timeout=600))
+    attacher = Attacher(Settings(target=Target(), start_stall=600))
     try:
         yield attacher, data
     finally:
@@ -587,7 +587,11 @@ def test_a_colour_range_set_by_hand_holds_and_is_restored(
     os.kill(json.loads(record.read_text())["pid"], 9)
     record.unlink()
     attacher.link = None
-    client = attacher.ensure().client
+    # Only open_view starts a node half again; other tools say it went.
+    with pytest.raises(ParaViewError) as caught:
+        attacher.ensure()
+    assert caught.value.code == "node_lost"
+    client = attacher.ensure(opening=True).client
     restored = client.command("open_view", {"scene": scene})
     assert restored["objects"][0]["display"]["color_range"] == [2.0, 6.0]
     ranges = _pvpython_script("color_range_check.py", str(data), prefix="RANGE=")
@@ -644,6 +648,22 @@ def test_an_animation_is_rendered_in_the_scene_and_encoded(
     assert seen["bad_labels"] == "bad_labels"
 
 
+def test_a_capture_says_how_much_it_drew(attached: tuple[Attacher, Path]) -> None:
+    """A frame with the data on it is measured as drawn; one with it all hidden is
+    measured as blank, so nobody is told about a picture that is not there."""
+    attacher, data = attached
+    client = attacher.ensure().client
+    write_vti(data / "drawn.vti")
+    opened = client.command("open_view", {"path": str(data / "drawn.vti"), "new": True})
+    assert opened["drawn"]["blank"] is False and opened["drawn"]["fraction"] > 0.01
+    shown = client.command("capture", {"width": 320, "height": 200})
+    assert shown["drawn"]["blank"] is False
+    for item in opened["objects"]:
+        client.command("set_representation", {"object": item["id"], "visible": False})
+    hidden = client.command("capture", {"width": 320, "height": 200})
+    assert hidden["drawn"]["blank"] is True
+
+
 def test_restart_restores_the_scene(attached: tuple[Attacher, Path]) -> None:
     attacher, data = attached
     client = attacher.ensure().client
@@ -657,11 +677,73 @@ def test_restart_restores_the_scene(attached: tuple[Attacher, Path]) -> None:
     os.kill(pid, 9)
     record.unlink()
     attacher.link = None
-    client = attacher.ensure().client
+    client = attacher.ensure(opening=True).client
     restored = client.command("open_view", {"scene": scene})
     assert restored["restored"] is True
     assert [o["id"] for o in restored["objects"]] == ["o1", "o2"]
     assert restored["objects"][1]["display"]["representation"] == "Wireframe"
+
+
+def test_a_pvserver_that_goes_stops_the_view(tmp_path: Path) -> None:
+    """Once the joined pvserver ends, the node half says so, leaves a note and exits;
+    the next tool hears that the pvserver went, not a blank picture."""
+    import subprocess
+
+    from paraview_mcp import attach
+
+    pvserver = os.environ.get("PARAVIEW_TEST_PVSERVER")
+    if not pvserver:
+        pytest.skip("set PARAVIEW_TEST_PVSERVER to a pvserver of the same ParaView")
+    home = _home(tmp_path)
+    data = tmp_path / "cube.vti"
+    write_vti(data, n=12)
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    served = subprocess.Popen(
+        [pvserver, f"--server-port={port}", "--force-offscreen-rendering"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    saved = {k: os.environ.get(k) for k in ("HOME", "PATH")}
+    os.environ["HOME"] = str(home)
+    assert PVPYTHON is not None
+    os.environ["PATH"] = f"{Path(PVPYTHON).parent}:{os.environ['PATH']}"
+    address = f"127.0.0.1:{port}"
+    attacher = Attacher(Settings(target=Target(), pvserver=address, start_stall=600))
+    try:
+        # Connecting would use up the pvserver's one handshake, so look at the table.
+        listening = f":{port:04X} 00000000:0000 0A"
+        deadline = time.monotonic() + 120
+        while listening not in Path("/proc/net/tcp").read_text():
+            assert time.monotonic() < deadline and served.poll() is None
+            time.sleep(0.5)
+        client = attacher.ensure(opening=True).client
+        opened = client.command("open_view", {"path": str(data)})
+        assert opened["drawn"]["blank"] is False
+        served.kill()
+        served.wait()
+        slot = attach.node_base(address)
+        folder = _local(home)
+        deadline = time.monotonic() + 120
+        while (folder / f"{slot}.json").exists() and time.monotonic() < deadline:
+            time.sleep(1)
+        assert not (folder / f"{slot}.json").exists()
+        note = json.loads((folder / f"{slot}.lost.json").read_text())
+        assert address in note["reason"] and note["scene"] == opened["scene"]
+        assert "closed the connection" in (folder / f"{slot}.log").read_text()
+        attacher.link = None
+        with pytest.raises(ParaViewError) as caught:
+            attacher.ensure()
+        assert caught.value.code == "pvserver_lost"
+        assert f"open_view(scene={opened['scene']!r})" in caught.value.message
+    finally:
+        attacher.close()
+        if served.poll() is None:
+            served.kill()
+        for key, value in saved.items():
+            if value is not None:
+                os.environ[key] = value
 
 
 def test_remote_mode_above_threshold(tmp_path: Path) -> None:
@@ -671,7 +753,7 @@ def test_remote_mode_above_threshold(tmp_path: Path) -> None:
     saved = os.environ["HOME"]
     os.environ["HOME"] = str(home)
     attacher = Attacher(
-        Settings(target=Target(), threshold_mb=0.001, idle_seconds=4, start_timeout=600)
+        Settings(target=Target(), threshold_mb=0.001, idle_seconds=4, start_stall=600)
     )
     try:
         opened = attacher.ensure().client.command("open_view", {"path": str(data)})

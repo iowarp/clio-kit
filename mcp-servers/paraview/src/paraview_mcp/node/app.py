@@ -92,6 +92,8 @@ BRIDGE_JS = r"""
     // forwarded link), and again after each resize; say when a full-size one shows
     // for the current size, so a host that looked early and saw nothing looks again.
     var drawnAt = '';
+    var toldAt = 0;
+    var untold = 0;
     (function watchPicture() {
       var box = document.querySelector('.clio-view');
       if (!box) { setTimeout(watchPicture, 200); return; }
@@ -100,11 +102,28 @@ BRIDGE_JS = r"""
         if (!img || img.tagName !== 'IMG') return;
         var rect = img.getBoundingClientRect();
         var size = Math.round(rect.width) + 'x' + Math.round(rect.height);
-        if (size === drawnAt || rect.width < 1 || img.naturalWidth < rect.width * 0.9) return;
+        if (rect.width < 1 || img.naturalWidth < rect.width * 0.9) return;
+        // The node half counts the pictures its viewers really show, told at
+        // most every two seconds while a drag streams them.
+        untold += 1;
+        var now = Date.now();
+        if (size !== drawnAt || now - toldAt > 2000) {
+          trame.trigger('clio_drawn', [size, untold]);
+          toldAt = now;
+          untold = 0;
+        }
+        if (size === drawnAt) return;
         drawnAt = size;
         post({ type: 'clio.paraview.drawn' });
       }, true);
     })();
+    // The pvserver went: say so in place of the picture, and stop reconnecting.
+    trame.state.watch(['clio_lost'], function (text) {
+      if (text) post({ type: 'clio.paraview.lost', text: text });
+    });
+    if (trame.state.get && trame.state.get('clio_lost')) {
+      post({ type: 'clio.paraview.lost', text: trame.state.get('clio_lost') });
+    }
   }
   start();
 })();
@@ -136,6 +155,12 @@ class NodeApp:
         self._replay: asyncio.Future[None] | None = None
         self.view: Any = None
         self.link_note = ""
+        #: Why the pvserver went, once it has; nothing is drawn after that.
+        self.lost = ""
+        #: Pictures the viewers have shown, as their pages report them.
+        self.frames_shown = 0
+        self.last_frame: float | None = None
+        self.last_frame_size = ""
         self._build()
         engine.listeners.append(self._on_scene_change)
 
@@ -161,6 +186,7 @@ class NodeApp:
             clio_view_colors=None,
             viewMode="local",
             clio_drag=None,
+            clio_lost="",
         )
         # A value slider's drag in progress stays in the browser; release applies it.
         state.client_only("clio_drag")
@@ -182,6 +208,7 @@ class NodeApp:
             "clio_set_mode": self._ui_set_mode,
             "clio_pick": self._ui_pick,
             "clio_redraw": self._ui_redraw,
+            "clio_drawn": self._ui_drawn,
         }.items():
             ctrl.trigger(name)(handler)
         ctrl.on_server_bind.add(self._bind_routes)
@@ -279,8 +306,30 @@ class NodeApp:
                 "protocol": NODE_PROTOCOL,
                 "scene": scene["scene"] if scene else None,
                 "session": self.engine.session,
+                **self.shown(),
             }
         )
+
+    def shown(self) -> dict[str, Any]:
+        """What the live view really shows: its viewers and the pictures they drew."""
+        return {
+            "lost": self.lost or None,
+            "viewers": self.sockets,
+            "frames_shown": self.frames_shown,
+            "last_frame_age": None
+            if self.last_frame is None
+            else round(time.time() - self.last_frame, 1),
+            "last_frame_size": self.last_frame_size or None,
+        }
+
+    def pvserver_lost(self, reason: str) -> None:
+        """The pvserver went: nothing more is drawn, and the view says why."""
+        self.lost = reason
+        with self.server.state:
+            self.server.state.clio_lost = (
+                f"ParaView stopped: {reason}. Nothing more is drawn here; the scene "
+                "is saved, and the agent can open it again once the pvserver runs."
+            )
 
     async def _no_launcher(self, _request: Any) -> Any:
         return self._json(None)
@@ -298,6 +347,24 @@ class NodeApp:
         except (ValueError, KeyError, TypeError):
             return self._json(
                 {"error": {"code": "bad_request", "message": "Malformed command."}}, 400
+            )
+        if self.lost:
+            scene = self.engine.scene
+            again = (
+                f" open_view(scene={scene['scene']!r}) opens it again once a "
+                "pvserver runs."
+                if scene
+                else ""
+            )
+            return self._json(
+                {
+                    "error": {
+                        "code": "pvserver_lost",
+                        "message": f"This ParaView view has stopped: {self.lost}. "
+                        "Nothing more is drawn or read through it." + again,
+                    }
+                },
+                409,
             )
         try:
             await self._await_source(name, args)
@@ -319,6 +386,18 @@ class NodeApp:
             )
         if name in ("set_camera", "fit_camera"):
             self.view.push_camera()
+        if name == "open_view" and isinstance(result, dict) and self.engine.scene:
+            # A small test frame: what the opened view really draws.
+            try:
+                result["drawn"] = self.engine.drawn()
+            except Exception as exc:  # noqa: BLE001 - reported, not fatal
+                result["drawn"] = {
+                    "fraction": None,
+                    "blank": None,
+                    "note": f"the test frame failed: {type(exc).__name__}: {exc}",
+                }
+        if name in ("capture", "open_view") and isinstance(result, dict):
+            result["shown"] = self.shown()
         return self._json({"result": result})
 
     async def _await_source(self, name: str, args: dict[str, Any]) -> None:
@@ -470,7 +549,7 @@ class NodeApp:
         """Send the scene to the view. ParaView brings its legends up to date
         (title, text colours, range) only when it renders, so render first when the
         browser draws, or the browser gets a legend ParaView has not set up yet."""
-        if self.view is None:
+        if self.view is None or self.lost:
             return
         if self.server.state.viewMode != "remote":
             self.engine.simple.Render(self.engine.view)
@@ -488,8 +567,18 @@ class NodeApp:
 
     def _ui_redraw(self) -> None:
         # Local mode draws in the browser; remote mode needs ParaView to render again.
+        if self.lost:
+            return
         if self.view is not None and self.server.state.viewMode == "remote":
             self.view.update()
+
+    def _ui_drawn(self, size: str = "", count: Any = 1) -> None:
+        try:
+            self.frames_shown += max(1, min(int(count), 10_000))
+        except (TypeError, ValueError):
+            self.frames_shown += 1
+        self.last_frame = time.time()
+        self.last_frame_size = str(size)[:32]
 
     def _ui_set_mode(self, mode: str) -> None:
         if self.engine.scene is None or mode not in MODE_LABELS:
@@ -533,6 +622,8 @@ class NodeApp:
         """Re-read growing sources; report new steps to the view."""
         while True:
             await asyncio.sleep(interval)
+            if self.lost:
+                return
             try:
                 with self.server.state:
                     self.engine.check_growth()

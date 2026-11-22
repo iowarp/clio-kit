@@ -81,15 +81,19 @@ def _lock(root: Path, name: str = "node") -> Any:
 
 
 def prune_slots(root: Path, own: str, min_age: float = 60.0) -> list[str]:
-    """Remove ``node-<ns>`` slots whose node half has gone, so they do not pile up.
+    """Remove ``<base>-<ns>`` slots whose node half has gone, so they do not pile up.
 
     A slot is gone when nobody holds its lock. Slots touched in the last
     ``min_age`` seconds are left alone, since their node may still be starting.
+    A pvserver's own slot (``node-pv<hash>``) is kept: its log and lost note say
+    why its node half went.
     """
+    import re
+
     removed = []
     for lock_path in sorted(root.glob("node-*.lock")):
         name = lock_path.stem
-        if name == own:
+        if name == own or not re.search(r"-(\d+|w\d+)$", name):
             continue
         try:
             if time.time() - lock_path.stat().st_mtime < min_age:
@@ -102,7 +106,7 @@ def prune_slots(root: Path, own: str, min_age: float = 60.0) -> list[str]:
             continue
         # A held lock blocks removing its file on Windows; let it go first.
         handle.close()
-        for suffix in (".json", ".log", ".stop", ".lock"):
+        for suffix in (".json", ".log", ".prev.log", ".lost.json", ".stop", ".lock"):
             try:
                 (root / f"{name}{suffix}").unlink()
             except OSError:
@@ -128,7 +132,25 @@ def parse(argv: list[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def write_through() -> None:
+    """Send ``print`` straight to the log, a line at a time.
+
+    Some pvpython builds (ParaView 5.13) hold Python's output until a normal exit,
+    ignoring flush, so a node half that ends with ``os._exit`` would leave an empty
+    log and a hung start would show nothing of what it waits for.
+    """
+    for fd, name in ((1, "stdout"), (2, "stderr")):
+        try:
+            stream = open(  # noqa: SIM115 - lives as long as the process
+                fd, "w", buffering=1, encoding="utf-8", errors="replace", closefd=False
+            )
+        except OSError:
+            continue
+        setattr(sys, name, stream)
+
+
 def main(argv: list[str] | None = None) -> None:
+    write_through()
     args = parse(argv)
     root: Path = args.root.resolve()
     root.mkdir(parents=True, exist_ok=True)
@@ -152,9 +174,13 @@ def main(argv: list[str] | None = None) -> None:
 
     from paraview import simple
 
+    from . import liveness
+
     session = None
     if args.pvserver:
         host, _, port = args.pvserver.rpartition(":")
+        # Said first, so a join that hangs shows what it is waiting for.
+        print(f"joining pvserver at {args.pvserver}", flush=True)
         # A pvserver serves one client, so it is joined without a probe first.
         try:
             joined = simple.Connect(host or "localhost", int(port))
@@ -166,9 +192,13 @@ def main(argv: list[str] | None = None) -> None:
             print(f"pvserver join failed: {args.pvserver}: {reason}", flush=True)
             sys.exit(4)
         session = args.pvserver
+        print(f"joined pvserver at {args.pvserver}", flush=True)
     elif _pvserver_listening(args.pvserver_port):
         simple.Connect("localhost", args.pvserver_port)
         session = f"localhost:{args.pvserver_port}"
+    watched = liveness.pvserver_socket() if session else None
+    if watched is not None and not liveness.watchable(watched):
+        watched = None
     threshold = args.threshold_mb
     if threshold is None:
         settings = simple.GetSettingsProxy("RenderViewSettings")
@@ -208,6 +238,9 @@ def main(argv: list[str] | None = None) -> None:
         loop.create_task(node.watch_growth(args.growth_interval))
         loop.create_task(idle(node, args.idle_seconds, record_path, lock))
         loop.create_task(watch_stop(node, stop_path, record_path, lock))
+        if watched is not None and session:
+            print(f"watching the pvserver connection to {session}", flush=True)
+            loop.create_task(watch_pvserver(node, watched, session, record_path, lock))
 
     server.controller.on_server_ready.add(ready)
     server.start(
@@ -221,13 +254,20 @@ def main(argv: list[str] | None = None) -> None:
     )
 
 
-def shut_down(node: Any, record_path: Path, lock: Any, why: str) -> None:
-    """Save the scene, drop the record and the lock, and exit."""
+def shut_down(
+    node: Any, record_path: Path, lock: Any, why: str, render: bool = True
+) -> None:
+    """Save the scene, drop the record and the lock, and exit.
+
+    Without ``render`` (the pvserver has gone) the camera is not read back: the
+    manifest keeps the camera of the last commit.
+    """
     from . import manifest
 
     engine = node.engine
     if engine.scene is not None:
-        engine.scene["camera"] = engine.read_camera()
+        if render:
+            engine.scene["camera"] = engine.read_camera()
         manifest.write(engine.root, engine.scene)
     print(f"{why}: shutting down", flush=True)
     try:
@@ -236,6 +276,44 @@ def shut_down(node: Any, record_path: Path, lock: Any, why: str) -> None:
         pass
     lock.close()
     os._exit(0)
+
+
+#: Seconds between looks at the pvserver connection, and how long the view is
+#: given to show that it went before the node half exits.
+PVSERVER_LOOK = 2.0
+LOST_NOTICE = 3.0
+
+
+async def watch_pvserver(
+    node: Any, fd: int, pvserver: str, record_path: Path, lock: Any
+) -> None:
+    """Stop drawing once the pvserver closes the connection, and say so.
+
+    Rendering after it has gone yields blank frames or aborts the process, so
+    the node half tells its view, leaves ``<name>.lost.json`` for the front, and
+    exits.
+    """
+    from . import liveness
+
+    while True:
+        await asyncio.sleep(PVSERVER_LOOK)
+        if not liveness.closed(fd):
+            continue
+        reason = f"the pvserver at {pvserver} closed the connection"
+        print(reason, flush=True)
+        scene = node.engine.scene
+        write_private(
+            record_path.with_name(record_path.stem + ".lost.json"),
+            {
+                "reason": reason,
+                "pvserver": pvserver,
+                "scene": scene["scene"] if scene else None,
+                "time": time.time(),
+            },
+        )
+        node.pvserver_lost(reason)
+        await asyncio.sleep(LOST_NOTICE)
+        shut_down(node, record_path, lock, reason, render=False)
 
 
 async def idle(node: Any, limit: float, record_path: Path, lock: Any) -> None:

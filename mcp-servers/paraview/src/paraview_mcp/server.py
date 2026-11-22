@@ -85,16 +85,36 @@ mcp: FastMCP = FastMCP(
 # negotiate them calls every tool directly, as before.
 mcp.add_extension(TasksExtension())
 
-_attacher: Attacher | None = None
+_attachers: dict[str, Attacher] = {}
+#: The attacher the last open_view used; scene tools act on its view.
+_current = ""
+#: Which attacher each opened scene lives on.
+_scene_keys: dict[str, str] = {}
+PVSERVER_ADDRESS = r"^[A-Za-z0-9.\-\[\]]+:\d{1,5}$"
 
 
-def attacher() -> Attacher:
-    """The process's one attacher, built from the connector's environment."""
-    global _attacher
-    if _attacher is None:
-        _attacher = Attacher(from_environment())
-        atexit.register(_attacher.close)
-    return _attacher
+def _key(pvserver: str | None) -> str:
+    """The attacher key for a pvserver: empty for the connector's own setting."""
+    if not pvserver or pvserver == (from_environment().pvserver or ""):
+        return ""
+    return pvserver
+
+
+def attacher(key: str | None = None) -> Attacher:
+    """The attacher for one pvserver (default: the current view's), built from the
+    connector's environment. Each pvserver has its own node half, so a view opened
+    on another pvserver stays beside the first one."""
+    from dataclasses import replace
+
+    key = _current if key is None else key
+    found = _attachers.get(key)
+    if found is None:
+        settings = from_environment()
+        if key:
+            settings = replace(settings, pvserver=key)
+        found = _attachers[key] = Attacher(settings)
+        atexit.register(found.close)
+    return found
 
 
 def _fail(exc: ParaViewError) -> ToolError:
@@ -115,11 +135,22 @@ def actor() -> str:
     return "person" if origin in ("view", "person") else "agent"
 
 
-def command(name: str, args: dict[str, Any], timeout: float = 900.0) -> tuple[Any, Any]:
-    """Run one scene command on the node half; return (result, link)."""
+def command(
+    name: str,
+    args: dict[str, Any],
+    timeout: float = 900.0,
+    opening: bool = False,
+    key: str | None = None,
+) -> tuple[Any, Any]:
+    """Run one scene command on the node half; return (result, link).
+
+    Only ``opening`` (open_view) starts a node half where none runs. Any other
+    command on a view whose node half has gone says why, instead of starting a
+    fresh one that shows nothing.
+    """
     clean = {k: v for k, v in args.items() if v is not None}
     try:
-        link = attacher().ensure()
+        link = attacher(key).ensure(opening=opening)
         return link.client.command(name, clean, timeout=timeout, by=actor()), link
     except ParaViewError as exc:
         raise _fail(exc) from exc
@@ -197,7 +228,8 @@ def open_arguments(
     annotations={"title": "Open a ParaView view", "openWorldHint": True},
     meta={**_paths(path="read"), STATE_META: VIEW_STATE},
 )
-def open_view(
+async def open_view(
+    ctx: Context,
     path: Annotated[
         str | None,
         Field(
@@ -223,6 +255,15 @@ def open_view(
             "being written. Use it instead of path when a run reported one."
         ),
     ] = None,
+    pvserver: Annotated[
+        str | None,
+        Field(
+            pattern=PVSERVER_ADDRESS,
+            description="host:port of a running pvserver to draw this view on, as a "
+            "run reported it. Default: the connector's setting. A view on another "
+            "pvserver opens beside the ones already open; they stay open.",
+        ),
+    ] = None,
 ) -> ToolResult:
     """Open a dataset or restore a saved scene, and show it in a live ParaView view.
 
@@ -232,18 +273,52 @@ def open_view(
     moves to each new step unless the person has parked it on one. A growing source
     that cannot be read yet (not there yet, or an ADIOS2 BP5 folder before its first
     whole step) is waited for while it changes on disk, so open it as soon as the
-    run starts.
+    run starts. Starting ParaView is reported as progress and can be cancelled; it
+    fails only when its start stops making progress. The result says how much of
+    a test frame the view really draws.
     """
-    summary, link = command(
-        "open_view", open_arguments(path, scene, growing, new, view)
+    global _current
+    key = _key(pvserver) if pvserver else _scene_keys.get(scene or "", _current)
+    chosen = attacher(key)
+    loop = asyncio.get_running_loop()
+    chosen.cancel.clear()
+    began = loop.time()
+
+    def progress(message: str) -> None:
+        # Progress must grow; the seconds spent starting do.
+        asyncio.run_coroutine_threadsafe(
+            ctx.report_progress(round(loop.time() - began, 1), None, message), loop
+        )
+
+    chosen.progress = progress
+    try:
+        summary, link = await asyncio.to_thread(
+            command,
+            "open_view",
+            open_arguments(path, scene, growing, new, view),
+            opening=True,
+            key=key,
+        )
+    except asyncio.CancelledError:
+        chosen.cancel.set()
+        raise
+    finally:
+        chosen.progress = None
+    _current = key
+    _scene_keys[summary["scene"]] = key
+    chosen.scene = summary["scene"]
+    text = present.scene_text(summary, _where()) + present.drawn_text(
+        summary.get("drawn"), summary.get("shown")
     )
-    text = present.scene_text(summary, _where())
+    reopen: dict[str, Any] = {"scene": summary["scene"]}
+    if key:
+        reopen["pvserver"] = key
     return ToolResult(
         content=[_text(text)],
         structured_content={"scene": summary["scene"], "summary": summary},
         meta={
             SERVICE_META: {"port": link.local_port, "token": link.token},
-            REOPEN_META: {"arguments": {"scene": summary["scene"]}},
+            REOPEN_META: {"arguments": reopen},
         },
     )
 
@@ -467,14 +542,17 @@ def capture(
     width: Annotated[int, Field(ge=64, le=4096)] = 1280,
     height: Annotated[int, Field(ge=64, le=4096)] = 800,
 ) -> list[Any]:
-    """A PNG rendered by ParaView at the camera the view last reported."""
+    """A PNG rendered by ParaView at the camera the view last reported. The text
+    says when the frame is blank, so look before describing it."""
     result, _ = command("capture", {"width": width, "height": height})
     return [
         _text(
-            f"ParaView render, {width}x{height}, saved on the ParaView machine at "
+            present.blank_warning(result.get("drawn"))
+            + f"ParaView render, {width}x{height}, saved on the ParaView machine at "
             f"{result['path']}. "
             + present.camera_text(result["camera"])
             + present.capture_note(result.get("seconds"), result.get("view") or {})
+            + present.drawn_text(result.get("drawn"), result.get("shown"))
         ),
         ImageContent(type="image", data=result["png_base64"], mime_type="image/png"),
     ]

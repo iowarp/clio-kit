@@ -21,6 +21,7 @@ import shlex
 import tarfile
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -82,6 +83,137 @@ def start_failure(where: str, log: str) -> ParaViewError:
     )
 
 
+_JOINING = "joining pvserver at "
+
+
+@dataclass
+class StartLook:
+    """One look at a node half that is starting."""
+
+    record: dict[str, Any] | None
+    #: The log's tail when the log shows that the start failed.
+    failed: str | None
+    alive: bool
+    size: int
+    last: str
+    tail: str = ""
+
+
+def wait_for_start(
+    look: Callable[[], StartLook],
+    code_hash: str,
+    where: str,
+    log_path: str,
+    stall: float,
+    cancel: threading.Event,
+    progress: Callable[[str], None] | None = None,
+    stop: Callable[[], None] | None = None,
+    every: float = 1.0,
+) -> dict[str, Any]:
+    """Wait for a starting node half for as long as it shows progress.
+
+    There is no overall limit. The start fails at once when the process ends or
+    its log shows a failure, and only after ``stall`` seconds with no new log
+    output; ``cancel`` ends the wait whenever it is set. Each new log line is
+    passed to ``progress``, so the wait is visible.
+    """
+    began = changed = told = time.monotonic()
+    size = -1
+    said = ""
+    dead = 0
+    while True:
+        if cancel.is_set():
+            if stop is not None:
+                stop()
+            raise ParaViewError(
+                "cancelled", f"Stopped starting the ParaView node half {where}."
+            )
+        seen = look()
+        if seen.record is not None and seen.record.get("code_hash") == code_hash:
+            return seen.record
+        if seen.failed:
+            raise start_failure(where, seen.failed)
+        now = time.monotonic()
+        if seen.size != size:
+            size, changed = seen.size, now
+        # A launcher may hand over to a child; take the process for gone only
+        # when it has also stopped writing.
+        dead = 0 if seen.alive else dead + 1
+        if dead >= 3 and now - changed >= 2 * every:
+            raise ParaViewError(
+                "node_failed",
+                f"The ParaView node half stopped while starting {where}. Its log "
+                f"({log_path}) ends with:\n{_whole_lines(seen.tail or seen.last)}",
+            )
+        quiet = now - changed
+        if progress is not None:
+            line = seen.last.strip()
+            if line != said or now - told >= 5.0:
+                said, told = line, now
+                progress(
+                    f"Starting ParaView {where}, {now - began:.0f} s"
+                    + (f": {line}" if line else "")
+                )
+        if quiet >= stall:
+            if stop is not None:
+                stop()
+            last = seen.last.strip()
+            if last.startswith(_JOINING):
+                target = last[len(_JOINING) :]
+                raise ParaViewError(
+                    "pvserver_join_stalled",
+                    f"The ParaView node half {where} waited {quiet:.0f} s to join the "
+                    f"pvserver at {target} with no answer. A pvserver serves one "
+                    "client at a time, so it may be serving another one, or its "
+                    "forwarded port leads nowhere. Check the pvserver and its "
+                    "forward, then open the view again.",
+                )
+            raise ParaViewError(
+                "node_start_stalled",
+                f"The ParaView node half {where} showed no progress for {quiet:.0f} "
+                f"s, so it was stopped. Its log ({log_path}) ends with:\n"
+                f"{_whole_lines(seen.tail or last) or '(nothing)'}",
+            )
+        cancel.wait(every)
+
+
+def gone_error(
+    note: str, tail: str, where: str, scene: str | None = None
+) -> ParaViewError:
+    """The error for a linked node half that has gone, from what it left behind.
+
+    ``note`` is the ``<slot>.lost.json`` it writes when its pvserver closes the
+    connection; ``tail`` is the end of its log, for any other end.
+    """
+    try:
+        lost = json.loads(note) if note.startswith("{") else None
+    except ValueError:
+        lost = None
+    if isinstance(lost, dict) and not scene and isinstance(lost.get("scene"), str):
+        scene = lost["scene"]
+    again = (
+        f" The scene {scene} is saved: open_view(scene={scene!r}) starts a new node "
+        "half and opens it again."
+        if scene
+        else " open_view starts a new node half."
+    )
+    if isinstance(lost, dict):
+        return ParaViewError(
+            "pvserver_lost",
+            f"The ParaView view {where} has stopped: {lost.get('reason')}. "
+            "Nothing more can be drawn or read through it, and its live view "
+            "shows that it stopped." + again + " The pvserver must be running "
+            "again for that.",
+        )
+    return ParaViewError(
+        "node_lost",
+        f"The ParaView node half {where} has stopped, so its live view shows "
+        "nothing more."
+        + (f" Its log ends with:\n{_whole_lines(tail)}\n" if tail else "")
+        + again,
+    )
+
+
 def code_bundle() -> tuple[bytes, str]:
     """The node half's code as a gzip tarball, and its content hash."""
     files = sorted(p for p in NODE_SOURCE.glob("*.py"))
@@ -135,7 +267,18 @@ def local_folder(version: str) -> str:
     return str(Path(base) / "paraview" / version)
 
 
-def probe_script(version: str, folder: str | None = None) -> str:
+def node_base(pvserver: str | None) -> str:
+    """The record name of the node half for ``pvserver``.
+
+    A node half joins one pvserver for its life, so each pvserver has its own
+    record, lock and log: a view of one never stops the node half of another.
+    """
+    if not pvserver:
+        return "node"
+    return "node-pv" + hashlib.sha1(pvserver.encode()).hexdigest()[:8]
+
+
+def probe_script(version: str, folder: str | None = None, base: str = "node") -> str:
     where = shlex.quote(folder) if folder else f'"$HOME/.clio/paraview/{version}"'
     return f"""
 D={where}
@@ -150,42 +293,44 @@ echo "CLIO_DIR=$D"
 echo "CLIO_PVPYTHON=$(command -v pvpython 2>/dev/null || true)"
 [ -f "$D/env.json" ] && echo "CLIO_ENV=$(cat "$D/env.json")"
 [ -f "$D/code/HASH" ] && echo "CLIO_CODE=$(cat "$D/code/HASH")"
-[ -f "$D/node.json" ] && echo "CLIO_NODE=$(cat "$D/node.json")"
+[ -f "$D/{base}.json" ] && echo "CLIO_NODE=$(cat "$D/{base}.json")"
 # A node half answers only inside its own network namespace, as sandboxed servers have.
 NS=$(readlink /proc/self/ns/net 2>/dev/null | tr -cd 0-9)
 echo "CLIO_NS=$NS"
 if [ -n "$NS" ]; then
-  [ -f "$D/node-$NS.json" ] && echo "CLIO_OWNNODE=$(cat "$D/node-$NS.json")"
-  if [ -f "$D/node.lock" ] && command -v flock >/dev/null 2>&1; then
-    if flock -n "$D/node.lock" true; then echo "CLIO_LOCKED=0"; else echo "CLIO_LOCKED=1"; fi
+  [ -f "$D/{base}-$NS.json" ] && echo "CLIO_OWNNODE=$(cat "$D/{base}-$NS.json")"
+  if [ -f "$D/{base}.lock" ] && command -v flock >/dev/null 2>&1; then
+    if flock -n "$D/{base}.lock" true; then echo "CLIO_LOCKED=0"; else echo "CLIO_LOCKED=1"; fi
   fi
 fi
 exit 0
 """
 
 
-def node_slot(marks: dict[str, str]) -> tuple[str, dict[str, Any] | None]:
+def node_slot(
+    marks: dict[str, str], base: str = "node"
+) -> tuple[str, dict[str, Any] | None]:
     """The record name this front uses, and the node half it names, if any.
 
     A node half answers only inside its own network namespace, and its pid
     means nothing outside its pid namespace. A host that confines each server
     it launches in fresh namespaces can leave a node half another server
     started holding the folder. That one is never linked to or stopped: this
-    front runs its own beside it, under ``node-<namespace>``.
+    front runs its own beside it, under ``<base>-<namespace>``.
     """
     node = json.loads(marks["NODE"]) if marks.get("NODE") else None
     ns = marks.get("NS", "")
     if not ns:
-        return "node", node
+        return base, node
     if marks.get("OWNNODE"):
-        return f"node-{ns}", json.loads(marks["OWNNODE"])
+        return f"{base}-{ns}", json.loads(marks["OWNNODE"])
     held = marks.get("LOCKED") == "1"
     theirs = node is not None and str(node.get("net") or ns) != ns
     if theirs and not held:
-        return "node", None
+        return base, None
     if theirs or (node is None and held):
-        return f"node-{ns}", None
-    return "node", node
+        return f"{base}-{ns}", None
+    return base, node
 
 
 PYINFO = (
@@ -293,6 +438,7 @@ class Link:
     built_now: bool = False
     uploaded_now: bool = False
     timings: dict[str, float] = field(default_factory=dict)
+    slot: str = "node"
 
     @property
     def token(self) -> str:
@@ -300,7 +446,12 @@ class Link:
 
 
 class Attacher:
-    """Keeps at most one link to a node half and re-attaches when it drops."""
+    """Keeps at most one link to a node half and re-attaches when it drops.
+
+    Once linked, a node half that has gone is reported (``pvserver_lost`` or
+    ``node_lost``, with the reason it left) instead of being replaced by an empty
+    one; only opening a view starts a new node half then.
+    """
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
@@ -311,17 +462,31 @@ class Attacher:
         self._heart: threading.Thread | None = None
         #: ParaView runs on this Windows machine: steps run in Python, not a shell.
         self._native = False
+        #: Set to end a node half's start that is being waited for.
+        self.cancel = threading.Event()
+        #: Told each new line a starting node half logs.
+        self.progress: Callable[[str], None] | None = None
+        #: Whether this front has had a node half; one that goes is then reported.
+        self.had_link = False
+        #: The last scene opened through this attacher, for the lost-node advice.
+        self.scene: str | None = None
+        self.base = node_base(settings.pvserver)
 
     # -- public ----------------------------------------------------------------
-    def ensure(self) -> Link:
-        """A healthy link, attaching first if there is none."""
+    def ensure(self, opening: bool = False) -> Link:
+        """A healthy link, attaching first if there is none.
+
+        Unless ``opening``, a node half that was linked and has gone raises the
+        reason it went, rather than starting an empty one in its place.
+        """
         with self.lock:
             link = self.link
             if link is not None:
                 if link.transport.alive() and self._answers(link.client):
                     return link
                 self._drop()
-            self.link = self._attach()
+            self.link = self._attach(opening)
+            self.had_link = True
             self._start_heartbeat()
             return self.link
 
@@ -369,14 +534,14 @@ class Attacher:
             self.link.transport.close()
             self.link = None
 
-    def _attach(self) -> Link:
+    def _attach(self, opening: bool = True) -> Link:
         started = time.monotonic()
         settings = self.settings
         target = settings.target
         transport = transport_for(target, settings.connect_timeout)
         try:
             transport.open()
-            return self._attach_over(transport, started)
+            return self._attach_over(transport, started, opening)
         except ParaViewError as exc:
             transport.close()
             if transport.remote and settings.pvserver and exc.code in _SSH_CODES:
@@ -386,17 +551,20 @@ class Attacher:
             transport.close()
             raise
 
-    def _attach_over(self, transport: Transport, started: float) -> Link:
+    def _attach_over(
+        self, transport: Transport, started: float, opening: bool = True
+    ) -> Link:
         settings = self.settings
+        base = self.base
         timings: dict[str, float] = {"connect": time.monotonic() - started}
         folder_here = None if transport.remote else local_folder(config.SERVER_VERSION)
         self._native = not transport.remote and native.wanted()
         probe_err = ""
         if self._native:
-            marks = native.probe(str(folder_here))
+            marks = native.probe(str(folder_here), base)
         else:
             probe = transport.run(
-                probe_script(config.SERVER_VERSION, folder_here), timeout=120
+                probe_script(config.SERVER_VERSION, folder_here, base), timeout=120
             )
             marks = parse_markers(probe.stdout)
             probe_err = probe.stderr.strip() or probe.stdout.strip()
@@ -443,7 +611,7 @@ class Attacher:
         uploaded = marks.get("CODE") != code_hash
         if uploaded:
             self._upload(transport, folder, bundle)
-        slot, node = node_slot(marks)
+        slot, node = node_slot(marks, base)
         # The rendering switch rides on the node's hash, so a node half started
         # without it is replaced rather than reused.
         node_hash = "+".join([code_hash, *(a.lstrip("-") for a in gl_args)])
@@ -453,12 +621,23 @@ class Attacher:
         link = None
         if node is not None and self._matches(node, node_hash):
             link = self._try_link(transport, folder, node, pvpython, env)
+        if link is None and not opening and self.had_link:
+            if node is not None and self._matches(node, node_hash):
+                raise ParaViewError(
+                    "node_unreachable",
+                    f"The ParaView node half {transport.where} is still running but "
+                    "did not answer, so nothing was done. It may be busy with a "
+                    "long render; retry, or call open_view to open the view again.",
+                )
+            # The node half this front was linked to has gone: say why, rather
+            # than show an empty scene in its place.
+            raise self._gone(transport, folder, slot)
         if link is None:
             if node is not None:
                 freed = self._stop_node(transport, folder, node, slot)
-                if not freed and slot == "node":
+                if not freed and slot == base:
                     # Another sandbox's node half would not let go: run beside it.
-                    slot = native.own_slot()
+                    slot = native.own_slot(base)
             node = self._start_node(
                 transport, folder, pvpython, node_hash, gl_args, slot
             )
@@ -469,6 +648,7 @@ class Attacher:
                 f"The ParaView node half started {transport.where} but does not "
                 f"answer. Its log is {folder}/{slot}.log.",
             )
+        link.slot = slot
         link.built_from = built_from or env.get("built")
         link.built_now = built_from is not None
         link.uploaded_now = uploaded
@@ -687,54 +867,121 @@ class Attacher:
         if self._native:
             return self._start_native(folder, [pvpython, *args], code_hash, slot)
         command = " ".join(shlex.quote(a) for a in [pvpython, *args])
-        transport.run(
-            f"rm -f {f}/{slot}.json\ncd {f}\n"
+        log = f"{f}/{slot}.log"
+        begun = transport.run(
+            f"rm -f {f}/{slot}.json {f}/{slot}.lost.json\ncd {f}\n"
+            f"[ -f {log} ] && mv -f {log} {f}/{slot}.prev.log\n"
             f"if command -v setsid >/dev/null 2>&1; then S=setsid; else S=; fi\n"
-            f"nohup $S {command} > {f}/{slot}.log 2>&1 < /dev/null &\n"
+            f"nohup $S {command} > {log} 2>&1 < /dev/null &\n"
+            'echo "CLIO_PID=$!"\n'
             "exit 0",
             timeout=60,
         )
-        deadline = time.monotonic() + settings.start_timeout
-        while time.monotonic() < deadline:
-            time.sleep(1.0)
+        pid = parse_markers(begun.stdout).get("PID", "")
+        pid = pid if pid.isdigit() else "0"
+        # A launcher that hands over to a child keeps the node half's arguments;
+        # the bracket keeps the pattern from matching this script's own shell.
+        alive = (
+            f'if kill -0 {pid} 2>/dev/null || pgrep -u "$(id -u)" -f -- '
+            f"{shlex.quote('[-]-name ' + slot + ' --idle-seconds')} >/dev/null 2>&1; "
+            "then echo CLIO_ALIVE=1; else echo CLIO_ALIVE=0; fi\n"
+        )
+        failure = "Traceback\\|another node half\\|pvserver join failed"
+
+        def look() -> StartLook:
             done = transport.run(
-                f"cat {f}/{slot}.json 2>/dev/null; echo; "
-                f"grep -c 'Traceback\\|another node half\\|pvserver join failed' "
-                f"{f}/{slot}.log 2>/dev/null || true",
+                f"cat {f}/{slot}.json 2>/dev/null; echo\n{alive}"
+                f'echo "CLIO_SIZE=$(wc -c < {log} 2>/dev/null || echo 0)"\n'
+                f"echo \"CLIO_FAILED=$(grep -c '{failure}' {log} 2>/dev/null)\"\n"
+                f"echo \"CLIO_LAST=$(tail -n 1 {log} 2>/dev/null | tr -d '\\r' "
+                '| cut -c1-400)"\n'
+                "exit 0",
                 timeout=60,
             )
-            lines = [line for line in done.stdout.splitlines() if line.strip()]
-            if lines and lines[0].startswith("{"):
-                node: dict[str, Any] = json.loads(lines[0])
-                if node.get("code_hash") == code_hash:
-                    return node
-            if lines and lines[-1].isdigit() and int(lines[-1]) > 0:
-                log = transport.run(f"tail -n 25 {f}/{slot}.log", timeout=60)
-                raise start_failure(transport.where, log.stdout)
-        raise ParaViewError(
-            "node_start_timeout",
-            f"The ParaView node half did not start {transport.where} within "
-            f"{settings.start_timeout:g} s. Its log is {folder}/{slot}.log.",
+            first = (done.stdout.splitlines() or [""])[0].strip()
+            record = json.loads(first) if first.startswith("{") else None
+            marks = parse_markers(done.stdout)
+            size = marks.get("SIZE", "0").strip()
+            failed = marks.get("FAILED", "0").strip()
+            is_alive = marks.get("ALIVE") != "0"
+            tail = ""
+            if (failed.isdigit() and int(failed) > 0) or not is_alive:
+                tail = transport.run(f"tail -n 25 {log}", timeout=60).stdout
+            return StartLook(
+                record=record,
+                failed=tail if failed.isdigit() and int(failed) > 0 else None,
+                alive=is_alive,
+                size=int(size) if size.isdigit() else 0,
+                last=marks.get("LAST", ""),
+                tail=tail,
+            )
+
+        def stop() -> None:
+            if pid != "0":
+                transport.run(f"kill {pid} 2>/dev/null; exit 0", timeout=60)
+
+        return wait_for_start(
+            look,
+            code_hash,
+            transport.where,
+            f"{folder}/{slot}.log",
+            settings.start_stall,
+            self.cancel,
+            self.progress,
+            stop,
         )
 
     def _start_native(
         self, folder: str, command: list[str], code_hash: str, slot: str
     ) -> dict[str, Any]:
-        settings = self.settings
-        native.start(folder, command, slot)
-        deadline = time.monotonic() + settings.start_timeout
-        while time.monotonic() < deadline:
-            time.sleep(1.0)
+        process = native.start(folder, command, slot)
+        log_path = Path(folder) / f"{slot}.log"
+
+        def look() -> StartLook:
             node, failed = native.started(folder, slot)
-            if node is not None and node.get("code_hash") == code_hash:
-                return node
-            if failed is not None:
-                raise start_failure("on this machine", failed)
-        raise ParaViewError(
-            "node_start_timeout",
-            f"The ParaView node half did not start on this machine within "
-            f"{settings.start_timeout:g} s. Its log is {folder}/{slot}.log.",
+            alive = process.poll() is None
+            try:
+                size = log_path.stat().st_size
+            except OSError:
+                size = 0
+            tail = native.log_tail(folder, slot)
+            return StartLook(
+                record=node,
+                failed=failed,
+                alive=alive,
+                size=size,
+                last=(tail.splitlines() or [""])[-1],
+                tail=tail,
+            )
+
+        def stop() -> None:
+            if process.poll() is None:
+                process.terminate()
+
+        return wait_for_start(
+            look,
+            code_hash,
+            "on this machine",
+            str(log_path),
+            self.settings.start_stall,
+            self.cancel,
+            self.progress,
+            stop,
         )
+
+    def _gone(self, transport: Transport, folder: str, slot: str) -> ParaViewError:
+        """Why the node half this front was linked to has gone, as an error."""
+        if self._native:
+            note, tail = native.lost_note(folder, slot), native.log_tail(folder, slot)
+        else:
+            f = shlex.quote(folder)
+            done = transport.run(
+                f"cat {f}/{slot}.lost.json 2>/dev/null; echo; echo CLIO_TAIL\n"
+                f"tail -n 25 {f}/{slot}.log 2>/dev/null; exit 0",
+                timeout=60,
+            )
+            note, _, tail = done.stdout.partition("CLIO_TAIL")
+        return gone_error(note.strip(), tail.strip(), transport.where, self.scene)
 
     def _try_link(
         self,
