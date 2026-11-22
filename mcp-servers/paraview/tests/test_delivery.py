@@ -14,8 +14,13 @@ class _Delivery:
     def __init__(self) -> None:
         self.views_in_animations = ["7", "9", "7"]
         self.tracking_views = {
-            "7": {"originalSize": (1398, 862), "ratio": 0.5, "quality": 50, "mtime": 41,
-                  "enabled": False},
+            "7": {
+                "originalSize": (1398, 862),
+                "ratio": 0.5,
+                "quality": 50,
+                "mtime": 41,
+                "enabled": False,
+            },
         }
 
 
@@ -37,7 +42,10 @@ def test_a_page_that_went_mid_drag_does_not_hold_back_the_next_pages_picture() -
     assert fresh_stream(_Server(_Protocol(delivery)), _View(), 348, 806)
     assert delivery.views_in_animations == ["9"]
     assert delivery.tracking_views["7"] == {
-        "originalSize": (348, 806), "ratio": 1, "quality": 100, "mtime": 0,
+        "originalSize": (348, 806),
+        "ratio": 1,
+        "quality": 100,
+        "mtime": 0,
         "enabled": True,
     }
 

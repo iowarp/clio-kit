@@ -35,7 +35,7 @@
     },
     {
       "name": "run_scene_script",
-      "description": "Build or change the scene with a ParaView script: readers (a second dataset too),\nfilters, colours, anything paraview.simple can do. It runs in the scene the person\nsees, so the live view, captures and the saved scene include what it makes. It applies\nwhole or not at all; a failing script leaves nothing behind. The step is saved with the\nscene and replayed when the scene is restored. Names are those of the ParaView that\nruns it: ParaView 6 colour presets drop \" (matplotlib)\" (either form works), and a\nscalar bar's range labels are AddRangeLabels."
+      "description": "Build or change the scene with a ParaView script: readers (a second dataset too),\nfilters, colours, anything paraview.simple can do. It runs in the scene the person\nsees, so the live view, captures and the saved scene include what it makes. It applies\nwhole or not at all; a failing script leaves nothing behind. The step is saved with the\nscene and replayed when the scene is restored. Names are those of the ParaView that\nruns it: ParaView 6 colour presets drop \" (matplotlib)\" (either form works), and a\nscalar bar's range labels are AddRangeLabels. A field's colour range defaults to the\n2nd to 98th percentile of the values shown, so extremes do not wash out the rest; a\nrange the script sets (RescaleTransferFunction, e.g. from measure_field) is kept."
     },
     {
       "name": "set_timestep",
