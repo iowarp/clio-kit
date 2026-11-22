@@ -790,6 +790,83 @@ def test_a_pvserver_that_goes_stops_the_view(tmp_path: Path) -> None:
                 os.environ[key] = value
 
 
+def test_a_call_held_up_by_a_pvserver_that_goes_fails_at_once(tmp_path: Path) -> None:
+    """The live failure: a capture waits on a pvserver that stopped answering, which
+    then ends. ParaView holds Python's lock while it waits, so only the watchdog can
+    end the node half: the call fails with the reason in seconds, not after its wait."""
+    import signal
+    import subprocess
+    import threading
+
+    from paraview_mcp import attach
+    from paraview_mcp.link import LinkError
+
+    pvserver = os.environ.get("PARAVIEW_TEST_PVSERVER")
+    if not pvserver:
+        pytest.skip("set PARAVIEW_TEST_PVSERVER to a pvserver of the same ParaView")
+    home = _home(tmp_path)
+    data = tmp_path / "cube.vti"
+    write_vti(data, n=12)
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    served = subprocess.Popen(
+        [pvserver, f"--server-port={port}", "--force-offscreen-rendering"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    saved = {k: os.environ.get(k) for k in ("HOME", "PATH")}
+    os.environ["HOME"] = str(home)
+    assert PVPYTHON is not None
+    os.environ["PATH"] = f"{Path(PVPYTHON).parent}:{os.environ['PATH']}"
+    address = f"127.0.0.1:{port}"
+    attacher = Attacher(Settings(target=Target(), pvserver=address, start_stall=600))
+    try:
+        listening = f":{port:04X} 00000000:0000 0A"
+        deadline = time.monotonic() + 120
+        while listening not in Path("/proc/net/tcp").read_text():
+            assert time.monotonic() < deadline and served.poll() is None
+            time.sleep(0.5)
+        client = attacher.ensure(opening=True).client
+        client.command("open_view", {"path": str(data)})
+        slot = attach.node_base(address)
+        folder = _local(home)
+        assert "pvserver watchdog did not start" not in (
+            folder / f"{slot}.log"
+        ).read_text()
+        served.send_signal(signal.SIGSTOP)
+        outcome: list[BaseException | None] = []
+
+        def capture() -> None:
+            try:
+                client.command("capture", {"width": 640, "height": 400})
+                outcome.append(None)
+            except BaseException as exc:  # noqa: BLE001 - checked below
+                outcome.append(exc)
+
+        waiting = threading.Thread(target=capture, daemon=True)
+        waiting.start()
+        waiting.join(8)
+        assert waiting.is_alive(), "the capture should wait on the stopped pvserver"
+        served.kill()
+        served.wait()
+        ended = time.monotonic()
+        waiting.join(120)
+        assert not waiting.is_alive() and time.monotonic() - ended < 60
+        assert isinstance(outcome[0], LinkError)
+        note = json.loads((folder / f"{slot}.lost.json").read_text())
+        assert address in note["reason"] and "closed the connection" in note["reason"]
+        state = attacher.status()
+        assert state["state"] == "lost" and state["code"] == "pvserver_lost"
+    finally:
+        attacher.close()
+        if served.poll() is None:
+            served.kill()
+        for key, value in saved.items():
+            if value is not None:
+                os.environ[key] = value
+
+
 def _kill_serving(served: subprocess.Popen[bytes], port: int) -> None:
     """Kill a test pvserver and every rank of it: mpiexec's ranks may leave its
     process group, so each process serving ``port`` is found by its command line."""

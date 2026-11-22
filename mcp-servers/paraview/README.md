@@ -74,7 +74,13 @@ viewers are connected and how many pictures they have shown (remote rendering
 only). A node half watches its `pvserver` connection: when the `pvserver`
 goes (its job ended), the node half stops drawing, the live view says why and
 stops reconnecting, it leaves `<record>.lost.json`, and later scene tools fail
-with `pvserver_lost` instead of starting a node half that shows nothing. Each
+with `pvserver_lost` instead of starting a node half that shows nothing. A
+ParaView call that is waiting on the `pvserver` when it goes cannot return, and
+it holds up the node half's own watcher, so a small watchdog process beside the
+node half (any Python, standard library only) watches the same socket. It then
+leaves the note and ends the node half, and the call fails at once with that
+reason. When the node half's loop is held for a minute, its log shows the stack
+it waits in, every minute, without stopping it. Each
 start keeps the previous log as `<record>.prev.log`.
 
 ## The first attach on a machine

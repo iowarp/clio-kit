@@ -155,6 +155,12 @@ def command(
     except ParaViewError as exc:
         raise _fail(exc) from exc
     except LinkError as exc:
+        if not exc.busy:
+            # A node half ended under the call (its watchdog does, once its pvserver
+            # has gone): say why, rather than asking for a retry.
+            state = attacher(key).status()
+            if state.get("state") == "lost":
+                raise ToolError(f"{state['text']} [{state['code']}]") from exc
         raise ToolError(
             "The link to ParaView dropped during this call; the scene is kept on "
             "the node. Call scene_state to see whether the change applied, then "

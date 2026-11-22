@@ -199,6 +199,11 @@ def main(argv: list[str] | None = None) -> None:
     watched = liveness.pvserver_socket() if session else None
     if watched is not None and not liveness.watchable(watched):
         watched = None
+    if watched is not None and session:
+        from . import watchdog
+
+        global _watchdog
+        _watchdog = watchdog.start(watched, session, root / f"{args.name}.json")
     threshold = args.threshold_mb
     if threshold is None:
         settings = simple.GetSettingsProxy("RenderViewSettings")
@@ -235,6 +240,7 @@ def main(argv: list[str] | None = None) -> None:
         )
         print(f"node half listening on 127.0.0.1:{server.port}", flush=True)
         loop = asyncio.get_event_loop()
+        loop.create_task(watch_loop())
         loop.create_task(node.watch_growth(args.growth_interval))
         loop.create_task(idle(node, args.idle_seconds, record_path, lock))
         loop.create_task(watch_stop(node, stop_path, record_path, lock))
@@ -270,6 +276,10 @@ def shut_down(
             engine.scene["camera"] = engine.read_camera()
         manifest.write(engine.root, engine.scene)
     print(f"{why}: shutting down", flush=True)
+    if _watchdog is not None and _watchdog.poll() is None:
+        # It holds a share of the pvserver socket: the pvserver sees this client go
+        # only once both have let go.
+        _watchdog.kill()
     try:
         record_path.unlink()
     except FileNotFoundError:
@@ -282,6 +292,25 @@ def shut_down(
 #: given to show that it went before the node half exits.
 PVSERVER_LOOK = 2.0
 LOST_NOTICE = 3.0
+#: Seconds the loop may be held before the log shows where (and again as often).
+STALL_REPORT = 60.0
+
+#: The child that ends a node half held up by a pvserver that has gone.
+_watchdog: Any = None
+
+
+async def watch_loop(every: float = 5.0, stall: float = STALL_REPORT) -> None:
+    """Make a held loop show where it waits, while it waits.
+
+    Not a limit: nothing is stopped. Python's fault handler writes every thread's
+    stack to the log each ``stall`` seconds the loop goes without coming back
+    here, from a thread of its own that a blocked ParaView call does not hold up.
+    """
+    import faulthandler
+
+    while True:
+        faulthandler.dump_traceback_later(stall, repeat=True, file=sys.stderr)
+        await asyncio.sleep(every)
 
 
 async def watch_pvserver(

@@ -78,6 +78,49 @@ async def test_a_view_that_cannot_reach_paraview_learns_why(
     assert closed.structured_content["state"] == "closed"
 
 
+def test_a_call_whose_node_half_ends_under_it_says_why(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The node half's watchdog ends it once its pvserver has gone mid-call: the call
+    fails at once with that reason, not with a retry hint after a long wait."""
+    from types import SimpleNamespace
+
+    from fastmcp.exceptions import ToolError
+
+    from paraview_mcp.link import LinkError
+
+    class Client:
+        def __init__(self, error: LinkError) -> None:
+            self.error = error
+
+        def command(self, *_args: object, **_kwargs: object) -> None:
+            raise self.error
+
+    class Ended:
+        def __init__(self, error: LinkError, state: str) -> None:
+            self.link = SimpleNamespace(client=Client(error))
+            self.state = state
+
+        def ensure(self, opening: bool = False) -> object:
+            return self.link
+
+        def status(self) -> dict[str, str]:
+            return {"state": self.state, "code": "pvserver_lost", "text": "It stopped."}
+
+    monkeypatch.setattr(server_module, "actor", lambda: "agent")
+    reset = LinkError("Remote end closed connection without response")
+    monkeypatch.setattr(server_module, "_attachers", {"": Ended(reset, "lost")})
+    with pytest.raises(ToolError, match=r"It stopped\. \[pvserver_lost\]"):
+        server_module.command("capture", {})
+    busy = LinkError("timed out", busy=True)
+    monkeypatch.setattr(server_module, "_attachers", {"": Ended(busy, "lost")})
+    with pytest.raises(ToolError, match=r"\[link_lost\]"):
+        server_module.command("capture", {})
+    monkeypatch.setattr(server_module, "_attachers", {"": Ended(reset, "running")})
+    with pytest.raises(ToolError, match=r"\[link_lost\]"):
+        server_module.command("capture", {})
+
+
 async def test_path_arguments_are_declared_where_paraview_runs() -> None:
     """CLIO reads ``ai.iowarp.clio/paths`` to tell a path on the ParaView machine from one
     on its own: no provenance warning for a remote open, no sandbox note for a remote
