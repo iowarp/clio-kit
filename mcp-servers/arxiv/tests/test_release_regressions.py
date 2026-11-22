@@ -93,6 +93,6 @@ async def test_download_tools_are_not_read_only_and_version_is_release():
         tools = {tool.name: tool for tool in await client.list_tools()}
         version = client.server_info.version
     for name in ("download_paper_pdf", "download_multiple_pdfs"):
-        assert tools[name].annotations.readOnlyHint is False
-    assert tools["get_pdf_url"].annotations.readOnlyHint is True
+        assert tools[name].annotations.read_only_hint is False
+    assert tools["get_pdf_url"].annotations.read_only_hint is True
     assert version == "2.2.8"

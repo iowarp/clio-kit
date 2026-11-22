@@ -109,5 +109,5 @@ async def test_server_info_version_and_glob_description():
     async with Client(mcp) as client:
         tools = {tool.name: tool for tool in await client.list_tools()}
         assert client.server_info.version == "2.2.8"
-    schema = tools["analyze_file_access_patterns"].inputSchema
+    schema = tools["analyze_file_access_patterns"].input_schema
     assert "glob" in schema["properties"]["file_pattern"]["description"]
