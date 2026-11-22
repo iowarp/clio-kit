@@ -31,15 +31,19 @@
   "tools": [
     {
       "name": "open_view",
-      "description": "Open a dataset or restore a saved scene, and show it in a live ParaView view.\n\nWith neither path nor scene, it shows the ParaView session already running\nwhere ParaView is, or the current scene, or else an empty scene that\nrun_scene_script can fill with sources."
+      "description": "Open a dataset or restore a saved scene, and show it in a live ParaView view.\n\nWith neither path nor scene, it shows the ParaView session already running\nwhere ParaView is, or the current scene, or else an empty scene that\nrun_scene_script can fill with sources. A growing source is followed: the view\nmoves to each new step unless the person has parked it on one. A growing source\nthat cannot be read yet (not there yet, or an ADIOS2 BP5 folder before its first\nwhole step) is waited for while it changes on disk, so open it as soon as the\nrun starts. Starting ParaView is reported as progress and can be cancelled; it\nfails only when its start stops making progress. The result says how much of\na test frame the view really draws."
     },
     {
       "name": "run_scene_script",
-      "description": "Build or change the scene with a ParaView script: readers (a second dataset too),\nfilters, colours, anything paraview.simple can do. It runs in the scene the person\nsees, so the live view, captures and the saved scene include what it makes. It applies\nwhole or not at all; a failing script leaves nothing behind. The step is saved with the\nscene and replayed when the scene is restored."
+      "description": "Build or change the scene with a ParaView script: readers (a second dataset too),\nfilters, colours, anything paraview.simple can do. It runs in the scene the person\nsees, so the live view, captures and the saved scene include what it makes. It applies\nwhole or not at all; a failing script leaves nothing behind. The step is saved with the\nscene and replayed when the scene is restored. Names are those of the ParaView that\nruns it: ParaView 6 colour presets drop \" (matplotlib)\" (either form works), and a\nscalar bar's range labels are AddRangeLabels."
     },
     {
       "name": "set_timestep",
       "description": "Show another time step, or follow the latest one."
+    },
+    {
+      "name": "watch_steps",
+      "description": "Report each new time step of the open scene's growing source as it is written,\nuntil the run ends. Prefer running it as a background task: each step is then\nthe task's status. Called directly, each step is a progress notification and the\ncall lasts until the watch ends; cancelling it ends it. Progress counts the\nsteps written, against the view descriptor's expected_steps when it gives them.\nIt ends once those are written (\"complete\"), when the writer closes its output\n(\"finished\"), when the source stalls (\"stalled\": no new step and nothing\nchanging on disk), when the source is not growing, or when the person cancels,\nand returns every step it saw. The view follows the newest step unless the\nperson parked it."
     },
     {
       "name": "set_camera",
@@ -58,8 +62,12 @@
       "description": "Exact statistics and a histogram of a field at the current time step."
     },
     {
+      "name": "measure_over_time",
+      "description": "Exact statistics (min, max, mean, std, median) of a field at each time step: the\nseries to plot or compare over a run. The view stays on its step."
+    },
+    {
       "name": "capture",
-      "description": "A PNG rendered by ParaView at the camera the view last reported."
+      "description": "A PNG rendered by ParaView at the camera the view last reported. The text\nsays when the frame is blank, so look before describing it."
     },
     {
       "name": "export_artifact",
@@ -76,6 +84,10 @@
     {
       "name": "scene_state",
       "description": "Where ParaView is attached, the dataset, the pipeline, time and view."
+    },
+    {
+      "name": "view_status",
+      "description": "For the live view: whether the ParaView behind it still runs, and if it went,\nwhy. A view whose page cannot reach ParaView asks this, so it shows the reason\ninstead of drawing nothing."
     }
   ],
   "resources": [
