@@ -56,6 +56,8 @@ packages = ["src/clio_agentic_search"]
 [tool.pytest.ini_options]
 addopts = "-q"
 testpaths = ["tests"]
+# pytest-asyncio warns until this is set explicitly; "function" is its default.
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 line-length = 100
