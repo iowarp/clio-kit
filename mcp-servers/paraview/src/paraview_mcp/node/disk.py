@@ -34,9 +34,12 @@ Listing the folder that holds it brings the path in at once. So every operation
 run through ``dispatch`` first lists the folders above its path and the path's
 own folder (``refresh``), and a pvserver's other ranks list them too, since each
 rank's reader opens the files. A rerun that removes and remakes its output is
-the usual case. Listing costs little on a local disk. A file's size and time can
-be as old, too (``os.stat`` answers from the cache, which some clusters keep
-for minutes), while opening a file checks it with the server.
+the usual case. Listing costs little on a local disk. A lookup that still finds
+nothing (the path was made between the listing and the look) lists the folder
+holding it once more and tries again (``_there``, ``_open``).
+
+A file's size and time can be as old (``os.stat`` answers from the cache, which
+some clusters keep for minutes), while opening a file checks it with the server.
 So sizes and times are read through an open file (``_fresh``): otherwise a
 growing source looks unchanged for minutes, and an index read whole runs ahead
 of the metadata size beside it.
@@ -111,13 +114,49 @@ def refresh_for(op: str, args: dict[str, Any]) -> list[str]:
     return refresh(path)
 
 
+def _relist(path: str) -> None:
+    """List the folder holding ``path``, so a machine that cached ``path`` as missing
+    looks it up again."""
+    try:
+        os.listdir(os.path.dirname(os.path.abspath(path)))
+    except OSError:
+        pass
+
+
+def _there(path: str, test: Any = None) -> bool:
+    """``test(path)`` (``os.path.exists`` by default); when it says no, asked once
+    more after listing the folder that holds ``path``."""
+    test = test or os.path.exists
+    if test(path):
+        return True
+    _relist(path)
+    return bool(test(path))
+
+
+def _open(path: str, flags: int = os.O_RDONLY) -> int:
+    """``os.open``; on "no such file", once more after listing the folder that holds
+    ``path``."""
+    try:
+        return os.open(path, flags)
+    except FileNotFoundError:
+        _relist(path)
+        return os.open(path, flags)
+
+
+def _read(path: str) -> bytes:
+    with os.fdopen(_open(path), "rb") as handle:
+        return handle.read()
+
+
 def _fresh(path: str) -> os.stat_result:
     """``path``'s size and times as they are now: read through an open handle, which
     a shared file system checks with the server, where ``os.stat`` may answer from
     what this machine saw a while ago. A path that cannot be opened (a folder on
     some systems, no read permission) falls back to ``os.stat``."""
     try:
-        handle = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+        handle = _open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+    except FileNotFoundError:
+        raise
     except OSError:
         return os.stat(path)
     try:
@@ -152,7 +191,7 @@ def files(path: str) -> list[str] | str | None:
     """The file (or folder) ``path`` names, or the sorted files its pattern matches;
     None when there is none."""
     if not is_pattern(path):
-        return path if os.path.exists(path) else None
+        return path if _there(path) else None
     return sorted(glob.glob(path)) or None
 
 
@@ -200,11 +239,10 @@ def _starts(record: tuple[int, ...], writers: int) -> list[int] | None:
 
 def check(path: str) -> Readiness:
     """Whether the BP5 folder at ``path`` can be read now, and if not, why not."""
-    if not os.path.isdir(path):
+    if not _there(path, os.path.isdir):
         return Readiness("the folder is not there yet", False)
     try:
-        with open(os.path.join(path, "md.idx"), "rb") as handle:
-            index = handle.read()
+        index = _read(os.path.join(path, "md.idx"))
     except FileNotFoundError:
         return Readiness("no step is written yet (there is no md.idx)", False)
     except OSError as exc:
@@ -295,8 +333,7 @@ def write_index(path: str, folder: str, steps: int) -> str:
         link = os.path.join(folder, name)
         if name != "md.idx" and not os.path.lexists(link):
             os.symlink(os.path.join(path, name), link)
-    with open(os.path.join(path, "md.idx"), "rb") as handle:
-        index = handle.read()
+    index = _read(os.path.join(path, "md.idx"))
     part = f"{folder.rstrip('/')}.idx"
     with open(part, "wb") as handle:
         handle.write(index[: _cut(index, steps)])
@@ -312,7 +349,7 @@ def source_readiness(
     key = disk_key(path)
     if pattern:
         return (None if key else "no file matches it yet"), True, key
-    if not os.path.exists(path):
+    if not _there(path):
         return "it is not there yet", False, key
     if not is_bp(path, reader):
         return None, True, key

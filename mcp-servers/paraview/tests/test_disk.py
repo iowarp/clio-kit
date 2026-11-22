@@ -107,6 +107,63 @@ def test_a_remade_output_is_seen_again(tmp_path: Path) -> None:
     assert disk.dispatch("disk_key", {"path": str(bp)}) != before
 
 
+@pytest.fixture
+def cached(monkeypatch: pytest.MonkeyPatch) -> tuple[set[str], list[str]]:
+    """A shared file system that cached some paths as missing: each is "not there"
+    until the folder holding it is listed. Returns those paths and the folders
+    listed."""
+    stale: set[str] = set()
+    listed: list[str] = []
+    real_list, real_open = os.listdir, os.open
+    real_exists, real_isdir = os.path.exists, os.path.isdir
+
+    def missing(path: Any) -> bool:
+        return os.path.abspath(str(path)) in stale
+
+    def listdir(path: Any = ".") -> list[str]:
+        folder = os.path.abspath(path)
+        listed.append(folder)
+        stale.difference_update({p for p in stale if os.path.dirname(p) == folder})
+        return real_list(path)
+
+    def open_(path: Any, *args: Any, **kwargs: Any) -> int:
+        if missing(path):
+            raise FileNotFoundError(2, "No such file or directory (cached)", str(path))
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(os, "listdir", listdir)
+    monkeypatch.setattr(os, "open", open_)
+    monkeypatch.setattr(os.path, "exists", lambda p: not missing(p) and real_exists(p))
+    monkeypatch.setattr(os.path, "isdir", lambda p: not missing(p) and real_isdir(p))
+    return stale, listed
+
+
+def test_a_cached_miss_is_looked_up_again_after_listing_once(
+    tmp_path: Path, cached: tuple[set[str], list[str]]
+) -> None:
+    """Asked before the solver made it, a path stays "not there" on this machine;
+    the first miss lists the folder holding it and looks again."""
+    stale, listed = cached
+    run, bp = _run(tmp_path)
+    (bp / "md.0").write_bytes(b"m" * 5)
+
+    stale.add(str(bp))
+    assert disk.files(str(bp)) == str(bp)
+    assert listed == [str(run)]
+
+    stale.update({str(bp), str(bp / "md.idx")})
+    listed.clear()
+    reason, _, _ = disk.source_readiness(str(bp), "ADIOS2VTXReader", False)
+    assert reason == "its index header is not written whole yet"
+    assert listed[:2] == [str(run), str(bp)]
+
+    stale.add(str(bp / "md.0"))
+    listed.clear()
+    assert disk._size(str(bp / "md.0")) == 5
+    assert listed == [str(bp)]
+    assert disk._size(str(bp / "gone")) == -1
+
+
 def test_sizes_and_times_are_read_through_an_open_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
