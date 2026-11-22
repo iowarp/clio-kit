@@ -280,3 +280,99 @@ def test_every_pvserver_rank_lists_the_source(
     seen, replies = _server_run(monkeypatch, 0, "check", args)
     assert seen[:3] == [str(run.parent), str(run), str(bp)]
     assert "ok" in json.loads(replies[0])
+
+
+class _FakeServer:
+    """ParaView's servermanager as ``ServerDisk`` uses it: a programmable source
+    whose script runs, as rank 0 would run it, when the reduction filter updates."""
+
+    def __init__(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        server = self
+
+        class Column:
+            def __init__(self) -> None:
+                self.values: list[str] = []
+
+            def SetName(self, name: str) -> None:
+                pass
+
+            def InsertNextValue(self, value: str) -> None:
+                self.values.append(value)
+
+            def GetNumberOfValues(self) -> int:
+                return len(self.values)
+
+            def GetValue(self, index: int) -> str:
+                return self.values[index]
+
+        class Table:
+            def __init__(self) -> None:
+                self.columns: list[Column] = []
+
+            def AddColumn(self, column: Column) -> None:
+                self.columns.append(column)
+
+            def GetColumnByName(self, name: str) -> Column | None:
+                return self.columns[0] if self.columns else None
+
+        class Source:
+            def __init__(self, **_: Any) -> None:
+                self.Script = ""
+
+        class Reducer:
+            def __init__(self, Input: Source) -> None:
+                self.input = Input
+                self.table = Table()
+                self.PassThrough: int | None = None
+                server.reducers += 1
+
+            def UpdatePipeline(self) -> None:
+                self.table = Table()
+                owner = types.SimpleNamespace(GetOutputDataObject=lambda p: self.table)
+                server.scripts.append(self.input.Script)
+                exec(self.input.Script, {"self": owner})  # noqa: S102
+
+            def GetClientSideObject(self) -> Any:
+                return types.SimpleNamespace(GetOutputDataObject=lambda p: self.table)
+
+        core = types.ModuleType("vtkmodules.vtkCommonCore")
+        core.vtkStringArray = Column  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "vtkmodules", types.ModuleType("vtkmodules"))
+        monkeypatch.setitem(sys.modules, "vtkmodules.vtkCommonCore", core)
+        monkeypatch.setitem(sys.modules, "vtkmodules.vtkParallelCore", None)
+        manager = types.ModuleType("paraview.servermanager")
+        manager.sources = types.SimpleNamespace(ProgrammableSource=Source)  # type: ignore[attr-defined]
+        manager.filters = types.SimpleNamespace(ReductionFilter=Reducer)  # type: ignore[attr-defined]
+        package = types.ModuleType("paraview")
+        package.servermanager = manager  # type: ignore[attr-defined]
+        monkeypatch.setitem(sys.modules, "paraview", package)
+        monkeypatch.setitem(sys.modules, "paraview.servermanager", manager)
+        self.reducers = 0
+        self.scripts: list[str] = []
+
+
+def test_the_server_disk_sends_disk_py_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A slow link pays for every byte and proxy: disk.py goes over on the first
+    call only, one reduction filter brings back every answer, and a server that
+    lost the module (or never had it) asks for it again."""
+    _, bp = _run(tmp_path)
+    fake = _FakeServer(monkeypatch)
+    there = datafs.ServerDisk()
+    monkeypatch.delitem(sys.modules, there._name, raising=False)
+    try:
+        first = there.disk_key(str(bp))
+        assert there.disk_key(str(bp)) == first
+        assert there.check(str(bp)) == datafs.LocalDisk().check(str(bp))
+        assert fake.reducers == 1 and len(fake.scripts) == 3
+        assert "SOURCE = None" not in fake.scripts[0]
+        assert all("SOURCE = None" in s for s in fake.scripts[1:])
+        assert all(len(s) < 3000 for s in fake.scripts[1:])
+
+        del sys.modules[there._name]  # a server that no longer has it
+        assert there.disk_key(str(bp)) == first
+        assert "SOURCE = None" in fake.scripts[3]
+        assert "SOURCE = None" not in fake.scripts[4]
+    finally:
+        sys.modules.pop(there._name, None)

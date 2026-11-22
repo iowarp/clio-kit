@@ -82,7 +82,10 @@ leaves the note and ends the node half, and the call fails at once with that
 reason. A call that ParaView lets go of when its pvserver closes is refused with
 `pvserver_lost` too, since what it returned is not real. When the node half's
 loop is held for a minute, its log shows the stack it waits in, every minute,
-without stopping it. Each
+without stopping it. The link to a `pvserver` may be a slow tunnel, so each
+followed step costs few round trips: the server keeps the node half's disk code
+loaded, a view drawn on the ParaView machine gets only its new image, and an
+agent's command goes ahead of the follow's next look. Each
 start keeps the previous log as `<record>.prev.log`.
 
 ## The first attach on a machine

@@ -152,6 +152,8 @@ class NodeApp:
         self.server = server or get_server("clio-paraview", client_type="vue3")
         self.last_link = time.monotonic()
         self.sockets = 0
+        #: Commands that arrived and have not started their work yet.
+        self.waiting = 0
         self._replay: asyncio.Future[None] | None = None
         self.view: Any = None
         self.link_note = ""
@@ -366,6 +368,24 @@ class NodeApp:
         return self._json({"ok": True})
 
     async def _command(self, request: Any) -> Any:
+        # Until its work starts, a command comes first: the follow and the catch-up
+        # skip their turns, so each of the command's awaits returns at once rather
+        # than after a step's round trips to a pvserver over a slow link.
+        self.waiting += 1
+        counted = True
+
+        def started() -> None:
+            nonlocal counted
+            if counted:
+                counted = False
+                self.waiting -= 1
+
+        try:
+            return await self._run_command(request, started)
+        finally:
+            started()
+
+    async def _run_command(self, request: Any, started: Any) -> Any:
         try:
             body = await request.json()
             name = str(body["command"])
@@ -396,6 +416,7 @@ class NodeApp:
             )
         try:
             await self._await_source(name, args)
+            started()
             if name == "measure_over_time":
                 result = await self._measure_series(args)
             else:
@@ -606,12 +627,18 @@ class NodeApp:
     def _update_view(self) -> None:
         """Send the scene to the view. ParaView brings its legends up to date
         (title, text colours, range) only when it renders, so render first when the
-        browser draws, or the browser gets a legend ParaView has not set up yet."""
+        browser draws, or the browser gets a legend ParaView has not set up yet.
+
+        A view drawn on the ParaView machine gets only its new image: the geometry
+        the browser would draw is not needed, and bringing it over is the slow part
+        of each step on a slow link. Switching to the browser sends it then."""
         if self.view is None or self.lost:
             return
         if self.server.state.viewMode != "remote":
             self.engine.simple.Render(self.engine.view)
-        self.view.update()
+            self.view.update()
+        else:
+            self.view.update_image()
 
     def _legend_title(self) -> str | None:
         """The field whose legend the browser shows: the selected object's, if on."""
@@ -682,6 +709,8 @@ class NodeApp:
             await asyncio.sleep(interval)
             if self.lost:
                 return
+            if self.waiting:
+                continue
             try:
                 with self.server.state:
                     self.engine.check_growth()
@@ -702,6 +731,8 @@ class NodeApp:
             going = True
             while going:
                 await asyncio.sleep(REPLAY_SECONDS)
+                if self.waiting:
+                    continue
                 alone = 0.0 if self.sockets > 0 else alone + REPLAY_SECONDS
                 if 0 < alone < REPLAY_ALONE:
                     continue

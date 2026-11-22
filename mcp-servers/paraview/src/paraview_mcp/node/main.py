@@ -311,8 +311,14 @@ async def watch_loop(every: float = 5.0, stall: float = STALL_REPORT) -> None:
     """
     import faulthandler
 
+    # pvpython puts its own object in sys.stderr; the fault handler needs the
+    # descriptor under it, which the log is.
+    try:
+        out: Any = sys.stderr.fileno()
+    except (AttributeError, OSError, ValueError):
+        out = 2
     while True:
-        faulthandler.dump_traceback_later(stall, repeat=True, file=sys.stderr)
+        faulthandler.dump_traceback_later(stall, repeat=True, file=out)
         await asyncio.sleep(every)
 
 
