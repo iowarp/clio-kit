@@ -3,8 +3,10 @@
 A built-in session reads files on this machine. A joined pvserver reads them
 on its own machine, so following a growing source must look at that disk:
 ``ServerDisk`` runs ``disk``'s functions in the server's Python, on rank 0, and
-brings back their result. It does so with a programmable source kept out of
-the pipeline, so a server needs ParaView's Python and nothing else.
+brings back their result; the other ranks only list the folders on the way to
+the path (``disk.refresh``), so a rank on another node sees new files too. It
+does so with a programmable source kept out of the pipeline, so a server needs
+ParaView's Python and nothing else.
 """
 
 from __future__ import annotations
@@ -29,16 +31,19 @@ try:
 except ImportError:
     _rank = 0
 _out = self.GetOutputDataObject(0)
-if _rank == 0:
-    _mod = sys.modules.get(NAME)
-    if _mod is None:
-        _mod = types.ModuleType(NAME)
-        sys.modules[NAME] = _mod
-        try:
-            exec(compile(SOURCE, NAME, "exec"), _mod.__dict__)
-        except BaseException:
-            del sys.modules[NAME]
-            raise
+_mod = sys.modules.get(NAME)
+if _mod is None:
+    _mod = types.ModuleType(NAME)
+    sys.modules[NAME] = _mod
+    try:
+        exec(compile(SOURCE, NAME, "exec"), _mod.__dict__)
+    except BaseException:
+        del sys.modules[NAME]
+        raise
+if _rank != 0:
+    # Each rank's reader opens the files, on whichever node it runs.
+    _mod.refresh_for(OP, ARGS)
+else:
     try:
         _text = json.dumps({"ok": _mod.dispatch(OP, ARGS)})
     except Exception as _exc:

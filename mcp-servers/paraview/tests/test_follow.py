@@ -15,7 +15,7 @@ from fastmcp_tasks.client import call_tool_task
 from test_front import SUMMARY, _FakeAttacher, _FakeClient
 
 from paraview_mcp import follow, present
-from paraview_mcp.node.sources import disk_key
+from paraview_mcp.node.disk import disk_key
 from paraview_mcp.server import mcp
 
 

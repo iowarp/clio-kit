@@ -27,6 +27,19 @@ last step is read once the folder stops changing for a moment. A writer that add
 a step every second rarely stops, and its data ends where its last step ends.
 
 Other formats (BP4, a single file) are not checked: ``check`` reports them ready.
+
+Shared file systems: a machine that looked a path up before another machine
+made it can be told it is not there for a minute or more (NFS caches the miss).
+Listing the folder that holds it brings the path in at once. So every operation
+run through ``dispatch`` first lists the folders above its path and the path's
+own folder (``refresh``), and a pvserver's other ranks list them too, since each
+rank's reader opens the files. A rerun that removes and remakes its output is
+the usual case. Listing costs little on a local disk. A file's size and time can
+be as old, too (``os.stat`` answers from the cache, which some clusters keep
+for minutes), while opening a file checks it with the server.
+So sizes and times are read through an open file (``_fresh``): otherwise a
+growing source looks unchanged for minutes, and an index read whole runs ahead
+of the metadata size beside it.
 """
 
 from __future__ import annotations
@@ -60,9 +73,62 @@ def is_pattern(path: str) -> bool:
     return any(ch in path for ch in "*?[")
 
 
+def refresh(path: str, depth: int = 2) -> list[str]:
+    """List the ``depth`` folders above ``path``, top down, then ``path`` itself when
+    it is a folder, so this machine sees what another machine has made there since
+    it last looked. For a pattern, ``path`` is the folder before its first pattern
+    part. Returns the folders listed; one that cannot be listed is passed over."""
+    if is_pattern(path):
+        while is_pattern(path) and os.path.dirname(path) != path:
+            path = os.path.dirname(path)
+        path = path or os.curdir
+    path = os.path.abspath(path)
+    folders = []
+    above = os.path.dirname(path)
+    for _ in range(depth):
+        folders.append(above)
+        if os.path.dirname(above) == above:
+            break
+        above = os.path.dirname(above)
+    folders.reverse()
+    listed = []
+    for folder in [*folders, path]:
+        if folder == path and not os.path.isdir(path):
+            continue
+        try:
+            os.listdir(folder)
+        except OSError:
+            continue
+        listed.append(folder)
+    return listed
+
+
+def refresh_for(op: str, args: dict[str, Any]) -> list[str]:
+    """``refresh`` the path an operation is about to look at, if it has one."""
+    path = args.get("path")
+    if op == "expand" or not isinstance(path, str) or not path:
+        return []
+    return refresh(path)
+
+
+def _fresh(path: str) -> os.stat_result:
+    """``path``'s size and times as they are now: read through an open handle, which
+    a shared file system checks with the server, where ``os.stat`` may answer from
+    what this machine saw a while ago. A path that cannot be opened (a folder on
+    some systems, no read permission) falls back to ``os.stat``."""
+    try:
+        handle = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+    except OSError:
+        return os.stat(path)
+    try:
+        return os.fstat(handle)
+    finally:
+        os.close(handle)
+
+
 def _stat(path: str) -> tuple[int, int] | None:
     try:
-        stat = os.stat(path)
+        stat = _fresh(path)
     except OSError:
         return None
     return (stat.st_size, stat.st_mtime_ns)
@@ -101,7 +167,7 @@ def is_bp(path: str, reader: str | None = None) -> bool:
 
 def _size(path: str) -> int:
     try:
-        return os.path.getsize(path)
+        return _fresh(path).st_size
     except OSError:
         return -1
 
@@ -255,7 +321,11 @@ def source_readiness(
 
 
 def dispatch(op: str, args: dict[str, Any]) -> Any:
-    """Run one of these functions by name, with a JSON-friendly result."""
+    """Run one of these functions by name, with a JSON-friendly result, after
+    listing the folders on the way to its path (see ``refresh``)."""
+    if op == "refresh":
+        return refresh(args["path"])
+    refresh_for(op, args)
     if op == "expand":
         return expand(args["path"])
     if op == "disk_key":
