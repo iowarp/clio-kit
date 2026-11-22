@@ -6,6 +6,7 @@ import base64
 import os
 import tempfile
 import time
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
@@ -104,9 +105,28 @@ class SceneReading:
         end: int | None = None,
         stride: int = 1,
     ) -> dict[str, Any]:
-        """Statistics of ``field`` at each time step from ``start`` to ``end``. The view
-        stays on its own step: the time is moved only while measuring."""
-        scene = self.require_scene()
+        """Statistics of ``field`` at each time step from ``start`` to ``end``."""
+        steps = self.measuring_over_time(field, object, component, start, end, stride)
+        while True:
+            try:
+                next(steps)
+            except StopIteration as done:
+                return done.value
+
+    def measuring_over_time(
+        self,
+        field: str,
+        object: str | None = None,
+        component: int | None = None,
+        start: int | None = None,
+        end: int | None = None,
+        stride: int = 1,
+    ) -> Generator[int, None, dict[str, Any]]:
+        """measure_over_time one step at a time: yields each step's index once it is
+        measured, so the node half can go on answering and following between steps,
+        and returns the series. Each step is measured at its own time; the view stays
+        on its step throughout."""
+        self.require_scene()
         item = self._carrier(field, object)
         proxy = self.proxies[item["id"]]
         steps: list[float | None] = list(self.timesteps()) or [None]
@@ -114,17 +134,14 @@ class SceneReading:
         first = max(0, min(int(start or 0), last))
         final = last if end is None else max(first, min(int(end), last))
         picked = list(range(first, final + 1, max(1, int(stride))))[-MAX_SERIES:]
-        animation = self.simple.GetAnimationScene()
         series = []
-        try:
-            for index in picked:
-                if steps[index] is not None:
-                    animation.AnimationTime = steps[index]
-                stats = data.measure(proxy, field, 1, component)
-                stats.pop("histogram", None)
-                series.append({"index": index, "time": steps[index], **stats})
-        finally:
-            self._apply_time(scene)
+        for index in picked:
+            stats = data.measure(
+                proxy, field, 1, component, time=steps[index], histogram=False
+            )
+            stats.pop("histogram", None)
+            series.append({"index": index, "time": steps[index], **stats})
+            yield index
         head = series[0] if series else {}
         return {
             "object": item["id"],

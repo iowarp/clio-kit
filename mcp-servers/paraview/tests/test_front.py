@@ -34,6 +34,7 @@ EXPECTED_TOOLS = {
     "scene_state",
     "watch_steps",
     "measure_over_time",
+    "view_status",
 }
 
 
@@ -42,9 +43,39 @@ async def test_tools_list_without_paraview() -> None:
         tools = {tool.name: tool for tool in await client.list_tools()}
     assert set(tools) == EXPECTED_TOOLS
     assert tools["open_view"].meta["ui"]["resourceUri"] == "ui://paraview/view"
-    # Only the opening call carries the view.
-    assert all("ui" not in (t.meta or {}) for n, t in tools.items() if n != "open_view")
+    # Only the opening call carries the view; the view's own check is for it alone.
+    assert tools["view_status"].meta["ui"] == {"visibility": ["app"]}
+    assert all(
+        "ui" not in (t.meta or {})
+        for n, t in tools.items()
+        if n not in ("open_view", "view_status")
+    )
     assert not any("connect" in name for name in tools)
+
+
+async def test_a_view_that_cannot_reach_paraview_learns_why(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The view asks view_status; a node half whose pvserver went says why."""
+
+    class Gone:
+        def status(self) -> dict[str, str]:
+            return {"state": "lost", "code": "pvserver_lost", "text": "It stopped."}
+
+    monkeypatch.setattr(server_module, "_attachers", {"": Gone()})
+    async with Client(mcp) as client:
+        result = await client.call_tool("view_status", {"scene": "s1"})
+        none = await client.call_tool("view_status", {})
+    assert result.structured_content == {
+        "state": "lost",
+        "code": "pvserver_lost",
+        "text": "It stopped.",
+    }
+    assert none.structured_content["state"] == "lost"
+    monkeypatch.setattr(server_module, "_attachers", {})
+    async with Client(mcp) as client:
+        closed = await client.call_tool("view_status", {})
+    assert closed.structured_content["state"] == "closed"
 
 
 async def test_path_arguments_are_declared_where_paraview_runs() -> None:
@@ -87,6 +118,9 @@ async def test_view_resource_is_an_mcp_app() -> None:
     # Context reports are throttled to ten a second.
     assert "100 - (Date.now() - lastSent)" in html
     assert "127.0.0.1" not in html and "localhost" not in html
+    # A page that never reaches ParaView asks the server why, and says so.
+    assert "name: 'view_status'" in html
+    assert "Not drawn yet" in html
 
 
 def test_settings_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:

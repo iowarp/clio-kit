@@ -495,6 +495,40 @@ class Attacher:
         with self.lock:
             self._drop()
 
+    def status(self) -> dict[str, Any]:
+        """Whether the linked node half runs, without waiting on it.
+
+        For a live view that cannot reach ParaView: ``running`` (it answers),
+        ``busy`` (it holds its loop, or a start or check is under way), ``lost``
+        (it went, with why) or ``closed`` (no node half was linked).
+        """
+        if not self.lock.acquire(blocking=False):
+            return {"state": "busy", "text": "ParaView is starting or busy."}
+        try:
+            link = self.link
+            if link is None:
+                return {"state": "closed", "text": "No ParaView node half is open."}
+            try:
+                link.client.health()
+                return {"state": "running", "text": "ParaView answers."}
+            except LinkError as exc:
+                if exc.busy:
+                    return {
+                        "state": "busy",
+                        "text": "ParaView is busy with a long step, such as a "
+                        "render or a measurement.",
+                    }
+            if link.transport.alive():
+                try:
+                    gone = self._gone(link.transport, link.folder, link.slot)
+                except ParaViewError as exc:
+                    gone = exc
+            else:
+                gone = gone_error("", "", link.transport.where, self.scene)
+            return {"state": "lost", "code": gone.code, "text": gone.message}
+        finally:
+            self.lock.release()
+
     def describe(self) -> dict[str, Any]:
         target = self.settings.target
         link = self.link
@@ -619,7 +653,10 @@ class Attacher:
             # A node half joins one pvserver for its life; another one needs a new node.
             node_hash += "+pv=" + settings.pvserver
         link = None
-        if node is not None and self._matches(node, node_hash):
+        if node is not None and node.get("code_hash") == node_hash:
+            # Another front with other knobs (one a connector change superseded,
+            # say) may still show views through it: share it rather than stop it.
+            # Its knobs hold until it ends; the next node half takes these.
             link = self._try_link(transport, folder, node, pvpython, env)
         if link is None and not opening and self.had_link:
             if node is not None and self._matches(node, node_hash):

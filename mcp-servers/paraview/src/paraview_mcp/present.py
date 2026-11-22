@@ -190,10 +190,17 @@ def measure_text(result: dict[str, Any]) -> str:
         f"[{_num(lo)}, {_num(hi)}): {count}"
         for lo, hi, count in zip(hist["edges"][:-1], hist["edges"][1:], hist["counts"])
     )
+    if result.get("median") is not None:
+        median = f"median {_num(result['median'])}"
+    elif result.get("median_between"):
+        low, high = result["median_between"]
+        median = f"median in [{_num(low)}, {_num(high)}) ({result.get('median_note', '')})"
+    else:
+        median = "median not known"
     return (
         f"{head}: {result['finite']} finite of {result['count']} values; "
         f"min {_num(result['min'])}, max {_num(result['max'])}, mean "
-        f"{_num(result['mean'])}, median {_num(result['median'])}, std "
+        f"{_num(result['mean'])}, {median}, std "
         f"{_num(result['std'])}.\nHistogram: {bins}."
     )
 

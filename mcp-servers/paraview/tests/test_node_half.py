@@ -188,6 +188,25 @@ def test_open_measure_and_rollback(attached: tuple[Attacher, Path]) -> None:
     assert isinstance(client.command("scene_state", {})["view"]["frame_seconds"], float)
 
 
+def test_a_second_front_shares_the_node_half(attached: tuple[Attacher, Path]) -> None:
+    """A connector change can leave the superseded server running beside the new
+    one while its view is open: the new front, even with other knobs, links to the
+    same node half instead of stopping it, so the open view keeps drawing."""
+    attacher, data = attached
+    first = attacher.ensure(opening=True)
+    opened = first.client.command("open_view", {"path": str(data / "cube.vti")})
+    other = Attacher(Settings(target=Target(), start_stall=600, idle_seconds=999))
+    try:
+        second = other.ensure(opening=True)
+        assert second.node["pid"] == first.node["pid"]
+        assert second.client.command("scene_state", {})["scene"] == opened["scene"]
+    finally:
+        other.close()
+    again = attacher.ensure()
+    assert again.node["pid"] == first.node["pid"]
+    assert again.client.command("scene_state", {})["scene"] == opened["scene"]
+
+
 def test_a_rectilinear_grid_is_measured_whole(attached: tuple[Attacher, Path]) -> None:
     attacher, data = attached
     client = attacher.ensure().client
@@ -737,6 +756,92 @@ def test_a_pvserver_that_goes_stops_the_view(tmp_path: Path) -> None:
             attacher.ensure()
         assert caught.value.code == "pvserver_lost"
         assert f"open_view(scene={opened['scene']!r})" in caught.value.message
+    finally:
+        attacher.close()
+        if served.poll() is None:
+            served.kill()
+        for key, value in saved.items():
+            if value is not None:
+                os.environ[key] = value
+
+
+def test_a_pvserver_measures_on_its_ranks(tmp_path: Path) -> None:
+    """Measuring through a pvserver brings back a row per rank, never the dataset:
+    the numbers are the whole field's, every step is measured at its own time while
+    the view stays put, and the view's own check tells running from gone.
+
+    ``PARAVIEW_TEST_MPIEXEC`` (for example ``mpiexec -launcher fork``) runs the
+    pvserver on two ranks, so the ranks' parts are joined too."""
+    import shlex
+    import subprocess
+
+    pvserver = os.environ.get("PARAVIEW_TEST_PVSERVER")
+    if not pvserver:
+        pytest.skip("set PARAVIEW_TEST_PVSERVER to a pvserver of the same ParaView")
+    mpiexec = shlex.split(os.environ.get("PARAVIEW_TEST_MPIEXEC", ""))
+    ranks = 2 if mpiexec else 1
+    home = _home(tmp_path)
+    for index in range(3):
+        write_vti(tmp_path / f"step_{index}.vti", shift=100.0 * index, n=12)
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    launch = [*mpiexec, "-n", "2"] if mpiexec else []
+    served = subprocess.Popen(
+        [*launch, pvserver, f"--server-port={port}", "--force-offscreen-rendering"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    saved = {k: os.environ.get(k) for k in ("HOME", "PATH")}
+    os.environ["HOME"] = str(home)
+    assert PVPYTHON is not None
+    os.environ["PATH"] = f"{Path(PVPYTHON).parent}:{os.environ['PATH']}"
+    address = f"127.0.0.1:{port}"
+    attacher = Attacher(Settings(target=Target(), pvserver=address, start_stall=600))
+    try:
+        listening = f":{port:04X} 00000000:0000 0A"
+        deadline = time.monotonic() + 120
+        while listening not in Path("/proc/net/tcp").read_text():
+            assert time.monotonic() < deadline and served.poll() is None
+            time.sleep(0.5)
+        assert attacher.status()["state"] == "closed"
+        client = attacher.ensure(opening=True).client
+        client.command("open_view", {"path": str(tmp_path / "step_*.vti")})
+        assert attacher.status()["state"] == "running"
+        measured = client.command("measure_field", {"field": "p", "bins": 3})
+        assert (measured["count"], measured["finite"]) == (1728, 1728)
+        assert (measured["min"], measured["max"]) == (0.0, 33.0)
+        assert measured["mean"] == pytest.approx(16.5)
+        values = [x + y + z for z in range(12) for y in range(12) for x in range(12)]
+        spread = (sum((v - 16.5) ** 2 for v in values) / len(values)) ** 0.5
+        assert measured["std"] == pytest.approx(spread)
+        assert measured["histogram"]["edges"] == pytest.approx([0.0, 11.0, 22.0, 33.0])
+        counts = [sum(1 for v in values if lo <= v < lo + 11) for lo in (0, 11)]
+        assert measured["histogram"]["counts"] == [*counts, 1728 - sum(counts)]
+        if ranks == 1:
+            assert measured["median"] == 16.5
+        else:
+            assert measured["median"] is None
+            low, high = measured["median_between"]
+            assert low <= 16.5 <= high
+        probed = client.command("inspect_selection", {"position": [1, 2, 3]})
+        assert probed["selection"]["point_values"]["p"] == 6.0
+        before = client.command("scene_state", {})["time"]["index"]
+        series = client.command("measure_over_time", {"field": "p"})
+        assert [row["mean"] for row in series["series"]] == pytest.approx(
+            [16.5, 116.5, 216.5]
+        )
+        assert [row["max"] for row in series["series"]] == [33.0, 133.0, 233.0]
+        assert all(row["count"] == 1728 for row in series["series"])
+        # The view stayed on its step; only the measurement moved through time.
+        assert client.command("scene_state", {})["time"]["index"] == before
+        served.kill()
+        served.wait()
+        deadline = time.monotonic() + 120
+        while attacher.status()["state"] != "lost":
+            assert time.monotonic() < deadline
+            time.sleep(1)
+        assert "pvserver" in attacher.status()["text"]
     finally:
         attacher.close()
         if served.poll() is None:

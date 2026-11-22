@@ -123,9 +123,60 @@
     // trame connects its WebSocket beside its page, under the same route.
     const page = new URL('index.html', base);
     page.search = base.search;
-    statusBox.hidden = true;
+    if (!waiting) statusBox.hidden = true;
     frame.hidden = false;
     frame.src = page.href;
+    clearTimeout(checkTimer);
+    checkTimer = setTimeout(() => { if (!linkUp) checkParaView(); }, LINK_WAIT_MS);
+  }
+
+  // ParaView stopped for good: say why, stop reconnecting, and tell the host.
+  function stopView(text) {
+    stopped = text;
+    clearTimeout(retryTimer);
+    clearTimeout(checkTimer);
+    retryTimer = null;
+    frame.hidden = true;
+    showStatus(stopped);
+    sentText = stopped;
+    request('ui/update-model-context', {
+      content: [{ type: 'text', text: 'The ParaView view stopped and shows nothing now. ' + stopped }],
+      structuredContent: Object.assign(latest ? structured(latest) : {}, { stopped }),
+    }).catch(() => {});
+  }
+
+  // A page that has not reached ParaView draws nothing and reports nothing, so the
+  // view asks the server why, shows it, and tells the host the view is not drawn.
+  const LINK_WAIT_MS = 20000;
+  let checkTimer = null;
+  let checking = false;
+  let waiting = '';
+  function checkParaView() {
+    if (checking || stopped || linkUp) return;
+    checking = true;
+    const scene = opened && opened.structuredContent ? opened.structuredContent.scene : undefined;
+    request('tools/call', { name: 'view_status', arguments: scene ? { scene } : {} })
+      .then((result) => {
+        if (stopped || linkUp) return;
+        const status = (result && result.structuredContent) || {};
+        const text = String(status.text || '');
+        if (status.state === 'lost') { stopView(text); return; }
+        const shown = 'Not drawn yet: this view has not reached ParaView. ' + text
+          + (status.state === 'closed' ? '' : ' Still trying.');
+        if (shown !== waiting) {
+          waiting = shown;
+          sentText = shown;
+          request('ui/update-model-context', {
+            content: [{ type: 'text', text: 'The ParaView view shows nothing yet. ' + shown }],
+            structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: false, waiting: status.state }),
+          }).catch(() => {});
+        }
+        showStatus(shown, true);
+        clearTimeout(checkTimer);
+        checkTimer = setTimeout(() => { if (!linkUp) checkParaView(); }, LINK_WAIT_MS);
+      })
+      .catch(() => {})
+      .finally(() => { checking = false; });
   }
 
   function describe(state) {
@@ -243,21 +294,12 @@
         sentText = '';
         schedule();
       } else if (data.type === 'clio.paraview.lost' && data.text) {
-        // ParaView stopped for good: say why, stop reconnecting, and tell the host.
-        stopped = String(data.text);
-        clearTimeout(retryTimer);
-        retryTimer = null;
-        frame.hidden = true;
-        showStatus(stopped);
-        sentText = stopped;
-        request('ui/update-model-context', {
-          content: [{ type: 'text', text: 'The ParaView view stopped and shows nothing now. ' + stopped }],
-          structuredContent: Object.assign(latest ? structured(latest) : {}, { stopped }),
-        }).catch(() => {});
+        stopView(String(data.text));
       } else if (data.type === 'clio.paraview.link') {
         if (stopped) return;
         if (data.up) {
           linkUp = true;
+          waiting = '';
           statusBox.hidden = true;
           retries = 0;
           clearTimeout(retryTimer);
@@ -266,6 +308,7 @@
           linkUp = false;
           showStatus('Lost the link to ParaView. The scene is kept there; reconnecting.', true);
           scheduleReconnect();
+          checkParaView();
         }
       }
       return;
@@ -290,7 +333,7 @@
         hostContext = Object.assign({}, hostContext, data.params || {});
         sendTheme();
         const url = serviceFrom(data.params);
-        if (url && url !== serviceUrl) { serviceUrl = url; stopped = ''; loadFrame(); }
+        if (url && url !== serviceUrl) { serviceUrl = url; stopped = ''; waiting = ''; loadFrame(); }
         break;
       }
       case 'ui/resource-teardown':

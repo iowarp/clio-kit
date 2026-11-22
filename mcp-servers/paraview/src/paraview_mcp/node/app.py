@@ -368,8 +368,11 @@ class NodeApp:
             )
         try:
             await self._await_source(name, args)
-            with self.server.state:
-                result = self.engine.run(name, args, by=by)
+            if name == "measure_over_time":
+                result = await self._measure_series(args)
+            else:
+                with self.server.state:
+                    result = self.engine.run(name, args, by=by)
         except CommandError as exc:
             return self._json(
                 {"error": {"code": exc.code, "message": exc.message}}, 422
@@ -399,6 +402,24 @@ class NodeApp:
         if name in ("capture", "open_view") and isinstance(result, dict):
             result["shown"] = self.shown()
         return self._json({"result": result})
+
+    async def _measure_series(self, args: dict[str, Any]) -> dict[str, Any]:
+        """measure_over_time a step at a time, giving the loop back between steps: a
+        long series must not hold up the view's follow, its step reports or health."""
+        engine = self.engine
+        with self.server.state:
+            steps = engine.series(args)
+        while True:
+            if self.lost:
+                raise CommandError(
+                    "pvserver_lost",
+                    f"This ParaView view stopped while measuring: {self.lost}.",
+                )
+            with self.server.state:
+                result = engine.advance(steps)
+            if result is not None:
+                return result
+            await asyncio.sleep(0)
 
     async def _await_source(self, name: str, args: dict[str, Any]) -> None:
         """Before a growing source is opened, wait until it can be read: until it is

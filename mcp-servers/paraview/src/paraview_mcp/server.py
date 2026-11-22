@@ -687,6 +687,26 @@ def scene_state() -> ToolResult:
     )
 
 
+@mcp.tool(
+    app=AppConfig(visibility=["app"]),
+    annotations={"title": "Check the live view's ParaView", "readOnlyHint": True},
+)
+def view_status(
+    scene: Annotated[
+        str | None, Field(description="The scene id the view shows.")
+    ] = None,
+) -> ToolResult:
+    """For the live view: whether the ParaView behind it still runs, and if it went,
+    why. A view whose page cannot reach ParaView asks this, so it shows the reason
+    instead of drawing nothing."""
+    key = _scene_keys.get(scene or "", _current)
+    status = _attachers[key].status() if key in _attachers else {
+        "state": "closed",
+        "text": "No ParaView node half is open.",
+    }
+    return ToolResult(content=[_text(status["text"])], structured_content=status)
+
+
 @mcp.resource(
     VIEW_URI,
     name="paraview_view",

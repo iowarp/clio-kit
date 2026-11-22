@@ -146,6 +146,19 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         except (AttributeError, ValueError, RuntimeError) as exc:
             raise CommandError("paraview_error", f"ParaView refused it: {exc}") from exc
 
+    def series(self, args: dict[str, Any]) -> Any:
+        """measure_over_time as steps for ``advance``; bad arguments are reported now,
+        the scene and field at the first step."""
+        return self._guard(self.measuring_over_time, args)
+
+    def advance(self, steps: Any) -> dict[str, Any] | None:
+        """Measure one more step of ``series``: its result once done, else None."""
+        try:
+            self._guard(lambda: next(steps), {})
+        except StopIteration as done:
+            return done.value
+        return None
+
     def commit(self, reason: str) -> None:
         """Write the manifest and tell the view that the scene changed."""
         if self.scene is None:
