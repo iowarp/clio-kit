@@ -38,3 +38,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/copernicus_kit_mcp"]
+
+[tool.ruff]
+# Keep ruff's own default rules for this server. Without a [tool.ruff] table
+# here, ruff would apply the launcher's lint selection from the repository root.
