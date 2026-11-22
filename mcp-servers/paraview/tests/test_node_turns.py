@@ -48,7 +48,7 @@ def test_a_command_counts_as_waiting_until_its_work_starts() -> None:
     node = _node(types.SimpleNamespace())
     seen: list[int] = []
 
-    async def run(request: Any, started: Any) -> str:
+    async def run(body: Any, started: Any) -> str:
         seen.append(node.waiting)
         started()
         seen.append(node.waiting)
@@ -57,15 +57,15 @@ def test_a_command_counts_as_waiting_until_its_work_starts() -> None:
         return "done"
 
     node._run_command = run
-    assert asyncio.run(node._command(None)) == "done"
+    assert asyncio.run(node._execute({})) == "done"
     assert seen == [1, 0, 0] and node.waiting == 0
 
-    async def fails(request: Any, started: Any) -> str:
+    async def fails(body: Any, started: Any) -> str:
         raise RuntimeError("bad")
 
     node._run_command = fails
     try:
-        asyncio.run(node._command(None))
+        asyncio.run(node._execute({}))
     except RuntimeError:
         pass
     assert node.waiting == 0
