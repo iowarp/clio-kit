@@ -194,7 +194,9 @@ def measure_text(result: dict[str, Any]) -> str:
         median = f"median {_num(result['median'])}"
     elif result.get("median_between"):
         low, high = result["median_between"]
-        median = f"median in [{_num(low)}, {_num(high)}) ({result.get('median_note', '')})"
+        median = (
+            f"median in [{_num(low)}, {_num(high)}) ({result.get('median_note', '')})"
+        )
     else:
         median = "median not known"
     return (

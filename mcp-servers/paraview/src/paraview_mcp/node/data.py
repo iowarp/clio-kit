@@ -175,9 +175,11 @@ def _fetch(proxy: Any, time: float | None, helper: str) -> Any:
 
 # Runs on every pvserver rank inside a ProgrammableFilter, so a remote measure or probe
 # moves a point or two per rank over the link instead of every array of every cell.
+# A pvserver's Python may have no numpy, so it uses only the standard library: the
+# arrays are read through VTK's buffer protocol, and the sums, extremes and sort run
+# in C.
 _RANK_SCRIPT = r"""
-import numpy
-from vtkmodules.util.numpy_support import vtk_to_numpy
+import math
 from vtkmodules.vtkCommonCore import vtkDoubleArray, vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkCellArray
 
@@ -218,57 +220,92 @@ if MODE == "stats":
             and info is not None and info.Has(key)):
         whole = [int(v) for v in info.Get(key)]
 
-    def owned(d, size):
-        if whole is None or not hasattr(d, "GetExtent"):
-            return None
-        extent = list(d.GetExtent())
-        axes = []
-        for axis in range(3):
-            low, high = extent[2 * axis], extent[2 * axis + 1]
-            keep = numpy.ones(high - low + 1, dtype=bool)
-            if high < whole[2 * axis + 1] and keep.size > 1:
-                keep[-1] = False
-            axes.append(keep)
-        mask = (axes[2][:, None, None] & axes[1][None, :, None]
-                & axes[0][None, None, :]).reshape(-1)
-        return mask if mask.size == size else None
+    def flat(array):
+        # The array's numbers in order, read in place where VTK allows it.
+        width = array.GetNumberOfComponents()
+        size = array.GetNumberOfTuples() * width
+        try:
+            view = memoryview(array)
+            code = view.format.lstrip("@=<>!")
+            if len(code) == 1 and view.nbytes == size * view.itemsize:
+                return view.cast("B").cast(code)
+        except (TypeError, ValueError):
+            pass
+        return [array.GetComponent(i // width, i % width) for i in range(size)]
 
-    chunks = []
+    def scalars(array):
+        width = array.GetNumberOfComponents()
+        numbers = flat(array)
+        if width == 1:
+            return numbers
+        if COMPONENT is not None:
+            return numbers[COMPONENT::width]
+        return [math.hypot(*numbers[i:i + width])
+                for i in range(0, len(numbers), width)]
+
+    def owned(d, values):
+        if whole is None or not hasattr(d, "GetExtent"):
+            return values
+        extent = list(d.GetExtent())
+        sizes = [extent[2 * a + 1] - extent[2 * a] + 1 for a in range(3)]
+        if sizes[0] * sizes[1] * sizes[2] != len(values):
+            return values
+        keep = [size - 1 if extent[2 * a + 1] < whole[2 * a + 1] and size > 1
+                else size for a, size in enumerate(sizes)]
+        if keep == sizes:
+            return values
+        out = []
+        for k in range(keep[2]):
+            for j in range(keep[1]):
+                start = sizes[0] * (j + sizes[1] * k)
+                out.extend(values[start:start + keep[0]])
+        return out
+
+    count = 0
+    finite = []
     for d in leaves:
         attributes = d.GetPointData() if ASSOC == "POINTS" else d.GetCellData()
         array = attributes.GetArray(FIELD)
         if array is None:
             continue
-        values = vtk_to_numpy(array).astype("float64")
-        if values.ndim == 2:
-            values = (numpy.linalg.norm(values, axis=1) if COMPONENT is None
-                      else values[:, COMPONENT])
-        keep = owned(d, values.shape[0])
+        values = owned(d, scalars(array))
         ghosts = attributes.GetArray("vtkGhostType")
         if ghosts is not None:
-            unghosted = (vtk_to_numpy(ghosts) & 1) == 0
-            keep = unghosted if keep is None else keep & unghosted
-        if keep is not None:
-            values = values[keep]
-        chunks.append(values)
-    values = numpy.concatenate(chunks) if chunks else numpy.zeros(0)
-    finite = values[numpy.isfinite(values)]
+            marks = owned(d, flat(ghosts))
+            values = [v for v, mark in zip(values, marks) if not int(mark) & 1]
+        count += len(values)
+        # v - v is 0 for a finite number and NaN for NaN or an infinity.
+        finite.extend([float(v) for v in values if v - v == 0])
+    finite.sort()
+    held = len(finite)
     nan = float("nan")
-    mean = float(finite.mean()) if finite.size else nan
+    mean = math.fsum(finite) / held if held else nan
+    middle = held // 2
     row = {
-        "count": float(values.size),
-        "finite": float(finite.size),
+        "count": float(count),
+        "finite": float(held),
         "mean": mean,
-        "m2": float(((finite - mean) ** 2).sum()) if finite.size else 0.0,
-        "min": float(finite.min()) if finite.size else nan,
-        "max": float(finite.max()) if finite.size else nan,
-        "median": float(numpy.median(finite)) if finite.size else nan,
+        "m2": math.fsum([(v - mean) ** 2 for v in finite]) if held else 0.0,
+        "min": finite[0] if held else nan,
+        "max": finite[-1] if held else nan,
+        "median": (finite[middle] if held % 2 else
+                   (finite[middle - 1] + finite[middle]) / 2.0) if held else nan,
     }
     for name, value in row.items():
         column(name).InsertNextValue(value)
-    counts = (numpy.histogram(finite, bins=BINS,
-                              range=None if LOW is None else (LOW, HIGH))[0]
-              if finite.size else numpy.zeros(BINS))
+    counts = [0] * BINS
+    if held:
+        from bisect import bisect_left, bisect_right
+
+        # numpy.histogram's bins, counted on the sorted values: each is closed below,
+        # the last one above too, and an empty range widens by a half on each side.
+        low, high = (finite[0], finite[-1]) if LOW is None else (LOW, HIGH)
+        if low == high:
+            low, high = low - 0.5, high + 0.5
+        edges = [low + (high - low) * i / BINS for i in range(BINS)] + [high]
+        marks = [bisect_left(finite, e) for e in edges[:-1]]
+        marks.append(bisect_right(finite, high))
+        counts = [marks[i + 1] - marks[i] for i in range(BINS)]
     column("histogram", BINS).InsertNextTuple([float(c) for c in counts])
     points.InsertNextPoint(0.0, 0.0, 0.0)
 else:
@@ -407,7 +444,9 @@ def _empty(
 
 
 def combine(
-    rows: list[dict[str, Any]], bins: int, histograms: list[dict[str, Any]] | None = None
+    rows: list[dict[str, Any]],
+    bins: int,
+    histograms: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Join the pvserver ranks' partial statistics into the whole field's.
 
@@ -465,7 +504,7 @@ def combine(
         )
     out["histogram"] = {
         "edges": [float(e) for e in edges],
-        "counts": [int(round(c)) for c in counts],
+        "counts": [round(c) for c in counts],
     }
     return out
 
@@ -526,14 +565,14 @@ def measure(
     """Exact statistics and a histogram of ``field`` on ``proxy`` at ``time`` (the
     view's, by default). The view itself is not moved. Without ``histogram``, a
     pvserver whose ranks split the field skips the pass that bins them alike."""
-    import numpy
-
     association = find_association(proxy, field)
     bins = max(1, min(int(bins), 256))
     if _remote():
         return _measure_remote(
             proxy, field, association, bins, component, time, histogram
         )
+    import numpy
+
     values = _values(proxy, field, association, component, time)
     finite = values[numpy.isfinite(values)]
     if finite.size == 0:

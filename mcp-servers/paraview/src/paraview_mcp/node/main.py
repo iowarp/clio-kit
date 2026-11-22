@@ -58,7 +58,7 @@ def network_namespace() -> str:
 def _try_lock(handle: Any) -> bool:
     """Take ``handle``'s lock without waiting; False when another process holds it."""
     try:
-        if os.name == "nt":
+        if sys.platform == "win32":
             import msvcrt
 
             handle.seek(0)

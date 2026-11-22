@@ -9,11 +9,14 @@ to link instead.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import shutil
+import signal
 import socket
 import stat
+import subprocess
 import time
 import urllib.error
 import urllib.request
@@ -765,6 +768,25 @@ def test_a_pvserver_that_goes_stops_the_view(tmp_path: Path) -> None:
                 os.environ[key] = value
 
 
+def _kill_serving(served: subprocess.Popen[bytes], port: int) -> None:
+    """Kill a test pvserver and every rank of it: mpiexec's ranks may leave its
+    process group, so each process serving ``port`` is found by its command line."""
+    with contextlib.suppress(ProcessLookupError):
+        served.kill()
+    marker = f"--server-port={port}".encode()
+    for entry in Path("/proc").iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            line = (entry / "cmdline").read_bytes()
+        except OSError:
+            continue
+        if marker in line and b"pvserver" in line:
+            with contextlib.suppress(ProcessLookupError):
+                os.kill(int(entry.name), signal.SIGKILL)
+    served.wait()
+
+
 def test_a_pvserver_measures_on_its_ranks(tmp_path: Path) -> None:
     """Measuring through a pvserver brings back a row per rank, never the dataset:
     the numbers are the whole field's, every step is measured at its own time while
@@ -790,7 +812,8 @@ def test_a_pvserver_measures_on_its_ranks(tmp_path: Path) -> None:
     served = subprocess.Popen(
         [*launch, pvserver, f"--server-port={port}", "--force-offscreen-rendering"],
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        # What a script on the ranks printed is read here when the test fails.
+        stderr=(tmp_path / "pvserver.log").open("w"),
     )
     saved = {k: os.environ.get(k) for k in ("HOME", "PATH")}
     os.environ["HOME"] = str(home)
@@ -808,25 +831,29 @@ def test_a_pvserver_measures_on_its_ranks(tmp_path: Path) -> None:
         client = attacher.ensure(opening=True).client
         client.command("open_view", {"path": str(tmp_path / "step_*.vti")})
         assert attacher.status()["state"] == "running"
+        # The view follows the latest step, so a measurement there sees its shift.
+        before = client.command("scene_state", {})["time"]["index"]
+        shift = 100.0 * before
         measured = client.command("measure_field", {"field": "p", "bins": 3})
         assert (measured["count"], measured["finite"]) == (1728, 1728)
-        assert (measured["min"], measured["max"]) == (0.0, 33.0)
-        assert measured["mean"] == pytest.approx(16.5)
+        assert (measured["min"], measured["max"]) == (shift, shift + 33.0)
+        assert measured["mean"] == pytest.approx(shift + 16.5)
         values = [x + y + z for z in range(12) for y in range(12) for x in range(12)]
         spread = (sum((v - 16.5) ** 2 for v in values) / len(values)) ** 0.5
         assert measured["std"] == pytest.approx(spread)
-        assert measured["histogram"]["edges"] == pytest.approx([0.0, 11.0, 22.0, 33.0])
+        assert measured["histogram"]["edges"] == pytest.approx(
+            [shift, shift + 11.0, shift + 22.0, shift + 33.0]
+        )
         counts = [sum(1 for v in values if lo <= v < lo + 11) for lo in (0, 11)]
         assert measured["histogram"]["counts"] == [*counts, 1728 - sum(counts)]
         if ranks == 1:
-            assert measured["median"] == 16.5
+            assert measured["median"] == shift + 16.5
         else:
             assert measured["median"] is None
             low, high = measured["median_between"]
-            assert low <= 16.5 <= high
+            assert low <= shift + 16.5 <= high
         probed = client.command("inspect_selection", {"position": [1, 2, 3]})
-        assert probed["selection"]["point_values"]["p"] == 6.0
-        before = client.command("scene_state", {})["time"]["index"]
+        assert probed["selection"]["point_values"]["p"] == shift + 6.0
         series = client.command("measure_over_time", {"field": "p"})
         assert [row["mean"] for row in series["series"]] == pytest.approx(
             [16.5, 116.5, 216.5]
@@ -835,17 +862,15 @@ def test_a_pvserver_measures_on_its_ranks(tmp_path: Path) -> None:
         assert all(row["count"] == 1728 for row in series["series"])
         # The view stayed on its step; only the measurement moved through time.
         assert client.command("scene_state", {})["time"]["index"] == before
-        served.kill()
-        served.wait()
+        _kill_serving(served, port)
         deadline = time.monotonic() + 120
         while attacher.status()["state"] != "lost":
-            assert time.monotonic() < deadline
+            assert time.monotonic() < deadline, attacher.status()
             time.sleep(1)
         assert "pvserver" in attacher.status()["text"]
     finally:
         attacher.close()
-        if served.poll() is None:
-            served.kill()
+        _kill_serving(served, port)
         for key, value in saved.items():
             if value is not None:
                 os.environ[key] = value

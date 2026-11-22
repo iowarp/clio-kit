@@ -700,10 +700,14 @@ def view_status(
     why. A view whose page cannot reach ParaView asks this, so it shows the reason
     instead of drawing nothing."""
     key = _scene_keys.get(scene or "", _current)
-    status = _attachers[key].status() if key in _attachers else {
-        "state": "closed",
-        "text": "No ParaView node half is open.",
-    }
+    status = (
+        _attachers[key].status()
+        if key in _attachers
+        else {
+            "state": "closed",
+            "text": "No ParaView node half is open.",
+        }
+    )
     return ToolResult(content=[_text(status["text"])], structured_content=status)
 
 

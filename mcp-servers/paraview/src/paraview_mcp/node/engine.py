@@ -136,7 +136,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         self.commit(name)
         return result
 
-    def _guard(self, handler: Callable[..., dict[str, Any]], args: dict[str, Any]):
+    def _guard(self, handler: Callable[..., Any], args: dict[str, Any]) -> Any:
         try:
             return handler(**args)
         except TypeError as exc:

@@ -58,7 +58,7 @@ def lock_free(folder: str, slot: str) -> bool:
     try:
         if not _try_lock(handle):
             return False
-        if os.name == "nt":
+        if sys.platform == "win32":
             import msvcrt
 
             # Let go at once, so the node half about to start can take it.
