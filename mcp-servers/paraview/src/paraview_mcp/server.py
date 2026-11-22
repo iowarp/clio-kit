@@ -398,7 +398,9 @@ async def run_scene_script(
     whole or not at all; a failing script leaves nothing behind. The step is saved with the
     scene and replayed when the scene is restored. Names are those of the ParaView that
     runs it: ParaView 6 colour presets drop " (matplotlib)" (either form works), and a
-    scalar bar's range labels are AddRangeLabels."""
+    scalar bar's range labels are AddRangeLabels. A field's colour range defaults to the
+    2nd to 98th percentile of the values shown, so extremes do not wash out the rest; a
+    range the script sets (RescaleTransferFunction, e.g. from measure_field) is kept."""
     result, _ = await run(ctx, "run_scene_script", {"code": code, "label": label})
     return present.script_text(result, _where())
 

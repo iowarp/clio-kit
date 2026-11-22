@@ -14,7 +14,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from . import colors, compat, data, manifest
+from . import colors, compat, data, manifest, ranges
 from .animation import SceneAnimation
 from .camera import CameraCommands
 from .changes import ChangeLog, describe
@@ -279,6 +279,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
             )
             if display["color_by"] and not display["color_by"][1]:
                 display["color_by"] = None
+            ranges.fit(self, item, proxy, rep)
             return
         rep.Representation = display.get("representation") or rep.Representation
         rep.Opacity = float(display.get("opacity", 1.0))
@@ -291,7 +292,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
                 if component is None
                 else (color_by[0], color_by[1], component),
             )
-            rep.RescaleTransferFunctionToDataRange(True, False)
+            ranges.fit(self, item, proxy, rep)
             if display.get("colormap"):
                 lut = simple.GetColorTransferFunction(color_by[1])
                 try:
@@ -735,7 +736,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
                 else [data.find_association(proxy, color_by), color_by]
             )
             if display["color_by"] != before:
-                display["color_range"] = None
+                display.update(color_range=None, auto_range=None, range_mode=None)
             if display["color_by"]:
                 display["solid_color"] = None
         if solid_color is not None:
@@ -756,9 +757,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
             colors.share(scene, display.get("color_by"), "scalar_bar", bool(scalar_bar))
         self._show(item, proxy, apply=True)
         if rescale and display.get("color_by"):
-            rep = self.simple.GetDisplayProperties(proxy, self.view)
-            rep.RescaleTransferFunctionToDataRange(False, True)
-            colors.share(scene, display.get("color_by"), "color_range", None)
+            ranges.full(self, item, proxy)
         if span is not None:
             colors.set_range(self.simple, scene, display.get("color_by"), span)
         self.update_view_mode()

@@ -27,6 +27,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from . import ranges
 from .datafs import LocalDisk
 from .disk import is_pattern, whole_steps, writing
 from .errors import CommandError
@@ -342,16 +343,7 @@ class SourceGrowth:
     def _grow_colours(self, scene: dict[str, Any]) -> None:
         """A colour map nobody fixed grows to take in each new step's values, as
         ParaView's own maps grow on Apply; a range set by hand stays where it is."""
-        self.view.Update()
-        for item in scene["objects"]:
-            shown = item.get("display") or {}
-            proxy = self.proxies.get(item["id"])
-            if proxy is None or not shown.get("color_by") or shown.get("color_range"):
-                continue
-            if shown.get("visible") is False:
-                continue
-            rep = self.simple.GetDisplayProperties(proxy, self.view)
-            rep.RescaleTransferFunctionToDataRange(True, False)
+        ranges.grow(self, scene)
 
     def _bp5_settled(self, item: dict[str, Any], key: Any) -> bool:
         """Whether a grown BP5 folder can be re-read: its files agree, and its data

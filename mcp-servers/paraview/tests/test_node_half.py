@@ -30,6 +30,7 @@ from paraview_mcp import config
 from paraview_mcp.attach import Attacher
 from paraview_mcp.config import Settings, Target
 from paraview_mcp.errors import ParaViewError
+from paraview_mcp.node import ranges
 
 PVPYTHON = os.environ.get("PARAVIEW_TEST_PVPYTHON") or shutil.which("pvpython")
 pytestmark = [
@@ -1046,6 +1047,23 @@ def test_a_pvserver_measures_on_its_ranks(tmp_path: Path) -> None:
         )
         assert [row["max"] for row in series["series"]] == [33.0, 133.0, 233.0]
         assert all(row["count"] == 1728 for row in series["series"])
+        # A field's default colour range is measured on the ranks too.
+        client.command(
+            "run_scene_script",
+            {
+                "code": "c = Calculator(Input=objects['o1'], ResultArrayName='q')\n"
+                "c.Function = 'p'\n"
+                "ColorBy(Show(c, view), ('POINTS', 'q'))\n",
+                "label": "colour",
+            },
+        )
+        coloured = client.command("scene_state", {})["objects"][-1]["display"]
+        ordered = sorted(v + shift for v in values)
+        expected = [ranges.percentile(ordered, p) for p in ranges.PERCENTILES]
+        assert coloured["auto_range"] == pytest.approx(
+            expected, abs=1e-9 if ranks == 1 else 0.1
+        )
+        assert coloured["data_range"] == [shift, shift + 33.0]
         # The view stayed on its step; only the measurement moved through time.
         assert client.command("scene_state", {})["time"]["index"] == before
         _kill_serving(served, port)
@@ -1114,6 +1132,23 @@ def _pvpython_script(name: str, *args: str, prefix: str = "COLORS=") -> dict:
     line = next((x for x in done.stdout.splitlines() if x.startswith(prefix)), None)
     assert line, done.stdout[-2000:] + done.stderr[-2000:]
     return json.loads(line.split("=", 1)[1])
+
+
+def test_a_fields_default_colour_range_represents_it(tmp_path: Path) -> None:
+    """A field that is a ramp from 0 to 1 but for a small body at 100 is coloured over
+    its 2nd to 98th percentile, not 0 to 100. A range a script sets is kept; one
+    ParaView picks in a script becomes the default; Rescale gives the whole range."""
+    got = _pvpython_script("robust_range_check.py", str(tmp_path), prefix="ROBUST=")
+    low, high = got["expected"]
+    assert high <= 1.0, got
+    assert got["default"] == pytest.approx(got["expected"], abs=1e-5), got
+    assert got["display"]["auto_range"] == pytest.approx([low, high], abs=1e-5)
+    assert got["display"]["data_range"] == [0.0, 100.0]
+    assert got["by_script"] == [0.0, 0.5] and got["kept"] == [0.0, 0.5]
+    assert got["script_colour"] == pytest.approx([low, high], abs=1e-5)
+    assert got["script_display"]["color_range"] is None
+    assert got["script_display"]["auto_range"] == pytest.approx([low, high], abs=1e-5)
+    assert got["rescaled"] == [0.0, 100.0] and got["rescaled_mode"] == "data"
 
 
 def test_colour_maps_survive_a_restart_and_do_not_leak(tmp_path: Path) -> None:

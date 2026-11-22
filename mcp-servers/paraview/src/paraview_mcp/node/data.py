@@ -214,6 +214,19 @@ def column(name, width=1):
 if MODE == "stats":
     from vtkmodules.vtkCommonExecutionModel import vtkStreamingDemandDrivenPipeline
 
+    try:
+        QUANTILES, SAMPLE
+    except NameError:
+        QUANTILES, SAMPLE = 0, 0
+    # A colour range reads at most SAMPLE values, evenly strided through the arrays.
+    stride = 1
+    if SAMPLE:
+        tuples = 0
+        for d in leaves:
+            attributes = d.GetPointData() if ASSOC == "POINTS" else d.GetCellData()
+            array = attributes.GetArray(FIELD)
+            tuples += array.GetNumberOfTuples() if array is not None else 0
+        stride = max(1, -(-tuples // SAMPLE))
     # A single structured dataset split over the ranks shares each boundary plane of
     # points between two pieces: the piece below owns it, unless it is the last.
     whole = None
@@ -240,11 +253,11 @@ if MODE == "stats":
         width = array.GetNumberOfComponents()
         numbers = flat(array)
         if width == 1:
-            return numbers
+            return numbers[::stride] if stride > 1 else numbers
         if COMPONENT is not None:
-            return numbers[COMPONENT::width]
+            return numbers[COMPONENT::width * stride]
         return [math.hypot(*numbers[i:i + width])
-                for i in range(0, len(numbers), width)]
+                for i in range(0, len(numbers), width * stride)]
 
     def owned(d, values):
         if whole is None or not hasattr(d, "GetExtent"):
@@ -271,9 +284,11 @@ if MODE == "stats":
         array = attributes.GetArray(FIELD)
         if array is None:
             continue
-        values = owned(d, scalars(array))
+        values = scalars(array)
         ghosts = attributes.GetArray("vtkGhostType")
-        if ghosts is not None:
+        if stride == 1:
+            values = owned(d, values)
+        if ghosts is not None and stride == 1:
             marks = owned(d, flat(ghosts))
             values = [v for v, mark in zip(values, marks) if not int(mark) & 1]
         count += len(values)
@@ -296,6 +311,16 @@ if MODE == "stats":
     }
     for name, value in row.items():
         column(name).InsertNextValue(value)
+    if QUANTILES:
+        # Evenly spaced order statistics, numpy's linear percentiles of this rank.
+        picks = [nan] * QUANTILES
+        for i in range(QUANTILES if held else 0):
+            at = i * (held - 1) / (QUANTILES - 1)
+            below = int(at)
+            above = min(below + 1, held - 1)
+            picks[i] = finite[below] + (finite[above] - finite[below]) * (at - below)
+        column("quantiles", QUANTILES).InsertNextTuple(picks)
+        column("stride").InsertNextValue(float(stride))
     counts = [0] * BINS
     if held:
         from bisect import bisect_left, bisect_right
