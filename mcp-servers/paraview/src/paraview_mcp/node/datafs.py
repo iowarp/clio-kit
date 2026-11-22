@@ -163,8 +163,12 @@ class ServerDisk(LocalDisk):
             )
             self._mover.OutputDataType = info.GetDataSetType()
             self._mover.WholeExtent = info.GetExtent()[:]
+        mover = self._mover.GetClientSideObject()
+        # The script changed on the server's side only: the mover's client half
+        # must run too, to take what the server half sends.
+        mover.Modified()
         self._mover.UpdatePipeline()
-        table = self._mover.GetClientSideObject().GetOutputDataObject(0)
+        table = mover.GetOutputDataObject(0)
         column = table.GetColumnByName("r") if table is not None else None
         if column is None or column.GetNumberOfValues() < 1:
             raise CommandError(

@@ -353,7 +353,8 @@ class _FakeServer:
 
             def GetClientSideObject(self) -> Any:
                 return types.SimpleNamespace(
-                    GetOutputDataObject=lambda p: self.input.table
+                    GetOutputDataObject=lambda p: self.input.table,
+                    Modified=lambda: None,
                 )
 
         core = types.ModuleType("vtkmodules.vtkCommonCore")
