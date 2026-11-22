@@ -3,7 +3,7 @@
   "name": "io.github.iowarp/paraview-mcp",
   "title": "CLIO Paraview",
   "description": "See and measure 3D scientific data in ParaView, on this machine or over SSH, in a live view.",
-  "version": "3.1.0",
+  "version": "3.3.0",
   "repository": {
     "url": "https://github.com/iowarp/clio-kit",
     "source": "github"
@@ -31,7 +31,7 @@
   "tools": [
     {
       "name": "open_view",
-      "description": "Open a dataset or restore a saved scene, and show it in a live ParaView view.\n\nWith neither path nor scene, it shows the ParaView session already running\nwhere ParaView is, or the current scene."
+      "description": "Open a dataset or restore a saved scene, and show it in a live ParaView view.\n\nWith neither path nor scene, it shows the ParaView session already running\nwhere ParaView is, or the current scene, or else an empty scene that\nrun_scene_script can fill with sources."
     },
     {
       "name": "run_scene_script",

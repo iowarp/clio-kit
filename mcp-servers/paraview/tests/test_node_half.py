@@ -9,11 +9,15 @@ to link instead.
 
 from __future__ import annotations
 
+import contextlib
+import itertools
 import json
 import os
 import shutil
+import signal
 import socket
 import stat
+import subprocess
 import time
 import urllib.error
 import urllib.request
@@ -105,7 +109,7 @@ def attached(
     assert PVPYTHON is not None
     os.environ["PATH"] = f"{Path(PVPYTHON).parent}:{os.environ['PATH']}"
     os.environ.setdefault("VTK_DEFAULT_OPENGL_WINDOW", "vtkOSOpenGLRenderWindow")
-    attacher = Attacher(Settings(target=Target(), start_timeout=600))
+    attacher = Attacher(Settings(target=Target(), start_stall=600))
     try:
         yield attacher, data
     finally:
@@ -186,6 +190,25 @@ def test_open_measure_and_rollback(attached: tuple[Attacher, Path]) -> None:
     # The capture was timed, and so were its frames, so a slow view can say so.
     assert isinstance(captured["seconds"], float)
     assert isinstance(client.command("scene_state", {})["view"]["frame_seconds"], float)
+
+
+def test_a_second_front_shares_the_node_half(attached: tuple[Attacher, Path]) -> None:
+    """A connector change can leave the superseded server running beside the new
+    one while its view is open: the new front, even with other knobs, links to the
+    same node half instead of stopping it, so the open view keeps drawing."""
+    attacher, data = attached
+    first = attacher.ensure(opening=True)
+    opened = first.client.command("open_view", {"path": str(data / "cube.vti")})
+    other = Attacher(Settings(target=Target(), start_stall=600, idle_seconds=999))
+    try:
+        second = other.ensure(opening=True)
+        assert second.node["pid"] == first.node["pid"]
+        assert second.client.command("scene_state", {})["scene"] == opened["scene"]
+    finally:
+        other.close()
+    again = attacher.ensure()
+    assert again.node["pid"] == first.node["pid"]
+    assert again.client.command("scene_state", {})["scene"] == opened["scene"]
 
 
 def test_a_rectilinear_grid_is_measured_whole(attached: tuple[Attacher, Path]) -> None:
@@ -304,6 +327,360 @@ def _wait_steps(client, steps: int) -> dict:
     raise AssertionError(f"the series never reached {steps} steps")
 
 
+def test_a_view_descriptor_names_the_reader_and_steps_report_growth(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """RL44: the descriptor's reader reads a growing series; ``steps`` re-reads its
+    time list at once, and a field is measured at every step afterwards."""
+    attacher, data = attached
+    client = attacher.ensure().client
+    series = data / "described"
+    series.mkdir()
+    for step in range(2):
+        write_vti(series / f"out_{step:03d}.vti", shift=step)
+    pattern = str(series / "out_*.vti")
+    with pytest.raises(ParaViewError) as caught:
+        client.command(
+            "open_view",
+            {"path": pattern, "reader": "XMLImageDataRaeder", "new": True},
+        )
+    assert caught.value.code == "unknown_reader"
+    assert "XMLImageDataReader" in str(caught.value)
+    opened = client.command(
+        "open_view",
+        {
+            "path": pattern,
+            "growing": True,
+            "new": True,
+            "format": "vti",
+            "reader": "XMLImageDataReader",
+            "reader_properties": {"PointArrayStatus": ["p"]},
+        },
+    )
+    assert opened["dataset"]["reader"] == "XMLImageDataReader"
+    assert opened["dataset"]["format"] == "vti"
+    assert opened["time"]["steps"] == 2
+    first = client.command("steps", {"after": 0})
+    assert [s["index"] for s in first["steps"]] == [0, 1]
+    assert all(s["seen"] for s in first["steps"]) and first["growing"]
+    write_vti(series / "out_002.vti", shift=2)
+    grown = client.command("steps", {"after": 2})
+    assert [s["index"] for s in grown["steps"]] == [2]
+    assert grown["time"]["index"] == 2 and grown["time"]["follow_latest"]
+    assert grown["last_growth"] is not None
+    client.command("set_timestep", {"index": 0})
+    write_vti(series / "out_003.vti", shift=3)
+    parked = client.command("steps", {"after": 3})
+    assert [s["index"] for s in parked["steps"]] == [3]
+    assert parked["time"]["index"] == 0 and parked["time"]["newer_steps"] == 3
+    measured = client.command("measure_over_time", {"field": "p"})
+    means = [round(row["mean"], 3) for row in measured["series"]]
+    assert means == [10.5, 11.5, 12.5, 13.5]
+    assert [row["index"] for row in measured["series"]] == [0, 1, 2, 3]
+    assert client.command("scene_state", {})["time"]["index"] == 0
+    strided = client.command(
+        "measure_over_time", {"field": "p", "start": 1, "stride": 2}
+    )
+    assert strided["series"] and [row["index"] for row in strided["series"]] == [1, 3]
+
+
+def test_a_long_measure_reports_its_steps_and_is_cancelled_on_the_node(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """A call has no time limit: the node runs it as a job, the front asks after it
+    and hears how many steps are measured, and a cancel stops it on the node, which
+    then serves the next call as before."""
+    import threading
+
+    attacher, data = attached
+    client = attacher.ensure().client
+    series = data / "long"
+    series.mkdir()
+    for step in range(30):
+        write_vti(series / f"out_{step:03d}.vti", shift=step)
+    client.command("open_view", {"path": str(series / "out_*.vti"), "new": True})
+    client.command("set_timestep", {"index": 4})
+    seen: list[dict] = []
+    measured = client.command(
+        "measure_over_time", {"field": "p"}, progress=seen.append, wait=0.01
+    )
+    assert len(measured["series"]) == 30
+    counts = [note["done"] for note in seen if "done" in note]
+    assert counts and counts == sorted(counts) and seen[0]["total"] == 30
+    stop = threading.Event()
+
+    def cancel_once_started(note: dict) -> None:
+        if note.get("done"):
+            stop.set()
+
+    with pytest.raises(ParaViewError) as caught:
+        client.command(
+            "measure_over_time",
+            {"field": "p"},
+            stop=stop,
+            progress=cancel_once_started,
+            wait=0.01,
+        )
+    assert caught.value.code == "cancelled"
+    # The cancelled measure put the view back on its step, and the node goes on.
+    assert client.command("scene_state", {})["time"]["index"] == 4
+    again = client.command("measure_over_time", {"field": "p", "stride": 10})
+    assert [row["index"] for row in again["series"]] == [0, 10, 20]
+    # An object a script made is measured by its name, even when the script step
+    # has the same label.
+    client.command(
+        "run_scene_script",
+        {
+            "code": "PassArrays(registrationName='copy', Input=GetActiveSource())",
+            "label": "copy",
+        },
+    )
+    copied = client.command(
+        "measure_over_time", {"field": "p", "object": "copy", "stride": 10}
+    )
+    assert copied["label"] == "copy" and len(copied["series"]) == 3
+    # Each step is measured at its own time downstream of a filter too.
+    assert [round(row["mean"], 3) for row in copied["series"]] == [10.5, 20.5, 30.5]
+
+
+def test_a_series_longer_than_a_thousand_steps_comes_back_whole(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """measure_over_time returns every picked step, however many there are."""
+    attacher, data = attached
+    client = attacher.ensure().client
+    series = data / "many"
+    series.mkdir()
+    for step in range(1100):
+        write_vti(series / f"out_{step:04d}.vti", shift=step)
+    client.command("open_view", {"path": str(series / "out_*.vti"), "new": True})
+    measured = client.command("measure_over_time", {"field": "p"}, wait=1.0)
+    assert [row["index"] for row in measured["series"]] == list(range(1100))
+    means = [row["mean"] for row in measured["series"]]
+    assert all(abs(b - a - 1) < 1e-6 for a, b in itertools.pairwise(means))
+
+
+def test_a_descriptor_display_gives_the_first_view(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """The display part of a view descriptor: a slice of the data, coloured by its
+    array over a fixed range, with the data itself as an outline."""
+    attacher, data = attached
+    client = attacher.ensure().client
+    write_vti(data / "shown.vti")
+    opened = client.command(
+        "open_view",
+        {
+            "path": str(data / "shown.vti"),
+            "new": True,
+            "descriptor": {
+                "name": "pressure",
+                "display": {
+                    "array": "p",
+                    "association": "POINTS",
+                    "representation": "Slice",
+                    "slice_normal": [0, 0, 1],
+                    "color_map": "Viridis (matplotlib)",
+                    "range": [0, 30],
+                },
+            },
+        },
+    )
+    objects = opened["objects"]
+    assert [o["id"] for o in objects] == ["o1", "o2"]
+    assert objects[0]["display"]["representation"] == "Outline"
+    assert objects[1]["display"]["color_by"] == ["POINTS", "p"]
+    assert objects[1]["display"]["color_range"] == [0.0, 30.0]
+    # ParaView 6 names the preset without its "(matplotlib)" qualifier.
+    assert objects[1]["display"]["colormap"] == "Viridis"
+    assert objects[1]["data"]["arrays"][0]["range"] == [3.5, 17.5]
+    assert opened["dataset"]["descriptor"]["name"] == "pressure"
+    assert "display_note" not in opened["dataset"]
+    write_vti(data / "unknown_map.vti")
+    partly = client.command(
+        "open_view",
+        {
+            "path": str(data / "unknown_map.vti"),
+            "new": True,
+            "descriptor": {
+                "display": {"array": "p", "color_map": "No Such Map", "range": [1, 2]}
+            },
+        },
+    )
+    # The rest of the display holds; the unknown preset is left out and said so.
+    assert partly["objects"][0]["display"]["color_range"] == [1.0, 2.0]
+    assert not partly["objects"][0]["display"]["colormap"]
+    assert "No Such Map" in partly["dataset"]["display_note"]
+
+
+def test_a_descriptor_slice_opens_face_on(attached: tuple[Attacher, Path]) -> None:
+    """A slice cut across y is looked at along y, not edge-on along the default z."""
+    attacher, data = attached
+    client = attacher.ensure().client
+    write_vti(data / "side.vti")
+    client.command(
+        "open_view",
+        {
+            "path": str(data / "side.vti"),
+            "new": True,
+            "descriptor": {
+                "display": {"representation": "Slice", "slice_normal": [0, 1, 0]}
+            },
+        },
+    )
+    camera = client.command("fit_camera", {})["camera"]
+    offset = [p - f for p, f in zip(camera["position"], camera["focal_point"])]
+    assert offset[1] > 0
+    assert abs(offset[0]) < 1e-6 and abs(offset[2]) < 1e-6
+    assert camera["view_up"] == [0.0, 0.0, 1.0]
+
+
+def test_a_followed_source_grows_free_colour_maps_and_keeps_fixed_ones(
+    attached: tuple[Attacher, Path],
+) -> None:
+    _, data = attached
+    report = _pvpython_script(
+        "growth_colour_check.py", str(data / "growth"), prefix="GROWTH="
+    )
+    assert report["new_steps"] >= 1
+    low, high = report["before"]["free"]
+    assert report["after"]["free"][0] == low
+    assert report["after"]["free"][1] > 1.5 * high
+    assert report["before"]["fixed"] == report["after"]["fixed"] == [0.0, 100.0]
+
+
+def test_a_growing_source_opened_late_catches_up_from_its_first_step(
+    attached: tuple[Attacher, Path],
+) -> None:
+    _, data = attached
+    report = _pvpython_script("replay_check.py", str(data / "replay"), prefix="REPLAY=")
+    assert report["opened"] == [2, False, True]
+    assert report["armed"] and report["started"]
+    assert report["first"] == [0, True, True]
+    assert report["going"] and report["second"] == [1, True, True]
+    assert report["ended"] and report["last"] == [2, False, True]
+    # It plays once per opening; a chosen step ends a catch-up and parks the view.
+    assert report["again"] is False
+    assert report["chosen"] == [1, False, False]
+
+
+BP_WRITER = '''
+import os, sys, time
+import numpy as np
+import adios2
+
+path, steps, ready = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
+n = 8
+xml = f"""<?xml version="1.0"?>
+<VTKFile type="ImageData" version="0.1" byte_order="LittleEndian">
+  <ImageData WholeExtent="0 {n-1} 0 {n-1} 0 {n-1}" Origin="0 0 0" Spacing="1 1 1">
+    <Piece Extent="0 {n-1} 0 {n-1} 0 {n-1}">
+      <PointData Scalars="p">
+        <DataArray Name="p" />
+        <DataArray Name="TIME">time</DataArray>
+      </PointData>
+    </Piece>
+  </ImageData>
+</VTKFile>"""
+z, y, x = np.meshgrid(np.arange(n), np.arange(n), np.arange(n), indexing="ij")
+with adios2.Stream(path, "w") as s:
+    for step in range(steps):
+        while step >= ready and not os.path.exists(f"{path}.go{step}"):
+            time.sleep(0.1)
+        s.begin_step()
+        if step == 0:
+            s.write_attribute("vtk.xml", xml)
+        p = (x + y + z + step).astype(np.float64)
+        s.write("p", p, list(p.shape), [0, 0, 0], list(p.shape))
+        s.write("time", np.array([0.5 * step]))
+        s.end_step()
+        print("wrote", step, flush=True)
+'''
+
+
+@pytest.mark.skipif(
+    not os.environ.get("PARAVIEW_TEST_ADIOS2_PYTHON"),
+    reason="set PARAVIEW_TEST_ADIOS2_PYTHON to a Python with adios2 and numpy",
+)
+def test_a_growing_adios2_bp_output_is_followed_then_parked(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """RL44 against the solvers' format: an ADIOS2 BP5 output, read by
+    ADIOS2VTXReader through its ``vtk.xml`` attribute, gains steps while a writer
+    holds it open. The view and a slice of it follow; a parked view stays put."""
+    import subprocess
+
+    attacher, data = attached
+    client = attacher.ensure().client
+    bp = data / "run.bp"
+    script = data / "bp_writer.py"
+    script.write_text(BP_WRITER)
+    env = {k: v for k, v in os.environ.items() if k != "LD_LIBRARY_PATH"}
+    writer = subprocess.Popen(
+        [os.environ["PARAVIEW_TEST_ADIOS2_PYTHON"], str(script), str(bp), "4", "2"],
+        stdout=subprocess.PIPE,
+        text=True,
+        env=env,
+    )
+
+    def written(step: int) -> None:
+        assert writer.stdout is not None
+        while True:
+            line = writer.stdout.readline()
+            assert line, f"the writer stopped before step {step}"
+            if line.strip() == f"wrote {step}":
+                return
+
+    try:
+        written(1)
+        opened = client.command(
+            "open_view",
+            {
+                "path": str(bp),
+                "new": True,
+                "growing": True,
+                "format": "adios2-bp5",
+                "reader": "ADIOS2VTXReader",
+                "descriptor": {
+                    "path_kind": "directory",
+                    "follow": {"signal": "reader-time-steps", "expected_steps": 4},
+                    "display": {
+                        "array": "p",
+                        "representation": "Slice",
+                        "slice_normal": [0, 0, 1],
+                        "range": [0, 30],
+                    },
+                },
+            },
+        )
+        assert opened["dataset"]["reader"] == "ADIOS2VTXReader"
+        assert opened["time"]["steps"] == 2
+        assert [o["id"] for o in opened["objects"]] == ["o1", "o2"]
+        Path(f"{bp}.go2").touch()
+        written(2)
+        grown = client.command("steps", {"after": 2})
+        assert [s["index"] for s in grown["steps"]] == [2]
+        assert grown["follow"]["expected_steps"] == 4
+        assert grown["time"]["index"] == 2 and grown["time"]["follow_latest"]
+        state = client.command("scene_state", {})
+        # The slice moved with the view: p = x + y + z + 2 on the plane z = 3.5.
+        assert state["objects"][1]["data"]["arrays"][0]["range"] == [5.5, 19.5]
+        client.command("set_timestep", {"index": 0})
+        Path(f"{bp}.go3").touch()
+        written(3)
+        parked = client.command("steps", {"after": 3})
+        assert [s["index"] for s in parked["steps"]] == [3]
+        assert parked["time"]["index"] == 0 and parked["time"]["newer_steps"] == 3
+        assert writer.wait(timeout=60) == 0
+        measured = client.command("measure_over_time", {"field": "p"})
+        means = [round(row["mean"], 3) for row in measured["series"]]
+        assert means == [10.5, 11.5, 12.5, 13.5]
+        assert client.command("scene_state", {})["time"]["index"] == 0
+    finally:
+        writer.kill()
+        writer.wait()
+
+
 def test_a_colour_range_set_by_hand_holds_and_is_restored(
     attached: tuple[Attacher, Path],
 ) -> None:
@@ -331,13 +708,18 @@ def test_a_colour_range_set_by_hand_holds_and_is_restored(
     os.kill(json.loads(record.read_text())["pid"], 9)
     record.unlink()
     attacher.link = None
-    client = attacher.ensure().client
+    # Only open_view starts a node half again; other tools say it went.
+    with pytest.raises(ParaViewError) as caught:
+        attacher.ensure()
+    assert caught.value.code == "node_lost"
+    client = attacher.ensure(opening=True).client
     restored = client.command("open_view", {"scene": scene})
     assert restored["objects"][0]["display"]["color_range"] == [2.0, 6.0]
     ranges = _pvpython_script("color_range_check.py", str(data), prefix="RANGE=")
     assert ranges == {
         "color": [100.0, 200.0],
         "opacity": [100.0, 200.0],
+        "kept": [100.0, 200.0],
         "solid": [1.0, 0.5, 0.0],
         "solid_coloured_by": "",
     }
@@ -387,6 +769,22 @@ def test_an_animation_is_rendered_in_the_scene_and_encoded(
     assert seen["bad_labels"] == "bad_labels"
 
 
+def test_a_capture_says_how_much_it_drew(attached: tuple[Attacher, Path]) -> None:
+    """A frame with the data on it is measured as drawn; one with it all hidden is
+    measured as blank, so nobody is told about a picture that is not there."""
+    attacher, data = attached
+    client = attacher.ensure().client
+    write_vti(data / "drawn.vti")
+    opened = client.command("open_view", {"path": str(data / "drawn.vti"), "new": True})
+    assert opened["drawn"]["blank"] is False and opened["drawn"]["fraction"] > 0.01
+    shown = client.command("capture", {"width": 320, "height": 200})
+    assert shown["drawn"]["blank"] is False
+    for item in opened["objects"]:
+        client.command("set_representation", {"object": item["id"], "visible": False})
+    hidden = client.command("capture", {"width": 320, "height": 200})
+    assert hidden["drawn"]["blank"] is True
+
+
 def test_restart_restores_the_scene(attached: tuple[Attacher, Path]) -> None:
     attacher, data = attached
     client = attacher.ensure().client
@@ -400,11 +798,268 @@ def test_restart_restores_the_scene(attached: tuple[Attacher, Path]) -> None:
     os.kill(pid, 9)
     record.unlink()
     attacher.link = None
-    client = attacher.ensure().client
+    client = attacher.ensure(opening=True).client
     restored = client.command("open_view", {"scene": scene})
     assert restored["restored"] is True
     assert [o["id"] for o in restored["objects"]] == ["o1", "o2"]
     assert restored["objects"][1]["display"]["representation"] == "Wireframe"
+
+
+def test_a_pvserver_that_goes_stops_the_view(tmp_path: Path) -> None:
+    """Once the joined pvserver ends, the node half says so, leaves a note and exits;
+    the next tool hears that the pvserver went, not a blank picture."""
+    import subprocess
+
+    from paraview_mcp import attach
+
+    pvserver = os.environ.get("PARAVIEW_TEST_PVSERVER")
+    if not pvserver:
+        pytest.skip("set PARAVIEW_TEST_PVSERVER to a pvserver of the same ParaView")
+    home = _home(tmp_path)
+    data = tmp_path / "cube.vti"
+    write_vti(data, n=12)
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    served = subprocess.Popen(
+        [pvserver, f"--server-port={port}", "--force-offscreen-rendering"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    saved = {k: os.environ.get(k) for k in ("HOME", "PATH")}
+    os.environ["HOME"] = str(home)
+    assert PVPYTHON is not None
+    os.environ["PATH"] = f"{Path(PVPYTHON).parent}:{os.environ['PATH']}"
+    address = f"127.0.0.1:{port}"
+    attacher = Attacher(Settings(target=Target(), pvserver=address, start_stall=600))
+    try:
+        # Connecting would use up the pvserver's one handshake, so look at the table.
+        listening = f":{port:04X} 00000000:0000 0A"
+        deadline = time.monotonic() + 120
+        while listening not in Path("/proc/net/tcp").read_text():
+            assert time.monotonic() < deadline and served.poll() is None
+            time.sleep(0.5)
+        client = attacher.ensure(opening=True).client
+        opened = client.command("open_view", {"path": str(data)})
+        assert opened["drawn"]["blank"] is False
+        served.kill()
+        served.wait()
+        slot = attach.node_base(address)
+        folder = _local(home)
+        deadline = time.monotonic() + 120
+        while (folder / f"{slot}.json").exists() and time.monotonic() < deadline:
+            time.sleep(1)
+        assert not (folder / f"{slot}.json").exists()
+        note = json.loads((folder / f"{slot}.lost.json").read_text())
+        assert address in note["reason"] and note["scene"] == opened["scene"]
+        assert "closed the connection" in (folder / f"{slot}.log").read_text()
+        attacher.link = None
+        with pytest.raises(ParaViewError) as caught:
+            attacher.ensure()
+        assert caught.value.code == "pvserver_lost"
+        assert f"open_view(scene={opened['scene']!r})" in caught.value.message
+    finally:
+        attacher.close()
+        if served.poll() is None:
+            served.kill()
+        for key, value in saved.items():
+            if value is not None:
+                os.environ[key] = value
+
+
+def test_a_call_held_up_by_a_pvserver_that_goes_fails_at_once(tmp_path: Path) -> None:
+    """The live failure: a capture waits on a pvserver that stopped answering, which
+    then ends. ParaView holds Python's lock while it waits, so only the watchdog can
+    end the node half: the call fails with the reason in seconds, not after its wait."""
+    import signal
+    import subprocess
+    import threading
+
+    from paraview_mcp import attach
+    from paraview_mcp.link import LinkError
+
+    pvserver = os.environ.get("PARAVIEW_TEST_PVSERVER")
+    if not pvserver:
+        pytest.skip("set PARAVIEW_TEST_PVSERVER to a pvserver of the same ParaView")
+    home = _home(tmp_path)
+    data = tmp_path / "cube.vti"
+    write_vti(data, n=12)
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    served = subprocess.Popen(
+        [pvserver, f"--server-port={port}", "--force-offscreen-rendering"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    saved = {k: os.environ.get(k) for k in ("HOME", "PATH")}
+    os.environ["HOME"] = str(home)
+    assert PVPYTHON is not None
+    os.environ["PATH"] = f"{Path(PVPYTHON).parent}:{os.environ['PATH']}"
+    address = f"127.0.0.1:{port}"
+    attacher = Attacher(Settings(target=Target(), pvserver=address, start_stall=600))
+    try:
+        listening = f":{port:04X} 00000000:0000 0A"
+        deadline = time.monotonic() + 120
+        while listening not in Path("/proc/net/tcp").read_text():
+            assert time.monotonic() < deadline and served.poll() is None
+            time.sleep(0.5)
+        client = attacher.ensure(opening=True).client
+        client.command("open_view", {"path": str(data)})
+        slot = attach.node_base(address)
+        folder = _local(home)
+        assert (
+            "pvserver watchdog did not start"
+            not in (folder / f"{slot}.log").read_text()
+        )
+        served.send_signal(signal.SIGSTOP)
+        outcome: list[BaseException | None] = []
+
+        def capture() -> None:
+            try:
+                client.command("capture", {"width": 640, "height": 400})
+                outcome.append(None)
+            except BaseException as exc:  # noqa: BLE001 - checked below
+                outcome.append(exc)
+
+        waiting = threading.Thread(target=capture, daemon=True)
+        waiting.start()
+        waiting.join(8)
+        assert waiting.is_alive(), "the capture should wait on the stopped pvserver"
+        served.kill()
+        served.wait()
+        ended = time.monotonic()
+        waiting.join(120)
+        assert not waiting.is_alive() and time.monotonic() - ended < 60
+        # Held in ParaView (Windows) the watchdog ends the node half and the link
+        # drops; let go with a failed send (Linux) the node half refuses the result.
+        failed = outcome[0]
+        assert isinstance(failed, LinkError) or (
+            isinstance(failed, ParaViewError) and failed.code == "pvserver_lost"
+        ), failed
+        deadline = time.monotonic() + 30
+        while not (folder / f"{slot}.lost.json").exists():
+            assert time.monotonic() < deadline
+            time.sleep(0.5)
+        note = json.loads((folder / f"{slot}.lost.json").read_text())
+        assert address in note["reason"] and "closed the connection" in note["reason"]
+        state = attacher.status()
+        assert state["state"] == "lost" and state["code"] == "pvserver_lost"
+    finally:
+        attacher.close()
+        if served.poll() is None:
+            served.kill()
+        for key, value in saved.items():
+            if value is not None:
+                os.environ[key] = value
+
+
+def _kill_serving(served: subprocess.Popen[bytes], port: int) -> None:
+    """Kill a test pvserver and every rank of it: mpiexec's ranks may leave its
+    process group, so each process serving ``port`` is found by its command line."""
+    with contextlib.suppress(ProcessLookupError):
+        served.kill()
+    marker = f"--server-port={port}".encode()
+    for entry in Path("/proc").iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            line = (entry / "cmdline").read_bytes()
+        except OSError:
+            continue
+        if marker in line and b"pvserver" in line:
+            with contextlib.suppress(ProcessLookupError):
+                os.kill(int(entry.name), signal.SIGKILL)
+    served.wait()
+
+
+def test_a_pvserver_measures_on_its_ranks(tmp_path: Path) -> None:
+    """Measuring through a pvserver brings back a row per rank, never the dataset:
+    the numbers are the whole field's, every step is measured at its own time while
+    the view stays put, and the view's own check tells running from gone.
+
+    ``PARAVIEW_TEST_MPIEXEC`` (for example ``mpiexec -launcher fork``) runs the
+    pvserver on two ranks, so the ranks' parts are joined too."""
+    import shlex
+    import subprocess
+
+    pvserver = os.environ.get("PARAVIEW_TEST_PVSERVER")
+    if not pvserver:
+        pytest.skip("set PARAVIEW_TEST_PVSERVER to a pvserver of the same ParaView")
+    mpiexec = shlex.split(os.environ.get("PARAVIEW_TEST_MPIEXEC", ""))
+    ranks = 2 if mpiexec else 1
+    home = _home(tmp_path)
+    for index in range(3):
+        write_vti(tmp_path / f"step_{index}.vti", shift=100.0 * index, n=12)
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    launch = [*mpiexec, "-n", "2"] if mpiexec else []
+    served = subprocess.Popen(
+        [*launch, pvserver, f"--server-port={port}", "--force-offscreen-rendering"],
+        stdout=subprocess.DEVNULL,
+        # What a script on the ranks printed is read here when the test fails.
+        stderr=(tmp_path / "pvserver.log").open("w"),
+    )
+    saved = {k: os.environ.get(k) for k in ("HOME", "PATH")}
+    os.environ["HOME"] = str(home)
+    assert PVPYTHON is not None
+    os.environ["PATH"] = f"{Path(PVPYTHON).parent}:{os.environ['PATH']}"
+    address = f"127.0.0.1:{port}"
+    attacher = Attacher(Settings(target=Target(), pvserver=address, start_stall=600))
+    try:
+        listening = f":{port:04X} 00000000:0000 0A"
+        deadline = time.monotonic() + 120
+        while listening not in Path("/proc/net/tcp").read_text():
+            assert time.monotonic() < deadline and served.poll() is None
+            time.sleep(0.5)
+        assert attacher.status()["state"] == "closed"
+        client = attacher.ensure(opening=True).client
+        client.command("open_view", {"path": str(tmp_path / "step_*.vti")})
+        assert attacher.status()["state"] == "running"
+        # The view follows the latest step, so a measurement there sees its shift.
+        before = client.command("scene_state", {})["time"]["index"]
+        shift = 100.0 * before
+        measured = client.command("measure_field", {"field": "p", "bins": 3})
+        assert (measured["count"], measured["finite"]) == (1728, 1728)
+        assert (measured["min"], measured["max"]) == (shift, shift + 33.0)
+        assert measured["mean"] == pytest.approx(shift + 16.5)
+        values = [x + y + z for z in range(12) for y in range(12) for x in range(12)]
+        spread = (sum((v - 16.5) ** 2 for v in values) / len(values)) ** 0.5
+        assert measured["std"] == pytest.approx(spread)
+        assert measured["histogram"]["edges"] == pytest.approx(
+            [shift, shift + 11.0, shift + 22.0, shift + 33.0]
+        )
+        counts = [sum(1 for v in values if lo <= v < lo + 11) for lo in (0, 11)]
+        assert measured["histogram"]["counts"] == [*counts, 1728 - sum(counts)]
+        if ranks == 1:
+            assert measured["median"] == shift + 16.5
+        else:
+            assert measured["median"] is None
+            low, high = measured["median_between"]
+            assert low <= shift + 16.5 <= high
+        probed = client.command("inspect_selection", {"position": [1, 2, 3]})
+        assert probed["selection"]["point_values"]["p"] == shift + 6.0
+        series = client.command("measure_over_time", {"field": "p"})
+        assert [row["mean"] for row in series["series"]] == pytest.approx(
+            [16.5, 116.5, 216.5]
+        )
+        assert [row["max"] for row in series["series"]] == [33.0, 133.0, 233.0]
+        assert all(row["count"] == 1728 for row in series["series"])
+        # The view stayed on its step; only the measurement moved through time.
+        assert client.command("scene_state", {})["time"]["index"] == before
+        _kill_serving(served, port)
+        deadline = time.monotonic() + 120
+        while attacher.status()["state"] != "lost":
+            assert time.monotonic() < deadline, attacher.status()
+            time.sleep(1)
+        assert "pvserver" in attacher.status()["text"]
+    finally:
+        attacher.close()
+        _kill_serving(served, port)
+        for key, value in saved.items():
+            if value is not None:
+                os.environ[key] = value
 
 
 def test_remote_mode_above_threshold(tmp_path: Path) -> None:
@@ -414,7 +1069,7 @@ def test_remote_mode_above_threshold(tmp_path: Path) -> None:
     saved = os.environ["HOME"]
     os.environ["HOME"] = str(home)
     attacher = Attacher(
-        Settings(target=Target(), threshold_mb=0.001, idle_seconds=4, start_timeout=600)
+        Settings(target=Target(), threshold_mb=0.001, idle_seconds=4, start_stall=600)
     )
     try:
         opened = attacher.ensure().client.command("open_view", {"path": str(data)})
@@ -495,6 +1150,9 @@ def test_a_volume_is_drawn_on_the_paraview_machine(tmp_path: Path) -> None:
     # A flat grid opens as an image slice, which the browser cannot draw either.
     assert seen["flat"]["representation"] == "Slice"
     assert seen["flat"]["mode"] == "remote" and seen["flat"]["reason"] == "slice"
+    # A growing source is followed as images, one per new step.
+    assert seen["growing"]["mode"] == "remote"
+    assert seen["growing"]["reason"] == "growing"
 
 
 def test_the_panel_runs_the_same_commands(tmp_path: Path) -> None:

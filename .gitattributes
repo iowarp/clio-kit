@@ -1,1 +1,7 @@
+# Check out text with LF on every platform. Component catalogues record the bytes of the
+# source folder, and prepare re-reads them from Git's archive, which is LF; a CRLF
+# checkout (core.autocrlf on Windows) would make every catalogued size disagree.
+* text=auto eol=lf
+# Data files keep their committed bytes.
+*.csv -text
 src/clio_kit/_mcp_contracts/*.json text eol=lf

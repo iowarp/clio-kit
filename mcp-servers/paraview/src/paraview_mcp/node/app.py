@@ -8,20 +8,57 @@ route adds it on the way through, so the browser never holds it.
 from __future__ import annotations
 
 import asyncio
+import contextvars
 import hmac
 import json
 import os
 import time
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from typing import Any
 
 from . import manifest
 from .changes import lines as change_lines
-from .engine import CommandError, Engine
+from .engine import MUTATING, STEPWISE, CommandError, Engine
 from .panel import MODE_LABELS, build
 from .serializers import register_serializers
+from .sources import REPLAY_ALONE, REPLAY_HOLD, REPLAY_SECONDS, SETTLE, is_pattern
 from .theme import FALLBACK_CSS, THEME_JS, apply_to_view
 from .workbench import Workbench
+
+#: Seconds a growing source may show no change on disk before open_view stops
+#: waiting for it to become readable.
+SOURCE_STALL = 90.0
+#: Seconds a finished call's answer is kept, so a front whose copy was lost on the
+#: way gets it again instead of running the call twice.
+KEEP_ANSWER = 600.0
+#: The longest a front may ask a call's answer to be waited for in one request.
+MOST_WAIT = 60.0
+
+
+@dataclass
+class Job:
+    """One call a front sent with its own id: it runs on its own, and the front
+    asks how it goes until it ends. A call takes as long as its work does."""
+
+    started: float
+    progress: dict[str, Any] = field(default_factory=dict)
+    task: asyncio.Future[None] | None = None
+    #: The answer, as sent: body and status.
+    answer: tuple[bytes, int] | None = None
+    ended: float | None = None
+
+
+#: The job the running call belongs to, for its progress.
+_JOB: contextvars.ContextVar[Job | None] = contextvars.ContextVar("job", default=None)
+
+
+def say_progress(**progress: Any) -> None:
+    """How the running call goes, for the front that asks."""
+    job = _JOB.get()
+    if job is not None:
+        job.progress = progress
+
 
 TOKEN_HEADERS = ("X-Clio-Service-Token",)
 END_INTERACTION_EVENT = 45  # vtkCommand::EndInteractionEvent
@@ -83,6 +120,42 @@ BRIDGE_JS = r"""
       if (!box || !window.ResizeObserver) { setTimeout(watch, 200); return; }
       new ResizeObserver(ask).observe(box);
     })();
+    // A remote picture can land well after the page starts (a pvserver over a
+    // forwarded link), and again after each resize; say when a full-size one shows
+    // for the current size, so a host that looked early and saw nothing looks again.
+    var drawnAt = '';
+    var toldAt = 0;
+    var untold = 0;
+    (function watchPicture() {
+      var box = document.querySelector('.clio-view');
+      if (!box) { setTimeout(watchPicture, 200); return; }
+      box.addEventListener('load', function (e) {
+        var img = e.target;
+        if (!img || img.tagName !== 'IMG') return;
+        var rect = img.getBoundingClientRect();
+        var size = Math.round(rect.width) + 'x' + Math.round(rect.height);
+        if (rect.width < 1 || img.naturalWidth < rect.width * 0.9) return;
+        // The node half counts the pictures its viewers really show, told at
+        // most every two seconds while a drag streams them.
+        untold += 1;
+        var now = Date.now();
+        if (size !== drawnAt || now - toldAt > 2000) {
+          trame.trigger('clio_drawn', [size, untold]);
+          toldAt = now;
+          untold = 0;
+        }
+        if (size === drawnAt) return;
+        drawnAt = size;
+        post({ type: 'clio.paraview.drawn' });
+      }, true);
+    })();
+    // The pvserver went: say so in place of the picture, and stop reconnecting.
+    trame.state.watch(['clio_lost'], function (text) {
+      if (text) post({ type: 'clio.paraview.lost', text: text });
+    });
+    if (trame.state.get && trame.state.get('clio_lost')) {
+      post({ type: 'clio.paraview.lost', text: trame.state.get('clio_lost') });
+    }
   }
   start();
 })();
@@ -111,8 +184,24 @@ class NodeApp:
         self.server = server or get_server("clio-paraview", client_type="vue3")
         self.last_link = time.monotonic()
         self.sockets = 0
+        #: Commands that arrived and have not started their work yet.
+        self.waiting = 0
+        #: Calls sent with their own id, by id.
+        self.jobs: dict[str, Job] = {}
+        #: Whether a video is being rendered in the scene's view.
+        self.animating = False
+        self._replay: asyncio.Future[None] | None = None
         self.view: Any = None
         self.link_note = ""
+        #: Why the pvserver went, once it has; nothing is drawn after that.
+        self.lost = ""
+        #: The pvserver socket and its address, when there is one to watch.
+        self.watched: int | None = None
+        self.pvserver = ""
+        #: Pictures the viewers have shown, as their pages report them.
+        self.frames_shown = 0
+        self.last_frame: float | None = None
+        self.last_frame_size = ""
         self._build()
         engine.listeners.append(self._on_scene_change)
 
@@ -131,12 +220,14 @@ class NodeApp:
             clio_steps=0,
             clio_index=0,
             clio_follow=True,
+            clio_catching=False,
             clio_newer=0,
             clio_mode_note="",
             clio_theme="light",
             clio_view_colors=None,
             viewMode="local",
             clio_drag=None,
+            clio_lost="",
         )
         # A value slider's drag in progress stays in the browser; release applies it.
         state.client_only("clio_drag")
@@ -158,6 +249,7 @@ class NodeApp:
             "clio_set_mode": self._ui_set_mode,
             "clio_pick": self._ui_pick,
             "clio_redraw": self._ui_redraw,
+            "clio_drawn": self._ui_drawn,
         }.items():
             ctrl.trigger(name)(handler)
         ctrl.on_server_bind.add(self._bind_routes)
@@ -201,6 +293,7 @@ class NodeApp:
         app.router.add_get("/clio/health", self._health)
         app.router.add_post("/clio/ping", self._ping)
         app.router.add_post("/clio/command", self._command)
+        app.router.add_post("/clio/cancel", self._cancel)
         # trame-client asks a launcher for its session before connecting. There
         # is none: an empty answer makes it connect to the WebSocket beside its
         # own page. (A sessionURL parameter would be lowercased by trame-client,
@@ -224,6 +317,10 @@ class NodeApp:
         websocket = request.headers.get("Upgrade", "").lower() == "websocket"
         if websocket:
             self.sockets += 1
+            if self.engine.replay_armed and (
+                self._replay is None or self._replay.done()
+            ):
+                self._replay = asyncio.ensure_future(self._replaying())
         # The view frames trame from a sandboxed, opaque-origin page, so its
         # module scripts and fetches are cross-origin.
         cross_origin = not request.path.startswith("/clio/") and not websocket
@@ -251,7 +348,54 @@ class NodeApp:
                 "protocol": NODE_PROTOCOL,
                 "scene": scene["scene"] if scene else None,
                 "session": self.engine.session,
+                **self.shown(),
             }
+        )
+
+    def shown(self) -> dict[str, Any]:
+        """What the live view really shows: its viewers and the pictures they drew."""
+        return {
+            "lost": self.lost or None,
+            "viewers": self.sockets,
+            "frames_shown": self.frames_shown,
+            "last_frame_age": None
+            if self.last_frame is None
+            else round(time.time() - self.last_frame, 1),
+            "last_frame_size": self.last_frame_size or None,
+        }
+
+    def pvserver_lost(self, reason: str) -> None:
+        """The pvserver went: nothing more is drawn, and the view says why."""
+        self.lost = reason
+        with self.server.state:
+            self.server.state.clio_lost = (
+                f"ParaView stopped: {reason}. Nothing more is drawn here; the scene "
+                "is saved, and the agent can open it again once the pvserver runs."
+            )
+
+    def _went_during_call(self) -> Any:
+        """A refusal when the pvserver closed while the call ran, else ``None``.
+
+        ParaView returns from a call whose pvserver went (a send fails, a render
+        falls back to an empty frame), so what it returned is not what the pvserver
+        holds; the watcher leaves its note within seconds.
+        """
+        if self.watched is None or self.lost:
+            return None
+        from . import liveness
+
+        if not liveness.closed(self.watched):
+            return None
+        return self._json(
+            {
+                "error": {
+                    "code": "pvserver_lost",
+                    "message": f"The pvserver at {self.pvserver} closed the "
+                    "connection while this call ran, so nothing it returned is "
+                    "real. Nothing more is drawn or read through this view.",
+                }
+            },
+            409,
         )
 
     async def _no_launcher(self, _request: Any) -> Any:
@@ -263,6 +407,103 @@ class NodeApp:
     async def _command(self, request: Any) -> Any:
         try:
             body = await request.json()
+            if not isinstance(body, dict):
+                raise TypeError("the body is not an object")
+        except (ValueError, TypeError):
+            return self._json(
+                {"error": {"code": "bad_request", "message": "Malformed command."}}, 400
+            )
+        if body.get("job"):
+            return await self._job(str(body["job"]), body)
+        return await self._execute(body)
+
+    async def _job(self, job_id: str, body: dict[str, Any]) -> Any:
+        """Start the call with this id, or ask how it goes: its answer once it has
+        one, else after ``wait`` seconds a pending note with its progress."""
+        from aiohttp import web
+
+        now = time.monotonic()
+        for known, old in list(self.jobs.items()):
+            if old.ended is not None and now - old.ended > KEEP_ANSWER:
+                del self.jobs[known]
+        job = self.jobs.get(job_id)
+        if job is None:
+            job = self.jobs[job_id] = Job(started=now)
+            job.task = asyncio.ensure_future(self._run_job(job, body))
+        try:
+            wait = min(MOST_WAIT, max(0.0, float(body.get("wait") or 0)))
+        except (TypeError, ValueError):
+            wait = 0.0
+        if job.answer is None and wait and job.task is not None:
+            await asyncio.wait({job.task}, timeout=wait)
+        if job.answer is not None:
+            payload, status = job.answer
+            return web.Response(
+                body=payload, status=status, content_type="application/json"
+            )
+        return self._json(
+            {
+                "pending": True,
+                "seconds": round(time.monotonic() - job.started, 1),
+                "progress": job.progress,
+            }
+        )
+
+    async def _run_job(self, job: Job, body: dict[str, Any]) -> None:
+        _JOB.set(job)
+        try:
+            response = await self._execute(body)
+            job.answer = (bytes(response.body), int(response.status))
+        except asyncio.CancelledError:
+            job.answer = self._error_bytes(
+                "cancelled", "The call was cancelled before it ended.", 409
+            )
+        except Exception as exc:  # noqa: BLE001 - the front gets the failure
+            job.answer = self._error_bytes(
+                "node_error", f"{type(exc).__name__}: {exc}", 500
+            )
+        finally:
+            job.ended = time.monotonic()
+
+    @staticmethod
+    def _error_bytes(code: str, message: str, status: int) -> tuple[bytes, int]:
+        payload = {"error": {"code": code, "message": message}}
+        return json.dumps(payload).encode(), status
+
+    async def _cancel(self, request: Any) -> Any:
+        """Stop a running call: it ends at its next step with a ``cancelled`` error."""
+        try:
+            job = self.jobs.get(str((await request.json())["job"]))
+        except (ValueError, KeyError, TypeError):
+            return self._json(
+                {"error": {"code": "bad_request", "message": "Malformed cancel."}}, 400
+            )
+        if job is None:
+            return self._json({"ok": False, "known": False})
+        if job.answer is None and job.task is not None:
+            job.task.cancel()
+        return self._json({"ok": True, "known": True, "ended": job.answer is not None})
+
+    async def _execute(self, body: dict[str, Any]) -> Any:
+        # Until its work starts, a command comes first: the follow and the catch-up
+        # skip their turns, so each of the command's awaits returns at once rather
+        # than after a step's round trips to a pvserver over a slow link.
+        self.waiting += 1
+        counted = True
+
+        def started() -> None:
+            nonlocal counted
+            if counted:
+                counted = False
+                self.waiting -= 1
+
+        try:
+            return await self._run_command(body, started)
+        finally:
+            started()
+
+    async def _run_command(self, body: dict[str, Any], started: Any) -> Any:
+        try:
             name = str(body["command"])
             args = dict(body.get("args") or {})
             # The front says whose call it is; anything else is the agent's.
@@ -271,14 +512,45 @@ class NodeApp:
             return self._json(
                 {"error": {"code": "bad_request", "message": "Malformed command."}}, 400
             )
+        if self.lost:
+            scene = self.engine.scene
+            again = (
+                f" open_view(scene={scene['scene']!r}) opens it again once a "
+                "pvserver runs."
+                if scene
+                else ""
+            )
+            return self._json(
+                {
+                    "error": {
+                        "code": "pvserver_lost",
+                        "message": f"This ParaView view has stopped: {self.lost}. "
+                        "Nothing more is drawn or read through it." + again,
+                    }
+                },
+                409,
+            )
         try:
-            with self.server.state:
-                result = self.engine.run(name, args, by=by)
+            await self._await_source(name, args)
+            if name in MUTATING:
+                await self._after_animation()
+            started()
+            if name in STEPWISE:
+                result = await self._stepwise(name, args)
+            else:
+                with self.server.state:
+                    result = self.engine.run(name, args, by=by)
         except CommandError as exc:
+            went = self._went_during_call()
+            if went is not None:
+                return went
             return self._json(
                 {"error": {"code": exc.code, "message": exc.message}}, 422
             )
         except Exception as exc:  # noqa: BLE001 - report the failure to the front
+            went = self._went_during_call()
+            if went is not None:
+                return went
             return self._json(
                 {
                     "error": {
@@ -290,7 +562,99 @@ class NodeApp:
             )
         if name in ("set_camera", "fit_camera"):
             self.view.push_camera()
+        if name == "open_view" and isinstance(result, dict) and self.engine.scene:
+            # A small test frame: what the opened view really draws.
+            try:
+                result["drawn"] = self.engine.drawn()
+            except Exception as exc:  # noqa: BLE001 - reported, not fatal
+                result["drawn"] = {
+                    "fraction": None,
+                    "blank": None,
+                    "note": f"the test frame failed: {type(exc).__name__}: {exc}",
+                }
+        if name in ("capture", "open_view") and isinstance(result, dict):
+            result["shown"] = self.shown()
+        went = self._went_during_call()
+        if went is not None:
+            return went
         return self._json({"result": result})
+
+    async def _after_animation(self) -> None:
+        """While a video is rendered in the scene's view, changes to the scene wait
+        for it: between its frames they would move the camera or what it shows."""
+        while self.animating:
+            say_progress(note="waiting for the video being rendered")
+            await asyncio.sleep(0.2)
+
+    async def _stepwise(self, name: str, args: dict[str, Any]) -> dict[str, Any]:
+        """A ``STEPWISE`` command a step at a time, giving the loop back between
+        steps: a long series or video must not hold up the view's follow, its step
+        reports or health. Each step is reported as progress; a cancel ends it at
+        the next step, and the command undoes what it set up."""
+        engine = self.engine
+        animating = name == "export_animation"
+        self.animating = self.animating or animating
+        try:
+            with self.server.state:
+                steps = engine.series(name, args)
+            try:
+                while True:
+                    if self.lost:
+                        raise CommandError(
+                            "pvserver_lost",
+                            f"This ParaView view stopped during {name}: {self.lost}.",
+                        )
+                    with self.server.state:
+                        progress, result = engine.advance(steps)
+                    if progress is None:
+                        return dict(result)
+                    say_progress(done=progress[0], total=progress[1])
+                    await asyncio.sleep(0)
+            finally:
+                with self.server.state:
+                    steps.close()
+        finally:
+            if animating:
+                self.animating = False
+
+    async def _await_source(self, name: str, args: dict[str, Any]) -> None:
+        """Before a growing source is opened, wait until it can be read: until it is
+        there and, for an ADIOS2 BP5 folder, until a whole step is on disk. The wait
+        lets the node go on answering. It ends when the source is readable, or once
+        nothing on disk has changed for ``SOURCE_STALL`` seconds; open_view then says
+        why the source cannot be read."""
+        if name != "open_view" or not args.get("growing") or not args.get("path"):
+            return
+        path = self.engine.disk.expand(str(args["path"]))
+        scene = self.engine.scene
+        if (
+            scene
+            and (scene.get("dataset") or {}).get("path") == path
+            and not args.get("new")
+        ):
+            return
+        pattern = is_pattern(path)
+        reader = args.get("reader")
+        last: Any = object()
+        changed = start = time.monotonic()
+        said = None
+        while True:
+            reason, clear, key = self.engine.disk.source_readiness(
+                path, reader, pattern
+            )
+            now = time.monotonic()
+            if key != last:
+                last, changed = key, now
+            if reason is None and (clear or now - changed >= SETTLE):
+                break
+            if now - changed >= SOURCE_STALL:
+                break
+            if reason and reason != said:
+                said = reason
+                print(f"waiting for {path}: {reason}", flush=True)
+            await asyncio.sleep(0.5)
+        if said:
+            print(f"waited {time.monotonic() - start:.1f}s for {path}", flush=True)
 
     # -- reacting to the scene -------------------------------------------------
     def _on_scene_change(self, reason: str) -> None:
@@ -317,12 +681,15 @@ class NodeApp:
                 if scene["view"].get("reason") == "volume"
                 else "Switched: an image slice is drawn on the ParaView machine"
                 if scene["view"].get("reason") == "slice"
+                else "Switched: a growing source is drawn on the ParaView machine"
+                if scene["view"].get("reason") == "growing"
                 else f"Switched: geometry {size:.1f} MB, over {engine.threshold_mb:g} MB"
             )
         time_state = engine.time_summary()
         state.clio_steps = time_state.get("steps", 0)
         state.clio_index = time_state.get("index", 0)
         state.clio_follow = time_state.get("follow_latest", True)
+        state.clio_catching = time_state.get("catching_up", False)
         state.clio_newer = time_state.get("newer_steps", 0)
         self.bench.refresh(reason)
         if reason not in ("selection", "camera"):
@@ -362,6 +729,7 @@ class NodeApp:
         return {
             "scene": scene["scene"],
             "dataset": (scene.get("dataset") or {}).get("path"),
+            "growing": bool((scene.get("dataset") or {}).get("growing")),
             "time": self.engine.time_summary(),
             "selection": None
             if not selection
@@ -397,12 +765,18 @@ class NodeApp:
     def _update_view(self) -> None:
         """Send the scene to the view. ParaView brings its legends up to date
         (title, text colours, range) only when it renders, so render first when the
-        browser draws, or the browser gets a legend ParaView has not set up yet."""
-        if self.view is None:
+        browser draws, or the browser gets a legend ParaView has not set up yet.
+
+        A view drawn on the ParaView machine gets only its new image: the geometry
+        the browser would draw is not needed, and bringing it over is the slow part
+        of each step on a slow link. Switching to the browser sends it then."""
+        if self.view is None or self.lost:
             return
         if self.server.state.viewMode != "remote":
             self.engine.simple.Render(self.engine.view)
-        self.view.update()
+            self.view.update()
+        else:
+            self.view.update_image()
 
     def _legend_title(self) -> str | None:
         """The field whose legend the browser shows: the selected object's, if on."""
@@ -416,8 +790,18 @@ class NodeApp:
 
     def _ui_redraw(self) -> None:
         # Local mode draws in the browser; remote mode needs ParaView to render again.
+        if self.lost:
+            return
         if self.view is not None and self.server.state.viewMode == "remote":
             self.view.update()
+
+    def _ui_drawn(self, size: str = "", count: Any = 1) -> None:
+        try:
+            self.frames_shown += max(1, min(int(count), 10_000))
+        except (TypeError, ValueError):
+            self.frames_shown += 1
+        self.last_frame = time.time()
+        self.last_frame_size = str(size)[:32]
 
     def _ui_set_mode(self, mode: str) -> None:
         if self.engine.scene is None or mode not in MODE_LABELS:
@@ -461,11 +845,42 @@ class NodeApp:
         """Re-read growing sources; report new steps to the view."""
         while True:
             await asyncio.sleep(interval)
+            if self.lost:
+                return
+            if self.waiting:
+                continue
             try:
                 with self.server.state:
                     self.engine.check_growth()
             except Exception as exc:  # noqa: BLE001 - keep watching; say why
                 print(f"growth check failed: {exc}", flush=True)
+
+    async def _replaying(self) -> None:
+        """Catch a late-opened growing source up from its first step while a view
+        watches; with no view for REPLAY_ALONE seconds it jumps to the latest."""
+        engine = self.engine
+        try:
+            with self.server.state:
+                if not engine.start_replay():
+                    return
+            print(f"catching up from step 1 of {len(engine.timesteps())}", flush=True)
+            await asyncio.sleep(REPLAY_HOLD)
+            alone = 0.0
+            going = True
+            while going:
+                await asyncio.sleep(REPLAY_SECONDS)
+                if self.waiting:
+                    continue
+                alone = 0.0 if self.sockets > 0 else alone + REPLAY_SECONDS
+                if 0 < alone < REPLAY_ALONE:
+                    continue
+                with self.server.state:
+                    going = engine.replay_tick(finish=alone >= REPLAY_ALONE)
+            print(f"caught up; following step {len(engine.timesteps())}", flush=True)
+        except Exception as exc:  # noqa: BLE001 - the view follows the latest step
+            print(f"catch-up failed: {exc}", flush=True)
+            with self.server.state:
+                engine.replay_tick(finish=True)
 
     def idle_for(self) -> float:
         """Seconds since the last request, or zero while a view is connected."""

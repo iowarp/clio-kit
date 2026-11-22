@@ -6,6 +6,7 @@ import base64
 import os
 import tempfile
 import time
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +39,12 @@ class SceneReading:
     def _probe_visible(self, world: list[float]) -> dict[str, Any] | None:
         raise NotImplementedError
 
+    def timesteps(self) -> list[float]:
+        raise NotImplementedError
+
+    def _apply_time(self, scene: dict[str, Any]) -> None:
+        raise NotImplementedError
+
     def cmd_inspect_selection(
         self, position: list[float] | None = None
     ) -> dict[str, Any]:
@@ -54,15 +61,23 @@ class SceneReading:
         fresh = self._probe_visible(picked["world_position"])
         return {"selection": fresh, "source": "view"}
 
-    def cmd_measure_field(
-        self,
-        field: str,
-        object: str | None = None,
-        bins: int = 16,
-        component: int | None = None,
-    ) -> dict[str, Any]:
+    def _carrier(self, field: str, object: str | None) -> dict[str, Any]:
+        """The scene object to measure: ``object``, else the first that has ``field``."""
         scene = self.require_scene()
-        item = manifest.find_object(scene, object) if object else None
+        # Only pipeline objects carry data: a script step may share its label with
+        # what it made.
+        item = (
+            next(
+                (
+                    o
+                    for o in manifest.pipeline(scene)
+                    if object in (o["id"], o.get("label"))
+                ),
+                None,
+            )
+            if object
+            else None
+        )
         if object and item is None:
             raise CommandError("unknown_object", f"No scene object {object!r}.")
         if item is None:
@@ -73,6 +88,16 @@ class SceneReading:
                 or field in self.proxies[o["id"]].CellData.keys()
             ]
             item = carrying[0] if carrying else scene["objects"][0]
+        return item
+
+    def cmd_measure_field(
+        self,
+        field: str,
+        object: str | None = None,
+        bins: int = 16,
+        component: int | None = None,
+    ) -> dict[str, Any]:
+        item = self._carrier(field, object)
         stats = data.measure(self.proxies[item["id"]], field, bins, component)
         return {
             "object": item["id"],
@@ -81,12 +106,97 @@ class SceneReading:
             **stats,
         }
 
+    def cmd_measure_over_time(
+        self,
+        field: str,
+        object: str | None = None,
+        component: int | None = None,
+        start: int | None = None,
+        end: int | None = None,
+        stride: int = 1,
+    ) -> dict[str, Any]:
+        """Statistics of ``field`` at each time step from ``start`` to ``end``."""
+        steps = self.measuring_over_time(field, object, component, start, end, stride)
+        while True:
+            try:
+                next(steps)
+            except StopIteration as done:
+                return done.value
+
+    def measuring_over_time(
+        self,
+        field: str,
+        object: str | None = None,
+        component: int | None = None,
+        start: int | None = None,
+        end: int | None = None,
+        stride: int = 1,
+    ) -> Generator[tuple[int, int], None, dict[str, Any]]:
+        """measure_over_time one step at a time: yields how many steps are measured
+        and how many there are, so the node half can go on answering and following
+        between steps, and returns the series. Each step is measured at its own time;
+        the view stays on its step throughout."""
+        self.require_scene()
+        item = self._carrier(field, object)
+        proxy = self.proxies[item["id"]]
+        steps: list[float | None] = list(self.timesteps()) or [None]
+        last = len(steps) - 1
+        first = max(0, min(int(start or 0), last))
+        final = last if end is None else max(first, min(int(end), last))
+        # Every picked step, however many: a series is never cut short.
+        picked = list(range(first, final + 1, max(1, int(stride))))
+        series = []
+        for done, index in enumerate(picked, 1):
+            stats = data.measure(
+                proxy, field, 1, component, time=steps[index], histogram=False
+            )
+            stats.pop("histogram", None)
+            series.append({"index": index, "time": steps[index], **stats})
+            yield done, len(picked)
+        head = series[0] if series else {}
+        return {
+            "object": item["id"],
+            "label": item.get("label"),
+            "field": field,
+            "association": head.get("association"),
+            "component": head.get("component"),
+            "steps": len(steps) if steps != [None] else 0,
+            "series": series,
+        }
+
     def _render_png(self, target: Path, width: int, height: int, **extra: Any) -> bytes:
         target.parent.mkdir(parents=True, exist_ok=True)
         self.simple.SaveScreenshot(
             str(target), self.view, ImageResolution=[int(width), int(height)], **extra
         )
         return target.read_bytes()
+
+    def drawn(
+        self, width: int = 320, height: int = 200, picture: Path | None = None
+    ) -> dict[str, Any]:
+        """How much of a frame of this size the scene really draws (drawn.py)."""
+        from paraview import servermanager
+
+        from . import drawn
+
+        scene = self.require_scene()
+        reps = [
+            rep
+            for rep in (
+                servermanager.GetRepresentation(proxy, self.view)
+                for proxy in self.proxies.values()
+            )
+            if rep is not None
+        ]
+        folder = manifest.scene_dir(self.root, scene["scene"]) / "captures"
+        return drawn.measure(
+            lambda path: self.simple.SaveScreenshot(
+                str(path), self.view, ImageResolution=[int(width), int(height)]
+            ),
+            reps,
+            folder,
+            picture,
+        )
 
     def cmd_capture(self, width: int = 1280, height: int = 800) -> dict[str, Any]:
         scene = self.require_scene()
@@ -106,6 +216,7 @@ class SceneReading:
             "view": dict(scene["view"]),
             "width": width,
             "height": height,
+            "drawn": self.drawn(width, height, Path(name)),
         }
 
     def cmd_export_artifact(

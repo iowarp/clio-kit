@@ -3,7 +3,8 @@
     pvpython color_range_check.py OUT_DIR
 
 Shows a wavelet as a volume with ``color_range`` [100, 200], steps nothing else, and
-prints ``RANGE=<json>`` with the colour map's and the opacity ramp's end points,
+prints ``RANGE=<json>`` with the colour map's and the opacity ramp's end points, the
+colour map's end points after a later change of colour map and opacity,
 then gives a contour of it one plain colour and prints that colour.
 """
 
@@ -37,6 +38,10 @@ def main(out: Path) -> dict[str, Any]:
     lut = simple.GetColorTransferFunction("RTData").RGBPoints
     pwf = simple.GetOpacityTransferFunction("RTData").Points
     engine.run(
+        "set_representation", {"object": "o1", "colormap": "Viridis", "opacity": 0.8}
+    )
+    kept = simple.GetColorTransferFunction("RTData").RGBPoints
+    engine.run(
         "create_filter",
         {
             "filter": "Contour",
@@ -48,6 +53,7 @@ def main(out: Path) -> dict[str, Any]:
     return {
         "color": [round(lut[0], 3), round(lut[-4], 3)],
         "opacity": [round(pwf[0], 3), round(pwf[-4], 3)],
+        "kept": [round(kept[0], 3), round(kept[-4], 3)],
         "solid": [round(v, 2) for v in shell.DiffuseColor],
         "solid_coloured_by": str(shell.ColorArrayName[1]),
     }

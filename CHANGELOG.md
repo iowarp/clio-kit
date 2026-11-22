@@ -35,6 +35,41 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
   `set_style` and `get_view`, follows the host's theme, and is saved under a
   view id so a reopen shows the same layers, re-reading files. The agent reads
   only layer names, counts and bounds; the GeoJSON goes to the view.
+- **paraview 3.3.0, joins a running pvserver**: `PARAVIEW_PVSERVER` names a
+  `pvserver` (`host:port`, such as a relay's local port for one running in a
+  cluster job) for the node half to join. Datasets, globs and the steps of a
+  growing source are then read and checked on the server's machine, so only
+  the rendered view crosses. `PARAVIEW_VERSION` pins the ParaView the node
+  half must run; when this machine has no `pvpython` of that version, the
+  server fetches Kitware's official binaries into clio-kit's cache, checked
+  against a pinned SHA-256 (5.13.1 for Windows x86-64). The node half runs
+  ParaView 5.13 and Python 3.10 as well as 6.x, and natively on Windows.
+- **paraview 3.2.0, a view that follows a growing source**: `open_view` takes
+  a `view` descriptor (`clio.view-descriptor.v1`, vendored from clio-jarvis)
+  naming the reader, its properties, how to follow and the first display. As
+  the source grows (an ADIOS2 BP output still being written, or a series of
+  files), the node re-reads the reader's time steps: a view on the latest step
+  moves to each new step, and a view set to an earlier step stays there and
+  reports how many newer steps exist. `watch_steps` runs as an MCP task and
+  reports every new step as task progress, and the view reports each step to
+  the agent. `measure_over_time` returns a field's statistics at every step for
+  analysis after a run. Colour map names without their qualifier
+  ("Viridis (matplotlib)") resolve, a fixed colour range survives later display
+  changes, and a free colour range grows with the data while following.
+  ParaView machines prepare a new `3.2.0` folder (saved scenes are carried
+  over). A host that runs each server in its own sandbox no longer blocks
+  ParaView in its other conversations: a node half left by another sandbox,
+  which cannot be reached or stopped from outside it, is left alone and the
+  front runs its own beside it. Each node half clears the records of node
+  halves whose sandbox has gone, so they do not accumulate. `open_view` with
+  no path and no running ParaView session opens an empty scene that
+  `run_scene_script` fills, instead of failing with `no_dataset`. A growing
+  ADIOS2 BP5 output can be opened as soon as its run starts: `open_view` waits
+  while the folder changes until a whole step is on disk, and the node reads a
+  growing BP5 folder only when its index, metadata and data agree. ParaView's
+  reader took the node down on a folder whose index ran ahead of its metadata.
+  Scene scripts can name ParaView 5 colour presets ("Viridis (matplotlib)"),
+  and `ColorBy(display, None)` on an uncoloured display does nothing.
 - **paraview 3.1.0, ParaView controls in the view**: the live view gains a
   compact left tool rail: a pipeline browser (show, hide, select, remove), an
   Add filter palette (Contour, Slice, Clip, Threshold, Glyph, Stream Tracer,

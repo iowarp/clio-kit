@@ -3,11 +3,25 @@
 from __future__ import annotations
 
 import json
+import threading
+import time
 import urllib.error
 import urllib.request
+import uuid
+from collections.abc import Callable
 from typing import Any
 
 from .errors import ParaViewError
+
+# The link is loopback only: a client's HTTP_PROXY must not carry it, since an
+# egress proxy cannot reach this machine's 127.0.0.1 and answers 502.
+_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+#: Seconds the node half holds each ask about a running call before it says how
+#: the call goes; a cancel is seen within this.
+JOB_WAIT = 5.0
+#: Seconds past ``JOB_WAIT`` before an ask with no answer means the node half holds
+#: its loop. This is a check for a stall, not a limit on the call.
+ANSWER_GRACE = 30.0
 
 
 class LinkError(Exception):
@@ -48,7 +62,7 @@ class NodeClient:
             },
         )
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with _OPENER.open(request, timeout=timeout) as response:
                 return json.loads(response.read())
         except urllib.error.HTTPError as exc:
             try:
@@ -71,13 +85,60 @@ class NodeClient:
     def ping(self) -> None:
         self._request("POST", "/clio/ping", {}, timeout=10.0)
 
+    def cancel(self, job: str) -> None:
+        """Ask the node half to stop a call; a node that cannot be reached has
+        stopped it already."""
+        try:
+            self._request("POST", "/clio/cancel", {"job": job}, timeout=10.0)
+        except (LinkError, ParaViewError):
+            pass
+
     def command(
-        self, name: str, args: dict[str, Any], timeout: float = 900.0, by: str = "agent"
+        self,
+        name: str,
+        args: dict[str, Any],
+        by: str = "agent",
+        stop: threading.Event | None = None,
+        progress: Callable[[dict[str, Any]], None] | None = None,
+        wait: float = JOB_WAIT,
     ) -> Any:
-        payload = self._request(
-            "POST",
-            "/clio/command",
-            {"command": name, "args": args, "by": by},
-            timeout=timeout,
-        )
-        return payload["result"]
+        """Run one command and return its result, however long it takes.
+
+        The call runs on the node half under its own id; this asks how it goes every
+        ``wait`` seconds and tells ``progress``. There is no limit on its length: it
+        ends with its result, when ``stop`` is set (the call is cancelled there too),
+        or when the node half is gone (refused or reset). A node half that took the
+        request but holds its loop, as a long render does, is busy, not gone: that is
+        waited for, and said.
+        """
+        job = uuid.uuid4().hex
+        body = {"command": name, "args": args, "by": by, "job": job, "wait": wait}
+        heard = time.monotonic()
+        while True:
+            if stop is not None and stop.is_set():
+                self.cancel(job)
+                raise ParaViewError(
+                    "cancelled", f"{name} was cancelled before it ended."
+                )
+            try:
+                payload = self._request(
+                    "POST", "/clio/command", body, timeout=wait + ANSWER_GRACE
+                )
+            except LinkError as exc:
+                if not exc.busy:
+                    raise
+                if progress is not None:
+                    progress(
+                        {
+                            "note": "ParaView has not answered for "
+                            f"{time.monotonic() - heard:.0f} s: it is busy (a long "
+                            "render holds it), not gone, so this waits"
+                        }
+                    )
+                continue
+            heard = time.monotonic()
+            if isinstance(payload, dict) and payload.get("pending"):
+                if progress is not None:
+                    progress(dict(payload.get("progress") or {}))
+                continue
+            return payload["result"]

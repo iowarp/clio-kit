@@ -315,7 +315,7 @@ def _step_menu(v3: Any, html: Any) -> None:
 def _follow(v3: Any) -> Any:
     # Following the latest step is a pressed toggle; newer steps say so in the tooltip.
     label = "Follow latest"
-    tip = "clio_newer > 0 && !clio_follow ? 'Follow latest (' + clio_newer + ' newer)' : 'Follow latest'"
+    tip = "clio_catching ? 'Catching up from the first step' : clio_newer > 0 && !clio_follow ? 'Follow latest (' + clio_newer + ' newer)' : 'Follow latest'"
     with v3.VBtn(
         icon=True,
         variant="text",
