@@ -134,9 +134,12 @@ def _datasets(proxy: Any, time: float | None = None) -> list[Any]:
     values zero (ParaView 6.2). A remote session never brings whole datasets here; it
     reduces them on the pvserver (``_gather``).
     """
-    from paraview import simple
-
-    simple.UpdatePipeline(time=time, proxy=proxy)
+    # Not simple.UpdatePipeline: it takes a time of 0.0 for none, and the first step
+    # of most runs is at 0.
+    if time is None:
+        proxy.UpdatePipeline()
+    else:
+        proxy.UpdatePipeline(time)
     return _leaves(proxy.GetClientSideObject().GetOutputDataObject(0))
 
 

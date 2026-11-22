@@ -438,6 +438,8 @@ def test_a_long_measure_reports_its_steps_and_is_cancelled_on_the_node(
         "measure_over_time", {"field": "p", "object": "copy", "stride": 10}
     )
     assert copied["label"] == "copy" and len(copied["series"]) == 3
+    # Each step is measured at its own time downstream of a filter too.
+    assert [round(row["mean"], 3) for row in copied["series"]] == [10.5, 20.5, 30.5]
 
 
 def test_a_descriptor_display_gives_the_first_view(
