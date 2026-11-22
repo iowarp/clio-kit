@@ -302,7 +302,9 @@ def test_no_paraview_here_names_a_version_it_can_fetch(
     with pytest.raises(ParaViewError) as caught:
         attacher.ensure()
     assert caught.value.code == "no_paraview"
-    assert ("set `version` ('ParaView version') to 5.13.1" in caught.value.message) is hinted
+    assert (
+        "set `version` ('ParaView version') to 5.13.1" in caught.value.message
+    ) is hinted
 
 
 def test_local_folder_follows_the_host_cache(
