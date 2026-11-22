@@ -220,6 +220,9 @@ def main(argv: list[str] | None = None) -> None:
     )
     token = secrets.token_urlsafe(32)
     node = NodeApp(engine, token)
+    if watched is not None and session:
+        node.watched = watched
+        node.pvserver = session
     server = node.server
     record_path = root / f"{args.name}.json"
 

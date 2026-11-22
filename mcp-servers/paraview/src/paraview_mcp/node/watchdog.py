@@ -62,7 +62,7 @@ def start(fd: int, pvserver: str, record: Path) -> subprocess.Popen[bytes] | Non
         str(record),
     ]
     try:
-        if os.name == "nt":
+        if sys.platform == "win32":
             child = subprocess.Popen(
                 [*command, "--fd", "share"],
                 stdin=subprocess.PIPE,
@@ -187,6 +187,7 @@ def watch(
         end(parent)
         return "ended the node half"
 
+
 def main(argv: list[str] | None = None) -> None:
     import argparse
 
@@ -202,6 +203,8 @@ def main(argv: list[str] | None = None) -> None:
     except OSError:
         pass
     if args.fd == "share":
+        if sys.platform != "win32":
+            raise SystemExit("a socket share is only given on Windows")
         # pvpython replaces sys.stdin, so the share is read from the descriptor.
         with open(0, "rb", closefd=False) as given:
             probe = socket.fromshare(given.read())

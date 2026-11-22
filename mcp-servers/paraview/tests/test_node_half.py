@@ -831,9 +831,10 @@ def test_a_call_held_up_by_a_pvserver_that_goes_fails_at_once(tmp_path: Path) ->
         client.command("open_view", {"path": str(data)})
         slot = attach.node_base(address)
         folder = _local(home)
-        assert "pvserver watchdog did not start" not in (
-            folder / f"{slot}.log"
-        ).read_text()
+        assert (
+            "pvserver watchdog did not start"
+            not in (folder / f"{slot}.log").read_text()
+        )
         served.send_signal(signal.SIGSTOP)
         outcome: list[BaseException | None] = []
 
@@ -853,7 +854,16 @@ def test_a_call_held_up_by_a_pvserver_that_goes_fails_at_once(tmp_path: Path) ->
         ended = time.monotonic()
         waiting.join(120)
         assert not waiting.is_alive() and time.monotonic() - ended < 60
-        assert isinstance(outcome[0], LinkError)
+        # Held in ParaView (Windows) the watchdog ends the node half and the link
+        # drops; let go with a failed send (Linux) the node half refuses the result.
+        failed = outcome[0]
+        assert isinstance(failed, LinkError) or (
+            isinstance(failed, ParaViewError) and failed.code == "pvserver_lost"
+        ), failed
+        deadline = time.monotonic() + 30
+        while not (folder / f"{slot}.lost.json").exists():
+            assert time.monotonic() < deadline
+            time.sleep(0.5)
         note = json.loads((folder / f"{slot}.lost.json").read_text())
         assert address in note["reason"] and "closed the connection" in note["reason"]
         state = attacher.status()

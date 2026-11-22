@@ -79,8 +79,10 @@ ParaView call that is waiting on the `pvserver` when it goes cannot return, and
 it holds up the node half's own watcher, so a small watchdog process beside the
 node half (any Python, standard library only) watches the same socket. It then
 leaves the note and ends the node half, and the call fails at once with that
-reason. When the node half's loop is held for a minute, its log shows the stack
-it waits in, every minute, without stopping it. Each
+reason. A call that ParaView lets go of when its pvserver closes is refused with
+`pvserver_lost` too, since what it returned is not real. When the node half's
+loop is held for a minute, its log shows the stack it waits in, every minute,
+without stopping it. Each
 start keeps the previous log as `<record>.prev.log`.
 
 ## The first attach on a machine

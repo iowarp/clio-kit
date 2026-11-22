@@ -157,6 +157,9 @@ class NodeApp:
         self.link_note = ""
         #: Why the pvserver went, once it has; nothing is drawn after that.
         self.lost = ""
+        #: The pvserver socket and its address, when there is one to watch.
+        self.watched: int | None = None
+        self.pvserver = ""
         #: Pictures the viewers have shown, as their pages report them.
         self.frames_shown = 0
         self.last_frame: float | None = None
@@ -331,6 +334,31 @@ class NodeApp:
                 "is saved, and the agent can open it again once the pvserver runs."
             )
 
+    def _went_during_call(self) -> Any:
+        """A refusal when the pvserver closed while the call ran, else ``None``.
+
+        ParaView returns from a call whose pvserver went (a send fails, a render
+        falls back to an empty frame), so what it returned is not what the pvserver
+        holds; the watcher leaves its note within seconds.
+        """
+        if self.watched is None or self.lost:
+            return None
+        from . import liveness
+
+        if not liveness.closed(self.watched):
+            return None
+        return self._json(
+            {
+                "error": {
+                    "code": "pvserver_lost",
+                    "message": f"The pvserver at {self.pvserver} closed the "
+                    "connection while this call ran, so nothing it returned is "
+                    "real. Nothing more is drawn or read through this view.",
+                }
+            },
+            409,
+        )
+
     async def _no_launcher(self, _request: Any) -> Any:
         return self._json(None)
 
@@ -374,10 +402,16 @@ class NodeApp:
                 with self.server.state:
                     result = self.engine.run(name, args, by=by)
         except CommandError as exc:
+            went = self._went_during_call()
+            if went is not None:
+                return went
             return self._json(
                 {"error": {"code": exc.code, "message": exc.message}}, 422
             )
         except Exception as exc:  # noqa: BLE001 - report the failure to the front
+            went = self._went_during_call()
+            if went is not None:
+                return went
             return self._json(
                 {
                     "error": {
@@ -401,6 +435,9 @@ class NodeApp:
                 }
         if name in ("capture", "open_view") and isinstance(result, dict):
             result["shown"] = self.shown()
+        went = self._went_during_call()
+        if went is not None:
+            return went
         return self._json({"result": result})
 
     async def _measure_series(self, args: dict[str, Any]) -> dict[str, Any]:
