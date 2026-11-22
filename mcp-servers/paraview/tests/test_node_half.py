@@ -425,6 +425,19 @@ def test_a_long_measure_reports_its_steps_and_is_cancelled_on_the_node(
     assert client.command("scene_state", {})["time"]["index"] == 4
     again = client.command("measure_over_time", {"field": "p", "stride": 10})
     assert [row["index"] for row in again["series"]] == [0, 10, 20]
+    # An object a script made is measured by its name, even when the script step
+    # has the same label.
+    client.command(
+        "run_scene_script",
+        {
+            "code": "PassArrays(registrationName='copy', Input=GetActiveSource())",
+            "label": "copy",
+        },
+    )
+    copied = client.command(
+        "measure_over_time", {"field": "p", "object": "copy", "stride": 10}
+    )
+    assert copied["label"] == "copy" and len(copied["series"]) == 3
 
 
 def test_a_descriptor_display_gives_the_first_view(

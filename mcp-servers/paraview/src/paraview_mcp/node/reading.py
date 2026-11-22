@@ -67,7 +67,20 @@ class SceneReading:
     def _carrier(self, field: str, object: str | None) -> dict[str, Any]:
         """The scene object to measure: ``object``, else the first that has ``field``."""
         scene = self.require_scene()
-        item = manifest.find_object(scene, object) if object else None
+        # Only pipeline objects carry data: a script step may share its label with
+        # what it made.
+        item = (
+            next(
+                (
+                    o
+                    for o in manifest.pipeline(scene)
+                    if object in (o["id"], o.get("label"))
+                ),
+                None,
+            )
+            if object
+            else None
+        )
         if object and item is None:
             raise CommandError("unknown_object", f"No scene object {object!r}.")
         if item is None:
