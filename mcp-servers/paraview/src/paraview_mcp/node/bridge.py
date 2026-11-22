@@ -48,17 +48,45 @@ BRIDGE_JS = r"""
     post({ type: 'clio.paraview.link', up: true });
     // The view page answers with the host's theme and colours (theme.py).
     post({ type: 'clio.paraview.ready' });
-    // A frame that mounts or resizes (a tab moved, the canvas maximized) asks for a
-    // fresh picture: in remote mode nothing else would draw it until the next drag.
-    // The remote view subscribes to images only once it has mounted and sized itself,
-    // so ask again when the view's box changes and a little after the page starts.
+    // A frame that mounts or resizes (a tab moved, the canvas maximized, the host
+    // remounted the app) asks for a fresh picture at its own size: in remote mode
+    // nothing else would draw it until the next drag. The images are shared by every
+    // page of the view, and a page that went mid-drag or at another size leaves that
+    // shared state behind, so the ask carries this page's size and says whether it has
+    // a picture yet. Until a full-size picture shows, it asks again, backing off.
+    var drawnAt = '';
+    var shown = false;
     var redraw = null;
+    var again = null;
+    var tries = 0;
+    function boxSize() {
+      var box = document.querySelector('.clio-view');
+      var r = box ? box.getBoundingClientRect() : null;
+      return r ? [Math.round(r.width), Math.round(r.height)] : [0, 0];
+    }
+    function send() {
+      var size = boxSize();
+      if (size[0] < 10 || size[1] < 10 || document.hidden) return;
+      if (trame.state.get && trame.state.get('viewMode') !== 'remote') return;
+      if (trame.state.get && trame.state.get('clio_lost')) return;
+      trame.trigger('clio_redraw', [size[0], size[1], !shown]);
+      clearTimeout(again);
+      again = setTimeout(function () {
+        if (shown) return;
+        tries += 1;
+        send();
+      }, Math.min(8000, 1000 * 2 ** tries));
+    }
     function ask() {
       clearTimeout(redraw);
-      redraw = setTimeout(function () { trame.trigger('clio_redraw'); }, 500);
+      shown = false;
+      tries = 0;
+      redraw = setTimeout(send, 300);
     }
-    [300, 1500, 4000].forEach(function (ms) { setTimeout(ask, ms); });
+    ask();
     window.addEventListener('resize', ask);
+    document.addEventListener('visibilitychange', ask);
+    trame.state.watch(['viewMode'], ask);
     (function watch() {
       var box = document.querySelector('.clio-view');
       if (!box || !window.ResizeObserver) { setTimeout(watch, 200); return; }
@@ -67,7 +95,6 @@ BRIDGE_JS = r"""
     // A remote picture can land well after the page starts (a pvserver over a
     // forwarded link), and again after each resize; say when a full-size one shows
     // for the current size, so a host that looked early and saw nothing looks again.
-    var drawnAt = '';
     var toldAt = 0;
     var untold = 0;
     (function watchPicture() {
@@ -79,6 +106,7 @@ BRIDGE_JS = r"""
         var rect = img.getBoundingClientRect();
         var size = Math.round(rect.width) + 'x' + Math.round(rect.height);
         if (rect.width < 1 || img.naturalWidth < rect.width * 0.9) return;
+        shown = true;
         // The node half counts the pictures its viewers really show, told at
         // most every two seconds while a drag streams them.
         untold += 1;

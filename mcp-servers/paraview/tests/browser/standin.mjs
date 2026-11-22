@@ -61,13 +61,31 @@ html,body{margin:0;height:100%;font:13px system-ui}#card{height:620px;border:1px
 body.full #card{position:fixed;inset:0;height:auto;margin:0}iframe{width:100%;height:100%;border:0}</style></head>
 <body><div id="card"><iframe id="app" src="${sandboxOrigin}/sandbox.html"></iframe></div><script>
 window.__log = []; window.__context = []; window.__modes = [];
-const frame = document.getElementById('app');
+let frame = document.getElementById('app');
+const frames = [frame];
 const html = ${safe(config.view_html)};
-function post(m) { frame.contentWindow.postMessage(m, '*'); }
+let source = null;
+function post(m) { source.postMessage(m, '*'); }
 const context = { displayMode: 'inline', availableDisplayModes: ['inline', 'fullscreen'],
   'ai.iowarp.clio/service': { url: ${JSON.stringify(serviceUrl)} } };
+// The host remounts the app: a new frame (hidden at first if asked), the old one
+// dropped or kept beside it, as a host's layout change at another width does.
+window.__remount = (keepOld, hiddenMs) => {
+  const card = document.getElementById('card');
+  if (!keepOld) frames.splice(0).forEach((f) => f.remove());
+  else frames.forEach((f) => { f.style.display = 'none'; });
+  frame = document.createElement('iframe');
+  frame.src = '${sandboxOrigin}/sandbox.html';
+  if (hiddenMs) {
+    frame.style.display = 'none';
+    setTimeout(() => { frame.style.display = ''; }, hiddenMs);
+  }
+  frames.push(frame);
+  card.appendChild(frame);
+};
 window.addEventListener('message', (e) => {
-  if (e.source !== frame.contentWindow) return;
+  if (!frames.some((f) => f.contentWindow === e.source)) return;
+  source = e.source;
   const m = e.data; window.__log.push(m);
   if (m.method === 'stand-in/sandbox-ready') { post({ method: 'stand-in/resource', params: { html } }); return; }
   if (m.method === 'ui/initialize') post({ jsonrpc: '2.0', id: m.id, result: {
@@ -173,7 +191,7 @@ async function visibleCanvasBox(frame) {
 
 await page.goto(`http://127.0.0.1:${hostPort}/`);
 for (let i = 0; i < 120 && !viewFrame(); i++) await sleep(250);
-const trame = viewFrame();
+let trame = viewFrame();
 if (!trame) {
   await shot("00-no-view");
   report.frameUrls = page.frames().map((f) => f.url());
@@ -248,6 +266,68 @@ for (const step of config.steps || []) {
     // The drawing control: press the choice that is not pressed.
     await trame.click('[aria-label="Drawing"] button[aria-pressed="false"]');
     await sleep(3000);
+  } else if (step.do === "remount") {
+    // The host mounts the app again (at another width, hidden at first, the old
+    // frame dropped or kept); time how long the new frame takes to show a picture.
+    if (step.width) await page.setViewportSize({ width: step.width, height: step.height || height });
+    const old = new Set(page.frames().filter((f) => f.url().includes("/service/")));
+    if (step.press) {
+      // A finger or button still down on the old view when the host remounts:
+      // the old page never ends its drag.
+      const b = await trame.locator(".clio-view").boundingBox();
+      await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+      await page.mouse.down();
+      for (let i = 1; i <= 5; i++) { await page.mouse.move(b.x + b.width / 2 + i * 6, b.y + b.height / 2); await sleep(40); }
+    }
+    let stuck = null;
+    if (step.stick) {
+      // The old page leaves the view's shared image stream as a page that went
+      // mid-drag would: an animation that never stopped, at interactive quality.
+      stuck = await trame.evaluate(async () => {
+        const session = window.trame.client.getConnection().getSession();
+        const id = window.trame.state.get("viewId");
+        await session.call("viewport.image.animation.start", [id]);
+        await session.call("viewport.image.push.quality", [id, 50, 0.5]);
+        return "stuck";
+      }).catch((e) => String(e).slice(0, 200));
+    }
+    const start = Date.now();
+    await page.evaluate(([keep, hidden]) => window.__remount(keep, hidden),
+      [!!step.keep_old, step.hidden_ms || 0]);
+    let next = null;
+    while (!next && Date.now() - start < 30000) {
+      next = page.frames().find((f) => f.url().includes("/service/") && !old.has(f));
+      if (!next) await sleep(100);
+    }
+    const remount = { width: step.width || width, keep_old: !!step.keep_old,
+      press: !!step.press, stuck,
+      hidden_ms: step.hidden_ms || 0, framed_ms: next ? Date.now() - start : null,
+      drawn_ms: null, last: null };
+    if (next) {
+      trame = next;
+      while (Date.now() - start < (step.limit_ms || 60000)) {
+        const seen = await next.evaluate(() => {
+          const box = document.querySelector(".clio-view");
+          const img = Array.from(document.querySelectorAll(".clio-view img")).find((i) => {
+            const r = i.getBoundingClientRect();
+            return r.width > 1 && r.height > 1 && i.complete && i.naturalWidth >= r.width * 0.9;
+          });
+          const r = box ? box.getBoundingClientRect() : null;
+          return { box: r ? [Math.round(r.width), Math.round(r.height)] : null,
+            image: img ? [img.naturalWidth, img.naturalHeight] : null,
+            mode: window.trame && window.trame.state ? window.trame.state.get("viewMode") : null };
+        }).catch((e) => ({ error: String(e).slice(0, 200) }));
+        remount.last = seen;
+        if (seen.image || (seen.mode === "local" && seen.box && seen.box[0] > 1)) {
+          remount.drawn_ms = Date.now() - start;
+          break;
+        }
+        await sleep(100);
+      }
+    }
+    if (step.press) await page.mouse.up();
+    report.remounts = (report.remounts || []).concat([remount]);
+    await sleep(step.after_ms || 1500);
   }
   if (step.shot) await shot(step.shot);
 }

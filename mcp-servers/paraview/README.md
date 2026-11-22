@@ -274,6 +274,16 @@ ParaView, one colour map and one legend belong to a field and are shared by
 every object coloured by it. When the browser draws, it shows one legend (the
 selected object's, else the newest); images ParaView renders show them all.
 
+A field's colour range starts from the values it represents, not its extremes:
+the 2nd to 98th percentile of the values shown (as xarray's `robust=True`),
+measured on the objects coloured by it at the view's time, on the pvserver's
+ranks when there is one. A few extreme values (a thin boundary layer, a body's
+surface) then no longer leave the rest of the field in one faint colour. The
+range grows as steps arrive, and `scene_state` gives it with the field's whole
+range. A range set by hand (a descriptor's `range`, or one a scene script sets
+with `RescaleTransferFunction`) stays where it is; Rescale in the Display panel
+gives the field's whole range instead.
+
 The result that opens the view declares the service in its private `_meta`:
 `"ai.iowarp.clio/service": {"port": <forwarded port>, "token": <token>}`. The
 host proxies the service under the app's own route and adds the token as

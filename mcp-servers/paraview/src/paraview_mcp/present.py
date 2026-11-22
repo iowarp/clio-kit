@@ -39,6 +39,16 @@ def object_line(item: dict[str, Any]) -> str:
             if display.get("color_range"):
                 low, high = display["color_range"]
                 detail.append(f"colour range {_num(low)} to {_num(high)} set by hand")
+            elif display.get("auto_range"):
+                low, high = display["auto_range"]
+                text = f"colour range {_num(low)} to {_num(high)}, the 2nd to 98th "
+                text += "percentile of the values shown"
+                if display.get("data_range"):
+                    whole = display["data_range"]
+                    text += f" (they run {_num(whole[0])} to {_num(whole[1])})"
+                detail.append(text)
+            elif display.get("range_mode") == "data":
+                detail.append("colour range the data's full range")
             if display.get("scalar_bar"):
                 detail.append("colour legend shown")
         elif display.get("solid_color"):

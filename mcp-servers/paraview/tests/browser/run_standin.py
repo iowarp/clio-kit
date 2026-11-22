@@ -32,6 +32,23 @@ from fastmcp.client.transports import StdioTransport
 
 HERE = Path(__file__).resolve().parent
 SERVER = HERE.parents[1]
+# A host remounts the app when its layout changes: each must show the view again.
+REMOUNTS = [
+    {"do": "remount", "width": 1440, "height": 900, "shot": "06-remount-1440"},
+    {"do": "remount", "width": 390, "height": 844, "shot": "07-remount-390"},
+    {"do": "remount", "width": 390, "height": 844, "hidden_ms": 3000, "shot": "08-hidden-390"},
+    {"do": "remount", "width": 390, "height": 844, "keep_old": True, "shot": "09-beside-390"},
+    {"do": "remount", "width": 1440, "height": 900, "keep_old": True, "hidden_ms": 2000,
+     "shot": "10-beside-hidden-1440"},
+    {"do": "remount", "width": 390, "height": 844, "press": True, "limit_ms": 20000,
+     "shot": "11-pressed-390"},
+    {"do": "remount", "width": 1440, "height": 900, "press": True, "limit_ms": 20000,
+     "shot": "12-pressed-1440"},
+    {"do": "remount", "width": 390, "height": 844, "stick": True, "limit_ms": 20000,
+     "shot": "13-stuck-390"},
+    {"do": "remount", "width": 1440, "height": 900, "stick": True, "limit_ms": 20000,
+     "shot": "14-stuck-1440"},
+]
 
 
 def _isosurfaces(found: Any) -> list[float] | None:
@@ -86,6 +103,11 @@ async def main() -> int:
     parser.add_argument("--width", default="1440")
     parser.add_argument("--height", default="900")
     parser.add_argument("--remote", action="store_true", help="expect remote mode")
+    parser.add_argument(
+        "--remount",
+        action="store_true",
+        help="remount the app at 1440 and 390 wide, hidden first and beside the old one",
+    )
     opts = parser.parse_args()
     opts.out.mkdir(parents=True, exist_ok=True)
     transport = StdioTransport(
@@ -104,15 +126,14 @@ async def main() -> int:
             [c.model_dump() for c in opened.content]
         ) + json.dumps(opened.structured_content)
         await client.call_tool(
-            "create_filter",
+            "run_scene_script",
             {
-                "filter": "Contour",
-                "properties": {
-                    "ContourBy": ["POINTS", opts.field],
-                    "Isosurfaces": [opts.iso]
-                    + ([opts.iso2] if opts.iso2 is not None else []),
-                    "ComputeScalars": 1,
-                },
+                "code": "c = Contour(Input=objects['o1'])\n"
+                f"c.ContourBy = ['POINTS', {opts.field!r}]\n"
+                f"c.Isosurfaces = {[opts.iso] + ([opts.iso2] if opts.iso2 is not None else [])!r}\n"
+                "c.ComputeScalars = 1\n"
+                "Show(c, view)\n",
+                "label": "isosurface",
             },
         )
         view = await client.read_resource("ui://paraview/view")
@@ -133,6 +154,7 @@ async def main() -> int:
                     if opts.slider
                     else []
                 ),
+                *(REMOUNTS if opts.remount else []),
             ],
         }
         config = opts.out / "run.json"
@@ -220,6 +242,7 @@ async def main() -> int:
         ),
         scene_state=_texts(state),
         sliders=report.get("sliders"),
+        remounts=report.get("remounts"),
         slider_check=_slider_check(
             report.get("sliders"), _isosurfaces(state.structured_content)
         ),

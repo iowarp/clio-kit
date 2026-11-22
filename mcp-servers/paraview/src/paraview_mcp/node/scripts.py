@@ -14,7 +14,7 @@ from __future__ import annotations
 import traceback
 from typing import Any
 
-from . import manifest
+from . import manifest, ranges
 from .errors import CommandError
 
 #: How much of a failing script's traceback the agent is shown.
@@ -146,6 +146,7 @@ class SceneScripts:
         step_id = f"s{scene['next_id']}"
         scene["next_id"] += 1
         label = (label or "").strip() or f"script {step_id}"
+        before = ranges.spans(self.simple, scene)
         made = self._execute(scene, code, label)
         step: dict[str, Any] = {
             "id": step_id,
@@ -176,6 +177,7 @@ class SceneScripts:
             self.proxies[object_id] = proxy
             added.append(item)
         self._apply_time(scene)
+        ranges.after_script(self, scene, before)
         self.update_view_mode()
         return {
             "step": {"id": step_id, "label": label, "lines": len(code.splitlines())},

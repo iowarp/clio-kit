@@ -20,6 +20,7 @@ from typing import Any
 from . import manifest
 from .bridge import BRIDGE_JS, token_from
 from .changes import lines as change_lines
+from .delivery import fresh_stream
 from .engine import MUTATING, STEPWISE, CommandError, Engine
 from .panel import MODE_LABELS, build
 from .serializers import register_serializers
@@ -679,11 +680,18 @@ class NodeApp:
         self.server.state.clio_bridge = self.bridge()
         self._update_view()  # the browser's one legend follows the selection
 
-    def _ui_redraw(self) -> None:
-        # Local mode draws in the browser; remote mode needs ParaView to render again.
+    def _ui_redraw(self, width: Any = 0, height: Any = 0, fresh: Any = False) -> None:
+        # Local mode draws in the browser; remote mode needs ParaView to render again,
+        # at the asking page's size, from a stream a page that went may have left stuck.
         if self.lost:
             return
         if self.view is not None and self.server.state.viewMode == "remote":
+            if fresh:
+                try:
+                    w, h = int(width), int(height)
+                except (TypeError, ValueError):
+                    w = h = 0
+                fresh_stream(self.server, self.engine.view, w, h)
             self.view.update()
 
     def _ui_drawn(self, size: str = "", count: Any = 1) -> None:
