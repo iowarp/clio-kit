@@ -72,6 +72,8 @@ def say_progress(**progress: Any) -> None:
 END_INTERACTION_EVENT = 45  # vtkCommand::EndInteractionEvent
 #: Seconds after a view's page last fetched a file before background work resumes.
 PAGE_QUIET = 1.5
+#: Seconds a stretch of page fetches may hold background work at most.
+PAGE_HOLD = 10.0
 
 
 class NodeApp:
@@ -87,6 +89,8 @@ class NodeApp:
         #: When the view's page last fetched a file; background work holds while a
         #: page loads, as each of ParaView's calls blocks the loop serving it.
         self.last_fetch = 0.0
+        #: When the current stretch of page fetches began.
+        self.fetch_began = 0.0
         self.sockets = 0
         #: Commands that arrived and have not started their work yet.
         self.waiting = 0
@@ -229,7 +233,10 @@ class NodeApp:
         # module scripts and fetches are cross-origin.
         cross_origin = not request.path.startswith("/clio/") and not websocket
         if cross_origin:
-            self.last_fetch = time.monotonic()
+            now = time.monotonic()
+            if now - self.last_fetch >= PAGE_QUIET:
+                self.fetch_began = now
+            self.last_fetch = now
         try:
             response = await handler(request)
             if cross_origin:
@@ -776,8 +783,11 @@ class NodeApp:
             spent = time.monotonic() - began
 
     def _loading(self) -> bool:
-        """Whether a view's page fetched a file in the last PAGE_QUIET seconds."""
-        return time.monotonic() - self.last_fetch < PAGE_QUIET
+        """Whether a view's page is loading: it fetched a file in the last PAGE_QUIET
+        seconds, in a stretch of fetches under PAGE_HOLD seconds long. Pages that
+        reload over and over do not hold background work for good."""
+        now = time.monotonic()
+        return now - self.last_fetch < PAGE_QUIET and now - self.fetch_began < PAGE_HOLD
 
     async def _replaying(self) -> None:
         """Catch a late-opened growing source up from its first step while a view
@@ -786,34 +796,42 @@ class NodeApp:
         try:
             while self._loading():
                 await asyncio.sleep(PAGE_QUIET)
+            began = time.monotonic()
             with self.server.state:
                 if not engine.start_replay():
                     return
+            # The first step is the costly one (the reader's first read of a later
+            # step), so it is what says whether the link can replay at all.
+            spent = time.monotonic() - began
             print(f"catching up from step 1 of {len(engine.timesteps())}", flush=True)
-            await asyncio.sleep(REPLAY_HOLD)
+            await asyncio.sleep(max(REPLAY_HOLD, spent))
             alone = 0.0
+            held = 0.0
             going = True
-            spent = 0.0
             while going:
                 pause = max(REPLAY_SECONDS, spent)
                 await asyncio.sleep(pause)
-                if self.waiting or self._loading():
+                # Held by commands or loading pages for REPLAY_ALONE in all, the
+                # catch-up goes to the latest step rather than wait on for its turn.
+                if (self.waiting or self._loading()) and held < REPLAY_ALONE:
+                    held += pause
                     continue
                 alone = 0.0 if self.sockets > 0 else alone + pause
                 if 0 < alone < REPLAY_ALONE:
                     continue
                 # A step that takes longer than REPLAY_SLOW to show is a link too
                 # slow to replay at a watchable pace: go to the latest step instead.
-                slow = spent > REPLAY_SLOW
+                slow = spent > REPLAY_SLOW or held >= REPLAY_ALONE
                 began = time.monotonic()
                 with self.server.state:
                     going = engine.replay_tick(finish=alone >= REPLAY_ALONE or slow)
                 if slow:
-                    print(
-                        f"a step took {spent:.1f} s to show over this link; "
-                        "skipped the rest of the catch-up",
-                        flush=True,
+                    why = (
+                        f"a step took {spent:.1f} s to show over this link"
+                        if spent > REPLAY_SLOW
+                        else f"the catch-up was held {held:.0f} s"
                     )
+                    print(f"{why}; skipped the rest of the catch-up", flush=True)
                 spent = time.monotonic() - began
             print(f"caught up; following step {len(engine.timesteps())}", flush=True)
         except Exception as exc:  # noqa: BLE001 - the view follows the latest step

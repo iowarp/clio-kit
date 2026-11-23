@@ -48,6 +48,7 @@ html, body, #app { margin: 0; height: 100%; overflow: hidden; }
 .clio-panel header span { flex: 1; }
 .clio-panel .clio-scroll { overflow: auto; padding: 0 10px 10px; flex: 1; min-height: 0; }
 .clio-view { flex: 1; position: relative; min-width: 0; min-height: 120px; }
+.clio-view img { object-fit: contain; }
 .v-btn { text-transform: none; letter-spacing: 0; }
 .v-btn.clio-pressed { background: rgba(var(--v-theme-primary), .16); color: rgb(var(--v-theme-primary));
   border-radius: 6px; }
