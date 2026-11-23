@@ -42,6 +42,9 @@ REPLAY_SECONDS = 0.25
 REPLAY_STEPS = 60
 #: Seconds a catch-up waits for a view that went away before it jumps to the latest.
 REPLAY_ALONE = 10.0
+#: Seconds a catch-up step may take to show before the link counts as too slow to
+#: replay at a watchable pace, and the catch-up goes to the latest step.
+REPLAY_SLOW = 3.0
 
 
 def set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
