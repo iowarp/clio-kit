@@ -23,7 +23,7 @@ from __future__ import annotations
 import difflib
 import os
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Generator, Iterator
 from pathlib import Path
 from typing import Any
 
@@ -307,16 +307,18 @@ class SourceGrowth:
         for value in self.timesteps():
             self._seen.setdefault(value, now)
 
-    def _grow_colours(self, scene: dict[str, Any]) -> None:
+    def _grow_colours(self, scene: dict[str, Any]) -> Iterator[str]:
         """A colour map nobody fixed grows to take in each new step's values, as
         ParaView's own maps grow on Apply; a range set by hand stays where it is.
         With the data on a joined pvserver it grows at most every
-        ``REMOTE_COLOUR_SECONDS``, taking in the step shown then."""
+        ``REMOTE_COLOUR_SECONDS``, taking in the step shown then. The view's
+        update, then each object's rescale, a stage at a time."""
         now = time.monotonic()
         if self.disk.remote and now - self._coloured_at < REMOTE_COLOUR_SECONDS:
             return
         self._coloured_at = now
-        self.view.Update()
+        with LEDGER.phase("update"):
+            self.view.Update()
         for item in scene["objects"]:
             shown = item.get("display") or {}
             proxy = self.proxies.get(item["id"])
@@ -324,8 +326,13 @@ class SourceGrowth:
                 continue
             if shown.get("visible") is False:
                 continue
-            rep = self.simple.GetDisplayProperties(proxy, self.view)
-            rep.RescaleTransferFunctionToDataRange(True, False)
+            yield f"range of {shown['color_by'][1]}"
+            if self.proxies.get(item["id"]) is not proxy:
+                continue
+            self.activate()
+            with LEDGER.phase("range"):
+                rep = self.simple.GetDisplayProperties(proxy, self.view)
+                rep.RescaleTransferFunctionToDataRange(True, False)
 
     def _bp5_settled(self, item: dict[str, Any], key: Any) -> bool:
         """Whether a grown BP5 folder can be re-read: its files agree, and its data
@@ -350,6 +357,20 @@ class SourceGrowth:
 
     def check_growth(self) -> dict[str, Any] | None:
         """Re-read the time list of growing sources; follow the latest step."""
+        stages = self.growth_stages()
+        while True:
+            try:
+                next(stages)
+            except StopIteration as done:
+                return done.value
+
+    def growth_stages(self) -> Generator[str, None, dict[str, Any] | None]:
+        """``check_growth`` a stage at a time: each reader's disk look, its re-read,
+        the new step's time, each colour map's range, then the scene record and the
+        picture. Over a slow link each takes seconds; the caller gives the loop back
+        between them, so the other views go on following and commands get in. After
+        each stage the scene may have changed: a scene closed or replaced ends the
+        growth, and the view is made active again before the next stage."""
         scene = self.scene
         if scene is None or not (scene.get("dataset") or {}).get("growing"):
             return None
@@ -359,12 +380,14 @@ class SourceGrowth:
         before = len(self.timesteps())
         changed = False
         for item in scene["objects"]:
+            if self.scene is not scene:
+                return None
             if item["kind"] != "reader" or item["id"] not in self.proxies:
                 continue
             proxy = self.proxies[item["id"]]
             source = self.readers.of(proxy)
             if source is None:
-                changed = self._grow_reader(item, proxy) or changed
+                changed = (yield from self._grow_reader(item, proxy)) or changed
                 continue
             self.readers.pull(source, self, item["id"])
             if source.generation != self._read_at.get(item["id"]):
@@ -372,25 +395,40 @@ class SourceGrowth:
                 self._read_at[item["id"]] = source.generation
                 changed = True
                 continue
-            if self.readers.looked(source):
+            if source.reading or self.readers.looked(source):
                 continue
             source.checked_at = time.monotonic()
+            source.reading = True
+            moved = False
             try:
-                moved = self._grow_reader(item, proxy)
+                moved = yield from self._grow_reader(item, proxy)
             finally:
+                source.reading = False
                 self.readers.push(source, self, item["id"])
             if moved:
                 source.generation += 1
                 self._read_at[item["id"]] = source.generation
                 changed = True
-        if not changed:
+        if not changed or self.scene is not scene:
             return None
+        yield "the new step"
+        if self.scene is not scene:
+            return None
+        self.activate()
         self._apply_time(scene)
         if scene["time"].get("follow_latest", True):
-            self._grow_colours(scene)
+            for label in self._grow_colours(scene):
+                yield label
+                if self.scene is not scene:
+                    return None
+                self.activate()
         self._note_steps()
         self.last_growth = time.time()
         after = len(self.timesteps())
+        yield "the picture"
+        if self.scene is not scene:
+            return None
+        self.activate()
         self.commit("growth")
         return {"new_steps": after - before, **self.time_summary()}
 
@@ -403,8 +441,11 @@ class SourceGrowth:
                 return True
         return False
 
-    def _grow_reader(self, item: dict[str, Any], proxy: Any) -> bool:
-        """Look at one reader's disk; re-read its files if they grew."""
+    def _grow_reader(
+        self, item: dict[str, Any], proxy: Any
+    ) -> Generator[str, None, bool]:
+        """Look at one reader's disk; re-read its files if they grew. The look and
+        the re-read are separate stages."""
         held = item["id"] in self._held
         state = None
         with LEDGER.phase("disk"):
@@ -432,6 +473,10 @@ class SourceGrowth:
                     return False
             self._growth[item["id"]] = key
             files = self._files(item)
+        yield f"re-reading {item['id']}"
+        if self.proxies.get(item["id"]) is not proxy:
+            return False
+        self.activate()
         with LEDGER.phase("reader"):
             if is_pattern(item["path"]):
                 self._point_reader(proxy, item, files, reset=True)

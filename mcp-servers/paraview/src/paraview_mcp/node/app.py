@@ -351,6 +351,8 @@ class NodeApp:
         self.jobs: dict[str, Job] = {}
         #: Whether a video is being rendered in the scene's view.
         self.animating = False
+        #: Whether a growth check is part way through its stages.
+        self.growth_busy = False
         self._replay: asyncio.Future[None] | None = None
         self.view: Any = None
         self.link_note = ""
@@ -767,6 +769,7 @@ class NodeApp:
             await self._await_source(name, args)
             if name in MUTATING:
                 await self._after_animation()
+                await self._after_growth()
             started()
             if name == "steps":
                 args = {**args, "check": self._steps_check()}
@@ -1291,14 +1294,53 @@ class NodeApp:
             if self.waiting or self._loading() or self.engine.opening:
                 spent = 0.0
                 continue
-            began = time.monotonic()
-            try:
-                with self.server.state, LEDGER.span(f"{self.name} growth"):
-                    self.engine.check_growth()
-            except Exception as exc:  # noqa: BLE001 - keep watching; say why
-                print(f"growth check failed: {exc}", flush=True)
-            spent = self.shared.worked(began)
+            spent = await self._grow_staged()
             self.shared.follows(self, self._following())
+
+    async def _grow_staged(self) -> float:
+        """One growth check a stage at a time (``growth_stages``). A step's disk
+        look, re-read, update, colour ranges and picture took 8 to 10 s together
+        over a slow link and held every view's loop that long; between stages the
+        other views take their turns and commands get in, and each stage is a span
+        of its own in the held-loop log. Commands and catch-up on this view wait
+        for the last stage. Returns the seconds of work, waits left out."""
+        spent = 0.0
+        self.growth_busy = True
+        try:
+            with self.server.state:
+                stages = self.engine.growth_stages()
+            try:
+                while not self.lost:
+                    began = time.monotonic()
+                    ended = False
+                    try:
+                        with self.server.state, LEDGER.span(f"{self.name} growth"):
+                            try:
+                                next(stages)
+                            except StopIteration:
+                                ended = True
+                    except Exception as exc:  # noqa: BLE001 - keep watching; say why
+                        print(f"growth check failed: {exc}", flush=True)
+                        ended = True
+                    spent += self.shared.worked(began)
+                    if ended:
+                        break
+                    if self.shared.queue:
+                        await self.shared.turn()
+                    else:
+                        await asyncio.sleep(0)
+            finally:
+                with self.server.state:
+                    stages.close()
+        finally:
+            self.growth_busy = False
+        return spent
+
+    async def _after_growth(self) -> None:
+        """A growth check part way through its stages finishes before this view's
+        scene changes again."""
+        while self.growth_busy and not self.lost:
+            await asyncio.sleep(TURN_POLL)
 
     def _behind(self) -> bool:
         try:
@@ -1357,6 +1399,7 @@ class NodeApp:
                     f"{why}; following the latest step without a catch-up", flush=True
                 )
                 return
+            await self._after_growth()
             began = time.monotonic()
             with self.server.state, LEDGER.span(f"{self.name} catch-up"):
                 if not engine.start_replay():
@@ -1389,6 +1432,7 @@ class NodeApp:
                 slow = (
                     spent > REPLAY_SLOW or waited > REPLAY_SLOW or held >= REPLAY_ALONE
                 )
+                await self._after_growth()
                 began = time.monotonic()
                 with self.server.state, LEDGER.span(f"{self.name} catch-up"):
                     going = engine.replay_tick(finish=alone >= REPLAY_ALONE or slow)

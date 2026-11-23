@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections.abc import Iterator
 from typing import Any
 
 from . import colors, data, manifest
@@ -349,6 +350,14 @@ def fit(engine: Any, item: dict[str, Any], proxy: Any, rep: Any) -> None:
 
 def grow(engine: Any, scene: dict[str, Any]) -> None:
     """Each field's default range takes in a new step's values."""
+    for _ in grow_stages(engine, scene):
+        pass
+
+
+def grow_stages(engine: Any, scene: dict[str, Any]) -> Iterator[str]:
+    """``grow`` a stage at a time: the view's update, then each field's range.
+    Over a slow link each takes seconds; between them the caller gives the loop
+    back, and the view is made active again before the next."""
     with LEDGER.phase("update"):
         engine.view.Update()
     done: set[str] = set()
@@ -361,6 +370,10 @@ def grow(engine: Any, scene: dict[str, Any]) -> None:
         if shown.get("visible") is False:
             continue
         done.add(field)
+        yield f"range of {field}"
+        if engine.proxies.get(item["id"]) is not proxy:
+            continue
+        engine.activate()
         with LEDGER.phase("range"):
             rep = engine.simple.GetDisplayProperties(proxy, engine.view)
             fit(engine, item, proxy, rep)

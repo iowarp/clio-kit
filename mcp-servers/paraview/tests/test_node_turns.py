@@ -23,13 +23,31 @@ def _node(engine: Any) -> Any:
     node.engine = engine
     node.lost = None
     node.waiting = 0
+    node.name = "view"
+    node.sockets = 0
+    node.growth_busy = False
     node.server = types.SimpleNamespace(state=_State())
     return node
 
 
+def _growing(checks: list[int], stages: int = 1) -> Any:
+    def growth_stages() -> Any:
+        for _ in range(stages - 1):
+            yield "stage"
+        checks.append(1)
+        return None
+
+    return types.SimpleNamespace(
+        growth_stages=growth_stages,
+        opening=False,
+        scene=None,
+        behind=lambda: False,
+    )
+
+
 def test_the_follow_skips_its_turns_while_a_command_waits() -> None:
     checks: list[int] = []
-    node = _node(types.SimpleNamespace(check_growth=lambda: checks.append(1)))
+    node = _node(_growing(checks))
 
     async def go() -> tuple[int, int]:
         node.waiting = 1
@@ -43,6 +61,26 @@ def test_the_follow_skips_its_turns_while_a_command_waits() -> None:
 
     held, after = asyncio.run(go())
     assert held == 0 and after > 0
+
+
+def test_a_growth_check_gives_the_loop_back_between_its_stages() -> None:
+    checks: list[int] = []
+    node = _node(_growing(checks, stages=4))
+    ticks: list[bool] = []
+
+    async def other() -> None:
+        while True:
+            ticks.append(node.growth_busy)
+            await asyncio.sleep(0)
+
+    async def go() -> None:
+        task = asyncio.create_task(other())
+        await node._grow_staged()
+        task.cancel()
+
+    asyncio.run(go())
+    assert checks == [1] and node.growth_busy is False
+    assert sum(ticks) >= 3
 
 
 def test_a_command_counts_as_waiting_until_its_work_starts() -> None:
