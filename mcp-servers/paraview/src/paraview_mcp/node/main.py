@@ -169,8 +169,8 @@ def main(argv: list[str] | None = None) -> None:
         sys.path.append(str(site))
         from . import vtkjs_patch
 
-        # Logged every start, so a bundle the guard does not fit is visible, not silent.
-        print(f"vtk.js display-actor guard: {vtkjs_patch.apply(site)}", flush=True)
+        # Logged every start, so a bundle a fix does not fit is visible, not silent.
+        print(f"vtk.js fixes: {vtkjs_patch.apply(site)}", flush=True)
 
     from paraview import simple
 
