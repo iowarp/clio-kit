@@ -16,7 +16,7 @@ from mcp.types import ImageContent
 from pydantic import Field
 
 from . import present
-from .server import _paths, _text, attacher, mcp, run
+from .server import _paths, _scene_keys, _text, attacher, mcp, run
 
 
 @mcp.tool(annotations={"title": "Read the picked point", "readOnlyHint": True})
@@ -212,9 +212,23 @@ async def export_scene(
 
 
 @mcp.tool(annotations={"title": "Describe the ParaView scene", "readOnlyHint": True})
-async def scene_state(ctx: Context) -> ToolResult:
-    """Where ParaView is attached, the dataset, the pipeline, time and view."""
-    result, _ = await run(ctx, "scene_state", {})
+async def scene_state(
+    ctx: Context,
+    scene: Annotated[
+        str | None,
+        Field(
+            description="An open scene's id: read its view and leave the current "
+            "view as it is. Default: the current view."
+        ),
+    ] = None,
+) -> ToolResult:
+    """Where ParaView is attached, the dataset, the pipeline, time and view, and every
+    open view with its step. Read views with this, not with open_view: opening an
+    open view again only brings it forward."""
+    args: dict[str, Any] = {"scene": scene} if scene else {}
+    result, _ = await run(
+        ctx, "scene_state", args, key=_scene_keys.get(scene) if scene else None
+    )
     attachment = attacher().describe()
     lines = [
         f"Attached {attachment['where']}: ParaView {attachment.get('paraview')} "
@@ -243,6 +257,7 @@ async def scene_state(ctx: Context) -> ToolResult:
     else:
         lines.append(present.scene_text(result, attachment["where"]))
         lines.extend(present.changes_lines(result.get("changes") or []))
+    lines.extend(present.views_lines(result.get("views") or []))
     return ToolResult(
         content=[_text("\n".join(lines))],
         structured_content={"attachment": attachment, "scene": result},

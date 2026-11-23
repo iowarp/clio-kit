@@ -17,6 +17,7 @@ from typing import Any
 from . import manifest
 from .app import NodeApp
 from .engine import Engine
+from .errors import CommandError
 
 
 def _slug(text: str) -> str:
@@ -62,12 +63,22 @@ class Stage:
         return scene_id
 
     async def route(
-        self, name: str, args: dict[str, Any], by: str = "agent"
+        self,
+        name: str,
+        args: dict[str, Any],
+        by: str = "agent",
+        found: dict[str, Any] | None = None,
     ) -> NodeApp:
         """The app a command is for. open_view picks the view of its scene, else a
         view with no scene yet, else starts one. The agent's open_view makes it the
         current view; a view reopening itself for the person (a host replays its
-        open_view) leaves the agent's commands where they were."""
+        open_view) leaves the agent's commands where they were. ``found`` is told
+        whether the scene was already open in a view (``already_open``).
+
+        scene_state with a scene reads that scene's view and leaves the current one
+        as it is, so the agent can look at every view without opening any."""
+        if name == "scene_state" and args.get("scene"):
+            return self._showing(str(args.pop("scene")))
         if name != "open_view":
             return self.current
         scene_id = self.scene_for(args)
@@ -76,6 +87,10 @@ class Stage:
         if args.get("path") and not args.get("scene"):
             args["scene"] = scene_id
         app = self._find(scene_id)
+        if found is not None:
+            found["already_open"] = bool(
+                app is not None and app.engine.scene is not None and not args.get("new")
+            )
         if app is None:
             if self._adding is None:
                 self._adding = asyncio.Lock()
@@ -84,6 +99,43 @@ class Stage:
         if by == "agent" or self.current.engine.scene is None:
             self.current = app
         return app
+
+    def _showing(self, scene_id: str) -> NodeApp:
+        for app in self.apps:
+            scene = app.engine.scene
+            if scene is not None and scene["scene"] == scene_id:
+                return app
+        open_ids = ", ".join(v["scene"] for v in self.views()) or "none"
+        raise CommandError(
+            "scene_not_open",
+            f"No open view shows scene {scene_id!r}. Open views: {open_ids}.",
+        )
+
+    def views(self) -> list[dict[str, Any]]:
+        """Every open view as it was last drawn: its scene, dataset, step and mode,
+        and whether the agent's commands go to it. Read from each view's last state,
+        so it costs no ParaView call and never waits on a busy view."""
+        out: list[dict[str, Any]] = []
+        for app in self.apps:
+            scene = app.engine.scene
+            if scene is None:
+                continue
+            bridge = app.server.state.clio_bridge or {}
+            out.append(
+                {
+                    "scene": scene["scene"],
+                    "current": app is self.current,
+                    "dataset": (scene.get("dataset") or {}).get("path"),
+                    "color_by": [
+                        p.get("color_by")
+                        for p in bridge.get("representation") or []
+                        if p.get("color_by")
+                    ],
+                    "time": bridge.get("time"),
+                    "view_mode": bridge.get("view_mode"),
+                }
+            )
+        return out
 
     def _find(self, scene_id: str) -> NodeApp | None:
         """The view showing a scene, else one that shows none yet."""

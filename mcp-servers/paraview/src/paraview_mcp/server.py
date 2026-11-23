@@ -357,7 +357,9 @@ async def open_view(
     one coloured by another variable (the descriptor's display array), opens a new
     view and leaves the open ones as they are, each at its own step. The other tools
     act on the view opened last; open_view(scene=id) of an open scene makes its view
-    the one they act on again.
+    the one they act on again. A view is open once: opening a scene that is already
+    open opens nothing new, brings its view forward and says already_open. To read a
+    view's step or state, call scene_state(scene=id), never open_view.
     """
     global _current
     key = _key(pvserver) if pvserver else _scene_keys.get(scene or "", _current)
@@ -375,6 +377,15 @@ async def open_view(
     text = present.scene_text(summary, _where()) + present.drawn_text(
         summary.get("drawn"), summary.get("shown")
     )
+    if summary.get("already_open"):
+        text = (
+            f"Scene {summary['scene']} is already open in its view; that view is "
+            "shown again and no new view was opened. Use scene_state(scene=...) to "
+            "read a view without opening it.\n" + text
+        )
+    views = present.views_lines(summary.get("views") or [])
+    if len(views) > 2:
+        text += "\n" + "\n".join(views)
     reopen: dict[str, Any] = {"scene": summary["scene"]}
     if key:
         reopen["pvserver"] = key
@@ -388,7 +399,11 @@ async def open_view(
         raise _fail(exc) from exc
     return ToolResult(
         content=[_text(text)],
-        structured_content={"scene": summary["scene"], "summary": summary},
+        structured_content={
+            "scene": summary["scene"],
+            "already_open": bool(summary.get("already_open")),
+            "summary": summary,
+        },
         meta={
             SERVICE_META: {"port": port, "token": link.token},
             REOPEN_META: {"arguments": reopen},
