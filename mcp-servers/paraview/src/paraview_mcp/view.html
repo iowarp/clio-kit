@@ -173,7 +173,13 @@
         }
         showStatus(shown, true);
         clearTimeout(checkTimer);
-        checkTimer = setTimeout(() => { if (!linkUp) checkParaView(); }, LINK_WAIT_MS);
+        // A first connect that failed before any link message never retries on its
+        // own, so reload the page with the same backoff a dropped link uses.
+        if (status.state === 'closed') {
+          checkTimer = setTimeout(() => { if (!linkUp) checkParaView(); }, LINK_WAIT_MS);
+        } else {
+          scheduleReconnect();
+        }
       })
       .catch(() => {})
       .finally(() => { checking = false; });
