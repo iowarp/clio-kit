@@ -118,6 +118,10 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         self._replay: int | None = None
         self._replay_armed: str | None = None
         self.last_growth: float | None = None
+        #: When growing sources were last checked, and their colours last grown
+        #: (monotonic seconds).
+        self.checked_at = 0.0
+        self._coloured_at = 0.0
         #: Each reader's last look at the disk, and when what it saw last changed.
         self._disk_seen: dict[str, Any] = {}
         self.disk_changed: float | None = None
