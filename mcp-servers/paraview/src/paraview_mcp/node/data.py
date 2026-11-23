@@ -182,9 +182,14 @@ def _fetch(proxy: Any, time: float | None, helper: str) -> Any:
 # arrays are read through VTK's buffer protocol, and the sums, extremes and sort run
 # in C.
 _RANK_SCRIPT = r"""
+import builtins
 import math
 from vtkmodules.vtkCommonCore import vtkDoubleArray, vtkPoints
 from vtkmodules.vtkCommonDataModel import vtkCellArray
+
+# A ProgrammableFilter runs its script with VTK's numpy algorithms imported, whose
+# max, min, sum and abs take an array and an axis; this script means Python's own.
+max, min, sum, abs = builtins.max, builtins.min, builtins.sum, builtins.abs
 
 source = self.GetInputDataObject(0, 0)
 leaves = []
