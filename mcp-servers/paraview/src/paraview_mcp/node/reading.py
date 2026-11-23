@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import math
 import os
 import tempfile
 import time
@@ -191,9 +192,14 @@ class SceneReading:
         return target.read_bytes()
 
     def drawn(
-        self, width: int = 320, height: int = 200, picture: Path | None = None
+        self,
+        width: int = 320,
+        height: int = 200,
+        picture: Path | None = None,
+        **extra: Any,
     ) -> dict[str, Any]:
-        """How much of a frame of this size the scene really draws (drawn.py)."""
+        """How much of a frame of this size the scene really draws (drawn.py), and
+        when it draws nothing, why."""
         from paraview import servermanager
 
         from . import drawn
@@ -208,12 +214,98 @@ class SceneReading:
             if rep is not None
         ]
         folder = manifest.scene_dir(self.root, scene["scene"]) / "captures"
-        return drawn.measure(
-            lambda path: self.screenshot(path, width, height),
+        result = drawn.measure(
+            lambda path: self.screenshot(path, width, height, **extra),
             reps,
             folder,
             picture,
         )
+        if result.get("blank") is True and not result.get("note"):
+            try:
+                result["note"] = self.blank_why()
+            except Exception as exc:  # noqa: BLE001 - the blank verdict stands
+                result["note"] = f"the cause was not found ({type(exc).__name__})"
+        return result
+
+    def blank_why(self) -> str:
+        """Why the visible objects draw no pixel: an empty output at this time, a
+        transparent display, or a camera that is inside the data or does not face it."""
+        from paraview import servermanager
+
+        scene = self.require_scene()
+        empty: list[str] = []
+        clear: list[str] = []
+        boxes: list[list[float]] = []
+        for item in scene.get("objects") or []:
+            proxy = self.proxies.get(item["id"])
+            rep = (
+                servermanager.GetRepresentation(proxy, self.view)
+                if proxy is not None
+                else None
+            )
+            if rep is None or not rep.Visibility:
+                continue
+            name = str(item.get("label") or item["id"])
+            info = proxy.GetDataInformation()
+            if int(info.GetNumberOfPoints()) == 0:
+                empty.append(name)
+                continue
+            if "Opacity" in rep.ListProperties() and float(rep.Opacity) <= 0.0:
+                clear.append(name)
+                continue
+            boxes.append([float(v) for v in info.GetBounds()])
+        reasons = []
+        if empty:
+            reasons.append(f"{', '.join(empty)} has no points at this time")
+        if clear:
+            reasons.append(f"{', '.join(clear)} is fully transparent")
+        if boxes:
+            reasons.append(self._camera_misses(boxes))
+        return "; ".join(r for r in reasons if r) or (
+            "the visible objects have points in front of the camera, yet no pixel "
+            "differs from the background: check their colour against the background "
+            "and whether ParaView is still running"
+        )
+
+    def _camera_misses(self, boxes: list[list[float]]) -> str:
+        """How the camera misses the data in ``boxes`` (xmin, xmax, ymin, ...), if it does."""
+        low = [min(b[2 * i] for b in boxes) for i in range(3)]
+        high = [max(b[2 * i + 1] for b in boxes) for i in range(3)]
+        centre = [(a + b) / 2 for a, b in zip(low, high)]
+        radius = max(sum((b - a) ** 2 for a, b in zip(low, high)) ** 0.5 / 2, 1e-12)
+        camera = self.read_camera()
+        position = camera["position"]
+        look = [f - p for f, p in zip(camera["focal_point"], position)]
+        length = sum(v * v for v in look) ** 0.5
+        if length == 0:
+            return "the camera's position is its focal point, so it looks nowhere"
+        look = [v / length for v in look]
+        up = camera["view_up"]
+        if abs(sum(a * b for a, b in zip(look, up))) > 0.999 * (
+            sum(v * v for v in up) ** 0.5 or 1.0
+        ):
+            return "the camera's view up is along its view direction"
+        if all(a <= p <= b for a, p, b in zip(low, position, high)):
+            return "the camera sits inside the data's bounds"
+        to_centre = [c - p for c, p in zip(centre, position)]
+        distance = sum(v * v for v in to_centre) ** 0.5
+        if camera["parallel_projection"]:
+            across = [
+                t - sum(a * b for a, b in zip(to_centre, look)) * l
+                for t, l in zip(to_centre, look)
+            ]
+            off = sum(v * v for v in across) ** 0.5
+            if off > radius + float(camera["parallel_scale"]) * 2:
+                return "the data lies outside the camera's parallel view"
+            return ""
+        ahead = sum(a * b for a, b in zip(to_centre, look))
+        if ahead < -radius:
+            return "the data is behind the camera"
+        angle = math.degrees(math.acos(max(-1.0, min(1.0, ahead / distance))))
+        spread = math.degrees(math.asin(min(1.0, radius / distance)))
+        if angle - spread > float(camera["view_angle"]):
+            return "the data lies outside the camera's field of view"
+        return ""
 
     def cmd_capture(self, width: int = 1280, height: int = 800) -> dict[str, Any]:
         scene = self.require_scene()
@@ -256,6 +348,7 @@ class SceneReading:
             "png_base64": base64.b64encode(png).decode("ascii"),
             "width": width,
             "height": height,
+            "drawn": self.drawn(width, height, target, **extra),
         }
 
     def cmd_export_scene(self, path: str | None = None) -> dict[str, Any]:

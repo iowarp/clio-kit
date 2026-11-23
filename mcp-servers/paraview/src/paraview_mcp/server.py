@@ -688,7 +688,8 @@ async def export_artifact(
     height: Annotated[int, Field(ge=64, le=8192)] = 1080,
     transparent: bool = False,
 ) -> list[Any]:
-    """Write a figure of the current view as a PNG file."""
+    """Write a figure of the current view as a PNG file. The text says when the
+    figure is blank and why, so fix that rather than export again."""
     result, _ = await run(
         ctx,
         "export_artifact",
@@ -697,7 +698,8 @@ async def export_artifact(
     size = len(base64.b64decode(result["png_base64"]))
     return [
         _text(
-            f"Wrote {result['path']} ({size} bytes, {width}x{height}) on the ParaView machine."
+            present.blank_warning(result.get("drawn"))
+            + f"Wrote {result['path']} ({size} bytes, {width}x{height}) on the ParaView machine."
         ),
         ImageContent(type="image", data=result["png_base64"], mime_type="image/png"),
     ]

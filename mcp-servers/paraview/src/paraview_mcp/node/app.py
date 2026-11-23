@@ -80,6 +80,12 @@ PAGE_QUIET = 1.5
 PAGE_HOLD = 10.0
 #: Seconds between looks at whether a background task's turn has come.
 TURN_POLL = 0.05
+#: Seconds the loop is left free between two stages of one piece of work. It must be
+#: a real wait: ``sleep(0)`` gives the loop a single pass, while a timer or a socket
+#: needs several (the timer fires, its future resolves, its task wakes; bytes arrive,
+#: the reader is fed, the handler wakes), so the held-loop watch, commands and pages
+#: only got in after the next stage had blocked the loop again.
+STAGE_BREAK = 0.02
 #: Seconds a background task may wait for its turn before the node log says so.
 TURN_SLOW = 30.0
 #: Seconds at most the loop is left free after a piece of background work. Commands
@@ -903,7 +909,7 @@ class NodeApp:
                     self.shared.worked(began)
                     await self.shared.turn()
                 else:
-                    await asyncio.sleep(0)
+                    await asyncio.sleep(STAGE_BREAK)
         finally:
             with self.server.state:
                 stages.close()
@@ -938,7 +944,7 @@ class NodeApp:
                     if progress is None:
                         return dict(result)
                     say_progress(done=progress[0], total=progress[1])
-                    await asyncio.sleep(0)
+                    await asyncio.sleep(STAGE_BREAK)
             finally:
                 with self.server.state:
                     steps.close()
@@ -1328,7 +1334,7 @@ class NodeApp:
                     if self.shared.queue:
                         await self.shared.turn()
                     else:
-                        await asyncio.sleep(0)
+                        await asyncio.sleep(STAGE_BREAK)
             finally:
                 with self.server.state:
                     stages.close()

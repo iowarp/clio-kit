@@ -83,6 +83,26 @@ def test_a_growth_check_gives_the_loop_back_between_its_stages() -> None:
     assert sum(ticks) >= 3
 
 
+def test_a_timer_gets_in_between_the_stages_of_a_growth_check() -> None:
+    checks: list[int] = []
+    node = _node(_growing(checks, stages=4))
+    woke: list[bool] = []
+
+    async def timer() -> None:
+        while True:
+            await asyncio.sleep(0.001)
+            woke.append(node.growth_busy)
+
+    async def go() -> None:
+        task = asyncio.create_task(timer())
+        await asyncio.sleep(0)
+        await node._grow_staged()
+        task.cancel()
+
+    asyncio.run(go())
+    assert sum(woke) >= 3
+
+
 def test_a_command_counts_as_waiting_until_its_work_starts() -> None:
     node = _node(types.SimpleNamespace())
     seen: list[int] = []
