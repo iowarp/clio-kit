@@ -22,7 +22,14 @@ from .changes import lines as change_lines
 from .engine import MUTATING, STEPWISE, CommandError, Engine
 from .panel import MODE_LABELS, build
 from .serializers import register_serializers
-from .sources import REPLAY_ALONE, REPLAY_HOLD, REPLAY_SECONDS, SETTLE, is_pattern
+from .sources import (
+    REPLAY_ALONE,
+    REPLAY_HOLD,
+    REPLAY_SECONDS,
+    REPLAY_SLOW,
+    SETTLE,
+    is_pattern,
+)
 from .theme import FALLBACK_CSS, THEME_JS, apply_to_view
 from .workbench import Workbench
 
@@ -62,6 +69,8 @@ def say_progress(**progress: Any) -> None:
 
 TOKEN_HEADERS = ("X-Clio-Service-Token",)
 END_INTERACTION_EVENT = 45  # vtkCommand::EndInteractionEvent
+#: Seconds after a view's page last fetched a file before background work resumes.
+PAGE_QUIET = 1.5
 
 # Posts the bridge state and the link state to the page that frames trame.
 BRIDGE_JS = r"""
@@ -183,6 +192,9 @@ class NodeApp:
         self.token = token
         self.server = server or get_server("clio-paraview", client_type="vue3")
         self.last_link = time.monotonic()
+        #: When the view's page last fetched a file; background work holds while a
+        #: page loads, as each of ParaView's calls blocks the loop serving it.
+        self.last_fetch = 0.0
         self.sockets = 0
         #: Commands that arrived and have not started their work yet.
         self.waiting = 0
@@ -324,6 +336,8 @@ class NodeApp:
         # The view frames trame from a sandboxed, opaque-origin page, so its
         # module scripts and fetches are cross-origin.
         cross_origin = not request.path.startswith("/clio/") and not websocket
+        if cross_origin:
+            self.last_fetch = time.monotonic()
         try:
             response = await handler(request)
             if cross_origin:
@@ -843,23 +857,36 @@ class NodeApp:
     # -- background work ---------------------------------------------------------
     async def watch_growth(self, interval: float = 2.0) -> None:
         """Re-read growing sources; report new steps to the view."""
+        spent = 0.0
         while True:
-            await asyncio.sleep(interval)
+            # ParaView's calls block this loop, which also serves the view's page and
+            # its link; over a slow link a check takes seconds, so the loop stays free
+            # at least as long as the last check took.
+            await asyncio.sleep(max(interval, spent))
             if self.lost:
                 return
-            if self.waiting:
+            if self.waiting or self._loading():
+                spent = 0.0
                 continue
+            began = time.monotonic()
             try:
                 with self.server.state:
                     self.engine.check_growth()
             except Exception as exc:  # noqa: BLE001 - keep watching; say why
                 print(f"growth check failed: {exc}", flush=True)
+            spent = time.monotonic() - began
+
+    def _loading(self) -> bool:
+        """Whether a view's page fetched a file in the last PAGE_QUIET seconds."""
+        return time.monotonic() - self.last_fetch < PAGE_QUIET
 
     async def _replaying(self) -> None:
         """Catch a late-opened growing source up from its first step while a view
         watches; with no view for REPLAY_ALONE seconds it jumps to the latest."""
         engine = self.engine
         try:
+            while self._loading():
+                await asyncio.sleep(PAGE_QUIET)
             with self.server.state:
                 if not engine.start_replay():
                     return
@@ -867,15 +894,28 @@ class NodeApp:
             await asyncio.sleep(REPLAY_HOLD)
             alone = 0.0
             going = True
+            spent = 0.0
             while going:
-                await asyncio.sleep(REPLAY_SECONDS)
-                if self.waiting:
+                pause = max(REPLAY_SECONDS, spent)
+                await asyncio.sleep(pause)
+                if self.waiting or self._loading():
                     continue
-                alone = 0.0 if self.sockets > 0 else alone + REPLAY_SECONDS
+                alone = 0.0 if self.sockets > 0 else alone + pause
                 if 0 < alone < REPLAY_ALONE:
                     continue
+                # A step that takes longer than REPLAY_SLOW to show is a link too
+                # slow to replay at a watchable pace: go to the latest step instead.
+                slow = spent > REPLAY_SLOW
+                began = time.monotonic()
                 with self.server.state:
-                    going = engine.replay_tick(finish=alone >= REPLAY_ALONE)
+                    going = engine.replay_tick(finish=alone >= REPLAY_ALONE or slow)
+                if slow:
+                    print(
+                        f"a step took {spent:.1f} s to show over this link; "
+                        "skipped the rest of the catch-up",
+                        flush=True,
+                    )
+                spent = time.monotonic() - began
             print(f"caught up; following step {len(engine.timesteps())}", flush=True)
         except Exception as exc:  # noqa: BLE001 - the view follows the latest step
             print(f"catch-up failed: {exc}", flush=True)
