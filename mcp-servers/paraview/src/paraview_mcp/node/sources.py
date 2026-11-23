@@ -130,6 +130,9 @@ class SourceGrowth:
     def commit(self, reason: str) -> None:
         raise NotImplementedError
 
+    def activate(self) -> None:
+        raise NotImplementedError
+
     cmd_create_filter: Callable[..., dict[str, Any]]
     cmd_set_representation: Callable[..., dict[str, Any]]
     face: Callable[[Any], None]
@@ -374,6 +377,7 @@ class SourceGrowth:
         scene = self.scene
         if scene is None or not (scene.get("dataset") or {}).get("growing"):
             return None
+        self.activate()
         self._note_steps()
         before = len(self.timesteps())
         changed = False
@@ -431,6 +435,10 @@ class SourceGrowth:
     def replay_armed(self) -> bool:
         return self._replay_armed is not None
 
+    def disarm_replay(self) -> None:
+        """A view opened while others watch: no catch-up, which would move theirs."""
+        self._replay_armed = None
+
     def start_replay(self) -> bool:
         """Show the first step of an armed source; the view still follows."""
         scene = self.scene
@@ -439,6 +447,7 @@ class SourceGrowth:
             return False
         if not scene["time"].get("follow_latest", True) or len(self.timesteps()) < 2:
             return False
+        self.activate()
         self._replay = 0
         self._apply_time(scene)
         self.commit("replay")
@@ -455,6 +464,7 @@ class SourceGrowth:
         stride = max(1, -(-(steps - 1) // REPLAY_STEPS))
         index = self._replay + stride
         self._replay = None if finish or index >= steps - 1 else index
+        self.activate()
         self._apply_time(scene)
         self.commit("replay")
         return self._replay is not None

@@ -77,13 +77,18 @@ def restore(simple: Any, saved: dict[str, Any] | None) -> None:
             simple.GetOpacityTransferFunction(name).Points = entry["OpacityPoints"]
 
 
-def forget(servermanager: Any, view: Any) -> None:
-    """Remove the process's colour maps and legends, so the next scene starts fresh."""
+def forget(servermanager: Any, view: Any, maps: bool = True) -> None:
+    """Remove the process's colour maps and legends, so the next scene starts fresh.
+    With ``maps`` false, only ``view``'s legends go: other scenes still use the maps."""
     pxm = servermanager.ProxyManager()
     for (name, _id), bar in list(pxm.GetProxiesInGroup("scalar_bars").items()):
-        if bar in view.Representations:
+        mine = bar in view.Representations
+        if mine:
             view.Representations.remove(bar)
-        pxm.UnRegisterProxy("scalar_bars", name, bar)
+        if mine or maps:
+            pxm.UnRegisterProxy("scalar_bars", name, bar)
+    if not maps:
+        return
     for group in GROUPS:
         for (name, _id), proxy in list(pxm.GetProxiesInGroup(group).items()):
             pxm.UnRegisterProxy(group, name, proxy)

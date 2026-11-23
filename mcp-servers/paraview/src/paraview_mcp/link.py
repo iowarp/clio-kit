@@ -166,3 +166,14 @@ class Link:
     @property
     def token(self) -> str:
         return str(self.node["token"])
+
+    def port_for(self, remote: Any) -> int:
+        """The local port of one of the node half's view ports: each open scene has
+        its own. The node's own port is the link's."""
+        try:
+            remote = int(remote)
+        except (TypeError, ValueError):
+            return self.local_port
+        if remote == int(self.node["port"]):
+            return self.local_port
+        return self.transport.forward(remote, keep=True)

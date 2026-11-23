@@ -211,18 +211,26 @@ def main(argv: list[str] | None = None) -> None:
 
     from .app import NodeApp
     from .engine import Engine
+    from .stage import Stage
 
-    engine = Engine(
-        root,
-        threshold_mb=threshold,
-        session=session,
-        data_on_server=bool(args.pvserver),
-    )
+    def make_engine(disk: Any = None) -> Engine:
+        return Engine(
+            root,
+            threshold_mb=threshold,
+            session=session,
+            data_on_server=bool(args.pvserver),
+            disk=disk,
+        )
+
+    engine = make_engine()
     token = secrets.token_urlsafe(32)
     node = NodeApp(engine, token)
     if watched is not None and session:
         node.watched = watched
         node.pvserver = session
+    stage = Stage(
+        node, lambda: make_engine(engine.disk), growth_interval=args.growth_interval
+    )
     server = node.server
     record_path = root / f"{args.name}.json"
 
@@ -245,11 +253,11 @@ def main(argv: list[str] | None = None) -> None:
         loop = asyncio.get_event_loop()
         loop.create_task(watch_loop())
         loop.create_task(node.watch_growth(args.growth_interval))
-        loop.create_task(idle(node, args.idle_seconds, record_path, lock))
-        loop.create_task(watch_stop(node, stop_path, record_path, lock))
+        loop.create_task(idle(stage, args.idle_seconds, record_path, lock))
+        loop.create_task(watch_stop(stage, stop_path, record_path, lock))
         if watched is not None and session:
             print(f"watching the pvserver connection to {session}", flush=True)
-            loop.create_task(watch_pvserver(node, watched, session, record_path, lock))
+            loop.create_task(watch_pvserver(stage, watched, session, record_path, lock))
 
     server.controller.on_server_ready.add(ready)
     server.start(
@@ -266,18 +274,23 @@ def main(argv: list[str] | None = None) -> None:
 def shut_down(
     node: Any, record_path: Path, lock: Any, why: str, render: bool = True
 ) -> None:
-    """Save the scene, drop the record and the lock, and exit.
+    """Save every open scene, drop the record and the lock, and exit.
 
     Without ``render`` (the pvserver has gone) the camera is not read back: the
     manifest keeps the camera of the last commit.
     """
     from . import manifest
 
-    engine = node.engine
-    if engine.scene is not None:
-        if render:
-            engine.scene["camera"] = engine.read_camera()
-        manifest.write(engine.root, engine.scene)
+    engines = node.engines() if hasattr(node, "engines") else [node.engine]
+    for engine in engines:
+        if engine.scene is None:
+            continue
+        try:
+            if render:
+                engine.scene["camera"] = engine.read_camera()
+            manifest.write(engine.root, engine.scene)
+        except Exception as exc:  # noqa: BLE001 - save the others; say why
+            print(f"saving {engine.scene['scene']}: {exc}", flush=True)
     print(f"{why}: shutting down", flush=True)
     if _watchdog is not None and _watchdog.poll() is None:
         # It holds a share of the pvserver socket: the pvserver sees this client go

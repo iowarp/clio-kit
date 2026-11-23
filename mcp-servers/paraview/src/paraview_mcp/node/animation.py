@@ -96,14 +96,12 @@ class SceneAnimation:
             shown = simple.Show(stamp, self.view)
             shown.WindowLocation = "Upper Left Corner"
             shown.FontSize = 22
-        animation = simple.GetAnimationScene()
         count = last - first + 1
         rendered = False
         try:
             for frame, index in enumerate(range(first, last + 1)):
                 if stamp is not None and labels is not None:
                     stamp.Text = str(labels[index])
-                animation.AnimationTime = steps[index]
                 self.view.ViewTime = steps[index]
                 simple.SaveScreenshot(
                     str(frames / f"f_{frame:05d}.png"),

@@ -79,7 +79,10 @@ mcp: FastMCP = FastMCP(
         "look with capture, before making a claim. For a source still being written "
         "(a running simulation), pass growing in open_view's view descriptor; the view "
         "follows the newest step, and watch_steps reports each new step as it is "
-        "written. Where ParaView runs is the connector's setting, not a tool."
+        "written. Each scene (a dataset, or one variable of it) has a view of its "
+        "own; the other tools act on the view opened last, and open_view(scene=id) "
+        "switches back to an open one. Where ParaView runs is the connector's "
+        "setting, not a tool."
     ),
 )
 # Background tasks (the MCP tasks extension) for watch_steps; a client that does not
@@ -308,7 +311,11 @@ async def open_view(
     ] = None,
     scene: Annotated[
         str | None,
-        Field(description="A scene id from an earlier open_view, to restore it."),
+        Field(
+            description="A scene id. One from an earlier open_view restores that "
+            "scene, or, while its view is open, makes it the view later tools act "
+            "on. A new name opens a scene of its own, e.g. one per variable."
+        ),
     ] = None,
     growing: Annotated[
         bool, Field(description="The source is still being written; follow it.")
@@ -345,6 +352,12 @@ async def open_view(
     run starts. Starting ParaView is reported as progress and can be cancelled; it
     fails only when its start stops making progress. The result says how much of
     a test frame the view really draws.
+
+    Each scene has a view of its own beside the others: another dataset, or the same
+    one coloured by another variable (the descriptor's display array), opens a new
+    view and leaves the open ones as they are, each at its own step. The other tools
+    act on the view opened last; open_view(scene=id) of an open scene makes its view
+    the one they act on again.
     """
     global _current
     key = _key(pvserver) if pvserver else _scene_keys.get(scene or "", _current)
@@ -365,11 +378,19 @@ async def open_view(
     reopen: dict[str, Any] = {"scene": summary["scene"]}
     if key:
         reopen["pvserver"] = key
+    # Each open scene has a port of its own on the node half, so views of different
+    # scenes stay open side by side.
+    try:
+        port = await asyncio.to_thread(
+            link.port_for, (summary.get("service") or {}).get("port")
+        )
+    except ParaViewError as exc:
+        raise _fail(exc) from exc
     return ToolResult(
         content=[_text(text)],
         structured_content={"scene": summary["scene"], "summary": summary},
         meta={
-            SERVICE_META: {"port": link.local_port, "token": link.token},
+            SERVICE_META: {"port": port, "token": link.token},
             REOPEN_META: {"arguments": reopen},
         },
     )

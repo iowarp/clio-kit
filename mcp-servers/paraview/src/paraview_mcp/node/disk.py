@@ -390,13 +390,24 @@ def source_readiness(
     one step in it is surely whole), and what is on disk."""
     key = disk_key(path)
     if pattern:
-        return (None if key else "no file matches it yet"), True, key
+        if not key:
+            # Nothing matches yet: what the run writes beside it says it goes on.
+            return "no file matches it yet", True, ("absent", _beside(path))
+        return None, True, key
     if not _there(path):
-        return "it is not there yet", False, key
+        return "it is not there yet", False, ("absent", _beside(path))
     if not is_bp(path, reader):
         return None, True, key
     state = check(path)
     return state.reason, state.clear or whole_steps(state) > 0, key
+
+
+def _beside(path: str) -> Any:
+    """What is in the folder a source that is not there yet will be in."""
+    parent = os.path.dirname(path.rstrip("/"))
+    while is_pattern(parent):
+        parent = os.path.dirname(parent)
+    return disk_key(parent) if parent and os.path.isdir(parent) else None
 
 
 def dispatch(op: str, args: dict[str, Any]) -> Any:

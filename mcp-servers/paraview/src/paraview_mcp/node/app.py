@@ -38,6 +38,9 @@ from .workbench import Workbench
 #: Seconds a growing source may show no change on disk before open_view stops
 #: waiting for it to become readable.
 SOURCE_STALL = 90.0
+#: Times a growing source's open is tried again, each after the source changed,
+#: before its error stands.
+OPEN_TRIES = 5
 #: Seconds a finished call's answer is kept, so a front whose copy was lost on the
 #: way gets it again instead of running the call twice.
 KEEP_ANSWER = 600.0
@@ -76,24 +79,47 @@ PAGE_QUIET = 1.5
 PAGE_HOLD = 10.0
 
 
-class NodeApp:
-    """Binds the engine to trame and serves the command routes."""
+@dataclass
+class Shared:
+    """What every view of the node half shares: they run on one loop, which each of
+    ParaView's calls blocks, and on one pvserver."""
 
-    def __init__(self, engine: Engine, token: str, server: Any = None) -> None:
+    #: Commands that arrived and have not started their work yet.
+    waiting: int = 0
+    #: Why the pvserver went, once it has; nothing is drawn after that.
+    lost: str = ""
+    #: When a view's page last fetched a file; background work holds while a page
+    #: loads.
+    last_fetch: float = 0.0
+    #: When the current stretch of page fetches began.
+    fetch_began: float = 0.0
+
+
+class NodeApp:
+    """Binds one scene's engine to trame and serves the command routes.
+
+    A node half has one of these per open scene, each on a port of its own, so
+    views of different scenes (another variable, another dataset) stay live side by
+    side. The first one, the front's, takes the commands and hands each to its
+    scene's app (``stage``)."""
+
+    def __init__(
+        self,
+        engine: Engine,
+        token: str,
+        server: Any = None,
+        shared: Shared | None = None,
+    ) -> None:
         from trame.app import get_server
 
         self.engine = engine
         self.token = token
         self.server = server or get_server("clio-paraview", client_type="vue3")
+        self.shared = shared or Shared()
+        #: The node half's views, when there may be more than this one.
+        self.stage: Any = None
         self.last_link = time.monotonic()
-        #: When the view's page last fetched a file; background work holds while a
-        #: page loads, as each of ParaView's calls blocks the loop serving it.
-        self.last_fetch = 0.0
-        #: When the current stretch of page fetches began.
-        self.fetch_began = 0.0
         self.sockets = 0
-        #: Commands that arrived and have not started their work yet.
-        self.waiting = 0
         #: Calls sent with their own id, by id.
         self.jobs: dict[str, Job] = {}
         #: Whether a video is being rendered in the scene's view.
@@ -101,8 +127,6 @@ class NodeApp:
         self._replay: asyncio.Future[None] | None = None
         self.view: Any = None
         self.link_note = ""
-        #: Why the pvserver went, once it has; nothing is drawn after that.
-        self.lost = ""
         #: The pvserver socket and its address, when there is one to watch.
         self.watched: int | None = None
         self.pvserver = ""
@@ -110,15 +134,33 @@ class NodeApp:
         self.frames_shown = 0
         self.last_frame: float | None = None
         self.last_frame_size = ""
+        #: What a growing source just opened had on disk, and when that last changed.
+        self._source_seen: tuple[Any, float] | None = None
         self._build()
         engine.listeners.append(self._on_scene_change)
+
+    @property
+    def waiting(self) -> int:
+        return self.shared.waiting
+
+    @waiting.setter
+    def waiting(self, value: int) -> None:
+        self.shared.waiting = value
+
+    @property
+    def lost(self) -> str:
+        return self.shared.lost
+
+    @lost.setter
+    def lost(self, value: str) -> None:
+        self.shared.lost = value
 
     # -- trame -----------------------------------------------------------------
     def _build(self) -> None:
         from trame.widgets import client
         from trame.widgets import paraview as pv_widgets
 
-        register_serializers(self._legend_title)
+        register_serializers(self._legend_for)
         state, ctrl = self.server.state, self.server.controller
         state.trame__title = "ParaView"
         state.update(
@@ -225,7 +267,11 @@ class NodeApp:
         websocket = request.headers.get("Upgrade", "").lower() == "websocket"
         if websocket:
             self.sockets += 1
-            if self.engine.replay_armed and (
+            # A scene's catch-up runs once, for its first viewer; a view that opens
+            # later shows the step the others show.
+            if self.sockets > 1:
+                self.engine.disarm_replay()
+            elif self.engine.replay_armed and (
                 self._replay is None or self._replay.done()
             ):
                 self._replay = asyncio.ensure_future(self._replaying())
@@ -234,9 +280,10 @@ class NodeApp:
         cross_origin = not request.path.startswith("/clio/") and not websocket
         if cross_origin:
             now = time.monotonic()
-            if now - self.last_fetch >= PAGE_QUIET:
-                self.fetch_began = now
-            self.last_fetch = now
+            shared = self.shared
+            if now - shared.last_fetch >= PAGE_QUIET:
+                shared.fetch_began = now
+            shared.last_fetch = now
         try:
             response = await handler(request)
             if cross_origin:
@@ -425,6 +472,31 @@ class NodeApp:
             return self._json(
                 {"error": {"code": "bad_request", "message": "Malformed command."}}, 400
             )
+        app = self
+        if self.stage is not None and not self.lost:
+            try:
+                app = await self.stage.route(name, args, by)
+            except CommandError as exc:
+                return self._json(
+                    {"error": {"code": exc.code, "message": exc.message}}, 422
+                )
+            except Exception as exc:  # noqa: BLE001 - a view that could not start
+                return self._json(
+                    {
+                        "error": {
+                            "code": "node_error",
+                            "message": "A view for this scene could not start: "
+                            f"{type(exc).__name__}: {exc}",
+                        }
+                    },
+                    500,
+                )
+        return await app._run_on(name, args, by, started)
+
+    async def _run_on(
+        self, name: str, args: dict[str, Any], by: str, started: Any
+    ) -> Any:
+        """Run one command on this view's scene."""
         if self.lost:
             scene = self.engine.scene
             again = (
@@ -451,8 +523,7 @@ class NodeApp:
             if name in STEPWISE:
                 result = await self._stepwise(name, args)
             else:
-                with self.server.state:
-                    result = self.engine.run(name, args, by=by)
+                result = await self._run_engine(name, args, by)
         except CommandError as exc:
             went = self._went_during_call()
             if went is not None:
@@ -487,10 +558,44 @@ class NodeApp:
                 }
         if name in ("capture", "open_view") and isinstance(result, dict):
             result["shown"] = self.shown()
+        if name == "open_view" and isinstance(result, dict):
+            # The port this scene's view is served on.
+            result["service"] = {"port": int(self.server.port)}
         went = self._went_during_call()
         if went is not None:
             return went
         return self._json({"result": result})
+
+    async def _run_engine(self, name: str, args: dict[str, Any], by: str) -> Any:
+        """Run a command on the engine. Opening a growing source that its writer has
+        not made readable yet (a step half written, a reader that sees no data yet) is
+        tried again while the source goes on changing; once it stops changing, the
+        error stands."""
+        growing = name == "open_view" and args.get("growing") and args.get("path")
+        tries = 0
+        while True:
+            try:
+                with self.server.state:
+                    return self.engine.run(name, args, by=by)
+            except CommandError as exc:
+                # An error that comes back after the source has changed several
+                # times is not about a step half written.
+                if (
+                    not growing
+                    or self.lost
+                    or tries >= OPEN_TRIES
+                    or self._source_seen is None
+                ):
+                    raise
+                path = self.engine.disk.expand(str(args["path"]))
+                tries += 1
+                print(f"opening {path} failed ({tries}): {exc}", flush=True)
+                say_progress(
+                    note=f"the source is not readable yet ({exc.message}); trying "
+                    "again once it changes"
+                )
+                while not self._source_changed(path, args.get("reader"), exc):
+                    await asyncio.sleep(1.0)
 
     async def _after_animation(self) -> None:
         """While a video is rendered in the scene's view, changes to the scene wait
@@ -533,9 +638,10 @@ class NodeApp:
     async def _await_source(self, name: str, args: dict[str, Any]) -> None:
         """Before a growing source is opened, wait until it can be read: until it is
         there and, for an ADIOS2 BP5 folder, until a whole step is on disk. The wait
-        lets the node go on answering. It ends when the source is readable, or once
-        nothing on disk has changed for ``SOURCE_STALL`` seconds; open_view then says
-        why the source cannot be read."""
+        lets the node go on answering. It ends when the source is readable; once it is
+        not, and nothing in it or beside it has changed for ``SOURCE_STALL`` seconds,
+        open_view says why instead of opening a view with nothing in it."""
+        self._source_seen = None
         if name != "open_view" or not args.get("growing") or not args.get("path"):
             return
         path = self.engine.disk.expand(str(args["path"]))
@@ -551,6 +657,7 @@ class NodeApp:
         last: Any = object()
         changed = start = time.monotonic()
         said = None
+        name_of = os.path.basename(path.rstrip("/")) or path
         while True:
             reason, clear, key = self.engine.disk.source_readiness(
                 path, reader, pattern
@@ -561,13 +668,50 @@ class NodeApp:
             if reason is None and (clear or now - changed >= SETTLE):
                 break
             if now - changed >= SOURCE_STALL:
+                if reason:
+                    raise CommandError(
+                        "source_not_ready",
+                        f"{path} cannot be read yet: {reason}, and nothing in it or "
+                        f"beside it has changed for {SOURCE_STALL:g} s, so the run "
+                        "writing it may be queued, starting, or stopped. Check the "
+                        "run, then call open_view again: it waits again while the "
+                        "source changes.",
+                    )
                 break
             if reason and reason != said:
                 said = reason
                 print(f"waiting for {path}: {reason}", flush=True)
+            say_progress(
+                note=f"waiting for {name_of}: {reason or 'letting it settle'} "
+                f"({now - start:.0f} s)"
+            )
             await asyncio.sleep(0.5)
         if said:
             print(f"waited {time.monotonic() - start:.1f}s for {path}", flush=True)
+        self._source_seen = (key, changed)
+
+    def _source_changed(self, path: str, reader: Any, failure: CommandError) -> bool:
+        """Whether a growing source that failed to open has changed on disk since;
+        once it has stopped changing, the failure stands, with why."""
+        seen = self._source_seen
+        if seen is None:
+            raise failure
+        last, changed = seen
+        _reason, _clear, key = self.engine.disk.source_readiness(
+            path, reader, is_pattern(path)
+        )
+        now = time.monotonic()
+        if key != last:
+            self._source_seen = (key, now)
+            return True
+        if now - changed >= SOURCE_STALL:
+            raise CommandError(
+                failure.code,
+                f"{failure.message} Nothing in {path} has changed for "
+                f"{SOURCE_STALL:g} s since, so this stopped trying. Check the run "
+                "that writes it, then call open_view again.",
+            )
+        return False
 
     # -- reacting to the scene -------------------------------------------------
     def _on_scene_change(self, reason: str) -> None:
@@ -691,10 +835,18 @@ class NodeApp:
         else:
             self.view.update_image()
 
-    def _legend_title(self) -> str | None:
-        """The field whose legend the browser shows: the selected object's, if on."""
+    def _legend_for(self, renderer: Any) -> tuple[bool, str | None]:
+        """Whether ``renderer`` is this view's, and the field whose legend the browser
+        shows there: the selected object's, if its legend is on."""
+        try:
+            mine = self.engine.view.GetClientSideObject().GetRenderWindow()
+            window = renderer.GetRenderWindow() if renderer is not None else None
+            if window is None or mine.__this__ != window.__this__:
+                return False, None
+        except Exception:  # noqa: BLE001 - not a renderer of this view
+            return False, None
         sel = self.server.state.clio_sel or {}
-        return sel.get("color") if sel.get("scalar_bar") else None
+        return True, sel.get("color") if sel.get("scalar_bar") else None
 
     def _ui_select(self, object_id: str) -> None:
         self.bench.select(object_id)
@@ -787,7 +939,11 @@ class NodeApp:
         seconds, in a stretch of fetches under PAGE_HOLD seconds long. Pages that
         reload over and over do not hold background work for good."""
         now = time.monotonic()
-        return now - self.last_fetch < PAGE_QUIET and now - self.fetch_began < PAGE_HOLD
+        shared = self.shared
+        return (
+            now - shared.last_fetch < PAGE_QUIET
+            and now - shared.fetch_began < PAGE_HOLD
+        )
 
     async def _replaying(self) -> None:
         """Catch a late-opened growing source up from its first step while a view

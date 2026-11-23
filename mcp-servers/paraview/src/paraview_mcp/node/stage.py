@@ -1,0 +1,145 @@
+"""The node half's views: one trame app, render view and port per open scene.
+
+A view follows its own scene: its variable, its time step, its catch-up and how it
+is drawn. Opening another scene (another dataset, or another variable of the same
+one) starts a view beside the open ones rather than replacing what they show. The
+first app, the front's, takes every command and hands it to its scene's app.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import re
+import time
+from collections.abc import Callable
+from typing import Any
+
+from . import manifest
+from .app import NodeApp
+from .engine import Engine
+
+
+def _slug(text: str) -> str:
+    return re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-").lower()[:24]
+
+
+class Stage:
+    """Every view of the node half, and which one the agent's commands go to."""
+
+    def __init__(
+        self,
+        front: NodeApp,
+        make_engine: Callable[[], Engine],
+        growth_interval: float = 2.0,
+    ) -> None:
+        self.front = front
+        self.apps = [front]
+        #: The view the agent opened last: commands other than open_view go to it.
+        self.current = front
+        self.make_engine = make_engine
+        self.growth_interval = growth_interval
+        self._adding: asyncio.Lock | None = None
+        self._tasks: list[Any] = []
+        front.stage = self
+        front.engine.alone = self.alone
+
+    def alone(self) -> bool:
+        return len(self.apps) == 1
+
+    def scene_for(self, args: dict[str, Any]) -> str | None:
+        """The scene id open_view opens, or ``None`` for the current view's."""
+        if args.get("scene"):
+            return str(args["scene"])
+        if not args.get("path"):
+            return None
+        path = self.front.engine.disk.expand(str(args["path"]))
+        scene_id = manifest.scene_id_for(path)
+        display = (args.get("descriptor") or {}).get("display") or {}
+        array = display.get("array")
+        if array:
+            # Each variable of a dataset is a scene of its own, in a view of its own.
+            scene_id = f"{scene_id}-{_slug(str(array))}"
+        return scene_id
+
+    async def route(
+        self, name: str, args: dict[str, Any], by: str = "agent"
+    ) -> NodeApp:
+        """The app a command is for. open_view picks the view of its scene, else a
+        view with no scene yet, else starts one. The agent's open_view makes it the
+        current view; a view reopening itself for the person (a host replays its
+        open_view) leaves the agent's commands where they were."""
+        if name != "open_view":
+            return self.current
+        scene_id = self.scene_for(args)
+        if scene_id is None:
+            return self.current
+        if args.get("path") and not args.get("scene"):
+            args["scene"] = scene_id
+        app = self._find(scene_id)
+        if app is None:
+            if self._adding is None:
+                self._adding = asyncio.Lock()
+            async with self._adding:
+                app = self._find(scene_id) or await self.add()
+        if by == "agent" or self.current.engine.scene is None:
+            self.current = app
+        return app
+
+    def _find(self, scene_id: str) -> NodeApp | None:
+        """The view showing a scene, else one that shows none yet."""
+        for app in self.apps:
+            scene = app.engine.scene
+            if scene is not None and scene["scene"] == scene_id:
+                return app
+        for app in self.apps:
+            if app.engine.scene is None:
+                return app
+        return None
+
+    async def add(self) -> NodeApp:
+        """Start one more view, on a port of its own, with the node half's token."""
+        from trame.app import get_server
+
+        front = self.front
+        server = get_server(f"clio-paraview-{len(self.apps)}", client_type="vue3")
+        engine = self.make_engine()
+        engine.alone = self.alone
+        app = NodeApp(engine, front.token, server, shared=front.shared)
+        app.watched, app.pvserver = front.watched, front.pvserver
+        began = time.monotonic()
+        task = server.start(
+            host="127.0.0.1",
+            port=0,
+            open_browser=False,
+            show_connection_info=False,
+            disable_logging=True,
+            timeout=0,
+            exec_mode="task",
+        )
+        self._tasks.append(task)
+        await server.ready
+        self.apps.append(app)
+        self._tasks.append(
+            asyncio.ensure_future(app.watch_growth(self.growth_interval))
+        )
+        print(
+            f"view {len(self.apps)} listening on 127.0.0.1:{server.port} "
+            f"({time.monotonic() - began:.1f} s)",
+            flush=True,
+        )
+        return app
+
+    def idle_for(self) -> float:
+        """Seconds since any view's last request, or zero while one is watched."""
+        return min(app.idle_for() for app in self.apps)
+
+    def pvserver_lost(self, reason: str) -> None:
+        for app in self.apps:
+            app.pvserver_lost(reason)
+
+    @property
+    def engine(self) -> Engine:
+        return self.current.engine
+
+    def engines(self) -> list[Engine]:
+        return [app.engine for app in self.apps]
