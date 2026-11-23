@@ -164,11 +164,30 @@ class SceneReading:
             "series": series,
         }
 
+    def screenshot(
+        self, target: Path | str, width: int, height: int, **extra: Any
+    ) -> None:
+        """Save one frame of exactly ``width`` x ``height``, rendered once.
+
+        SaveScreenshot never enlarges a view: when the target is bigger than the
+        view a browser last sized, it renders the picture in tiles, one render
+        each, and a viewer a few pixels wide turns one frame into thousands of
+        renders (over a remote pvserver, one round trip each). The offscreen view
+        takes the target size for this frame and gets its own size back after.
+        """
+        size = [max(1, int(width)), max(1, int(height))]
+        before = [int(v) for v in self.view.ViewSize]
+        self.view.ViewSize = size
+        try:
+            self.simple.SaveScreenshot(
+                str(target), self.view, ImageResolution=size, **extra
+            )
+        finally:
+            self.view.ViewSize = before
+
     def _render_png(self, target: Path, width: int, height: int, **extra: Any) -> bytes:
         target.parent.mkdir(parents=True, exist_ok=True)
-        self.simple.SaveScreenshot(
-            str(target), self.view, ImageResolution=[int(width), int(height)], **extra
-        )
+        self.screenshot(target, width, height, **extra)
         return target.read_bytes()
 
     def drawn(
@@ -190,9 +209,7 @@ class SceneReading:
         ]
         folder = manifest.scene_dir(self.root, scene["scene"]) / "captures"
         return drawn.measure(
-            lambda path: self.simple.SaveScreenshot(
-                str(path), self.view, ImageResolution=[int(width), int(height)]
-            ),
+            lambda path: self.screenshot(path, width, height),
             reps,
             folder,
             picture,

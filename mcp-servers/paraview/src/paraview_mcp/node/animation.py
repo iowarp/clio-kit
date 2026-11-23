@@ -44,6 +44,11 @@ class SceneAnimation:
     def _apply_time(self, scene: dict[str, Any]) -> None:
         raise NotImplementedError
 
+    def screenshot(
+        self, target: Path | str, width: int, height: int, **extra: Any
+    ) -> None:
+        raise NotImplementedError
+
     def cmd_export_animation(self, **args: Any) -> dict[str, Any]:
         frames = self.animating(**args)
         while True:
@@ -103,11 +108,7 @@ class SceneAnimation:
                 if stamp is not None and labels is not None:
                     stamp.Text = str(labels[index])
                 self.view.ViewTime = steps[index]
-                simple.SaveScreenshot(
-                    str(frames / f"f_{frame:05d}.png"),
-                    self.view,
-                    ImageResolution=[width, height],
-                )
+                self.screenshot(frames / f"f_{frame:05d}.png", width, height)
                 yield frame + 1, count
             rendered = True
         finally:
