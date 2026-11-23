@@ -19,6 +19,7 @@ class _State:
 
 def _node(engine: Any) -> Any:
     node = object.__new__(node_app.NodeApp)
+    node.shared = node_app.Shared()
     node.engine = engine
     node.lost = None
     node.waiting = 0

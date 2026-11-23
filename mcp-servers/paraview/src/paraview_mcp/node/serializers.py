@@ -71,8 +71,26 @@ class _LegendActor:
         return getattr(self._actor, name)
 
 
-def register_serializers(preferred: Callable[[], str | None]) -> None:
-    """Register the composite-dataset and legend serializers with trame-vtk."""
+#: Per view: given a renderer, whether it is the view's own and, if so, the title
+#: of the legend the view prefers. trame-vtk's registry is process-wide, and a node
+#: half holds a render view per scene.
+_CHOOSERS: list[Callable[[Any], tuple[bool, str | None]]] = []
+
+
+def _preferred(renderer: Any) -> str | None:
+    for chooser in _CHOOSERS:
+        mine, title = chooser(renderer)
+        if mine:
+            return title
+    return None
+
+
+def register_serializers(chooser: Callable[[Any], tuple[bool, str | None]]) -> None:
+    """Register the composite-dataset and legend serializers with trame-vtk, once,
+    and ``chooser`` for one view's legend."""
+    _CHOOSERS.append(chooser)
+    if len(_CHOOSERS) > 1:
+        return
     from trame_vtk.modules.vtk.serializers import initialize_serializers
     from trame_vtk.modules.vtk.serializers.actors import scalar_bar_actor_serializer
     from trame_vtk.modules.vtk.serializers.data import merge_to_polydata_serializer
@@ -87,7 +105,7 @@ def register_serializers(preferred: Callable[[], str | None]) -> None:
     copies: dict[int, Any] = {}
 
     def legend(parent: Any, rep: Any, rep_id: Any, context: Any, depth: int) -> Any:
-        if chosen_legend(_shown_legends(parent), preferred()) is not rep:
+        if chosen_legend(_shown_legends(parent), _preferred(parent)) is not rep:
             return None
         # A fresh copy each time: trame-vtk sends it whole, as a new object.
         copies[id(rep)] = _new_map()

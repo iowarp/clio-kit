@@ -203,7 +203,9 @@ class LocalTransport:
         full = with_prepare(self.target.prepare, script)
         return watched(["bash", "-c", full], self.watch, f"{label} {self.where}", stdin)
 
-    def forward(self, remote_port: int, local_port: int | None = None) -> int:
+    def forward(
+        self, remote_port: int, local_port: int | None = None, keep: bool = False
+    ) -> int:
         return remote_port
 
     def alive(self) -> bool:
@@ -450,11 +452,19 @@ class SshTransport:
             command, self.watch, f"{label} on {self.host}", stdin, self.folder
         )
 
-    def forward(self, remote_port: int, local_port: int | None = None) -> int:
-        """Forward one loopback port here to the node half's loopback port."""
+    def forward(
+        self, remote_port: int, local_port: int | None = None, keep: bool = False
+    ) -> int:
+        """Forward one loopback port here to the node half's loopback port. With
+        ``keep`` the other forwards stay (each open view of a node half has its own
+        port), and a port forwarded already is reused."""
+        if keep:
+            for local, remote in self.forwards:
+                if remote == remote_port:
+                    return local
         if not self.multiplex:
-            return self._forward_plain(remote_port, local_port)
-        for local, remote in list(self.forwards):
+            return self._forward_plain(remote_port, local_port, keep)
+        for local, remote in [] if keep else list(self.forwards):
             subprocess.run(
                 [
                     *self._base(),
@@ -505,9 +515,12 @@ class SshTransport:
         self.tunnels.clear()
         self.forwards.clear()
 
-    def _forward_plain(self, remote_port: int, local_port: int | None) -> int:
+    def _forward_plain(
+        self, remote_port: int, local_port: int | None, keep: bool = False
+    ) -> int:
         """A dedicated ``ssh -N -L`` that lives as long as this transport."""
-        self._stop_tunnels()
+        if not keep:
+            self._stop_tunnels()
         port = local_port or free_port()
         log_path = self.folder / f"forward-{port}.log"
         command = [
@@ -530,11 +543,20 @@ class SshTransport:
                 cwd=self.folder,
             )
         self.tunnels.append(tunnel)
+
+        def drop() -> None:
+            if not keep:
+                self._stop_tunnels()
+                return
+            if tunnel.poll() is None:
+                tunnel.kill()
+            self.tunnels.remove(tunnel)
+
         deadline = time.monotonic() + 2 * self.connect_timeout + 10
         while time.monotonic() < deadline:
             if tunnel.poll() is not None:
                 stderr = log_path.read_text("utf-8", "replace").strip()
-                self._stop_tunnels()
+                drop()
                 raise ParaViewError(
                     "forward_failed",
                     f"Could not forward a local port to {self.host}: {stderr}",
@@ -543,7 +565,7 @@ class SshTransport:
                 self.forwards.append((port, remote_port))
                 return port
             time.sleep(0.2)
-        self._stop_tunnels()
+        drop()
         raise ParaViewError(
             "forward_failed",
             f"The port forward to {self.host} did not open in "

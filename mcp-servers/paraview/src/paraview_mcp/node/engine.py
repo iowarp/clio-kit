@@ -77,6 +77,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         threshold_mb: float = 20.0,
         session: str | None = None,
         data_on_server: bool = False,
+        disk: Any = None,
     ) -> None:
         from paraview import simple
 
@@ -91,11 +92,21 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         self.root = root
         self.threshold_mb = float(threshold_mb)
         self.session = session
-        # A joined pvserver on another machine reads the data there.
-        self.disk = ServerDisk() if data_on_server else LocalDisk()
+        # A joined pvserver on another machine reads the data there. The engines of
+        # one node half share it.
+        self.disk = disk or (ServerDisk() if data_on_server else LocalDisk())
         self.view = simple.CreateRenderView()
         self.view.OrientationAxesVisibility = 1
+        # Each scene keeps its own time: the time keeper would move every view to
+        # the step one of them shows.
+        keeper = simple.GetTimeKeeper()
+        try:
+            keeper.Views = [v for v in keeper.Views if v != self.view]
+        except Exception as exc:  # noqa: BLE001 - an older keeper only slows a view
+            print(f"time keeper: {exc}", flush=True)
         simple.SetActiveView(self.view)
+        #: Whether this is the node half's only scene; colour maps are process-wide.
+        self.alone: Callable[[], bool] = lambda: True
         self.frames = FrameClock(self.view)
         self.scene: dict[str, Any] | None = None
         self.proxies: dict[str, Any] = {}
@@ -122,6 +133,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         """
         if name not in MUTATING and name not in READING:
             raise CommandError("unknown_command", f"No command named {name!r}.")
+        self.activate()
         handler = getattr(self, f"cmd_{name}")
         if name in READING:
             return self._guard(handler, args)
@@ -155,11 +167,19 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
     def series(self, name: str, args: dict[str, Any]) -> Any:
         """A ``STEPWISE`` command as steps for ``advance``; bad arguments are reported
         now, the rest at the first step."""
+        self.activate()
         return self._guard(getattr(self, STEPWISE[name]), args)
+
+    def activate(self) -> None:
+        """Make this scene's view the active one: ParaView reads data at the active
+        view's time, and a node half holds a view per scene."""
+        if self.simple.GetActiveView() != self.view:
+            self.simple.SetActiveView(self.view)
 
     def advance(self, steps: Any) -> tuple[tuple[int, int] | None, Any]:
         """One more step of ``series``: ``((done, total), None)`` while it goes on,
         ``(None, result)`` once it is done."""
+        self.activate()
         try:
             return self._guard(lambda: next(steps), {}), None
         except StopIteration as done:
@@ -240,7 +260,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         if not self.session:
             from paraview import servermanager
 
-            colors.forget(servermanager, self.view)
+            colors.forget(servermanager, self.view, maps=self.alone())
 
     def _make(self, item: dict[str, Any]) -> Any:
         simple = self.simple
@@ -348,17 +368,23 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
 
     # -- time ------------------------------------------------------------
     def timesteps(self) -> list[float]:
-        keeper = self.simple.GetTimeKeeper()
-        values = keeper.TimestepValues
-        if values is None:
-            return []
-        if isinstance(values, (int, float)):
-            return [float(values)]
-        return [float(v) for v in values]
+        """The time steps of this scene's own objects (other scenes of the node half
+        may be at other steps of the same data, or show other data)."""
+        found: set[float] = set()
+        for proxy in self.proxies.values():
+            try:
+                values = proxy.TimestepValues
+            except AttributeError:
+                continue
+            if values is None:
+                continue
+            if isinstance(values, (int, float)):
+                found.add(float(values))
+            else:
+                found.update(float(v) for v in values)
+        return sorted(found)
 
     def _apply_time(self, scene: dict[str, Any]) -> None:
-        animation = self.simple.GetAnimationScene()
-        animation.UpdateAnimationUsingDataTimeSteps()
         steps = self.timesteps()
         time_state = scene["time"]
         if not steps:
@@ -371,7 +397,6 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
             )
         index = max(0, min(int(time_state.get("index", 0)), len(steps) - 1))
         time_state["index"] = index
-        animation.AnimationTime = steps[index]
         self.view.ViewTime = steps[index]
 
     def time_summary(self) -> dict[str, Any]:
