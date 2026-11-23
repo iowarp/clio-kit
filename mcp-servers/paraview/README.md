@@ -99,7 +99,15 @@ loop is held for a minute, its log shows the stack it waits in, every minute,
 without stopping it. The link to a `pvserver` may be a slow tunnel, so each
 followed step costs few round trips: the server keeps the node half's disk code
 loaded, a view drawn on the ParaView machine gets only its new image, and an
-agent's command goes ahead of the follow's next look. Each
+agent's command goes ahead of the follow's next look. Views of one growing source
+(the same path, reader and reader properties) share one reader: one view's look
+at the disk and re-read moves them all, and a colour range measured once serves
+every view of that source at that step and filter chain. Opening a view is built
+in stages (the reader, then each filter, colour and the first picture), and the
+node half lets the other views take their turn between them: the open reports
+`opening the view: <stage>` as progress, and a command that changes the scene
+while it opens is refused with `view_opening` (try again once the open returns).
+Each
 start keeps the previous log as `<record>.prev.log`.
 
 ## The first attach on a machine
@@ -148,7 +156,8 @@ renders there. Datasets are then read on the server's machine: paths, globs and
 the steps of a growing source are checked in the server's own file system, so
 a cluster job's output never crosses to this machine, only the rendered view.
 Follow indexes for a growing BP5 source are written under the server's
-`~/.clio/paraview/follow/`. The client and the server must run the same
+`~/.clio/paraview/follow/<source>/`, one folder per shared reader. The client
+and the server must run the same
 ParaView version; set `PARAVIEW_VERSION` to it and the front refuses any other
 `pvpython` with `paraview_version_mismatch`.
 
@@ -252,6 +261,12 @@ view reports the time step, the picked point, the pipeline with each object's
 representation and colouring, the camera and the recent changes (and whether
 the person or the agent made them) through `ui/update-model-context`, at most
 ten times a second.
+
+A page that loads (a new view, or one the host remounted on a resize) and a
+page asking for a picture at a new size come first: every view's background
+work waits until that page draws, 15 s at most. A page whose ParaView answers
+but is busy is left to finish loading rather than reloaded from nothing; it is
+reloaded after three such looks, or at once when its link drops.
 
 The view carries ParaView's own controls, icon-led and compact. A left tool
 rail opens one panel at a time (a sheet over the lower view at phone width):

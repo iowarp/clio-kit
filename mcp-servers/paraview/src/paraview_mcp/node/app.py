@@ -95,6 +95,11 @@ FOLLOWING_SECONDS = 60.0
 SCENE_WAIT = 60.0
 #: Seconds after a page connects before it gets a fresh picture.
 PAGE_FRESH = 1.0
+#: Seconds between a following view's looks at whether a view sharing its reader
+#: has re-read it.
+GROWTH_TICK = 0.25
+#: Seconds at most background work holds for a page loading until it draws.
+PAGE_DUE = 15.0
 
 # Posts the bridge state and the link state to the page that frames trame.
 BRIDGE_JS = r"""
@@ -237,6 +242,25 @@ class Shared:
     #: Views following a growing source with a page open, by view, with when they
     #: last looked at it.
     following: dict[int, float] = field(default_factory=dict)
+    #: Views whose page is loading, or connected and not yet drawn, with since when:
+    #: background work holds for them (PAGE_DUE at most), so a page that a resize or
+    #: a host remount reloaded links and draws at once rather than behind every
+    #: view's follow.
+    pages_due: dict[int, float] = field(default_factory=dict)
+
+    def page_due(self, view: object) -> None:
+        now = time.monotonic()
+        since = self.pages_due.get(id(view))
+        # A page that never drew holds nothing more until a while after its cap.
+        if since is None or now - since >= 4 * PAGE_DUE:
+            self.pages_due[id(view)] = now
+
+    def page_drawn(self, view: object) -> None:
+        self.pages_due.pop(id(view), None)
+
+    def page_loading(self) -> bool:
+        now = time.monotonic()
+        return any(now - since < PAGE_DUE for since in self.pages_due.values())
 
     async def turn(self) -> float:
         """Wait for background work's turn: every view's follow and catch-up share
@@ -475,6 +499,9 @@ class NodeApp:
         websocket = request.headers.get("Upgrade", "").lower() == "websocket"
         if websocket:
             self.sockets += 1
+            # Its first picture comes next; background work holds until it draws.
+            self.shared.page_due(self)
+            self.shared.last_fetch = time.monotonic()
             # A page that opens (a new view, a frame the host remounted, a link that
             # came back) gets a fresh picture: the scene a page that went never said
             # it drew is not waited for, and a remote stream that page left is reset.
@@ -496,6 +523,9 @@ class NodeApp:
             if now - shared.last_fetch >= PAGE_QUIET:
                 shared.fetch_began = now
             shared.last_fetch = now
+            if self.sockets <= 0:
+                # A page of this view is loading (a resize or remount reloads it).
+                shared.page_due(self)
         try:
             response = await handler(request)
             if cross_origin:
@@ -767,7 +797,10 @@ class NodeApp:
         if name in ("set_camera", "fit_camera"):
             self.view.push_camera()
         if name == "open_view" and isinstance(result, dict) and self.engine.scene:
-            # A small test frame: what the opened view really draws.
+            # A small test frame: what the opened view really draws. It renders, so
+            # it waits for its turn behind the other views' follows.
+            if self.shared.queue:
+                await self.shared.turn()
             try:
                 result["drawn"] = self.engine.drawn()
             except Exception as exc:  # noqa: BLE001 - reported, not fatal
@@ -810,7 +843,12 @@ class NodeApp:
         growing = name == "open_view" and args.get("growing") and args.get("path")
         tries = 0
         while True:
+            while self.engine.opening and not self.lost:
+                # A view opening a stage at a time: the scene is whole once it ends.
+                await asyncio.sleep(TURN_POLL)
             try:
+                if name == "open_view":
+                    return await self._open_staged(args, by)
                 with self.server.state:
                     return self.engine.run(name, args, by=by)
             except CommandError as exc:
@@ -832,6 +870,40 @@ class NodeApp:
                 )
                 while not self._source_changed(path, args.get("reader"), exc):
                     await asyncio.sleep(1.0)
+
+    async def _open_staged(self, args: dict[str, Any], by: str) -> Any:
+        """open_view a stage at a time: each stage (the reader, its display, a slice,
+        a colour map) can take seconds over a slow link, and between them the other
+        views take their turns, so they go on following while this one opens."""
+        engine = self.engine
+        with self.server.state:
+            stages = engine.staged(args, by)
+        try:
+            while True:
+                if self.lost:
+                    raise CommandError(
+                        "pvserver_lost",
+                        f"This ParaView view stopped while it opened: {self.lost}.",
+                    )
+                began = time.monotonic()
+                ended, result, label = False, None, ""
+                with self.server.state, LEDGER.span(f"{self.name} open"):
+                    try:
+                        label = next(stages)
+                    except StopIteration as done:
+                        ended, result = True, done.value
+                if ended:
+                    return result
+                say_progress(note=f"opening the view: {label}")
+                if self.shared.queue:
+                    # Other views wait to follow their sources: they go first.
+                    self.shared.worked(began)
+                    await self.shared.turn()
+                else:
+                    await asyncio.sleep(0)
+        finally:
+            with self.server.state:
+                stages.close()
 
     async def _after_animation(self) -> None:
         """While a video is rendered in the scene's view, changes to the scene wait
@@ -1104,6 +1176,7 @@ class NodeApp:
         if not ok:
             print(f"the browser could not draw a scene: {error}", flush=True)
         self._scene_sent = None
+        self.shared.page_drawn(self)
         if (
             self._scene_waiting
             and not self.lost
@@ -1152,6 +1225,7 @@ class NodeApp:
             self.view.update_image()
 
     def _ui_drawn(self, size: str = "", count: Any = 1) -> None:
+        self.shared.page_drawn(self)
         try:
             self.frames_shown += max(1, min(int(count), 10_000))
         except (TypeError, ValueError):
@@ -1203,13 +1277,18 @@ class NodeApp:
         while True:
             # ParaView's calls block this loop, which also serves the view's page and
             # its link; over a slow link a check takes seconds, so the loop stays free
-            # at least as long as the last check took.
-            await asyncio.sleep(max(interval, spent))
+            # at least as long as the last check took. A view whose shared reader
+            # another view just re-read moves at once.
+            wait = max(interval, spent)
+            waited = 0.0
+            while waited < wait and not self._behind():
+                await asyncio.sleep(GROWTH_TICK)
+                waited += GROWTH_TICK
             await self.shared.turn()
             if self.lost:
                 self.shared.follows(self, False)
                 return
-            if self.waiting or self._loading():
+            if self.waiting or self._loading() or self.engine.opening:
                 spent = 0.0
                 continue
             began = time.monotonic()
@@ -1221,6 +1300,12 @@ class NodeApp:
             spent = self.shared.worked(began)
             self.shared.follows(self, self._following())
 
+    def _behind(self) -> bool:
+        try:
+            return bool(self.engine.behind())
+        except Exception:  # noqa: BLE001 - a scene mid-change is looked at next tick
+            return False
+
     def _following(self) -> bool:
         """Whether this view follows a growing source with a page open."""
         scene = self.engine.scene
@@ -1230,11 +1315,14 @@ class NodeApp:
         return growing and bool(scene["time"].get("follow_latest", True))
 
     def _loading(self) -> bool:
-        """Whether a view's page is loading: it fetched a file in the last PAGE_QUIET
-        seconds, in a stretch of fetches under PAGE_HOLD seconds long. Pages that
-        reload over and over do not hold background work for good."""
+        """Whether a view's page is loading: one connected and has not drawn yet
+        (PAGE_DUE at most), or one fetched a file in the last PAGE_QUIET seconds, in
+        a stretch of fetches under PAGE_HOLD seconds long. Pages that reload over and
+        over do not hold background work for good."""
         now = time.monotonic()
         shared = self.shared
+        if shared.page_loading():
+            return True
         return (
             now - shared.last_fetch < PAGE_QUIET
             and now - shared.fetch_began < PAGE_HOLD

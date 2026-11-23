@@ -31,6 +31,7 @@ from .datafs import LocalDisk
 from .disk import Readiness, is_pattern, whole_steps, writing
 from .errors import CommandError
 from .held import LEDGER
+from .pool import Readers
 
 #: Seconds a grown BP5 folder must stay unchanged before its last step is read,
 #: when its data may still be short of that step.
@@ -119,6 +120,8 @@ class SourceGrowth:
     _coloured_at: float
     _disk_seen: dict[str, Any]
     disk_changed: float | None
+    readers: Readers
+    _read_at: dict[str, int]
 
     # Provided by the engine.
     def require_scene(self) -> dict[str, Any]:
@@ -156,71 +159,6 @@ class SourceGrowth:
         if descriptor:
             dataset["descriptor"] = {**(dataset.get("descriptor") or {}), **descriptor}
 
-    def _first_view(self, display: dict[str, Any] | None) -> None:
-        """Show what the descriptor's display asks for: a slice or contour of the data,
-        coloured by an array over a fixed range. A viewer may ignore it, so each part
-        that cannot be shown is left out and noted with the dataset; the open stands."""
-        if not display or self.scene is None:
-            return
-        from .data import DataError
-
-        array = display.get("array")
-        kind = display.get("representation")
-        notes: list[str] = []
-
-        def attempt(step: Callable[[], Any]) -> Any:
-            try:
-                return step()
-            except (CommandError, DataError) as exc:
-                notes.append(str(exc))
-                return None
-
-        target = "o1"
-        made = None
-        if kind == "Slice":
-            normal = display.get("slice_normal")
-            made = attempt(
-                lambda: self.cmd_create_filter(
-                    "Slice",
-                    "o1",
-                    {"SliceType.Normal": normal} if normal else None,
-                    label="slice",
-                )
-            )
-        elif kind == "Contour" and array and display.get("contour_values"):
-            contour = {
-                "ContourBy": [display.get("association") or "POINTS", array],
-                "Isosurfaces": display["contour_values"],
-                "ComputeScalars": True,
-            }
-            made = attempt(
-                lambda: self.cmd_create_filter(
-                    "Contour", "o1", contour, label="contour"
-                )
-            )
-        elif kind in ("Outline", "Surface", "Volume"):
-            attempt(lambda: self.cmd_set_representation("o1", representation=kind))
-        if made:
-            target = made["object"]["id"]
-            attempt(lambda: self.cmd_set_representation("o1", representation="Outline"))
-            if kind == "Slice":
-                attempt(lambda: self.face(self.proxies[target].SliceType.Normal))
-        if array:
-            colour: dict[str, Any] = {"color_by": array, "scalar_bar": True}
-            if display.get("range"):
-                colour["color_range"] = display["range"]
-            if attempt(lambda: self.cmd_set_representation(target, **colour)):
-                preset = display.get("color_map")
-                name = preset_name(preset) if preset else None
-                if preset and name is None:
-                    notes.append(f"ParaView has no colour preset {preset!r}.")
-                elif name:
-                    attempt(lambda: self.cmd_set_representation(target, colormap=name))
-        if notes:
-            self.scene["dataset"]["display_note"] = (
-                "The descriptor's display was shown in part: " + " ".join(notes)
-            )
-
     def _files(self, item: dict[str, Any]) -> list[str] | str:
         path = item["path"]
         files = self.disk.files(path)
@@ -235,10 +173,11 @@ class SourceGrowth:
         return not is_pattern(path) and self.disk.is_bp(path, item.get("reader"))
 
     def _follow_index(self, item: dict[str, Any], steps: int) -> str:
-        """The copy of a growing BP5 folder the reader is given, with ``steps`` steps."""
-        scene = self.require_scene()
+        """The copy of a growing BP5 folder the reader is given, with ``steps`` steps.
+        It is the source's, not the scene's: views sharing the reader share it."""
         name = os.path.basename(item["path"].rstrip("/")) or "data.bp"
-        folder = self.disk.follow_folder(self.root, scene["scene"], item["id"], name)
+        source = Readers.folder_of(Readers.key_of(item))
+        folder = self.disk.follow_folder(self.root, source, name)
         target = self.disk.write_index(item["path"], folder, steps)
         self._held[item["id"]] = steps
         return target
@@ -266,6 +205,17 @@ class SourceGrowth:
         return whole if whole > held else None
 
     def _make_reader(self, item: dict[str, Any]) -> Any:
+        growing = bool(((self.scene or {}).get("dataset") or {}).get("growing"))
+        shared = Readers.key_of(item)
+        if growing:
+            source = self.readers.get(shared, self.simple)
+            if source is not None:
+                # Another view of this node reads the same growing source: share
+                # its reader, so each new step is looked for and read once.
+                self.readers.join(source, self)
+                self.readers.pull(source, self, item["id"])
+                self._read_at[item["id"]] = source.generation
+                return source.proxy
         files = self._files(item)
         self._held.pop(item["id"], None)
         if self._bp5(item):
@@ -277,7 +227,7 @@ class SourceGrowth:
                     "its writer has written a whole step; open_view with growing set "
                     "waits for that while the folder is still changing.",
                 )
-            if state.steps and ((self.scene or {}).get("dataset") or {}).get("growing"):
+            if state.steps and growing:
                 # A writer still writing its newest step: open on the steps surely
                 # on disk, and the follow adds the newest once it is whole.
                 files = self._follow_index(item, whole_steps(state) or state.steps)
@@ -308,6 +258,10 @@ class SourceGrowth:
             set_property(proxy, name or proxy.GetXMLName(), key, value)
         proxy.UpdatePipelineInformation()
         self._growth[item["id"]] = self.disk.disk_key(item["path"])
+        if growing:
+            source = self.readers.add(shared, proxy, self)
+            self.readers.push(source, self, item["id"])
+            self._read_at[item["id"]] = source.generation
         return proxy
 
     @staticmethod
@@ -407,55 +361,87 @@ class SourceGrowth:
         for item in scene["objects"]:
             if item["kind"] != "reader" or item["id"] not in self.proxies:
                 continue
-            held = item["id"] in self._held
-            state = None
-            with LEDGER.phase("disk"):
-                if held:
-                    key, state = self.disk.grown(item["path"])
-                else:
-                    key = self.disk.disk_key(item["path"])
-            if key != self._disk_seen.get(item["id"], self):
-                self._disk_seen[item["id"]] = key
-                self.disk_changed = time.time()
             proxy = self.proxies[item["id"]]
-            if held and state is not None:
-                # A growing BP5 folder: its reader reads a copy whose index holds
-                # only the steps whose data is surely on disk.
-                whole = self._bp5_whole(item, key, state)
-                if whole is None:
-                    continue
-                self._growth[item["id"]] = key
-                with LEDGER.phase("disk"):
-                    files: list[str] | str = self._follow_index(item, whole)
-            else:
-                if key == self._growth.get(item["id"]):
-                    continue
-                with LEDGER.phase("disk"):
-                    if self._bp5(item) and not self._bp5_settled(item, key):
-                        continue
-                self._growth[item["id"]] = key
-                files = self._files(item)
-            changed = True
-            with LEDGER.phase("reader"):
-                if is_pattern(item["path"]):
-                    self._point_reader(proxy, item, files, reset=True)
-                elif not self.simple.ReloadFiles(proxy):
-                    # A folder or file written in place, such as an ADIOS2 BP
-                    # output: the reader re-opens it. Resetting the name is the
-                    # fallback.
-                    self._point_reader(proxy, item, files, reset=True)
-                proxy.UpdatePipelineInformation()
+            source = self.readers.of(proxy)
+            if source is None:
+                changed = self._grow_reader(item, proxy) or changed
+                continue
+            self.readers.pull(source, self, item["id"])
+            if source.generation != self._read_at.get(item["id"]):
+                # Another view of this source re-read it: this view moves with it.
+                self._read_at[item["id"]] = source.generation
+                changed = True
+                continue
+            if self.readers.looked(source):
+                continue
+            source.checked_at = time.monotonic()
+            try:
+                moved = self._grow_reader(item, proxy)
+            finally:
+                self.readers.push(source, self, item["id"])
+            if moved:
+                source.generation += 1
+                self._read_at[item["id"]] = source.generation
+                changed = True
         if not changed:
             return None
         self._apply_time(scene)
         if scene["time"].get("follow_latest", True):
-            with LEDGER.phase("colours"):
-                self._grow_colours(scene)
+            self._grow_colours(scene)
         self._note_steps()
         self.last_growth = time.time()
         after = len(self.timesteps())
         self.commit("growth")
         return {"new_steps": after - before, **self.time_summary()}
+
+    def behind(self) -> bool:
+        """Whether another view re-read a source this view shares, so this view
+        should move to the new step now rather than at its next look."""
+        for item_id, proxy in self.proxies.items():
+            source = self.readers.of(proxy)
+            if source is not None and source.generation != self._read_at.get(item_id):
+                return True
+        return False
+
+    def _grow_reader(self, item: dict[str, Any], proxy: Any) -> bool:
+        """Look at one reader's disk; re-read its files if they grew."""
+        held = item["id"] in self._held
+        state = None
+        with LEDGER.phase("disk"):
+            if held:
+                key, state = self.disk.grown(item["path"])
+            else:
+                key = self.disk.disk_key(item["path"])
+        if key != self._disk_seen.get(item["id"], self):
+            self._disk_seen[item["id"]] = key
+            self.disk_changed = time.time()
+        if held and state is not None:
+            # A growing BP5 folder: its reader reads a copy whose index holds
+            # only the steps whose data is surely on disk.
+            whole = self._bp5_whole(item, key, state)
+            if whole is None:
+                return False
+            self._growth[item["id"]] = key
+            with LEDGER.phase("disk"):
+                files: list[str] | str = self._follow_index(item, whole)
+        else:
+            if key == self._growth.get(item["id"]):
+                return False
+            with LEDGER.phase("disk"):
+                if self._bp5(item) and not self._bp5_settled(item, key):
+                    return False
+            self._growth[item["id"]] = key
+            files = self._files(item)
+        with LEDGER.phase("reader"):
+            if is_pattern(item["path"]):
+                self._point_reader(proxy, item, files, reset=True)
+            elif not self.simple.ReloadFiles(proxy):
+                # A folder or file written in place, such as an ADIOS2 BP
+                # output: the reader re-opens it. Resetting the name is the
+                # fallback.
+                self._point_reader(proxy, item, files, reset=True)
+            proxy.UpdatePipelineInformation()
+        return True
 
     # -- catching up from the first step ---------------------------------------
     def arm_replay(self) -> None:

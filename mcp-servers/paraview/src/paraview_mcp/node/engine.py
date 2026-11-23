@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import copy
 import difflib
-import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
@@ -17,11 +16,13 @@ from typing import Any
 from . import colors, compat, data, manifest, ranges
 from .animation import SceneAnimation
 from .camera import CameraCommands
-from .changes import ChangeLog, describe
+from .changes import ChangeLog
 from .data import DataError
 from .errors import CommandError
 from .frames import FrameClock, volume_grids
 from .held import LEDGER
+from .opening import SceneOpening
+from .pool import Readers
 from .reading import SceneReading
 from .scripts import SceneScripts, forget_made
 from .sources import SourceGrowth
@@ -69,7 +70,14 @@ def _close_presets(name: str) -> str:
     return f" Close matches: {', '.join(close)}." if close else ""
 
 
-class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceGrowth):
+class Engine(
+    CameraCommands,
+    SceneReading,
+    SceneScripts,
+    SceneAnimation,
+    SourceGrowth,
+    SceneOpening,
+):
     """Holds the render view, the live scene and the proxies that show it."""
 
     def __init__(
@@ -79,6 +87,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         session: str | None = None,
         data_on_server: bool = False,
         disk: Any = None,
+        readers: Readers | None = None,
     ) -> None:
         from paraview import simple
 
@@ -97,6 +106,10 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         # one node half share it.
         self.disk = disk or (ServerDisk() if data_on_server else LocalDisk())
         self.data_on_server = data_on_server
+        #: Readers of growing sources, shared with the other scenes of the node half.
+        self.readers = readers or Readers()
+        #: Each shared reader's generation this scene last moved to.
+        self._read_at: dict[str, int] = {}
         self.view = simple.CreateRenderView()
         self.view.OrientationAxesVisibility = 1
         self._remote_threshold: float | None = None
@@ -134,6 +147,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         self.disk_changed: float | None = None
         self.listeners: list[Callable[[str], None]] = []
         self.changes = ChangeLog()
+        self.opening = False
 
     # -- dispatch --------------------------------------------------------
     def run(self, name: str, args: dict[str, Any], by: str = "agent") -> dict[str, Any]:
@@ -148,21 +162,18 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         handler = getattr(self, f"cmd_{name}")
         if name in READING:
             return self._guard(handler, args)
+        if self.opening:
+            raise CommandError(
+                "view_opening",
+                "This view is still opening; try again once open_view has answered.",
+            )
         before = copy.deepcopy(self.scene)
         try:
             result = self._guard(handler, args)
         except Exception:
             self._rollback(before)
             raise
-        if name == "open_view" and (before or {}).get("scene") != (
-            self.scene or {}
-        ).get("scene"):
-            self.changes.clear()
-            self.arm_replay()
-        change = describe(name, args, result, self.scene)
-        if change is not None:
-            self.changes.record(by, *change)
-        self.commit(name)
+        self.finish(name, args, result, before, by)
         return result
 
     def _guard(self, handler: Callable[..., Any], args: dict[str, Any]) -> Any:
@@ -261,12 +272,16 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
             if kept or (item is not None and item["kind"] == "session"):
                 self.simple.Hide(proxy, self.view)
                 continue
+            if self.readers.leave(proxy, self):
+                # Another scene still reads through this shared reader.
+                self.simple.Hide(proxy, self.view)
+                continue
             try:
                 self.simple.Hide(proxy, self.view)
                 self.simple.Delete(proxy)
             except Exception as exc:  # noqa: BLE001 - a proxy already gone needs no delete
                 print(f"clearing {object_id}: {exc}", flush=True)
-        for state in (self._growth, self._settling, self._held):
+        for state in (self._growth, self._settling, self._held, self._read_at):
             for object_id in [k for k in state if k not in keep]:
                 del state[object_id]
         if not self.session:
@@ -353,31 +368,6 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         rep.SetScalarBarVisibility(self.view, bool(color_by) and wanted)
         if not display.get("visible", True):
             simple.Hide(proxy, self.view)
-
-    def _build(
-        self, scene: dict[str, Any], reuse: dict[str, Any] | None = None
-    ) -> None:
-        made: dict[str, Any] = {}
-        reuse = reuse or {}
-        for item in scene["objects"]:
-            if item.get("kind") == "script":
-                made.update(self.replay_script(item))
-                continue
-            if item.get("kind") == "made":
-                proxy = made.pop(item["id"])
-            elif item["id"] in reuse:
-                proxy = reuse[item["id"]]
-            else:
-                proxy = self._make(item)
-            self.proxies[item["id"]] = proxy
-            self._show(item, proxy, apply="display" in item)
-        self._apply_time(scene)
-        colors.restore(self.simple, scene.get("colormaps"))
-        if scene.get("camera"):
-            self.apply_camera(scene["camera"])
-        else:
-            self.view.ResetCamera(False)
-        self.update_view_mode()
 
     # -- time ------------------------------------------------------------
     def timesteps(self) -> list[float]:
@@ -558,80 +548,6 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         return best
 
     # -- commands that change the scene ----------------------------------------
-    def cmd_open_view(
-        self,
-        path: str | None = None,
-        scene: str | None = None,
-        growing: bool = False,
-        new: bool = False,
-        format: str | None = None,
-        reader: str | None = None,
-        reader_properties: dict[str, Any] | None = None,
-        descriptor: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        if scene is None and path is None and self.session:
-            return self._open_session()
-        if scene is None and path is None:
-            if self.scene is not None and not new:
-                return self.summary()
-            return self._open_empty(new)
-        if path is not None:
-            path = self.disk.expand(path)
-        scene_id = scene or manifest.scene_id_for(path or "")
-        if self.scene is not None and self.scene["scene"] == scene_id and not new:
-            self._update_dataset(self.scene, growing, descriptor)
-            return self.summary()
-        saved = None if new else manifest.read(self.root, scene_id)
-        if saved is not None and (reader or reader_properties):
-            # A saved scene read its data another way; the descriptor's reader wins.
-            known = saved.get("dataset") or {}
-            if (known.get("reader"), known.get("reader_properties")) != (
-                reader,
-                reader_properties or None,
-            ):
-                saved = None
-        if saved is None and path is None:
-            raise CommandError(
-                "unknown_scene",
-                f"There is no scene {scene_id} here. Known scenes: "
-                + (", ".join(manifest.known_scenes(self.root)) or "none"),
-            )
-        self._clear()
-        if saved is not None:
-            self._update_dataset(saved, growing, descriptor)
-            self.scene = saved
-            self._build(saved)
-            return self.summary(restored=True)
-        dataset: dict[str, Any] = {"path": path, "growing": bool(growing)}
-        reading: dict[str, Any] = {
-            "format": format,
-            "reader": reader,
-            "reader_properties": reader_properties or None,
-        }
-        dataset.update({k: v for k, v in reading.items() if v})
-        if descriptor:
-            dataset["descriptor"] = descriptor
-        self.scene = manifest.new_scene(scene_id, dataset)
-        item: dict[str, Any] = {
-            "id": "o1",
-            "kind": "reader",
-            "path": path,
-            "label": None,
-        }
-        item.update({k: v for k, v in reading.items() if v and k != "format"})
-        self.scene["next_id"] = 2
-        proxy = self._make(item)
-        item["label"] = os.path.basename(path.rstrip("/")) if path else "data"
-        item["type"] = proxy.GetXMLName()
-        self.scene["objects"].append(item)
-        self.proxies["o1"] = proxy
-        self._show(item, proxy, apply=False)
-        self._apply_time(self.scene)
-        self.view.ResetCamera(False)
-        self._first_view((descriptor or {}).get("display"))
-        self.update_view_mode()
-        return self.summary()
-
     def _open_empty(self, new: bool) -> dict[str, Any]:
         """A scene with no dataset, for sources a scene script makes."""
         self._clear()

@@ -214,13 +214,14 @@ def main(argv: list[str] | None = None) -> None:
     from .held import watch_held
     from .stage import Stage
 
-    def make_engine(disk: Any = None) -> Engine:
+    def make_engine(disk: Any = None, readers: Any = None) -> Engine:
         return Engine(
             root,
             threshold_mb=threshold,
             session=session,
             data_on_server=bool(args.pvserver),
             disk=disk,
+            readers=readers,
         )
 
     engine = make_engine()
@@ -230,7 +231,9 @@ def main(argv: list[str] | None = None) -> None:
         node.watched = watched
         node.pvserver = session
     stage = Stage(
-        node, lambda: make_engine(engine.disk), growth_interval=args.growth_interval
+        node,
+        lambda: make_engine(engine.disk, engine.readers),
+        growth_interval=args.growth_interval,
     )
     server = node.server
     record_path = root / f"{args.name}.json"
