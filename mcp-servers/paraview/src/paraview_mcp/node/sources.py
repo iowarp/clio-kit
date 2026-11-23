@@ -44,6 +44,10 @@ REPLAY_ALONE = 10.0
 #: Seconds a catch-up step may take to show before the link counts as too slow to
 #: replay at a watchable pace, and the catch-up goes to the latest step.
 REPLAY_SLOW = 3.0
+#: Seconds at least between two growths of a followed source's colour maps when its
+#: data is on a joined pvserver: each measures the new step there, several round
+#: trips over what may be a slow link, while steps can land every few seconds.
+REMOTE_COLOUR_SECONDS = 15.0
 
 
 def set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
@@ -110,6 +114,8 @@ class SourceGrowth:
     _replay: int | None
     _replay_armed: str | None
     last_growth: float | None
+    checked_at: float
+    _coloured_at: float
     _disk_seen: dict[str, Any]
     disk_changed: float | None
 
@@ -347,7 +353,13 @@ class SourceGrowth:
 
     def _grow_colours(self, scene: dict[str, Any]) -> None:
         """A colour map nobody fixed grows to take in each new step's values, as
-        ParaView's own maps grow on Apply; a range set by hand stays where it is."""
+        ParaView's own maps grow on Apply; a range set by hand stays where it is.
+        With the data on a joined pvserver it grows at most every
+        ``REMOTE_COLOUR_SECONDS``, taking in the step shown then."""
+        now = time.monotonic()
+        if self.disk.remote and now - self._coloured_at < REMOTE_COLOUR_SECONDS:
+            return
+        self._coloured_at = now
         self.view.Update()
         for item in scene["objects"]:
             shown = item.get("display") or {}
@@ -385,6 +397,7 @@ class SourceGrowth:
         scene = self.scene
         if scene is None or not (scene.get("dataset") or {}).get("growing"):
             return None
+        self.checked_at = time.monotonic()
         self.activate()
         self._note_steps()
         before = len(self.timesteps())
@@ -477,12 +490,14 @@ class SourceGrowth:
         self.commit("replay")
         return self._replay is not None
 
-    def cmd_steps(self, after: int = 0) -> dict[str, Any]:
+    def cmd_steps(self, after: int = 0, check: bool = True) -> dict[str, Any]:
         """The scene's time steps from index ``after`` on, each with when it was first
-        seen, after checking a growing source for new ones."""
+        seen, after checking a growing source for new ones (unless ``check`` is
+        false: then as the follow last read them)."""
         scene = self.require_scene()
         self._note_steps()
-        self.check_growth()
+        if check:
+            self.check_growth()
         start = max(0, int(after))
         steps = self.timesteps()
         dataset = scene.get("dataset") or {}
@@ -498,7 +513,9 @@ class SourceGrowth:
             "time": self.time_summary(),
             "last_growth": self.last_growth,
             "source": self.source_state(),
-            "checked": time.time(),
+            "checked": time.time() - max(0.0, time.monotonic() - self.checked_at)
+            if self.checked_at
+            else time.time(),
         }
 
     def source_state(self) -> dict[str, Any]:

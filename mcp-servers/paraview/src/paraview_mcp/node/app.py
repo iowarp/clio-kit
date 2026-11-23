@@ -79,6 +79,9 @@ PAGE_QUIET = 1.5
 PAGE_HOLD = 10.0
 #: Seconds between looks at whether a background task's turn has come.
 TURN_POLL = 0.05
+#: Seconds after which an agent's ``steps`` call checks a growing source itself even
+#: while background work has the loop: the follow has not looked for that long.
+STEPS_FRESH = 15.0
 
 # Posts the bridge state and the link state to the page that frames trame.
 BRIDGE_JS = r"""
@@ -661,10 +664,18 @@ class NodeApp:
             if name in MUTATING:
                 await self._after_animation()
             started()
+            timed = False
+            if name == "steps":
+                check = self._steps_check()
+                timed = check and self._remote_data()
+                args = {**args, "check": check}
+            began = time.monotonic()
             if name in STEPWISE:
                 result = await self._stepwise(name, args)
             else:
                 result = await self._run_engine(name, args, by)
+            if timed:
+                self.shared.worked(began)
         except CommandError as exc:
             went = self._went_during_call()
             if went is not None:
@@ -706,6 +717,21 @@ class NodeApp:
         if went is not None:
             return went
         return self._json({"result": result})
+
+    def _remote_data(self) -> bool:
+        return bool(getattr(getattr(self.engine, "disk", None), "remote", False))
+
+    def _steps_check(self) -> bool:
+        """Whether an agent's ``steps`` call checks the growing source itself. With
+        the data on a joined pvserver a check is several round trips over what may
+        be a slow link, and the follow checks anyway: a watch polling every second
+        checks only once background work has left the loop free (and then leaves it
+        free as long), or when nothing has checked for ``STEPS_FRESH`` seconds."""
+        if not self._remote_data():
+            return True
+        now = time.monotonic()
+        last = float(getattr(self.engine, "checked_at", 0.0))
+        return now >= self.shared.free_at or now - last >= STEPS_FRESH
 
     async def _run_engine(self, name: str, args: dict[str, Any], by: str) -> Any:
         """Run a command on the engine. Opening a growing source that its writer has
