@@ -211,6 +211,7 @@ def main(argv: list[str] | None = None) -> None:
 
     from .app import NodeApp
     from .engine import Engine
+    from .held import watch_held
     from .stage import Stage
 
     def make_engine(disk: Any = None) -> Engine:
@@ -252,6 +253,7 @@ def main(argv: list[str] | None = None) -> None:
         print(f"node half listening on 127.0.0.1:{server.port}", flush=True)
         loop = asyncio.get_event_loop()
         loop.create_task(watch_loop())
+        loop.create_task(watch_held())
         loop.create_task(node.watch_growth(args.growth_interval))
         loop.create_task(idle(stage, args.idle_seconds, record_path, lock))
         loop.create_task(watch_stop(stage, stop_path, record_path, lock))

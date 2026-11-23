@@ -206,7 +206,14 @@ follows again (`set_timestep` with `latest`). A growing source opened once it
 already has steps catches up: when a view first connects it shows the first
 step, plays forward a few steps a second (a long history is strided to about 60
 frames), then follows the latest step. The view reports `catching_up` meanwhile;
-choosing a step ends it. Each step reaches the view's model
+choosing a step ends it. A view opened while another view of the node half already
+follows a growing source, or while background work has been waiting more than a
+few seconds for its turn, follows the latest step at once instead: its catch-up
+would share the node with them and slow every view. With the data on a joined
+pvserver, ParaView mode has the pvserver draw a growing source, so only the
+picture of each new step crosses the link, not its geometry. When the node half's
+loop is held for 2 s or more, its log names the work that held it and how long
+each part took. Each step reaches the view's model
 context, and `watch_steps` reports it as task progress, "Step k of N", so any MCP
 host can show a run advancing. `watch_steps` lasts as long as the run: it ends
 when the expected steps are written, when the writer closes its ADIOS2 output,

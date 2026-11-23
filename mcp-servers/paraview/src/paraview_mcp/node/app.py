@@ -21,6 +21,7 @@ from typing import Any
 from . import manifest, vtkjs_patch
 from .changes import lines as change_lines
 from .engine import MUTATING, STEPWISE, CommandError, Engine
+from .held import LEDGER
 from .panel import MODE_LABELS, build
 from .serializers import register_serializers
 from .sources import (
@@ -81,6 +82,14 @@ PAGE_HOLD = 10.0
 TURN_POLL = 0.05
 #: Seconds a background task may wait for its turn before the node log says so.
 TURN_SLOW = 30.0
+#: Seconds at most the loop is left free after a piece of background work. Commands
+#: and loading pages get in however long the gap (background work skips its turn for
+#: them), so a gap as long as the work only made every other view wait twice as long.
+TURN_GAP = 2.0
+#: How many of the latest turn waits say whether the node is busy.
+TURN_RECENT = 6
+#: Seconds a view counts as following after its last look at a growing source.
+FOLLOWING_SECONDS = 60.0
 #: Seconds the browser has to say it drew a scene it was sent before the next one
 #: goes anyway (a page that went, a bundle that cannot say).
 SCENE_WAIT = 60.0
@@ -221,12 +230,19 @@ class Shared:
     free_at: float = 0.0
     #: Background work waiting for its turn, in the order it asked.
     queue: deque[object] = field(default_factory=deque)
+    #: The latest turn waits, in seconds.
+    recent_waits: deque[float] = field(
+        default_factory=lambda: deque(maxlen=TURN_RECENT)
+    )
+    #: Views following a growing source with a page open, by view, with when they
+    #: last looked at it.
+    following: dict[int, float] = field(default_factory=dict)
 
     async def turn(self) -> float:
         """Wait for background work's turn: every view's follow and catch-up share
-        the loop, so each leaves it free at least as long as its work took, and
-        commands and pages get in however many views are open. Turns go in the
-        order they were asked for, so one view's catch-up cannot keep another
+        the loop, so each leaves it free for a while after its work (TURN_GAP at
+        most), and commands and pages get in however many views are open. Turns go
+        in the order they were asked for, so one view's catch-up cannot keep another
         view's follow waiting. Returns the seconds it waited."""
         me = object()
         self.queue.append(me)
@@ -243,6 +259,7 @@ class Shared:
                             f"background work waited {waited:.0f} s for its turn",
                             flush=True,
                         )
+                    self.recent_waits.append(waited)
                     return waited
                 else:
                     await asyncio.sleep(TURN_POLL)
@@ -252,8 +269,31 @@ class Shared:
     def worked(self, began: float) -> float:
         """Note background work that began at ``began``; return how long it took."""
         now = time.monotonic()
-        self.free_at = max(self.free_at, now + (now - began))
-        return now - began
+        spent = now - began
+        self.free_at = max(self.free_at, now + min(spent, TURN_GAP))
+        return spent
+
+    def busy_waits(self) -> float:
+        """The average of the latest turn waits, in seconds (0 with none yet)."""
+        waits = self.recent_waits
+        return sum(waits) / len(waits) if waits else 0.0
+
+    def follows(self, view: object, on: bool) -> None:
+        """Note whether ``view`` follows a growing source with a page open."""
+        if on:
+            self.following[id(view)] = time.monotonic()
+        else:
+            self.following.pop(id(view), None)
+
+    def others_following(self, view: object) -> int:
+        """How many other views followed a growing source in the last
+        FOLLOWING_SECONDS."""
+        now = time.monotonic()
+        return sum(
+            1
+            for key, seen in self.following.items()
+            if key != id(view) and now - seen < FOLLOWING_SECONDS
+        )
 
 
 class NodeApp:
@@ -275,6 +315,8 @@ class NodeApp:
 
         self.engine = engine
         self.token = token
+        #: How the node log names this view.
+        self.name = "view 1"
         self.server = server or get_server("clio-paraview", client_type="vue3")
         self.shared = shared or Shared()
         #: The node half's views, when there may be more than this one.
@@ -942,9 +984,11 @@ class NodeApp:
         state.clio_follow = time_state.get("follow_latest", True)
         state.clio_catching = time_state.get("catching_up", False)
         state.clio_newer = time_state.get("newer_steps", 0)
-        self.bench.refresh(reason)
+        with LEDGER.phase("panel"):
+            self.bench.refresh(reason)
         if reason not in ("selection", "camera"):
-            self._update_view()
+            with LEDGER.phase("picture"):
+                self._update_view()
         moved = reason in ("open_view", "fit_camera", "set_camera", "rollback")
         if moved and self.view is not None:
             self.view.push_camera()
@@ -1163,17 +1207,27 @@ class NodeApp:
             await asyncio.sleep(max(interval, spent))
             await self.shared.turn()
             if self.lost:
+                self.shared.follows(self, False)
                 return
             if self.waiting or self._loading():
                 spent = 0.0
                 continue
             began = time.monotonic()
             try:
-                with self.server.state:
+                with self.server.state, LEDGER.span(f"{self.name} growth"):
                     self.engine.check_growth()
             except Exception as exc:  # noqa: BLE001 - keep watching; say why
                 print(f"growth check failed: {exc}", flush=True)
             spent = self.shared.worked(began)
+            self.shared.follows(self, self._following())
+
+    def _following(self) -> bool:
+        """Whether this view follows a growing source with a page open."""
+        scene = self.engine.scene
+        if scene is None or self.sockets <= 0:
+            return False
+        growing = bool((scene.get("dataset") or {}).get("growing"))
+        return growing and bool(scene["time"].get("follow_latest", True))
 
     def _loading(self) -> bool:
         """Whether a view's page is loading: it fetched a file in the last PAGE_QUIET
@@ -1195,18 +1249,28 @@ class NodeApp:
                 await asyncio.sleep(PAGE_QUIET)
             # On a node busy with other views every catch-up step waits this long
             # again, so a long wait for the first means the view stays on the
-            # latest step and follows it rather than crawl up from step 1.
+            # latest step and follows it rather than crawl up from step 1. So does
+            # another view already following: the catch-up's steps would share the
+            # loop with it, and slow both.
             waited = await self.shared.turn()
-            if waited > REPLAY_SLOW:
+            others = self.shared.others_following(self)
+            busy = self.shared.busy_waits()
+            if others or waited > REPLAY_SLOW or busy > REPLAY_SLOW:
                 engine.disarm_replay()
+                why = (
+                    f"{others} other view{'s' if others > 1 else ''} already "
+                    "follow this node"
+                    if others
+                    else f"the node is busy (waited {waited:.0f} s for a turn)"
+                    if waited > REPLAY_SLOW
+                    else f"the node is busy (turns waited {busy:.0f} s lately)"
+                )
                 print(
-                    f"the node is busy (waited {waited:.0f} s for a turn); "
-                    "following the latest step without a catch-up",
-                    flush=True,
+                    f"{why}; following the latest step without a catch-up", flush=True
                 )
                 return
             began = time.monotonic()
-            with self.server.state:
+            with self.server.state, LEDGER.span(f"{self.name} catch-up"):
                 if not engine.start_replay():
                     return
             # The first step is the costly one (the reader's first read of a later
@@ -1238,7 +1302,7 @@ class NodeApp:
                     spent > REPLAY_SLOW or waited > REPLAY_SLOW or held >= REPLAY_ALONE
                 )
                 began = time.monotonic()
-                with self.server.state:
+                with self.server.state, LEDGER.span(f"{self.name} catch-up"):
                     going = engine.replay_tick(finish=alone >= REPLAY_ALONE or slow)
                 if slow:
                     if spent > REPLAY_SLOW:

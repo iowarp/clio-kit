@@ -13,10 +13,15 @@ rebuilt from the scene, so the agent's changes show in the panel at once.
 from __future__ import annotations
 
 import asyncio
+import time
 from typing import Any, TypeGuard
 
 from . import colors, data, filters, manifest
 from .errors import CommandError
+
+#: Seconds at least between two descriptions of a followed source's new step for
+#: the panel, when its data is on a joined pvserver.
+DESCRIBE_SECONDS = 15.0
 
 PRESETS = (
     "Cool to Warm",
@@ -157,6 +162,7 @@ class Workbench:
         self.state = state
         self.after = after or (lambda _name: None)
         self.infos: dict[str, dict[str, Any]] = {}
+        self._described = 0.0
         self._play: asyncio.Task[None] | None = None
         state.update(
             clio_panel="",
@@ -191,6 +197,21 @@ class Workbench:
         return result
 
     # -- the panel's state from the scene ---------------------------------------
+    def _keep_infos(self, reason: str, objects: list[dict[str, Any]]) -> bool:
+        """Whether a new step of a followed source keeps the panel's data
+        information for now. With the data on a joined pvserver, describing each
+        object asks the pvserver over the link, and steps can land every few
+        seconds for each view; so the panel takes in a new step's information at
+        most every DESCRIBE_SECONDS. Any other change describes at once."""
+        disk = getattr(self.engine, "disk", None)
+        return (
+            reason in ("growth", "replay")
+            and bool(getattr(disk, "remote", False))
+            and set(self.infos)
+            == {o["id"] for o in objects if o["id"] in self.engine.proxies}
+            and time.monotonic() - self._described < DESCRIBE_SECONDS
+        )
+
     def refresh(self, reason: str) -> None:
         """Rebuild the panel from the scene after any change, whoever made it."""
         scene = self.engine.scene
@@ -199,11 +220,13 @@ class Workbench:
             state.update(clio_objects=[], clio_active=None, clio_sel=None)
             return
         objects = manifest.pipeline(scene)
-        self.infos = {
-            o["id"]: data.describe(self.engine.proxies[o["id"]])
-            for o in objects
-            if o["id"] in self.engine.proxies
-        }
+        if not self._keep_infos(reason, objects):
+            self.infos = {
+                o["id"]: data.describe(self.engine.proxies[o["id"]])
+                for o in objects
+                if o["id"] in self.engine.proxies
+            }
+            self._described = time.monotonic()
         ids = [o["id"] for o in objects]
         active = state.clio_active
         if reason == "create_filter" and objects:

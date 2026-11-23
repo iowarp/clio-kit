@@ -21,6 +21,7 @@ from .changes import ChangeLog, describe
 from .data import DataError
 from .errors import CommandError
 from .frames import FrameClock, volume_grids
+from .held import LEDGER
 from .reading import SceneReading
 from .scripts import SceneScripts, forget_made
 from .sources import SourceGrowth
@@ -199,9 +200,10 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         """Write the manifest and tell the view that the scene changed."""
         if self.scene is None:
             return
-        self.scene["camera"] = self.read_camera()
-        self.scene["colormaps"] = colors.snapshot(self.simple, self.scene)
-        manifest.write(self.root, self.scene)
+        with LEDGER.phase("scene record"):
+            self.scene["camera"] = self.read_camera()
+            self.scene["colormaps"] = colors.snapshot(self.simple, self.scene)
+            manifest.write(self.root, self.scene)
         for listener in list(self.listeners):
             listener(reason)
 
@@ -489,10 +491,16 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         when the view is under its remote render threshold; above it the pvserver
         draws and the actors here stay empty. The browser draws from the actors here,
         so browser mode would show only the colour legend. Browser mode lifts the
-        threshold so the geometry comes here; ParaView mode puts it back."""
+        threshold so the geometry comes here.
+
+        ParaView mode puts it back, but a growing source the pvserver draws always:
+        under the threshold every new step's geometry crossed the link for each view
+        that shows it, to draw a picture here, and on a slow link that held the node
+        for seconds a step. Drawn there, only the picture crosses."""
         if not self.data_on_server or self._remote_threshold is None:
             return
-        wanted = 1e12 if mode == "local" else self._remote_threshold
+        growing = bool(((self.scene or {}).get("dataset") or {}).get("growing"))
+        wanted = 1e12 if mode == "local" else 0.0 if growing else self._remote_threshold
         try:
             if float(self.view.RemoteRenderThreshold) != wanted:
                 self.view.RemoteRenderThreshold = wanted
@@ -507,12 +515,22 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         from vtkmodules.vtkRenderingCore import vtkCellPicker
 
         self.view.ViewSize = [max(1, int(width)), max(1, int(height))]
-        self.simple.Render(self.view)
-        picker = vtkCellPicker()
-        picker.SetTolerance(0.005)
-        if not picker.Pick(float(x), float(y), 0.0, self.view.GetRenderer()):
-            return None
-        return [float(v) for v in picker.GetPickPosition()]
+        # A scene the pvserver draws has no geometry here: a pick brings it over
+        # for this one look, then the pvserver draws again.
+        drawn_there = self.data_on_server and self._remote_threshold is not None
+        before = float(self.view.RemoteRenderThreshold) if drawn_there else None
+        if before is not None and before < 1e12:
+            self.view.RemoteRenderThreshold = 1e12
+        try:
+            self.simple.Render(self.view)
+            picker = vtkCellPicker()
+            picker.SetTolerance(0.005)
+            if not picker.Pick(float(x), float(y), 0.0, self.view.GetRenderer()):
+                return None
+            return [float(v) for v in picker.GetPickPosition()]
+        finally:
+            if before is not None and before < 1e12:
+                self.view.RemoteRenderThreshold = before
 
     def browser_pick(self, world: list[float]) -> dict[str, Any] | None:
         """Record what the person picked at world position ``world``."""

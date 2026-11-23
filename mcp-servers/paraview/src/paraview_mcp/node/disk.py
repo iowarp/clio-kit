@@ -444,6 +444,8 @@ def dispatch(op: str, args: dict[str, Any]) -> Any:
         return is_bp(args["path"], args.get("reader"))
     if op == "check":
         return asdict(check(args["path"]))
+    if op == "grown":
+        return [disk_key(args["path"]), asdict(check(args["path"]))]
     if op == "write_index":
         return write_index(args["path"], args["folder"], int(args["steps"]))
     if op == "source_readiness":
