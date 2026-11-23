@@ -171,6 +171,7 @@ class Stage:
         self._tasks.append(task)
         await server.ready
         self.apps.append(app)
+        app.name = f"view {len(self.apps)}"
         self._tasks.append(
             asyncio.ensure_future(app.watch_growth(self.growth_interval))
         )

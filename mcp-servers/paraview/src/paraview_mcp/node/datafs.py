@@ -12,12 +12,16 @@ ParaView's Python and nothing else.
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any
 
 from . import disk, manifest
 from .disk import Readiness
 from .errors import CommandError
+
+#: Seconds one look at a growing output on the pvserver's disk serves every view.
+GROWN_FRESH = 1.5
 
 # Runs inside the server. SOURCE is disk.py; the module is registered so its
 # dataclass resolves its own annotations.
@@ -86,6 +90,12 @@ class LocalDisk:
     def check(self, path: str) -> Readiness:
         return Readiness(**self.call("check", path=path))
 
+    def grown(self, path: str) -> tuple[Any, Readiness]:
+        """What is on disk for a BP5 folder (``disk_key``) and whether it can be read
+        (``check``), in one look."""
+        key, state = self.call("grown", path=path)
+        return key, Readiness(**state)
+
     def write_index(self, path: str, folder: str, steps: int) -> str:
         return str(self.call("write_index", path=path, folder=folder, steps=steps))
 
@@ -123,6 +133,18 @@ class ServerDisk(LocalDisk):
         self._sent = False
         self._answered = False
         self._calls = 0
+        self._grown: dict[str, tuple[float, Any, Readiness]] = {}
+
+    def grown(self, path: str) -> tuple[Any, Readiness]:
+        # Several views following one output each look at it every few seconds;
+        # one look over the link serves them all for GROWN_FRESH seconds.
+        now = time.monotonic()
+        seen = self._grown.get(path)
+        if seen is not None and now - seen[0] < GROWN_FRESH:
+            return seen[1], seen[2]
+        key, state = super().grown(path)
+        self._grown[path] = (now, key, state)
+        return key, state
 
     def call(self, op: str, **args: Any) -> Any:
         reply = self._ask(op, args, with_source=not self._sent)

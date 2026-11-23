@@ -29,8 +29,9 @@ from typing import Any
 
 from . import ranges
 from .datafs import LocalDisk
-from .disk import is_pattern, whole_steps, writing
+from .disk import Readiness, is_pattern, whole_steps, writing
 from .errors import CommandError
+from .held import LEDGER
 
 #: Seconds a grown BP5 folder must stay unchanged before its last step is read,
 #: when its data may still be short of that step.
@@ -243,11 +244,12 @@ class SourceGrowth:
         self._held[item["id"]] = steps
         return target
 
-    def _bp5_whole(self, item: dict[str, Any], key: Any) -> int | None:
+    def _bp5_whole(
+        self, item: dict[str, Any], key: Any, state: Readiness
+    ) -> int | None:
         """How many steps of a grown BP5 folder can be read now, if more than the
         reader has: every whole step, and the last once the folder has stopped
-        changing for ``SETTLE`` seconds."""
-        state = self.disk.check(item["path"])
+        changing for ``SETTLE`` seconds. ``state`` is the folder's ``check``."""
         held = self._held[item["id"]]
         if state.reason or state.steps <= held:
             self._settling.pop(item["id"], None)
@@ -397,39 +399,50 @@ class SourceGrowth:
         for item in scene["objects"]:
             if item["kind"] != "reader" or item["id"] not in self.proxies:
                 continue
-            key = self.disk.disk_key(item["path"])
+            held = item["id"] in self._held
+            state = None
+            with LEDGER.phase("disk"):
+                if held:
+                    key, state = self.disk.grown(item["path"])
+                else:
+                    key = self.disk.disk_key(item["path"])
             if key != self._disk_seen.get(item["id"], self):
                 self._disk_seen[item["id"]] = key
                 self.disk_changed = time.time()
             proxy = self.proxies[item["id"]]
-            if item["id"] in self._held:
+            if held and state is not None:
                 # A growing BP5 folder: its reader reads a copy whose index holds
                 # only the steps whose data is surely on disk.
-                whole = self._bp5_whole(item, key)
+                whole = self._bp5_whole(item, key, state)
                 if whole is None:
                     continue
                 self._growth[item["id"]] = key
-                files: list[str] | str = self._follow_index(item, whole)
+                with LEDGER.phase("disk"):
+                    files: list[str] | str = self._follow_index(item, whole)
             else:
                 if key == self._growth.get(item["id"]):
                     continue
-                if self._bp5(item) and not self._bp5_settled(item, key):
-                    continue
+                with LEDGER.phase("disk"):
+                    if self._bp5(item) and not self._bp5_settled(item, key):
+                        continue
                 self._growth[item["id"]] = key
                 files = self._files(item)
             changed = True
-            if is_pattern(item["path"]):
-                self._point_reader(proxy, item, files, reset=True)
-            elif not self.simple.ReloadFiles(proxy):
-                # A folder or file written in place, such as an ADIOS2 BP output:
-                # the reader re-opens it. Resetting the name is the fallback.
-                self._point_reader(proxy, item, files, reset=True)
-            proxy.UpdatePipelineInformation()
+            with LEDGER.phase("reader"):
+                if is_pattern(item["path"]):
+                    self._point_reader(proxy, item, files, reset=True)
+                elif not self.simple.ReloadFiles(proxy):
+                    # A folder or file written in place, such as an ADIOS2 BP
+                    # output: the reader re-opens it. Resetting the name is the
+                    # fallback.
+                    self._point_reader(proxy, item, files, reset=True)
+                proxy.UpdatePipelineInformation()
         if not changed:
             return None
         self._apply_time(scene)
         if scene["time"].get("follow_latest", True):
-            self._grow_colours(scene)
+            with LEDGER.phase("colours"):
+                self._grow_colours(scene)
         self._note_steps()
         self.last_growth = time.time()
         after = len(self.timesteps())

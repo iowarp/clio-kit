@@ -5,6 +5,8 @@ from __future__ import annotations
 import time
 from typing import Any
 
+from .held import LEDGER
+
 #: Renders closer together than this belong to one burst (a screenshot's passes, a drag).
 BURST_GAP_SECONDS = 0.25
 
@@ -34,6 +36,7 @@ class FrameClock:
         if not self._started:
             return
         now = time.perf_counter()
+        LEDGER.rendered(now - self._started)
         took = round(now - self._started, 2)
         same_burst = self._started - self._ended < BURST_GAP_SECONDS
         self.seconds = max(took, self.seconds or 0.0) if same_burst else took
