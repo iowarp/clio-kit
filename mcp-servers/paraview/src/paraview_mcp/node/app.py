@@ -18,7 +18,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from . import manifest
+from . import manifest, vtkjs_patch
 from .bridge import BRIDGE_JS, token_from
 from .changes import lines as change_lines
 from .delivery import fresh_stream
@@ -80,9 +80,13 @@ PAGE_QUIET = 1.5
 PAGE_HOLD = 10.0
 #: Seconds between looks at whether a background task's turn has come.
 TURN_POLL = 0.05
-#: Seconds after which an agent's ``steps`` call checks a growing source itself even
-#: while background work has the loop: the follow has not looked for that long.
-STEPS_FRESH = 15.0
+#: Seconds a background task may wait for its turn before the node log says so.
+TURN_SLOW = 30.0
+#: Seconds the browser has to say it drew a scene it was sent before the next one
+#: goes anyway (a page that went, a bundle that cannot say).
+SCENE_WAIT = 60.0
+#: Seconds after a page connects before it gets a fresh picture.
+PAGE_FRESH = 1.0
 
 
 @dataclass
@@ -112,12 +116,19 @@ class Shared:
         view's follow waiting."""
         me = object()
         self.queue.append(me)
+        asked = time.monotonic()
         try:
             while True:
                 wait = self.free_at - time.monotonic()
                 if wait > 0:
                     await asyncio.sleep(wait)
                 elif self.queue[0] is me:
+                    waited = time.monotonic() - asked
+                    if waited > TURN_SLOW:
+                        print(
+                            f"background work waited {waited:.0f} s for its turn",
+                            flush=True,
+                        )
                     return
                 else:
                     await asyncio.sleep(TURN_POLL)
@@ -172,6 +183,10 @@ class NodeApp:
         self.last_frame_size = ""
         #: What a growing source just opened had on disk, and when that last changed.
         self._source_seen: tuple[Any, float] | None = None
+        #: When a scene went to the browser that it has not said it drew, and whether
+        #: a newer one waits for that.
+        self._scene_sent: float | None = None
+        self._scene_waiting = False
         self._build()
         engine.listeners.append(self._on_scene_change)
 
@@ -236,6 +251,7 @@ class NodeApp:
             "clio_pick": self._ui_pick,
             "clio_redraw": self._ui_redraw,
             "clio_drawn": self._ui_drawn,
+            "clio_scene_loaded": self._ui_scene_loaded,
         }.items():
             ctrl.trigger(name)(handler)
         ctrl.on_server_bind.add(self._bind_routes)
@@ -303,6 +319,10 @@ class NodeApp:
         websocket = request.headers.get("Upgrade", "").lower() == "websocket"
         if websocket:
             self.sockets += 1
+            # A page that opens (a new view, a frame the host remounted, a link that
+            # came back) gets a fresh picture: the scene a page that went never said
+            # it drew is not waited for, and a remote stream that page left is reset.
+            asyncio.get_running_loop().call_later(PAGE_FRESH, self._new_page)
             # A scene's catch-up runs once, for its first viewer; a view that opens
             # later shows the step the others show.
             if self.sockets > 1:
@@ -556,18 +576,12 @@ class NodeApp:
             if name in MUTATING:
                 await self._after_animation()
             started()
-            timed = False
             if name == "steps":
-                check = self._steps_check()
-                timed = check and self._remote_data()
-                args = {**args, "check": check}
-            began = time.monotonic()
+                args = {**args, "check": self._steps_check()}
             if name in STEPWISE:
                 result = await self._stepwise(name, args)
             else:
                 result = await self._run_engine(name, args, by)
-            if timed:
-                self.shared.worked(began)
         except CommandError as exc:
             went = self._went_during_call()
             if went is not None:
@@ -616,14 +630,11 @@ class NodeApp:
     def _steps_check(self) -> bool:
         """Whether an agent's ``steps`` call checks the growing source itself. With
         the data on a joined pvserver a check is several round trips over what may
-        be a slow link, and the follow checks anyway: a watch polling every second
-        checks only once background work has left the loop free (and then leaves it
-        free as long), or when nothing has checked for ``STEPS_FRESH`` seconds."""
-        if not self._remote_data():
-            return True
-        now = time.monotonic()
-        last = float(getattr(self.engine, "checked_at", 0.0))
-        return now >= self.shared.free_at or now - last >= STEPS_FRESH
+        be a slow link, and the follow checks anyway: the call says what the follow
+        last read, and when. Checking there too, a watch polling every second kept
+        the loop busy outside the turns, and every view's follow and catch-up but
+        one waited for good."""
+        return not self._remote_data()
 
     async def _run_engine(self, name: str, args: dict[str, Any], by: str) -> Any:
         """Run a command on the engine. Opening a growing source that its writer has
@@ -889,10 +900,62 @@ class NodeApp:
         if self.view is None or self.lost:
             return
         if self.server.state.viewMode != "remote":
-            self.engine.simple.Render(self.engine.view)
-            self.view.update()
+            if self._scene_held():
+                self._scene_waiting = True
+                return
+            self._send_scene()
         else:
             self.view.update_image()
+
+    def _scene_held(self) -> bool:
+        """Whether the next scene waits for the browser to draw the last one sent.
+        Each scene's arrays are fetched after it lands, and over a slow link a page
+        sent a scene per step fetched them all at once and drew none."""
+        sent = self._scene_sent
+        if sent is None or not vtkjs_patch.scene_signal or self.sockets <= 0:
+            return False
+        if time.monotonic() - sent < SCENE_WAIT:
+            return True
+        print(
+            f"the browser has not said it drew the scene sent {SCENE_WAIT:g} s ago; "
+            "sending the newest",
+            flush=True,
+        )
+        return False
+
+    def _send_scene(self) -> None:
+        self._scene_waiting = False
+        self.engine.simple.Render(self.engine.view)
+        self.view.update()
+        if vtkjs_patch.scene_signal and self.sockets > 0:
+            self._scene_sent = time.monotonic()
+
+    def _ui_scene_loaded(self, ok: Any = True, error: Any = "") -> None:
+        """A page drew the scene it was sent, or could not: send the newest, if one
+        waits."""
+        if not ok:
+            print(f"the browser could not draw a scene: {error}", flush=True)
+        self._scene_sent = None
+        if (
+            self._scene_waiting
+            and not self.lost
+            and self.view is not None
+            and self.server.state.viewMode != "remote"
+        ):
+            self._send_scene()
+
+    def _new_page(self) -> None:
+        """A fresh picture for a page that just connected."""
+        if self.lost or self.view is None or self.sockets <= 0:
+            return
+        if self.server.state.viewMode == "remote":
+            fresh_stream(self.server, self.engine.view, 0, 0)
+            self.view.update_image()
+            return
+        self._scene_sent = None
+        if self._scene_waiting:
+            with self.server.state:
+                self._send_scene()
 
     def _legend_for(self, renderer: Any) -> tuple[bool, str | None]:
         """Whether ``renderer`` is this view's, and the field whose legend the browser
@@ -924,7 +987,9 @@ class NodeApp:
                 except (TypeError, ValueError):
                     w = h = 0
                 fresh_stream(self.server, self.engine.view, w, h)
-            self.view.update()
+            # The picture alone: the geometry is the browser's to draw, and sending
+            # it is the slow part over a slow link.
+            self.view.update_image()
 
     def _ui_drawn(self, size: str = "", count: Any = 1) -> None:
         try:

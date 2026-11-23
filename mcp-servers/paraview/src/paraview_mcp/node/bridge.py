@@ -46,6 +46,12 @@ BRIDGE_JS = r"""
       client.onConnectionError(function () { post({ type: 'clio.paraview.link', up: false }); });
     }
     post({ type: 'clio.paraview.link', up: true });
+    // The page drew a scene it was sent, or could not (vtkjs_patch.py): the node
+    // half sends the next one then.
+    window.addEventListener('vtk-scene-loaded', function (e) {
+      var detail = (e && e.detail) || {};
+      trame.trigger('clio_scene_loaded', [!!detail.ok, String(detail.error || '').slice(0, 300)]);
+    });
     // The view page answers with the host's theme and colours (theme.py).
     post({ type: 'clio.paraview.ready' });
     // A frame that mounts or resizes (a tab moved, the canvas maximized, the host

@@ -17,6 +17,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from . import array_cache
+
 
 def _shown_legends(renderer: Any) -> list[Any]:
     props = renderer.GetViewProps()
@@ -99,6 +101,7 @@ def register_serializers(chooser: Callable[[Any], tuple[bool, str | None]]) -> N
     )
 
     initialize_serializers()
+    array_cache.install()
     for name in ("vtkPartitionedDataSetCollection", "vtkPartitionedDataSet"):
         register_instance_serializer(name, merge_to_polydata_serializer)
 
