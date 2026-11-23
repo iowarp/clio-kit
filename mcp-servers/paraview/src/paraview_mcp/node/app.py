@@ -13,6 +13,7 @@ import hmac
 import json
 import os
 import time
+from collections import deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -76,6 +77,8 @@ END_INTERACTION_EVENT = 45  # vtkCommand::EndInteractionEvent
 PAGE_QUIET = 1.5
 #: Seconds a stretch of page fetches may hold background work at most.
 PAGE_HOLD = 10.0
+#: Seconds between looks at whether a background task's turn has come.
+TURN_POLL = 0.05
 
 # Posts the bridge state and the link state to the page that frames trame.
 BRIDGE_JS = r"""
@@ -203,13 +206,28 @@ class Shared:
     fetch_began: float = 0.0
     #: Until when the loop is left free after the last background work of any view.
     free_at: float = 0.0
+    #: Background work waiting for its turn, in the order it asked.
+    queue: deque[object] = field(default_factory=deque)
 
     async def turn(self) -> None:
         """Wait for background work's turn: every view's follow and catch-up share
         the loop, so each leaves it free at least as long as its work took, and
-        commands and pages get in however many views are open."""
-        while (wait := self.free_at - time.monotonic()) > 0:
-            await asyncio.sleep(wait)
+        commands and pages get in however many views are open. Turns go in the
+        order they were asked for, so one view's catch-up cannot keep another
+        view's follow waiting."""
+        me = object()
+        self.queue.append(me)
+        try:
+            while True:
+                wait = self.free_at - time.monotonic()
+                if wait > 0:
+                    await asyncio.sleep(wait)
+                elif self.queue[0] is me:
+                    return
+                else:
+                    await asyncio.sleep(TURN_POLL)
+        finally:
+            self.queue.remove(me)
 
     def worked(self, began: float) -> float:
         """Note background work that began at ``began``; return how long it took."""
