@@ -222,12 +222,12 @@ class Shared:
     #: Background work waiting for its turn, in the order it asked.
     queue: deque[object] = field(default_factory=deque)
 
-    async def turn(self) -> None:
+    async def turn(self) -> float:
         """Wait for background work's turn: every view's follow and catch-up share
         the loop, so each leaves it free at least as long as its work took, and
         commands and pages get in however many views are open. Turns go in the
         order they were asked for, so one view's catch-up cannot keep another
-        view's follow waiting."""
+        view's follow waiting. Returns the seconds it waited."""
         me = object()
         self.queue.append(me)
         asked = time.monotonic()
@@ -243,7 +243,7 @@ class Shared:
                             f"background work waited {waited:.0f} s for its turn",
                             flush=True,
                         )
-                    return
+                    return waited
                 else:
                     await asyncio.sleep(TURN_POLL)
         finally:
@@ -1193,13 +1193,25 @@ class NodeApp:
         try:
             while self._loading():
                 await asyncio.sleep(PAGE_QUIET)
+            # On a node busy with other views every catch-up step waits this long
+            # again, so a long wait for the first means the view stays on the
+            # latest step and follows it rather than crawl up from step 1.
+            waited = await self.shared.turn()
+            if waited > REPLAY_SLOW:
+                engine.disarm_replay()
+                print(
+                    f"the node is busy (waited {waited:.0f} s for a turn); "
+                    "following the latest step without a catch-up",
+                    flush=True,
+                )
+                return
             began = time.monotonic()
             with self.server.state:
                 if not engine.start_replay():
                     return
             # The first step is the costly one (the reader's first read of a later
             # step), so it is what says whether the link can replay at all.
-            spent = time.monotonic() - began
+            spent = self.shared.worked(began)
             print(f"catching up from step 1 of {len(engine.timesteps())}", flush=True)
             await asyncio.sleep(max(REPLAY_HOLD, spent))
             alone = 0.0
@@ -1208,27 +1220,33 @@ class NodeApp:
             while going:
                 pause = max(REPLAY_SECONDS, spent)
                 await asyncio.sleep(pause)
-                await self.shared.turn()
+                # Time spent waiting for the turn holds the catch-up as much as
+                # commands and loading pages do.
+                waited = await self.shared.turn()
+                held += waited
                 # Held by commands or loading pages for REPLAY_ALONE in all, the
                 # catch-up goes to the latest step rather than wait on for its turn.
                 if (self.waiting or self._loading()) and held < REPLAY_ALONE:
                     held += pause
                     continue
-                alone = 0.0 if self.sockets > 0 else alone + pause
+                alone = 0.0 if self.sockets > 0 else alone + pause + waited
                 if 0 < alone < REPLAY_ALONE:
                     continue
-                # A step that takes longer than REPLAY_SLOW to show is a link too
-                # slow to replay at a watchable pace: go to the latest step instead.
-                slow = spent > REPLAY_SLOW or held >= REPLAY_ALONE
+                # A step that takes longer than REPLAY_SLOW to show, or to get its
+                # turn, cannot replay at a watchable pace: go to the latest instead.
+                slow = (
+                    spent > REPLAY_SLOW or waited > REPLAY_SLOW or held >= REPLAY_ALONE
+                )
                 began = time.monotonic()
                 with self.server.state:
                     going = engine.replay_tick(finish=alone >= REPLAY_ALONE or slow)
                 if slow:
-                    why = (
-                        f"a step took {spent:.1f} s to show over this link"
-                        if spent > REPLAY_SLOW
-                        else f"the catch-up was held {held:.0f} s"
-                    )
+                    if spent > REPLAY_SLOW:
+                        why = f"a step took {spent:.1f} s to show over this link"
+                    elif waited > REPLAY_SLOW:
+                        why = f"a step waited {waited:.0f} s for its turn"
+                    else:
+                        why = f"the catch-up was held {held:.0f} s"
                     print(f"{why}; skipped the rest of the catch-up", flush=True)
                 spent = self.shared.worked(began)
             print(f"caught up; following step {len(engine.timesteps())}", flush=True)
