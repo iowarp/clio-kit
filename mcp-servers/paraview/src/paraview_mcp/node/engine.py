@@ -14,7 +14,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from . import colors, compat, data, manifest
+from . import colors, compat, data, manifest, ranges
 from .animation import SceneAnimation
 from .camera import CameraCommands
 from .changes import ChangeLog, describe
@@ -95,8 +95,14 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         # A joined pvserver on another machine reads the data there. The engines of
         # one node half share it.
         self.disk = disk or (ServerDisk() if data_on_server else LocalDisk())
+        self.data_on_server = data_on_server
         self.view = simple.CreateRenderView()
         self.view.OrientationAxesVisibility = 1
+        self._remote_threshold: float | None = None
+        try:
+            self._remote_threshold = float(self.view.RemoteRenderThreshold)
+        except Exception as exc:  # noqa: BLE001 - only browser drawing on a pvserver needs it
+            print(f"remote render threshold: {exc}", flush=True)
         # Each scene keeps its own time: the time keeper would move every view to
         # the step one of them shows.
         keeper = simple.GetTimeKeeper()
@@ -303,6 +309,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
             )
             if display["color_by"] and not display["color_by"][1]:
                 display["color_by"] = None
+            ranges.fit(self, item, proxy, rep)
             return
         rep.Representation = display.get("representation") or rep.Representation
         rep.Opacity = float(display.get("opacity", 1.0))
@@ -315,7 +322,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
                 if component is None
                 else (color_by[0], color_by[1], component),
             )
-            rep.RescaleTransferFunctionToDataRange(True, False)
+            ranges.fit(self, item, proxy, rep)
             if display.get("colormap"):
                 lut = simple.GetColorTransferFunction(color_by[1])
                 try:
@@ -467,13 +474,30 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
         view_state["volume_grids"] = volume_grids(scene, self.proxies)
         if not view_state.get("pinned"):
             view_state["mode"] = "remote" if view_state["reason"] else "local"
+        self._deliver_for(view_state["mode"])
         return view_state["mode"]
 
     def set_view_mode(self, mode: str) -> None:
         """The person's own choice of rendering mode; it sticks."""
         scene = self.require_scene()
         scene["view"].update(mode=mode, pinned=True)
+        self._deliver_for(mode)
         self.commit("view_mode")
+
+    def _deliver_for(self, mode: str) -> None:
+        """With data on a joined pvserver, ParaView only sends geometry to this process
+        when the view is under its remote render threshold; above it the pvserver
+        draws and the actors here stay empty. The browser draws from the actors here,
+        so browser mode would show only the colour legend. Browser mode lifts the
+        threshold so the geometry comes here; ParaView mode puts it back."""
+        if not self.data_on_server or self._remote_threshold is None:
+            return
+        wanted = 1e12 if mode == "local" else self._remote_threshold
+        try:
+            if float(self.view.RemoteRenderThreshold) != wanted:
+                self.view.RemoteRenderThreshold = wanted
+        except Exception as exc:  # noqa: BLE001 - the view still draws on the pvserver
+            print(f"remote render threshold: {exc}", flush=True)
 
     # -- browser reports -----------------------------------------------------
     def pick_display(
@@ -764,7 +788,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
                 else [data.find_association(proxy, color_by), color_by]
             )
             if display["color_by"] != before:
-                display["color_range"] = None
+                display.update(color_range=None, auto_range=None, range_mode=None)
             if display["color_by"]:
                 display["solid_color"] = None
         if solid_color is not None:
@@ -785,9 +809,7 @@ class Engine(CameraCommands, SceneReading, SceneScripts, SceneAnimation, SourceG
             colors.share(scene, display.get("color_by"), "scalar_bar", bool(scalar_bar))
         self._show(item, proxy, apply=True)
         if rescale and display.get("color_by"):
-            rep = self.simple.GetDisplayProperties(proxy, self.view)
-            rep.RescaleTransferFunctionToDataRange(False, True)
-            colors.share(scene, display.get("color_by"), "color_range", None)
+            ranges.full(self, item, proxy)
         if span is not None:
             colors.set_range(self.simple, scene, display.get("color_by"), span)
         self.update_view_mode()
