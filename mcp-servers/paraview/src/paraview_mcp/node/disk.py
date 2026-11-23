@@ -50,6 +50,7 @@ from __future__ import annotations
 import glob
 import itertools
 import os
+import shutil
 import struct
 from dataclasses import asdict, dataclass
 from typing import Any
@@ -367,10 +368,27 @@ def write_index(path: str, folder: str, steps: int) -> str:
     """Make ``folder`` show the BP5 output at ``path`` up to its first ``steps``
     steps: links to its files, and its index cut after that step. A reader given
     ``folder`` cannot reach a step whose data may not be on disk yet. Returns the
-    folder, expanded on this machine."""
+    folder, expanded on this machine.
+
+    The folder outlives the run: a later run of the same scene finds links into
+    an output that is gone or another run's, and a reader given those segfaults
+    the server. So every link is pointed at ``path`` again, and anything that is
+    not in ``path`` goes."""
     folder = expand(folder)
     os.makedirs(folder, exist_ok=True)
-    for name in os.listdir(path):
+    names = set(os.listdir(path))
+    for name in os.listdir(folder):
+        link = os.path.join(folder, name)
+        if name != "md.idx" and (
+            name not in names
+            or not os.path.islink(link)
+            or os.readlink(link) != os.path.join(path, name)
+        ):
+            if os.path.isdir(link) and not os.path.islink(link):
+                shutil.rmtree(link)
+            else:
+                os.remove(link)
+    for name in names:
         link = os.path.join(folder, name)
         if name != "md.idx" and not os.path.lexists(link):
             os.symlink(os.path.join(path, name), link)

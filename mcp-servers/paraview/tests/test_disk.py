@@ -88,6 +88,26 @@ def test_write_index_lists_the_source_first(tmp_path: Path, listed: list[str]) -
     assert listed[:3] == [str(run.parent), str(run), str(bp)]
 
 
+@pytest.mark.skipif(os.name == "nt", reason="symlinks need privileges on Windows")
+def test_write_index_repoints_a_folder_an_earlier_run_left(tmp_path: Path) -> None:
+    """The live 2a run: a scene's follow folder still linked into the last run's
+    deleted output, and pvserver segfaulted reading it. Every link now points at
+    this run's output, and what this run has not got goes."""
+    _, old = _run(tmp_path / "old")
+    _, bp = _run(tmp_path)
+    for name in ("data.0", "md.0", "mmd.0"):
+        (bp / name).write_bytes(b"x")
+    folder = tmp_path / "follow" / "data.bp5"
+    folder.mkdir(parents=True)
+    for name in ("data.0", "md.0", "data.1"):
+        os.symlink(old / name, folder / name)
+    (folder / "mmd.0").write_bytes(b"stale")
+    disk.write_index(str(bp), str(folder), 0)
+    assert sorted(os.listdir(folder)) == ["data.0", "md.0", "md.idx", "mmd.0"]
+    for name in ("data.0", "md.0", "mmd.0"):
+        assert os.readlink(folder / name) == str(bp / name)
+
+
 def test_expand_does_not_touch_the_disk(tmp_path: Path, listed: list[str]) -> None:
     disk.dispatch("expand", {"path": str(tmp_path / "x")})
     assert listed == []
