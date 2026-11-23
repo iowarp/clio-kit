@@ -38,6 +38,8 @@ class Source:
     state: dict[str, Any] = field(default_factory=dict)
     checked_at: float = 0.0
     disk_changed: float | None = None
+    #: A view is part way through re-reading it, a stage at a time.
+    reading: bool = False
 
 
 #: The engine dicts a shared reader's growth state lives in, per item id.

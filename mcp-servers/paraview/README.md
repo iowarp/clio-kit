@@ -107,7 +107,11 @@ in stages (the reader, then each filter, colour and the first picture), and the
 node half lets the other views take their turn between them: the open reports
 `opening the view: <stage>` as progress, and a command that changes the scene
 while it opens is refused with `view_opening` (try again once the open returns).
-Each
+A followed step is checked in stages too (each reader's disk look, its re-read,
+the new step's time, each colour range, then the picture), with the other views'
+turns between them, so a step that costs seconds over a slow link does not hold
+every view for all of them; a command that changes the scene waits for the last
+stage. Each
 start keeps the previous log as `<record>.prev.log`.
 
 ## The first attach on a machine
