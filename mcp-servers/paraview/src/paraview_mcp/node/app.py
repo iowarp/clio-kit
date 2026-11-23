@@ -201,6 +201,21 @@ class Shared:
     last_fetch: float = 0.0
     #: When the current stretch of page fetches began.
     fetch_began: float = 0.0
+    #: Until when the loop is left free after the last background work of any view.
+    free_at: float = 0.0
+
+    async def turn(self) -> None:
+        """Wait for background work's turn: every view's follow and catch-up share
+        the loop, so each leaves it free at least as long as its work took, and
+        commands and pages get in however many views are open."""
+        while (wait := self.free_at - time.monotonic()) > 0:
+            await asyncio.sleep(wait)
+
+    def worked(self, began: float) -> float:
+        """Note background work that began at ``began``; return how long it took."""
+        now = time.monotonic()
+        self.free_at = max(self.free_at, now + (now - began))
+        return now - began
 
 
 class NodeApp:
@@ -1022,6 +1037,7 @@ class NodeApp:
             # its link; over a slow link a check takes seconds, so the loop stays free
             # at least as long as the last check took.
             await asyncio.sleep(max(interval, spent))
+            await self.shared.turn()
             if self.lost:
                 return
             if self.waiting or self._loading():
@@ -1033,7 +1049,7 @@ class NodeApp:
                     self.engine.check_growth()
             except Exception as exc:  # noqa: BLE001 - keep watching; say why
                 print(f"growth check failed: {exc}", flush=True)
-            spent = time.monotonic() - began
+            spent = self.shared.worked(began)
 
     def _loading(self) -> bool:
         """Whether a view's page is loading: it fetched a file in the last PAGE_QUIET
@@ -1068,6 +1084,7 @@ class NodeApp:
             while going:
                 pause = max(REPLAY_SECONDS, spent)
                 await asyncio.sleep(pause)
+                await self.shared.turn()
                 # Held by commands or loading pages for REPLAY_ALONE in all, the
                 # catch-up goes to the latest step rather than wait on for its turn.
                 if (self.waiting or self._loading()) and held < REPLAY_ALONE:
@@ -1089,7 +1106,7 @@ class NodeApp:
                         else f"the catch-up was held {held:.0f} s"
                     )
                     print(f"{why}; skipped the rest of the catch-up", flush=True)
-                spent = time.monotonic() - began
+                spent = self.shared.worked(began)
             print(f"caught up; following step {len(engine.timesteps())}", flush=True)
         except Exception as exc:  # noqa: BLE001 - the view follows the latest step
             print(f"catch-up failed: {exc}", flush=True)
