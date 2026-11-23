@@ -107,8 +107,6 @@
     retryTimer = setTimeout(() => {
       retryTimer = null;
       loadFrame();
-      // A page that never reaches ParaView reports nothing; try again.
-      setTimeout(() => { if (!linkUp) scheduleReconnect(); }, 15000);
     }, wait);
   }
 
@@ -148,6 +146,9 @@
   // A page that has not reached ParaView draws nothing and reports nothing, so the
   // view asks the server why, shows it, and tells the host the view is not drawn.
   const LINK_WAIT_MS = 20000;
+  // Looks at a ParaView that answers before a page that has not linked is reloaded.
+  const LOAD_WAITS = 3;
+  let patience = 0;
   let checkTimer = null;
   let checking = false;
   let waiting = '';
@@ -173,11 +174,17 @@
         }
         showStatus(shown, true);
         clearTimeout(checkTimer);
-        // A first connect that failed before any link message never retries on its
-        // own, so reload the page with the same backoff a dropped link uses.
-        if (status.state === 'closed') {
+        // A page still loading from a ParaView that answers (or is busy) is left to
+        // load: a reload would start it again from nothing. It is reloaded once it
+        // has had LOAD_WAITS looks, or at once when ParaView is not there; a first
+        // connect that failed before any link message never retries on its own.
+        patience += 1;
+        const loading = (status.state === 'running' || status.state === 'busy')
+          && patience < LOAD_WAITS;
+        if (status.state === 'closed' || loading) {
           checkTimer = setTimeout(() => { if (!linkUp) checkParaView(); }, LINK_WAIT_MS);
         } else {
+          patience = 0;
           scheduleReconnect();
         }
       })
@@ -310,6 +317,7 @@
           waiting = '';
           statusBox.hidden = true;
           retries = 0;
+          patience = 0;
           clearTimeout(retryTimer);
           retryTimer = null;
         } else {

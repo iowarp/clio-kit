@@ -223,124 +223,132 @@ if MODE == "stats":
         QUANTILES, SAMPLE
     except NameError:
         QUANTILES, SAMPLE = 0, 0
-    # A colour range reads at most SAMPLE values, evenly strided through the arrays.
-    stride = 1
-    if SAMPLE:
-        tuples = 0
+    # Several fields can be measured in one pass, one point per field per rank,
+    # each with its index in FIELDS as "which".
+    try:
+        FIELDS
+    except NameError:
+        FIELDS = [(FIELD, ASSOC, COMPONENT)]
+    for WHICH, (FIELD, ASSOC, COMPONENT) in enumerate(FIELDS):
+        # A colour range reads at most SAMPLE values, evenly strided through the arrays.
+        stride = 1
+        if SAMPLE:
+            tuples = 0
+            for d in leaves:
+                attributes = d.GetPointData() if ASSOC == "POINTS" else d.GetCellData()
+                array = attributes.GetArray(FIELD)
+                tuples += array.GetNumberOfTuples() if array is not None else 0
+            stride = max(1, -(-tuples // SAMPLE))
+        # A single structured dataset split over the ranks shares each boundary plane of
+        # points between two pieces: the piece below owns it, unless it is the last.
+        whole = None
+        key = vtkStreamingDemandDrivenPipeline.WHOLE_EXTENT()
+        info = self.GetInputInformation(0, 0)
+        if (ASSOC == "POINTS" and source is not None and not source.IsA("vtkCompositeDataSet")
+                and info is not None and info.Has(key)):
+            whole = [int(v) for v in info.Get(key)]
+
+        def flat(array):
+            # The array's numbers in order, read in place where VTK allows it.
+            width = array.GetNumberOfComponents()
+            size = array.GetNumberOfTuples() * width
+            try:
+                view = memoryview(array)
+                code = view.format.lstrip("@=<>!")
+                if len(code) == 1 and view.nbytes == size * view.itemsize:
+                    return view.cast("B").cast(code)
+            except (TypeError, ValueError):
+                pass
+            return [array.GetComponent(i // width, i % width) for i in range(size)]
+
+        def scalars(array):
+            width = array.GetNumberOfComponents()
+            numbers = flat(array)
+            if width == 1:
+                return numbers[::stride] if stride > 1 else numbers
+            if COMPONENT is not None:
+                return numbers[COMPONENT::width * stride]
+            return [math.hypot(*numbers[i:i + width])
+                    for i in range(0, len(numbers), width * stride)]
+
+        def owned(d, values):
+            if whole is None or not hasattr(d, "GetExtent"):
+                return values
+            extent = list(d.GetExtent())
+            sizes = [extent[2 * a + 1] - extent[2 * a] + 1 for a in range(3)]
+            if sizes[0] * sizes[1] * sizes[2] != len(values):
+                return values
+            keep = [size - 1 if extent[2 * a + 1] < whole[2 * a + 1] and size > 1
+                    else size for a, size in enumerate(sizes)]
+            if keep == sizes:
+                return values
+            out = []
+            for k in range(keep[2]):
+                for j in range(keep[1]):
+                    start = sizes[0] * (j + sizes[1] * k)
+                    out.extend(values[start:start + keep[0]])
+            return out
+
+        count = 0
+        finite = []
         for d in leaves:
             attributes = d.GetPointData() if ASSOC == "POINTS" else d.GetCellData()
             array = attributes.GetArray(FIELD)
-            tuples += array.GetNumberOfTuples() if array is not None else 0
-        stride = max(1, -(-tuples // SAMPLE))
-    # A single structured dataset split over the ranks shares each boundary plane of
-    # points between two pieces: the piece below owns it, unless it is the last.
-    whole = None
-    key = vtkStreamingDemandDrivenPipeline.WHOLE_EXTENT()
-    info = self.GetInputInformation(0, 0)
-    if (ASSOC == "POINTS" and source is not None and not source.IsA("vtkCompositeDataSet")
-            and info is not None and info.Has(key)):
-        whole = [int(v) for v in info.Get(key)]
+            if array is None:
+                continue
+            values = scalars(array)
+            ghosts = attributes.GetArray("vtkGhostType")
+            if stride == 1:
+                values = owned(d, values)
+            if ghosts is not None and stride == 1:
+                marks = owned(d, flat(ghosts))
+                values = [v for v, mark in zip(values, marks) if not int(mark) & 1]
+            count += len(values)
+            # v - v is 0 for a finite number and NaN for NaN or an infinity.
+            finite.extend([float(v) for v in values if v - v == 0])
+        finite.sort()
+        held = len(finite)
+        nan = float("nan")
+        mean = math.fsum(finite) / held if held else nan
+        middle = held // 2
+        row = {
+            "count": float(count),
+            "finite": float(held),
+            "mean": mean,
+            "m2": math.fsum([(v - mean) ** 2 for v in finite]) if held else 0.0,
+            "min": finite[0] if held else nan,
+            "max": finite[-1] if held else nan,
+            "median": (finite[middle] if held % 2 else
+                       (finite[middle - 1] + finite[middle]) / 2.0) if held else nan,
+        }
+        for name, value in row.items():
+            column(name).InsertNextValue(value)
+        if QUANTILES:
+            # Evenly spaced order statistics, numpy's linear percentiles of this rank.
+            picks = [nan] * QUANTILES
+            for i in range(QUANTILES if held else 0):
+                at = i * (held - 1) / (QUANTILES - 1)
+                below = int(at)
+                above = min(below + 1, held - 1)
+                picks[i] = finite[below] + (finite[above] - finite[below]) * (at - below)
+            column("quantiles", QUANTILES).InsertNextTuple(picks)
+            column("stride").InsertNextValue(float(stride))
+        counts = [0] * BINS
+        if held:
+            from bisect import bisect_left, bisect_right
 
-    def flat(array):
-        # The array's numbers in order, read in place where VTK allows it.
-        width = array.GetNumberOfComponents()
-        size = array.GetNumberOfTuples() * width
-        try:
-            view = memoryview(array)
-            code = view.format.lstrip("@=<>!")
-            if len(code) == 1 and view.nbytes == size * view.itemsize:
-                return view.cast("B").cast(code)
-        except (TypeError, ValueError):
-            pass
-        return [array.GetComponent(i // width, i % width) for i in range(size)]
-
-    def scalars(array):
-        width = array.GetNumberOfComponents()
-        numbers = flat(array)
-        if width == 1:
-            return numbers[::stride] if stride > 1 else numbers
-        if COMPONENT is not None:
-            return numbers[COMPONENT::width * stride]
-        return [math.hypot(*numbers[i:i + width])
-                for i in range(0, len(numbers), width * stride)]
-
-    def owned(d, values):
-        if whole is None or not hasattr(d, "GetExtent"):
-            return values
-        extent = list(d.GetExtent())
-        sizes = [extent[2 * a + 1] - extent[2 * a] + 1 for a in range(3)]
-        if sizes[0] * sizes[1] * sizes[2] != len(values):
-            return values
-        keep = [size - 1 if extent[2 * a + 1] < whole[2 * a + 1] and size > 1
-                else size for a, size in enumerate(sizes)]
-        if keep == sizes:
-            return values
-        out = []
-        for k in range(keep[2]):
-            for j in range(keep[1]):
-                start = sizes[0] * (j + sizes[1] * k)
-                out.extend(values[start:start + keep[0]])
-        return out
-
-    count = 0
-    finite = []
-    for d in leaves:
-        attributes = d.GetPointData() if ASSOC == "POINTS" else d.GetCellData()
-        array = attributes.GetArray(FIELD)
-        if array is None:
-            continue
-        values = scalars(array)
-        ghosts = attributes.GetArray("vtkGhostType")
-        if stride == 1:
-            values = owned(d, values)
-        if ghosts is not None and stride == 1:
-            marks = owned(d, flat(ghosts))
-            values = [v for v, mark in zip(values, marks) if not int(mark) & 1]
-        count += len(values)
-        # v - v is 0 for a finite number and NaN for NaN or an infinity.
-        finite.extend([float(v) for v in values if v - v == 0])
-    finite.sort()
-    held = len(finite)
-    nan = float("nan")
-    mean = math.fsum(finite) / held if held else nan
-    middle = held // 2
-    row = {
-        "count": float(count),
-        "finite": float(held),
-        "mean": mean,
-        "m2": math.fsum([(v - mean) ** 2 for v in finite]) if held else 0.0,
-        "min": finite[0] if held else nan,
-        "max": finite[-1] if held else nan,
-        "median": (finite[middle] if held % 2 else
-                   (finite[middle - 1] + finite[middle]) / 2.0) if held else nan,
-    }
-    for name, value in row.items():
-        column(name).InsertNextValue(value)
-    if QUANTILES:
-        # Evenly spaced order statistics, numpy's linear percentiles of this rank.
-        picks = [nan] * QUANTILES
-        for i in range(QUANTILES if held else 0):
-            at = i * (held - 1) / (QUANTILES - 1)
-            below = int(at)
-            above = min(below + 1, held - 1)
-            picks[i] = finite[below] + (finite[above] - finite[below]) * (at - below)
-        column("quantiles", QUANTILES).InsertNextTuple(picks)
-        column("stride").InsertNextValue(float(stride))
-    counts = [0] * BINS
-    if held:
-        from bisect import bisect_left, bisect_right
-
-        # numpy.histogram's bins, counted on the sorted values: each is closed below,
-        # the last one above too, and an empty range widens by a half on each side.
-        low, high = (finite[0], finite[-1]) if LOW is None else (LOW, HIGH)
-        if low == high:
-            low, high = low - 0.5, high + 0.5
-        edges = [low + (high - low) * i / BINS for i in range(BINS)] + [high]
-        marks = [bisect_left(finite, e) for e in edges[:-1]]
-        marks.append(bisect_right(finite, high))
-        counts = [marks[i + 1] - marks[i] for i in range(BINS)]
-    column("histogram", BINS).InsertNextTuple([float(c) for c in counts])
-    points.InsertNextPoint(0.0, 0.0, 0.0)
+            # numpy.histogram's bins, counted on the sorted values: each is closed below,
+            # the last one above too, and an empty range widens by a half on each side.
+            low, high = (finite[0], finite[-1]) if LOW is None else (LOW, HIGH)
+            if low == high:
+                low, high = low - 0.5, high + 0.5
+            edges = [low + (high - low) * i / BINS for i in range(BINS)] + [high]
+            marks = [bisect_left(finite, e) for e in edges[:-1]]
+            marks.append(bisect_right(finite, high))
+            counts = [marks[i + 1] - marks[i] for i in range(BINS)]
+        column("histogram", BINS).InsertNextTuple([float(c) for c in counts])
+        points.InsertNextPoint(0.0, 0.0, 0.0)
+        column("which").InsertNextValue(float(WHICH))
 else:
     from vtkmodules.vtkCommonDataModel import vtkPointLocator
 

@@ -16,7 +16,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from . import disk, manifest
+from . import disk
 from .disk import Readiness
 from .errors import CommandError
 
@@ -107,9 +107,10 @@ class LocalDisk:
         )
         return reason, bool(clear), key
 
-    def follow_folder(self, root: Path, scene_id: str, item_id: str, name: str) -> str:
-        """Where the copy of a growing BP5 folder goes, on the data's machine."""
-        return str(manifest.scene_dir(root, scene_id) / "follow" / item_id / name)
+    def follow_folder(self, root: Path, source: str, name: str) -> str:
+        """Where the copy of a growing BP5 folder goes, on the data's machine: one
+        per source, which every view of it reads through one reader."""
+        return str(root / "follow" / source / name)
 
 
 class ServerDisk(LocalDisk):
@@ -206,9 +207,9 @@ class ServerDisk(LocalDisk):
         self._answered = True
         return json.loads(column.GetValue(0))
 
-    def follow_folder(self, root: Path, scene_id: str, item_id: str, name: str) -> str:
+    def follow_folder(self, root: Path, source: str, name: str) -> str:
         # The server's home, which every rank of a cluster's pvserver shares.
-        return f"~/.clio/paraview/follow/{scene_id}/{item_id}/{name}"
+        return f"~/.clio/paraview/follow/{source}/{name}"
 
 
 def for_session(session: str | None) -> LocalDisk:

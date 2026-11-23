@@ -12,10 +12,12 @@ script, stays where it is; ``rescale`` asks for the data's full range instead.
 
 from __future__ import annotations
 
+import json
 import math
 from typing import Any
 
-from . import colors, data
+from . import colors, data, manifest
+from .held import LEDGER
 
 PERCENTILES = (2.0, 98.0)
 #: Evenly spaced order statistics each pvserver rank sends back.
@@ -134,6 +136,131 @@ def _lut_span(lut: Any) -> tuple[float, float] | None:
     return (float(points[0]), float(points[-4])) if len(points) >= 8 else None
 
 
+def span_all(
+    proxy: Any, wanted: list[tuple[str, int | None]], time: float | None
+) -> list[dict[str, list[float]] | None]:
+    """``span`` of each (field, component) on ``proxy`` at ``time``; on a pvserver,
+    in one pass over its ranks. A field not on ``proxy`` measures None."""
+    if not data._remote():
+        found: list[dict[str, list[float]] | None] = []
+        for field, component in wanted:
+            try:
+                found.append(span(proxy, field, component, time))
+            except data.DataError:
+                found.append(None)
+        return found
+    asked: list[tuple[str, str, int | None]] = []
+    where: list[int | None] = []
+    for field, component in wanted:
+        try:
+            association = data.find_association(proxy, field)
+        except data.DataError:
+            where.append(None)
+            continue
+        if component is not None and _width(proxy, association, field) == 1:
+            component = None
+        where.append(len(asked))
+        asked.append((field, association, component))
+    rows = (
+        data._gather(
+            proxy,
+            "stats",
+            time,
+            FIELDS=asked,
+            BINS=1,
+            LOW=None,
+            HIGH=None,
+            QUANTILES=SAMPLES,
+            SAMPLE=SAMPLE,
+        )
+        if asked
+        else []
+    )
+    measured: list[dict[str, list[float]] | None] = []
+    for index, (field, association, component) in enumerate(asked):
+        mine = [r for r in rows if int(r.get("which") or 0) == index]
+        low, high = (pooled(mine, p) for p in PERCENTILES)
+        if low is None or high is None:
+            measured.append(None)
+            continue
+        whole = _whole(proxy, association, field, component)
+        measured.append({"span": [low, high], "whole": whole})
+    return [None if at is None else measured[at] for at in where]
+
+
+def signature(engine: Any, item: dict[str, Any]) -> tuple[str, str, int] | None:
+    """What ``item`` shows, for measuring it once for every view that shows the same:
+    its shared reader, the filters from there to it, and the reader's generation.
+    None for what a script made or anything not on a shared reader."""
+    scene = engine.scene or {}
+    readers = getattr(engine, "readers", None)
+    if readers is None:
+        return None
+    chain: list[Any] = []
+    current: dict[str, Any] | None = item
+    while current is not None:
+        kind = current.get("kind")
+        if kind == "reader":
+            proxy = engine.proxies.get(current["id"])
+            source = readers.of(proxy) if proxy is not None else None
+            if source is None:
+                return None
+            text = json.dumps(chain[::-1], sort_keys=True, default=str)
+            return source.key, text, source.generation
+        if kind != "filter":
+            return None
+        chain.append([current.get("type"), current.get("properties") or {}])
+        current = manifest.find_object(scene, current.get("input") or "")
+    return None
+
+
+def _siblings(engine: Any, sign: tuple[str, str, int]) -> list[tuple[str, int | None]]:
+    """The fields the views of one shared reader colour on what ``sign`` shows."""
+    source = engine.readers.named(sign[0])
+    users = list(source.users.values()) if source is not None else [engine]
+    wanted: list[tuple[str, int | None]] = []
+    for user in users:
+        for item in (user.scene or {}).get("objects") or []:
+            shown = item.get("display") or {}
+            field = (shown.get("color_by") or [None, None])[1]
+            if not field or shown.get("visible") is False or shown.get("color_range"):
+                continue
+            if signature(user, item) != sign:
+                continue
+            pair = (field, shown.get("color_component"))
+            if pair not in wanted:
+                wanted.append(pair)
+    return wanted
+
+
+def measure(
+    engine: Any,
+    item: dict[str, Any],
+    proxy: Any,
+    field: str,
+    component: int | None,
+    time: float | None,
+) -> dict[str, list[float]] | None:
+    """``span`` of ``field`` on ``item``, measured once for every view of a shared
+    reader showing the same at that time: one pass measures each field they colour,
+    and the others take theirs from it."""
+    sign = signature(engine, item)
+    if sign is None:
+        return span(proxy, field, component, time)
+    readers = engine.readers
+    hit, value = readers.range_of((*sign, time, field, component))
+    if hit:
+        return value
+    wanted = [(field, component)]
+    for pair in _siblings(engine, sign):
+        if pair not in wanted and not readers.range_of((*sign, time, *pair))[0]:
+            wanted.append(pair)
+    found = span_all(proxy, wanted, time)
+    for pair, measured in zip(wanted, found, strict=True):
+        readers.keep_range((*sign, time, *pair), measured)
+    return found[0]
+
+
 def locked(lut: Any) -> bool:
     return (
         "AutomaticRescaleRangeMode" in lut.ListProperties()
@@ -186,7 +313,9 @@ def fit(engine: Any, item: dict[str, Any], proxy: Any, rep: Any) -> None:
     found = []
     for other, other_proxy in shown:
         try:
-            measured = span(
+            measured = measure(
+                engine,
+                other,
                 other_proxy,
                 field,
                 (other.get("display") or {}).get("color_component"),
@@ -220,7 +349,8 @@ def fit(engine: Any, item: dict[str, Any], proxy: Any, rep: Any) -> None:
 
 def grow(engine: Any, scene: dict[str, Any]) -> None:
     """Each field's default range takes in a new step's values."""
-    engine.view.Update()
+    with LEDGER.phase("update"):
+        engine.view.Update()
     done: set[str] = set()
     for item in scene["objects"]:
         shown = item.get("display") or {}
@@ -231,7 +361,9 @@ def grow(engine: Any, scene: dict[str, Any]) -> None:
         if shown.get("visible") is False:
             continue
         done.add(field)
-        fit(engine, item, proxy, engine.simple.GetDisplayProperties(proxy, engine.view))
+        with LEDGER.phase("range"):
+            rep = engine.simple.GetDisplayProperties(proxy, engine.view)
+            fit(engine, item, proxy, rep)
 
 
 def full(engine: Any, item: dict[str, Any], proxy: Any) -> None:
