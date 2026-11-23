@@ -141,7 +141,7 @@
     sentText = stopped;
     request('ui/update-model-context', {
       content: [{ type: 'text', text: 'The ParaView view stopped and shows nothing now. ' + stopped }],
-      structuredContent: Object.assign(latest ? structured(latest) : {}, { stopped }),
+      structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: false, stopped }),
     }).catch(() => {});
   }
 
@@ -299,6 +299,8 @@
         if (stopped) return;
         if (data.up) {
           linkUp = true;
+          // The host was told nothing is drawn; the next report withdraws that.
+          if (waiting) { sentText = ''; schedule(); }
           waiting = '';
           statusBox.hidden = true;
           retries = 0;
