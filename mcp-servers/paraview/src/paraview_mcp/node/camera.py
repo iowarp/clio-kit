@@ -20,6 +20,27 @@ DIRECTIONS = {
 }
 
 
+def _check_camera(camera: dict[str, Any]) -> None:
+    """Refuse a camera that draws nothing: one at its own focal point, or one whose
+    view up lies along the way it looks."""
+    look = [f - p for f, p in zip(camera["focal_point"], camera["position"])]
+    up = [float(v) for v in camera["view_up"]]
+    length = sum(v * v for v in look) ** 0.5
+    if length == 0:
+        raise CommandError(
+            "bad_camera", "The camera position is its focal point; move one of them."
+        )
+    up_length = sum(v * v for v in up) ** 0.5
+    if up_length == 0 or abs(sum(a * b for a, b in zip(look, up))) > 0.999 * (
+        length * up_length
+    ):
+        raise CommandError(
+            "bad_camera",
+            "The view up lies along the way the camera looks; pick a view up "
+            "across it.",
+        )
+
+
 class CameraCommands:
     """Mixed into the engine: the camera commands and the browser's camera reports."""
 
@@ -95,13 +116,13 @@ class CameraCommands:
             self.view.CameraParallelProjection = int(bool(parallel_projection))
         current = self.read_camera()
         if position is not None or focal_point is not None or view_up is not None:
-            self.apply_camera(
-                {
-                    "position": position or current["position"],
-                    "focal_point": focal_point or current["focal_point"],
-                    "view_up": view_up or current["view_up"],
-                }
-            )
+            wanted = {
+                "position": position or current["position"],
+                "focal_point": focal_point or current["focal_point"],
+                "view_up": view_up or current["view_up"],
+            }
+            _check_camera(wanted)
+            self.apply_camera(wanted)
         camera = self.view.GetActiveCamera()
         if azimuth:
             camera.Azimuth(float(azimuth))

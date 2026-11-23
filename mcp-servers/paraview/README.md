@@ -82,8 +82,12 @@ scene tools act on the view opened last. The view's reopen arguments carry the
 ## What the view really shows
 
 `open_view` renders a small test frame and says how much of it the data
-covers; `capture` does the same for its frame and leads with "This frame is
-blank" when nothing but the background shows. Both also report how many
+covers; `capture` and `export_artifact` do the same for their frame and lead
+with "This frame is blank" when nothing but the background shows, with the
+cause when one is found: an object with no points at this time, a fully
+transparent display, or a camera inside the data, facing away or aimed past
+it. `set_camera` refuses a camera at its own focal point or with its view up
+along the way it looks. `open_view` and `capture` also report how many
 viewers are connected and how many pictures they have shown (remote rendering
 only). A node half watches its `pvserver` connection: when the `pvserver`
 goes (its job ended), the node half stops drawing, the live view says why and
