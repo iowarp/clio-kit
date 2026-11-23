@@ -643,9 +643,10 @@ class NodeApp:
                 {"error": {"code": "bad_request", "message": "Malformed command."}}, 400
             )
         app = self
+        found: dict[str, Any] = {"stage": self.stage}
         if self.stage is not None and not self.lost:
             try:
-                app = await self.stage.route(name, args, by)
+                app = await self.stage.route(name, args, by, found)
             except CommandError as exc:
                 return self._json(
                     {"error": {"code": exc.code, "message": exc.message}}, 422
@@ -661,10 +662,15 @@ class NodeApp:
                     },
                     500,
                 )
-        return await app._run_on(name, args, by, started)
+        return await app._run_on(name, args, by, started, found)
 
     async def _run_on(
-        self, name: str, args: dict[str, Any], by: str, started: Any
+        self,
+        name: str,
+        args: dict[str, Any],
+        by: str,
+        started: Any,
+        found: dict[str, Any] | None = None,
     ) -> Any:
         """Run one command on this view's scene."""
         if self.lost:
@@ -733,6 +739,10 @@ class NodeApp:
         if name == "open_view" and isinstance(result, dict):
             # The port this scene's view is served on.
             result["service"] = {"port": int(self.server.port)}
+            result["already_open"] = bool((found or {}).get("already_open"))
+        stage = (found or {}).get("stage")
+        if name in ("open_view", "scene_state") and isinstance(result, dict) and stage:
+            result["views"] = stage.views()
         went = self._went_during_call()
         if went is not None:
             return went

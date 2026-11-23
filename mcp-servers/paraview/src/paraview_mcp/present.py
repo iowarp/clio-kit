@@ -241,6 +241,25 @@ def series_text(result: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def views_lines(views: list[dict[str, Any]]) -> list[str]:
+    """Every open view, its scene and step: one view per scene, read without reopening."""
+    if not views:
+        return []
+    lines = [f"Open views ({len(views)}), one per scene:"]
+    for view in views:
+        colour = ", ".join(str(c) for c in view.get("color_by") or [])
+        time_state = view.get("time") or {}
+        lines.append(
+            f"- {view['scene']}"
+            + (" (the current view)" if view.get("current") else "")
+            + (f", coloured by {colour}" if colour else "")
+            + (f", {view['view_mode']} rendering" if view.get("view_mode") else "")
+            + ". "
+            + (time_line(time_state) if time_state else "Time: not drawn yet.")
+        )
+    return lines
+
+
 def changes_lines(changes: list[dict[str, Any]]) -> list[str]:
     """The newest scene changes, and whether the person or the agent made them."""
     if not changes:
