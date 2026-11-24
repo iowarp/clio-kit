@@ -151,6 +151,10 @@ class Engine(
         self.listeners: list[Callable[[str], None]] = []
         self.changes = ChangeLog()
         self.opening = False
+        #: The scene and shown-data box a followed view's camera was last fitted
+        #: to, and whether the last followed step fitted it again (camera.py).
+        self._framed: tuple[str, list[float]] | None = None
+        self.reframed = False
 
     # -- dispatch --------------------------------------------------------
     def run(self, name: str, args: dict[str, Any], by: str = "agent") -> dict[str, Any]:
@@ -214,6 +218,11 @@ class Engine(
         """Write the manifest and tell the view that the scene changed."""
         if self.scene is None:
             return
+        if reason not in ("growth", "replay"):
+            # Objects or the camera may have changed: the next followed step
+            # measures the data's movement from what is shown then.
+            self._framed = None
+            self.reframed = False
         with LEDGER.phase("scene record"):
             self.scene["camera"] = self.read_camera()
             self.scene["colormaps"] = colors.snapshot(self.simple, self.scene)
@@ -426,6 +435,7 @@ class Engine(
             "follow_latest": scene["time"]["follow_latest"],
             "newer_steps": len(steps) - 1 - index,
             "catching_up": self._replay is not None,
+            "camera_follows": not bool(scene["view"].get("camera_held")),
         }
 
     # -- camera and view mode -----------------------------------------------

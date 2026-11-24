@@ -601,7 +601,9 @@ async def set_camera(
         bool | None, Field(description="True for parallel, False for perspective.")
     ] = None,
 ) -> str:
-    """Place the camera, or turn and zoom it from where it is."""
+    """Place the camera, or turn and zoom it from where it is. A placed camera
+    stays put while a followed growing source moves; looking along an axis lets it
+    follow the data again."""
     result, _ = await run(
         ctx,
         "set_camera",
@@ -626,7 +628,8 @@ async def fit_camera(
         str | None, Field(description="Fit this object; default: everything.")
     ] = None,
 ) -> str:
-    """Point the camera so everything, or one object, fills the view."""
+    """Point the camera so everything, or one object, fills the view. Fitting
+    everything lets the camera follow a growing source's moving data again."""
     result, _ = await run(ctx, "fit_camera", {"object": object})
     return present.camera_text(result["camera"])
 
