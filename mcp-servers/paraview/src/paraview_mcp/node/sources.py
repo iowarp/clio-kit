@@ -139,6 +139,14 @@ class SourceGrowth:
     def commit(self, reason: str) -> None:
         raise NotImplementedError
 
+    def prime_frame(self) -> None:
+        raise NotImplementedError
+
+    def follow_frame(self) -> bool:
+        raise NotImplementedError
+
+    reframed: bool
+
     def activate(self) -> None:
         raise NotImplementedError
 
@@ -415,6 +423,7 @@ class SourceGrowth:
         if self.scene is not scene:
             return None
         self.activate()
+        self.prime_frame()
         self._apply_time(scene)
         if scene["time"].get("follow_latest", True):
             for label in self._grow_colours(scene):
@@ -429,6 +438,7 @@ class SourceGrowth:
         if self.scene is not scene:
             return None
         self.activate()
+        self.reframed = self.follow_frame()
         self.commit("growth")
         return {"new_steps": after - before, **self.time_summary()}
 
@@ -514,7 +524,9 @@ class SourceGrowth:
             return False
         self.activate()
         self._replay = 0
+        self.prime_frame()
         self._apply_time(scene)
+        self.reframed = self.follow_frame()
         self.commit("replay")
         return True
 
@@ -530,7 +542,9 @@ class SourceGrowth:
         index = self._replay + stride
         self._replay = None if finish or index >= steps - 1 else index
         self.activate()
+        self.prime_frame()
         self._apply_time(scene)
+        self.reframed = self.follow_frame()
         self.commit("replay")
         return self._replay is not None
 

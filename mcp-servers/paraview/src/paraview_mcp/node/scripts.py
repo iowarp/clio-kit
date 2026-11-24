@@ -15,6 +15,7 @@ import traceback
 from typing import Any
 
 from . import manifest
+from .camera import same_camera
 from .errors import CommandError
 
 #: How much of a failing script's traceback the agent is shown.
@@ -47,6 +48,12 @@ class SceneScripts:
         raise NotImplementedError
 
     def object_summary(self, item: dict[str, Any]) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def read_camera(self) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def hold_camera(self, held: bool) -> None:
         raise NotImplementedError
 
     # -- running ------------------------------------------------------------
@@ -146,7 +153,11 @@ class SceneScripts:
         step_id = f"s{scene['next_id']}"
         scene["next_id"] += 1
         label = (label or "").strip() or f"script {step_id}"
+        camera = self.read_camera()
         made = self._execute(scene, code, label)
+        if not same_camera(camera, self.read_camera()):
+            # The script placed the camera: it stays there as the data moves.
+            self.hold_camera(True)
         step: dict[str, Any] = {
             "id": step_id,
             "kind": "script",

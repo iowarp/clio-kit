@@ -232,7 +232,14 @@ frames), then follows the latest step. The view reports `catching_up` meanwhile;
 choosing a step ends it. A view opened while another view of the node half already
 follows a growing source, or while background work has been waiting more than a
 few seconds for its turn, follows the latest step at once instead: its catch-up
-would share the node with them and slow every view. With the data on a joined
+would share the node with them and slow every view. While a view follows the
+latest step and nobody has placed its camera, the camera is fitted again, in the
+same direction, whenever the data it shows moves by more than 2% of its size (a
+moving window, a travelling body). A camera the person turns, or the agent places
+with `set_camera` (position, focal point, view up, azimuth, elevation or zoom),
+`fit_camera` on one object or a scene script, stays put; `fit_camera` on the whole
+scene (the view's Reset) or looking along an axis lets it follow again. The time
+state reports this as `camera_follows`. With the data on a joined
 pvserver, ParaView mode has the pvserver draw a growing source, so only the
 picture of each new step crosses the link, not its geometry. When the node half's
 loop is held for 2 s or more, its log names the work that held it and how long
@@ -290,7 +297,7 @@ rail opens one panel at a time (a sheet over the lower view at phone width):
 | Pipeline | Each object, indented under its input: show or hide, select, remove |
 | Add filter | Contour, Slice, Clip, Threshold, Glyph, Stream Tracer, Calculator on the selected object, with a short form whose defaults come from its data |
 | Display | Representation, colour by field and component, colour map, rescale, legend, opacity |
-| Camera | Reset, look along ±X, ±Y or ±Z, parallel projection |
+| Camera | Reset (the camera follows moving data again), look along ±X, ±Y or ±Z, parallel projection |
 | Information | Data type, points, cells, memory, bounds, each field's range, filter properties |
 
 The top bar holds the dataset name, time (previous, play, next, a slider,

@@ -19,6 +19,31 @@ DIRECTIONS = {
     "-z": ((0, 0, -1), (0, 1, 0)),
 }
 
+#: How far the data a followed view shows may move, as a share of its size, before
+#: the camera is fitted to it again.
+REFRAME_SHARE = 0.02
+
+
+def same_camera(a: dict[str, Any] | None, b: dict[str, Any] | None) -> bool:
+    """Whether two cameras are the same, up to rounding on the way to the browser."""
+    if not a or not b:
+        return a == b
+    for key in ("position", "focal_point", "view_up"):
+        left, right = list(a.get(key) or []), list(b.get(key) or [])
+        if len(left) != len(right):
+            return False
+        scale = max([1e-300, *(abs(float(v)) for v in left + right)])
+        if any(abs(float(x) - float(y)) > 1e-6 * scale for x, y in zip(left, right)):
+            return False
+    return bool(a.get("parallel_projection")) == bool(b.get("parallel_projection"))
+
+
+def _moved(framed: list[float], shown: list[float]) -> bool:
+    """Whether the box ``shown`` (xmin, xmax, ymin, ...) left the box ``framed``
+    by more than ``REFRAME_SHARE`` of its size."""
+    size = sum((framed[2 * i + 1] - framed[2 * i]) ** 2 for i in range(3)) ** 0.5
+    return max(abs(a - b) for a, b in zip(framed, shown)) > REFRAME_SHARE * size
+
 
 def _check_camera(camera: dict[str, Any]) -> None:
     """Refuse a camera that draws nothing: one at its own focal point, or one whose
@@ -42,17 +67,96 @@ def _check_camera(camera: dict[str, Any]) -> None:
 
 
 class CameraCommands:
-    """Mixed into the engine: the camera commands and the browser's camera reports."""
+    """Mixed into the engine: the camera commands and the browser's camera reports.
+
+    While a view follows the latest step of a growing source and nobody has placed
+    the camera, the camera is fitted again whenever the data it shows moves, such
+    as a moving window or a body that travels, keeping the way it looks. A camera
+    the person turns, or the agent sets or moves in a scene script, stays where it
+    was put; fitting the camera (Reset camera) or looking along an axis lets it
+    follow the data again. Whether it is held is saved with the scene.
+    """
 
     view: Any
     root: Path
     scene: dict[str, Any] | None
     proxies: dict[str, Any]
     changes: Any
+    #: The scene and the box of shown data the camera was last fitted to.
+    _framed: tuple[str, list[float]] | None
+    #: Whether the last followed step fitted the camera again.
+    reframed: bool
 
     # Provided by the engine.
     def require_scene(self) -> dict[str, Any]:
         raise NotImplementedError
+
+    def camera_held(self) -> bool:
+        return bool(self.scene is not None and self.scene["view"].get("camera_held"))
+
+    def hold_camera(self, held: bool) -> None:
+        """Keep the camera where it is (``held``), or let it follow the data."""
+        if self.scene is not None:
+            self.scene["view"]["camera_held"] = bool(held)
+        self._framed = None
+
+    def shown_bounds(self) -> list[float] | None:
+        """The box (xmin, xmax, ymin, ...) round the visible objects with points."""
+        from paraview import servermanager
+
+        boxes: list[list[float]] = []
+        for item in (self.scene or {}).get("objects") or []:
+            proxy = self.proxies.get(item["id"])
+            if proxy is None:
+                continue
+            rep = servermanager.GetRepresentation(proxy, self.view)
+            if rep is None or not rep.Visibility:
+                continue
+            proxy.UpdatePipeline(self.view.ViewTime)
+            info = proxy.GetDataInformation()
+            if int(info.GetNumberOfPoints()) == 0:
+                continue
+            boxes.append([float(v) for v in info.GetBounds()])
+        if not boxes:
+            return None
+        return [(min if i % 2 == 0 else max)(b[i] for b in boxes) for i in range(6)]
+
+    def _following_free(self) -> bool:
+        scene = self.scene
+        return (
+            scene is not None
+            and bool((scene.get("dataset") or {}).get("growing"))
+            and bool(scene["time"].get("follow_latest", True))
+            and not self.camera_held()
+        )
+
+    def prime_frame(self) -> None:
+        """Note the shown data's box before a followed step moves, if not yet noted."""
+        scene = self.scene
+        if scene is None or not self._following_free():
+            return
+        if self._framed is None or self._framed[0] != scene["scene"]:
+            bounds = self.shown_bounds()
+            self._framed = None if bounds is None else (scene["scene"], bounds)
+
+    def follow_frame(self) -> bool:
+        """Fit the camera again if the shown data moved since it was last fitted.
+        Returns whether it did."""
+        scene = self.scene
+        if scene is None or not self._following_free():
+            return False
+        bounds = self.shown_bounds()
+        if bounds is None:
+            return False
+        framed = self._framed
+        if framed is None or framed[0] != scene["scene"]:
+            self._framed = (scene["scene"], bounds)
+            return False
+        if not _moved(framed[1], bounds):
+            return False
+        self.view.ResetCamera(False)
+        self._framed = (scene["scene"], bounds)
+        return True
 
     def read_camera(self) -> dict[str, Any]:
         camera = self.view.GetActiveCamera()
@@ -92,9 +196,17 @@ class CameraCommands:
                 "parallel_projection": camera.get("parallelProjection"),
             }
         )
+        self.person_moved_camera()
+
+    def person_moved_camera(self) -> None:
+        """Take the camera as the person left it in the view. If they moved it, it
+        stays there instead of following the data."""
+        if self.scene is None:
+            return
         moved = self.read_camera()
-        if moved != self.scene.get("camera"):
+        if not same_camera(moved, self.scene.get("camera")):
             self.changes.record("person", "camera:drag", "camera turned in the view")
+            self.hold_camera(True)
         self.scene["camera"] = moved
         manifest.write(self.root, self.scene)
 
@@ -131,7 +243,19 @@ class CameraCommands:
             camera.OrthogonalizeViewUp()
         if zoom and zoom != 1.0:
             camera.Dolly(float(zoom))
-        return {"camera": self.read_camera()}
+        placed = (
+            position is not None
+            or focal_point is not None
+            or view_up is not None
+            or bool(azimuth)
+            or bool(elevation)
+            or bool(zoom and zoom != 1.0)
+        )
+        if placed:
+            self.hold_camera(True)
+        elif direction is not None:
+            self.hold_camera(False)
+        return {"camera": self.read_camera(), "camera_follows": not self.camera_held()}
 
     def _look(self, direction: str) -> None:
         """Look along an axis at the centre of the scene, then fit it."""
@@ -180,10 +304,12 @@ class CameraCommands:
         scene = self.require_scene()
         if object is None:
             self.view.ResetCamera(False)
+            self.hold_camera(False)
         else:
             item = manifest.find_object(scene, object)
             if item is None:
                 raise CommandError("unknown_object", f"No scene object {object!r}.")
             bounds = self.proxies[item["id"]].GetDataInformation().GetBounds()
             self.view.ResetCamera(*bounds)
-        return {"camera": self.read_camera()}
+            self.hold_camera(True)
+        return {"camera": self.read_camera(), "camera_follows": not self.camera_held()}

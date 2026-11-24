@@ -1070,7 +1070,9 @@ class NodeApp:
         if reason not in ("selection", "camera"):
             with LEDGER.phase("picture"):
                 self._update_view()
-        moved = reason in ("open_view", "fit_camera", "set_camera", "rollback")
+        moved = reason in ("open_view", "fit_camera", "set_camera", "rollback") or (
+            reason in ("growth", "replay") and engine.reframed
+        )
         if moved and self.view is not None:
             self.view.push_camera()
         state.clio_bridge = self.bridge()
@@ -1259,7 +1261,7 @@ class NodeApp:
         scene = self.engine.scene
         if scene is None or scene["view"].get("mode") != "remote":
             return
-        scene["camera"] = self.engine.read_camera()
+        self.engine.person_moved_camera()
         with self.server.state:
             self.server.state.clio_bridge = self.bridge()
 
