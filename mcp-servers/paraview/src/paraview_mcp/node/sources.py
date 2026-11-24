@@ -72,7 +72,9 @@ def reader_by_class(servermanager: Any, name: str) -> str | None:
                 part = sub.GetNestedElement(j)
                 group = part.GetAttribute("proxygroup")
                 proxy = part.GetAttribute("proxyname")
-                core = defs.GetProxyDefinition(group, proxy) if group and proxy else None
+                core = (
+                    defs.GetProxyDefinition(group, proxy) if group and proxy else None
+                )
                 if core is not None:
                     found.add(core.GetAttribute("class"))
         return {c for c in found if c}
