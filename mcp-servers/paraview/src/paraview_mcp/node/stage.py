@@ -50,7 +50,14 @@ class Stage:
     def scene_for(self, args: dict[str, Any]) -> str | None:
         """The scene id open_view opens, or ``None`` for the current view's."""
         if args.get("scene"):
-            return str(args["scene"])
+            scene_id = str(args["scene"])
+            if not manifest.is_scene_id(scene_id):
+                raise CommandError(
+                    "bad_arguments",
+                    f"{scene_id!r} is not a scene id: use letters, digits, '.', '_' "
+                    "and '-', starting with a letter or digit, e.g. wrf-t2",
+                )
+            return scene_id
         if not args.get("path"):
             return None
         path = self.front.engine.disk.expand(str(args["path"]))

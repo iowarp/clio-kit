@@ -30,6 +30,7 @@ from .config import Target, from_environment
 from .descriptor import ViewDescriptor
 from .errors import ParaViewError
 from .link import LinkError
+from .node.manifest import SCENE_ID
 
 VIEW_URI = "ui://paraview/view"
 SERVICE_META = "ai.iowarp.clio/service"
@@ -312,9 +313,11 @@ async def open_view(
     scene: Annotated[
         str | None,
         Field(
-            description="A scene id. One from an earlier open_view restores that "
+            description="A scene id: letters, digits, '.', '_' and '-', e.g. wrf-t2. "
+            "One from an earlier open_view restores that "
             "scene, or, while its view is open, makes it the view later tools act "
-            "on. A new name opens a scene of its own, e.g. one per variable."
+            "on. A new id opens a scene of its own, e.g. one per variable.",
+            pattern=SCENE_ID,
         ),
     ] = None,
     growing: Annotated[

@@ -17,6 +17,12 @@ from pathlib import Path
 from typing import Any
 
 SCHEMA = 1
+#: What a scene id may be: it names the scene's folder on disk.
+SCENE_ID = r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,80}$"
+
+
+def is_scene_id(value: str) -> bool:
+    return re.fullmatch(SCENE_ID.strip("^$"), value) is not None
 
 
 def scene_id_for(path: str) -> str:
@@ -46,7 +52,7 @@ def new_scene(scene_id: str, dataset: dict[str, Any] | None) -> dict[str, Any]:
 
 def scene_dir(root: Path, scene_id: str) -> Path:
     """The folder that holds one scene's manifest and exports."""
-    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,80}", scene_id):
+    if not is_scene_id(scene_id):
         raise ValueError(f"not a scene id: {scene_id!r}")
     return root / "scenes" / scene_id
 

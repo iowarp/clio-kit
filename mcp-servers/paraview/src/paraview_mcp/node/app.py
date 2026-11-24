@@ -752,6 +752,7 @@ class NodeApp:
                 if (
                     not growing
                     or self.lost
+                    or exc.code == "bad_arguments"
                     or tries >= OPEN_TRIES
                     or self._source_seen is None
                 ):
