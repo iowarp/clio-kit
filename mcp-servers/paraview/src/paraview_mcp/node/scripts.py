@@ -3,7 +3,8 @@
 ``run_scene_script`` runs ``paraview.simple`` code in this process, the one that owns the
 scene and serves its live view, so what the script builds is what the person sees. After
 the script, every pipeline source it created is adopted as a scene object (``kind:
-"made"``) with the display it was left with, and the step is kept in the manifest
+"made"``) with the display it was left with, and what it changed in how an existing
+object is drawn is kept in that object's display. The step is kept in the manifest
 (``kind: "script"``). Restoring a scene replays its scripts in order and pairs the sources
 each one creates, in creation order, with the objects it recorded; the recorded displays
 (and the person's later edits to them) are applied on top. See docs/scene-scripts.md.
@@ -139,6 +140,52 @@ class SceneScripts:
             display["solid_color"] = [round(float(v), 4) for v in rep.DiffuseColor]
         return display
 
+    def _shown_before(self, scene: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        """How each object already in the scene is drawn, before a script runs."""
+        return {
+            item["id"]: self._adopt(self.proxies[item["id"]])
+            for item in scene["objects"]
+            if item.get("kind") != "script" and item["id"] in self.proxies
+        }
+
+    def _keep_changes(
+        self, scene: dict[str, Any], before: dict[str, dict[str, Any]]
+    ) -> None:
+        """What a script changed in how an existing object is drawn is kept in its
+        display, as set_representation keeps it; otherwise the next redraw, and a
+        restore after the script's replay, would put the old display back."""
+        for item in scene["objects"]:
+            was = before.get(item["id"])
+            proxy = self.proxies.get(item["id"])
+            if was is None or proxy is None:
+                continue
+            now = self._adopt(proxy)
+            if now == was:
+                continue
+            display = item.setdefault("display", {})
+            if "color_by" in now and now["color_by"] != was.get("color_by"):
+                # A new field's colour map is the one the script left; the old
+                # field's range and component do not carry over.
+                display.update(
+                    color_by=now.get("color_by"),
+                    color_component=None,
+                    colormap=None,
+                    color_range=None,
+                    auto_range=None,
+                    range_mode=None,
+                )
+                if now.get("color_by"):
+                    display["solid_color"] = None
+            for key in ("visible", "representation", "opacity", "scalar_bar"):
+                if key in now and now[key] != was.get(key):
+                    display[key] = now[key]
+            if (
+                "color_by" in now
+                and not now["color_by"]
+                and now.get("solid_color") != was.get("solid_color")
+            ):
+                display["solid_color"] = now.get("solid_color")
+
     def cmd_run_scene_script(
         self, code: str, label: str | None = None
     ) -> dict[str, Any]:
@@ -147,7 +194,9 @@ class SceneScripts:
         scene["next_id"] += 1
         label = (label or "").strip() or f"script {step_id}"
         before = ranges.spans(self.simple, scene)
+        drawn = self._shown_before(scene)
         made = self._execute(scene, code, label)
+        self._keep_changes(scene, drawn)
         step: dict[str, Any] = {
             "id": step_id,
             "kind": "script",

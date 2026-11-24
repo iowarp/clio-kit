@@ -33,6 +33,9 @@ owns the scene and serves its live view. The script sees:
 - Every source the script created becomes a scene object (`kind: "made"`), named by its
   pipeline registration name, with the display it was left with: representation,
   colouring, opacity, visibility, solid colour.
+- What the script changed in how an object already in the scene is drawn is kept in that
+  object's display, as `set_representation` keeps it. A new colouring field drops the old
+  field's range and component, and keeps the colour map the script left.
 - Colour maps are snapshotted as for any commit.
 - The view mode is chosen from what is shown: a volume or an image slice is drawn by
   ParaView, and so is a growing source, so each new step arrives as one image.
