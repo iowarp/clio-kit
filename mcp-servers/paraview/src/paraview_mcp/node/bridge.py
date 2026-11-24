@@ -40,10 +40,39 @@ BRIDGE_JS = r"""
     trame.state.watch(['clio_bridge'], function (bridge) {
       if (bridge) post({ type: 'clio.paraview.state', state: bridge });
     });
+    // On a closed link trame swaps its page for a "Connection closed" notice on the
+    // next render, which would hide the last picture the view promises to keep. The
+    // close runs before that render, so the picture is copied out of trame's page
+    // first and laid over the notice; a reconnect reloads the page and drops it.
+    var lastPicture = null;
+    function keepPicture() {
+      if (document.getElementById('clio-kept-picture')) return;
+      var source = lastPicture && lastPicture.isConnected ? lastPicture
+        : document.querySelector('.clio-view canvas');
+      if (!source) return;
+      var rect = source.getBoundingClientRect();
+      if (rect.width < 10 || rect.height < 10) return;
+      var copy = document.createElement('canvas');
+      copy.width = Math.round(rect.width * (window.devicePixelRatio || 1));
+      copy.height = Math.round(rect.height * (window.devicePixelRatio || 1));
+      try { copy.getContext('2d').drawImage(source, 0, 0, copy.width, copy.height); } catch (e) { return; }
+      copy.style.cssText = 'position:absolute;left:' + rect.left + 'px;top:' + rect.top + 'px;width:'
+        + rect.width + 'px;height:' + rect.height + 'px';
+      var cover = document.createElement('div');
+      cover.id = 'clio-kept-picture';
+      cover.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:'
+        + (getComputedStyle(document.body).backgroundColor || 'transparent');
+      cover.appendChild(copy);
+      document.body.appendChild(cover);
+    }
+    function linkDown() {
+      keepPicture();
+      post({ type: 'clio.paraview.link', up: false });
+    }
     var client = trame.client;
     if (client && client.onConnectionClose) {
-      client.onConnectionClose(function () { post({ type: 'clio.paraview.link', up: false }); });
-      client.onConnectionError(function () { post({ type: 'clio.paraview.link', up: false }); });
+      client.onConnectionClose(linkDown);
+      client.onConnectionError(linkDown);
     }
     post({ type: 'clio.paraview.link', up: true });
     // The page drew a scene it was sent, or could not (vtkjs_patch.py): the node
@@ -113,6 +142,7 @@ BRIDGE_JS = r"""
         var size = Math.round(rect.width) + 'x' + Math.round(rect.height);
         if (rect.width < 1 || img.naturalWidth < rect.width * 0.9) return;
         shown = true;
+        lastPicture = img;
         // The node half counts the pictures its viewers really show, told at
         // most every two seconds while a drag streams them.
         untold += 1;
