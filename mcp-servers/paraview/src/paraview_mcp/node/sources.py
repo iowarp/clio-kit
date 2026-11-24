@@ -29,7 +29,7 @@ from typing import Any
 
 from . import ranges
 from .datafs import LocalDisk
-from .disk import Readiness, is_pattern, whole_steps, writing
+from .disk import FILE_SETTLE, Readiness, fresh_files, is_pattern, whole_steps, writing
 from .errors import CommandError
 from .held import LEDGER
 from .pool import Readers
@@ -188,6 +188,7 @@ class SourceGrowth:
     proxies: dict[str, Any]
     _growth: dict[str, Any]
     _settling: dict[str, tuple[Any, float]]
+    _quiet: dict[str, dict[str, tuple[Any, float]]]
     _held: dict[str, int]
     _seen: dict[float, float]
     _seen_scene: str | None
@@ -246,6 +247,43 @@ class SourceGrowth:
             raise CommandError("not_found", f"There is no file at {path}.")
         return files
 
+    def _settled(self, item: dict[str, Any], look: dict[str, Any]) -> tuple[Any, ...]:
+        """The entries of a growing pattern's ``disk.series`` look to read: every file
+        it matches but those changed in the last ``FILE_SETTLE`` seconds, which a
+        writer may be part way through; the follow reads them once they settle. A
+        file this node has seen unchanged that long is read whatever the clocks
+        say."""
+        key = look.get("key") or ()
+        fresh = fresh_files(key, int(look.get("now") or 0))
+        now = time.monotonic()
+        seen = self._quiet.get(item["id"], {})
+        quiet: dict[str, tuple[Any, float]] = {}
+        for name, stat in key:
+            if name in fresh:
+                first = seen.get(name)
+                quiet[name] = first if first and first[0] == stat else (stat, now)
+        self._quiet[item["id"]] = quiet
+        return tuple(
+            entry
+            for entry in key
+            if entry[0] not in fresh or now - quiet[entry[0]][1] >= FILE_SETTLE
+        )
+
+    def _series_files(self, item: dict[str, Any]) -> tuple[list[str], tuple[Any, ...]]:
+        """A growing pattern's files to open (``_settled``), and the entries read."""
+        path = item["path"]
+        look = self.disk.series(path)
+        used = self._settled(item, look)
+        if used:
+            return [entry[0] for entry in used], used
+        if look.get("key"):
+            raise CommandError(
+                "not_ready",
+                f"Every file {path} matches is still being written. open_view with "
+                "growing set waits until one has stopped changing; call it again.",
+            )
+        raise CommandError("not_found", f"No file matches {path}.")
+
     def _bp5(self, item: dict[str, Any]) -> bool:
         path = item["path"]
         return not is_pattern(path) and self.disk.is_bp(path, item.get("reader"))
@@ -294,7 +332,15 @@ class SourceGrowth:
                 self.readers.pull(source, self, item["id"])
                 self._read_at[item["id"]] = source.generation
                 return source.proxy
-        files = self._files(item)
+        # What is on disk is taken before the reader reads it: a file that changes
+        # while the reader opens it is re-read by the follow.
+        files: list[str] | str
+        seen: Any
+        if growing and is_pattern(item["path"]):
+            files, seen = self._series_files(item)
+        else:
+            files = self._files(item)
+            seen = self.disk.disk_key(item["path"]) if growing else None
         self._held.pop(item["id"], None)
         if self._bp5(item):
             state = self.disk.check(item["path"])
@@ -343,7 +389,7 @@ class SourceGrowth:
         for key, value in (item.get("reader_properties") or {}).items():
             set_property(proxy, name or proxy.GetXMLName(), key, value)
         proxy.UpdatePipelineInformation()
-        self._growth[item["id"]] = self.disk.disk_key(item["path"])
+        self._growth[item["id"]] = seen if growing else self.disk.disk_key(item["path"])
         if growing:
             source = self.readers.add(shared, proxy, self)
             self.readers.push(source, self, item["id"])
@@ -534,10 +580,15 @@ class SourceGrowth:
         """Look at one reader's disk; re-read its files if they grew. The look and
         the re-read are separate stages."""
         held = item["id"] in self._held
+        series = not held and is_pattern(item["path"])
         state = None
+        look: dict[str, Any] = {}
         with LEDGER.phase("disk"):
             if held:
                 key, state = self.disk.grown(item["path"])
+            elif series:
+                look = self.disk.series(item["path"])
+                key = look.get("key")
             else:
                 key = self.disk.disk_key(item["path"])
         if key != self._disk_seen.get(item["id"], self):
@@ -552,6 +603,14 @@ class SourceGrowth:
             self._growth[item["id"]] = key
             with LEDGER.phase("disk"):
                 files: list[str] | str = self._follow_index(item, whole)
+        elif series:
+            # A file still being written stays out until it settles; the reader
+            # is re-read when the files it can have change.
+            usable = self._settled(item, look)
+            if not usable or usable == self._growth.get(item["id"]):
+                return False
+            self._growth[item["id"]] = usable
+            files = [entry[0] for entry in usable]
         else:
             if key == self._growth.get(item["id"]):
                 return False

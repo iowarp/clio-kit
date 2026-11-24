@@ -52,6 +52,7 @@ import itertools
 import os
 import shutil
 import struct
+import time
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -64,6 +65,11 @@ ACTIVE_AT = {4: 38, 5: 39}
 WRITER_ACTIVE = "writer_active"
 STEP = b"s"
 WRITER_MAP = b"w"
+#: Seconds since its last change before a file a growing pattern matches is read.
+#: A writer can take many seconds over one file (a NetCDF history gathered from
+#: every rank, a large VTK piece), and a reader that opens it part way fails or
+#: reads it short. ``PARAVIEW_FILE_SETTLE`` sets it; 0 reads every file at once.
+FILE_SETTLE = float(os.environ.get("PARAVIEW_FILE_SETTLE") or 5.0)
 
 
 @dataclass(frozen=True)
@@ -227,6 +233,24 @@ def disk_key(path: str) -> Any:
         active = writer_active(path) if "md.idx" in names else None
         return key if active is None else (*key, (WRITER_ACTIVE, active))
     return _stat(path)
+
+
+def series(path: str) -> dict[str, Any]:
+    """A pattern's ``disk_key`` and this machine's clock (nanoseconds), so the
+    caller can tell which files changed in the last moments (``fresh_files``)."""
+    return {"key": disk_key(path), "now": time.time_ns()}
+
+
+def fresh_files(key: Any, now: int, settle: float = FILE_SETTLE) -> set[str]:
+    """The files of a pattern's ``disk_key`` that changed less than ``settle``
+    seconds before ``now``, by the clock of the machine that looked: a writer may
+    be part way through them. A time further ahead of that clock than ``settle``
+    says nothing (the clocks disagree) and holds no file."""
+    fresh = set()
+    for name, stat in key or ():
+        if stat is not None and -settle < (now - stat[1]) / 1e9 < settle:
+            fresh.add(name)
+    return fresh
 
 
 def files(path: str) -> list[str] | str | None:
@@ -401,16 +425,19 @@ def write_index(path: str, folder: str, steps: int) -> str:
 
 
 def source_readiness(
-    path: str, reader: str | None, pattern: bool
+    path: str, reader: str | None, pattern: bool, settle: float = FILE_SETTLE
 ) -> tuple[str | None, bool, Any]:
     """For a growing source about to be opened: why it cannot be read yet (or None),
     whether it can be read without waiting for it to settle (a BP5 folder can once
-    one step in it is surely whole), and what is on disk."""
+    one step in it is surely whole), and what is on disk. A pattern can be read
+    once one file it matches has stopped changing (``FILE_SETTLE``)."""
     key = disk_key(path)
     if pattern:
         if not key:
             # Nothing matches yet: what the run writes beside it says it goes on.
             return "no file matches it yet", True, ("absent", _beside(path))
+        if len(fresh_files(key, time.time_ns(), settle)) == len(key):
+            return "its first file is still being written", True, key
         return None, True, key
     if not _there(path):
         return "it is not there yet", False, ("absent", _beside(path))
@@ -440,6 +467,8 @@ def dispatch(op: str, args: dict[str, Any]) -> Any:
         return disk_key(args["path"])
     if op == "files":
         return files(args["path"])
+    if op == "series":
+        return series(args["path"])
     if op == "is_bp":
         return is_bp(args["path"], args.get("reader"))
     if op == "check":
@@ -449,5 +478,12 @@ def dispatch(op: str, args: dict[str, Any]) -> Any:
     if op == "write_index":
         return write_index(args["path"], args["folder"], int(args["steps"]))
     if op == "source_readiness":
-        return list(source_readiness(args["path"], args.get("reader"), args["pattern"]))
+        return list(
+            source_readiness(
+                args["path"],
+                args.get("reader"),
+                args["pattern"],
+                float(args.get("settle", FILE_SETTLE)),
+            )
+        )
     raise ValueError(f"no disk operation {op!r}")

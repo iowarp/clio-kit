@@ -33,6 +33,9 @@ from paraview_mcp.errors import ParaViewError
 from paraview_mcp.node import ranges
 
 PVPYTHON = os.environ.get("PARAVIEW_TEST_PVPYTHON") or shutil.which("pvpython")
+# The fixtures write each step whole before the follow looks, so the node reads a
+# file as soon as it is there rather than waiting for it to settle.
+os.environ.setdefault("PARAVIEW_FILE_SETTLE", "0")
 pytestmark = [
     pytest.mark.pvpython,
     pytest.mark.skipif(

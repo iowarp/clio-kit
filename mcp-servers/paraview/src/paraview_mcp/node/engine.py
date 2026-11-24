@@ -132,6 +132,9 @@ class Engine(
         self.proxies: dict[str, Any] = {}
         self._growth: dict[str, Any] = {}
         self._settling: dict[str, tuple[Any, float]] = {}
+        #: Per growing pattern, when each file still being written was last seen
+        #: to change (``SourceGrowth._settled``).
+        self._quiet: dict[str, dict[str, tuple[Any, float]]] = {}
         self._held: dict[str, int] = {}
         self._seen: dict[float, float] = {}
         self._seen_scene: str | None = None
@@ -281,7 +284,13 @@ class Engine(
                 self.simple.Delete(proxy)
             except Exception as exc:  # noqa: BLE001 - a proxy already gone needs no delete
                 print(f"clearing {object_id}: {exc}", flush=True)
-        for state in (self._growth, self._settling, self._held, self._read_at):
+        for state in (
+            self._growth,
+            self._settling,
+            self._quiet,
+            self._held,
+            self._read_at,
+        ):
             for object_id in [k for k in state if k not in keep]:
                 del state[object_id]
         if not self.session:

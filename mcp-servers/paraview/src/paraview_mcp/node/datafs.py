@@ -84,6 +84,11 @@ class LocalDisk:
         result: list[str] | str | None = self.call("files", path=path)
         return result
 
+    def series(self, path: str) -> dict[str, Any]:
+        """A pattern's ``disk_key`` and the data machine's clock (``disk.series``)."""
+        result: dict[str, Any] = self.call("series", path=path)
+        return result
+
     def is_bp(self, path: str, reader: str | None = None) -> bool:
         return bool(self.call("is_bp", path=path, reader=reader))
 
@@ -103,7 +108,11 @@ class LocalDisk:
         self, path: str, reader: str | None, pattern: bool
     ) -> tuple[str | None, bool, Any]:
         reason, clear, key = self.call(
-            "source_readiness", path=path, reader=reader, pattern=pattern
+            "source_readiness",
+            path=path,
+            reader=reader,
+            pattern=pattern,
+            settle=disk.FILE_SETTLE,
         )
         return reason, bool(clear), key
 
