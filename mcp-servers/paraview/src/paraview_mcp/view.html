@@ -97,6 +97,31 @@
     return entry && typeof entry.url === 'string' ? entry.url : null;
   }
 
+  // Whether ParaView's bridge answered in the page loaded last.
+  let pageReady = false;
+  function showFrame() {
+    pageReady = true;
+    frame.style.visibility = '';
+  }
+  // A page that loaded with no bridge in it (ParaView is not there) asks the server
+  // at once whether ParaView stopped, rather than after the full link wait; only a
+  // stop or a relaunch is acted on here, as a slow page may still be starting.
+  const EARLY_LOOK_MS = 2000;
+  frame.addEventListener('load', () => {
+    if (!frame.src || stopped) return;
+    setTimeout(() => {
+      if (pageReady || linkUp || stopped || checking || relaunching) return;
+      const scene = opened && opened.structuredContent ? opened.structuredContent.scene : undefined;
+      request('tools/call', { name: 'view_status', arguments: scene ? { scene } : {} })
+        .then((result) => {
+          const status = (result && result.structuredContent) || {};
+          if (pageReady || linkUp || stopped) return;
+          if (status.state === 'lost' || status.state === 'relaunching') checkParaView();
+        })
+        .catch(() => {});
+    }, EARLY_LOOK_MS);
+  });
+
   // A dropped link (the page was starved, the network blinked) reloads the frame on
   // its own, backing off to 30 s; the scene is kept on the ParaView side.
   let retries = 0;
@@ -128,8 +153,12 @@
     // trame connects its WebSocket beside its page, under the same route.
     const page = new URL('index.html', base);
     page.search = base.search;
-    if (!waiting) statusBox.hidden = true;
+    if (!waiting) showStatus('Opening the ParaView view…');
     frame.hidden = false;
+    // The page stays out of sight until ParaView's bridge answers in it: a proxy
+    // that could not reach ParaView answers with an error document instead.
+    frame.style.visibility = 'hidden';
+    pageReady = false;
     drawn = false;
     frame.src = page.href;
     clearTimeout(checkTimer);
@@ -359,6 +388,7 @@
         latest = data.state;
         schedule();
       } else if (data.type === 'clio.paraview.ready') {
+        showFrame();
         sendTheme();
       } else if (data.type === 'clio.paraview.drawn') {
         drawn = true;
@@ -371,6 +401,7 @@
         if (stopped) return;
         if (data.up) {
           linkUp = true;
+          showFrame();
           // The host was told nothing is drawn; the next report withdraws that.
           if (waiting) { sentText = ''; schedule(); }
           waiting = '';

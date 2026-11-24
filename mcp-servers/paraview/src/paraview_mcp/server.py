@@ -95,7 +95,9 @@ _attachers: dict[str, Attacher] = {}
 _current = ""
 #: Which attacher each opened scene lives on.
 _scene_keys: dict[str, str] = {}
-PVSERVER_ADDRESS = r"^[A-Za-z0-9.\-\[\]]+:\d{1,5}$"
+PVSERVER_ADDRESS = r"^(connector|[A-Za-z0-9.\-\[\]]+:\d{1,5})$"
+#: The pvserver value that opens a view where the connector points.
+CONNECTOR = "connector"
 
 
 def _key(pvserver: str | None) -> str:
@@ -264,10 +266,23 @@ def _paths(**access: str) -> dict[str, Any]:
 
 
 def _where() -> str:
-    settings = attacher().settings
+    return _where_for(_current)
+
+
+def _where_for(key: str) -> str:
+    settings = attacher(key).settings
     if settings.pvserver:
         return f"on the ParaView server at {settings.pvserver}"
     return settings.target.describe()
+
+
+def _pvserver_ended(key: str) -> bool:
+    """Whether the pvserver an attacher drew on has ended for good."""
+    found = _attachers.get(key)
+    if found is None or not key:
+        return False
+    state = found.status()
+    return state.get("state") == "lost" and state.get("code") == "pvserver_lost"
 
 
 def _text(text: str) -> TextContent:
@@ -349,8 +364,11 @@ async def open_view(
         Field(
             pattern=PVSERVER_ADDRESS,
             description="host:port of a running pvserver to draw this view on, as a "
-            "run reported it. Default: the connector's setting. A view on another "
-            "pvserver opens beside the ones already open; they stay open.",
+            "run reported it, or 'connector' for where the connector points (this "
+            "machine when it names no pvserver), e.g. for a file copied here. "
+            "Default: the pvserver of the view opened last, or the connector once "
+            "that pvserver has ended. A view on another pvserver opens beside the "
+            "ones already open; they stay open.",
         ),
     ] = None,
 ) -> ToolResult:
@@ -375,7 +393,23 @@ async def open_view(
     view's step or state, call scene_state(scene=id), never open_view.
     """
     global _current
-    key = _key(pvserver) if pvserver else _scene_keys.get(scene or "", _current)
+    if pvserver == CONNECTOR:
+        key = ""
+    elif pvserver:
+        key = _key(pvserver)
+    else:
+        key = _scene_keys.get(scene or "", _current)
+    moved = ""
+    if not pvserver and key and (scene or "") not in _scene_keys:
+        # A new scene with no pvserver named follows the current view's pvserver,
+        # unless that pvserver has ended: then it opens where the connector says.
+        ended = await asyncio.to_thread(_pvserver_ended, key)
+        if ended:
+            moved = (
+                f"The pvserver at {key} has ended, so this view opens where the "
+                f"connector points instead: {_where_for('')}.\n"
+            )
+            key = ""
     chosen = attacher(key)
     summary, link = await run(
         ctx,
@@ -387,8 +421,10 @@ async def open_view(
     _current = key
     _scene_keys[summary["scene"]] = key
     chosen.scene = summary["scene"]
-    text = present.scene_text(summary, _where()) + present.drawn_text(
-        summary.get("drawn"), summary.get("shown")
+    text = (
+        moved
+        + present.scene_text(summary, _where())
+        + present.drawn_text(summary.get("drawn"), summary.get("shown"))
     )
     if summary.get("already_open"):
         text = (
