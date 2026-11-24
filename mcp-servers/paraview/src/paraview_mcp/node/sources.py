@@ -53,6 +53,44 @@ REPLAY_SLOW = 3.0
 REMOTE_COLOUR_SECONDS = 15.0
 
 
+def reader_by_class(servermanager: Any, name: str) -> str | None:
+    """The paraview.simple name of the reader ``name`` means when it is not one:
+    a VTK class (vtkNetCDFCFReader, or NetCDFCFReader) or an XML proxy name
+    (netCDFReader). File readers wrap their class in a file-series reader, so the
+    class of each definition's sub-proxies counts too."""
+    defs = servermanager.ProxyManager().SMProxyManager.GetProxyDefinitionManager()
+    bare = name[3:] if name.startswith("vtk") else name
+    wanted = {name, bare, "vtk" + bare}
+
+    def classes(element: Any) -> set[str]:
+        found = {element.GetAttribute("class")}
+        for i in range(element.GetNumberOfNestedElements()):
+            sub = element.GetNestedElement(i)
+            if sub.GetName() != "SubProxy":
+                continue
+            for j in range(sub.GetNumberOfNestedElements()):
+                part = sub.GetNestedElement(j)
+                group = part.GetAttribute("proxygroup")
+                proxy = part.GetAttribute("proxyname")
+                core = defs.GetProxyDefinition(group, proxy) if group and proxy else None
+                if core is not None:
+                    found.add(core.GetAttribute("class"))
+        return {c for c in found if c}
+
+    matches: list[str] = []
+    each = defs.NewSingleGroupIterator("sources")
+    each.InitTraversal()
+    while not each.IsDoneWithTraversal():
+        xml_name = each.GetProxyName()
+        element = defs.GetProxyDefinition("sources", xml_name)
+        if element is not None and (xml_name == name or classes(element) & wanted):
+            label = element.GetAttribute("label") or xml_name
+            matches.append(servermanager._make_name_valid(label))
+        each.GoToNextItem()
+    # One class can sit behind several readers; only an unambiguous one is taken.
+    return matches[0] if len(set(matches)) == 1 else None
+
+
 def set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
     """Set ``key`` on a proxy. ``"SliceType.Normal"`` (or ``{"SliceType": {...}}``)
     reaches into the proxy a property holds, such as a Slice's plane."""
@@ -245,6 +283,8 @@ class SourceGrowth:
             from paraview import servermanager
 
             known = [n for n in dir(servermanager.sources) if not n.startswith("_")]
+            if name not in known:
+                name = reader_by_class(servermanager, name) or name
             if name not in known:
                 readers = [n for n in known if "Reader" in n] or known
                 close = difflib.get_close_matches(name, readers, n=5, cutoff=0.4)
