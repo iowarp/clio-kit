@@ -61,12 +61,14 @@
   let keptPicture = false;
   function keepPicture(data) {
     if (typeof data.url !== 'string' || !data.url.startsWith('data:image/')) return;
-    const share = (value) => (Number.isFinite(value) ? value * 100 + '%' : '0');
+    // Placed as it was in the page, at its own size: a status line above the frame
+    // may shorten the space, which crops the picture rather than stretching it.
+    const place = (value) => (Number.isFinite(value) ? Math.round(value) + 'px' : '0');
     keptImage.src = data.url;
-    keptImage.style.left = share(data.left);
-    keptImage.style.top = share(data.top);
-    keptImage.style.width = share(data.width);
-    keptImage.style.height = share(data.height);
+    keptImage.style.left = place(data.left);
+    keptImage.style.top = place(data.top);
+    keptImage.style.width = place(data.width);
+    keptImage.style.height = place(data.height);
     kept.style.background = typeof data.background === 'string' ? data.background : '';
     keptPicture = true;
     kept.hidden = false;
@@ -280,7 +282,10 @@
           loadFrame();
           return;
         }
-        const shown = 'Not drawn yet: this view has not reached ParaView. ' + text
+        const shown = (keptPicture
+          ? 'ParaView\'s link closed, so this is its last picture, which does not change. '
+            + 'Checking whether ParaView comes back: '
+          : 'Not drawn yet: this view has not reached ParaView. ') + text
           + (status.state === 'closed' ? '' : ' Still trying.');
         if (shown !== waiting) {
           waiting = shown;
@@ -289,7 +294,7 @@
             ? 'The ParaView view shows its last picture, which no longer changes until it reconnects. '
             : 'The ParaView view shows nothing yet. ';
           request('ui/update-model-context', {
-            content: [{ type: 'text', text: showing + shown }],
+            content: [{ type: 'text', text: showing + (keptPicture ? text : shown) }],
             structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: keptPicture, waiting: status.state }),
           }).catch(() => {});
         }

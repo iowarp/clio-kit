@@ -68,8 +68,7 @@ BRIDGE_JS = r"""
       // load once ParaView is gone, would drop the copy laid over it here.
       try {
         post({ type: 'clio.paraview.picture', url: copy.toDataURL('image/png'),
-          left: rect.left / window.innerWidth, top: rect.top / window.innerHeight,
-          width: rect.width / window.innerWidth, height: rect.height / window.innerHeight,
+          left: rect.left, top: rect.top, width: rect.width, height: rect.height,
           background: cover.style.background });
       } catch (e) { /* a picture that cannot be read stays in this page only */ }
     }

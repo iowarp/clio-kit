@@ -123,15 +123,23 @@ class Attacher:
             self._call = (stop, progress)
             try:
                 link = self.link
-                if link is not None:
-                    if link.transport.alive() and self._answers(link.client):
-                        return link
-                    if self._relaunchable():
-                        return self._restart(link)
-                    self._drop()
-                elif self.ended is not None and not opening:
-                    raise self.ended
-                self.link = self._attach(opening)
+                try:
+                    if link is not None:
+                        if link.transport.alive() and self._answers(link.client):
+                            return link
+                        if self._relaunchable():
+                            return self._restart(link)
+                        self._drop()
+                    elif self.ended is not None and not opening:
+                        raise self.ended
+                    self.link = self._attach(opening)
+                except ParaViewError as exc:
+                    # A linked node half that went and could not be started again
+                    # has ended: its live view says why rather than that none was
+                    # ever open.
+                    if link is not None and self.link is None and not opening:
+                        self.ended = exc
+                    raise
                 self.had_link = True
                 if opening:
                     self.ended = None
@@ -188,6 +196,14 @@ class Attacher:
                         "state": "lost",
                         "code": self.ended.code,
                         "text": self.ended.message,
+                    }
+                if self.had_link:
+                    return {
+                        "state": "lost",
+                        "code": "node_lost",
+                        "text": "ParaView's node half went and was not started again "
+                        "(its pvserver has likely ended with its job). The scenes are "
+                        "saved: open_view on a running pvserver opens them again.",
                     }
                 return {"state": "closed", "text": "No ParaView node half is open."}
             try:
