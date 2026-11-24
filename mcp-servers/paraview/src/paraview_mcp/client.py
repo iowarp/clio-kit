@@ -15,6 +15,7 @@ import os
 import platform
 import shutil
 import threading
+import time
 import urllib.request
 import zipfile
 from dataclasses import dataclass
@@ -42,6 +43,11 @@ BUILDS: dict[tuple[str, str], Build] = {
 }
 
 _lock = threading.Lock()
+
+#: How often the fetching front touches its lock, and how long an untouched lock
+#: lasts before another front takes the fetch over.
+BEAT_S = 5.0
+STALE_S = 60.0
 
 
 def machine() -> str:
@@ -82,6 +88,13 @@ class Fetch:
     A build is a gigabyte or more, longer than a tool call should wait, so the
     first attach starts the fetch and says how far it has got; a later attach
     finds it done.
+
+    A connector change restarts the front, so a fetch outlives the process that
+    started it: the bytes land in a ``.part`` file that the next front resumes
+    with an HTTP range, and a lock file the fetching front keeps fresh lets one
+    front fetch while the others follow its progress. A lock nobody has touched
+    for :data:`STALE_S` seconds belongs to a front that is gone, so another
+    takes it over.
     """
 
     def __init__(self, version: str, build: Build) -> None:
@@ -92,6 +105,7 @@ class Fetch:
         self.error: ParaViewError | None = None
         self.pvpython: str | None = None
         self.thread = threading.Thread(target=self._run, daemon=True)
+        self._beat = 0.0
 
     def describe(self) -> str:
         if self.phase == "downloading":
@@ -101,22 +115,90 @@ class Fetch:
             )
         return f"unpacking ParaView {self.version}"
 
+    # -- the lock one front holds while it fetches -------------------------------
+    def _lock(self) -> Path:
+        return cache_root() / f"{self.version}.lock"
+
+    def _take(self) -> bool:
+        lock = self._lock()
+        for _ in range(2):
+            try:
+                fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            except FileExistsError:
+                try:
+                    age = time.time() - lock.stat().st_mtime
+                except FileNotFoundError:
+                    continue
+                if age < STALE_S:
+                    return False
+                lock.unlink(missing_ok=True)  # its front is gone
+                continue
+            with os.fdopen(fd, "w", encoding="utf-8") as out:
+                out.write(str(os.getpid()))
+            self._beat = time.monotonic()
+            return True
+        return False
+
+    def _heartbeat(self) -> None:
+        now = time.monotonic()
+        if now - self._beat >= BEAT_S:
+            self._beat = now
+            try:
+                os.utime(self._lock())
+            except OSError:
+                pass
+
+    def _follow(self) -> bool:
+        """Follow another front's fetch until it ends; True when its build is here."""
+        part = cache_root() / f"{self.version}.part"
+        while True:
+            if installed(self.version):
+                return True
+            try:
+                self.done_bytes = part.stat().st_size
+            except FileNotFoundError:
+                pass
+            try:
+                age = time.time() - self._lock().stat().st_mtime
+            except FileNotFoundError:
+                return bool(installed(self.version))
+            if age >= STALE_S:
+                return False
+            time.sleep(1.0)
+
+    # -- fetching ----------------------------------------------------------------
     def _download(self, target: Path) -> None:
         build = self.build
         digest = hashlib.sha256()
         part = target.with_suffix(".part")
-        request = urllib.request.Request(build.url, headers={"User-Agent": "clio-kit"})
-        with (
-            urllib.request.urlopen(request, timeout=60) as reply,
-            open(part, "wb") as out,
-        ):
-            while True:
-                chunk = reply.read(1 << 20)
-                if not chunk:
-                    break
-                digest.update(chunk)
-                out.write(chunk)
-                self.done_bytes += len(chunk)
+        have = 0
+        if part.is_file():
+            # Resume what an earlier front fetched; its bytes count toward the check.
+            with open(part, "rb") as earlier:
+                while chunk := earlier.read(1 << 20):
+                    digest.update(chunk)
+                    have += len(chunk)
+                    self._heartbeat()
+            if have > build.size:
+                part.unlink()
+                digest, have = hashlib.sha256(), 0
+        self.done_bytes = have
+        if have < build.size:
+            headers = {"User-Agent": "clio-kit"}
+            if have:
+                headers["Range"] = f"bytes={have}-"
+            request = urllib.request.Request(build.url, headers=headers)
+            with urllib.request.urlopen(request, timeout=60) as reply:
+                if have and reply.status != 206:
+                    # The server sent the whole build: start the file over.
+                    digest, have = hashlib.sha256(), 0
+                    self.done_bytes = 0
+                with open(part, "ab" if have else "wb") as out:
+                    while chunk := reply.read(1 << 20):
+                        digest.update(chunk)
+                        out.write(chunk)
+                        self.done_bytes += len(chunk)
+                        self._heartbeat()
         if digest.hexdigest() != build.sha256:
             part.unlink(missing_ok=True)
             raise ParaViewError(
@@ -128,18 +210,40 @@ class Fetch:
 
     def _run(self) -> None:
         root = cache_root()
+        try:
+            while not self._take():
+                if self._follow():
+                    self.pvpython = installed(self.version)
+                    return
+            try:
+                self._fetch(root)
+            finally:
+                self._lock().unlink(missing_ok=True)
+        finally:
+            self.phase = "done"
+
+    def _fetch(self, root: Path) -> None:
         archive = root / f"{self.version}.zip"
         building = root / f"{self.version}.extracting"
+        if installed(self.version):
+            self.pvpython = installed(self.version)
+            return
+        if archive.is_file():
+            # An earlier front stopped while unpacking: check the archive again.
+            archive.replace(archive.with_suffix(".part"))
         try:
             self._download(archive)
             self.phase = "unpacking"
             shutil.rmtree(building, ignore_errors=True)
             with zipfile.ZipFile(archive) as unpacked:
-                unpacked.extractall(building)
+                for member in unpacked.infolist():
+                    unpacked.extract(member, building)
+                    self._heartbeat()
             folder = root / self.version
             shutil.rmtree(folder, ignore_errors=True)
             building.rename(folder)
             (folder / "READY").write_text(self.build.sha256, "utf-8")
+            archive.unlink(missing_ok=True)
             self.pvpython = installed(self.version)
             if not self.pvpython:
                 raise ParaViewError(
@@ -148,17 +252,24 @@ class Fetch:
                 )
         except ParaViewError as exc:
             self.error = exc
-        except (OSError, zipfile.BadZipFile) as exc:
+        except zipfile.BadZipFile as exc:
+            archive.unlink(missing_ok=True)
+            self.error = ParaViewError(
+                "client_fetch_failed",
+                f"The ParaView {self.version} archive from {self.build.url} would not "
+                f"unpack: {exc}",
+            )
+        except OSError as exc:
+            # The bytes so far stay in the .part file, and the next attempt resumes.
             self.error = ParaViewError(
                 "client_fetch_failed",
                 f"Could not fetch ParaView {self.version} from {self.build.url} into "
-                f"{root}: {type(exc).__name__}: {exc}",
+                f"{root}: {type(exc).__name__}: {exc}. Fetched so far: "
+                f"{self.done_bytes >> 20} of {self.build.size >> 20} MB, kept for the "
+                "next try.",
             )
         finally:
             shutil.rmtree(building, ignore_errors=True)
-            archive.unlink(missing_ok=True)
-            archive.with_suffix(".part").unlink(missing_ok=True)
-            self.phase = "done"
 
 
 _fetches: dict[str, Fetch] = {}
