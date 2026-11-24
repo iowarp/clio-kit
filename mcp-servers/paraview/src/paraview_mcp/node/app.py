@@ -896,7 +896,7 @@ class NodeApp:
                     )
                 began = time.monotonic()
                 ended, result, label = False, None, ""
-                with self.server.state, LEDGER.span(f"{self.name} open"):
+                with LEDGER.span(f"{self.name} open"), self.server.state:
                     try:
                         label = next(stages)
                     except StopIteration as done:
@@ -1148,13 +1148,14 @@ class NodeApp:
         of each step on a slow link. Switching to the browser sends it then."""
         if self.view is None or self.lost:
             return
-        if self.server.state.viewMode != "remote":
-            if self._scene_held():
-                self._scene_waiting = True
-                return
-            self._send_scene()
-        else:
-            self.view.update_image()
+        with LEDGER.drawing():
+            if self.server.state.viewMode != "remote":
+                if self._scene_held():
+                    self._scene_waiting = True
+                    return
+                self._send_scene()
+            else:
+                self.view.update_image()
 
     def _scene_held(self) -> bool:
         """Whether the next scene waits for the browser to draw the last one sent.
@@ -1320,7 +1321,7 @@ class NodeApp:
                     began = time.monotonic()
                     ended = False
                     try:
-                        with self.server.state, LEDGER.span(f"{self.name} growth"):
+                        with LEDGER.span(f"{self.name} growth"), self.server.state:
                             try:
                                 next(stages)
                             except StopIteration:
@@ -1407,7 +1408,7 @@ class NodeApp:
                 return
             await self._after_growth()
             began = time.monotonic()
-            with self.server.state, LEDGER.span(f"{self.name} catch-up"):
+            with LEDGER.span(f"{self.name} catch-up"), self.server.state:
                 if not engine.start_replay():
                     return
             # The first step is the costly one (the reader's first read of a later
@@ -1440,7 +1441,7 @@ class NodeApp:
                 )
                 await self._after_growth()
                 began = time.monotonic()
-                with self.server.state, LEDGER.span(f"{self.name} catch-up"):
+                with LEDGER.span(f"{self.name} catch-up"), self.server.state:
                     going = engine.replay_tick(finish=alone >= REPLAY_ALONE or slow)
                 if slow:
                     if spent > REPLAY_SLOW:
