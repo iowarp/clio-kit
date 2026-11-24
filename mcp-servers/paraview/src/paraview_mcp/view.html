@@ -45,6 +45,8 @@
   let opened = null;
   // Set once ParaView stopped for good (its pvserver went); nothing reconnects then.
   let stopped = '';
+  // Whether the loaded page shows a picture: it stays on screen once ParaView stops.
+  let drawn = false;
 
   function send(message) { window.parent.postMessage(message, '*'); }
   function request(method, params) {
@@ -102,7 +104,9 @@
   let linkUp = false;
   function scheduleReconnect() {
     if (retryTimer) return;
-    const wait = Math.min(30000, 1000 * 2 ** retries);
+    // A page with a picture waits long enough for the status check to say whether
+    // ParaView stopped for good, which keeps that picture rather than reloading it.
+    const wait = Math.min(30000, Math.max(drawn ? 3000 : 0, 1000 * 2 ** retries));
     retries += 1;
     retryTimer = setTimeout(() => {
       retryTimer = null;
@@ -123,23 +127,30 @@
     page.search = base.search;
     if (!waiting) statusBox.hidden = true;
     frame.hidden = false;
+    drawn = false;
     frame.src = page.href;
     clearTimeout(checkTimer);
     checkTimer = setTimeout(() => { if (!linkUp) checkParaView(); }, LINK_WAIT_MS);
   }
 
-  // ParaView stopped for good: say why, stop reconnecting, and tell the host.
+  // ParaView stopped for good: say why, stop reconnecting, and tell the host. A
+  // picture already drawn stays below the notice (a run that ended leaves its last
+  // frame to look at); it no longer changes.
   function stopView(text) {
     stopped = text;
     clearTimeout(retryTimer);
     clearTimeout(checkTimer);
     retryTimer = null;
-    frame.hidden = true;
-    showStatus(stopped);
+    const kept = drawn && !frame.hidden;
+    if (!kept) frame.hidden = true;
+    showStatus(kept ? stopped + ' The last picture stays below and no longer changes.' : stopped);
     sentText = stopped;
+    const said = kept
+      ? 'The ParaView view stopped; it still shows its last picture, which no longer changes. '
+      : 'The ParaView view stopped and shows nothing now. ';
     request('ui/update-model-context', {
-      content: [{ type: 'text', text: 'The ParaView view stopped and shows nothing now. ' + stopped }],
-      structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: false, stopped }),
+      content: [{ type: 'text', text: said + stopped }],
+      structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: kept, stopped }),
     }).catch(() => {});
   }
 
@@ -303,6 +314,7 @@
       } else if (data.type === 'clio.paraview.ready') {
         sendTheme();
       } else if (data.type === 'clio.paraview.drawn') {
+        drawn = true;
         // Report the state again: a host that read the view blank looks once more.
         sentText = '';
         schedule();
