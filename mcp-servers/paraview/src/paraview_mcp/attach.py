@@ -199,6 +199,8 @@ class Attacher:
                         link.transport.where,
                         self.scene,
                     )
+                    if self._relaunchable():
+                        return self._relaunching(self._kick(gone.message, rejoin=True))
                     return {"state": "lost", "code": gone.code, "text": gone.message}
                 if scene and scene in self.reopen:
                     return {
@@ -221,8 +223,9 @@ class Attacher:
                     gone = exc
             else:
                 gone = gone_error("", "", link.transport.where, self.scene)
-            if gone.code == "node_lost" and self._relaunchable():
-                return self._relaunching(self._kick(gone.message))
+            if gone.code in _RELAUNCHED and self._relaunchable():
+                rejoin = gone.code == "pvserver_lost"
+                return self._relaunching(self._kick(gone.message, rejoin=rejoin))
             return {"state": "lost", "code": gone.code, "text": gone.message}
         finally:
             self.lock.release()
@@ -269,8 +272,13 @@ class Attacher:
     def _relaunching(self, relaunch: dict[str, Any]) -> dict[str, Any]:
         tries = int(relaunch.get("tries") or 0)
         text = (
-            "ParaView's node half stopped while its pvserver still runs, so it is "
-            "being started again with the same scenes"
+            (
+                "ParaView's connection to its pvserver closed, so it is joining the "
+                "pvserver again with the same scenes"
+                if relaunch.get("rejoin")
+                else "ParaView's node half stopped while its pvserver still runs, so it "
+                "is being started again with the same scenes"
+            )
             + (f" (try {tries})" if tries else "")
             + "."
         )
@@ -283,17 +291,58 @@ class Attacher:
             "text": text,
         }
 
-    def _kick(self, why: str) -> dict[str, Any]:
-        """Start the background relaunch, once; its state."""
+    def _kick(self, why: str, rejoin: bool = False) -> dict[str, Any]:
+        """Start the background relaunch, once; its state. ``rejoin`` when the node
+        half went because its pvserver connection closed: one join that fails then
+        means the pvserver has ended."""
         if self.relaunch is not None and self._relauncher is not None:
             return self.relaunch
-        relaunch: dict[str, Any] = {"tries": 0, "since": time.time(), "why": why}
+        relaunch: dict[str, Any] = {
+            "tries": 0,
+            "since": time.time(),
+            "why": why,
+            "rejoin": rejoin,
+        }
         self.relaunch = relaunch
         self._relauncher = threading.Thread(
             target=self._relaunch_loop, args=(relaunch,), daemon=True
         )
         self._relauncher.start()
         return relaunch
+
+    def rejoin(
+        self,
+        lost: ParaViewError,
+        stop: threading.Event | None = None,
+        progress: Callable[[str], None] | None = None,
+    ) -> Link:
+        """A node half joined to the pvserver again in place of one whose pvserver
+        connection closed (``lost``), with its scenes, for a call to go on with.
+
+        The path to a pvserver can drop while the pvserver runs on (a port forward
+        rebuilt after its owner restarted). A join that fails means the pvserver
+        has ended, and raises ``lost`` with what the join said.
+        """
+        with self.lock:
+            if not self._relaunchable():
+                raise lost
+            self._call = (stop, progress)
+            try:
+                link = self.link
+                if link is not None and self._healthy(link):
+                    return link
+                return self._restart(link, rejoin=True)
+            finally:
+                self._call = (None, None)
+
+    def _healthy(self, link: Link) -> bool:
+        """Whether ``link``'s node half answers and still has its pvserver."""
+        if not (link.transport.alive() and self._answers(link.client)):
+            return False
+        try:
+            return not link.client.health().get("lost")
+        except LinkError:
+            return False
 
     def _relaunch_loop(self, relaunch: dict[str, Any]) -> None:
         """Try to start the node half again until it starts, the pvserver is seen to
@@ -320,13 +369,8 @@ class Attacher:
                         self._call = (self.relaunch_stop, said)
                         try:
                             link = self.link
-                            healthy = (
-                                link is not None
-                                and link.transport.alive()
-                                and self._answers(link.client)
-                            )
-                            if not healthy:
-                                self._restart(link)
+                            if link is None or not self._healthy(link):
+                                self._restart(link, rejoin=bool(relaunch.get("rejoin")))
                         finally:
                             self._call = (None, None)
                     return
@@ -359,18 +403,36 @@ class Attacher:
             self.relaunch = None
             self._relauncher = None
 
-    def _restart(self, old: Link | None) -> Link:
+    def _restart(self, old: Link | None, rejoin: bool = False) -> Link:
         """Start a node half in place of one that went, through the same start,
         keeping its token and ports, and open its scenes again. A node half that
-        went with its pvserver raises why instead."""
+        went with its pvserver raises why instead, unless ``rejoin``: then the new
+        node half joins the pvserver again, and raises why only if that fails."""
+        lost: ParaViewError | None = None
         if old is not None and old.transport.alive():
             gone = self._gone(old.transport, old.folder, old.slot)
-            if gone.code != "node_lost":
+            if gone.code == "pvserver_lost" and rejoin:
+                lost = gone
+            elif gone.code != "node_lost":
                 raise gone
         if old is not None:
             self._reuse = {"token": old.token, "port": int(old.node.get("port") or 0)}
         self._drop()
-        link = self._attach(opening=True)
+        try:
+            link = self._attach(opening=True)
+        except ParaViewError as exc:
+            if rejoin and exc.code in _JOIN_ENDED:
+                said = (
+                    lost.message
+                    if lost is not None
+                    else ("The ParaView view's pvserver connection closed.")
+                )
+                raise ParaViewError(
+                    "pvserver_lost",
+                    f"{said} ParaView tried to join the pvserver again and could "
+                    f"not, so it has ended: {exc.message}",
+                ) from exc
+            raise
         self.link = link
         self.had_link = True
         self._start_heartbeat()
@@ -1020,6 +1082,12 @@ class Attacher:
 
 #: Seconds between the heartbeat's pings.
 BEAT = 10.0
+
+#: Why a node half went that has it started again with its scenes.
+_RELAUNCHED = ("node_lost", "pvserver_lost")
+
+#: How joining a pvserver again fails when the pvserver has ended.
+_JOIN_ENDED = ("pvserver_join_failed", "pvserver_join_stalled", "pvserver_lost")
 
 #: How a front hands a node half started in place of a gone one the token it had
 #: (paraview_mcp.node.main reads it), so views a host serves keep their access.

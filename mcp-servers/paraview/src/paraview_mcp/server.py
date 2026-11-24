@@ -163,9 +163,19 @@ def command(
 
     try:
         link = attacher(key).ensure(opening=opening, stop=stop, progress=waiting)
-        result = link.client.command(
-            name, clean, by=actor(), stop=stop, progress=progress
-        )
+        try:
+            result = link.client.command(
+                name, clean, by=actor(), stop=stop, progress=progress
+            )
+        except ParaViewError as exc:
+            if exc.code != "pvserver_lost":
+                raise
+            # The pvserver connection closed under the call; the pvserver may run on
+            # behind a rebuilt forward. Join it again with the same scenes and go on.
+            link = attacher(key).rejoin(exc, stop=stop, progress=waiting)
+            result = link.client.command(
+                name, clean, by=actor(), stop=stop, progress=progress
+            )
         return result, link
     except ParaViewError as exc:
         raise _fail(exc) from exc
