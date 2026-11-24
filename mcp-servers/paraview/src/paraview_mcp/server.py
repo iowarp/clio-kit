@@ -400,6 +400,7 @@ async def open_view(
         )
     except ParaViewError as exc:
         raise _fail(exc) from exc
+    chosen.remember(summary["scene"], (summary.get("service") or {}).get("port"), port)
     return ToolResult(
         content=[_text(text)],
         structured_content={
@@ -600,10 +601,11 @@ def view_status(
 ) -> ToolResult:
     """For the live view: whether the ParaView behind it still runs, and if it went,
     why. A view whose page cannot reach ParaView asks this, so it shows the reason
-    instead of drawing nothing."""
+    instead of drawing nothing. A node half that went while its pvserver runs is
+    started again with its scenes; this says each try."""
     key = _scene_keys.get(scene or "", _current)
     status = (
-        _attachers[key].status()
+        _attachers[key].status(scene)
         if key in _attachers
         else {
             "state": "closed",
@@ -611,6 +613,31 @@ def view_status(
         }
     )
     return ToolResult(content=[_text(status["text"])], structured_content=status)
+
+
+@mcp.tool(
+    app=AppConfig(visibility=["app"]),
+    annotations={"title": "Stop reconnecting the live view", "idempotentHint": True},
+)
+def stop_view_relaunch(
+    scene: Annotated[
+        str | None, Field(description="The scene id the view shows.")
+    ] = None,
+) -> ToolResult:
+    """For the live view: stop starting ParaView's gone node half again. The scenes
+    stay saved; open_view(scene=id) starts it and opens one again."""
+    key = _scene_keys.get(scene or "", _current)
+    found = _attachers.get(key)
+    going = found.stop_relaunch() if found is not None else False
+    text = (
+        "Stopped starting ParaView again. The scene is saved; opening the view "
+        "again starts it."
+        if going
+        else "ParaView was not being started again."
+    )
+    return ToolResult(
+        content=[_text(text)], structured_content={"stopped": going, "text": text}
+    )
 
 
 @mcp.resource(

@@ -162,6 +162,9 @@ class Link:
     uploaded_now: bool = False
     timings: dict[str, float] = field(default_factory=dict)
     slot: str = "node"
+    #: The local port each node-side port was forwarded to, kept by the attacher
+    #: across links, so a node half started again is reached on the same ports.
+    local_for: dict[int, int] = field(default_factory=dict)
 
     @property
     def token(self) -> str:
@@ -176,4 +179,13 @@ class Link:
             return self.local_port
         if remote == int(self.node["port"]):
             return self.local_port
-        return self.transport.forward(remote, keep=True)
+        preferred = self.local_for.get(remote)
+        try:
+            local = self.transport.forward(remote, preferred, keep=True)
+        except ParaViewError:
+            if preferred is None:
+                raise
+            # The old local port is taken now: a new one, and the view opens again.
+            local = self.transport.forward(remote, keep=True)
+        self.local_for[remote] = local
+        return local

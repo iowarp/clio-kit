@@ -129,7 +129,27 @@ def parse(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--code-hash", default="")
     parser.add_argument("--growth-interval", type=float, default=2.0)
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=0,
+        help="the port to listen on when it is free (a node half started again "
+        "keeps the one it had); 0 picks any",
+    )
     return parser.parse_args(argv)
+
+
+#: Where a front starting a gone node half again passes the token it had, so the
+#: views a host already serves keep their access. Never on the command line.
+TOKEN_ENV = "CLIO_PARAVIEW_NODE_TOKEN"
+
+
+def node_token() -> str:
+    """The token handed over in the environment, else a new one."""
+    given = os.environ.pop(TOKEN_ENV, "").strip()
+    if 32 <= len(given) <= 256 and all(ch.isalnum() or ch in "-_" for ch in given):
+        return given
+    return secrets.token_urlsafe(32)
 
 
 def write_through() -> None:
@@ -225,7 +245,7 @@ def main(argv: list[str] | None = None) -> None:
         )
 
     engine = make_engine()
-    token = secrets.token_urlsafe(32)
+    token = node_token()
     node = NodeApp(engine, token)
     if watched is not None and session:
         node.watched = watched
@@ -265,9 +285,11 @@ def main(argv: list[str] | None = None) -> None:
             loop.create_task(watch_pvserver(stage, watched, session, record_path, lock))
 
     server.controller.on_server_ready.add(ready)
+    from .stage import usable_port
+
     server.start(
         host="127.0.0.1",
-        port=0,
+        port=usable_port(args.port) if args.port else 0,
         open_browser=False,
         show_connection_info=False,
         disable_logging=True,

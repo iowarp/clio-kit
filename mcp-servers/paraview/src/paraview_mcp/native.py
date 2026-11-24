@@ -239,11 +239,17 @@ def stop(folder: str, pid: int, slot: str, wait: float = 15.0) -> bool:
     return True
 
 
-def start(folder: str, command: list[str], slot: str) -> subprocess.Popen[bytes]:
+def start(
+    folder: str,
+    command: list[str],
+    slot: str,
+    env: dict[str, str] | None = None,
+) -> subprocess.Popen[bytes]:
     """Start the node half on its own, writing its output to ``<slot>.log``.
 
     The last node half's log is kept as ``<slot>.prev.log``, so the reason it
-    stopped is still there to read after this one starts.
+    stopped is still there to read after this one starts. ``env`` is added to
+    this process's environment for it.
     """
     root = Path(folder)
     (root / f"{slot}.json").unlink(missing_ok=True)
@@ -261,6 +267,7 @@ def start(folder: str, command: list[str], slot: str) -> subprocess.Popen[bytes]
             stdin=subprocess.DEVNULL,
             stdout=log,
             stderr=subprocess.STDOUT,
+            env={**os.environ, **env} if env else None,
             creationflags=CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW,
             close_fds=True,
         )

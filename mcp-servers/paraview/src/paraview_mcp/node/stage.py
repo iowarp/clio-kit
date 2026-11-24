@@ -9,7 +9,9 @@ first app, the front's, takes every command and hands it to its scene's app.
 from __future__ import annotations
 
 import asyncio
+import os
 import re
+import socket
 import time
 from collections.abc import Callable
 from typing import Any
@@ -22,6 +24,30 @@ from .errors import CommandError
 
 def _slug(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-").lower()[:24]
+
+
+def usable_port(port: Any) -> int:
+    """``port`` when this machine can listen on it now, else 0 (any free port).
+
+    A node half started again after one went asks for the ports its views had,
+    so a host that serves a view's port keeps reaching it.
+    """
+    try:
+        port = int(port)
+    except (TypeError, ValueError):
+        return 0
+    if not 0 < port < 65536:
+        return 0
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        if os.name != "nt":
+            # Lets the bind pass over the gone listener's closing connections;
+            # on Windows the same option would share a port that is in use.
+            probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            probe.bind(("127.0.0.1", port))
+        except OSError:
+            return 0
+    return port
 
 
 class Stage:
@@ -88,12 +114,14 @@ class Stage:
             return self._showing(str(args.pop("scene")))
         if name != "open_view":
             return self.current
+        # The port this scene's view had, from a front starting a gone node half again.
+        port = args.pop("view_port", None)
         scene_id = self.scene_for(args)
         if scene_id is None:
             return self.current
         if args.get("path") and not args.get("scene"):
             args["scene"] = scene_id
-        app = self._find(scene_id)
+        app = self._find(scene_id, port)
         if found is not None:
             found["already_open"] = bool(
                 app is not None and app.engine.scene is not None and not args.get("new")
@@ -102,7 +130,7 @@ class Stage:
             if self._adding is None:
                 self._adding = asyncio.Lock()
             async with self._adding:
-                app = self._find(scene_id) or await self.add()
+                app = self._find(scene_id, port) or await self.add(port)
         if by == "agent" or self.current.engine.scene is None:
             self.current = app
         return app
@@ -144,19 +172,26 @@ class Stage:
             )
         return out
 
-    def _find(self, scene_id: str) -> NodeApp | None:
-        """The view showing a scene, else one that shows none yet."""
+    def _find(self, scene_id: str, port: Any = None) -> NodeApp | None:
+        """The view showing a scene, else one that shows none yet (on ``port``,
+        when the scene asks for the port it had)."""
         for app in self.apps:
             scene = app.engine.scene
             if scene is not None and scene["scene"] == scene_id:
                 return app
+        # A scene asking for its old port takes the empty view on that port, or
+        # any empty view when no view could have that port now.
+        free = port is not None and usable_port(port) != 0
         for app in self.apps:
-            if app.engine.scene is None:
+            if app.engine.scene is not None:
+                continue
+            if not free or str(app.server.port) == str(port):
                 return app
         return None
 
-    async def add(self) -> NodeApp:
-        """Start one more view, on a port of its own, with the node half's token."""
+    async def add(self, port: Any = None) -> NodeApp:
+        """Start one more view, on a port of its own (``port`` when it is free),
+        with the node half's token."""
         from trame.app import get_server
 
         front = self.front
@@ -168,7 +203,7 @@ class Stage:
         began = time.monotonic()
         task = server.start(
             host="127.0.0.1",
-            port=0,
+            port=usable_port(port),
             open_browser=False,
             show_connection_info=False,
             disable_logging=True,

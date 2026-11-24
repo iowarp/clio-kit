@@ -110,6 +110,9 @@
     retries += 1;
     retryTimer = setTimeout(() => {
       retryTimer = null;
+      // While ParaView is started again the page keeps its picture; the status
+      // check loads it once ParaView answers.
+      if (relaunching) return;
       loadFrame();
     }, wait);
   }
@@ -163,6 +166,31 @@
   let checkTimer = null;
   let checking = false;
   let waiting = '';
+  const RELAUNCH_LOOK_MS = 3000;
+  let relaunching = false;
+  function showRelaunch(text) {
+    const shown = 'Reconnecting: ' + text;
+    statusBox.hidden = false;
+    statusBox.textContent = shown;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = 'Stop reconnecting';
+    button.addEventListener('click', () => {
+      const scene = opened && opened.structuredContent ? opened.structuredContent.scene : undefined;
+      request('tools/call', { name: 'stop_view_relaunch', arguments: scene ? { scene } : {} })
+        .catch(() => {})
+        .finally(() => { relaunching = false; checkParaView(); });
+    });
+    statusBox.appendChild(button);
+    if (shown !== waiting) {
+      waiting = shown;
+      sentText = shown;
+      request('ui/update-model-context', {
+        content: [{ type: 'text', text: 'The ParaView view is reconnecting. ' + text }],
+        structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn, waiting: 'relaunching' }),
+      }).catch(() => {});
+    }
+  }
   function checkParaView() {
     if (checking || stopped || linkUp) return;
     checking = true;
@@ -172,7 +200,26 @@
         if (stopped || linkUp) return;
         const status = (result && result.structuredContent) || {};
         const text = String(status.text || '');
-        if (status.state === 'lost') { stopView(text); return; }
+        if (status.state === 'lost') { relaunching = false; stopView(text); return; }
+        if (status.state === 'relaunching') {
+          // ParaView's node half is being started again with this scene: say each
+          // try, let the person stop it, and look again soon.
+          relaunching = true;
+          showRelaunch(text);
+          clearTimeout(checkTimer);
+          checkTimer = setTimeout(() => { if (!linkUp) checkParaView(); }, RELAUNCH_LOOK_MS);
+          return;
+        }
+        if (relaunching && status.state === 'running') {
+          // Started again on the same port and token: load the page from it now.
+          relaunching = false;
+          patience = 0;
+          retries = 0;
+          clearTimeout(retryTimer);
+          retryTimer = null;
+          loadFrame();
+          return;
+        }
         const shown = 'Not drawn yet: this view has not reached ParaView. ' + text
           + (status.state === 'closed' ? '' : ' Still trying.');
         if (shown !== waiting) {

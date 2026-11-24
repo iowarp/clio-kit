@@ -35,6 +35,7 @@ EXPECTED_TOOLS = {
     "watch_steps",
     "measure_over_time",
     "view_status",
+    "stop_view_relaunch",
 }
 
 
@@ -45,10 +46,11 @@ async def test_tools_list_without_paraview() -> None:
     assert tools["open_view"].meta["ui"]["resourceUri"] == "ui://paraview/view"
     # Only the opening call carries the view; the view's own check is for it alone.
     assert tools["view_status"].meta["ui"] == {"visibility": ["app"]}
+    assert tools["stop_view_relaunch"].meta["ui"] == {"visibility": ["app"]}
     assert all(
         "ui" not in (t.meta or {})
         for n, t in tools.items()
-        if n not in ("open_view", "view_status")
+        if n not in ("open_view", "view_status", "stop_view_relaunch")
     )
     assert not any("connect" in name for name in tools)
 
@@ -59,7 +61,7 @@ async def test_a_view_that_cannot_reach_paraview_learns_why(
     """The view asks view_status; a node half whose pvserver went says why."""
 
     class Gone:
-        def status(self) -> dict[str, str]:
+        def status(self, scene: str | None = None) -> dict[str, str]:
             return {"state": "lost", "code": "pvserver_lost", "text": "It stopped."}
 
     monkeypatch.setattr(server_module, "_attachers", {"": Gone()})
@@ -104,7 +106,7 @@ def test_a_call_whose_node_half_ends_under_it_says_why(
         def ensure(self, opening: bool = False, **_: object) -> object:
             return self.link
 
-        def status(self) -> dict[str, str]:
+        def status(self, scene: str | None = None) -> dict[str, str]:
             return {"state": self.state, "code": "pvserver_lost", "text": "It stopped."}
 
     monkeypatch.setattr(server_module, "actor", lambda: "agent")

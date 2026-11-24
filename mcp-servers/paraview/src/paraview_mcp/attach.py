@@ -55,9 +55,14 @@ _WRITE_DENIED = (
 class Attacher:
     """Keeps at most one link to a node half and re-attaches when it drops.
 
-    Once linked, a node half that has gone is reported (``pvserver_lost`` or
-    ``node_lost``, with the reason it left) instead of being replaced by an empty
-    one; only opening a view starts a new node half then.
+    Once linked, a node half that has gone with its pvserver (``pvserver_lost``)
+    is reported, with the reason it left, instead of being replaced by an empty
+    one. A node half that went while its pvserver still runs (it was killed, or
+    crashed) is started again through the same start, keeping its token and
+    ports, and its open scenes are opened again from their manifests, so a view
+    the host serves reconnects to the same scenes. The retries are said in
+    :meth:`status` and go on, backing off, until one starts, the pvserver is seen
+    to have gone, or the person stops them.
     """
 
     def __init__(self, settings: Settings) -> None:
@@ -83,6 +88,22 @@ class Attacher:
         #: The last scene opened through this attacher, for the lost-node advice.
         self.scene: str | None = None
         self.base = node_base(settings.pvserver)
+        #: Each open scene's view ports, node-side and here, in opening order.
+        self.views: dict[str, tuple[int | None, int | None]] = {}
+        #: The local port each node-side port is forwarded to, across links.
+        self.local_for: dict[int, int] = {}
+        #: The token and port a node half started in place of a gone one keeps.
+        self._reuse: dict[str, Any] | None = None
+        #: While a gone node half is started again: its tries and what they said.
+        self.relaunch: dict[str, Any] | None = None
+        #: Set by the person to stop starting a gone node half again.
+        self.relaunch_stop = threading.Event()
+        self._relauncher: threading.Thread | None = None
+        #: Why starting it again ended for good, once it did.
+        self.ended: ParaViewError | None = None
+        #: Scenes that came back on another port, or did not come back: their
+        #: views must be opened again, and why.
+        self.reopen: dict[str, str] = {}
 
     # -- public ----------------------------------------------------------------
     def ensure(
@@ -105,31 +126,69 @@ class Attacher:
                 if link is not None:
                     if link.transport.alive() and self._answers(link.client):
                         return link
+                    if self._relaunchable():
+                        return self._restart(link)
                     self._drop()
+                elif self.ended is not None and not opening:
+                    raise self.ended
                 self.link = self._attach(opening)
                 self.had_link = True
+                if opening:
+                    self.ended = None
+                    self.relaunch_stop.clear()
                 self._start_heartbeat()
                 return self.link
             finally:
                 self._call = (None, None)
+
+    def remember(self, scene: str, remote: Any, local: int | None) -> None:
+        """Note a scene's view ports once open_view opened it, so a node half
+        started in place of a gone one opens it again on the same ports."""
+        try:
+            port = int(remote)
+        except (TypeError, ValueError):
+            port = None
+        self.views.pop(scene, None)
+        self.views[scene] = (port, local)
+        self.reopen.pop(scene, None)
+
+    def stop_relaunch(self) -> bool:
+        """Stop starting a gone node half again; whether a relaunch was going on."""
+        going = self.relaunch is not None
+        self.relaunch_stop.set()
+        if going:
+            self.cancel.set()
+        return going
 
     def close(self) -> None:
         self._stop.set()
         with self.lock:
             self._drop()
 
-    def status(self) -> dict[str, Any]:
+    def status(self, scene: str | None = None) -> dict[str, Any]:
         """Whether the linked node half runs, without waiting on it.
 
         For a live view that cannot reach ParaView: ``running`` (it answers),
-        ``busy`` (it holds its loop, or a start or check is under way), ``lost``
-        (it went, with why) or ``closed`` (no node half was linked).
+        ``busy`` (it holds its loop, or a start or check is under way),
+        ``relaunching`` (it went while its pvserver runs, and is being started
+        again), ``lost`` (it went, with why) or ``closed`` (no node half was
+        linked). A ``scene`` whose view did not come back as it was is ``lost``
+        with what to do.
         """
+        relaunch = self.relaunch
+        if relaunch is not None:
+            return self._relaunching(relaunch)
         if not self.lock.acquire(blocking=False):
             return {"state": "busy", "text": "ParaView is starting or busy."}
         try:
             link = self.link
             if link is None:
+                if self.ended is not None:
+                    return {
+                        "state": "lost",
+                        "code": self.ended.code,
+                        "text": self.ended.message,
+                    }
                 return {"state": "closed", "text": "No ParaView node half is open."}
             try:
                 health = link.client.health()
@@ -141,6 +200,12 @@ class Attacher:
                         self.scene,
                     )
                     return {"state": "lost", "code": gone.code, "text": gone.message}
+                if scene and scene in self.reopen:
+                    return {
+                        "state": "lost",
+                        "code": "view_moved",
+                        "text": self.reopen[scene],
+                    }
                 return {"state": "running", "text": "ParaView answers."}
             except LinkError as exc:
                 if exc.busy:
@@ -156,6 +221,8 @@ class Attacher:
                     gone = exc
             else:
                 gone = gone_error("", "", link.transport.where, self.scene)
+            if gone.code == "node_lost" and self._relaunchable():
+                return self._relaunching(self._kick(gone.message))
             return {"state": "lost", "code": gone.code, "text": gone.message}
         finally:
             self.lock.release()
@@ -192,6 +259,155 @@ class Attacher:
                 attach_seconds=link.timings,
             )
         return out
+
+    # -- starting a gone node half again -----------------------------------------
+    def _relaunchable(self) -> bool:
+        """Whether a node half that went is started again: it showed scenes, and
+        the person has not stopped that."""
+        return bool(self.views) and not self.relaunch_stop.is_set()
+
+    def _relaunching(self, relaunch: dict[str, Any]) -> dict[str, Any]:
+        tries = int(relaunch.get("tries") or 0)
+        text = (
+            "ParaView's node half stopped while its pvserver still runs, so it is "
+            "being started again with the same scenes"
+            + (f" (try {tries})" if tries else "")
+            + "."
+        )
+        if relaunch.get("last"):
+            text += f" Last: {relaunch['last']}"
+        return {
+            "state": "relaunching",
+            "tries": tries,
+            "since": relaunch.get("since"),
+            "text": text,
+        }
+
+    def _kick(self, why: str) -> dict[str, Any]:
+        """Start the background relaunch, once; its state."""
+        if self.relaunch is not None and self._relauncher is not None:
+            return self.relaunch
+        relaunch: dict[str, Any] = {"tries": 0, "since": time.time(), "why": why}
+        self.relaunch = relaunch
+        self._relauncher = threading.Thread(
+            target=self._relaunch_loop, args=(relaunch,), daemon=True
+        )
+        self._relauncher.start()
+        return relaunch
+
+    def _relaunch_loop(self, relaunch: dict[str, Any]) -> None:
+        """Try to start the node half again until it starts, the pvserver is seen to
+        have gone, or the person stops it. Each try is said; there is no limit on
+        how many, only on a pvserver that takes no client for ``start_stall``."""
+        wait = 2.0
+        refused_since: float | None = None
+        try:
+            while not self._stop.is_set():
+                if self.relaunch_stop.is_set():
+                    self.ended = ParaViewError(
+                        "relaunch_stopped",
+                        "Starting ParaView's node half again was stopped. The scenes "
+                        "are saved: open_view(scene=...) starts it and opens one again.",
+                    )
+                    return
+                relaunch["tries"] = int(relaunch.get("tries") or 0) + 1
+
+                def said(text: str) -> None:
+                    relaunch["last"] = text
+
+                try:
+                    with self.lock:
+                        self._call = (self.relaunch_stop, said)
+                        try:
+                            link = self.link
+                            healthy = (
+                                link is not None
+                                and link.transport.alive()
+                                and self._answers(link.client)
+                            )
+                            if not healthy:
+                                self._restart(link)
+                        finally:
+                            self._call = (None, None)
+                    return
+                except ParaViewError as exc:
+                    if exc.code == "pvserver_lost":
+                        self.ended = exc
+                        return
+                    if exc.code == "pvserver_join_failed":
+                        refused_since = refused_since or time.monotonic()
+                        quiet = time.monotonic() - refused_since
+                        if quiet > self.settings.start_stall:
+                            self.ended = ParaViewError(
+                                "pvserver_lost",
+                                f"ParaView's node half could not be started again: "
+                                f"the pvserver at {self.settings.pvserver} has taken "
+                                f"no client for {quiet:.0f} s, so it seems to have "
+                                "ended (its job finished, say). The scenes are saved; "
+                                "open_view on a running pvserver opens them again. "
+                                + exc.message,
+                            )
+                            return
+                    else:
+                        refused_since = None
+                    relaunch["last"] = exc.message
+                except LinkError as exc:
+                    relaunch["last"] = f"the new node half did not answer: {exc}"
+                self.relaunch_stop.wait(wait)
+                wait = min(30.0, wait * 2)
+        finally:
+            self.relaunch = None
+            self._relauncher = None
+
+    def _restart(self, old: Link | None) -> Link:
+        """Start a node half in place of one that went, through the same start,
+        keeping its token and ports, and open its scenes again. A node half that
+        went with its pvserver raises why instead."""
+        if old is not None and old.transport.alive():
+            gone = self._gone(old.transport, old.folder, old.slot)
+            if gone.code != "node_lost":
+                raise gone
+        if old is not None:
+            self._reuse = {"token": old.token, "port": int(old.node.get("port") or 0)}
+        self._drop()
+        link = self._attach(opening=True)
+        self.link = link
+        self.had_link = True
+        self._start_heartbeat()
+        self._restore(link, old.token if old is not None else None)
+        return link
+
+    def _restore(self, link: Link, token: str | None) -> None:
+        """Open each scene the gone node half showed, on the port its view had."""
+        stop = self._call[0]
+        same_token = token is None or link.token == token
+        # The scene the agent's tools act on opens last, so it stays current.
+        for scene in sorted(self.views, key=lambda s: s == self.scene):
+            remote, local = self.views[scene]
+            args: dict[str, Any] = {"scene": scene}
+            if remote:
+                args["view_port"] = remote
+            try:
+                result = link.client.command("open_view", args, stop=stop)
+            except ParaViewError as exc:
+                if exc.code == "cancelled":
+                    raise
+                self.reopen[scene] = (
+                    f"ParaView started again after its node half stopped, but scene "
+                    f"{scene} did not open: {exc.message}"
+                )
+                continue
+            now = ((result or {}).get("service") or {}).get("port")
+            here = link.port_for(now)
+            self.views[scene] = (int(now) if now else None, here)
+            if same_token and (local is None or here == local):
+                self.reopen.pop(scene, None)
+            else:
+                self.reopen[scene] = (
+                    f"ParaView started again after its node half stopped, and scene "
+                    f"{scene} is open again, but its view moved to another port: "
+                    f"open_view(scene={scene!r}) shows it again."
+                )
 
     # -- attaching ---------------------------------------------------------------
     def _drop(self) -> None:
@@ -566,17 +782,33 @@ class Attacher:
             args += ["--threshold-mb", str(settings.threshold_mb)]
         if settings.pvserver:
             args += ["--pvserver", settings.pvserver]
+        reuse = self._reuse or {}
+        token = str(reuse.get("token") or "")
+        if reuse.get("port"):
+            args += ["--port", str(reuse["port"])]
         if self._native:
-            return self._start_native(folder, [pvpython, *args], code_hash, slot)
+            return self._start_native(
+                folder,
+                [pvpython, *args],
+                code_hash,
+                slot,
+                {TOKEN_ENV: token} if token else None,
+            )
         command = " ".join(shlex.quote(a) for a in [pvpython, *args])
         log = f"{f}/{slot}.log"
+        # The token goes over the connection's input, never on a command line.
+        handover = (
+            f"IFS= read -r {TOKEN_ENV} || true\nexport {TOKEN_ENV}\n" if token else ""
+        )
         begun = transport.run(
             f"rm -f {f}/{slot}.json {f}/{slot}.lost.json\ncd {f}\n"
             f"[ -f {log} ] && mv -f {log} {f}/{slot}.prev.log\n"
+            f"{handover}"
             f"if command -v setsid >/dev/null 2>&1; then S=setsid; else S=; fi\n"
             f"nohup $S {command} > {log} 2>&1 < /dev/null &\n"
             'echo "CLIO_PID=$!"\n'
             "exit 0",
+            stdin=f"{token}\n".encode() if token else None,
             label="Starting the node half",
         )
         pid = parse_markers(begun.stdout).get("PID", "")
@@ -636,9 +868,14 @@ class Attacher:
         )
 
     def _start_native(
-        self, folder: str, command: list[str], code_hash: str, slot: str
+        self,
+        folder: str,
+        command: list[str],
+        code_hash: str,
+        slot: str,
+        env: dict[str, str] | None = None,
     ) -> dict[str, Any]:
-        process = native.start(folder, command, slot)
+        process = native.start(folder, command, slot, env)
         log_path = Path(folder) / f"{slot}.log"
 
         def look() -> StartLook:
@@ -711,6 +948,7 @@ class Attacher:
             node=node,
             pvpython=pvpython,
             paraview=str(env.get("paraview", "")),
+            local_for=self.local_for,
         )
 
     def _answers(self, client: NodeClient) -> bool:
@@ -765,14 +1003,27 @@ class Attacher:
         self._heart.start()
 
     def _beat(self) -> None:
-        while not self._stop.wait(60.0):
+        """Keep the link warm, and see a node half that went within a beat, so it
+        is started again even while no view or tool asks."""
+        while not self._stop.wait(BEAT):
             link = self.link
-            if link is None:
+            if link is None or self.relaunch is not None:
                 continue
             try:
                 link.client.ping()
-            except LinkError:
-                pass
+            except LinkError as exc:
+                if exc.busy or not self._relaunchable():
+                    continue
+                # status() reads why it went and starts it again when it may.
+                self.status()
+
+
+#: Seconds between the heartbeat's pings.
+BEAT = 10.0
+
+#: How a front hands a node half started in place of a gone one the token it had
+#: (paraview_mcp.node.main reads it), so views a host serves keep their access.
+TOKEN_ENV = "CLIO_PARAVIEW_NODE_TOKEN"
 
 
 def _tail(done: Completed) -> str:
