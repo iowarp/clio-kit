@@ -253,8 +253,14 @@ class SourceGrowth:
                     f"ParaView has no reader {name!r}."
                     + (f" Close matches: {', '.join(close)}." if close else ""),
                 )
-            proxy = getattr(self.simple, name)()
-            self._point_reader(proxy, item, files)
+            # The reader takes its files when it is made, as ParaView's own open
+            # does: the defaults that depend on the file, such as which NetCDF
+            # variables share one grid, are chosen then. Files given after leave
+            # them unset, and the reader may stop at a variable it cannot read.
+            probe = getattr(servermanager.sources, name)()
+            prop, value = self._file_setting(probe, item, files)
+            del probe
+            proxy = getattr(self.simple, name)(**{prop: value})
         for key, value in (item.get("reader_properties") or {}).items():
             set_property(proxy, name or proxy.GetXMLName(), key, value)
         proxy.UpdatePipelineInformation()
@@ -271,32 +277,36 @@ class SourceGrowth:
     ) -> None:
         """Give the reader its files. ``reset`` clears them first: setting the same
         value is not a change, and the reader must re-read its index."""
+        key, value = SourceGrowth._file_setting(proxy, item, files)
+        if reset:
+            setattr(proxy, key, [] if isinstance(value, list) else "")
+        setattr(proxy, key, value)
+
+    @staticmethod
+    def _file_setting(
+        proxy: Any, item: dict[str, Any], files: list[str] | str
+    ) -> tuple[str, list[str] | str]:
+        """The reader property that takes ``files``, and the value it takes."""
         names = proxy.ListProperties()
         if "FileNames" in names:
-            if reset:
-                proxy.FileNames = []
-            proxy.FileNames = files if isinstance(files, list) else [files]
-            return
+            return "FileNames", files if isinstance(files, list) else [files]
         if "FileName" not in names:
             raise CommandError(
                 "bad_reader",
                 f"{proxy.GetXMLName()} takes no file name; it is not a reader.",
             )
-        if reset:
-            proxy.FileName = [] if isinstance(files, list) else ""
         if isinstance(files, list):
             # A repeatable FileName (the XML readers') takes a file series.
             if proxy.GetProperty("FileName").SMProperty.GetRepeatable():
-                proxy.FileName = files
-                return
+                return "FileName", files
             if len(files) != 1:
                 raise CommandError(
                     "bad_path",
                     f"{proxy.GetXMLName()} reads one file or folder, and "
                     f"{item['path']} matches {len(files)}.",
                 )
-            files = files[0]
-        proxy.FileName = files
+            return "FileName", files[0]
+        return "FileName", files
 
     def _note_steps(self) -> None:
         """Remember when each time value was first seen, per scene."""
