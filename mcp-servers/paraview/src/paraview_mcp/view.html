@@ -69,6 +69,7 @@
     keptImage.style.top = place(data.top);
     keptImage.style.width = place(data.width);
     keptImage.style.height = place(data.height);
+    keptImage.style.objectFit = 'contain';
     kept.style.background = typeof data.background === 'string' ? data.background : '';
     keptPicture = true;
     kept.hidden = false;
