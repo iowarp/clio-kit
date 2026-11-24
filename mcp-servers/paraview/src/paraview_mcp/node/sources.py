@@ -93,6 +93,27 @@ def reader_by_class(servermanager: Any, name: str) -> str | None:
     return matches[0] if len(set(matches)) == 1 else None
 
 
+def allowed_strings(proxy: Any, name: str) -> list[str]:
+    """The values a property's own list domain holds, or none when it has no
+    such list: an enumeration's names, or a string list such as the NetCDF
+    reader's Dimensions, filled from the file."""
+    prop = proxy.GetProperty(name)
+    sm = getattr(prop, "SMProperty", None)
+    if sm is None:
+        return []
+    each = sm.NewDomainIterator()
+    each.Begin()
+    while not each.IsAtEnd():
+        domain = each.GetDomain()
+        if domain.IsA("vtkSMEnumerationDomain"):
+            return [domain.GetEntryText(i) for i in range(domain.GetNumberOfEntries())]
+        # Only the plain list: its subclasses list arrays or files.
+        if domain.GetClassName() == "vtkSMStringListDomain":
+            return [domain.GetString(i) for i in range(domain.GetNumberOfStrings())]
+        each.Next()
+    return []
+
+
 def set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
     """Set ``key`` on a proxy. ``"SliceType.Normal"`` (or ``{"SliceType": {...}}``)
     reaches into the proxy a property holds, such as a Slice's plane."""
@@ -107,6 +128,22 @@ def set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
             + f" Its properties are: {', '.join(names)}.",
         )
     if not rest and not isinstance(value, dict):
+        allowed = allowed_strings(proxy, head)
+        if allowed and isinstance(value, str) and value not in allowed:
+            # ParaView takes a value its list does not hold and reads nothing,
+            # so a wrong choice is refused with the ones the file offers.
+            now = getattr(proxy, head, None)
+            raise CommandError(
+                "bad_value",
+                f"{owner}.{head} cannot be {value!r}; it takes one of: "
+                f"{', '.join(repr(a) for a in allowed[:24])}"
+                + (" and more" if len(allowed) > 24 else "")
+                + (
+                    f". Leave it out to keep {now!r}."
+                    if isinstance(now, str) and now
+                    else "."
+                ),
+            )
         setattr(proxy, head, value)
         return
     inner = getattr(proxy, head)
@@ -313,16 +350,28 @@ class SourceGrowth:
             self._read_at[item["id"]] = source.generation
         return proxy
 
-    @staticmethod
     def _point_reader(
-        proxy: Any, item: dict[str, Any], files: list[str] | str, reset: bool = False
+        self,
+        proxy: Any,
+        item: dict[str, Any],
+        files: list[str] | str,
+        reset: bool = False,
     ) -> None:
-        """Give the reader its files. ``reset`` clears them first: setting the same
-        value is not a change, and the reader must re-read its index."""
+        """Give the reader its files. With ``reset`` it re-reads them even when the
+        list is the same: setting the same value is not a change."""
         key, value = SourceGrowth._file_setting(proxy, item, files)
-        if reset:
-            setattr(proxy, key, [] if isinstance(value, list) else "")
+        prop = proxy.GetProperty(key)
+        now = [prop[i] for i in range(len(prop))]
+        if not reset or now != (value if isinstance(value, list) else [value]):
+            # A new list is a change the reader acts on. Emptying it first would
+            # leave a file series reader with no steps until it is reloaded.
+            setattr(proxy, key, value)
+            return
+        if self.simple.ReloadFiles(proxy):
+            return
+        setattr(proxy, key, [] if isinstance(value, list) else "")
         setattr(proxy, key, value)
+        self.simple.ReloadFiles(proxy)
 
     @staticmethod
     def _file_setting(
