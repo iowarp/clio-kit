@@ -64,6 +64,14 @@ BRIDGE_JS = r"""
         + (getComputedStyle(document.body).backgroundColor || 'transparent');
       cover.appendChild(copy);
       document.body.appendChild(cover);
+      // The view page keeps it too: a reload of this page, or a page that cannot
+      // load once ParaView is gone, would drop the copy laid over it here.
+      try {
+        post({ type: 'clio.paraview.picture', url: copy.toDataURL('image/png'),
+          left: rect.left / window.innerWidth, top: rect.top / window.innerHeight,
+          width: rect.width / window.innerWidth, height: rect.height / window.innerHeight,
+          background: cover.style.background });
+      } catch (e) { /* a picture that cannot be read stays in this page only */ }
     }
     function linkDown() {
       keepPicture();
@@ -159,7 +167,9 @@ BRIDGE_JS = r"""
     })();
     // The pvserver went: say so in place of the picture, and stop reconnecting.
     trame.state.watch(['clio_lost'], function (text) {
-      if (text) post({ type: 'clio.paraview.lost', text: text });
+      if (!text) return;
+      keepPicture();
+      post({ type: 'clio.paraview.lost', text: text });
     });
     if (trame.state.get && trame.state.get('clio_lost')) {
       post({ type: 'clio.paraview.lost', text: trame.state.get('clio_lost') });

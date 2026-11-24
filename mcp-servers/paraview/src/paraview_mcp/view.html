@@ -20,13 +20,20 @@
   #status { padding: 6px 10px; border-bottom: 1px solid var(--color-border-primary); }
   #status[hidden] { display: none; }
   #status button { font: inherit; margin-left: 8px; }
+  #stage { flex: 1; position: relative; display: flex; min-height: 480px; }
   #frame { flex: 1; width: 100%; border: 0; min-height: 480px; }
   #frame[hidden] { display: none; }
+  #kept { position: absolute; inset: 0; overflow: hidden; }
+  #kept[hidden] { display: none; }
+  #kept img { position: absolute; }
 </style>
 </head>
 <body>
 <div id="status" role="status">Opening the ParaView view…</div>
+<div id="stage">
 <iframe id="frame" title="ParaView" hidden></iframe>
+<div id="kept" hidden><img alt="The last picture ParaView drew"></div>
+</div>
 <script>
 (() => {
   'use strict';
@@ -47,6 +54,29 @@
   let stopped = '';
   // Whether the loaded page shows a picture: it stays on screen once ParaView stops.
   let drawn = false;
+  // The last picture a page drew, sent by its bridge when its link closed. It is laid
+  // over the frame while a page reloads or once ParaView stops, so neither drops it.
+  const kept = document.getElementById('kept');
+  const keptImage = kept.querySelector('img');
+  let keptPicture = false;
+  function keepPicture(data) {
+    if (typeof data.url !== 'string' || !data.url.startsWith('data:image/')) return;
+    const share = (value) => (Number.isFinite(value) ? value * 100 + '%' : '0');
+    keptImage.src = data.url;
+    keptImage.style.left = share(data.left);
+    keptImage.style.top = share(data.top);
+    keptImage.style.width = share(data.width);
+    keptImage.style.height = share(data.height);
+    kept.style.background = typeof data.background === 'string' ? data.background : '';
+    keptPicture = true;
+    kept.hidden = false;
+  }
+  function dropKeptPicture() {
+    keptPicture = false;
+    kept.hidden = true;
+    keptImage.removeAttribute('src');
+  }
+  function pictureShown() { return drawn || keptPicture; }
 
   function send(message) { window.parent.postMessage(message, '*'); }
   function request(method, params) {
@@ -131,7 +161,7 @@
     if (retryTimer) return;
     // A page with a picture waits long enough for the status check to say whether
     // ParaView stopped for good, which keeps that picture rather than reloading it.
-    const wait = Math.min(30000, Math.max(drawn ? 3000 : 0, 1000 * 2 ** retries));
+    const wait = Math.min(30000, Math.max(pictureShown() ? 3000 : 0, 1000 * 2 ** retries));
     retries += 1;
     retryTimer = setTimeout(() => {
       retryTimer = null;
@@ -173,16 +203,17 @@
     clearTimeout(retryTimer);
     clearTimeout(checkTimer);
     retryTimer = null;
-    const kept = drawn && !frame.hidden;
-    if (!kept) frame.hidden = true;
-    showStatus(kept ? stopped + ' The last picture stays below and no longer changes.' : stopped);
+    const keeps = keptPicture || (drawn && !frame.hidden && frame.style.visibility !== 'hidden');
+    if (keptPicture) kept.hidden = false;
+    if (!keeps || keptPicture) frame.hidden = true;
+    showStatus(keeps ? stopped + ' The last picture stays below and no longer changes.' : stopped);
     sentText = stopped;
-    const said = kept
+    const said = keeps
       ? 'The ParaView view stopped; it still shows its last picture, which no longer changes. '
       : 'The ParaView view stopped and shows nothing now. ';
     request('ui/update-model-context', {
       content: [{ type: 'text', text: said + stopped }],
-      structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: kept, stopped }),
+      structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: keeps, stopped }),
     }).catch(() => {});
   }
 
@@ -216,7 +247,7 @@
       sentText = shown;
       request('ui/update-model-context', {
         content: [{ type: 'text', text: 'The ParaView view is reconnecting. ' + text }],
-        structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn, waiting: 'relaunching' }),
+        structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: pictureShown(), waiting: 'relaunching' }),
       }).catch(() => {});
     }
   }
@@ -254,9 +285,12 @@
         if (shown !== waiting) {
           waiting = shown;
           sentText = shown;
+          const showing = keptPicture
+            ? 'The ParaView view shows its last picture, which no longer changes until it reconnects. '
+            : 'The ParaView view shows nothing yet. ';
           request('ui/update-model-context', {
-            content: [{ type: 'text', text: 'The ParaView view shows nothing yet. ' + shown }],
-            structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: false, waiting: status.state }),
+            content: [{ type: 'text', text: showing + shown }],
+            structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: keptPicture, waiting: status.state }),
           }).catch(() => {});
         }
         showStatus(shown, true);
@@ -390,8 +424,12 @@
       } else if (data.type === 'clio.paraview.ready') {
         showFrame();
         sendTheme();
+      } else if (data.type === 'clio.paraview.picture') {
+        keepPicture(data);
       } else if (data.type === 'clio.paraview.drawn') {
         drawn = true;
+        // A page that draws again replaces the picture kept from the one before.
+        if (keptPicture && !stopped) dropKeptPicture();
         // Report the state again: a host that read the view blank looks once more.
         sentText = '';
         schedule();
