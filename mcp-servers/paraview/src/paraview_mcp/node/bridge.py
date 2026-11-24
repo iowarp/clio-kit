@@ -53,10 +53,13 @@ BRIDGE_JS = r"""
       var rect = source.getBoundingClientRect();
       if (rect.width < 10 || rect.height < 10) return;
       var copy = document.createElement('canvas');
-      // At the canvas's own pixel size: its picture may be letterboxed in its box,
-      // so it is fitted the same way rather than stretched to the box.
-      copy.width = source.width || Math.round(rect.width * (window.devicePixelRatio || 1));
-      copy.height = source.height || Math.round(rect.height * (window.devicePixelRatio || 1));
+      // At the picture's own pixel size (an img's natural size, a canvas's buffer):
+      // it may be letterboxed in its box, so it is fitted the same way rather than
+      // stretched to the box.
+      copy.width = source.naturalWidth || source.width
+        || Math.round(rect.width * (window.devicePixelRatio || 1));
+      copy.height = source.naturalHeight || source.height
+        || Math.round(rect.height * (window.devicePixelRatio || 1));
       try { copy.getContext('2d').drawImage(source, 0, 0, copy.width, copy.height); } catch (e) { return; }
       copy.style.cssText = 'position:absolute;left:' + rect.left + 'px;top:' + rect.top + 'px;width:'
         + rect.width + 'px;height:' + rect.height + 'px;object-fit:contain';
