@@ -177,7 +177,13 @@ official binaries for that version into clio-kit's cache
 (`$CLIO_KIT_CACHE_DIR/paraview-client/`, else `<user cache>/clio-kit/paraview-client/`),
 checks the archive's SHA-256 against the one pinned in `client.py`, and uses
 its `pvpython`. The fetch starts in the background when the server starts; an
-attach before it finishes says so and asks to try again shortly. Pinned builds:
+attach before it finishes says so and asks to try again shortly. A connector
+change restarts the front, so a fetch survives it: the bytes kept in
+`<version>.part` are resumed with an HTTP range, and while one front fetches,
+holding a lock file it keeps fresh, any other front follows its progress
+instead of starting again. Set `PARAVIEW_VERSION` as soon as the server's
+version is known, before its job runs, so the client is here when the job
+serves. Pinned builds:
 5.13.1 for Windows x86-64. On Windows the node half runs natively, without
 `ssh` or a shell; delete the cache folder to remove the fetched client.
 
