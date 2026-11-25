@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,52 @@ DIRECTIONS = {
 #: How far the data a followed view shows may move, as a share of its size, before
 #: the camera is fitted to it again.
 REFRAME_SHARE = 0.02
+
+#: Coordinates beyond this size are not data but garbage (uninitialised memory,
+#: VTK's empty box at 1e299).
+LARGEST = 1e30
+
+#: The camera a view falls back to when neither the data nor the last camera can
+#: place it.
+HOME_CAMERA = {
+    "position": [0.0, 0.0, 1.0],
+    "focal_point": [0.0, 0.0, 0.0],
+    "view_up": [0.0, 1.0, 0.0],
+}
+
+
+def _real(value: Any) -> bool:
+    """Whether a coordinate is a real number of a sane size: finite, below
+    ``LARGEST`` and not denormal (a freed buffer reads as values near 1e-310)."""
+    try:
+        v = abs(float(value))
+    except (TypeError, ValueError):
+        return False
+    return v == 0.0 or sys.float_info.min <= v <= LARGEST
+
+
+def sane_bounds(bounds: Any) -> bool:
+    """Whether a box (xmin, xmax, ymin, ...) is real data: six real numbers, each
+    minimum at most its maximum."""
+    values = list(bounds or [])
+    if len(values) != 6 or not all(_real(v) for v in values):
+        return False
+    return all(float(values[2 * i]) <= float(values[2 * i + 1]) for i in range(3))
+
+
+def sane_camera(camera: dict[str, Any] | None) -> bool:
+    """Whether a camera can draw: real coordinates, a position apart from its focal
+    point and a view up of some length."""
+    if not camera:
+        return False
+    parts = [
+        list(camera.get(key) or []) for key in ("position", "focal_point", "view_up")
+    ]
+    if any(len(part) != 3 or not all(_real(v) for v in part) for part in parts):
+        return False
+    position, focal, up = ([float(v) for v in part] for part in parts)
+    look = sum((f - p) ** 2 for f, p in zip(focal, position))
+    return look > 0.0 and sum(v * v for v in up) > 0.0
 
 
 def same_camera(a: dict[str, Any] | None, b: dict[str, Any] | None) -> bool:
@@ -48,7 +95,17 @@ def _moved(framed: list[float], shown: list[float]) -> bool:
 def _check_camera(camera: dict[str, Any]) -> None:
     """Refuse a camera that draws nothing: one at its own focal point, or one whose
     view up lies along the way it looks."""
-    look = [f - p for f, p in zip(camera["focal_point"], camera["position"])]
+    for key in ("position", "focal_point", "view_up"):
+        values = list(camera[key])
+        if len(values) != 3 or not all(_real(v) for v in values):
+            raise CommandError(
+                "bad_camera",
+                f"The camera {key.replace('_', ' ')} needs three finite numbers "
+                f"of a sane size, not {values}.",
+            )
+    look = [
+        float(f) - float(p) for f, p in zip(camera["focal_point"], camera["position"])
+    ]
     up = [float(v) for v in camera["view_up"]]
     length = sum(v * v for v in look) ** 0.5
     if length == 0:
@@ -75,6 +132,10 @@ class CameraCommands:
     the person turns, or the agent sets or moves in a scene script, stays where it
     was put; fitting the camera (Reset camera) or looking along an axis lets it
     follow the data again. Whether it is held is saved with the scene.
+
+    Fits count only boxes that are real data (finite, of a sane size, minimum at
+    most maximum), so an object with broken cells cannot blank the view, and a
+    camera that cannot draw is never kept: the last good camera comes back.
     """
 
     view: Any
@@ -116,10 +177,61 @@ class CameraCommands:
             info = proxy.GetDataInformation()
             if int(info.GetNumberOfPoints()) == 0:
                 continue
-            boxes.append([float(v) for v in info.GetBounds()])
+            box = [float(v) for v in info.GetBounds()]
+            # An object whose box is garbage (broken cells, a freed buffer) is left
+            # out, so it cannot throw the camera off the real data.
+            if sane_bounds(box):
+                boxes.append(box)
         if not boxes:
             return None
         return [(min if i % 2 == 0 else max)(b[i] for b in boxes) for i in range(6)]
+
+    def fit_view(self, before: dict[str, Any] | None = None) -> None:
+        """Fit the camera to the shown data, keeping the way it looks. Only real
+        boxes count; a fit that still leaves a camera that cannot draw goes back
+        to ``before`` (the camera before the fit) or the home camera."""
+        if before is None:
+            before = self.read_camera()
+        bounds = self.shown_bounds()
+        if bounds is not None:
+            self.view.ResetCamera(*bounds)
+        elif not self.shown_points():
+            self.view.ResetCamera(False)
+        self.keep_camera_sane(before)
+
+    def shown_points(self) -> bool:
+        """Whether a visible object has points, real box or not."""
+        from paraview import servermanager
+
+        for item in (self.scene or {}).get("objects") or []:
+            proxy = self.proxies.get(item["id"])
+            if proxy is None:
+                continue
+            rep = servermanager.GetRepresentation(proxy, self.view)
+            if (
+                rep is not None
+                and rep.Visibility
+                and int(proxy.GetDataInformation().GetNumberOfPoints()) > 0
+            ):
+                return True
+        return False
+
+    def keep_camera_sane(self, fallback: dict[str, Any] | None = None) -> bool:
+        """If the camera cannot draw (garbage coordinates, at its own focal point),
+        put back ``fallback`` when that can draw, or fit the real data, or the home
+        camera. Returns whether it had to."""
+        if sane_camera(self.read_camera()):
+            return False
+        if fallback is not None and sane_camera(fallback):
+            self.apply_camera(fallback)
+            return True
+        self.apply_camera(HOME_CAMERA)
+        bounds = self.shown_bounds()
+        if bounds is not None:
+            self.view.ResetCamera(*bounds)
+        if not sane_camera(self.read_camera()):
+            self.apply_camera(HOME_CAMERA)
+        return True
 
     def _following_free(self) -> bool:
         scene = self.scene
@@ -154,7 +266,7 @@ class CameraCommands:
             return False
         if not _moved(framed[1], bounds):
             return False
-        self.view.ResetCamera(False)
+        self.fit_view()
         self._framed = (scene["scene"], bounds)
         return True
 
@@ -186,16 +298,19 @@ class CameraCommands:
         """Take the camera the browser reports after an interaction."""
         if self.scene is None or not camera:
             return
-        self.apply_camera(
-            {
-                "position": camera["position"],
-                "focal_point": camera.get("focalPoint", camera.get("focal_point")),
-                "view_up": camera.get("viewUp", camera.get("view_up")),
-                "view_angle": camera.get("viewAngle"),
-                "parallel_scale": camera.get("parallelScale"),
-                "parallel_projection": camera.get("parallelProjection"),
-            }
-        )
+        reported = {
+            "position": camera.get("position"),
+            "focal_point": camera.get("focalPoint", camera.get("focal_point")),
+            "view_up": camera.get("viewUp", camera.get("view_up")),
+            "view_angle": camera.get("viewAngle"),
+            "parallel_scale": camera.get("parallelScale"),
+            "parallel_projection": camera.get("parallelProjection"),
+        }
+        if not sane_camera(reported):
+            # A browser that drew a broken frame can report a camera that cannot
+            # draw; taking it would keep the view blank.
+            return
+        self.apply_camera(reported)
         self.person_moved_camera()
 
     def person_moved_camera(self) -> None:
@@ -266,7 +381,8 @@ class CameraCommands:
                 f"{direction!r} is not one of: {', '.join(DIRECTIONS)}.",
             )
         look, up = DIRECTIONS[key]
-        current = self.read_camera()
+        before = self.read_camera()
+        current = before if sane_camera(before) else HOME_CAMERA
         focal = current["focal_point"]
         distance = max(
             sum((p - f) ** 2 for p, f in zip(current["position"], focal)) ** 0.5, 1e-6
@@ -278,7 +394,7 @@ class CameraCommands:
                 "view_up": list(up),
             }
         )
-        self.view.ResetCamera(False)
+        self.fit_view(before)
 
     def face(self, normal: Any) -> None:
         """Look at a plane with this normal face on, then fit the scene, so a slice
@@ -289,7 +405,8 @@ class CameraCommands:
             return
         look = [-v / length for v in n]
         up = (0.0, 1.0, 0.0) if abs(look[2]) > 0.9 else (0.0, 0.0, 1.0)
-        current = self.read_camera()
+        before = self.read_camera()
+        current = before if sane_camera(before) else HOME_CAMERA
         focal = current["focal_point"]
         self.apply_camera(
             {
@@ -298,18 +415,29 @@ class CameraCommands:
                 "view_up": list(up),
             }
         )
-        self.view.ResetCamera(False)
+        self.fit_view(before)
 
     def cmd_fit_camera(self, object: str | None = None) -> dict[str, Any]:
         scene = self.require_scene()
         if object is None:
-            self.view.ResetCamera(False)
+            self.fit_view()
             self.hold_camera(False)
         else:
             item = manifest.find_object(scene, object)
             if item is None:
                 raise CommandError("unknown_object", f"No scene object {object!r}.")
-            bounds = self.proxies[item["id"]].GetDataInformation().GetBounds()
+            bounds = [
+                float(v)
+                for v in self.proxies[item["id"]].GetDataInformation().GetBounds()
+            ]
+            if not sane_bounds(bounds):
+                raise CommandError(
+                    "bad_bounds",
+                    f"{item.get('label') or object} has no real extent to fit "
+                    f"(its box is {bounds}); its data may be empty or broken.",
+                )
+            before = self.read_camera()
             self.view.ResetCamera(*bounds)
+            self.keep_camera_sane(before)
             self.hold_camera(True)
         return {"camera": self.read_camera(), "camera_follows": not self.camera_held()}
