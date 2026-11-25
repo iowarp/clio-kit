@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from . import engine
+
 
 def _absorber(a: dict[str, Any]) -> str:
     if "sites" in a:
@@ -90,7 +92,7 @@ def status_text(d: dict[str, Any]) -> str:
     ex = d["executable"]
     if ex["found"]:
         return f"FDMNES is ready: {ex['command']} (found via {ex['source']})."
-    return f"FDMNES is not available: {ex['problem']}. {d['install']}"
+    return engine.missing_text(ex)
 
 
 def materials_text(d: dict[str, Any]) -> str:

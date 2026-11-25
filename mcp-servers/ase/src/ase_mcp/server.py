@@ -326,19 +326,12 @@ def calculator_status() -> list[dict[str, Any]]:
             found = calculators.nwchem_command()
             entry["command"] = found
             if not found["found"]:
-                needs.append(
-                    "NWChem: set ASE_NWCHEM_COMMAND or NWCHEM_COMMAND, or put "
-                    "nwchem on PATH; the nwchem plugin's install skill installs it "
-                    "with Spack [binary_missing]"
-                )
+                needs.append(f"{calculators.nwchem_missing()} [binary_missing]")
         if kind == "orca":
             found = calculators.orca_command()
             entry["command"] = found
             if not found["found"]:
-                needs.append(
-                    "ORCA: download after registration on the ORCA forum and set "
-                    "ORCA_COMMAND to the orca executable path [binary_missing]"
-                )
+                needs.append(f"{calculators.orca_missing()} [binary_missing]")
         blocking = [n for n in needs if "[" in n]
         if blocking:
             entry["state"] = "needs setup"

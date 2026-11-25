@@ -80,6 +80,23 @@ def orca_command() -> dict[str, Any]:
     return {"found": False}
 
 
+def nwchem_missing() -> str:
+    return (
+        f"NWChem was not found in {', '.join(NWCHEM_ENV)} or PATH (nwchem). If it is installed "
+        "elsewhere, set NWCHEM_COMMAND to the executable, or ASE_NWCHEM_COMMAND to the full "
+        "command (e.g. 'mpirun -np 4 /path/to/nwchem PREFIX.nwi > PREFIX.nwo'); otherwise see "
+        "the nwchem plugin's install skill, which installs it with Spack."
+    )
+
+
+def orca_missing() -> str:
+    return (
+        f"ORCA was not found in {', '.join(ORCA_ENV)} or PATH (orca). If it is installed "
+        "elsewhere, set ORCA_COMMAND to the orca executable; otherwise it is downloaded from "
+        "the ORCA forum (free registration, academic licence)."
+    )
+
+
 def hf_token() -> dict[str, Any]:
     name, value = _env_value(HF_ENV)
     if value:
@@ -100,22 +117,9 @@ def gate(resolved: dict[str, Any], driver: str = "energy") -> None:
             "nwchem or orca for driver 'ir', or driver 'vib' for frequencies only.",
         )
     if kind == "nwchem" and not nwchem_command()["found"]:
-        raise AseError(
-            "binary_missing",
-            "NWChem was not found: set ASE_NWCHEM_COMMAND to the full command (e.g. "
-            "'mpirun -np 4 /path/to/nwchem PREFIX.nwi > PREFIX.nwo') or NWCHEM_COMMAND to "
-            "the nwchem executable, or put nwchem on PATH. The nwchem plugin's install "
-            "skill installs it with Spack.",
-            env=list(NWCHEM_ENV),
-        )
+        raise AseError("binary_missing", nwchem_missing(), env=list(NWCHEM_ENV))
     if kind == "orca" and not orca_command()["found"]:
-        raise AseError(
-            "binary_missing",
-            "ORCA was not found: download ORCA from the ORCA forum (free registration, "
-            "academic licence), unpack it and set ORCA_COMMAND (or ASE_ORCA_COMMAND) to the "
-            "full path of the orca executable, or put orca on PATH.",
-            env=list(ORCA_ENV),
-        )
+        raise AseError("binary_missing", orca_missing(), env=list(ORCA_ENV))
     if kind == "uma" and not hf_token()["found"]:
         raise AseError(
             "hf_token_missing",
