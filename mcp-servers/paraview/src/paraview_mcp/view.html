@@ -103,7 +103,7 @@
   let retryTimer = null;
   let linkUp = false;
   function scheduleReconnect() {
-    if (retryTimer || reopenTimer || reopening) return;
+    if (retryTimer) return;
     // A page with a picture waits long enough for the status check to say whether
     // ParaView stopped for good, which keeps that picture rather than reloading it.
     const wait = Math.min(30000, Math.max(drawn ? 3000 : 0, 1000 * 2 ** retries));
@@ -154,50 +154,6 @@
     }).catch(() => {});
   }
 
-  // ParaView went (its pvserver crashed, say): ask the server to start it again on
-  // the same ports, so this view draws again where it is once a pvserver runs. It
-  // backs off from 5 s to 30 s and stops after REOPEN_TRIES, or when the server
-  // gives up (the scene keeps crashing it).
-  const REOPEN_TRIES = 8;
-  let reopenTries = 0;
-  let reopenTimer = null;
-  let reopening = false;
-  function sceneArgs() {
-    const scene = opened && opened.structuredContent ? opened.structuredContent.scene : undefined;
-    return scene ? { scene } : {};
-  }
-  function lostView(text) {
-    if (stopped || reopenTimer || reopening) return;
-    if (reopenTries >= REOPEN_TRIES) { stopView(text); return; }
-    const wait = Math.min(30000, 5000 * 2 ** reopenTries);
-    reopenTries += 1;
-    clearTimeout(retryTimer);
-    clearTimeout(checkTimer);
-    retryTimer = null;
-    linkUp = false;
-    showStatus(text + ' Reopening this view once ParaView runs again.', true);
-    reopenTimer = setTimeout(() => {
-      reopenTimer = null;
-      reopening = true;
-      request('tools/call', { name: 'view_status', arguments: Object.assign(sceneArgs(), { reopen: true }) })
-        .then((result) => {
-          reopening = false;
-          const status = (result && result.structuredContent) || {};
-          const said = String(status.text || text);
-          if (status.state === 'running') {
-            reopenTries = 0;
-            patience = 0;
-            loadFrame();
-          } else if (status.reopen === 'given_up' || !status.reopen) {
-            stopView(said);
-          } else {
-            lostView(said);
-          }
-        })
-        .catch(() => { reopening = false; lostView(text); });
-    }, wait);
-  }
-
   // A page that has not reached ParaView draws nothing and reports nothing, so the
   // view asks the server why, shows it, and tells the host the view is not drawn.
   const LINK_WAIT_MS = 20000;
@@ -208,14 +164,15 @@
   let checking = false;
   let waiting = '';
   function checkParaView() {
-    if (checking || stopped || linkUp || reopenTimer || reopening) return;
+    if (checking || stopped || linkUp) return;
     checking = true;
-    request('tools/call', { name: 'view_status', arguments: sceneArgs() })
+    const scene = opened && opened.structuredContent ? opened.structuredContent.scene : undefined;
+    request('tools/call', { name: 'view_status', arguments: scene ? { scene } : {} })
       .then((result) => {
         if (stopped || linkUp) return;
         const status = (result && result.structuredContent) || {};
         const text = String(status.text || '');
-        if (status.state === 'lost') { lostView(text); return; }
+        if (status.state === 'lost') { stopView(text); return; }
         const shown = 'Not drawn yet: this view has not reached ParaView. ' + text
           + (status.state === 'closed' ? '' : ' Still trying.');
         if (shown !== waiting) {
@@ -362,7 +319,7 @@
         sentText = '';
         schedule();
       } else if (data.type === 'clio.paraview.lost' && data.text) {
-        lostView(String(data.text));
+        stopView(String(data.text));
       } else if (data.type === 'clio.paraview.link') {
         if (stopped) return;
         if (data.up) {

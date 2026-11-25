@@ -129,33 +129,7 @@ def parse(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--code-hash", default="")
     parser.add_argument("--growth-interval", type=float, default=2.0)
-    parser.add_argument(
-        "--port",
-        type=int,
-        default=0,
-        help="the port to serve on: a node half reopened after its pvserver went "
-        "takes its old one, so the views already shown reach it again",
-    )
-    parser.add_argument(
-        "--token-file",
-        type=Path,
-        default=None,
-        help="a file holding the token to take (read, then deleted); default: new",
-    )
     return parser.parse_args(argv)
-
-
-def take_token(path: Path | None) -> str:
-    """The token a reopened node half keeps from the one before, else a new one."""
-    if path is not None:
-        try:
-            token = path.read_text("utf-8").strip()
-        except OSError:
-            token = ""
-        path.unlink(missing_ok=True)
-        if len(token) >= 32:
-            return token
-    return secrets.token_urlsafe(32)
 
 
 def write_through() -> None:
@@ -251,7 +225,7 @@ def main(argv: list[str] | None = None) -> None:
         )
 
     engine = make_engine()
-    token = take_token(args.token_file)
+    token = secrets.token_urlsafe(32)
     node = NodeApp(engine, token)
     if watched is not None and session:
         node.watched = watched
@@ -291,16 +265,9 @@ def main(argv: list[str] | None = None) -> None:
             loop.create_task(watch_pvserver(stage, watched, session, record_path, lock))
 
     server.controller.on_server_ready.add(ready)
-    port = args.port
-    if port:
-        from .stage import _free
-
-        if not _free(port):
-            print(f"port {port} is taken; the node half takes another", flush=True)
-            port = 0
     server.start(
         host="127.0.0.1",
-        port=port,
+        port=0,
         open_browser=False,
         show_connection_info=False,
         disable_logging=True,
