@@ -145,6 +145,18 @@ def test_a_lost_note_says_the_pvserver_went() -> None:
     assert other.code == "node_lost" and "Segmentation fault" in other.message
 
 
+def test_a_reopened_node_half_keeps_its_token_once(tmp_path: Any) -> None:
+    from paraview_mcp.node.main import parse, take_token
+
+    path = tmp_path / "node.token"
+    path.write_text("k" * 43)
+    assert take_token(path) == "k" * 43
+    assert not path.exists()
+    assert take_token(path) != "k" * 43
+    args = parse(["--root", "/r", "--port", "5123", "--token-file", str(path)])
+    assert args.port == 5123 and args.token_file == path
+
+
 def test_prune_keeps_a_pvservers_own_slot(tmp_path: Any) -> None:
     import os
 

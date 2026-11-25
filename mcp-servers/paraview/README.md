@@ -90,9 +90,17 @@ it. `set_camera` refuses a camera at its own focal point or with its view up
 along the way it looks. `open_view` and `capture` also report how many
 viewers are connected and how many pictures they have shown (remote rendering
 only). A node half watches its `pvserver` connection: when the `pvserver`
-goes (its job ended), the node half stops drawing, the live view says why and
-stops reconnecting, it leaves `<record>.lost.json`, and later scene tools fail
-with `pvserver_lost` instead of starting a node half that shows nothing. A
+goes (its job ended), the node half stops drawing, the live view says why, it
+leaves `<record>.lost.json`, and later scene tools fail with `pvserver_lost`
+instead of starting a node half that shows nothing. The live view then asks
+`view_status(reopen=true)`, backing off from 5 s to 30 s for eight tries: once a
+`pvserver` answers again (one that restarts after a crash, say), the server
+starts the node half again on its old port and token and opens each scene it
+showed on its old view port from the saved manifest, so the views draw again
+where they are. A view that gets no `pvserver` back, or a scene that crashed it
+three times in ten minutes, stops and says why; `open_view(scene=...,
+new=true)` then starts it afresh. An agent's `open_view` reopens the same way
+first. A
 ParaView call that is waiting on the `pvserver` when it goes cannot return, and
 it holds up the node half's own watcher, so a small watchdog process beside the
 node half (any Python, standard library only) watches the same socket. It then

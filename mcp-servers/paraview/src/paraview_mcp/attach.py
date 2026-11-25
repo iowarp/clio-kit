@@ -53,6 +53,11 @@ main()
 
 _JOIN_FAILED = "pvserver join failed: "
 
+#: A live view reopens its ParaView at most this often within the window (seconds),
+#: so a scene that crashes its pvserver each time it is drawn is not drawn forever.
+REOPEN_LIMIT = 3
+REOPEN_WINDOW = 600.0
+
 
 def _whole_lines(text: str, limit: int = 1500) -> str:
     """The end of ``text`` within ``limit`` characters, cut only between lines."""
@@ -192,8 +197,8 @@ def gone_error(
     if isinstance(lost, dict) and not scene and isinstance(lost.get("scene"), str):
         scene = lost["scene"]
     again = (
-        f" The scene {scene} is saved: open_view(scene={scene!r}) starts a new node "
-        "half and opens it again."
+        f" The scene {scene} is saved: its live view opens it again on its own once "
+        f"a pvserver runs, and open_view(scene={scene!r}) does too."
         if scene
         else " open_view starts a new node half."
     )
@@ -201,9 +206,7 @@ def gone_error(
         return ParaViewError(
             "pvserver_lost",
             f"The ParaView view {where} has stopped: {lost.get('reason')}. "
-            "Nothing more can be drawn or read through it, and its live view "
-            "shows that it stopped." + again + " The pvserver must be running "
-            "again for that.",
+            "Nothing more can be drawn or read through it until then." + again,
         )
     return ParaViewError(
         "node_lost",
@@ -493,6 +496,13 @@ class Attacher:
         #: The last scene opened through this attacher, for the lost-node advice.
         self.scene: str | None = None
         self.base = node_base(settings.pvserver)
+        #: The linked node half's port and token, and each open scene's view port
+        #: there and here: what a reopen after its pvserver went serves again.
+        self._main: tuple[int, str] | None = None
+        self.views: dict[str, tuple[int, int]] = {}
+        #: Set while a reopen starts a node half: the port and token it keeps.
+        self._reuse: tuple[int, str] | None = None
+        self._reopens: list[float] = []
 
     # -- public ----------------------------------------------------------------
     def ensure(
@@ -518,10 +528,125 @@ class Attacher:
                     self._drop()
                 self.link = self._attach(opening)
                 self.had_link = True
+                self._linked(self.link)
                 self._start_heartbeat()
                 return self.link
             finally:
                 self._call = (None, None)
+
+    def _linked(self, link: Link) -> None:
+        """A new link: views of another node half are not this one's to reopen."""
+        main = (int(link.node["port"]), link.token)
+        if main != self._main:
+            self.views.clear()
+            self._main = main
+
+    def remember(self, scene: str, remote: Any, local: int) -> None:
+        """An opened scene's view port on the node half and here, for a reopen."""
+        if self._main is None:
+            return
+        try:
+            port = int(remote)
+        except (TypeError, ValueError):
+            port = self._main[0]
+        self.views.pop(scene, None)
+        self.views[scene] = (port, local)
+
+    def reopen(self) -> dict[str, Any]:
+        """For a live view whose ParaView went: start the node half again on its
+        old port and token, and open each scene it showed on its old view port, so
+        the views the host shows draw again where they are. Each scene opens from
+        its saved manifest. The status after it, with ``reopen``: ``reopened``,
+        ``waiting`` (the old node half has not ended yet), ``failed`` (the start did
+        not work, so a later try may), or ``given_up`` (too many in a short time).
+        """
+        with self.lock:
+            state = self.status()
+            if state["state"] in ("running", "busy") or not self.views:
+                return state
+            if state.get("ending"):
+                return {**state, "reopen": "waiting"}
+            if self._main is None:
+                return state
+            now = time.monotonic()
+            self._reopens = [t for t in self._reopens if now - t < REOPEN_WINDOW]
+            if len(self._reopens) >= REOPEN_LIMIT:
+                return {
+                    **state,
+                    "reopen": "given_up",
+                    "text": f"{state['text']} The view was reopened {REOPEN_LIMIT} "
+                    "times in ten minutes, so it is not reopened again; "
+                    "open_view(scene=..., new=true) starts the scene afresh.",
+                }
+            self._reopens.append(now)
+            main_port, token = self._main
+            views = sorted(self.views.items(), key=lambda v: v[1][0] != main_port)
+            main_local = next(
+                (local for _, (remote, local) in views if remote == main_port),
+                self.local_port,
+            )
+            current = self.scene
+            self._drop()
+            self.local_port = main_local
+            self._reuse = (main_port, token)
+            try:
+                link = self._attach(opening=True)
+            except ParaViewError as exc:
+                return {
+                    **state,
+                    "reopen": "failed",
+                    "text": f"{state['text']} Reopening it did not work yet: "
+                    f"{exc.message}",
+                }
+            finally:
+                self._reuse = None
+            self.link = link
+            self.had_link = True
+            self._main = (int(link.node["port"]), link.token)
+            self._start_heartbeat()
+            opened, missed = self._open_again(link, views, main_port)
+            if current in opened and len(opened) > 1:
+                try:
+                    link.client.command("open_view", {"scene": current})
+                except (LinkError, ParaViewError):
+                    pass
+            self.views = {s: opened[s] for s, _ in views if s in opened}
+            text = (
+                f"ParaView went ({state['text']}) and was started again: "
+                f"{', '.join(opened) or 'no scene'} reopened from the saved scene."
+            )
+            if missed:
+                text += " Not reopened: " + "; ".join(missed) + "."
+            return {"state": "running", "reopen": "reopened", "text": text}
+
+    def _open_again(
+        self, link: Link, views: list[tuple[str, tuple[int, int]]], main_port: int
+    ) -> tuple[dict[str, tuple[int, int]], list[str]]:
+        """Open each scene again on its old view port, forwarded to its old local
+        port; the scenes opened, with their ports, and why any did not."""
+        opened: dict[str, tuple[int, int]] = {}
+        missed: list[str] = []
+        for scene, (remote, local) in views:
+            args: dict[str, Any] = {"scene": scene}
+            if remote != main_port:
+                args["view_port"] = remote
+            try:
+                summary = link.client.command("open_view", args)
+                now = int((summary.get("service") or {}).get("port") or main_port)
+                if now == int(link.node["port"]):
+                    here = link.local_port
+                else:
+                    here = link.transport.forward(now, local, keep=True)
+            except (LinkError, ParaViewError, TypeError, ValueError) as exc:
+                missed.append(f"{scene} ({exc})")
+                continue
+            opened[scene] = (now, here)
+            if here != local:
+                missed.append(
+                    f"{scene} opened on another port, so its view must be opened "
+                    "again with open_view"
+                )
+        return opened, missed
 
     def close(self) -> None:
         self._stop.set()
@@ -550,7 +675,13 @@ class Attacher:
                         link.transport.where,
                         self.scene,
                     )
-                    return {"state": "lost", "code": gone.code, "text": gone.message}
+                    # The node half still runs: it saves its scenes and then ends.
+                    return {
+                        "state": "lost",
+                        "code": gone.code,
+                        "text": gone.message,
+                        "ending": True,
+                    }
                 return {"state": "running", "text": "ParaView answers."}
             except LinkError as exc:
                 if exc.busy:
@@ -976,12 +1107,29 @@ class Attacher:
             args += ["--threshold-mb", str(settings.threshold_mb)]
         if settings.pvserver:
             args += ["--pvserver", settings.pvserver]
+        reuse = self._reuse
+        token_write = ""
+        if reuse is not None:
+            # A reopened node half serves on its old port with its old token, so the
+            # views the host shows reach it again without being opened anew.
+            token_path = f"{folder}/{slot}.token"
+            args += ["--port", str(reuse[0]), "--token-file", token_path]
+            if self._native:
+                written = Path(token_path)
+                written.write_text(reuse[1], "utf-8")
+                if os.name != "nt":
+                    written.chmod(0o600)
+            else:
+                token_write = (
+                    f"(umask 077; printf '%s' {shlex.quote(reuse[1])} > "
+                    f"{shlex.quote(token_path)})\n"
+                )
         if self._native:
             return self._start_native(folder, [pvpython, *args], code_hash, slot)
         command = " ".join(shlex.quote(a) for a in [pvpython, *args])
         log = f"{f}/{slot}.log"
         begun = transport.run(
-            f"rm -f {f}/{slot}.json {f}/{slot}.lost.json\ncd {f}\n"
+            f"rm -f {f}/{slot}.json {f}/{slot}.lost.json\ncd {f}\n{token_write}"
             f"[ -f {log} ] && mv -f {log} {f}/{slot}.prev.log\n"
             f"if command -v setsid >/dev/null 2>&1; then S=setsid; else S=; fi\n"
             f"nohup $S {command} > {log} 2>&1 < /dev/null &\n"

@@ -365,6 +365,10 @@ async def open_view(
     global _current
     key = _key(pvserver) if pvserver else _scene_keys.get(scene or "", _current)
     chosen = attacher(key)
+    if chosen.views:
+        # A ParaView that went is started again on its old ports first, so the
+        # views already shown draw again beside the one this opens.
+        await asyncio.to_thread(chosen.reopen)
     summary, link = await run(
         ctx,
         "open_view",
@@ -398,6 +402,7 @@ async def open_view(
         )
     except ParaViewError as exc:
         raise _fail(exc) from exc
+    chosen.remember(summary["scene"], (summary.get("service") or {}).get("port"), port)
     return ToolResult(
         content=[_text(text)],
         structured_content={
@@ -834,23 +839,33 @@ async def scene_state(
     app=AppConfig(visibility=["app"]),
     annotations={"title": "Check the live view's ParaView", "readOnlyHint": True},
 )
-def view_status(
+async def view_status(
     scene: Annotated[
         str | None, Field(description="The scene id the view shows.")
     ] = None,
+    reopen: Annotated[
+        bool,
+        Field(
+            description="If the ParaView behind it went, start it again on the same "
+            "ports and open its scenes from their saved state."
+        ),
+    ] = False,
 ) -> ToolResult:
     """For the live view: whether the ParaView behind it still runs, and if it went,
     why. A view whose page cannot reach ParaView asks this, so it shows the reason
-    instead of drawing nothing."""
+    instead of drawing nothing. With ``reopen``, a ParaView that went (its pvserver
+    crashed and was restarted, say) is started again for the views it showed, which
+    then draw again where they are; ``reopen`` in the result says how that went."""
     key = _scene_keys.get(scene or "", _current)
-    status = (
-        _attachers[key].status()
-        if key in _attachers
-        else {
+    if key not in _attachers:
+        status: dict[str, Any] = {
             "state": "closed",
             "text": "No ParaView node half is open.",
         }
-    )
+    elif reopen:
+        status = await asyncio.to_thread(_attachers[key].reopen)
+    else:
+        status = await asyncio.to_thread(_attachers[key].status)
     return ToolResult(content=[_text(status["text"])], structured_content=status)
 
 

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+import socket
 import time
 from collections.abc import Callable
 from typing import Any
@@ -22,6 +23,25 @@ from .errors import CommandError
 
 def _slug(text: str) -> str:
     return re.sub(r"[^A-Za-z0-9]+", "-", text).strip("-").lower()[:24]
+
+
+def _port(value: Any) -> int:
+    try:
+        port = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return port if 0 < port < 65536 else 0
+
+
+def _free(port: int) -> bool:
+    """Whether a loopback port can be served on now."""
+    with socket.socket() as probe:
+        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            probe.bind(("127.0.0.1", port))
+        except OSError:
+            return False
+    return True
 
 
 class Stage:
@@ -81,6 +101,8 @@ class Stage:
             return self._showing(str(args.pop("scene")))
         if name != "open_view":
             return self.current
+        # A view the front reopens after its pvserver went asks for its old port.
+        view_port = args.pop("view_port", None)
         scene_id = self.scene_for(args)
         if scene_id is None:
             return self.current
@@ -95,7 +117,7 @@ class Stage:
             if self._adding is None:
                 self._adding = asyncio.Lock()
             async with self._adding:
-                app = self._find(scene_id) or await self.add()
+                app = self._find(scene_id) or await self.add(_port(view_port))
         if by == "agent" or self.current.engine.scene is None:
             self.current = app
         return app
@@ -148,8 +170,9 @@ class Stage:
                 return app
         return None
 
-    async def add(self) -> NodeApp:
-        """Start one more view, on a port of its own, with the node half's token."""
+    async def add(self, port: int = 0) -> NodeApp:
+        """Start one more view, on a port of its own (``port``, else any free one),
+        with the node half's token."""
         from trame.app import get_server
 
         front = self.front
@@ -159,9 +182,12 @@ class Stage:
         app = NodeApp(engine, front.token, server, shared=front.shared)
         app.watched, app.pvserver = front.watched, front.pvserver
         began = time.monotonic()
+        if port and not _free(port):
+            print(f"port {port} is taken; this view takes another", flush=True)
+            port = 0
         task = server.start(
             host="127.0.0.1",
-            port=0,
+            port=port,
             open_browser=False,
             show_connection_info=False,
             disable_logging=True,
