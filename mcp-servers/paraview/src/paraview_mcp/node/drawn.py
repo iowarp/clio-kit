@@ -4,7 +4,9 @@ A render that returns is not proof of a picture: a pvserver that went away, a
 camera that looks at nothing or an empty pipeline all give a frame of plain
 background. The test renders the same frame again with the pipeline hidden
 (scalar bars and axes stay) and counts the pixels that differ, so it holds for
-any background, gradient or theme. It needs only VTK, not numpy.
+any background, gradient or theme. Every pixel is counted, so an outline or a
+one-pixel line is seen: such a frame is sparse, not blank. It needs only VTK,
+not numpy.
 """
 
 from __future__ import annotations
@@ -18,16 +20,39 @@ from typing import Any
 
 #: A pixel differs when its summed RGB difference is over this.
 PIXEL_DIFFERENCE = 30
-#: A frame with fewer differing pixels than this share is blank.
-BLANK_BELOW = 0.005
-#: About how many pixels are compared.
+#: A frame with fewer differing pixels than this is blank.
+BLANK_PIXELS = 4
+#: A drawn frame with a smaller share of differing pixels than this is sparse: an
+#: outline, thin lines or a few points.
+SPARSE_BELOW = 0.005
+#: Pixels compared at once; a run with equal bytes in both pictures is skipped.
+CHUNK = 32
+#: About how many pixels the quick first look compares.
 SAMPLES = 40_000
 
 
-def compare(a: bytes, b: bytes, comps: int, stride: int = 1) -> float:
-    """The share of sampled pixels that differ between two same-size pictures."""
-    if len(a) != len(b) or comps < 1 or not a:
-        return 1.0 if len(a) != len(b) else 0.0
+def count(a: bytes, b: bytes, comps: int) -> int:
+    """How many pixels differ between two same-size pictures, every pixel looked at."""
+    if comps < 1 or len(a) != len(b):
+        return 0
+    rgb = min(3, comps)
+    width = CHUNK * comps
+    differ = 0
+    for chunk in range(0, len(a), width):
+        end = min(chunk + width, len(a))
+        if a[chunk:end] == b[chunk:end]:
+            continue
+        for start in range(chunk, end - comps + 1, comps):
+            if (
+                sum(abs(a[start + c] - b[start + c]) for c in range(rgb))
+                > PIXEL_DIFFERENCE
+            ):
+                differ += 1
+    return differ
+
+
+def sample(a: bytes, b: bytes, comps: int, stride: int) -> float:
+    """The share of every ``stride``-th pixel that differs: quick, but blind to lines."""
     step = comps * max(1, stride)
     rgb = min(3, comps)
     total = differ = 0
@@ -36,6 +61,14 @@ def compare(a: bytes, b: bytes, comps: int, stride: int = 1) -> float:
         if sum(abs(a[start + c] - b[start + c]) for c in range(rgb)) > PIXEL_DIFFERENCE:
             differ += 1
     return differ / total if total else 0.0
+
+
+def compare(a: bytes, b: bytes, comps: int) -> float:
+    """The share of pixels that differ between two same-size pictures."""
+    if len(a) != len(b) or comps < 1 or not a:
+        return 1.0 if len(a) != len(b) else 0.0
+    total = len(a) // comps
+    return count(a, b, comps) / total if total else 0.0
 
 
 def read_png(path: Path) -> tuple[bytes, int, int, int]:
@@ -110,10 +143,19 @@ def measure(
             "seconds": round(time.perf_counter() - started, 2),
             "note": "the test frames could not be read back",
         }
-    stride = max(1, (width * height) // SAMPLES)
-    fraction = compare(a, b, comps, stride)
-    return {
+    total = width * height
+    fraction = sample(a, b, comps, max(1, total // SAMPLES))
+    pixels = None
+    if fraction < SPARSE_BELOW:
+        pixels = count(a, b, comps)
+        fraction = pixels / total if total else 0.0
+    blank = pixels is not None and pixels < BLANK_PIXELS
+    result: dict[str, Any] = {
         "fraction": round(fraction, 4),
-        "blank": fraction < BLANK_BELOW,
+        "blank": blank,
+        "sparse": pixels is not None and not blank,
         "seconds": round(time.perf_counter() - started, 2),
     }
+    if pixels is not None:
+        result["pixels"] = pixels
+    return result

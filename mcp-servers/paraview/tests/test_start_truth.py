@@ -182,6 +182,20 @@ def test_compare_counts_differing_pixels() -> None:
     assert drawn.compare(faint, background, 3) == 0.0
 
 
+def test_count_sees_a_one_pixel_line_in_a_large_frame() -> None:
+    width, height = 1280, 800
+    background = bytes([82, 87, 110]) * (width * height)
+    outline = bytearray(background)
+    column = 377
+    for row in range(137, 662):
+        outline[(row * width + column) * 3] = 255
+    assert drawn.count(bytes(outline), background, 3) == 662 - 137
+    assert drawn.count(background, background, 3) == 0
+    sparse = {"fraction": 0.0004, "pixels": 525, "blank": False, "sparse": True}
+    assert present.blank_warning(sparse) == ""
+    assert "thin lines" in present.drawn_text(sparse, None)
+
+
 def test_drawn_text_never_claims_a_blank_picture() -> None:
     blank = {"fraction": 0.0, "blank": True}
     assert "blank" in present.drawn_text(blank, None)

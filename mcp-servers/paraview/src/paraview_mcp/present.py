@@ -322,6 +322,14 @@ def drawn_text(drawn: dict[str, Any] | None, shown: dict[str, Any] | None) -> st
                 + (f" ({drawn['note']})" if drawn.get("note") else "")
                 + ": nothing shows yet. Do not tell the person a picture is there."
             )
+        elif drawn.get("sparse"):
+            pixels = drawn.get("pixels")
+            parts.append(
+                "A test frame draws only thin lines or a few points"
+                + (f" ({pixels} pixels)" if pixels else "")
+                + ", such as an outline: the data's own cells may not show. Check what "
+                "is visible (scene_state) before describing it."
+            )
         else:
             parts.append(
                 f"A test frame draws data over {fraction * 100:.0f}% of the view."
