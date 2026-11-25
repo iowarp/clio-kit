@@ -239,7 +239,10 @@ moving window, a travelling body). A camera the person turns, or the agent place
 with `set_camera` (position, focal point, view up, azimuth, elevation or zoom),
 `fit_camera` on one object or a scene script, stays put; `fit_camera` on the whole
 scene (the view's Reset) or looking along an axis lets it follow again. The time
-state reports this as `camera_follows`. With the data on a joined
+state reports this as `camera_follows`. Every fit counts only objects whose box is
+real data (finite, of a sane size, each minimum at most its maximum), so an object
+with broken cells cannot blank the view, and a camera that cannot draw, whether a
+script or the browser left it, is put back to the last good one. With the data on a joined
 pvserver, ParaView mode has the pvserver draw a growing source, so only the
 picture of each new step crosses the link, not its geometry. When the node half's
 loop is held for 2 s or more, its log names the work that held it and how long

@@ -224,6 +224,7 @@ class Engine(
             self._framed = None
             self.reframed = False
         with LEDGER.phase("scene record"):
+            self.keep_camera_sane(self.scene.get("camera"))
             self.scene["camera"] = self.read_camera()
             self.scene["colormaps"] = colors.snapshot(self.simple, self.scene)
             manifest.write(self.root, self.scene)
@@ -577,7 +578,7 @@ class Engine(
             return self.summary(restored=True)
         self.scene = manifest.new_scene(EMPTY_SCENE, {})
         self._apply_time(self.scene)
-        self.view.ResetCamera(False)
+        self.fit_view()
         self.update_view_mode()
         return self.summary()
 
@@ -603,7 +604,7 @@ class Engine(
             self.proxies[object_id] = proxy
             self._show(item, proxy, apply=False)
         self._apply_time(self.scene)
-        self.view.ResetCamera(False)
+        self.fit_view()
         self.update_view_mode()
         return self.summary()
 

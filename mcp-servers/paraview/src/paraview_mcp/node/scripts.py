@@ -57,6 +57,9 @@ class SceneScripts:
     def hold_camera(self, held: bool) -> None:
         raise NotImplementedError
 
+    def keep_camera_sane(self, fallback: dict[str, Any] | None = None) -> bool:
+        raise NotImplementedError
+
     # -- running ------------------------------------------------------------
     def _sources(self) -> dict[int, Any]:
         return {
@@ -205,7 +208,10 @@ class SceneScripts:
         camera = self.read_camera()
         made = self._execute(scene, code, label)
         self._keep_changes(scene, drawn)
-        if not same_camera(camera, self.read_camera()):
+        # A script that left a camera unable to draw (it fitted broken data) gets
+        # the last good camera back, which keeps following.
+        restored = self.keep_camera_sane(camera)
+        if not restored and not same_camera(camera, self.read_camera()):
             # The script placed the camera: it stays there as the data moves.
             self.hold_camera(True)
         step: dict[str, Any] = {

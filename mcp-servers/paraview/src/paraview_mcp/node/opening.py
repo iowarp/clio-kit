@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Any, TypeVar
 
 from . import colors, manifest
+from .camera import sane_camera
 from .changes import describe
 from .data import DataError
 from .datafs import LocalDisk
@@ -68,6 +69,7 @@ class SceneOpening:
     _open_session: Callable[[], dict[str, Any]]
     replay_script: Callable[[dict[str, Any]], dict[str, Any]]
     apply_camera: Callable[[Any], None]
+    fit_view: Callable[[], None]
     update_view_mode: Callable[[], str]
     cmd_create_filter: Callable[..., dict[str, Any]]
     cmd_set_representation: Callable[..., dict[str, Any]]
@@ -193,7 +195,7 @@ class SceneOpening:
         yield "reader"
         self._show(item, proxy, apply=False)
         self._apply_time(self.scene)
-        self.view.ResetCamera(False)
+        self.fit_view()
         yield "shown"
         yield from self._first_view_steps((descriptor or {}).get("display"))
         self.update_view_mode()
@@ -226,10 +228,10 @@ class SceneOpening:
             yield f"object {item['id']}"
         self._apply_time(scene)
         colors.restore(self.simple, scene.get("colormaps"))
-        if scene.get("camera"):
+        if sane_camera(scene.get("camera")):
             self.apply_camera(scene["camera"])
         else:
-            self.view.ResetCamera(False)
+            self.fit_view()
         self.update_view_mode()
 
     def _first_view(self, display: dict[str, Any] | None) -> None:
