@@ -151,7 +151,7 @@ def watch(
             _write_private(
                 lost,
                 {
-                    "reason": f"the pvserver at {pvserver} {reason}",
+                    "reason": reason,
                     "pvserver": pvserver,
                     "scene": None,
                     "time": time.time(),
@@ -167,7 +167,9 @@ def watch(
         gone = closed(probe.fileno())
         if not alive(parent):
             if gone:
-                leave_note("closed the connection, and the node half ended with it")
+                leave_note(
+                    "its server closed the connection, and ParaView ended with it"
+                )
             return "the node half ended"
         if not gone:
             continue
@@ -175,10 +177,12 @@ def watch(
         until = time.monotonic() + grace
         while time.monotonic() < until:
             if not alive(parent):
-                leave_note("closed the connection, and the node half ended with it")
+                leave_note(
+                    "its server closed the connection, and ParaView ended with it"
+                )
                 return "the node half ended after its pvserver"
             time.sleep(0.25)
-        leave_note("closed the connection while ParaView was waiting on it")
+        leave_note("its server closed the connection while ParaView was waiting on it")
         print(
             f"the pvserver at {pvserver} closed the connection while ParaView was "
             "waiting on it; the node half was held up, so it is ended",

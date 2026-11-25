@@ -377,8 +377,9 @@ async def watch_pvserver(
         await asyncio.sleep(PVSERVER_LOOK)
         if not liveness.closed(fd):
             continue
-        reason = f"the pvserver at {pvserver} closed the connection"
-        print(reason, flush=True)
+        # Plain words for the view; the endpoint stays in the log and the note.
+        reason = "its server closed the connection"
+        print(f"the pvserver at {pvserver} closed the connection", flush=True)
         scene = node.engine.scene
         write_private(
             record_path.with_name(record_path.stem + ".lost.json"),

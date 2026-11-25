@@ -46,7 +46,8 @@ def test_a_held_up_node_half_is_ended_with_the_reason(tmp_path: Path) -> None:
     thread.join(10)
     assert out == ["ended the node half"] and ended == [4242]
     note = json.loads((tmp_path / "node-pv1.lost.json").read_text())
-    assert "127.0.0.1:11111" in note["reason"] and "waiting on it" in note["reason"]
+    assert "127.0.0.1:11111" in note["pvserver"] and "waiting on it" in note["reason"]
+    assert "127.0.0.1" not in note["reason"]
     assert not record.exists()
 
 

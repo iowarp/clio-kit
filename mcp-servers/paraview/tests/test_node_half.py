@@ -855,7 +855,8 @@ def test_a_pvserver_that_goes_stops_the_view(tmp_path: Path) -> None:
             time.sleep(1)
         assert not (folder / f"{slot}.json").exists()
         note = json.loads((folder / f"{slot}.lost.json").read_text())
-        assert address in note["reason"] and note["scene"] == opened["scene"]
+        assert address in note["pvserver"] and address not in note["reason"]
+        assert note["scene"] == opened["scene"]
         assert "closed the connection" in (folder / f"{slot}.log").read_text()
         attacher.link = None
         with pytest.raises(ParaViewError) as caught:
@@ -946,7 +947,7 @@ def test_a_call_held_up_by_a_pvserver_that_goes_fails_at_once(tmp_path: Path) ->
             assert time.monotonic() < deadline
             time.sleep(0.5)
         note = json.loads((folder / f"{slot}.lost.json").read_text())
-        assert address in note["reason"] and "closed the connection" in note["reason"]
+        assert address in note["pvserver"] and "closed the connection" in note["reason"]
         state = attacher.status()
         assert state["state"] == "lost" and state["code"] == "pvserver_lost"
     finally:

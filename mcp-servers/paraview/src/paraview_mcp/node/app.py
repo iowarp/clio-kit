@@ -465,8 +465,8 @@ class NodeApp:
         self.lost = reason
         with self.server.state:
             self.server.state.clio_lost = (
-                f"ParaView stopped: {reason}. Nothing more is drawn here; the scene "
-                "is saved, and the agent can open it again once the pvserver runs."
+                f"ParaView stopped: {reason}. The scene is saved, and the agent "
+                "can open it again once the server runs."
             )
 
     def _went_during_call(self) -> Any:
