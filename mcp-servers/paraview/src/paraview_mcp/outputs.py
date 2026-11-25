@@ -16,10 +16,16 @@ from mcp.types import ImageContent
 from pydantic import Field
 
 from . import present
-from .server import _paths, _scene_keys, _text, attacher, mcp, run
+from .server import _hints, _paths, _scene_keys, _text, attacher, mcp, run
 
 
-@mcp.tool(annotations={"title": "Read the picked point", "readOnlyHint": True})
+@mcp.tool(
+    annotations={
+        "title": "Read the picked point",
+        **_hints(read_only=True, destructive=False, idempotent=True),
+    },
+    tags={"paraview", "analysis"},
+)
 async def inspect_selection(
     ctx: Context,
     position: Annotated[
@@ -38,7 +44,13 @@ async def inspect_selection(
     return present.selection_line(result["selection"])
 
 
-@mcp.tool(annotations={"title": "Measure a field", "readOnlyHint": True})
+@mcp.tool(
+    annotations={
+        "title": "Measure a field",
+        **_hints(read_only=True, destructive=False, idempotent=True),
+    },
+    tags={"paraview", "analysis"},
+)
 async def measure_field(
     ctx: Context,
     field: Annotated[str, Field(description="Field (array) name.")],
@@ -61,7 +73,13 @@ async def measure_field(
     )
 
 
-@mcp.tool(annotations={"title": "Measure a field over time", "readOnlyHint": True})
+@mcp.tool(
+    annotations={
+        "title": "Measure a field over time",
+        **_hints(read_only=True, destructive=False, idempotent=True),
+    },
+    tags={"paraview", "analysis", "time"},
+)
 async def measure_over_time(
     ctx: Context,
     field: Annotated[str, Field(description="Field (array) name.")],
@@ -94,7 +112,13 @@ async def measure_over_time(
     )
 
 
-@mcp.tool(annotations={"title": "Capture the view", "readOnlyHint": True})
+@mcp.tool(
+    annotations={
+        "title": "Capture the view",
+        **_hints(read_only=True, destructive=False, idempotent=True),
+    },
+    tags={"paraview", "render"},
+)
 async def capture(
     ctx: Context,
     width: Annotated[int, Field(ge=64, le=4096)] = 1280,
@@ -116,7 +140,15 @@ async def capture(
     ]
 
 
-@mcp.tool(annotations={"title": "Export a figure"}, meta=_paths(path="write"))
+@mcp.tool(
+    annotations={
+        "title": "Export a figure",
+        # Overwrites a file at the path.
+        **_hints(read_only=False, destructive=True, idempotent=True),
+    },
+    meta=_paths(path="write"),
+    tags={"paraview", "export"},
+)
 async def export_artifact(
     ctx: Context,
     path: Annotated[
@@ -144,7 +176,15 @@ async def export_artifact(
     ]
 
 
-@mcp.tool(annotations={"title": "Export an animation"}, meta=_paths(path="write"))
+@mcp.tool(
+    annotations={
+        "title": "Export an animation",
+        # Overwrites a file at the path.
+        **_hints(read_only=False, destructive=True, idempotent=True),
+    },
+    meta=_paths(path="write"),
+    tags={"paraview", "export"},
+)
 async def export_animation(
     ctx: Context,
     path: Annotated[
@@ -192,7 +232,15 @@ async def export_animation(
     return present.animation_text(result)
 
 
-@mcp.tool(annotations={"title": "Export the scene"}, meta=_paths(path="write"))
+@mcp.tool(
+    annotations={
+        "title": "Export the scene",
+        # Overwrites files at the path.
+        **_hints(read_only=False, destructive=True, idempotent=True),
+    },
+    meta=_paths(path="write"),
+    tags={"paraview", "export", "scene"},
+)
 async def export_scene(
     ctx: Context,
     path: Annotated[
@@ -213,7 +261,13 @@ async def export_scene(
     )
 
 
-@mcp.tool(annotations={"title": "Describe the ParaView scene", "readOnlyHint": True})
+@mcp.tool(
+    annotations={
+        "title": "Describe the ParaView scene",
+        **_hints(read_only=True, destructive=False, idempotent=True),
+    },
+    tags={"paraview", "scene"},
+)
 async def scene_state(
     ctx: Context,
     scene: Annotated[

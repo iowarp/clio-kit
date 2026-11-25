@@ -4,22 +4,20 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
 
 ## Unreleased
 
-- **globe server removed**: the plain 3D globe (the MCP Apps map example,
-  `@modelcontextprotocol/server-map`) only framed a named region and could not
-  draw points or GeoJSON. Geo's `show_on_globe` replaces it; `clio-geoscience`
-  no longer includes `clio-globe`.
-- **geo 2.4.0, layers on an interactive globe**: `show_on_globe` takes the
-  layers and styles `render_feature_map` takes (GeoJSON inline or as paths,
-  `color_by`, `category_colors`, `epa_aqi`, colormaps, legends) and shows them
-  on a CesiumJS globe with OpenStreetMap tiles, as an MCP Apps view
-  (`ui://geo/globe`). Points are dots, labelled when few; a layer list toggles
-  layers and shows legends; clicking a feature lists its properties and
-  reports it to the agent as `selected_feature`, and a host that sets
-  `selected_feature` (a linked table row) turns the globe to that feature. The
-  view offers `fly_to`, `select_feature`, `add_layer`, `remove_layer`,
-  `set_style` and `get_view`, follows the host's theme, and is saved under a
-  view id so a reopen shows the same layers, re-reading files. The agent reads
-  only layer names, counts and bounds; the GeoJSON goes to the view.
+## 2.13.1 - 2026-11-25
+
+- **clio-core-skills, a new skill collection for CLIO Core**: `storage-compose`
+  chooses and orders the shipped modules into a `compose` section and states
+  what an acknowledged put means, when data is durable and what each failure
+  loses; `chimod-dev` writes and extends ChiMods and data-path operators;
+  `gpu-vector` writes and tunes kernels over the paged out-of-core vector.
+  One skill per shipped module documents every compose key, its client API
+  and what it loses per failure, for users without the CLIO Core source:
+  `clio-runtime-config`, `clio-bdev`, `clio-cte-core`, `clio-cte-caches`,
+  `clio-replication`, `clio-compressor`, `clio-indexer`, `clio-fs` and
+  `clio-cae`.
+  Install with `clio-kit skill install --bundle clio-core` or
+  `claude plugin install clio-core-skills@clio-kit`.
 - **paraview 3.3.0, joins a running pvserver**: `PARAVIEW_PVSERVER` names a
   `pvserver` (`host:port`, such as a relay's local port for one running in a
   cluster job) for the node half to join. Datasets, globs and the steps of a
@@ -55,6 +53,29 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
   reader took the node down on a folder whose index ran ahead of its metadata.
   Scene scripts can name ParaView 5 colour presets ("Viridis (matplotlib)"),
   and `ColorBy(display, None)` on an uncoloured display does nothing.
+- **paraview tools declare their behaviour**: every tool sets the read-only,
+  destructive and idempotent hints and carries tags, and the server offers an
+  `explore_dataset` prompt that opens a dataset, measures it and captures the
+  view.
+
+## 2.13.0 - 2026-11-19
+
+- **globe server removed**: the plain 3D globe (the MCP Apps map example,
+  `@modelcontextprotocol/server-map`) only framed a named region and could not
+  draw points or GeoJSON. Geo's `show_on_globe` replaces it; `clio-geoscience`
+  no longer includes `clio-globe`.
+- **geo 2.4.0, layers on an interactive globe**: `show_on_globe` takes the
+  layers and styles `render_feature_map` takes (GeoJSON inline or as paths,
+  `color_by`, `category_colors`, `epa_aqi`, colormaps, legends) and shows them
+  on a CesiumJS globe with OpenStreetMap tiles, as an MCP Apps view
+  (`ui://geo/globe`). Points are dots, labelled when few; a layer list toggles
+  layers and shows legends; clicking a feature lists its properties and
+  reports it to the agent as `selected_feature`, and a host that sets
+  `selected_feature` (a linked table row) turns the globe to that feature. The
+  view offers `fly_to`, `select_feature`, `add_layer`, `remove_layer`,
+  `set_style` and `get_view`, follows the host's theme, and is saved under a
+  view id so a reopen shows the same layers, re-reading files. The agent reads
+  only layer names, counts and bounds; the GeoJSON goes to the view.
 - **paraview 3.1.0, ParaView controls in the view**: the live view gains a
   compact left tool rail: a pipeline browser (show, hide, select, remove), an
   Add filter palette (Contour, Slice, Clip, Threshold, Glyph, Stream Tracer,

@@ -29,7 +29,7 @@ load_dotenv()
 # Initialize FastMCP server instance
 mcp: FastMCP = FastMCP(
     "ndp",
-    version="2.2.9",
+    version="2.2.10",
     instructions=(
         "Discovers and explores scientific datasets from the National Data Platform "
         "(NDP) and stages their resources for analysis. Use search_datasets to find "
@@ -325,8 +325,15 @@ async def search_datasets(
     limit: Annotated[
         str | int | None, Field(description="Maximum results to return (default: 20)")
     ] = None,
+    query: Annotated[
+        str | None,
+        Field(description="Words to search for across all fields; the same as search_term."),
+    ] = None,
 ) -> SearchDatasetsResult:
     """Search for datasets in the National Data Platform."""
+    if query and search_term and query != search_term:
+        raise ToolError("Give query or search_term, not two different values")
+    search_term = search_term or query
     # An unfiltered search asks the API for the whole catalogue, which times out
     # upstream (HTTP 504 after ~25 s). Require something to search for.
     if not any(
@@ -438,12 +445,20 @@ async def search_datasets(
 )
 async def get_dataset_details(
     dataset_identifier: Annotated[
-        str, Field(description="The dataset ID or name to retrieve details for")
-    ],
+        str | None, Field(description="The dataset ID or name to retrieve details for")
+    ] = None,
     identifier_type: Annotated[str, Field(description="Type of identifier: 'id' or 'name'")] = "id",
     server: Annotated[str, Field(description="Server to query: 'local' or 'global'")] = "global",
+    dataset_id: Annotated[
+        str | None, Field(description="The dataset ID; the same as dataset_identifier.")
+    ] = None,
 ) -> GetDatasetDetailsResult:
     """Get detailed information about a specific dataset."""
+    if dataset_identifier and dataset_id and dataset_identifier != dataset_id:
+        raise ToolError("Give dataset_identifier or dataset_id, not two different values")
+    dataset_identifier = dataset_identifier or dataset_id
+    if not dataset_identifier:
+        raise ToolError("Give the dataset's id or name as dataset_identifier (or dataset_id)")
     try:
         # Search for the specific dataset
         if isinstance(ndp_client, NDPCatalogClient) and identifier_type in ("id", "name"):

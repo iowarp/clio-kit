@@ -1,0 +1,9 @@
+{
+  "clio-weather": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "weather"
+    ]
+  }
+}

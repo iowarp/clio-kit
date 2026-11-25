@@ -736,3 +736,36 @@ async def test_open_view_declares_what_its_view_reports() -> None:
     assert all(
         e.get("tool") != "set_timestep" or e["key"] in set_timestep for e in declared
     )
+
+
+async def test_every_tool_declares_its_behaviour_and_tags() -> None:
+    async with Client(mcp) as client:
+        tools = await client.list_tools()
+    for tool in tools:
+        hints = tool.annotations.model_dump(by_alias=True) if tool.annotations else {}
+        for hint in ("readOnlyHint", "destructiveHint", "idempotentHint"):
+            assert isinstance(hints.get(hint), bool), (tool.name, hint)
+        assert tool.meta and tool.meta["fastmcp"]["tags"], tool.name
+    by_name = {tool.name: tool.annotations for tool in tools}
+    # What only reads the scene says so; what writes files over a path says that.
+    for name in ("inspect_selection", "measure_field", "capture", "scene_state"):
+        assert by_name[name].readOnlyHint is True
+    for name in (
+        "run_scene_script",
+        "export_artifact",
+        "export_animation",
+        "export_scene",
+    ):
+        assert by_name[name].readOnlyHint is False
+        assert by_name[name].destructiveHint is True
+
+
+async def test_the_explore_prompt_walks_the_scene_tools() -> None:
+    async with Client(mcp) as client:
+        prompts = {prompt.name for prompt in await client.list_prompts()}
+        result = await client.get_prompt("explore_dataset", {"path": "/data/run.vti"})
+    assert prompts == {"explore_dataset"}
+    text = result.messages[0].content.text
+    assert "/data/run.vti" in text
+    for tool in ("open_view", "scene_state", "measure_field", "capture"):
+        assert tool in text

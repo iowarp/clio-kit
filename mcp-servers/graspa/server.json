@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.12.7",
+      "version": "2.13.1",
       "transport": {
         "type": "stdio"
       },
@@ -55,6 +55,12 @@
       "uri": "graspa://capabilities",
       "name": "capabilities",
       "description": "Describe what the graspa MCP server can do."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "adsorption_uptake",
+      "description": "Guided adsorption uptake of a gas in a framework."
     }
   ],
   "tags": [

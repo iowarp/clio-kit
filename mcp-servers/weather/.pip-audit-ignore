@@ -1,0 +1,6 @@
+# intake <= 2.0.9 expands shell() in parameter defaults of a catalog it loads
+# (CVE-2026-33310). No fixed release exists. weather only opens the fixed
+# Pangeo CMIP6 ESM collection (climate.PANGEO_CMIP6) through intake-esm, never
+# a user-supplied catalog. Remove this entry once intake ships a fix.
+GHSA-37g4-qqqv-7m99 intake: no fixed release; fixed trusted catalog only
+PYSEC-2026-2185 same advisory, PyPI identifier

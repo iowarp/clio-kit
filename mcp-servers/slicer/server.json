@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.12.7",
+      "version": "2.13.1",
       "transport": {
         "type": "stdio"
       },
@@ -72,6 +72,12 @@
       "uri": "slicer://capabilities",
       "name": "capabilities",
       "description": "Describe what the slicer MCP server can do."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "plan_print",
+      "description": "Slice a model for a printer, look at the layers, and weigh a faster or stronger option."
     }
   ],
   "tags": [

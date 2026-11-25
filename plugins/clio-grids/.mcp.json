@@ -1,0 +1,9 @@
+{
+  "clio-grids": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "grids"
+    ]
+  }
+}

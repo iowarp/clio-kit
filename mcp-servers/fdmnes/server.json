@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.12.7",
+      "version": "2.13.1",
       "transport": {
         "type": "stdio"
       },
@@ -55,6 +55,12 @@
       "uri": "fdmnes://capabilities",
       "name": "capabilities",
       "description": "Describe what the fdmnes MCP server can do."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "site_xanes",
+      "description": "Guided K-edge XANES for each inequivalent site."
     }
   ],
   "tags": [

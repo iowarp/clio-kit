@@ -195,7 +195,7 @@ load_dotenv()
 
 mcp: FastMCP = FastMCP(
     "geo",
-    version="2.4.0",
+    version="2.4.1",
     instructions=(
         "Renders and retrieves geospatial vector data. Pass one or more layers of "
         "GeoJSON (polygons, lines, points) to render_feature_map and get back a PNG "
@@ -243,7 +243,7 @@ async def render_feature_map_tool(
     output_path: Annotated[str, Field(description="Destination PNG path.")] = "map.png",
     title: Annotated[str, Field(description="Figure title.")] = "",
     basemap: Annotated[
-        bool, Field(description="Add a CartoDB Positron basemap (needs network).")
+        bool, Field(description="Add an Esri light-gray basemap (needs network).")
     ] = True,
     bbox: Annotated[
         list[float] | None,

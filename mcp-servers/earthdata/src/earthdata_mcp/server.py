@@ -9,7 +9,9 @@ earthdata-mcp-server's own name and version. Arguments after the server name pas
 
 The upstream command runs as its own program (``exec`` on POSIX, a child process
 on Windows, where ``exec`` cannot keep the client's stdio), so this wrapper never
-imports it.
+imports it. The repository's metadata checks describe it by asking the
+running upstream command what it advertises (``command`` and ``metadata_env``;
+see ``scripts/upstream_metadata.py``).
 """
 
 from __future__ import annotations
@@ -48,6 +50,11 @@ def main() -> None:
     if os.name == "nt":
         raise SystemExit(subprocess.call(argv))
     os.execv(argv[0], argv)
+
+
+def metadata_env() -> dict[str, str]:
+    """What the upstream command needs added to its environment to list everything."""
+    return {}
 
 
 if __name__ == "__main__":

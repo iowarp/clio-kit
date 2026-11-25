@@ -1,0 +1,46 @@
+[project]
+name = "copernicus-kit-mcp"
+version = "1.0.0"
+description = "Search, subset and download Copernicus Marine and Climate Data Store products, with provenance and resumable jobs."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "BSD-3-Clause"
+authors = [
+    { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
+]
+keywords = ["MCP", "Copernicus", "Copernicus Marine", "CMEMS", "CDS", "ERA5", "ocean", "climate"]
+# The one runtime dependency is the upstream server with its Marine and CDS backends,
+# pinned exactly; uv.lock locks everything it brings (copernicus-mcp is BSD-3-Clause).
+dependencies = [
+    "copernicus-mcp[cmems,cds]==0.7.2",
+]
+
+[project.urls]
+Homepage = "https://toolkit.iowarp.ai/"
+Repository = "https://github.com/iowarp/clio-kit"
+
+[project.scripts]
+copernicus-kit-mcp = "copernicus_kit_mcp.server:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.0",
+    "pip>=26.1.2",
+    "pip-audit>=2.10.0",
+    "pytest>=9.0.3",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/copernicus_kit_mcp"]
+
+[tool.uv]
+# copernicus-mcp 0.7.2 (latest) caps mcp<1.28 and pyarrow<22. mcp<1.30.0 carries
+# CVE-2026-59951, CVE-2026-115563 and CVE-2026-116684/5/6; pyarrow<23.0.1 carries
+# PYSEC-2026-113. Override both caps until upstream lifts them.
+override-dependencies = ["mcp>=1.30.0,<2", "pyarrow>=23.0.1"]

@@ -18,6 +18,7 @@ from typing import Annotated, Any, Literal
 from fastmcp import Context, FastMCP
 from fastmcp.apps import AppConfig
 from fastmcp.exceptions import ToolError
+from fastmcp.prompts import Message
 from fastmcp.tools import ToolResult
 from fastmcp.utilities.tasks import TaskConfig
 from fastmcp_tasks import TasksExtension
@@ -122,6 +123,15 @@ def attacher(key: str | None = None) -> Attacher:
         found = _attachers[key] = Attacher(settings)
         atexit.register(found.close)
     return found
+
+
+def _hints(*, read_only: bool, destructive: bool, idempotent: bool) -> dict[str, bool]:
+    """The three behaviour hints every tool declares, in MCP's spelling."""
+    return {
+        "readOnlyHint": read_only,
+        "destructiveHint": destructive,
+        "idempotentHint": idempotent,
+    }
 
 
 def _fail(exc: ParaViewError) -> ToolError:
@@ -323,8 +333,14 @@ def open_arguments(
 
 @mcp.tool(
     app=AppConfig(resource_uri=VIEW_URI),
-    annotations={"title": "Open a ParaView view", "openWorldHint": True},
+    annotations={
+        "title": "Open a ParaView view",
+        # new=true starts an empty scene that replaces the saved one for that path.
+        **_hints(read_only=False, destructive=True, idempotent=True),
+        "openWorldHint": True,
+    },
     meta={**_paths(path="read"), STATE_META: VIEW_STATE},
+    tags={"paraview", "scene", "view"},
 )
 async def open_view(
     ctx: Context,
@@ -461,7 +477,14 @@ async def open_view(
     )
 
 
-@mcp.tool(annotations={"title": "Build the ParaView scene"})
+@mcp.tool(
+    annotations={
+        "title": "Build the ParaView scene",
+        # Any paraview.simple code: it can delete objects or write files.
+        **_hints(read_only=False, destructive=True, idempotent=False),
+    },
+    tags={"paraview", "scene", "script"},
+)
 async def run_scene_script(
     ctx: Context,
     code: Annotated[
@@ -491,7 +514,13 @@ async def run_scene_script(
     return present.script_text(result, _where())
 
 
-@mcp.tool(annotations={"title": "Change the timestep"})
+@mcp.tool(
+    annotations={
+        "title": "Change the timestep",
+        **_hints(read_only=False, destructive=False, idempotent=True),
+    },
+    tags={"paraview", "time"},
+)
 async def set_timestep(
     ctx: Context,
     index: Annotated[
@@ -513,7 +542,11 @@ async def set_timestep(
 
 @mcp.tool(
     task=TaskConfig(mode="optional"),
-    annotations={"title": "Watch new time steps", "readOnlyHint": True},
+    annotations={
+        "title": "Watch new time steps",
+        **_hints(read_only=True, destructive=False, idempotent=True),
+    },
+    tags={"paraview", "time"},
 )
 async def watch_steps(
     ctx: Context,
@@ -582,7 +615,14 @@ async def watch_steps(
     )
 
 
-@mcp.tool(annotations={"title": "Move the camera"})
+@mcp.tool(
+    annotations={
+        "title": "Move the camera",
+        # azimuth, elevation and zoom turn from where the camera is.
+        **_hints(read_only=False, destructive=False, idempotent=False),
+    },
+    tags={"paraview", "camera"},
+)
 async def set_camera(
     ctx: Context,
     position: Annotated[list[float] | None, Field(min_length=3, max_length=3)] = None,
@@ -621,7 +661,13 @@ async def set_camera(
     return present.camera_text(result["camera"])
 
 
-@mcp.tool(annotations={"title": "Fit the camera"})
+@mcp.tool(
+    annotations={
+        "title": "Fit the camera",
+        **_hints(read_only=False, destructive=False, idempotent=True),
+    },
+    tags={"paraview", "camera"},
+)
 async def fit_camera(
     ctx: Context,
     object: Annotated[
@@ -641,7 +687,11 @@ from . import outputs  # noqa: F401
 
 @mcp.tool(
     app=AppConfig(visibility=["app"]),
-    annotations={"title": "Check the live view's ParaView", "readOnlyHint": True},
+    annotations={
+        "title": "Check the live view's ParaView",
+        **_hints(read_only=True, destructive=False, idempotent=True),
+    },
+    tags={"paraview", "view"},
 )
 def view_status(
     scene: Annotated[
@@ -666,7 +716,11 @@ def view_status(
 
 @mcp.tool(
     app=AppConfig(visibility=["app"]),
-    annotations={"title": "Stop reconnecting the live view", "idempotentHint": True},
+    annotations={
+        "title": "Stop reconnecting the live view",
+        **_hints(read_only=False, destructive=False, idempotent=True),
+    },
+    tags={"paraview", "view"},
 )
 def stop_view_relaunch(
     scene: Annotated[
@@ -699,6 +753,22 @@ def stop_view_relaunch(
 def view_resource() -> str:
     """The view page."""
     return resources.files("paraview_mcp").joinpath("view.html").read_text("utf-8")
+
+
+@mcp.prompt(tags={"paraview", "workflow"})
+def explore_dataset(path: str) -> list[Message]:
+    """Open a dataset in a live ParaView view, measure it, and show what it holds."""
+    return [
+        Message(
+            f"Open {path} in ParaView with open_view (the path is on the machine where "
+            "ParaView runs) and call scene_state to see its fields, time steps and "
+            "bounds. For the main fields, read exact numbers with measure_field before "
+            "describing them, colour the scene by the most informative one with "
+            "run_scene_script, and capture the view to check what it shows. Report the "
+            "scene id so the scene can be reopened, and keep every claim to what the "
+            "measurements and the capture support."
+        )
+    ]
 
 
 def _warm_client() -> None:

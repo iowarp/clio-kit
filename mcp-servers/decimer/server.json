@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.12.7",
+      "version": "2.13.1",
       "transport": {
         "type": "stdio"
       },
@@ -43,6 +43,12 @@
       "uri": "decimer://capabilities",
       "name": "capabilities",
       "description": "Describe what the decimer MCP server can do."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "structure_from_drawing",
+      "description": "Guided reading of a drawn or printed structure into SMILES."
     }
   ],
   "tags": [

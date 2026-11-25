@@ -182,7 +182,7 @@ def render_map(
         layers: Ordered layers; later layers draw on top.
         output_path: Destination PNG path.
         title: Figure title.
-        basemap: Add a CartoDB Positron web-tile basemap (needs network).
+        basemap: Add Esri's World Light Gray web-tile basemap (needs network; no key).
         bbox: Optional ``[min_lon, min_lat, max_lon, max_lat]`` view window.
         figsize: Figure size in inches.
         dpi: Output resolution.
@@ -286,7 +286,10 @@ def render_map(
 
     if basemap:
         try:
-            cx.add_basemap(ax, source=cx.providers.CartoDB.Positron, attribution_size=6)
+            # CARTO's basemaps now need an API key and answer a keyless request with a
+            # placeholder tile ("API KEY REQUIRED"), drawn into every map; Esri's
+            # light-gray canvas serves without a key.
+            cx.add_basemap(ax, source=cx.providers.Esri.WorldGrayCanvas, attribution_size=6)
             basemap_added = True
         except Exception as exc:  # noqa: BLE001 - network/tile failures must not abort the render
             basemap_added = False

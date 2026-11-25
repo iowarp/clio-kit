@@ -580,9 +580,12 @@ def test_launcher_local_server_evicts_stale_sibling(
 
     monkeypatch.setattr(clio_kit.subprocess, "run", fake_run)
 
-    clio_kit._run_locked_local_server(server_path, "spack-mcp", (), os.environ.copy())
+    caller_environment = {**os.environ, "UV_PYTHON": "3.13"}
+    clio_kit._run_locked_local_server(server_path, "spack-mcp", (), caller_environment)
 
     assert current_env.exists()
     assert sync_environments[0]["UV_PRERELEASE"] == "allow"
+    # The server's requires-python picks its interpreter, not the caller's.
+    assert "UV_PYTHON" not in sync_environments[0]
     assert not stale_env.exists()
     assert not stale_project.exists()

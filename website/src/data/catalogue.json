@@ -41,7 +41,7 @@
       "key": "mcpServers"
     }
   },
-  "version": "2.12.7",
+  "version": "2.13.1",
   "publishers": [
     {
       "id": "clio-kit",
@@ -734,6 +734,106 @@
       }
     },
     {
+      "id": "mcp/copernicus",
+      "kind": "mcp",
+      "name": "copernicus",
+      "title": "Copernicus",
+      "description": "Search, subset and download Copernicus Marine and Climate Data Store products, with provenance and resumable jobs.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/copernicus",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "copernicus",
+        "cmems",
+        "cds",
+        "era5",
+        "ocean",
+        "climate",
+        "reanalysis"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/copernicus",
+      "evidence": "Locked runtime",
+      "icon": "🛳️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-copernicus",
+      "summary": "Search, subset and download Copernicus Marine and Climate Data Store products, with provenance and resumable jobs.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "copernicus"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "copernicus"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "copernicus"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "copernicus"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "copernicus"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "copernicus"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "copernicus"
+          ]
+        }
+      }
+    },
+    {
       "id": "mcp/darshan",
       "kind": "mcp",
       "name": "darshan",
@@ -1132,7 +1232,7 @@
       "description": "MCP server for rendering GeoJSON vector layers into map images with basemaps",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.4.0",
+      "version": "2.4.1",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/geo",
@@ -1217,6 +1317,205 @@
           "args": [
             "mcp-server",
             "geo"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/geoprocess",
+      "kind": "mcp",
+      "name": "geoprocess",
+      "title": "Geoprocess",
+      "description": "Core geospatial operations: reproject, clip, dissolve and overlay, zonal statistics and raster differencing",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/geoprocess",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "geospatial",
+        "gis",
+        "overlay",
+        "zonal-statistics",
+        "reprojection",
+        "raster"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/geoprocess",
+      "evidence": "Locked runtime",
+      "icon": "📐",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-geoprocess",
+      "summary": "Core geospatial operations: reproject, clip, dissolve and overlay, zonal statistics and raster differencing",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "geoprocess"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoprocess"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/geoservices",
+      "kind": "mcp",
+      "name": "geoservices",
+      "title": "Geoservices",
+      "description": "Fetch geospatial data where it is served: ArcGIS REST, OGC WFS and WCS, STAC, remote rasters and EPT/COPC lidar, by region",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.1.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/geoservices",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "geospatial",
+        "arcgis",
+        "ogc",
+        "stac",
+        "cog",
+        "lidar",
+        "point-cloud"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/geoservices",
+      "evidence": "Locked runtime",
+      "icon": "🗺️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-geoservices",
+      "summary": "Fetch geospatial data where it is served: ArcGIS REST, OGC WFS and WCS, STAC, remote rasters and EPT/COPC lidar, by region",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "geoservices"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "geoservices"
           ]
         }
       }
@@ -1315,6 +1614,105 @@
           "args": [
             "mcp-server",
             "graspa"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/grids",
+      "kind": "mcp",
+      "name": "grids",
+      "title": "Grids",
+      "description": "MCP server for hand edits to 2-D model grids (bathymetry, land masks, topography): an interactive editor, an ordered edit list located by longitude and latitude, and replay onto a regenerated grid with content hashes",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/grids",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "grid",
+        "bathymetry",
+        "land-mask",
+        "topography",
+        "model",
+        "mcp-apps"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/grids",
+      "evidence": "Locked runtime",
+      "icon": "🗺️",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-grids",
+      "summary": "MCP server for hand edits to 2-D model grids (bathymetry, land masks, topography).",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "grids"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "grids"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "grids"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "grids"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "grids"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "grids"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "grids"
           ]
         }
       }
@@ -1715,7 +2113,7 @@
       "description": "National Data Platform (NDP) MCP server for searching and discovering datasets across multiple CKAN instances",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.2.9",
+      "version": "2.2.10",
       "category": "Research & discovery",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/ndp",
@@ -1896,6 +2294,107 @@
           "args": [
             "mcp-server",
             "node-hardware"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/ocean",
+      "kind": "mcp",
+      "name": "ocean",
+      "title": "Ocean",
+      "description": "MCP server for ocean analysis: CTD casts, TEOS-10, water masses, Argo and glider profiles, sections, transports, tides, eddies, particles, marine heatwaves and model checks, each result with a provenance record",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/ocean",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "oceanography",
+        "argo",
+        "ctd",
+        "teos-10",
+        "tides",
+        "eddies",
+        "marine-heatwave",
+        "mom6"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/ocean",
+      "evidence": "Locked runtime",
+      "icon": "🌊",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-ocean",
+      "summary": "MCP server for ocean analysis.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ocean"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "ocean"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ocean"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ocean"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ocean"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ocean"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "ocean"
           ]
         }
       }
@@ -3176,7 +3675,7 @@
       "description": "MCP server for terrain analysis: DEM slope/aspect/suitability and point-cloud reading/gridding",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "2.2.8",
+      "version": "2.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "mcp-servers/terrain",
@@ -3261,6 +3760,107 @@
           "args": [
             "mcp-server",
             "terrain"
+          ]
+        }
+      }
+    },
+    {
+      "id": "mcp/weather",
+      "kind": "mcp",
+      "name": "weather",
+      "title": "Weather",
+      "description": "MCP server for weather and climate analysis: ensemble exceedance, threshold events, sections and soundings with CAPE, forecast scores, station verification, blob tracking, climate indices and CMIP6 regional change, each result with a provenance record",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Geoscience",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "mcp-servers/weather",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "weather",
+        "climate",
+        "era5",
+        "ensemble",
+        "cape",
+        "cyclone",
+        "cmip6",
+        "verification"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/mcps/weather",
+      "evidence": "Locked runtime",
+      "icon": "⛅",
+      "componentTypes": [
+        "mcp"
+      ],
+      "installation": "launcher",
+      "nativePackage": "clio-weather",
+      "summary": "MCP server for weather and climate analysis.",
+      "mcpSettings": {
+        "codex": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "weather"
+          ],
+          "startup_timeout_sec": 300
+        },
+        "opencode": {
+          "type": "local",
+          "command": [
+            "clio-kit",
+            "mcp-server",
+            "weather"
+          ],
+          "enabled": true,
+          "timeout": 120000
+        },
+        "cursor": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "weather"
+          ]
+        },
+        "antigravity": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "weather"
+          ]
+        },
+        "claude-code": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "weather"
+          ],
+          "type": "stdio"
+        },
+        "vscode": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "weather"
+          ],
+          "type": "stdio"
+        },
+        "other": {
+          "command": "clio-kit",
+          "args": [
+            "mcp-server",
+            "weather"
           ]
         }
       }
@@ -3873,14 +4473,70 @@
       "summary": "Verify a Clio Coder source change against its contract, smoke, boundary and application tests."
     },
     {
+      "id": "plugin/clio-core-skills",
+      "kind": "collection",
+      "name": "clio-core-skills",
+      "title": "Core Skills",
+      "description": "CLIO Core skills: one per shipped module (runtime, block devices, CTE core, caches, replication, compressor, indexer, filesystem, CAE), composing them into a storage system, writing new ChiMods, and gpu_vector kernels.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Scientific computing",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "./skills/clio-core-skills",
+      "members": [
+        "skill/chimod-dev",
+        "skill/clio-bdev",
+        "skill/clio-cae",
+        "skill/clio-compressor",
+        "skill/clio-cte-caches",
+        "skill/clio-cte-core",
+        "skill/clio-fs",
+        "skill/clio-indexer",
+        "skill/clio-replication",
+        "skill/clio-runtime-config",
+        "skill/gpu-vector",
+        "skill/storage-compose"
+      ],
+      "servers": [],
+      "tags": [],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/plugins",
+      "evidence": "See validation coverage",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "native-package",
+      "nativePackage": "clio-core-skills",
+      "role": "Component collection",
+      "projectInstall": true,
+      "clientSupport": {
+        "codex": true,
+        "opencode": true,
+        "cursor": true,
+        "antigravity": true,
+        "claude-code": true,
+        "vscode": true
+      },
+      "summary": "CLIO Core skills."
+    },
+    {
       "id": "plugin/clio-geoscience-skills",
       "kind": "collection",
       "name": "clio-geoscience-skills",
       "title": "Geoscience Skills",
-      "description": "Skills for the clio-geoscience workflow: inspect and map geospatial features, terrain, waveforms and NASA Earth-science data.",
+      "description": "Skills for the clio-geoscience workflow: maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.1.0",
+      "version": "1.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "./skills/clio-geoscience-skills",
@@ -3917,7 +4573,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Skills for the clio-geoscience workflow: inspect and map geospatial features, terrain, waveforms and NASA Earth-science data."
+      "summary": "Skills for the clio-geoscience workflow: maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data."
     },
     {
       "id": "plugin/clio-hpc-skills",
@@ -5325,6 +5981,286 @@
       "summary": "Choose a chart type, axes, bins and color scale that suit scientific data."
     },
     {
+      "id": "skill/chimod-dev",
+      "kind": "skill",
+      "name": "chimod-dev",
+      "title": "Developing a CLIO Core module (ChiMod)",
+      "description": "Use when writing your own CLIO Core runtime module (ChiMod) outside the clio-core repo: install with headers, clio_mod.yaml, tasks, runtime, client, codegen, CMake, loading, testing, or a CTE interposer layer. Triggers on \"new chimod\", \"custom module\", \"add a method\", \"clio_mod.yaml\", \"clio-run refresh\", \"CreateParams\", \"CLIO_REPO_PATH\", \"CoreInterposer\". Not for configuring shipped modules; use storage-compose. Not for GPU paged-vector kernels; use gpu-vector.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/chimod-dev/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Build or extend a CLIO Core runtime module: tasks, runtime, client, codegen, CMake and tests."
+    },
+    {
+      "id": "skill/clio-bdev",
+      "kind": "skill",
+      "name": "clio-bdev",
+      "title": "clio-bdev: block devices and the safe_bdev array",
+      "description": "Use when configuring CLIO Core block devices: a clio_bdev pool (ram, file, hbm, pinned, noop, s3, gcs, daos), a CTE storage tier entry, capacity, persistence_level, alloc_log and --fresh, or a clio_safe_bdev erasure-coded array (members, parity, max_failures, rebuild). Triggers on \"bdev_type\", \"capacity_limit\", \"alloc_log\", \"persistence_level\", \"safe_bdev\", \"parity disk\", \"S3 tier\". Not for designing the whole chain (use storage-compose) or CTE core keys (use clio-cte-core).",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-bdev/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Configure CLIO block devices and CTE tiers, allocator durability and the erasure-coded safe_bdev array."
+    },
+    {
+      "id": "skill/clio-cae",
+      "kind": "skill",
+      "name": "clio-cae",
+      "title": "Context Assimilation Engine (`clio_cae_core`, `clio_cae_summarizer`)",
+      "description": "Use when importing external data into CLIO Core with the Context Assimilation Engine: writing OMNI files, running clio-cae, calling ParseOmni or clio_cee context_bundle from Python/C++, choosing sources (file, HDF5, HTTP, S3, GCS, Globus), allowed_roots, or composing the LLM summarizer (401.0). Triggers on \"OMNI file\", \"clio-cae\", \"assimilate\", \"ParseOmni\", \"context_bundle\", \"label_matches\", \"summarizer\". Not for searching imported data (use clio-indexer) or chain ordering (use storage-compose).",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-cae/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Import files, HDF5 datasets and cloud objects into CLIO with OMNI files and clio-cae, plus the LLM summarizer."
+    },
+    {
+      "id": "skill/clio-compressor",
+      "kind": "skill",
+      "name": "clio-compressor",
+      "title": "clio-compressor: transparent blob compression",
+      "description": "Use when enabling, configuring or debugging clio_cte_compressor (pool 562.0): building with CLIO_CTE_ENABLE_COMPRESS or Spack +compress, default_compress and presets, static vs dynamic (model-chosen) codecs, GPU codecs, chain placement, and stored vs logical size. Triggers on \"compress my blobs\", \"default_compress\", \"zstd\", \"lz4\", \"kCompressDynamic\", \"562.0\", \"compression ratio\". Not for choosing or ordering the whole chain; use storage-compose. Not for the blob API itself; use clio-cte-core.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-compressor/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Compress CTE blobs transparently: build it, pick codecs, set defaults and place it in the chain."
+    },
+    {
+      "id": "skill/clio-cte-caches",
+      "kind": "skill",
+      "name": "clio-cte-caches",
+      "title": "CTE cache modules",
+      "description": "Use when choosing, composing, tuning or debugging a CLIO Core CTE cache module: write-back (567.0), write-thru, the shared-memory cache (568.0) or the node-copy cache (563.0). Covers keys, chain order, ack and fsync semantics, staleness and loss per failure. Triggers on \"write-back cache\", \"flush_period_ms\", \"fsync is slow\", \"lost writes after crash\", \"md_only\", \"invalidate_on_flush\", \"stale size on another node\". Not for the core or chain design; use clio-cte-core or storage-compose.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-cte-caches/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Choose and tune the CTE write-back, write-thru, shared-memory and node-copy caches, and what each loses on failure."
+    },
+    {
+      "id": "skill/clio-cte-core",
+      "kind": "skill",
+      "name": "clio-cte-core",
+      "title": "CTE core (`clio_cte_core`)",
+      "description": "Use when configuring, calling or debugging the Context Transfer Engine core (clio_cte_core): the persistent core at 512.0, the volatile core at 540.0, tiers, scores, the metadata WAL and the C++/Python blob API (Tag, PutBlob, GetBlob, TagQuery, SyncTag) every chain speaks. Triggers on \"clio_cte_core\", \"512.0\", \"540.0\", \"PutBlob rc=11\", \"metadata_log_path\", \"clio_cte_core_ext\", \"persistence_level\". Not for choosing or ordering the chain; use storage-compose. Not for bdev keys; use clio-bdev.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-cte-core/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Configure and call the CTE core: tiers, scores, the metadata log and the C++ and Python blob API."
+    },
+    {
+      "id": "skill/clio-fs",
+      "kind": "skill",
+      "name": "clio-fs",
+      "title": "clio-fs: files over the Context Transfer Engine",
+      "description": "Use when mounting, configuring or debugging the CLIO Core POSIX file layer: the filesystem ChiMod (560.0), the stream ChiMod (565.0), the clio_cte_fuse mount on Linux/Windows/macOS, the checkpoint fault handler (566.0), and the LD_PRELOAD/MPI-IO/HDF5/ADIOS2 adapters. Triggers on \"clio_cte_fuse\", \"mount CLIO\", \"metadata_log_path\", \"CLIO_FUSE_\", \"fsync EIO\", \"case_insensitive\", \"stream pool\". Not for chain design or blob APIs; use storage-compose or clio-cte-core.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-fs/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Mount CLIO as a POSIX filesystem and configure its filesystem and stream modules, fsync guarantees and adapters."
+    },
+    {
+      "id": "skill/clio-indexer",
+      "kind": "skill",
+      "name": "clio-indexer",
+      "title": "Indexer: keyword search over blob contents (`clio_cte_indexer`)",
+      "description": "Use when configuring, scoping, debugging or calling the CLIO Core keyword search index (clio_cte_indexer, pool 564.0): BM25 SemanticSearch over blob contents from Python (clio_cte_core_ext, or clio_cee context_query with a prompt) or C++, index persistence, memory growth, ReindexScan. Triggers on \"SemanticSearch\", \"search my files\", \"context_query prompt\", \"564.0\", \"index_log_path\", \"indexer OOM\". Not for ingesting data (use clio-cae) or ordering the chain (use storage-compose).",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-indexer/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Search CTE blob contents with the BM25 indexer: scope it, persist it, bound its memory and query it from Python."
+    },
+    {
       "id": "skill/clio-kit-archify",
       "kind": "skill",
       "name": "clio-kit-archify",
@@ -6690,6 +7626,76 @@
       "summary": "Merge finished worktree branches through a throwaway integration branch, testing after each merge."
     },
     {
+      "id": "skill/clio-replication",
+      "kind": "skill",
+      "name": "clio-replication",
+      "title": "clio-replication: durable copies and node failover",
+      "description": "Use when configuring, reasoning about or testing clio_cte_replication (pool 561.0): replication_factor and remote copies on successor nodes, failover_to_successor, hand-back after a node returns, handoff_log_path, on-node replicas, and node or disk loss. Triggers on \"replication_factor\", \"remote_copies\", \"failover_to_successor\", \"hand-back\", \"survive a node\", \"561.0\". Not for choosing or ordering the whole chain; use storage-compose. Not for core tiers or WAL; use clio-cte-core.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-replication/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Keep copies of CTE data on successor nodes, with failover and hand-back, and know what survives node loss."
+    },
+    {
+      "id": "skill/clio-runtime-config",
+      "kind": "skill",
+      "name": "clio-runtime-config",
+      "title": "Running and configuring the Context Runtime",
+      "description": "Use when installing, starting, configuring or troubleshooting the CLIO Core Context Runtime itself: where clio.yaml comes from, networking/runtime/swim/viz keys, compose entry basics, CLIO_* environment variables, clio-run start/stop/status/compose, --fresh, multi-node hostfiles, Docker, client connection. Triggers on \"clio-run start\", \"~/.clio/clio.yaml\", \"CLIO_SERVER_CONF\", \"hostfile\", \"port 9413\", \"runtime not running\". Not for designing a storage chain; use storage-compose.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/clio-runtime-config/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Run and configure the CLIO Context Runtime: config file, environment variables, the clio-run CLI, multi-node and Docker."
+    },
+    {
       "id": "skill/cluster-run",
       "kind": "skill",
       "name": "cluster-run",
@@ -6738,7 +7744,7 @@
       "description": "Use when interpreting axis order, projections, distance units or vertical datums. Triggers on \"lat lon\", \"CRS\", \"UTM\", \"map offset\". Calls no tools. Not for executing map operations; use geospatial-map.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.1.0",
+      "version": "1.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-geoscience-skills/skills/coordinate-systems/SKILL.md",
@@ -6928,7 +7934,7 @@
       "description": "Use when validating GeoJSON, querying spatial relationships, mapping features or analyzing terrain grids. Triggers on \"GeoJSON\", \"render a map\", \"DEM\", \"point cloud\". Not for CRS interpretation alone; use coordinate-systems.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.1.0",
+      "version": "1.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-geoscience-skills/skills/geospatial-map/SKILL.md",
@@ -6957,6 +7963,41 @@
       ],
       "installation": "portable-skill",
       "summary": "Validate GeoJSON, query spatial relationships, map features and analyze terrain grids."
+    },
+    {
+      "id": "skill/gpu-vector",
+      "kind": "skill",
+      "name": "gpu-vector",
+      "title": "Programming the gpu_vector paged vector",
+      "description": "Use when writing, porting, optimizing or debugging GPU kernels over CLIO's paged out-of-core vector (gv::Vector / gv::DeviceVector): layout, page and cache sizing, fetch/hold/flush placement, eviction safety, multi-node generations, tier policy. Triggers on \"gpu_vector\", \"gv::Vector\", \"DeviceVector\", \"CoFetch\", \"HoldPage\", \"out-of-core kernel\", \"CLIO_COROC_RUN\", \"ReorganizeHint\". Not for writing a runtime module; use chimod-dev. Not for wiring tiers into a deployment; use storage-compose.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/gpu-vector/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Write and tune GPU kernels over CLIO's paged out-of-core vector, validated resident and out of core."
     },
     {
       "id": "skill/io-performance",
@@ -7193,7 +8234,7 @@
       "description": "Use when inspecting SAC waveforms or evaluating a saved earthquake event catalogue. Triggers on \"SAC\", \"waveform statistics\", \"b-value\", \"magnitude completeness\". Not for geospatial mapping; use geospatial-map.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.1.0",
+      "version": "1.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "skills/clio-geoscience-skills/skills/seismic-analysis/SKILL.md",
@@ -7408,6 +8449,41 @@
       ],
       "installation": "portable-skill",
       "summary": "Check installed Spack packages and available or saved module environments."
+    },
+    {
+      "id": "skill/storage-compose",
+      "kind": "skill",
+      "name": "storage-compose",
+      "title": "Composing a storage system from CLIO Core modules",
+      "description": "Use when designing, configuring or reviewing a CLIO Core storage deployment: choosing which shipped modules to compose (bdev, safe_bdev, CTE cores, write-back/write-thru caches, replication, shm cache, indexer, compressor, stream, filesystem, CAE), ordering the chain, and stating its consistency and fault tolerance. Triggers on \"compose section\", \"clio_default.yaml\", \"next_pool_id\", \"replication_factor\", \"is this durable\", \"what survives a crash\". Not for writing a new module; use chimod-dev.",
+      "publisher": "clio-kit",
+      "origin": "Maintained",
+      "version": "1.0.0",
+      "category": "Coding",
+      "source": "https://github.com/iowarp/clio-kit",
+      "path": "skills/clio-core-skills/skills/storage-compose/SKILL.md",
+      "members": [],
+      "servers": [],
+      "tags": [
+        "clio-core"
+      ],
+      "clients": [
+        "codex",
+        "opencode",
+        "cursor",
+        "antigravity",
+        "claude-code",
+        "vscode",
+        "other"
+      ],
+      "license": "BSD-3-Clause",
+      "docs": "/docs/marketplace#installable-components",
+      "evidence": "Scenarios recorded",
+      "componentTypes": [
+        "skill"
+      ],
+      "installation": "portable-skill",
+      "summary": "Compose CLIO Core's shipped modules into a storage system and state what it guarantees."
     },
     {
       "id": "skill/storage-format",
@@ -7719,27 +8795,39 @@
       "kind": "plugin",
       "name": "clio-geoscience",
       "title": "Explore the physical world",
-      "description": "Inspect and map geospatial features, terrain, waveforms and NASA Earth-science data.",
+      "description": "Maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data.",
       "publisher": "clio-kit",
       "origin": "Maintained",
-      "version": "1.1.0",
+      "version": "1.3.0",
       "category": "Geoscience",
       "source": "https://github.com/iowarp/clio-kit",
       "path": "plugins/clio-geoscience/.claude-plugin/plugin.json",
       "members": [
+        "mcp/copernicus",
         "mcp/earthdata",
         "mcp/geo",
+        "mcp/geoprocess",
+        "mcp/geoservices",
+        "mcp/grids",
+        "mcp/ocean",
         "mcp/seismology",
         "mcp/terrain",
+        "mcp/weather",
         "skill/coordinate-systems",
         "skill/geospatial-map",
         "skill/seismic-analysis"
       ],
       "servers": [
+        "clio-copernicus",
         "clio-earthdata",
         "clio-geo",
+        "clio-geoprocess",
+        "clio-geoservices",
+        "clio-grids",
+        "clio-ocean",
         "clio-seismology",
-        "clio-terrain"
+        "clio-terrain",
+        "clio-weather"
       ],
       "tags": [],
       "clients": [
@@ -7770,7 +8858,7 @@
         "claude-code": true,
         "vscode": true
       },
-      "summary": "Inspect and map geospatial features, terrain, waveforms and NASA Earth-science data."
+      "summary": "Maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data."
     },
     {
       "id": "workflow/clio-home",

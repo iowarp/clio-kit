@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.12.7",
+      "version": "2.13.1",
       "transport": {
         "type": "stdio"
       },
@@ -63,6 +63,12 @@
       "uri": "ase://capabilities",
       "name": "capabilities",
       "description": "Describe what the ase MCP server can do."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "optimize_and_check",
+      "description": "Guided optimization with a frequency check."
     }
   ],
   "tags": [

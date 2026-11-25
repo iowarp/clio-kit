@@ -42,6 +42,13 @@
         "compression"
       ]
     },
+    "clio-copernicus": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "copernicus"
+      ]
+    },
     "clio-darshan": {
       "command": "clio-kit",
       "args": [
@@ -77,11 +84,32 @@
         "geo"
       ]
     },
+    "clio-geoprocess": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "geoprocess"
+      ]
+    },
+    "clio-geoservices": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "geoservices"
+      ]
+    },
     "clio-graspa": {
       "command": "clio-kit",
       "args": [
         "mcp-server",
         "graspa"
+      ]
+    },
+    "clio-grids": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "grids"
       ]
     },
     "clio-hdf5": {
@@ -124,6 +152,13 @@
       "args": [
         "mcp-server",
         "node-hardware"
+      ]
+    },
+    "clio-ocean": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "ocean"
       ]
     },
     "clio-pandas": {
@@ -222,6 +257,13 @@
       "args": [
         "mcp-server",
         "terrain"
+      ]
+    },
+    "clio-weather": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "weather"
       ]
     },
     "clio-web": {

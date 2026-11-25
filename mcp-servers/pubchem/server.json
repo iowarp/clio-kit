@@ -12,7 +12,7 @@
     {
       "registryType": "pypi",
       "identifier": "clio-kit",
-      "version": "2.12.7",
+      "version": "2.13.1",
       "transport": {
         "type": "stdio"
       },
@@ -47,6 +47,12 @@
       "uri": "pubchem://capabilities",
       "name": "capabilities",
       "description": "Describe what the pubchem MCP server can do."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "compound_lookup",
+      "description": "Guided lookup of a compound in PubChem by name."
     }
   ],
   "tags": [

@@ -1,0 +1,13 @@
+{
+  "name": "clio-grids",
+  "description": "MCP server for hand edits to 2-D model grids (bathymetry, land masks, topography): an interactive editor, an ordered edit list located by longitude and latitude, and replay onto a regenerated grid with content hashes",
+  "version": "1.0.0",
+  "author": {
+    "name": "IoWarp Team - Gnosis Research Center",
+    "email": "grc@illinoistech.edu",
+    "url": "https://github.com/iowarp/clio-kit"
+  },
+  "homepage": "https://github.com/iowarp/clio-kit",
+  "repository": "https://github.com/iowarp/clio-kit",
+  "license": "BSD-3-Clause"
+}
