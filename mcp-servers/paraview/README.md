@@ -21,6 +21,12 @@ the MCP host --stdio--> the front --one ssh, one forwarded port--> the node half
 
 When ParaView is on this machine there is no `ssh`.
 
+The front installs from wheels only, on Windows, macOS and Linux (a test keeps
+its lock that way), so its first start takes seconds. It does not install the
+`adios2` Python package: ADIOS2 BP output is read by ParaView's own
+`ADIOS2VTXReader`, which Kitware's builds include on all three systems, through
+the same node-half path on each.
+
 ## Configuration
 
 The front reads where ParaView runs from its environment. A connector sets
