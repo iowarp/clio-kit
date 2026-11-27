@@ -232,9 +232,10 @@ def test_user_surface_hides_environment_materialization() -> None:
         "spack_locate",
         "spack_search",
         "spack_info",
-        "spack_install",
+        "spack_site_query",
     }
     assert "spack_environment" not in server.USER_TOOLS
+    assert "spack_install" not in server.USER_TOOLS
     assert "spack_load" not in server.USER_TOOLS | server.ADMIN_TOOLS
 
 
@@ -336,9 +337,15 @@ def test_main_runs_http_and_admin_main_selects_admin_profile(
     [
         (
             "user",
-            {"spack_find", "spack_locate", "spack_search", "spack_info", "spack_install"},
+            {
+                "spack_find",
+                "spack_locate",
+                "spack_search",
+                "spack_info",
+                "spack_site_query",
+            },
         ),
-        ("admin", {"spack_environment"}),
+        ("admin", {"spack_environment", "spack_install"}),
         (
             "all",
             {
@@ -346,6 +353,7 @@ def test_main_runs_http_and_admin_main_selects_admin_profile(
                 "spack_locate",
                 "spack_search",
                 "spack_info",
+                "spack_site_query",
                 "spack_install",
                 "spack_environment",
             },

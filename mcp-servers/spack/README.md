@@ -11,8 +11,13 @@ spack_find
 spack_locate
 spack_search
 spack_info
-spack_install
+spack_site_query
 ```
+
+`spack_install` and `spack_environment` are admin tools (`--profile admin`).
+Users install packages on a site through a jarvis install job
+(`jarvis ppl install ... +submit`), which runs on a compute node, not through
+this server.
 
 The default server intentionally has no stateful `spack_load` tool. Each MCP
 call runs in its own process context, so changing that process environment would
@@ -28,9 +33,66 @@ An ordinary `spack_find` query with no installed matches is successful typed
 data: `count` is `0` and `packages` is `[]`. Calling `spack_locate` for an absent
 package instead returns the structured `not_installed` semantic, enriched with
 whether a recipe is available to install (and in which repo) or exists in no
-registered repo at all, so an agent can decide whether its policy permits
-`spack_install` without a separate lookup. Other nonzero Spack invocations
+registered repo at all, so an agent can route the install to a jarvis install
+job without a separate lookup. Other nonzero Spack invocations
 remain structured MCP errors.
+
+## Sites reached through clio-relay
+
+On an HPC site, CLIO uses a JARVIS Spack that reuses what the site already has
+(the site Spack's install tree and modules, such as a site MPI that spans
+nodes) and builds the rest. This server never opens an SSH connection itself,
+and it does not prepare that Spack.
+
+Site preparation belongs to jarvis-cd: clio-relay runs `jarvis spack prepare`
+on the site (see jarvis-cd `docs/spack.md`). It clones the Spack release the
+site runs into `JARVIS_SPACK_ROOT` (`<site_home>/spack`), writes the clone's
+`etc/spack` site scope (upstreams, build-tool externals, module MPIs as
+candidates, `packages:mpi:buildable:false`, the compiler preference and
+`build_jobs`) and records the result as `jarvis.spack-site-prep.v1` in
+`<root>/var/jarvis/site-prep.json`. It exits 0 when prepared, 3 with
+`ambiguous_compiler` when several full toolchains qualify (the person picks
+one, once, and the agent reruns it with `--compiler` or `--answers`) and 5 on a
+refusal. `jarvis spack prepare --compiler` is also the lever to fix a build that
+failed in a compiler check. An unreleased build of this server had a
+`spack_prepare_site` tool for this; it was removed so that there is one path.
+
+`spack_site_query(site, query)` researches that Spack in two calls:
+
+1. Called without `relay_result`, it returns `relay_call`: the clio-relay
+   `exec` arguments (`site`, an argv `command`, `timeout_s`,
+   `max_output_bytes`).
+2. The agent calls clio-relay `exec` with those arguments unchanged, then calls
+   the tool again with the same arguments and `relay_result` set to the exec
+   structured result. The tool checks that the result belongs to the planned
+   argv and parses it.
+
+Its queries are `find` (installed and upstream packages), `info` (one recipe),
+`spec` (`spack spec -I -l`: which nodes are installed, upstream, external or
+still to build) and `modules` (`module -t avail`). The research verbs run Spack
+directly, with no shell, as `["env", "SPACK_DISABLE_LOCAL_CONFIG=1",
+".clio-relay/spack/bin/spack", "find", "--json", term]` (the same shape for
+`info` and `spec`). The Spack path is relative to home because relay's exec
+runs from `$HOME`; a `~/` root is given that way, and an absolute root only
+works on a guarded site whose guard lists it. The prepared config is in the
+clone's site scope, so `SPACK_DISABLE_LOCAL_CONFIG=1` alone keeps the person's
+`~/.spack` out. If the clone is missing, the exec exits 127 and the tool says to
+prepare the site through relay with `jarvis spack prepare` first.
+
+Login nodes are shared, so the tool does only light, short work there: `find`,
+`info`, `spec` and `module avail`. It never runs `spack install` or a build,
+and nothing outlives the relay call (relay's exec kills the process group when
+it ends).
+
+On a Secure (guarded) relay site, the research argv is on relay's read-only
+list: `env` may set only `SPACK_DISABLE_LOCAL_CONFIG=1`, and `-C`, `-e`, `-D`
+are refused. If relay still asks the person and the client cannot show the
+ask, relay returns `needs_approval` with an `ask_id`; the tool returns
+`status: needs_approval` with the same `relay_call`, which the agent sends again
+unchanged once the person has answered. A declined ask comes back as
+`status: declined`, and the agent stops. Any other guard refusal is
+`status: refused`, and the agent tells the person instead of working around
+the guard.
 
 ## Recipe discovery
 
@@ -59,9 +121,11 @@ recipe **availability**:
   only read as source) and marks the result `degraded: true` with a
   `degraded_reason` naming the actual cause -- never silently.
 
-## Install concretization
+## Install concretization (admin)
 
-`spack_install` always selects the Spack concretization policy explicitly:
+`spack_install` is an admin tool for a local Spack. It must not run on an HPC
+login node; site installs run as jarvis install jobs. It always selects the
+Spack concretization policy explicitly:
 
 - `spack_install(spec, reuse=true)` runs `spack install --reuse <spec>` and may
   reuse compatible installed packages or buildcaches while concretizing.
@@ -98,6 +162,15 @@ recovery affordance:
 - `log_unwritable` -- the install log directory or file could not be
   created/opened; Spack is never invoked in this case.
 
+### Breaking change in the v2.3 -> v3 registry contract
+
+`spack_install` moved from the default (user) profile to the admin profile,
+and the user profile gained `spack_site_query`. An
+agent that called `spack_install` on the default server must route installs
+to a jarvis install job, or run the server with `--profile admin`. Site
+preparation (`spack_prepare_site` in unreleased builds of v3) moved to
+`jarvis spack prepare`, run through clio-relay.
+
 ### Breaking change in the v2.1 -> v2.2 registry contract
 
 `spack_install`'s output shape changed: v2.1's `packages` (a list) and
@@ -131,8 +204,8 @@ Sites can add exact non-secret variable names with the comma-separated
 `CLIO_SPACK_ENV_ALLOWLIST` or `SPACK_MCP_ENV_ALLOWLIST`; sensitive and transient
 names remain rejected even when configured.
 
-An operator-only diagnostic can return the structured environment without
-claiming to mutate future processes:
+An operator-only profile adds `spack_install` and a diagnostic that returns the
+structured environment without claiming to mutate future processes:
 
 ```bash
 clio-kit mcp-server spack -- --profile admin

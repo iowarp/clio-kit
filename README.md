@@ -217,7 +217,7 @@ and Scientific Catalog, with SHA-256 digests for downstream verification:
 clio-kit mcp-contracts
 clio-kit mcp-contract clio-kit-jarvis-user-v3.7.2
 clio-kit mcp-contract clio-kit-slurm-user-v3.1
-clio-kit mcp-contract clio-kit-spack-user-v2.3
+clio-kit mcp-contract clio-kit-spack-user-v3
 clio-kit mcp-contract clio-kit-scientific-catalog-user-v1.1
 ```
 
@@ -513,7 +513,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`scientific-catalog`** | 1.1.7 | Discovery | Operator-owned scientific dataset discovery | `clio-kit mcp-server scientific-catalog` |
 | **`slicer`** | 1.0.0 | 3D Printing | Slice models with the installed PrusaSlicer or OrcaSlicer and view toolpaths layer by layer | `clio-kit mcp-server slicer` |
 | **`slurm`** | 3.1.1 | HPC | Job submission and management | `clio-kit mcp-server slurm` |
-| **`spack`** | 2.3.4 | Package Management | Structured package discovery, installation, and location | `clio-kit mcp-server spack` |
+| **`spack`** | 3.0.0 | Package Management | Structured package discovery and location, plus relay-backed HPC site preparation and research | `clio-kit mcp-server spack` |
 | **`spice`** | 1.0.0 | Electronics | Simulate circuits with ngspice or LTspice and plot waveforms (runs ltspice-mcp 0.8.0) | `clio-kit mcp-server spice` |
 | **`terrain`** | 2.3.0 | Geospatial | Analyze DEMs and terrain point clouds | `clio-kit mcp-server terrain` |
 | **`web`** | 2.1.6 | Web | Web search and URL fetch, with queryable, cancellable fetch tasks; DOI and document conversion need a remote service | `clio-kit mcp-server web` |

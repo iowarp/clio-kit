@@ -7,7 +7,7 @@ import asyncio
 import os
 from collections.abc import Callable
 from pathlib import Path
-from typing import Annotated, TypeVar
+from typing import Annotated, Any, Literal, TypeVar
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
@@ -31,13 +31,23 @@ from spack_mcp.discovery import (
     search_packages,
 )
 from spack_mcp.provisioning import SpackInstallResult, install_spec
+from spack_mcp.site import DEFAULT_SITE_HOME, site_query
+from spack_mcp.site_models import SpackSiteQueryResult
 
 mcp: FastMCP = FastMCP(
     "spack",
-    version="2.3.4",
+    version="3.0.0",
     instructions=(
-        "Discover, locate, search, describe, and install Spack packages using "
-        "structured results. A find with no installed matches succeeds with "
+        "Discover, locate, search and describe Spack packages using structured "
+        "results. On a remote HPC site, the JARVIS Spack is prepared by `jarvis "
+        "spack prepare`, run through clio-relay; spack_site_query researches it "
+        "(find, info, spec, modules). It reaches the site only through clio-relay: "
+        "it returns a relay exec call to make, then parses its result on a second "
+        "call. It does light login-node work only and never installs or builds. "
+        "Packages are installed by jarvis install jobs "
+        "(jarvis ppl install ... +submit); choices jarvis can't resolve, such as "
+        "several MPIs or compilers, go to the person. spack_install is an admin tool for a "
+        "local Spack. A find with no installed matches succeeds with "
         "count=0 and packages=[]; locating an absent package returns the "
         "structured not_installed error, enriched with whether a recipe is "
         "available to install. Search answers recipe AVAILABILITY across every "
@@ -51,8 +61,14 @@ mcp: FastMCP = FastMCP(
     ),
 )
 
-USER_TOOLS = {"spack_find", "spack_locate", "spack_search", "spack_info", "spack_install"}
-ADMIN_TOOLS = {"spack_environment"}
+USER_TOOLS = {
+    "spack_find",
+    "spack_locate",
+    "spack_search",
+    "spack_info",
+    "spack_site_query",
+}
+ADMIN_TOOLS = {"spack_environment", "spack_install"}
 MCP_METADATA_PROFILE = "user"
 ResultT = TypeVar("ResultT")
 
@@ -86,7 +102,7 @@ async def spack_find_tool(query: str | None = None) -> SpackFindResult:
         "jarvis_run.input.spack_specs; do not derive or pass an executable path from "
         "the returned prefix. An absent package returns the structured not_installed "
         "error, whose detail now says whether a recipe is available to install "
-        "(call spack_install) or exists in no registered repo at all."
+        "(through a jarvis install job) or exists in no registered repo at all."
     ),
     annotations={
         "readOnlyHint": True,
@@ -155,7 +171,9 @@ async def spack_info_tool(package: str) -> SpackInfoResult:
     name="spack_install",
     title="Install Package",
     description=(
-        "Install one Spack spec with explicit reusable or fresh concretization. "
+        "Admin: install one Spack spec into the local Spack with explicit reusable or "
+        "fresh concretization. Never use it on an HPC login node; site installs run "
+        "as jarvis install jobs. "
         "Runs synchronously (streaming/task augmentation is deferred to the kit "
         "tasks-semantics slice, SEP-2663) with a configurable timeout; captures the "
         "full build log to disk and returns its path plus a bounded tail, and the "
@@ -169,7 +187,7 @@ async def spack_info_tool(package: str) -> SpackInfoResult:
         "idempotentHint": False,
         "openWorldHint": True,
     },
-    tags={"spack", "packages", "user"},
+    tags={"spack", "packages", "admin"},
 )
 async def spack_install_tool(
     spec: str,
@@ -191,6 +209,74 @@ async def spack_install_tool(
         spec,
         reuse=reuse,
         timeout_seconds=timeout_seconds,
+    )
+
+
+_RelayResult = Annotated[
+    dict[str, Any] | None,
+    Field(
+        description=(
+            "Leave empty on the first call. On the second call, pass the structured "
+            "result of the clio-relay exec call this tool returned."
+        )
+    ),
+]
+_SiteHome = Annotated[
+    str,
+    Field(description="The site's CLIO home: clio-relay's remote_dir for the site."),
+]
+_Root = Annotated[
+    str | None,
+    Field(
+        description=(
+            "The JARVIS Spack checkout; default <site_home>/spack. On a guarded relay site "
+            "queries run only the Spack its guard lists (default .clio-relay/spack/bin/spack)."
+        )
+    ),
+]
+
+
+@mcp.tool(
+    name="spack_site_query",
+    title="Research Site Spack",
+    description=(
+        "Research a clio-relay site's JARVIS Spack (prepared by `jarvis spack "
+        "prepare` through relay): "
+        "find (installed and upstream packages, --json), info (one recipe), spec "
+        "(spack spec -I -l: what is installed, upstream, external or still to build) "
+        "or modules (module -t avail). Read-only, short login-node work; Spack runs as "
+        "env SPACK_DISABLE_LOCAL_CONFIG=1 <spack> <verb>, the shape clio-relay's guard "
+        "accepts. The first call returns the relay exec call; the second, with "
+        "relay_result, returns the parsed answer."
+    ),
+    annotations={
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": True,
+    },
+    tags={"spack", "site", "user"},
+)
+async def spack_site_query_tool(
+    site: Annotated[str, Field(description="The clio-relay site id, such as ares")],
+    query: Literal["find", "info", "spec", "modules"],
+    spec: Annotated[
+        str | None,
+        Field(description="Spec for find/spec, package for info, module name for modules."),
+    ] = None,
+    site_home: _SiteHome = DEFAULT_SITE_HOME,
+    root: _Root = None,
+    relay_result: _RelayResult = None,
+) -> SpackSiteQueryResult:
+    """Plan or read one read-only research command on a site's JARVIS Spack."""
+    return await _call_backend(
+        site_query,
+        site,
+        query,
+        spec=spec,
+        site_home=site_home,
+        root=root,
+        relay_result=relay_result,
     )
 
 
@@ -218,24 +304,31 @@ async def spack_environment_tool(specs: list[str]) -> SpackEnvironmentResult:
 def spack_capabilities() -> dict[str, object]:
     """Describe the stateless Spack contract exposed by this server."""
     return {
-        "operations": ["find", "locate", "search", "info", "install"],
-        "admin_operations": ["environment"],
+        "operations": ["find", "locate", "search", "info", "site_query"],
+        "site_preparation": "jarvis spack prepare (through clio-relay)",
+        "admin_operations": ["environment", "install"],
         "stateful_load_exposed": False,
         "runtime_owner": "jarvis_run",
+        "site_transport": "clio-relay exec",
+        "site_installs": "jarvis ppl install +submit",
     }
 
 
 @mcp.prompt()
 def prepare_spack_package(spec: str) -> list[Message]:
-    """Guide an agent through the provisioning loop: locate, search, install."""
+    """Guide an agent through the provisioning loop: research, then a jarvis install."""
     return [
         Message(
-            f"Prepare Spack package {spec!r}. First call spack_find (or spack_locate) "
-            "to check whether it is already installed. If not, call spack_search to "
-            "confirm a recipe exists and spack_info to see its versions/variants "
-            "before proposing an install. Install only after that check (and any "
-            "required approval), then call spack_locate. Copy "
-            "spack_locate.output.load_spec (or spack_install.output.load_spec) "
+            f"Prepare Spack package {spec!r}. On a remote site, make sure the JARVIS "
+            "Spack was prepared (relay runs `jarvis spack prepare`; it exits 3 with "
+            "ambiguous_compiler when the person must pick a compiler), then research "
+            "with spack_site_query: "
+            "find to see what the site has, info for versions and variants, spec to see "
+            "what would still be built. Locally, use spack_find (or spack_locate), "
+            "spack_search and spack_info. Install through a jarvis install job "
+            "(jarvis ppl install ... +submit), never on a login node. When jarvis "
+            "reports an install issue it can't resolve, such as several MPIs, ask the "
+            "person and pass the answer back. Copy spack_locate.output.load_spec "
             "unchanged into jarvis_run.input.spack_specs so JARVIS persists the "
             "runtime environment."
         )

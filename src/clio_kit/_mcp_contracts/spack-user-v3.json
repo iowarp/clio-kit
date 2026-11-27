@@ -1,0 +1,1162 @@
+{
+  "canonicalization": "json-sort-keys-compact-utf8-v1",
+  "contract_id": "clio-kit-spack-user-v3",
+  "contract_sha256": "d29bea0e221550ce4fd464f01d10eef893e1f1caea02d573228f337727de7f7a",
+  "profile": "user",
+  "projection": "mcp-agent-tool-schema-v1",
+  "schema_version": "clio-kit.mcp-user-contract.v1",
+  "server_name": "spack",
+  "source": {
+    "method": "tools/list",
+    "protocol_version": "2024-11-05",
+    "transport": "stdio"
+  },
+  "tool_names": [
+    "spack_find",
+    "spack_info",
+    "spack_locate",
+    "spack_search",
+    "spack_site_query"
+  ],
+  "tools": [
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": [
+            "packages",
+            "spack",
+            "user"
+          ]
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "List installed Spack packages matching an optional constraint. No matches is a successful result with count=0 and packages=[].",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "type": "object"
+      },
+      "name": "spack_find",
+      "outputSchema": {
+        "additionalProperties": false,
+        "description": "Machine-readable installed-package query result.",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "operation": {
+            "const": "find",
+            "default": "find",
+            "type": "string"
+          },
+          "packages": {
+            "items": {
+              "additionalProperties": false,
+              "description": "Stable summary of one concrete installed Spack package.",
+              "properties": {
+                "architecture": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "compiler": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "dag_hash": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                },
+                "name": {
+                  "type": "string"
+                },
+                "version": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "default": null
+                }
+              },
+              "required": [
+                "name"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "query": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "schema_version": {
+            "const": "spack.mcp.result.v1",
+            "default": "spack.mcp.result.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "type": "object"
+      },
+      "title": "Find Packages"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": [
+            "packages",
+            "spack",
+            "user"
+          ]
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Describe one recipe: versions, variants, and description. Probes `spack info` first; if that subcommand is unavailable or fails on this deployment, falls back to statically parsing the recipe's package.py and marks the result degraded=true with degraded_reason explaining why -- never silently. A package absent from every registered repo returns the structured recipe_not_found error.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "package": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "package"
+        ],
+        "type": "object"
+      },
+      "name": "spack_info",
+      "outputSchema": {
+        "additionalProperties": false,
+        "description": "Recipe detail: versions, variants, description, and how it was read.",
+        "properties": {
+          "degraded": {
+            "type": "boolean"
+          },
+          "degraded_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "operation": {
+            "const": "info",
+            "default": "info",
+            "type": "string"
+          },
+          "package": {
+            "type": "string"
+          },
+          "repo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "schema_version": {
+            "const": "spack.mcp.result.v1",
+            "default": "spack.mcp.result.v1",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "spack_info",
+              "package_py"
+            ],
+            "type": "string"
+          },
+          "variants": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "versions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "package",
+          "source",
+          "degraded"
+        ],
+        "type": "object"
+      },
+      "title": "Describe Recipe"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": [
+            "packages",
+            "spack",
+            "user"
+          ]
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Resolve one unique installed Spack spec. Copy spack_locate.output.load_spec unchanged into one element of jarvis_run.input.spack_specs; do not derive or pass an executable path from the returned prefix. An absent package returns the structured not_installed error, whose detail now says whether a recipe is available to install (through a jarvis install job) or exists in no registered repo at all.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "spec": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "spec"
+        ],
+        "type": "object"
+      },
+      "name": "spack_locate",
+      "outputSchema": {
+        "additionalProperties": false,
+        "description": "Unique installed package and its exact prefix.",
+        "properties": {
+          "load_spec": {
+            "description": "Exact runtime identity for JARVIS. Copy this value unchanged from spack_locate.output.load_spec into one element of jarvis_run.input.spack_specs.",
+            "type": "string"
+          },
+          "operation": {
+            "const": "locate",
+            "default": "locate",
+            "type": "string"
+          },
+          "package": {
+            "additionalProperties": false,
+            "description": "Stable summary of one concrete installed Spack package.",
+            "properties": {
+              "architecture": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "compiler": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "dag_hash": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              },
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "default": null
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "type": "object"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "requested_spec": {
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "spack.mcp.result.v1",
+            "default": "spack.mcp.result.v1",
+            "type": "string"
+          }
+        },
+        "required": [
+          "requested_spec",
+          "load_spec",
+          "package",
+          "prefix"
+        ],
+        "type": "object"
+      },
+      "title": "Locate Package"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": [
+            "packages",
+            "spack",
+            "user"
+          ]
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Search recipe AVAILABILITY across every registered Spack repo -- broader than spack_find/spack_locate, which only see what is already installed. Answers 'does a recipe exist', 'in which repo', and 'is it already installed' in one call. No matches is a successful result with count=0.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "type": "object"
+      },
+      "name": "spack_search",
+      "outputSchema": {
+        "additionalProperties": false,
+        "description": "Recipe availability across every registered repo, not just installs.",
+        "properties": {
+          "count": {
+            "type": "integer"
+          },
+          "installed_state_degraded": {
+            "default": false,
+            "description": "True when `spack find` failed while resolving install state; recipe availability above is still authoritative, but every match's installed/installed_packages defaults to not-installed rather than a confirmed answer.",
+            "type": "boolean"
+          },
+          "installed_state_degraded_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "matches": {
+            "items": {
+              "additionalProperties": false,
+              "description": "One catalog recipe matched by a search query.",
+              "properties": {
+                "installed": {
+                  "type": "boolean"
+                },
+                "installed_packages": {
+                  "items": {
+                    "additionalProperties": false,
+                    "description": "Stable summary of one concrete installed Spack package.",
+                    "properties": {
+                      "architecture": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null
+                      },
+                      "compiler": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null
+                      },
+                      "dag_hash": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "version": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "default": null
+                      }
+                    },
+                    "required": [
+                      "name"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "repos": {
+                  "description": "Registered repo namespaces that declare this recipe.",
+                  "items": {
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "required": [
+                "name",
+                "repos",
+                "installed"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "operation": {
+            "const": "search",
+            "default": "search",
+            "type": "string"
+          },
+          "query": {
+            "type": "string"
+          },
+          "repos_searched": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "repos_unreadable": {
+            "description": "Registered repos whose package directory could not be scanned (missing path, permission denied, ...); recipes may exist there that this search could not see. Never treat an empty result as a confirmed absence when this list is non-empty.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "schema_version": {
+            "const": "spack.mcp.result.v1",
+            "default": "spack.mcp.result.v1",
+            "type": "string"
+          },
+          "total_matches": {
+            "description": "Total ranked matches before the response cap; compare with count/truncated to tell '25 of 25' from '25 of 60'.",
+            "type": "integer"
+          },
+          "truncated": {
+            "default": false,
+            "description": "True when total_matches exceeds the 25-result cap.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "query",
+          "repos_searched",
+          "matches",
+          "count",
+          "total_matches"
+        ],
+        "type": "object"
+      },
+      "title": "Search Recipes"
+    },
+    {
+      "_meta": {
+        "fastmcp": {
+          "tags": [
+            "site",
+            "spack",
+            "user"
+          ]
+        }
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Research a clio-relay site's JARVIS Spack (prepared by `jarvis spack prepare` through relay): find (installed and upstream packages, --json), info (one recipe), spec (spack spec -I -l: what is installed, upstream, external or still to build) or modules (module -t avail). Read-only, short login-node work; Spack runs as env SPACK_DISABLE_LOCAL_CONFIG=1 <spack> <verb>, the shape clio-relay's guard accepts. The first call returns the relay exec call; the second, with relay_result, returns the parsed answer.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "query": {
+            "enum": [
+              "find",
+              "info",
+              "spec",
+              "modules"
+            ],
+            "type": "string"
+          },
+          "relay_result": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Leave empty on the first call. On the second call, pass the structured result of the clio-relay exec call this tool returned."
+          },
+          "root": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "The JARVIS Spack checkout; default <site_home>/spack. On a guarded relay site queries run only the Spack its guard lists (default .clio-relay/spack/bin/spack)."
+          },
+          "site": {
+            "description": "The clio-relay site id, such as ares",
+            "type": "string"
+          },
+          "site_home": {
+            "default": "~/.clio-relay",
+            "description": "The site's CLIO home: clio-relay's remote_dir for the site.",
+            "type": "string"
+          },
+          "spec": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "description": "Spec for find/spec, package for info, module name for modules."
+          }
+        },
+        "required": [
+          "site",
+          "query"
+        ],
+        "type": "object"
+      },
+      "name": "spack_site_query",
+      "outputSchema": {
+        "additionalProperties": false,
+        "description": "Result of spack_site_query, either the relay call to make or the parsed answer.",
+        "properties": {
+          "ask": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "description": "A pending clio-relay ask the person answers before exec runs.",
+                "properties": {
+                  "ask_id": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "message": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "page": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "find": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "description": "Machine-readable installed-package query result.",
+                "properties": {
+                  "count": {
+                    "type": "integer"
+                  },
+                  "operation": {
+                    "const": "find",
+                    "default": "find",
+                    "type": "string"
+                  },
+                  "packages": {
+                    "items": {
+                      "additionalProperties": false,
+                      "description": "Stable summary of one concrete installed Spack package.",
+                      "properties": {
+                        "architecture": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "compiler": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "dag_hash": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "version": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "query": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "schema_version": {
+                    "const": "spack.mcp.result.v1",
+                    "default": "spack.mcp.result.v1",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "count"
+                ],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "info": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "description": "Recipe detail: versions, variants, description, and how it was read.",
+                "properties": {
+                  "degraded": {
+                    "type": "boolean"
+                  },
+                  "degraded_reason": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "operation": {
+                    "const": "info",
+                    "default": "info",
+                    "type": "string"
+                  },
+                  "package": {
+                    "type": "string"
+                  },
+                  "repo": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  },
+                  "schema_version": {
+                    "const": "spack.mcp.result.v1",
+                    "default": "spack.mcp.result.v1",
+                    "type": "string"
+                  },
+                  "source": {
+                    "enum": [
+                      "spack_info",
+                      "package_py"
+                    ],
+                    "type": "string"
+                  },
+                  "variants": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "versions": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "package",
+                  "source",
+                  "degraded"
+                ],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "login_node": {
+            "default": "Login-node work only: find, info, spec and module avail. Nothing installs or builds here, and nothing keeps running after the relay call. The Spack is prepared by jarvis spack prepare (through clio-relay); package installs go through a jarvis install job (jarvis ppl install ... +submit).",
+            "type": "string"
+          },
+          "modules": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "description": "Modules the site's login shell offers.",
+                "properties": {
+                  "modules": {
+                    "items": {
+                      "additionalProperties": false,
+                      "description": "One module from ``module -t avail``.",
+                      "properties": {
+                        "directory": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "default": null
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "query": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null
+                  }
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "next_step": {
+            "type": "string"
+          },
+          "operation": {
+            "const": "site_query",
+            "default": "site_query",
+            "type": "string"
+          },
+          "query": {
+            "enum": [
+              "find",
+              "info",
+              "spec",
+              "modules"
+            ],
+            "type": "string"
+          },
+          "relay_call": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "description": "One clio-relay tool call the agent makes next.",
+                "properties": {
+                  "arguments": {
+                    "additionalProperties": false,
+                    "description": "Arguments for clio-relay's ``exec`` tool, to pass unchanged.",
+                    "properties": {
+                      "command": {
+                        "items": {
+                          "type": "string"
+                        },
+                        "type": "array"
+                      },
+                      "max_output_bytes": {
+                        "type": "integer"
+                      },
+                      "site": {
+                        "type": "string"
+                      },
+                      "timeout_s": {
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "site",
+                      "command",
+                      "timeout_s",
+                      "max_output_bytes"
+                    ],
+                    "type": "object"
+                  },
+                  "server": {
+                    "const": "clio-relay",
+                    "default": "clio-relay",
+                    "type": "string"
+                  },
+                  "tool": {
+                    "const": "exec",
+                    "default": "exec",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "arguments"
+                ],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "schema_version": {
+            "const": "spack.mcp.result.v1",
+            "default": "spack.mcp.result.v1",
+            "type": "string"
+          },
+          "site": {
+            "type": "string"
+          },
+          "spec": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "description": "Concretized tree on the site, with what would still be built.",
+                "properties": {
+                  "counts": {
+                    "additionalProperties": {
+                      "type": "integer"
+                    },
+                    "type": "object"
+                  },
+                  "nodes": {
+                    "items": {
+                      "additionalProperties": false,
+                      "description": "One node of ``spack spec -I -l``.",
+                      "properties": {
+                        "depth": {
+                          "type": "integer"
+                        },
+                        "hash": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "spec": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "enum": [
+                            "installed",
+                            "upstream",
+                            "external",
+                            "missing"
+                          ],
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "hash",
+                        "status",
+                        "depth",
+                        "spec"
+                      ],
+                      "type": "object"
+                    },
+                    "type": "array"
+                  },
+                  "spec": {
+                    "type": "string"
+                  },
+                  "to_build": {
+                    "description": "Missing nodes; a jarvis install job builds them on a compute node.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  },
+                  "warnings": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "spec"
+                ],
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "status": {
+            "enum": [
+              "relay_call_required",
+              "needs_approval",
+              "done",
+              "failed",
+              "refused",
+              "declined"
+            ],
+            "type": "string"
+          },
+          "stderr_tail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          }
+        },
+        "required": [
+          "site",
+          "query",
+          "status",
+          "next_step"
+        ],
+        "type": "object"
+      },
+      "title": "Research Site Spack"
+    }
+  ],
+  "wire_sha256": "224b4631b83757719e60a8608189c2539e0607c685a6bf8de0de949eca632fac"
+}
