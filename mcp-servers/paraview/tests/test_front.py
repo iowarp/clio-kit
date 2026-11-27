@@ -585,6 +585,9 @@ class _FakeLink:
     def __init__(self, client: _FakeClient) -> None:
         self.client = client
 
+    def port_for(self, remote: object) -> int:
+        return self.local_port
+
 
 class _FakeAttacher:
     def __init__(self, client: _FakeClient) -> None:
@@ -600,6 +603,9 @@ class _FakeAttacher:
     def ensure(self, opening: bool = False, **_: object) -> _FakeLink:
         self.opened.append(opening)
         return self.link
+
+    def remember(self, scene: str, remote: object, local: int) -> None:
+        pass
 
     def describe(self) -> dict:
         return {"where": "on node through login", "paraview": "6.2.1", "folder": "/f"}
