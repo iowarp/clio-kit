@@ -8,6 +8,8 @@ import os
 from typing import Optional, Any, Dict, List
 import traceback
 
+from .data_io import json_safe_records
+
 
 def filter_data(
     file_path: str, filter_conditions: Dict[str, Any], output_file: Optional[str] = None
@@ -217,7 +219,7 @@ def filter_data(
         # read cleaned data from output_file by path.
         _preview_n = 5
         rows_written = final_shape[0]
-        preview = filtered_df.head(_preview_n).to_dict("records")
+        preview = json_safe_records(filtered_df.head(_preview_n).to_dict("records"))
 
         return {
             "success": True,

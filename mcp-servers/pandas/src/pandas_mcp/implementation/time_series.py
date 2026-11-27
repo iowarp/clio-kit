@@ -9,6 +9,8 @@ import os
 from typing import Optional, Dict, Any
 import traceback
 
+from .data_io import json_safe_records
+
 # Map deprecated frequency aliases to pandas 3.x equivalents
 _FREQ_ALIASES: dict[str, str] = {
     "M": "ME",
@@ -193,7 +195,7 @@ def time_series_operations(
         # bounded preview. The full result is on disk at output_file.
         _preview_n = 5
         rows_written = len(result_df)
-        preview = result_df.head(_preview_n).to_dict("records")
+        preview = json_safe_records(result_df.head(_preview_n).to_dict("records"))
 
         return {
             "success": True,

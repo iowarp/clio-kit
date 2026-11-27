@@ -9,6 +9,8 @@ from typing import Any, Literal, Optional, List, Dict
 from typing_extensions import TypedDict
 import traceback
 
+from .data_io import json_safe_records
+
 
 class GroupByInfo(TypedDict):
     """Parameters and outcome summary of a groupby aggregation."""
@@ -140,7 +142,7 @@ def groupby_operations(
         # Return a bounded preview; the full result is on disk at output_file.
         _preview_n = 5
         rows_written = len(result)
-        preview = result.head(_preview_n).to_dict("records")
+        preview = json_safe_records(result.head(_preview_n).to_dict("records"))
 
         return {
             "success": True,
@@ -266,7 +268,7 @@ def merge_datasets(
         # C1 lean return (#1325): never send full merged dataset into LLM context.
         _preview_n = 5
         rows_written = len(merged_df)
-        preview = merged_df.head(_preview_n).to_dict("records")
+        preview = json_safe_records(merged_df.head(_preview_n).to_dict("records"))
 
         return {
             "success": True,
