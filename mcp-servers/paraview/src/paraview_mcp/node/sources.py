@@ -59,7 +59,7 @@ def reader_by_class(servermanager: Any, name: str) -> str | None:
     (netCDFReader). File readers wrap their class in a file-series reader, so the
     class of each definition's sub-proxies counts too."""
     defs = servermanager.ProxyManager().SMProxyManager.GetProxyDefinitionManager()
-    bare = name[3:] if name.startswith("vtk") else name
+    bare = name.removeprefix("vtk")
     wanted = {name, bare, "vtk" + bare}
 
     def classes(element: Any) -> set[str]:
