@@ -53,8 +53,7 @@ STEPWISE = {"measure_over_time": "measuring_over_time", "export_animation": "ani
 def _close_presets(name: str) -> str:
     from paraview import servermanager
 
-    presets = servermanager.vtkSMTransferFunctionPresets.GetInstance()
-    names = [presets.GetPresetName(i) for i in range(presets.GetNumberOfPresets())]
+    names = colors.preset_names(servermanager)
     close = difflib.get_close_matches(name, names, n=5, cutoff=0.3)
     return f" Close matches: {', '.join(close)}." if close else ""
 
@@ -350,9 +349,12 @@ class Engine(
             )
             ranges.fit(self, item, proxy, rep)
             if display.get("colormap"):
+                from paraview import servermanager
+
                 lut = simple.GetColorTransferFunction(color_by[1])
+                preset = colors.resolve_preset(servermanager, display["colormap"])
                 try:
-                    applied = lut.ApplyPreset(display["colormap"], True)
+                    applied = bool(preset) and lut.ApplyPreset(preset, True)
                 except RuntimeError:
                     applied = False
                 if not applied:
@@ -361,6 +363,7 @@ class Engine(
                         f"ParaView has no colour preset {display['colormap']!r}."
                         + _close_presets(display["colormap"]),
                     )
+                display["colormap"] = preset
             if display.get("color_range"):
                 # A range set by hand holds through any later change to the display.
                 low, high = display["color_range"]

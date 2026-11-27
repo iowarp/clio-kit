@@ -94,6 +94,31 @@ def forget(servermanager: Any, view: Any, maps: bool = True) -> None:
             pxm.UnRegisterProxy(group, name, proxy)
 
 
+def preset_names(servermanager: Any) -> list[str]:
+    presets = servermanager.vtkSMTransferFunctionPresets.GetInstance()
+    return [presets.GetPresetName(i) for i in range(presets.GetNumberOfPresets())]
+
+
+def _bare(name: str) -> str:
+    return name.split(" (", 1)[0].strip().casefold()
+
+
+def resolve_preset(servermanager: Any, name: str) -> str | None:
+    """The preset ParaView holds under ``name``, or None. Some ParaView releases
+    name a preset ``"Viridis (matplotlib)"`` and others ``"Viridis"``, and
+    ApplyPreset answers True for a name it does not have while changing nothing,
+    so the name is looked up first: exactly, then ignoring case, then ignoring
+    the qualifier in brackets when only one preset matches that way."""
+    names = preset_names(servermanager)
+    if name in names:
+        return name
+    for test in (str.casefold, _bare):
+        hits = [n for n in names if test(n) == test(name)]
+        if len(hits) == 1:
+            return hits[0]
+    return None
+
+
 def preset_name(simple: Any, field: str | None) -> str | None:
     """The preset a field's colour map last took, for the Display panel."""
     if not field:

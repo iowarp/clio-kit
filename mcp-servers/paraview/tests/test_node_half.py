@@ -729,6 +729,92 @@ def test_a_growing_adios2_bp_output_is_followed_then_parked(
         writer.wait()
 
 
+@pytest.mark.skipif(
+    not os.environ.get("PARAVIEW_TEST_ADIOS2_PYTHON"),
+    reason="set PARAVIEW_TEST_ADIOS2_PYTHON to a Python with adios2 and numpy",
+)
+def test_a_step_still_being_written_is_never_shown(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """A reader on another machine of a shared file system can see a BP5 step's
+    index record and metadata land before its data, and its data part way. Real
+    ADIOS2 output is laid down in those orders: the view takes a step only once
+    its data is whole, and every step it shows has its true values."""
+    import subprocess
+    import time as clock
+
+    from paraview_mcp.node import disk
+
+    attacher, data = attached
+    client = attacher.ensure().client
+    whole = data / "whole.bp"
+    script = data / "bp_writer.py"
+    script.write_text(BP_WRITER)
+    env = {k: v for k, v in os.environ.items() if k != "LD_LIBRARY_PATH"}
+    subprocess.run(
+        [os.environ["PARAVIEW_TEST_ADIOS2_PYTHON"], str(script), str(whole), "3", "3"],
+        check=True,
+        capture_output=True,
+        env=env,
+    )
+    index = (whole / "md.idx").read_bytes()
+    meta, body = (whole / "md.0").read_bytes(), (whole / "data.0").read_bytes()
+    steps = [v for kind, v in disk._records(index) if kind == disk.STEP]
+    assert len(steps) == 3
+    md_end = [s[0] + s[1] for s in steps]
+    starts = [disk._starts(s, 1)[0] for s in steps]
+    data_end = [*starts[1:], len(body)]
+    header = bytearray(index[: disk.HEADER])
+    header[disk.ACTIVE_AT[5]] = 1  # the writer still has it open
+
+    run = data / "torn.bp"
+    run.mkdir()
+    (run / "mmd.0").write_bytes((whole / "mmd.0").read_bytes())
+
+    def lay(records: int, md_upto: int, data_upto: int) -> None:
+        (run / "data.0").write_bytes(body[:data_upto])
+        (run / "md.0").write_bytes(meta[:md_upto])
+        (run / "md.idx").write_bytes(
+            bytes(header) + index[disk.HEADER : disk._cut(index, records)]
+        )
+
+    def shown(seconds: float) -> int:
+        """The steps the view has after looking for ``seconds``, past the settle."""
+        end = clock.monotonic() + seconds
+        count = 0
+        while clock.monotonic() < end:
+            count = client.command("steps", {})["time"]["steps"]
+            clock.sleep(0.25)
+        return count
+
+    lay(2, md_end[1], data_end[1])
+    client.command(
+        "open_view",
+        {
+            "path": str(run),
+            "new": True,
+            "growing": True,
+            "format": "adios2-bp5",
+            "reader": "ADIOS2VTXReader",
+            "descriptor": {"path_kind": "directory", "display": {"array": "p"}},
+        },
+    )
+    assert shown(2.5) == 2
+    # The index and metadata name step 3 before any of its data is there.
+    lay(3, md_end[2], data_end[1])
+    assert shown(2.5) == 2
+    # Its data part way: the folder stands still, and the step is still not whole.
+    lay(3, md_end[2], (data_end[1] + data_end[2]) // 2)
+    assert shown(2.5) == 2
+    lay(3, md_end[2], data_end[2])
+    assert shown(2.5) == 3
+    measured = client.command("measure_over_time", {"field": "p"})
+    # p = x + y + z + step over 8^3 points: a step read short would not hold these.
+    assert [round(r["mean"], 3) for r in measured["series"]] == [10.5, 11.5, 12.5]
+    assert [r["min"] for r in measured["series"]] == [0.0, 1.0, 2.0]
+    assert [r["max"] for r in measured["series"]] == [21.0, 22.0, 23.0]
+
+
 def test_a_colour_range_set_by_hand_holds_and_is_restored(
     attached: tuple[Attacher, Path],
 ) -> None:
@@ -1286,10 +1372,12 @@ def test_the_panel_runs_the_same_commands(tmp_path: Path) -> None:
     display = report["display"]
     assert display["color_by"] == ["POINTS", "Gradient"]
     assert display["color_component"] == 2 and display["scalar_bar"] is True
-    assert display["colormap"] == "Viridis" and display["opacity"] == 0.6
+    # The preset ParaView really holds: 5.13 names it "Viridis (matplotlib)".
+    assert display["colormap"] in ("Viridis", "Viridis (matplotlib)")
+    assert display["opacity"] == 0.6
     assert display["representation"] == "Surface With Edges"
     assert "unknown_colormap" in report["bad_colormap"]
-    assert report["display_after_refusal"] == "Viridis"
+    assert report["display_after_refusal"] == display["colormap"]
     assert report["camera"]["parallel_projection"] is True
     assert report["camera"]["view_up"] == [0.0, 1.0, 0.0]
     assert report["camera"]["position"][2] > report["camera"]["focal_point"][2]
