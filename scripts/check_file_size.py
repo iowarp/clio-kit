@@ -85,7 +85,10 @@ RATCHET_BASELINE: dict[str, int] = {
     # NEW owner module (artifact_content.py), not here; this file only grew
     # by the trivial call-site wiring inside get_execution() that has to live
     # where get_execution() itself lives, 3521 -> 3529.
-    "mcp-servers/jarvis/src/jarvis_mcp/capabilities/jarvis_handler.py": 3658,
+    # fix/jarvis-pipeline-environment-capture-v2: _build_pipeline_env falls back
+    # to EnvironmentManager capture (jarvis-cd 1.8 Pipeline has no build_env),
+    # 3658 -> 3679.
+    "mcp-servers/jarvis/src/jarvis_mcp/capabilities/jarvis_handler.py": 3679,
     # #362: NOT split this wave -- out of wave-1 scope (jarvis-only). Flat
     # FastMCP function surface, no god-class; still needs an owner-module cut.
     "mcp-servers/hdf5/src/hdf5_mcp/server.py": 2366,
