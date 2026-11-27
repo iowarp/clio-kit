@@ -81,6 +81,102 @@
   }
   function pictureShown() { return drawn || keptPicture; }
 
+  // The view's own words, in the host's locale (hostContext.locale), else the
+  // browser's; what the agent is told stays English, and ParaView's own text as sent.
+  const STRINGS = {
+    en: {
+      opening: 'Opening the ParaView view…',
+      reconnect: 'Reconnect',
+      stopReconnecting: 'Stop reconnecting',
+      noService: 'This host did not give the view its ParaView service, so the live view cannot open here. '
+        + 'The agent can still show the scene with the capture tool.',
+      lostLink: 'Lost the link to ParaView. The scene is kept there; reconnecting.',
+      couldNotOpen: 'ParaView could not open the view.',
+      notStarted: 'The host did not start the view: {0}.',
+      unknownError: 'unknown error',
+      reconnecting: 'Reconnecting: ',
+      notDrawn: 'Not drawn yet: this view has not reached ParaView. ',
+      keptChecking: 'ParaView\'s link closed, so this is its last picture, which does not change. '
+        + 'Checking whether ParaView comes back: ',
+      stillTrying: ' Still trying.',
+      keptBelow: ' The last picture stays below and no longer changes.',
+      keptAlt: 'The last picture ParaView drew',
+    },
+    es: {
+      opening: 'Abriendo la vista de ParaView…',
+      reconnect: 'Reconectar',
+      stopReconnecting: 'Dejar de reconectar',
+      noService: 'La aplicación anfitriona no dio a la vista su servicio de ParaView, así que la vista en vivo '
+        + 'no puede abrirse aquí. El agente aún puede mostrar la escena con la herramienta de captura.',
+      lostLink: 'Se perdió la conexión con ParaView. La escena se conserva allí; reconectando.',
+      couldNotOpen: 'ParaView no pudo abrir la vista.',
+      notStarted: 'La aplicación anfitriona no inició la vista: {0}.',
+      unknownError: 'error desconocido',
+      reconnecting: 'Reconectando: ',
+      notDrawn: 'Aún sin dibujar: esta vista no ha llegado a ParaView. ',
+      keptChecking: 'Se cerró la conexión con ParaView, así que esta es su última imagen, que no cambia. '
+        + 'Comprobando si ParaView vuelve: ',
+      stillTrying: ' Seguimos intentándolo.',
+      keptBelow: ' La última imagen queda debajo y ya no cambia.',
+      keptAlt: 'La última imagen que dibujó ParaView',
+    },
+    ja: {
+      opening: 'ParaView ビューを開いています…',
+      reconnect: '再接続',
+      stopReconnecting: '再接続を停止',
+      noService: 'このホストはビューに ParaView サービスを渡していないため、ここではライブビューを開けません。'
+        + 'エージェントはキャプチャツールでシーンを表示できます。',
+      lostLink: 'ParaView との接続が切れました。シーンは ParaView 側に保持されています。再接続しています。',
+      couldNotOpen: 'ParaView はビューを開けませんでした。',
+      notStarted: 'ホストがビューを開始しませんでした: {0}。',
+      unknownError: '不明なエラー',
+      reconnecting: '再接続中: ',
+      notDrawn: 'まだ描画されていません: このビューは ParaView に接続できていません。 ',
+      keptChecking: 'ParaView との接続が閉じたため、これは最後の画像で、もう変わりません。'
+        + 'ParaView が戻るか確認しています: ',
+      stillTrying: ' 引き続き試行しています。',
+      keptBelow: ' 最後の画像は下に残り、もう変わりません。',
+      keptAlt: 'ParaView が最後に描画した画像',
+    },
+    el: {
+      opening: 'Άνοιγμα της προβολής ParaView…',
+      reconnect: 'Επανασύνδεση',
+      stopReconnecting: 'Διακοπή επανασύνδεσης',
+      noService: 'Η εφαρμογή υποδοχής δεν έδωσε στην προβολή την υπηρεσία ParaView, οπότε η ζωντανή προβολή '
+        + 'δεν μπορεί να ανοίξει εδώ. Ο πράκτορας μπορεί ακόμη να δείξει τη σκηνή με το εργαλείο λήψης εικόνας.',
+      lostLink: 'Χάθηκε η σύνδεση με το ParaView. Η σκηνή διατηρείται εκεί. Γίνεται επανασύνδεση.',
+      couldNotOpen: 'Το ParaView δεν μπόρεσε να ανοίξει την προβολή.',
+      notStarted: 'Η εφαρμογή υποδοχής δεν ξεκίνησε την προβολή: {0}.',
+      unknownError: 'άγνωστο σφάλμα',
+      reconnecting: 'Γίνεται επανασύνδεση: ',
+      notDrawn: 'Δεν έχει σχεδιαστεί ακόμη: αυτή η προβολή δεν έχει φτάσει στο ParaView. ',
+      keptChecking: 'Η σύνδεση με το ParaView έκλεισε, οπότε αυτή είναι η τελευταία του εικόνα, που δεν αλλάζει. '
+        + 'Έλεγχος αν το ParaView επιστρέφει: ',
+      stillTrying: ' Συνεχίζουμε να προσπαθούμε.',
+      keptBelow: ' Η τελευταία εικόνα μένει από κάτω και δεν αλλάζει πια.',
+      keptAlt: 'Η τελευταία εικόνα που σχεδίασε το ParaView',
+    },
+  };
+  const EN = STRINGS.en;
+  let words = EN;
+  // Draws the status line shown last again, in new words after a locale change.
+  let redraw = null;
+  function languageOf(tag) {
+    const primary = String(tag || '').toLowerCase().split(/[-_]/)[0];
+    return Object.prototype.hasOwnProperty.call(STRINGS, primary) ? primary : 'en';
+  }
+  function setLocale(tag) {
+    const language = languageOf(tag);
+    document.documentElement.lang = language;
+    keptImage.alt = STRINGS[language].keptAlt;
+    if (STRINGS[language] === words) return;
+    words = STRINGS[language];
+    if (redraw && !statusBox.hidden) redraw();
+  }
+  function localeFrom(context) {
+    return context && typeof context.locale === 'string' && context.locale ? context.locale : null;
+  }
+
   function send(message) { window.parent.postMessage(message, '*'); }
   function request(method, params) {
     const id = nextId++;
@@ -90,15 +186,19 @@
   function notify(method, params) { send({ jsonrpc: '2.0', method, params }); }
   function respond(id, result) { send({ jsonrpc: '2.0', id, result }); }
 
-  function showStatus(text, withReconnect) {
+  // text is a function of the current words, so a locale change can draw it again;
+  // button is true for Reconnect, or { label, onClick } with label a function too.
+  function showStatus(text, button) {
+    redraw = () => showStatus(text, button);
     statusBox.hidden = false;
-    statusBox.textContent = text;
-    if (withReconnect) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.textContent = 'Reconnect';
-      button.addEventListener('click', () => loadFrame());
-      statusBox.appendChild(button);
+    statusBox.textContent = typeof text === 'function' ? text() : text;
+    if (button) {
+      const spec = button === true ? { label: () => words.reconnect, onClick: () => loadFrame() } : button;
+      const element = document.createElement('button');
+      element.type = 'button';
+      element.textContent = spec.label();
+      element.addEventListener('click', spec.onClick);
+      statusBox.appendChild(element);
     }
   }
 
@@ -177,8 +277,7 @@
 
   function loadFrame() {
     if (!serviceUrl) {
-      showStatus('This host did not give the view its ParaView service, so the live view cannot open here. '
-        + 'The agent can still show the scene with the capture tool.');
+      showStatus(() => words.noService);
       return;
     }
     const base = new URL(serviceUrl, document.baseURI);
@@ -186,7 +285,7 @@
     // trame connects its WebSocket beside its page, under the same route.
     const page = new URL('index.html', base);
     page.search = base.search;
-    if (!waiting) showStatus('Opening the ParaView view…');
+    if (!waiting) showStatus(() => words.opening);
     frame.hidden = false;
     // The page stays out of sight until ParaView's bridge answers in it: a proxy
     // that could not reach ParaView answers with an error document instead.
@@ -209,7 +308,7 @@
     const keeps = keptPicture || (drawn && !frame.hidden && frame.style.visibility !== 'hidden');
     if (keptPicture) kept.hidden = false;
     if (!keeps || keptPicture) frame.hidden = true;
-    showStatus(keeps ? stopped + ' The last picture stays below and no longer changes.' : stopped);
+    showStatus(() => (keeps ? stopped + words.keptBelow : stopped));
     sentText = stopped;
     const said = keeps
       ? 'The ParaView view stopped; it still shows its last picture, which no longer changes. '
@@ -232,19 +331,16 @@
   const RELAUNCH_LOOK_MS = 3000;
   let relaunching = false;
   function showRelaunch(text) {
-    const shown = 'Reconnecting: ' + text;
-    statusBox.hidden = false;
-    statusBox.textContent = shown;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.textContent = 'Stop reconnecting';
-    button.addEventListener('click', () => {
-      const scene = opened && opened.structuredContent ? opened.structuredContent.scene : undefined;
-      request('tools/call', { name: 'stop_view_relaunch', arguments: scene ? { scene } : {} })
-        .catch(() => {})
-        .finally(() => { relaunching = false; checkParaView(); });
+    const shown = EN.reconnecting + text;
+    showStatus(() => words.reconnecting + text, {
+      label: () => words.stopReconnecting,
+      onClick: () => {
+        const scene = opened && opened.structuredContent ? opened.structuredContent.scene : undefined;
+        request('tools/call', { name: 'stop_view_relaunch', arguments: scene ? { scene } : {} })
+          .catch(() => {})
+          .finally(() => { relaunching = false; checkParaView(); });
+      },
     });
-    statusBox.appendChild(button);
     if (shown !== waiting) {
       waiting = shown;
       sentText = shown;
@@ -283,11 +379,10 @@
           loadFrame();
           return;
         }
-        const shown = (keptPicture
-          ? 'ParaView\'s link closed, so this is its last picture, which does not change. '
-            + 'Checking whether ParaView comes back: '
-          : 'Not drawn yet: this view has not reached ParaView. ') + text
-          + (status.state === 'closed' ? '' : ' Still trying.');
+        const withPicture = keptPicture;
+        const tail = status.state === 'closed' ? '' : 'stillTrying';
+        const phrase = (w) => (withPicture ? w.keptChecking : w.notDrawn) + text + (tail ? w[tail] : '');
+        const shown = phrase(EN);
         if (shown !== waiting) {
           waiting = shown;
           sentText = shown;
@@ -299,7 +394,7 @@
             structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: keptPicture, waiting: status.state }),
           }).catch(() => {});
         }
-        showStatus(shown, true);
+        showStatus(() => phrase(words), true);
         clearTimeout(checkTimer);
         // A page still loading from a ParaView that answers (or is busy) is left to
         // load: a reload would start it again from nothing. It is reloaded once it
@@ -456,7 +551,7 @@
           retryTimer = null;
         } else {
           linkUp = false;
-          showStatus('Lost the link to ParaView. The scene is kept there; reconnecting.', true);
+          showStatus(() => words.lostLink, true);
           scheduleReconnect();
           checkParaView();
         }
@@ -475,12 +570,14 @@
         opened = data.params || null;
         if (opened && opened.isError) {
           const text = (opened.content || []).map((c) => c.text || '').join('\n');
-          showStatus(text || 'ParaView could not open the view.');
+          showStatus(() => text || words.couldNotOpen);
         }
         break;
       }
       case 'ui/notifications/host-context-changed': {
         hostContext = Object.assign({}, hostContext, data.params || {});
+        const locale = localeFrom(data.params);
+        if (locale) setLocale(locale);
         sendTheme();
         const url = serviceFrom(data.params);
         if (url && url !== serviceUrl) { serviceUrl = url; stopped = ''; waiting = ''; loadFrame(); }
@@ -496,12 +593,15 @@
     }
   });
 
+  setLocale(navigator.language);
+  showStatus(() => words.opening);
   request('ui/initialize', {
     appInfo: { name: 'paraview-view', version: '3.3.0' },
     appCapabilities: { availableDisplayModes: ['inline', 'fullscreen'] },
     protocolVersion: PROTOCOL,
   }).then((result) => {
     hostContext = (result && result.hostContext) || {};
+    if (localeFrom(hostContext)) setLocale(hostContext.locale);
     sendTheme();
     notify('ui/notifications/initialized', {});
     notify('ui/notifications/size-changed', { width: document.body.clientWidth, height: 560 });
@@ -512,7 +612,8 @@
       request('ui/request-display-mode', { mode: 'fullscreen' }).catch(() => {});
     }
   }).catch((error) => {
-    showStatus('The host did not start the view: ' + ((error && error.message) || 'unknown error') + '.');
+    const reason = error && error.message;
+    showStatus(() => words.notStarted.replace('{0}', reason || words.unknownError));
   });
 })();
 </script>
