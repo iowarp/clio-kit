@@ -86,13 +86,16 @@ def test_a_quiet_start_is_stopped_after_the_stall(
     assert "loading paraview" in caught.value.message
 
 
-def test_a_join_that_hangs_names_the_pvserver(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_join_that_hangs_says_so_in_plain_words(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     clock = _Clock(monkeypatch)
     look = _looks(StartLook(None, None, True, 10, "joining pvserver at 127.0.0.1:9"))
     with pytest.raises(ParaViewError) as caught:
         wait_for_start(look, "h", "here", "/l", 30.0, clock.cancel())
     assert caught.value.code == "pvserver_join_stalled"
-    assert "127.0.0.1:9" in caught.value.message
+    assert caught.value.message.startswith("ParaView could not reach its server")
+    assert "127.0.0.1:9" not in caught.value.message
 
 
 def test_a_process_that_ended_fails_at_once(monkeypatch: pytest.MonkeyPatch) -> None:

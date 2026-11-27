@@ -441,12 +441,12 @@ class Attacher:
                 said = (
                     lost.message
                     if lost is not None
-                    else ("The ParaView view's pvserver connection closed.")
+                    else "ParaView's connection to its server closed."
                 )
                 raise ParaViewError(
                     "pvserver_lost",
-                    f"{said} ParaView tried to join the pvserver again and could "
-                    f"not, so it has ended: {exc.message}",
+                    f"{said} ParaView tried to reconnect and could not, so it has "
+                    f"ended. {exc.message}",
                 ) from exc
             raise
         self.link = link

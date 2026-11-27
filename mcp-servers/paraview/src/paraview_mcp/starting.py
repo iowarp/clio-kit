@@ -119,14 +119,14 @@ def wait_for_start(
                 stop()
             last = seen.last.strip()
             if last.startswith(_JOINING):
-                target = last[len(_JOINING) :]
+                # The address stays in the node half's log, out of the text the
+                # view shows on its own.
                 raise ParaViewError(
                     "pvserver_join_stalled",
-                    f"The ParaView node half {where} waited {quiet:.0f} s to join the "
-                    f"pvserver at {target} with no answer. A pvserver serves one "
-                    "client at a time, so it may be serving another one, or its "
-                    "forwarded port leads nowhere. Check the pvserver and its "
-                    "forward, then open the view again.",
+                    f"ParaView could not reach its server: it waited {quiet:.0f} s "
+                    "with no answer. The server may be busy with another viewer, "
+                    "or its connection may lead nowhere. Check the server, then "
+                    "open the view again.",
                 )
             raise ParaViewError(
                 "node_start_stalled",
