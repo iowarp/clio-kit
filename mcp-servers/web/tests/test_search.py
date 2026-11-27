@@ -18,6 +18,39 @@ from web_mcp.server import Settings, create_mcp, mcp
 from .helpers import parse_result
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("selectors", "expected"),
+    [
+        ({}, {"engines": "arxiv,crossref"}),
+        ({"category": "general"}, {"categories": "general"}),
+        ({"engines": ["wikipedia"]}, {"engines": "wikipedia"}),
+        ({"engines": []}, {}),
+    ],
+)
+async def test_search_searxng_configured_defaults_respect_call_selectors(
+    monkeypatch: pytest.MonkeyPatch,
+    httpx_mock: HTTPXMock,
+    selectors: dict[str, Any],
+    expected: dict[str, str],
+) -> None:
+    """Installation defaults reach HTTP, but never replace a caller's selectors."""
+    monkeypatch.setenv("WEB_SEARXNG_DEFAULT_ENGINES", '["arxiv", "crossref"]')
+    configured = Settings(search_provider="searxng", searxng_base_url="http://127.0.0.1:8088")
+    httpx_mock.add_response(json={"results": []})
+    async with Client(create_mcp(configured)) as client:
+        result = await client.call_tool("search", {"query": "parallel io", **selectors})
+    assert parse_result(result)["ok"] is True
+    request = httpx_mock.get_request()
+    assert request is not None
+    assert dict(request.url.params) == {
+        "q": "parallel io",
+        "format": "json",
+        "pageno": "1",
+        **expected,
+    }
+
+
 class _FakeDDGS:
     """Context-manager stand-in for ``ddgs.DDGS``."""
 
