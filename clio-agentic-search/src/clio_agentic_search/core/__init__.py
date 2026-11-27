@@ -36,7 +36,7 @@ def __getattr__(name: str) -> object:
             build_default_registry,
         )
 
-        exports = {
+        exports: dict[str, object] = {
             "NamespaceRegistry": NamespaceRegistry,
             "build_default_registry": build_default_registry,
         }

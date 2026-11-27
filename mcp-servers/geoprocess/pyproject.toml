@@ -61,3 +61,7 @@ packages = ["src/geoprocess_mcp"]
 pythonpath = ["src"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.ruff]
+# Keep ruff's own default rules for this server. Without a [tool.ruff] table
+# here, ruff would apply the launcher's lint selection from the repository root.

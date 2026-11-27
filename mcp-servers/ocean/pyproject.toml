@@ -73,3 +73,7 @@ markers = ["network: reaches a public data service", "worker: builds a separate 
 
 [tool.mypy]
 ignore_missing_imports = true
+
+[tool.ruff]
+# Keep ruff's own default rules for this server. Without a [tool.ruff] table
+# here, ruff would apply the launcher's lint selection from the repository root.

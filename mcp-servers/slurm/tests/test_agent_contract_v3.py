@@ -92,8 +92,8 @@ def test_user_contract_locks_exact_names_and_closed_schemas() -> None:
         _assert_every_object_schema_is_closed(tool.output_schema)
 
     cancel = tools["slurm_cancel"]
-    assert cancel.annotations.destructiveHint is True
-    assert cancel.annotations.readOnlyHint is False
+    assert cancel.annotations.destructive_hint is True
+    assert cancel.annotations.read_only_hint is False
     assert set(cancel.parameters["required"]) == {"job_id", "confirm_job_id"}
 
 

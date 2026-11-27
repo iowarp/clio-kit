@@ -220,8 +220,8 @@ def test_open_and_close_are_read_only_to_clients():
 
     annotations = run(None, exercise)
     for name in ("open_file", "close_file"):
-        assert annotations[name].readOnlyHint is True
-        assert annotations[name].destructiveHint is False
+        assert annotations[name].read_only_hint is True
+        assert annotations[name].destructive_hint is False
 
 
 def test_visit_scopes_to_a_group_and_partial_reads_take_lists(source, tmp_path):

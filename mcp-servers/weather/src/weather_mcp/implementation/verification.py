@@ -109,7 +109,7 @@ def score(
                     {pick(climatology, LON): f[lon], pick(climatology, LAT): f[lat]}
                 )
                 if "dayofyear" in clim.dims:
-                    clim = clim.sel(dayofyear=valid.dayofyear)
+                    clim = clim.sel(dayofyear=valid.day_of_year)
                 fa, ra = mean_f - clim, r - clim
                 num = (fa * ra).weighted(w).mean()
                 den = np.sqrt((fa**2).weighted(w).mean() * (ra**2).weighted(w).mean())

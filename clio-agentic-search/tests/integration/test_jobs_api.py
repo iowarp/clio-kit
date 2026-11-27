@@ -6,7 +6,7 @@ import asyncio
 from pathlib import Path
 
 import pytest
-from httpx import ASGITransport, AsyncClient
+from httpx2 import ASGITransport, AsyncClient
 
 from clio_agentic_search.api.app import app
 

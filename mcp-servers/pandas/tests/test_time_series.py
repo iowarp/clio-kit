@@ -205,7 +205,7 @@ class TestSeasonalityDetection:
         """Create data with known seasonality"""
         dates = pd.date_range(start="2020-01-01", periods=365, freq="D")
         # Create seasonal pattern (weekly)
-        day_of_week = dates.dayofweek
+        day_of_week = dates.day_of_week
         seasonal_component = np.sin(2 * np.pi * day_of_week / 7) * 10
         trend = np.linspace(0, 10, 365)
         noise = np.random.randn(365) * 2

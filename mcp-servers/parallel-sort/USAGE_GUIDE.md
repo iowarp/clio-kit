@@ -69,7 +69,7 @@ The repository includes sample log files for testing:
 ### 2. Analyze application performance
 ```python
 # Input: sample_data/application.log
-# Tool: analyze_log_statistics  
+# Tool: analyze_log_statistics
 # Result: Detailed statistics including temporal patterns, log levels, quality metrics
 ```
 

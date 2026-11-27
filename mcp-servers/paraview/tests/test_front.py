@@ -738,7 +738,7 @@ async def test_open_view_declares_what_its_view_reports() -> None:
     view = (resources.files("paraview_mcp") / "view.html").read_text()
     for entry in declared:
         assert f"{entry['key']}:" in view, entry["key"]
-    set_timestep = tools["set_timestep"].inputSchema["properties"]
+    set_timestep = tools["set_timestep"].input_schema["properties"]
     assert all(
         e.get("tool") != "set_timestep" or e["key"] in set_timestep for e in declared
     )

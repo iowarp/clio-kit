@@ -254,7 +254,7 @@ async def test_install_annotation_discloses_open_world_interaction() -> None:
         tools = await fresh_server.mcp.list_tools(run_middleware=False)
         install = next(tool for tool in tools if tool.name == "spack_install")
         assert install.annotations is not None
-        assert install.annotations.openWorldHint is True
+        assert install.annotations.open_world_hint is True
     finally:
         importlib.reload(server)
 

@@ -35,4 +35,4 @@ async def test_all_tools_declare_they_reach_the_open_world() -> None:
 
     for tool in tools:
         assert tool.annotations is not None, tool.name
-        assert tool.annotations.openWorldHint is True, tool.name
+        assert tool.annotations.open_world_hint is True, tool.name

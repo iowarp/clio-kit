@@ -44,3 +44,7 @@ packages = ["src/copernicus_kit_mcp"]
 # CVE-2026-59951, CVE-2026-115563 and CVE-2026-116684/5/6; pyarrow<23.0.1 carries
 # PYSEC-2026-113. Override both caps until upstream lifts them.
 override-dependencies = ["mcp>=1.30.0,<2", "pyarrow>=23.0.1"]
+
+[tool.ruff]
+# Keep ruff's own default rules for this server. Without a [tool.ruff] table
+# here, ruff would apply the launcher's lint selection from the repository root.

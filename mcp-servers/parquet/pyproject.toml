@@ -60,3 +60,8 @@ asyncio_mode = "auto"
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
 ]
+
+[tool.ruff.lint]
+# ruff 0.16 widened the implicit default rule set; keep the rules this
+# server has been checked against (the pre-0.16 defaults).
+select = ["E4", "E7", "E9", "F"]

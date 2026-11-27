@@ -172,7 +172,7 @@ def threshold_climatology(
             f"baseline {baseline[0]}-{baseline[1]} has fewer than three years of data",
         )
     doy = (
-        base.index.dayofyear
+        base.index.day_of_year
         + ((~base.index.is_leap_year) & (base.index.month > 2)).astype(int)
     ).to_numpy()
     values = base.to_numpy()
@@ -186,7 +186,7 @@ def threshold_climatology(
             mean[d - 1] = sample.mean()
             thresh[d - 1] = np.percentile(sample, percentile)
     all_doy = (
-        daily.index.dayofyear
+        daily.index.day_of_year
         + ((~daily.index.is_leap_year) & (daily.index.month > 2)).astype(int)
     ).to_numpy()
     return pd.DataFrame(

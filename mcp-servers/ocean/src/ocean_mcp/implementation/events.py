@@ -47,7 +47,7 @@ def climatology(
             "Hobday et al. recommend at least 30",
         )
     # Day of year on a 366-day calendar so 29 Feb has its own slot.
-    doy = base.index.dayofyear + (
+    doy = base.index.day_of_year + (
         (~base.index.is_leap_year) & (base.index.month > 2)
     ).astype(int)
     values = base.to_numpy()
@@ -72,7 +72,7 @@ def climatology(
         return out[smooth_days:-smooth_days]
 
     seas, thresh = smooth(seas), smooth(thresh)
-    all_doy = s.index.dayofyear + (
+    all_doy = s.index.day_of_year + (
         (~s.index.is_leap_year) & (s.index.month > 2)
     ).astype(int)
     return pd.DataFrame(
