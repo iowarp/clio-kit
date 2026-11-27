@@ -8,7 +8,7 @@ import pytest
 from fastmcp import Client
 
 from paraview_mcp import present
-from paraview_mcp.node import changes, filters, panel, theme
+from paraview_mcp.node import changes, colors, filters, panel, theme
 from paraview_mcp.server import mcp
 
 WAVELET = {
@@ -47,11 +47,8 @@ def test_form_defaults_come_from_the_data() -> None:
     contour = {f["key"]: f for f in filters.form("Contour", WAVELET)}
     assert contour["ContourBy"]["value"] == "POINTS:RTData"
     assert float(contour["Isosurfaces"]["value"]) == pytest.approx(157.1)
-    # Contour by a point field only.
-    assert [i["value"] for i in contour["ContourBy"]["items"]] == [
-        "POINTS:RTData",
-        "POINTS:velocity",
-    ]
+    # Contour by a one-component point field only: ParaView reads past a vector.
+    assert [i["value"] for i in contour["ContourBy"]["items"]] == ["POINTS:RTData"]
     slice_ = {f["key"]: f["value"] for f in filters.form("Slice", WAVELET)}
     assert slice_ == {
         "SliceType.Origin": [0.0, 0.0, 0.0],
@@ -70,6 +67,41 @@ def test_form_defaults_come_from_the_data() -> None:
         filters.form("Contour", WAVELET),
         {"ContourBy": "POINTS:RTData", "Isosurfaces": "100, 200"},
     )["Isosurfaces"] == [100.0, 200.0]
+
+
+class _Presets:
+    names = ("Jet", "Viridis (matplotlib)", "Blue Orange (divergent)", "Cool to Warm")
+
+    def GetNumberOfPresets(self) -> int:
+        return len(self.names)
+
+    def GetPresetName(self, i: int) -> str:
+        return self.names[i]
+
+
+class _ServerManager:
+    class vtkSMTransferFunctionPresets:
+        @staticmethod
+        def GetInstance() -> _Presets:
+            return _Presets()
+
+
+@pytest.mark.parametrize(
+    ("asked", "held"),
+    [
+        ("Jet", "Jet"),
+        ("jet", "Jet"),
+        ("Viridis", "Viridis (matplotlib)"),
+        ("viridis (matplotlib)", "Viridis (matplotlib)"),
+        ("Blue Orange", "Blue Orange (divergent)"),
+        ("No Such Map", None),
+    ],
+)
+def test_a_colormap_name_is_the_preset_paraview_holds(
+    asked: str, held: str | None
+) -> None:
+    # ParaView's ApplyPreset answers True for a name it lacks and changes nothing.
+    assert colors.resolve_preset(_ServerManager, asked) == held
 
 
 def test_vector_filters_are_off_without_a_vector_field() -> None:

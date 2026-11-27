@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from . import engine
+
 
 def _cond(cfg: dict[str, Any]) -> str:
     return f"{cfg['adsorbate']} at {cfg['temperature_K']:g} K and {cfg['pressure_Pa']:g} Pa"
@@ -67,4 +69,4 @@ def status_text(d: dict[str, Any]) -> str:
     ex = d["executable"]
     if ex["found"]:
         return f"gRASPA is ready: {ex['command']} (found via {ex['source']})."
-    return f"gRASPA is not available here: {ex['problem']}. {d['install']}"
+    return engine.missing_text(ex)

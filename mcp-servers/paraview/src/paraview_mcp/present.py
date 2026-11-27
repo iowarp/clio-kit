@@ -22,6 +22,8 @@ def object_line(item: dict[str, Any]) -> str:
     data = item.get("data") or {}
     parts = [f"{item['id']} {item.get('label') or item.get('type')}"]
     detail = [str(item.get("type") or item.get("kind"))]
+    if item.get("kind") == "geometry":
+        detail.append(f"geometry from {item.get('path')}, in the data's coordinates")
     if item.get("input"):
         detail.append(f"from {item['input']}")
     if item.get("by"):
@@ -39,6 +41,16 @@ def object_line(item: dict[str, Any]) -> str:
             if display.get("color_range"):
                 low, high = display["color_range"]
                 detail.append(f"colour range {_num(low)} to {_num(high)} set by hand")
+            elif display.get("auto_range"):
+                low, high = display["auto_range"]
+                text = f"colour range {_num(low)} to {_num(high)}, the 2nd to 98th "
+                text += "percentile of the values shown"
+                if display.get("data_range"):
+                    whole = display["data_range"]
+                    text += f" (they run {_num(whole[0])} to {_num(whole[1])})"
+                detail.append(text)
+            elif display.get("range_mode") == "data":
+                detail.append("colour range the data's full range")
             if display.get("scalar_bar"):
                 detail.append("colour legend shown")
         elif display.get("solid_color"):
@@ -70,6 +82,8 @@ def time_line(time_state: dict[str, Any]) -> str:
         f"Time: step {time_state['index'] + 1} of {steps} "
         f"(time {_num(time_state['time'])})"
     )
+    if time_state.get("catching_up"):
+        return line + ", catching up from the first step, then following the latest."
     if time_state.get("follow_latest"):
         return line + ", following the latest step."
     return (
@@ -95,6 +109,8 @@ def view_line(view: dict[str, Any]) -> str:
         extra += "; a volume is shown, which only ParaView draws"
     if mode == "remote" and view.get("reason") == "slice" and not view.get("pinned"):
         extra += "; an image slice is shown, which only ParaView draws"
+    if mode == "remote" and view.get("reason") == "growing" and not view.get("pinned"):
+        extra += "; the source is growing, so each new step arrives as one image"
     if view.get("pinned"):
         extra += "; chosen by hand in the view"
     return f"View: {how}{extra}{frame_note(view)}."
@@ -131,8 +147,16 @@ def scene_text(summary: dict[str, Any], where: str) -> str:
         else ""
     )
     lines.append(f"Scene {summary['scene']} {where}{restored}: {source}.")
+    if not source:
+        lines[-1] = (
+            f"Scene {summary['scene']} {where}{restored}: an empty scene; "
+            "add sources with run_scene_script."
+        )
     if dataset.get("growing"):
         lines.append("The source is marked as still growing; new steps are picked up.")
+    for note in ("display_note", "geometry_note"):
+        if dataset.get(note):
+            lines.append(dataset[note])
     lines.append("Objects:")
     for item in summary.get("objects") or []:
         lines.append(f"- {object_line(item)}")
@@ -179,12 +203,74 @@ def measure_text(result: dict[str, Any]) -> str:
         f"[{_num(lo)}, {_num(hi)}): {count}"
         for lo, hi, count in zip(hist["edges"][:-1], hist["edges"][1:], hist["counts"])
     )
+    if result.get("median") is not None:
+        median = f"median {_num(result['median'])}"
+    elif result.get("median_between"):
+        low, high = result["median_between"]
+        median = (
+            f"median in [{_num(low)}, {_num(high)}) ({result.get('median_note', '')})"
+        )
+    else:
+        median = "median not known"
     return (
         f"{head}: {result['finite']} finite of {result['count']} values; "
         f"min {_num(result['min'])}, max {_num(result['max'])}, mean "
-        f"{_num(result['mean'])}, median {_num(result['median'])}, std "
+        f"{_num(result['mean'])}, {median}, std "
         f"{_num(result['std'])}.\nHistogram: {bins}."
     )
+
+
+#: Lines of a series written out in text; the structured result has every step.
+SERIES_LINES = 40
+
+
+def series_text(result: dict[str, Any]) -> str:
+    """A field's statistics at each time step."""
+    series = result.get("series") or []
+    head = (
+        f"{result['field']} ({str(result.get('association') or '?').lower()}, "
+        f"{result.get('component')}) on {result['object']} {result.get('label') or ''}"
+    ).strip()
+    if not series:
+        return f"{head}: no step was measured."
+    lines = [f"{head}, over {len(series)} of {result.get('steps', 0)} step(s):"]
+    every = max(1, -(-len(series) // SERIES_LINES))
+    shown = series[::every]
+    for row in shown:
+        where = f"step {row['index'] + 1}" + (
+            f" (time {_num(row['time'])})" if row.get("time") is not None else ""
+        )
+        if "min" not in row:
+            lines.append(f"- {where}: {row.get('message', 'no values')}")
+            continue
+        lines.append(
+            f"- {where}: min {_num(row['min'])}, max {_num(row['max'])}, mean "
+            f"{_num(row['mean'])}, std {_num(row['std'])}"
+        )
+    if every > 1:
+        lines.append(
+            f"Every {every}th step is written here; the structured result has all of them."
+        )
+    return "\n".join(lines)
+
+
+def views_lines(views: list[dict[str, Any]]) -> list[str]:
+    """Every open view, its scene and step: one view per scene, read without reopening."""
+    if not views:
+        return []
+    lines = [f"Open views ({len(views)}), one per scene:"]
+    for view in views:
+        colour = ", ".join(str(c) for c in view.get("color_by") or [])
+        time_state = view.get("time") or {}
+        lines.append(
+            f"- {view['scene']}"
+            + (" (the current view)" if view.get("current") else "")
+            + (f", coloured by {colour}" if colour else "")
+            + (f", {view['view_mode']} rendering" if view.get("view_mode") else "")
+            + ". "
+            + (time_line(time_state) if time_state else "Time: not drawn yet.")
+        )
+    return lines
 
 
 def changes_lines(changes: list[dict[str, Any]]) -> list[str]:
@@ -218,6 +304,67 @@ def capture_note(seconds: float | None, view: dict[str, Any]) -> str:
         return ""
     cause = frame_note({**view, "frame_seconds": seconds}).partition(", because")[2]
     return f" It took {seconds:g} s to draw" + (f", because{cause}." if cause else ".")
+
+
+def blank_warning(drawn: dict[str, Any] | None) -> str:
+    """A lead line when a rendered frame shows nothing but the background."""
+    if not drawn or drawn.get("blank") is not True:
+        return ""
+    why = drawn.get("note") or "the pipeline draws no pixel in it"
+    return (
+        f"This frame is blank: {why}. Do not describe a picture; check the camera "
+        "(fit_camera), what is visible (scene_state) and whether ParaView is still "
+        "running.\n"
+    )
+
+
+def drawn_text(drawn: dict[str, Any] | None, shown: dict[str, Any] | None) -> str:
+    """What a test frame drew, and what the live view's viewers really saw."""
+    parts = []
+    if drawn:
+        fraction = drawn.get("fraction")
+        if fraction is None:
+            parts.append(
+                "Whether the view draws anything is unknown: "
+                + str(drawn.get("note") or "the test frame failed")
+                + "."
+            )
+        elif drawn.get("blank"):
+            parts.append(
+                "A test frame came out blank"
+                + (f" ({drawn['note']})" if drawn.get("note") else "")
+                + ": nothing shows yet. Do not tell the person a picture is there."
+            )
+        elif drawn.get("sparse"):
+            pixels = drawn.get("pixels")
+            parts.append(
+                "A test frame draws only thin lines or a few points"
+                + (f" ({pixels} pixels)" if pixels else "")
+                + ", such as an outline: the data's own cells may not show. Check what "
+                "is visible (scene_state) before describing it."
+            )
+        else:
+            parts.append(
+                f"A test frame draws data over {fraction * 100:.0f}% of the view."
+            )
+    if shown:
+        if shown.get("lost"):
+            parts.append(f"The view stopped: {shown['lost']}.")
+        viewers = int(shown.get("viewers") or 0)
+        frames = int(shown.get("frames_shown") or 0)
+        if frames:
+            age = shown.get("last_frame_age")
+            parts.append(
+                f"{viewers} viewer(s) connected; {frames} picture(s) shown"
+                + (f", the last {age:g} s ago" if age is not None else "")
+                + "."
+            )
+        else:
+            parts.append(
+                f"{viewers} viewer(s) connected; no picture has been shown in a "
+                "viewer yet (a view drawn in the browser does not report pictures)."
+            )
+    return (" " + " ".join(parts)) if parts else ""
 
 
 def _hex(rgb: list[float]) -> str:

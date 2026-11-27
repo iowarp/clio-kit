@@ -3,11 +3,27 @@
 from __future__ import annotations
 
 import json
+import threading
+import time
 import urllib.error
 import urllib.request
+import uuid
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from typing import Any
 
 from .errors import ParaViewError
+from .transport import Transport
+
+# The link is loopback only: a client's HTTP_PROXY must not carry it, since an
+# egress proxy cannot reach this machine's 127.0.0.1 and answers 502.
+_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+#: Seconds the node half holds each ask about a running call before it says how
+#: the call goes; a cancel is seen within this.
+JOB_WAIT = 5.0
+#: Seconds past ``JOB_WAIT`` before an ask with no answer means the node half holds
+#: its loop. This is a check for a stall, not a limit on the call.
+ANSWER_GRACE = 30.0
 
 
 class LinkError(Exception):
@@ -48,7 +64,7 @@ class NodeClient:
             },
         )
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with _OPENER.open(request, timeout=timeout) as response:
                 return json.loads(response.read())
         except urllib.error.HTTPError as exc:
             try:
@@ -71,13 +87,105 @@ class NodeClient:
     def ping(self) -> None:
         self._request("POST", "/clio/ping", {}, timeout=10.0)
 
+    def cancel(self, job: str) -> None:
+        """Ask the node half to stop a call; a node that cannot be reached has
+        stopped it already."""
+        try:
+            self._request("POST", "/clio/cancel", {"job": job}, timeout=10.0)
+        except (LinkError, ParaViewError):
+            pass
+
     def command(
-        self, name: str, args: dict[str, Any], timeout: float = 900.0, by: str = "agent"
+        self,
+        name: str,
+        args: dict[str, Any],
+        by: str = "agent",
+        stop: threading.Event | None = None,
+        progress: Callable[[dict[str, Any]], None] | None = None,
+        wait: float = JOB_WAIT,
     ) -> Any:
-        payload = self._request(
-            "POST",
-            "/clio/command",
-            {"command": name, "args": args, "by": by},
-            timeout=timeout,
-        )
-        return payload["result"]
+        """Run one command and return its result, however long it takes.
+
+        The call runs on the node half under its own id; this asks how it goes every
+        ``wait`` seconds and tells ``progress``. There is no limit on its length: it
+        ends with its result, when ``stop`` is set (the call is cancelled there too),
+        or when the node half is gone (refused or reset). A node half that took the
+        request but holds its loop, as a long render does, is busy, not gone: that is
+        waited for, and said.
+        """
+        job = uuid.uuid4().hex
+        body = {"command": name, "args": args, "by": by, "job": job, "wait": wait}
+        heard = time.monotonic()
+        while True:
+            if stop is not None and stop.is_set():
+                self.cancel(job)
+                raise ParaViewError(
+                    "cancelled", f"{name} was cancelled before it ended."
+                )
+            try:
+                payload = self._request(
+                    "POST", "/clio/command", body, timeout=wait + ANSWER_GRACE
+                )
+            except LinkError as exc:
+                if not exc.busy:
+                    raise
+                if progress is not None:
+                    progress(
+                        {
+                            "note": "ParaView has not answered for "
+                            f"{time.monotonic() - heard:.0f} s: it is busy (a long "
+                            "render holds it), not gone, so this waits"
+                        }
+                    )
+                continue
+            heard = time.monotonic()
+            if isinstance(payload, dict) and payload.get("pending"):
+                if progress is not None:
+                    progress(dict(payload.get("progress") or {}))
+                continue
+            return payload["result"]
+
+
+@dataclass
+class Link:
+    """A live attachment: the transport, the forwarded port and the client."""
+
+    transport: Transport
+    folder: str
+    local_port: int
+    client: NodeClient
+    node: dict[str, Any]
+    pvpython: str
+    paraview: str
+    built_from: str | None = None
+    built_now: bool = False
+    uploaded_now: bool = False
+    timings: dict[str, float] = field(default_factory=dict)
+    slot: str = "node"
+    #: The local port each node-side port was forwarded to, kept by the attacher
+    #: across links, so a node half started again is reached on the same ports.
+    local_for: dict[int, int] = field(default_factory=dict)
+
+    @property
+    def token(self) -> str:
+        return str(self.node["token"])
+
+    def port_for(self, remote: Any) -> int:
+        """The local port of one of the node half's view ports: each open scene has
+        its own. The node's own port is the link's."""
+        try:
+            remote = int(remote)
+        except (TypeError, ValueError):
+            return self.local_port
+        if remote == int(self.node["port"]):
+            return self.local_port
+        preferred = self.local_for.get(remote)
+        try:
+            local = self.transport.forward(remote, preferred, keep=True)
+        except ParaViewError:
+            if preferred is None:
+                raise
+            # The old local port is taken now: a new one, and the view opens again.
+            local = self.transport.forward(remote, keep=True)
+        self.local_for[remote] = local
+        return local

@@ -44,15 +44,23 @@ def find_executable() -> dict[str, Any]:
     return {"found": False, "source": None, "problem": "no FDMNES executable found"}
 
 
+def missing_text(found: dict[str, Any]) -> str:
+    """Where FDMNES was looked for and the setting that points at it."""
+    where = (
+        f"FDMNES was not found: {found['problem']}"
+        if found.get("source")
+        else f"FDMNES was not found in {', '.join(ENV_VARS)} or PATH ({', '.join(PATH_NAMES)})"
+    )
+    return (
+        f"{where}. If it is installed elsewhere, set FDMNES_COMMAND to the executable; "
+        "otherwise see the fdmnes plugin's install skill (spack install fdmnes)."
+    )
+
+
 def require_executable() -> str:
     found = find_executable()
     if not found["found"]:
-        raise FdmnesError(
-            "binary_missing",
-            f"FDMNES is not available here ({found['problem']}). Install it (the fdmnes "
-            "plugin's install skill builds it with Spack: spack install fdmnes) and set "
-            "FDMNES_COMMAND to the executable, or put fdmnes on PATH.",
-        )
+        raise FdmnesError("binary_missing", missing_text(found))
     return str(found["command"])
 
 

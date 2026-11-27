@@ -45,16 +45,25 @@ def find_executable() -> dict[str, Any]:
     return {"found": False, "source": None, "problem": "no gRASPA executable found"}
 
 
+def missing_text(found: dict[str, Any]) -> str:
+    """Where gRASPA was looked for, the setting that points at it, and the GPU-node route."""
+    where = (
+        f"gRASPA was not found: {found['problem']}"
+        if found.get("source")
+        else f"gRASPA was not found in {', '.join(ENV_VARS)} or PATH ({', '.join(PATH_NAMES)})"
+    )
+    return (
+        f"{where}. If it is installed elsewhere, set GRASPA_COMMAND to the executable; "
+        "otherwise see the graspa plugin's install skill (it builds gRASPA on a GPU node). "
+        "Without gRASPA here, prepare_graspa writes the run folder to submit to a GPU node "
+        "and read_graspa reads the result."
+    )
+
+
 def require_executable() -> str:
     found = find_executable()
     if not found["found"]:
-        raise GraspaError(
-            "binary_missing",
-            f"gRASPA is not available here ({found['problem']}). It needs a GPU node: "
-            "build it there (the graspa plugin's install skill: spack install graspa) and "
-            "set GRASPA_COMMAND, or use prepare_graspa to write the run folder and submit "
-            "it to a GPU node, then read_graspa to read the result.",
-        )
+        raise GraspaError("binary_missing", missing_text(found))
     return str(found["command"])
 
 

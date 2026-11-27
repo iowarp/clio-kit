@@ -77,16 +77,46 @@ def restore(simple: Any, saved: dict[str, Any] | None) -> None:
             simple.GetOpacityTransferFunction(name).Points = entry["OpacityPoints"]
 
 
-def forget(servermanager: Any, view: Any) -> None:
-    """Remove the process's colour maps and legends, so the next scene starts fresh."""
+def forget(servermanager: Any, view: Any, maps: bool = True) -> None:
+    """Remove the process's colour maps and legends, so the next scene starts fresh.
+    With ``maps`` false, only ``view``'s legends go: other scenes still use the maps."""
     pxm = servermanager.ProxyManager()
     for (name, _id), bar in list(pxm.GetProxiesInGroup("scalar_bars").items()):
-        if bar in view.Representations:
+        mine = bar in view.Representations
+        if mine:
             view.Representations.remove(bar)
-        pxm.UnRegisterProxy("scalar_bars", name, bar)
+        if mine or maps:
+            pxm.UnRegisterProxy("scalar_bars", name, bar)
+    if not maps:
+        return
     for group in GROUPS:
         for (name, _id), proxy in list(pxm.GetProxiesInGroup(group).items()):
             pxm.UnRegisterProxy(group, name, proxy)
+
+
+def preset_names(servermanager: Any) -> list[str]:
+    presets = servermanager.vtkSMTransferFunctionPresets.GetInstance()
+    return [presets.GetPresetName(i) for i in range(presets.GetNumberOfPresets())]
+
+
+def _bare(name: str) -> str:
+    return name.split(" (", 1)[0].strip().casefold()
+
+
+def resolve_preset(servermanager: Any, name: str) -> str | None:
+    """The preset ParaView holds under ``name``, or None. Some ParaView releases
+    name a preset ``"Viridis (matplotlib)"`` and others ``"Viridis"``, and
+    ApplyPreset answers True for a name it does not have while changing nothing,
+    so the name is looked up first: exactly, then ignoring case, then ignoring
+    the qualifier in brackets when only one preset matches that way."""
+    names = preset_names(servermanager)
+    if name in names:
+        return name
+    for test in (str.casefold, _bare):
+        hits = [n for n in names if test(n) == test(name)]
+        if len(hits) == 1:
+            return hits[0]
+    return None
 
 
 def preset_name(simple: Any, field: str | None) -> str | None:

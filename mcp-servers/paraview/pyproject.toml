@@ -1,6 +1,6 @@
 [project]
 name = "paraview-mcp"
-version = "3.1.0"
+version = "3.3.0"
 description = "See and measure 3D scientific data in ParaView, on this machine or over SSH, in a live view."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -10,7 +10,7 @@ authors = [
 ]
 keywords = ["MCP", "ParaView", "trame", "visualization", "scientific", "3D", "SSH"]
 dependencies = [
-    "fastmcp>=4.1.2,<5",
+    "fastmcp[tasks]>=4.1.2,<5",
     "platformdirs>=4.3",
 ]
 

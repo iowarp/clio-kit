@@ -1,0 +1,678 @@
+"""Readers, and sources that are still being written.
+
+A reader comes from a view descriptor: the path or path pattern, the format,
+the ParaView reader and that reader's properties, and whether the source is
+still being written. Without a named reader, ParaView picks one from the
+file name.
+
+For a growing source the engine watches what is on disk: the files a pattern
+matches, a file's size and time, or the entries of a folder (an ADIOS2 BP
+output is a folder). When that changes it re-reads the reader's time list. A
+view following the latest step moves to it; a view parked on a step stays
+there and reports how many newer steps exist. ``steps`` lists the steps with
+when each was first seen, so a caller can report each new one.
+
+A growing source opened once it already has steps catches up: when a view
+first connects, it shows the first step, plays forward a few steps a second,
+then follows the latest step. While it catches up the view still counts as
+following; a step chosen by the person or the agent ends the catch-up.
+"""
+
+from __future__ import annotations
+
+import difflib
+import time
+from collections.abc import Callable, Generator, Iterator
+from pathlib import Path
+from typing import Any
+
+from . import ranges
+from .datafs import LocalDisk
+from .disk import FILE_SETTLE, fresh_files, is_pattern
+from .errors import CommandError
+from .held import LEDGER
+from .pool import Readers
+
+#: A late-opened growing source's catch-up: seconds its first step is held, then
+#: seconds per later step; a longer history is strided to about REPLAY_STEPS.
+REPLAY_HOLD = 2.0
+REPLAY_SECONDS = 0.25
+REPLAY_STEPS = 60
+#: Seconds a catch-up waits for a view that went away before it jumps to the latest.
+REPLAY_ALONE = 10.0
+#: Seconds a catch-up step may take to show before the link counts as too slow to
+#: replay at a watchable pace, and the catch-up goes to the latest step.
+REPLAY_SLOW = 3.0
+#: Seconds at least between two growths of a followed source's colour maps when its
+#: data is on a joined pvserver: each measures the new step there, several round
+#: trips over what may be a slow link, while steps can land every few seconds.
+REMOTE_COLOUR_SECONDS = 15.0
+
+
+def reader_by_class(servermanager: Any, name: str) -> str | None:
+    """The paraview.simple name of the reader ``name`` means when it is not one:
+    a VTK class (vtkNetCDFCFReader, or NetCDFCFReader) or an XML proxy name
+    (netCDFReader). File readers wrap their class in a file-series reader, so the
+    class of each definition's sub-proxies counts too."""
+    defs = servermanager.ProxyManager().SMProxyManager.GetProxyDefinitionManager()
+    bare = name.removeprefix("vtk")
+    wanted = {name, bare, "vtk" + bare}
+
+    def classes(element: Any) -> set[str]:
+        found = {element.GetAttribute("class")}
+        for i in range(element.GetNumberOfNestedElements()):
+            sub = element.GetNestedElement(i)
+            if sub.GetName() != "SubProxy":
+                continue
+            for j in range(sub.GetNumberOfNestedElements()):
+                part = sub.GetNestedElement(j)
+                group = part.GetAttribute("proxygroup")
+                proxy = part.GetAttribute("proxyname")
+                core = (
+                    defs.GetProxyDefinition(group, proxy) if group and proxy else None
+                )
+                if core is not None:
+                    found.add(core.GetAttribute("class"))
+        return {c for c in found if c}
+
+    matches: list[str] = []
+    each = defs.NewSingleGroupIterator("sources")
+    each.InitTraversal()
+    while not each.IsDoneWithTraversal():
+        xml_name = each.GetProxyName()
+        element = defs.GetProxyDefinition("sources", xml_name)
+        if element is not None and (xml_name == name or classes(element) & wanted):
+            label = element.GetAttribute("label") or xml_name
+            matches.append(servermanager._make_name_valid(label))
+        each.GoToNextItem()
+    # One class can sit behind several readers; only an unambiguous one is taken.
+    return matches[0] if len(set(matches)) == 1 else None
+
+
+def allowed_strings(proxy: Any, name: str) -> list[str]:
+    """The values a property's own list domain holds, or none when it has no
+    such list: an enumeration's names, or a string list such as the NetCDF
+    reader's Dimensions, filled from the file."""
+    prop = proxy.GetProperty(name)
+    sm = getattr(prop, "SMProperty", None)
+    if sm is None:
+        return []
+    each = sm.NewDomainIterator()
+    each.Begin()
+    while not each.IsAtEnd():
+        domain = each.GetDomain()
+        if domain.IsA("vtkSMEnumerationDomain"):
+            return [domain.GetEntryText(i) for i in range(domain.GetNumberOfEntries())]
+        # Only the plain list: its subclasses list arrays or files.
+        if domain.GetClassName() == "vtkSMStringListDomain":
+            return [domain.GetString(i) for i in range(domain.GetNumberOfStrings())]
+        each.Next()
+    return []
+
+
+def allowed_arrays(proxy: Any, name: str) -> list[str] | None:
+    """The arrays a property's own array domain accepts (ParaView's panel lists
+    only these: a Contour takes one-component arrays), or None when it has none."""
+    prop = proxy.GetProperty(name)
+    sm = getattr(prop, "SMProperty", None)
+    if sm is None:
+        return None
+    each = sm.NewDomainIterator()
+    each.Begin()
+    while not each.IsAtEnd():
+        domain = each.GetDomain()
+        if domain.IsA("vtkSMArrayListDomain"):
+            return [domain.GetString(i) for i in range(domain.GetNumberOfStrings())]
+        each.Next()
+    return None
+
+
+def _array_named(value: Any) -> str | None:
+    """The array name an array property's value gives: ``"p"``, or the last
+    entry of ``["POINTS", "p"]``."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple)) and value and isinstance(value[-1], str):
+        return value[-1]
+    return None
+
+
+def set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
+    """Set ``key`` on a proxy. ``"SliceType.Normal"`` (or ``{"SliceType": {...}}``)
+    reaches into the proxy a property holds, such as a Slice's plane."""
+    head, _, rest = key.partition(".")
+    names = proxy.ListProperties()
+    if head not in names:
+        close = difflib.get_close_matches(head, names, n=5)
+        raise CommandError(
+            "unknown_property",
+            f"{owner} has no property {head!r}."
+            + (f" Close matches: {', '.join(close)}." if close else "")
+            + f" Its properties are: {', '.join(names)}.",
+        )
+    if not rest and not isinstance(value, dict):
+        allowed = allowed_strings(proxy, head)
+        if allowed and isinstance(value, str) and value not in allowed:
+            # ParaView takes a value its list does not hold and reads nothing,
+            # so a wrong choice is refused with the ones the file offers.
+            now = getattr(proxy, head, None)
+            raise CommandError(
+                "bad_value",
+                f"{owner}.{head} cannot be {value!r}; it takes one of: "
+                f"{', '.join(repr(a) for a in allowed[:24])}"
+                + (" and more" if len(allowed) > 24 else "")
+                + (
+                    f". Leave it out to keep {now!r}."
+                    if isinstance(now, str) and now
+                    else "."
+                ),
+            )
+        accepted = allowed_arrays(proxy, head)
+        named = _array_named(value)
+        if accepted and named and named not in accepted:
+            # ParaView does not check this itself: a Contour given a vector reads
+            # past the array's end and can take the whole process down. An empty
+            # list means the input is not known yet, so nothing is refused.
+            raise CommandError(
+                "bad_value",
+                f"{owner}.{head} cannot use the array {named!r}; it takes one of: "
+                f"{', '.join(repr(a) for a in accepted)}.",
+            )
+        setattr(proxy, head, value)
+        return
+    inner = getattr(proxy, head)
+    if not hasattr(inner, "ListProperties"):
+        raise CommandError(
+            "unknown_property",
+            f"{owner}.{head} is a plain value, so {key!r} cannot be set; give {head} itself.",
+        )
+    settings = {rest: value} if rest else value
+    for name, part in settings.items():
+        set_property(inner, f"{owner}.{head}", name, part)
+
+
+def preset_name(name: str) -> str | None:
+    """ParaView's name for colour preset ``name``: the name itself, or the same
+    name without a qualifier such as " (matplotlib)", which ParaView 6 drops
+    ("Viridis (matplotlib)" is "Viridis"), in any letter case."""
+    from paraview import servermanager
+
+    presets = servermanager.vtkSMTransferFunctionPresets.GetInstance()
+    names = [presets.GetPresetName(i) for i in range(presets.GetNumberOfPresets())]
+    bare = name.split(" (", 1)[0].strip()
+    for wanted in (name, bare):
+        for known in names:
+            if known.lower() == wanted.lower():
+                return known
+    # ParaView 5.13 still qualifies them: "Viridis" is "Viridis (matplotlib)".
+    for known in names:
+        if known.split(" (", 1)[0].strip().lower() == bare.lower():
+            return known
+    return None
+
+
+class SourceGrowth:
+    """Mixed into the engine: making readers and following a growing source."""
+
+    simple: Any
+    view: Any
+    root: Path
+    disk: LocalDisk
+    scene: dict[str, Any] | None
+    proxies: dict[str, Any]
+    _growth: dict[str, Any]
+    _quiet: dict[str, dict[str, tuple[Any, float]]]
+    _seen: dict[float, float]
+    _seen_scene: str | None
+    _replay: int | None
+    _replay_armed: str | None
+    last_growth: float | None
+    checked_at: float
+    _coloured_at: float
+    _disk_seen: dict[str, Any]
+    disk_changed: float | None
+    readers: Readers
+    _read_at: dict[str, int]
+
+    # Provided by the engine.
+    def require_scene(self) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def timesteps(self) -> list[float]:
+        raise NotImplementedError
+
+    def time_summary(self) -> dict[str, Any]:
+        raise NotImplementedError
+
+    def _apply_time(self, scene: dict[str, Any]) -> None:
+        raise NotImplementedError
+
+    def commit(self, reason: str) -> None:
+        raise NotImplementedError
+
+    def prime_frame(self) -> None:
+        raise NotImplementedError
+
+    def follow_frame(self) -> bool:
+        raise NotImplementedError
+
+    reframed: bool
+
+    def activate(self) -> None:
+        raise NotImplementedError
+
+    cmd_create_filter: Callable[..., dict[str, Any]]
+    cmd_set_representation: Callable[..., dict[str, Any]]
+    face: Callable[[Any], None]
+
+    @staticmethod
+    def _update_dataset(
+        scene: dict[str, Any], growing: bool, descriptor: dict[str, Any] | None
+    ) -> None:
+        """A reopened scene takes what a newer descriptor says about following it."""
+        dataset = scene.get("dataset")
+        if not isinstance(dataset, dict):
+            return
+        if growing:
+            dataset["growing"] = True
+        if descriptor:
+            dataset["descriptor"] = {**(dataset.get("descriptor") or {}), **descriptor}
+
+    def _files(self, item: dict[str, Any]) -> list[str] | str:
+        path = item["path"]
+        files = self.disk.files(path)
+        if not files:
+            if is_pattern(path):
+                raise CommandError("not_found", f"No file matches {path}.")
+            raise CommandError("not_found", f"There is no file at {path}.")
+        return files
+
+    def _settled(self, item: dict[str, Any], look: dict[str, Any]) -> tuple[Any, ...]:
+        """The entries of a growing pattern's ``disk.series`` look to read: every file
+        it matches but those changed in the last ``FILE_SETTLE`` seconds, which a
+        writer may be part way through; the follow reads them once they settle. A
+        file this node has seen unchanged that long is read whatever the clocks
+        say."""
+        key = look.get("key") or ()
+        fresh = fresh_files(key, int(look.get("now") or 0))
+        now = time.monotonic()
+        seen = self._quiet.get(item["id"], {})
+        quiet: dict[str, tuple[Any, float]] = {}
+        for name, stat in key:
+            if name in fresh:
+                first = seen.get(name)
+                quiet[name] = first if first and first[0] == stat else (stat, now)
+        self._quiet[item["id"]] = quiet
+        return tuple(
+            entry
+            for entry in key
+            if entry[0] not in fresh or now - quiet[entry[0]][1] >= FILE_SETTLE
+        )
+
+    def _series_files(self, item: dict[str, Any]) -> tuple[list[str], tuple[Any, ...]]:
+        """A growing pattern's files to open (``_settled``), and the entries read."""
+        path = item["path"]
+        look = self.disk.series(path)
+        used = self._settled(item, look)
+        if used:
+            return [entry[0] for entry in used], used
+        if look.get("key"):
+            raise CommandError(
+                "not_ready",
+                f"Every file {path} matches is still being written. open_view with "
+                "growing set waits until one has stopped changing; call it again.",
+            )
+        raise CommandError("not_found", f"No file matches {path}.")
+
+    def _make_reader(self, item: dict[str, Any]) -> Any:
+        growing = bool(((self.scene or {}).get("dataset") or {}).get("growing"))
+        shared = Readers.key_of(item)
+        if growing:
+            source = self.readers.get(shared, self.simple)
+            if source is not None:
+                # Another view of this node reads the same growing source: share
+                # its reader, so each new step is looked for and read once.
+                self.readers.join(source, self)
+                self.readers.pull(source, self, item["id"])
+                self._read_at[item["id"]] = source.generation
+                return source.proxy
+        # What is on disk is taken before the reader reads it: a file that changes
+        # while the reader opens it is re-read by the follow.
+        files: list[str] | str
+        seen: Any
+        if growing and is_pattern(item["path"]):
+            files, seen = self._series_files(item)
+        else:
+            files = self._files(item)
+            seen = self.disk.disk_key(item["path"]) if growing else None
+        name = item.get("reader")
+        if not name:
+            proxy = self.simple.OpenDataFile(files)
+            if proxy is None:
+                raise CommandError(
+                    "no_reader",
+                    f"ParaView has no reader for {item['path']}. Name one in the "
+                    "view descriptor's reader.",
+                )
+        else:
+            from paraview import servermanager
+
+            known = [n for n in dir(servermanager.sources) if not n.startswith("_")]
+            if name not in known:
+                name = reader_by_class(servermanager, name) or name
+            if name not in known:
+                readers = [n for n in known if "Reader" in n] or known
+                close = difflib.get_close_matches(name, readers, n=5, cutoff=0.4)
+                raise CommandError(
+                    "unknown_reader",
+                    f"ParaView has no reader {name!r}."
+                    + (f" Close matches: {', '.join(close)}." if close else ""),
+                )
+            # The reader takes its files when it is made, as ParaView's own open
+            # does: the defaults that depend on the file, such as which NetCDF
+            # variables share one grid, are chosen then. Files given after leave
+            # them unset, and the reader may stop at a variable it cannot read.
+            probe = getattr(servermanager.sources, name)()
+            prop, value = self._file_setting(probe, item, files)
+            del probe
+            proxy = getattr(self.simple, name)(**{prop: value})
+        for key, value in (item.get("reader_properties") or {}).items():
+            set_property(proxy, name or proxy.GetXMLName(), key, value)
+        proxy.UpdatePipelineInformation()
+        self._growth[item["id"]] = seen if growing else self.disk.disk_key(item["path"])
+        if growing:
+            source = self.readers.add(shared, proxy, self)
+            self.readers.push(source, self, item["id"])
+            self._read_at[item["id"]] = source.generation
+        return proxy
+
+    def _point_reader(
+        self,
+        proxy: Any,
+        item: dict[str, Any],
+        files: list[str] | str,
+        reset: bool = False,
+    ) -> None:
+        """Give the reader its files. With ``reset`` it re-reads them even when the
+        list is the same: setting the same value is not a change."""
+        key, value = SourceGrowth._file_setting(proxy, item, files)
+        prop = proxy.GetProperty(key)
+        now = [prop[i] for i in range(len(prop))]
+        if not reset or now != (value if isinstance(value, list) else [value]):
+            # A new list is a change the reader acts on. Emptying it first would
+            # leave a file series reader with no steps until it is reloaded.
+            setattr(proxy, key, value)
+            return
+        if self.simple.ReloadFiles(proxy):
+            return
+        setattr(proxy, key, [] if isinstance(value, list) else "")
+        setattr(proxy, key, value)
+        self.simple.ReloadFiles(proxy)
+
+    @staticmethod
+    def _file_setting(
+        proxy: Any, item: dict[str, Any], files: list[str] | str
+    ) -> tuple[str, list[str] | str]:
+        """The reader property that takes ``files``, and the value it takes."""
+        names = proxy.ListProperties()
+        if "FileNames" in names:
+            return "FileNames", files if isinstance(files, list) else [files]
+        if "FileName" not in names:
+            raise CommandError(
+                "bad_reader",
+                f"{proxy.GetXMLName()} takes no file name; it is not a reader.",
+            )
+        if isinstance(files, list):
+            # A repeatable FileName (the XML readers') takes a file series.
+            if proxy.GetProperty("FileName").SMProperty.GetRepeatable():
+                return "FileName", files
+            if len(files) != 1:
+                raise CommandError(
+                    "bad_path",
+                    f"{proxy.GetXMLName()} reads one file or folder, and "
+                    f"{item['path']} matches {len(files)}.",
+                )
+            return "FileName", files[0]
+        return "FileName", files
+
+    def _note_steps(self) -> None:
+        """Remember when each time value was first seen, per scene."""
+        scene_id = (self.scene or {}).get("scene")
+        if scene_id != self._seen_scene:
+            self._seen_scene = scene_id
+            self._seen = {}
+        now = time.time()
+        for value in self.timesteps():
+            self._seen.setdefault(value, now)
+
+    def _grow_colours(self, scene: dict[str, Any]) -> Iterator[str]:
+        """A colour map nobody fixed grows to take in each new step's values, as
+        ParaView's own maps grow on Apply; a range set by hand stays where it is.
+        With the data on a joined pvserver it grows at most every
+        ``REMOTE_COLOUR_SECONDS``, taking in the step shown then. A stage at a
+        time, as ``ranges.grow_stages``."""
+        now = time.monotonic()
+        if self.disk.remote and now - self._coloured_at < REMOTE_COLOUR_SECONDS:
+            return
+        self._coloured_at = now
+        yield from ranges.grow_stages(self, scene)
+
+    def check_growth(self, fresh: bool = False) -> dict[str, Any] | None:
+        """Re-read the time list of growing sources; follow the latest step. With
+        ``fresh`` (an agent asking) the disk is looked at even if a view just did."""
+        stages = self.growth_stages(fresh)
+        while True:
+            try:
+                next(stages)
+            except StopIteration as done:
+                return done.value
+
+    def growth_stages(
+        self, fresh: bool = False
+    ) -> Generator[str, None, dict[str, Any] | None]:
+        """``check_growth`` a stage at a time: each reader's disk look, its re-read,
+        the new step's time, each colour map's range, then the scene record and the
+        picture. Over a slow link each takes seconds; the caller gives the loop back
+        between them, so the other views go on following and commands get in. After
+        each stage the scene may have changed: a scene closed or replaced ends the
+        growth, and the view is made active again before the next stage."""
+        scene = self.scene
+        if scene is None or not (scene.get("dataset") or {}).get("growing"):
+            return None
+        self.checked_at = time.monotonic()
+        self.activate()
+        self._note_steps()
+        before = len(self.timesteps())
+        changed = False
+        for item in scene["objects"]:
+            if self.scene is not scene:
+                return None
+            if item["kind"] != "reader" or item["id"] not in self.proxies:
+                continue
+            proxy = self.proxies[item["id"]]
+            source = self.readers.of(proxy)
+            if source is None:
+                changed = (yield from self._grow_reader(item, proxy)) or changed
+                continue
+            self.readers.pull(source, self, item["id"])
+            if source.generation != self._read_at.get(item["id"]):
+                # Another view of this source re-read it: this view moves with it.
+                self._read_at[item["id"]] = source.generation
+                changed = True
+                continue
+            if source.reading or (not fresh and self.readers.looked(source)):
+                # The follow shares one look between the views of a source; an
+                # agent's own check looks now, or a step written since is missed.
+                continue
+            source.checked_at = time.monotonic()
+            source.reading = True
+            moved = False
+            try:
+                moved = yield from self._grow_reader(item, proxy)
+            finally:
+                source.reading = False
+                self.readers.push(source, self, item["id"])
+            if moved:
+                source.generation += 1
+                self._read_at[item["id"]] = source.generation
+                changed = True
+        if not changed or self.scene is not scene:
+            return None
+        yield "the new step"
+        if self.scene is not scene:
+            return None
+        self.activate()
+        self.prime_frame()
+        self._apply_time(scene)
+        if scene["time"].get("follow_latest", True):
+            for label in self._grow_colours(scene):
+                yield label
+                if self.scene is not scene:
+                    return None
+                self.activate()
+        self._note_steps()
+        self.last_growth = time.time()
+        after = len(self.timesteps())
+        yield "the picture"
+        if self.scene is not scene:
+            return None
+        self.activate()
+        self.reframed = self.follow_frame()
+        self.commit("growth")
+        return {"new_steps": after - before, **self.time_summary()}
+
+    def behind(self) -> bool:
+        """Whether another view re-read a source this view shares, so this view
+        should move to the new step now rather than at its next look."""
+        for item_id, proxy in self.proxies.items():
+            source = self.readers.of(proxy)
+            if source is not None and source.generation != self._read_at.get(item_id):
+                return True
+        return False
+
+    def _grow_reader(
+        self, item: dict[str, Any], proxy: Any
+    ) -> Generator[str, None, bool]:
+        """Look at one reader's disk; re-read its files if they grew. The look and
+        the re-read are separate stages."""
+        series = is_pattern(item["path"])
+        look: dict[str, Any] = {}
+        with LEDGER.phase("disk"):
+            if series:
+                look = self.disk.series(item["path"])
+                key = look.get("key")
+            else:
+                key = self.disk.disk_key(item["path"])
+        if key != self._disk_seen.get(item["id"], self):
+            self._disk_seen[item["id"]] = key
+            self.disk_changed = time.time()
+        files: list[str] | str
+        if series:
+            # A file still being written stays out until it settles; the reader
+            # is re-read when the files it can have change.
+            usable = self._settled(item, look)
+            if not usable or usable == self._growth.get(item["id"]):
+                return False
+            self._growth[item["id"]] = usable
+            files = [entry[0] for entry in usable]
+        else:
+            if key == self._growth.get(item["id"]):
+                return False
+            self._growth[item["id"]] = key
+            files = self._files(item)
+        yield f"re-reading {item['id']}"
+        if self.proxies.get(item["id"]) is not proxy:
+            return False
+        self.activate()
+        with LEDGER.phase("reader"):
+            if is_pattern(item["path"]):
+                self._point_reader(proxy, item, files, reset=True)
+            elif not self.simple.ReloadFiles(proxy):
+                # A folder or file written in place, such as an ADIOS2 BP
+                # output: the reader re-opens it. Resetting the name is the
+                # fallback.
+                self._point_reader(proxy, item, files, reset=True)
+            proxy.UpdatePipelineInformation()
+        return True
+
+    # -- catching up from the first step ---------------------------------------
+    def arm_replay(self) -> None:
+        """A growing source just opened catches up when a view first connects."""
+        scene = self.scene
+        self._replay = None
+        growing = scene is not None and (scene.get("dataset") or {}).get("growing")
+        self._replay_armed = scene["scene"] if scene is not None and growing else None
+
+    @property
+    def replay_armed(self) -> bool:
+        return self._replay_armed is not None
+
+    def disarm_replay(self) -> None:
+        """A view opened while others watch: no catch-up, which would move theirs."""
+        self._replay_armed = None
+
+    def start_replay(self) -> bool:
+        """Show the first step of an armed source; the view still follows."""
+        scene = self.scene
+        armed, self._replay_armed = self._replay_armed, None
+        if scene is None or armed != scene["scene"] or self._replay is not None:
+            return False
+        if not scene["time"].get("follow_latest", True) or len(self.timesteps()) < 2:
+            return False
+        self.activate()
+        self._replay = 0
+        self.prime_frame()
+        self._apply_time(scene)
+        self.reframed = self.follow_frame()
+        self.commit("replay")
+        return True
+
+    def replay_tick(self, finish: bool = False) -> bool:
+        """Move a catch-up forward; at the latest step, or with ``finish``, it ends
+        and the view follows the latest step. Returns whether it goes on."""
+        scene = self.scene
+        if self._replay is None or scene is None:
+            self._replay = None
+            return False
+        steps = len(self.timesteps())
+        stride = max(1, -(-(steps - 1) // REPLAY_STEPS))
+        index = self._replay + stride
+        self._replay = None if finish or index >= steps - 1 else index
+        self.activate()
+        self.prime_frame()
+        self._apply_time(scene)
+        self.reframed = self.follow_frame()
+        self.commit("replay")
+        return self._replay is not None
+
+    def cmd_steps(self, after: int = 0, check: bool = True) -> dict[str, Any]:
+        """The scene's time steps from index ``after`` on, each with when it was first
+        seen, after checking a growing source for new ones (unless ``check`` is
+        false: then as the follow last read them)."""
+        scene = self.require_scene()
+        self._note_steps()
+        if check:
+            self.check_growth(fresh=True)
+        start = max(0, int(after))
+        steps = self.timesteps()
+        dataset = scene.get("dataset") or {}
+        return {
+            "scene": scene["scene"],
+            "growing": bool(dataset.get("growing")),
+            "follow": (dataset.get("descriptor") or {}).get("follow"),
+            "steps": [
+                {"index": i, "time": value, "seen": self._seen.get(value)}
+                for i, value in enumerate(steps)
+                if i >= start
+            ],
+            "time": self.time_summary(),
+            "last_growth": self.last_growth,
+            "source": self.source_state(),
+            "checked": time.time() - max(0.0, time.monotonic() - self.checked_at)
+            if self.checked_at
+            else time.time(),
+        }
+
+    def source_state(self) -> dict[str, Any]:
+        """What the disk says of the growing source: when it last changed."""
+        return {"changed": self.disk_changed}

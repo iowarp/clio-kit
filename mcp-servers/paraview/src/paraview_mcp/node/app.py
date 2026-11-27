@@ -15,113 +15,101 @@ import time
 from collections.abc import Callable
 from typing import Any
 
-from . import manifest
+from . import manifest, vtkjs_patch
+from .bridge import BRIDGE_JS, token_from
 from .changes import lines as change_lines
-from .engine import CommandError, Engine
+from .commands import CommandRoutes, Job
+from .delivery import fresh_stream
+from .engine import Engine
+from .growth import GrowthWork
+from .held import LEDGER
 from .panel import MODE_LABELS, build
 from .serializers import register_serializers
 from .theme import FALLBACK_CSS, THEME_JS, apply_to_view
+from .turns import (
+    END_INTERACTION_EVENT,
+    PAGE_FRESH,
+    PAGE_QUIET,
+    SCENE_WAIT,
+    Shared,
+)
 from .workbench import Workbench
 
-TOKEN_HEADERS = ("X-Clio-Service-Token",)
-END_INTERACTION_EVENT = 45  # vtkCommand::EndInteractionEvent
 
-# Posts the bridge state and the link state to the page that frames trame.
-BRIDGE_JS = r"""
-(function () {
-  function post(message) {
-    try { window.parent.postMessage(message, '*'); } catch (e) { /* no parent */ }
-  }
-  var down = null;
-  // A click that did not move is a pick; ParaView finds what is under it.
-  document.addEventListener('pointerdown', function (e) {
-    down = e.button === 0 ? { x: e.clientX, y: e.clientY } : null;
-  }, true);
-  document.addEventListener('pointerup', function (e) {
-    var start = down;
-    down = null;
-    if (!start || !window.trame || !e.target.closest || !e.target.closest('.clio-view')) return;
-    if (Math.abs(e.clientX - start.x) + Math.abs(e.clientY - start.y) > 4) return;
-    var canvas = Array.prototype.find.call(document.querySelectorAll('.clio-view canvas'), function (c) {
-      var r = c.getBoundingClientRect();
-      return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-    });
-    if (!canvas) return;
-    var box = canvas.getBoundingClientRect();
-    var camera = null;
-    try { camera = window.trame.refs.view.getCamera(); } catch (err) { camera = null; }
-    window.trame.trigger('clio_pick', [e.clientX - box.left, box.height - (e.clientY - box.top),
-      box.width, box.height, camera]);
-  }, true);
-  function start() {
-    var trame = window.trame;
-    if (!trame || !trame.state || !trame.state.watch) { setTimeout(start, 50); return; }
-    trame.state.watch(['clio_bridge'], function (bridge) {
-      if (bridge) post({ type: 'clio.paraview.state', state: bridge });
-    });
-    var client = trame.client;
-    if (client && client.onConnectionClose) {
-      client.onConnectionClose(function () { post({ type: 'clio.paraview.link', up: false }); });
-      client.onConnectionError(function () { post({ type: 'clio.paraview.link', up: false }); });
-    }
-    post({ type: 'clio.paraview.link', up: true });
-    // The view page answers with the host's theme and colours (theme.py).
-    post({ type: 'clio.paraview.ready' });
-    // A frame that mounts or resizes (a tab moved, the canvas maximized) asks for a
-    // fresh picture: in remote mode nothing else would draw it until the next drag.
-    // The remote view subscribes to images only once it has mounted and sized itself,
-    // so ask again when the view's box changes and a little after the page starts.
-    var redraw = null;
-    function ask() {
-      clearTimeout(redraw);
-      redraw = setTimeout(function () { trame.trigger('clio_redraw'); }, 500);
-    }
-    [300, 1500, 4000].forEach(function (ms) { setTimeout(ask, ms); });
-    window.addEventListener('resize', ask);
-    (function watch() {
-      var box = document.querySelector('.clio-view');
-      if (!box || !window.ResizeObserver) { setTimeout(watch, 200); return; }
-      new ResizeObserver(ask).observe(box);
-    })();
-  }
-  start();
-})();
-"""
+class NodeApp(CommandRoutes, GrowthWork):
+    """Binds one scene's engine to trame and serves the command routes.
 
+    A node half has one of these per open scene, each on a port of its own, so
+    views of different scenes (another variable, another dataset) stay live side by
+    side. The first one, the front's, takes the commands and hands each to its
+    scene's app (``stage``)."""
 
-def token_from(request: Any) -> str | None:
-    """The token a request carries, from the bearer header or the CLIO header."""
-    auth = request.headers.get("Authorization", "")
-    if auth.lower().startswith("bearer "):
-        return auth[7:].strip()
-    for name in TOKEN_HEADERS:
-        if request.headers.get(name):
-            return request.headers[name].strip()
-    return None
-
-
-class NodeApp:
-    """Binds the engine to trame and serves the command routes."""
-
-    def __init__(self, engine: Engine, token: str, server: Any = None) -> None:
+    def __init__(
+        self,
+        engine: Engine,
+        token: str,
+        server: Any = None,
+        shared: Shared | None = None,
+    ) -> None:
         from trame.app import get_server
 
         self.engine = engine
         self.token = token
+        #: How the node log names this view.
+        self.name = "view 1"
         self.server = server or get_server("clio-paraview", client_type="vue3")
+        self.shared = shared or Shared()
+        #: The node half's views, when there may be more than this one.
+        self.stage: Any = None
         self.last_link = time.monotonic()
         self.sockets = 0
+        #: Calls sent with their own id, by id.
+        self.jobs: dict[str, Job] = {}
+        #: Whether a video is being rendered in the scene's view.
+        self.animating = False
+        #: Whether a growth check is part way through its stages.
+        self.growth_busy = False
+        self._replay: asyncio.Future[None] | None = None
         self.view: Any = None
         self.link_note = ""
+        #: The pvserver socket and its address, when there is one to watch.
+        self.watched: int | None = None
+        self.pvserver = ""
+        #: Pictures the viewers have shown, as their pages report them.
+        self.frames_shown = 0
+        self.last_frame: float | None = None
+        self.last_frame_size = ""
+        #: What a growing source just opened had on disk, and when that last changed.
+        self._source_seen: tuple[Any, float] | None = None
+        #: When a scene went to the browser that it has not said it drew, and whether
+        #: a newer one waits for that.
+        self._scene_sent: float | None = None
+        self._scene_waiting = False
         self._build()
         engine.listeners.append(self._on_scene_change)
+
+    @property
+    def waiting(self) -> int:
+        return self.shared.waiting
+
+    @waiting.setter
+    def waiting(self, value: int) -> None:
+        self.shared.waiting = value
+
+    @property
+    def lost(self) -> str:
+        return self.shared.lost
+
+    @lost.setter
+    def lost(self, value: str) -> None:
+        self.shared.lost = value
 
     # -- trame -----------------------------------------------------------------
     def _build(self) -> None:
         from trame.widgets import client
         from trame.widgets import paraview as pv_widgets
 
-        register_serializers(self._legend_title)
+        register_serializers(self._legend_for)
         state, ctrl = self.server.state, self.server.controller
         state.trame__title = "ParaView"
         state.update(
@@ -131,12 +119,14 @@ class NodeApp:
             clio_steps=0,
             clio_index=0,
             clio_follow=True,
+            clio_catching=False,
             clio_newer=0,
             clio_mode_note="",
             clio_theme="light",
             clio_view_colors=None,
             viewMode="local",
             clio_drag=None,
+            clio_lost="",
         )
         # A value slider's drag in progress stays in the browser; release applies it.
         state.client_only("clio_drag")
@@ -158,6 +148,8 @@ class NodeApp:
             "clio_set_mode": self._ui_set_mode,
             "clio_pick": self._ui_pick,
             "clio_redraw": self._ui_redraw,
+            "clio_drawn": self._ui_drawn,
+            "clio_scene_loaded": self._ui_scene_loaded,
         }.items():
             ctrl.trigger(name)(handler)
         ctrl.on_server_bind.add(self._bind_routes)
@@ -201,6 +193,7 @@ class NodeApp:
         app.router.add_get("/clio/health", self._health)
         app.router.add_post("/clio/ping", self._ping)
         app.router.add_post("/clio/command", self._command)
+        app.router.add_post("/clio/cancel", self._cancel)
         # trame-client asks a launcher for its session before connecting. There
         # is none: an empty answer makes it connect to the WebSocket beside its
         # own page. (A sessionURL parameter would be lowercased by trame-client,
@@ -224,9 +217,33 @@ class NodeApp:
         websocket = request.headers.get("Upgrade", "").lower() == "websocket"
         if websocket:
             self.sockets += 1
+            # Its first picture comes next; background work holds until it draws.
+            self.shared.page_due(self)
+            self.shared.last_fetch = time.monotonic()
+            # A page that opens (a new view, a frame the host remounted, a link that
+            # came back) gets a fresh picture: the scene a page that went never said
+            # it drew is not waited for, and a remote stream that page left is reset.
+            asyncio.get_running_loop().call_later(PAGE_FRESH, self._new_page)
+            # A scene's catch-up runs once, for its first viewer; a view that opens
+            # later shows the step the others show.
+            if self.sockets > 1:
+                self.engine.disarm_replay()
+            elif self.engine.replay_armed and (
+                self._replay is None or self._replay.done()
+            ):
+                self._replay = asyncio.ensure_future(self._replaying())
         # The view frames trame from a sandboxed, opaque-origin page, so its
         # module scripts and fetches are cross-origin.
         cross_origin = not request.path.startswith("/clio/") and not websocket
+        if cross_origin:
+            now = time.monotonic()
+            shared = self.shared
+            if now - shared.last_fetch >= PAGE_QUIET:
+                shared.fetch_began = now
+            shared.last_fetch = now
+            if self.sockets <= 0:
+                # A page of this view is loading (a resize or remount reloads it).
+                shared.page_due(self)
         try:
             response = await handler(request)
             if cross_origin:
@@ -251,7 +268,54 @@ class NodeApp:
                 "protocol": NODE_PROTOCOL,
                 "scene": scene["scene"] if scene else None,
                 "session": self.engine.session,
+                **self.shown(),
             }
+        )
+
+    def shown(self) -> dict[str, Any]:
+        """What the live view really shows: its viewers and the pictures they drew."""
+        return {
+            "lost": self.lost or None,
+            "viewers": self.sockets,
+            "frames_shown": self.frames_shown,
+            "last_frame_age": None
+            if self.last_frame is None
+            else round(time.time() - self.last_frame, 1),
+            "last_frame_size": self.last_frame_size or None,
+        }
+
+    def pvserver_lost(self, reason: str) -> None:
+        """The pvserver went: nothing more is drawn, and the view says why."""
+        self.lost = reason
+        with self.server.state:
+            self.server.state.clio_lost = (
+                f"ParaView stopped: {reason}. The scene is saved, and the agent "
+                "can open it again once the server runs."
+            )
+
+    def _went_during_call(self) -> Any:
+        """A refusal when the pvserver closed while the call ran, else ``None``.
+
+        ParaView returns from a call whose pvserver went (a send fails, a render
+        falls back to an empty frame), so what it returned is not what the pvserver
+        holds; the watcher leaves its note within seconds.
+        """
+        if self.watched is None or self.lost:
+            return None
+        from . import liveness
+
+        if not liveness.closed(self.watched):
+            return None
+        return self._json(
+            {
+                "error": {
+                    "code": "pvserver_lost",
+                    "message": f"The pvserver at {self.pvserver} closed the "
+                    "connection while this call ran, so nothing it returned is "
+                    "real. Nothing more is drawn or read through this view.",
+                }
+            },
+            409,
         )
 
     async def _no_launcher(self, _request: Any) -> Any:
@@ -259,38 +323,6 @@ class NodeApp:
 
     async def _ping(self, _request: Any) -> Any:
         return self._json({"ok": True})
-
-    async def _command(self, request: Any) -> Any:
-        try:
-            body = await request.json()
-            name = str(body["command"])
-            args = dict(body.get("args") or {})
-            # The front says whose call it is; anything else is the agent's.
-            by = "person" if body.get("by") == "person" else "agent"
-        except (ValueError, KeyError, TypeError):
-            return self._json(
-                {"error": {"code": "bad_request", "message": "Malformed command."}}, 400
-            )
-        try:
-            with self.server.state:
-                result = self.engine.run(name, args, by=by)
-        except CommandError as exc:
-            return self._json(
-                {"error": {"code": exc.code, "message": exc.message}}, 422
-            )
-        except Exception as exc:  # noqa: BLE001 - report the failure to the front
-            return self._json(
-                {
-                    "error": {
-                        "code": "node_error",
-                        "message": f"{type(exc).__name__}: {exc}",
-                    }
-                },
-                500,
-            )
-        if name in ("set_camera", "fit_camera"):
-            self.view.push_camera()
-        return self._json({"result": result})
 
     # -- reacting to the scene -------------------------------------------------
     def _on_scene_change(self, reason: str) -> None:
@@ -317,17 +349,24 @@ class NodeApp:
                 if scene["view"].get("reason") == "volume"
                 else "Switched: an image slice is drawn on the ParaView machine"
                 if scene["view"].get("reason") == "slice"
+                else "Switched: a growing source is drawn on the ParaView machine"
+                if scene["view"].get("reason") == "growing"
                 else f"Switched: geometry {size:.1f} MB, over {engine.threshold_mb:g} MB"
             )
         time_state = engine.time_summary()
         state.clio_steps = time_state.get("steps", 0)
         state.clio_index = time_state.get("index", 0)
         state.clio_follow = time_state.get("follow_latest", True)
+        state.clio_catching = time_state.get("catching_up", False)
         state.clio_newer = time_state.get("newer_steps", 0)
-        self.bench.refresh(reason)
+        with LEDGER.phase("panel"):
+            self.bench.refresh(reason)
         if reason not in ("selection", "camera"):
-            self._update_view()
-        moved = reason in ("open_view", "fit_camera", "set_camera", "rollback")
+            with LEDGER.phase("picture"):
+                self._update_view()
+        moved = reason in ("open_view", "fit_camera", "set_camera", "rollback") or (
+            reason in ("growth", "replay") and engine.reframed
+        )
         if moved and self.view is not None:
             self.view.push_camera()
         state.clio_bridge = self.bridge()
@@ -362,6 +401,7 @@ class NodeApp:
         return {
             "scene": scene["scene"],
             "dataset": (scene.get("dataset") or {}).get("path"),
+            "growing": bool((scene.get("dataset") or {}).get("growing")),
             "time": self.engine.time_summary(),
             "selection": None
             if not selection
@@ -397,27 +437,118 @@ class NodeApp:
     def _update_view(self) -> None:
         """Send the scene to the view. ParaView brings its legends up to date
         (title, text colours, range) only when it renders, so render first when the
-        browser draws, or the browser gets a legend ParaView has not set up yet."""
-        if self.view is None:
-            return
-        if self.server.state.viewMode != "remote":
-            self.engine.simple.Render(self.engine.view)
-        self.view.update()
+        browser draws, or the browser gets a legend ParaView has not set up yet.
 
-    def _legend_title(self) -> str | None:
-        """The field whose legend the browser shows: the selected object's, if on."""
+        A view drawn on the ParaView machine gets only its new image: the geometry
+        the browser would draw is not needed, and bringing it over is the slow part
+        of each step on a slow link. Switching to the browser sends it then."""
+        if self.view is None or self.lost:
+            return
+        with LEDGER.drawing():
+            if self.server.state.viewMode != "remote":
+                if self._scene_held():
+                    self._scene_waiting = True
+                    return
+                self._send_scene()
+            else:
+                self.view.update_image()
+
+    def _scene_held(self) -> bool:
+        """Whether the next scene waits for the browser to draw the last one sent.
+        Each scene's arrays are fetched after it lands, and over a slow link a page
+        sent a scene per step fetched them all at once and drew none."""
+        sent = self._scene_sent
+        if sent is None or not vtkjs_patch.scene_signal or self.sockets <= 0:
+            return False
+        if time.monotonic() - sent < SCENE_WAIT:
+            return True
+        print(
+            f"the browser has not said it drew the scene sent {SCENE_WAIT:g} s ago; "
+            "sending the newest",
+            flush=True,
+        )
+        return False
+
+    def _send_scene(self) -> None:
+        self._scene_waiting = False
+        self.engine.simple.Render(self.engine.view)
+        self.view.update()
+        if vtkjs_patch.scene_signal and self.sockets > 0:
+            self._scene_sent = time.monotonic()
+
+    def _ui_scene_loaded(self, ok: Any = True, error: Any = "") -> None:
+        """A page drew the scene it was sent, or could not: send the newest, if one
+        waits."""
+        if not ok:
+            print(f"the browser could not draw a scene: {error}", flush=True)
+        self._scene_sent = None
+        self.shared.page_drawn(self)
+        if (
+            self._scene_waiting
+            and not self.lost
+            and self.view is not None
+            and self.server.state.viewMode != "remote"
+        ):
+            self._send_scene()
+
+    def _new_page(self) -> None:
+        """A fresh picture for a page that just connected."""
+        if self.lost or self.view is None or self.sockets <= 0:
+            return
+        if self.server.state.viewMode == "remote":
+            fresh_stream(self.server, self.engine.view, 0, 0)
+            self.view.update_image()
+            return
+        self._scene_sent = None
+        if self._scene_waiting:
+            with self.server.state:
+                self._send_scene()
+
+    def _legend_for(self, renderer: Any) -> tuple[bool, str | None]:
+        """Whether ``renderer`` is this view's, and the field whose legend the browser
+        shows there: the selected object's, if its legend is on."""
+        try:
+            mine = self.engine.view.GetClientSideObject().GetRenderWindow()
+            window = renderer.GetRenderWindow() if renderer is not None else None
+            if window is None or mine.__this__ != window.__this__:
+                return False, None
+        except Exception:  # noqa: BLE001 - not a renderer of this view
+            return False, None
         sel = self.server.state.clio_sel or {}
-        return sel.get("color") if sel.get("scalar_bar") else None
+        return True, sel.get("color") if sel.get("scalar_bar") else None
 
     def _ui_select(self, object_id: str) -> None:
         self.bench.select(object_id)
         self.server.state.clio_bridge = self.bridge()
         self._update_view()  # the browser's one legend follows the selection
 
-    def _ui_redraw(self) -> None:
-        # Local mode draws in the browser; remote mode needs ParaView to render again.
+    def _ui_redraw(self, width: Any = 0, height: Any = 0, fresh: Any = False) -> None:
+        # Local mode draws in the browser; remote mode needs ParaView to render again,
+        # at the asking page's size, from a stream a page that went may have left stuck.
+        if self.lost:
+            return
         if self.view is not None and self.server.state.viewMode == "remote":
-            self.view.update()
+            if fresh:
+                try:
+                    w, h = int(width), int(height)
+                except (TypeError, ValueError):
+                    w = h = 0
+                fresh_stream(self.server, self.engine.view, w, h)
+                # A page with no picture at this size (a resize) draws before any
+                # view's background work runs again.
+                self.shared.page_due(self)
+            # The picture alone: the geometry is the browser's to draw, and sending
+            # it is the slow part over a slow link.
+            self.view.update_image()
+
+    def _ui_drawn(self, size: str = "", count: Any = 1) -> None:
+        self.shared.page_drawn(self)
+        try:
+            self.frames_shown += max(1, min(int(count), 10_000))
+        except (TypeError, ValueError):
+            self.frames_shown += 1
+        self.last_frame = time.time()
+        self.last_frame_size = str(size)[:32]
 
     def _ui_set_mode(self, mode: str) -> None:
         if self.engine.scene is None or mode not in MODE_LABELS:
@@ -435,7 +566,7 @@ class NodeApp:
         scene = self.engine.scene
         if scene is None or scene["view"].get("mode") != "remote":
             return
-        scene["camera"] = self.engine.read_camera()
+        self.engine.person_moved_camera()
         with self.server.state:
             self.server.state.clio_bridge = self.bridge()
 
@@ -455,17 +586,6 @@ class NodeApp:
         world = engine.pick_display(x, y, width, height)
         if world is not None:
             engine.browser_pick(world)
-
-    # -- background work ---------------------------------------------------------
-    async def watch_growth(self, interval: float = 2.0) -> None:
-        """Re-read growing sources; report new steps to the view."""
-        while True:
-            await asyncio.sleep(interval)
-            try:
-                with self.server.state:
-                    self.engine.check_growth()
-            except Exception as exc:  # noqa: BLE001 - keep watching; say why
-                print(f"growth check failed: {exc}", flush=True)
 
     def idle_for(self) -> float:
         """Seconds since the last request, or zero while a view is connected."""

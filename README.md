@@ -500,7 +500,7 @@ distinct `not_installed` semantic, while real Spack failures remain errors.
 | **`node-hardware`** | 2.3.3 | System | System hardware information | `clio-kit mcp-server node-hardware` |
 | **`pandas`** | 2.4.1 | Data Analysis | CSV data loading and filtering | `clio-kit mcp-server pandas` |
 | **`parallel-sort`** | 2.3.3 | Computing | Large file sorting | `clio-kit mcp-server parallel-sort` |
-| **`paraview`** | 3.1.0 | Visualization | Live 3D views of scientific data, here or over SSH | `clio-kit mcp-server paraview` |
+| **`paraview`** | 3.3.0 | Visualization | Live 3D views of scientific data, here or over SSH | `clio-kit mcp-server paraview` |
 | **`parquet`** | 2.3.1 | Data I/O | Read Parquet file columns | `clio-kit mcp-server parquet` |
 | **`pdf`** | 1.0.0 | Research | Read papers in an interactive PDF viewer (runs the MCP Apps PDF server 2.0.4) | `clio-kit mcp-server pdf` |
 | **`plot`** | 2.2.8 | Visualization | Generate plots from CSV data | `clio-kit mcp-server plot` |

@@ -21,6 +21,12 @@ the MCP host --stdio--> the front --one ssh, one forwarded port--> the node half
 
 When ParaView is on this machine there is no `ssh`.
 
+The front installs from wheels only, on Windows, macOS and Linux (a test keeps
+its lock that way), so its first start takes seconds. It does not install the
+`adios2` Python package: ADIOS2 BP output is read by ParaView's own
+`ADIOS2VTXReader`, which Kitware's builds include on all three systems, through
+the same node-half path on each.
+
 ## Configuration
 
 The front reads where ParaView runs from its environment. A connector sets
@@ -31,30 +37,123 @@ these from the values the person (or the agent) gives:
 | `PARAVIEW_ADDRESS` | Empty for this machine; otherwise an SSH host name (an alias from `~/.ssh/config` works) |
 | `PARAVIEW_VIA` | A jump host, used when `~/.ssh/config` gives the host no `ProxyJump` |
 | `PARAVIEW_PREPARE` | A shell line run first, for example `module load paraview`, so that `pvpython` is on the PATH |
+| `PARAVIEW_PVSERVER` | A running `pvserver` to join, as `host:port` from where the node half runs, for example a relay's local port for a `pvserver` in a cluster job. Empty: join one on port 11111 of that machine if it listens |
+| `PARAVIEW_VERSION` | The ParaView version the node half must run, for example `5.13.1` to match that `pvserver`. Empty: any `pvpython` found |
 
 `ssh ares; ssh ares-compute-08` is the address `ares-compute-08` via `ares`.
 The front runs the system `ssh` with `BatchMode=yes` and your own keys, agent
 and config. A host that asks for a password or a one-time code fails at once
-with a message saying interactive sign-in is needed; nothing waits.
+with a message saying interactive sign-in is needed; nothing waits. Where the
+system `ssh` holds one control master, every step and the port forward share
+it. OpenSSH for Windows has no control master, so there each step is its own
+`ssh` (through the jump host when there is one) and the forward is a dedicated
+`ssh -N -L` that lives as long as the link.
+
+When something else already forwards a `pvserver`'s port to this machine, for
+example a job service that starts `pvserver` in a cluster job and forwards its
+port here, use that forward: set `PARAVIEW_PVSERVER` to its local `host:port`
+and leave `PARAVIEW_ADDRESS` and `PARAVIEW_VIA` empty. The client then runs on
+this machine and the connector opens no SSH of its own. An SSH failure while a
+`pvserver` is named says so.
 
 Test knobs: `PARAVIEW_IDLE_SECONDS` (node half idle shutdown, default 1800),
 `PARAVIEW_REMOTE_RENDER_THRESHOLD_MB` (default: ParaView's own setting, 20),
-`PARAVIEW_PVSERVER_PORT` (default 11111), `PARAVIEW_START_TIMEOUT`.
+`PARAVIEW_PVSERVER_PORT` (default 11111), `PARAVIEW_START_STALL` (default 120:
+a starting node half is stopped only after this many seconds with no new line
+in its log; there is no overall limit, the start is reported as progress and
+the call can be cancelled. `PARAVIEW_START_TIMEOUT` is read as its old name),
+`PARAVIEW_SETUP_STALL` (default 600: a setup step, such as the folder probe, the
+offscreen rendering check or the trame install, is stopped only after printing
+nothing for this many seconds).
+
+No call has a time limit. A call runs on the node half under a job id; the
+front asks after it every few seconds, reports what it has done ("measured 40
+of 120 steps", or the seconds elapsed) as MCP progress, and cancels it on the
+node when the host cancels the call. A node that holds its loop (a long render)
+is busy, not gone, and the wait says so; a node or `pvserver` that has ended
+fails the call at once with its reason. Setting up a machine works the same way:
+each step's last line is reported as progress for as long as it runs, a cancel
+stops it, and only a step that falls silent for `PARAVIEW_SETUP_STALL` seconds
+fails, as `setup_stalled`. `measure_over_time` returns every step it picks, however
+many there are.
+
+## Views on several pvservers
+
+`open_view(pvserver="host:port")` draws a view on another running `pvserver`,
+such as a second run's. Each `pvserver` has its own node half (`node-pv<hash>`
+records beside `node.json`), so the views already open stay open beside it;
+scene tools act on the view opened last. The view's reopen arguments carry the
+`pvserver`, so a host that restarts the server reopens each view on its own.
+
+## What the view really shows
+
+`open_view` renders a small test frame and says how much of it the data
+covers; `capture` and `export_artifact` do the same for their frame and lead
+with "This frame is blank" when nothing but the background shows, with the
+cause when one is found: an object with no points at this time, a fully
+transparent display, or a camera inside the data, facing away or aimed past
+it. Every pixel is compared, so a frame that shows only an outline or thin
+lines is reported as sparse, not blank. `set_camera` refuses a camera at its own focal point or with its view up
+along the way it looks. `open_view` and `capture` also report how many
+viewers are connected and how many pictures they have shown (remote rendering
+only). A node half watches its `pvserver` connection: when the `pvserver`
+goes (its job ended), the node half stops drawing, the live view says why and
+stops reconnecting, it leaves `<record>.lost.json`, and later scene tools fail
+with `pvserver_lost` instead of starting a node half that shows nothing. A
+ParaView call that is waiting on the `pvserver` when it goes cannot return, and
+it holds up the node half's own watcher, so a small watchdog process beside the
+node half (any Python, standard library only) watches the same socket. It then
+leaves the note and ends the node half, and the call fails at once with that
+reason. A call that ParaView lets go of when its pvserver closes is refused with
+`pvserver_lost` too, since what it returned is not real. When the node half's
+loop is held for a minute, its log shows the stack it waits in, every minute,
+without stopping it. The link to a `pvserver` may be a slow tunnel, so each
+followed step costs few round trips: the server keeps the node half's disk code
+loaded, a view drawn on the ParaView machine gets only its new image, and an
+agent's command goes ahead of the follow's next look. Views of one growing source
+(the same path, reader and reader properties) share one reader: one view's look
+at the disk and re-read moves them all, and a colour range measured once serves
+every view of that source at that step and filter chain. Opening a view is built
+in stages (the reader, then each filter, colour and the first picture), and the
+node half lets the other views take their turn between them: the open reports
+`opening the view: <stage>` as progress, and a command that changes the scene
+while it opens is refused with `view_opening` (try again once the open returns).
+A followed step is checked in stages too (each reader's disk look, its re-read,
+the new step's time, each colour range, then the picture), with the other views'
+turns between them, so a step that costs seconds over a slow link does not hold
+every view for all of them; a command that changes the scene waits for the last
+stage. Each
+start keeps the previous log as `<record>.prev.log`.
 
 ## The first attach on a machine
 
 The front prepares `~/.clio/paraview/<server version>/` there (on this machine,
-clio-kit's own data folder, `<user data>/clio-kit/paraview/<server version>/`,
-which a host that confines the servers it launches lets them write):
+`$CLIO_KIT_CACHE_DIR/paraview-node/<server version>/` when the host sets it,
+as CLIO does for the servers it confines, else clio-kit's own data folder,
+`<user data>/clio-kit/paraview/<server version>/`):
 
 - `site/`: trame, trame-vtk and trame-vuetify (pinned in `config.py`),
   installed for the Python of that machine's
-  `pvpython` (ParaView 6.0 or later, Python 3.12). If the machine cannot reach
+  `pvpython` (ParaView 5.13 or later, Python 3.10 or later). If the machine cannot reach
   the package index, the front builds it from the jump host, which shares the
   home folder on a cluster. If neither can, the message names the command to
-  run from a machine that can.
+  run from a machine that can. If the folder refuses the write, the error is
+  `node_folder_unwritable` and names the folder.
 - `code/`: the node half, copied over the same connection.
+- `env.json`: what the front learned about that `pvpython`, including whether
+  it renders offscreen as it is. Login and compute nodes often have no X
+  server, EGL or system OSMesa; the front then starts the node half with the
+  ParaView launcher's `--mesa` switch, which uses the OSMesa that the Kitware
+  binaries ship. A `prepare` line that brings its own GL libraries is probed
+  on its own.
 - `node.json`: the running node half's port and token, readable only by you.
+  A node half answers only inside its own network namespace. When a host runs
+  each server in its own sandbox and another sandbox's node half still holds
+  the folder, the front leaves it alone and runs its own as
+  `node-<namespace>.json`. On Windows, where a sandboxed server cannot signal
+  a node half started from another sandbox, the front asks it to stop by
+  writing `node.stop`, which the node half watches. If it still holds the
+  folder after that, the front runs its own beside it as `node-w<pid>.json`.
 - `scenes/<id>/manifest.json`: each scene, written after every committed
   command.
 
@@ -65,6 +164,33 @@ when the link drops it keeps the scene, and with no link for thirty minutes it
 writes the scene manifest and exits. If a `pvserver` listens on port 11111 of
 that machine, the node half joins it as a client and shows that session.
 
+### Joining a pvserver
+
+With `PARAVIEW_PVSERVER` set, the node half connects to that `pvserver` and
+renders there. Datasets are then read on the server's machine: paths, globs and
+the steps of a growing source are checked in the server's own file system, so
+a cluster job's output never crosses to this machine, only the rendered view.
+The client and the server must run the same ParaView version; set `PARAVIEW_VERSION` to it and the front refuses any other
+`pvpython` with `paraview_version_mismatch`.
+
+### ParaView on this machine
+
+When `PARAVIEW_ADDRESS` is empty and the `pvpython` on the PATH is not the
+`PARAVIEW_VERSION` asked for (or there is none), the front fetches Kitware's
+official binaries for that version into clio-kit's cache
+(`$CLIO_KIT_CACHE_DIR/paraview-client/`, else `<user cache>/clio-kit/paraview-client/`),
+checks the archive's SHA-256 against the one pinned in `client.py`, and uses
+its `pvpython`. The fetch starts in the background when the server starts; an
+attach before it finishes says so and asks to try again shortly. A connector
+change restarts the front, so a fetch survives it: the bytes kept in
+`<version>.part` are resumed with an HTTP range, and while one front fetches,
+holding a lock file it keeps fresh, any other front follows its progress
+instead of starting again. Set `PARAVIEW_VERSION` as soon as the server's
+version is known, before its job runs, so the client is here when the job
+serves. Pinned builds:
+5.13.1 for Windows x86-64. On Windows the node half runs natively, without
+`ssh` or a shell; delete the cache folder to remove the fetched client.
+
 ## Tools
 
 | Tool | What it does |
@@ -74,11 +200,13 @@ Building a scene is free; managing its view is tooled
 
 | Tool | What it does |
 | --- | --- |
-| `open_view` | Opens a dataset (a glob opens a file series; `growing` follows one still being written), or restores a scene by id, and returns the live view |
+| `open_view` | Opens a dataset (a glob opens a file series; `growing` follows one still being written), or a view descriptor (`view`), or restores a scene by id, and returns the live view |
 | `run_scene_script` | Builds or changes the scene with `paraview.simple` code run inside it: readers (a second dataset too), filters, colours. It is saved with the scene and replayed on restore |
 | `set_timestep` | Moves in time or follows the latest step |
+| `watch_steps` | Watches a growing source: reports each new step as progress and ends when the run stops or reaches its expected steps (an MCP task where the host supports them) |
 | `set_camera`, `fit_camera` | Move the camera |
 | `inspect_selection`, `measure_field` | Exact values: what the person picked, a field's statistics and histogram |
+| `measure_over_time` | A field's statistics at each time step, the series to plot over a run |
 | `capture` | A PNG rendered by ParaView at the camera the view last reported |
 | `export_artifact`, `export_animation`, `export_scene` | A figure; a video of the time steps as the view shows them (MP4 with ffmpeg, else OGG); or the scene manifest and a ParaView state file |
 | `scene_state` | Where it is attached, the dataset, the pipeline, time and view |
@@ -87,6 +215,60 @@ Each tool is one command, applied whole: it commits or it rolls back. A failing
 scene script leaves nothing behind. Paths are paths on the machine where
 ParaView runs. There is no connect tool: where ParaView runs is the connector's
 setting.
+
+## A source that grows
+
+A solver still writing its output (an ADIOS2 BP read with `ADIOS2VTXReader`, or a
+file series) opens with `growing`. A view descriptor says the same in one object,
+`clio.view-descriptor.v1` ([schema](src/paraview_mcp/schemas/view-descriptor.v1.json)):
+the path and reader, `follow` (how often to look and how many steps the run will
+write) and `display` (the first view: a slice or contour, coloured by an array over
+a fixed range with a colour map). A display part ParaView cannot show is left out
+and named in the dataset's note; the open stands.
+
+The server re-reads the reader's time list as the source grows. A view that
+follows the latest step moves to each new one; a view the person or agent moved
+to an earlier step stays there and says how many newer steps exist, until it
+follows again (`set_timestep` with `latest`). A growing source opened once it
+already has steps catches up: when a view first connects it shows the first
+step, plays forward a few steps a second (a long history is strided to about 60
+frames), then follows the latest step. The view reports `catching_up` meanwhile;
+choosing a step ends it. A view opened while another view of the node half already
+follows a growing source, or while background work has been waiting more than a
+few seconds for its turn, follows the latest step at once instead: its catch-up
+would share the node with them and slow every view. While a view follows the
+latest step and nobody has placed its camera, the camera is fitted again, in the
+same direction, whenever the data it shows moves by more than 2% of its size (a
+moving window, a travelling body). A camera the person turns, or the agent places
+with `set_camera` (position, focal point, view up, azimuth, elevation or zoom),
+`fit_camera` on one object or a scene script, stays put; `fit_camera` on the whole
+scene (the view's Reset) or looking along an axis lets it follow again. The time
+state reports this as `camera_follows`. Every fit counts only objects whose box is
+real data (finite, of a sane size, each minimum at most its maximum), so an object
+with broken cells cannot blank the view, and a camera that cannot draw, whether a
+script or the browser left it, is put back to the last good one. With the data on a joined
+pvserver, ParaView mode has the pvserver draw a growing source, so only the
+picture of each new step crosses the link, not its geometry. When the node half's
+loop is held for 2 s or more, its log names the work that held it and how long
+each part took. Each step reaches the view's model
+context, and `watch_steps` reports it as task progress, "Step k of N", so any MCP
+host can show a run advancing. `watch_steps` lasts as long as the run: it ends
+when the expected steps are written, when the source is not marked as growing, or when it stalls (no new step and
+nothing changed on disk for `idle_seconds`, default 300, or three times the
+longest gap between steps if that is longer), or when the person cancels. It
+takes no time limit unless a person asks for one (`max_seconds`). When the run
+ends, `measure_over_time` gives the statistics of a field at every step.
+
+A growing source can be opened as soon as the run starts. While it is not there
+yet, or no file of its pattern has stopped changing, `open_view` waits as long as
+the folder keeps changing, and says why it cannot be read once nothing has
+changed for 90 seconds. A file a pattern matches is read once it has been still
+for `PARAVIEW_FILE_SETTLE` seconds (default 5), so a reader does not open a file
+part written.
+
+Scene scripts run on ParaView 6, which drops the " (matplotlib)" qualifier from
+colour preset names: `ApplyPreset("Viridis (matplotlib)")` applies "Viridis", and
+`ColorBy(display, None)` on a display that colours by nothing does nothing.
 
 ## The view
 
@@ -100,6 +282,12 @@ representation and colouring, the camera and the recent changes (and whether
 the person or the agent made them) through `ui/update-model-context`, at most
 ten times a second.
 
+A page that loads (a new view, or one the host remounted on a resize) and a
+page asking for a picture at a new size come first: every view's background
+work waits until that page draws, 15 s at most. A page whose ParaView answers
+but is busy is left to finish loading rather than reloaded from nothing; it is
+reloaded after three such looks, or at once when its link drops.
+
 The view carries ParaView's own controls, icon-led and compact. A left tool
 rail opens one panel at a time (a sheet over the lower view at phone width):
 
@@ -108,7 +296,7 @@ rail opens one panel at a time (a sheet over the lower view at phone width):
 | Pipeline | Each object, indented under its input: show or hide, select, remove |
 | Add filter | Contour, Slice, Clip, Threshold, Glyph, Stream Tracer, Calculator on the selected object, with a short form whose defaults come from its data |
 | Display | Representation, colour by field and component, colour map, rescale, legend, opacity |
-| Camera | Reset, look along ±X, ±Y or ±Z, parallel projection |
+| Camera | Reset (the camera follows moving data again), look along ±X, ±Y or ±Z, parallel projection |
 | Information | Data type, points, cells, memory, bounds, each field's range, filter properties |
 
 The top bar holds the dataset name, time (previous, play, next, a slider,
@@ -127,6 +315,26 @@ new scene starts with ParaView's defaults, not the last scene's maps. As in
 ParaView, one colour map and one legend belong to a field and are shared by
 every object coloured by it. When the browser draws, it shows one legend (the
 selected object's, else the newest); images ParaView renders show them all.
+
+A field's colour range starts from the values it represents, not its extremes:
+the 2nd to 98th percentile of the values shown (as xarray's `robust=True`),
+measured on the objects coloured by it at the view's time, on the pvserver's
+ranks when there is one. A few extreme values (a thin boundary layer, a body's
+surface) then no longer leave the rest of the field in one faint colour. The
+range grows as steps arrive, and `scene_state` gives it with the field's whole
+range. A range set by hand (a descriptor's `range`, or one a scene script sets
+with `RescaleTransferFunction`) stays where it is; Rescale in the Display panel
+gives the field's whole range instead.
+
+The tool's guidance (the server's instructions and `run_scene_script`) also
+steers what the scene shows. A body's real surface (an STL the person made,
+passed in the descriptor's `geometry` or opened by a scene script) reads better
+than a contour of its mask, which shows the grid's resolution in steps of one
+cell and suits checking the mask against the surface. A live view shows a run
+evolving better through what it changes, such as a contour of a vortex measure
+the run writes or a slice across the wake downstream, than through a fixed plane
+in a region that settles; `measure_over_time` on the shown object says whether
+it still changes.
 
 The result that opens the view declares the service in its private `_meta`:
 `"ai.iowarp.clio/service": {"port": <forwarded port>, "token": <token>}`. The

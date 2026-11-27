@@ -58,7 +58,10 @@ async def test_missing_executable(monkeypatch, copper_cif, out):
     with pytest.raises(ToolError, match=r"spack install fdmnes.*\[binary_missing\]"):
         await call("run_xanes", {"structure": str(copper_cif), "absorber": "Cu"})
     text, data = await call("fdmnes_status", {})
-    assert not data["executable"]["found"] and "not available" in text
+    assert not data["executable"]["found"]
+    assert (
+        "not found in FDMNES_COMMAND, FDMNES_EXE or PATH" in text and "set FDMNES_COMMAND" in text
+    )
 
 
 async def test_missing_structure(fake_fdmnes, out):

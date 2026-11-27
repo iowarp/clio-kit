@@ -10,7 +10,17 @@ schema-version = 1
 # in ParaView's Python and shows a live trame view (MCP Apps). 3.1.0 gives the
 # view ParaView controls (pipeline, filters, display, camera, information) that
 # run the tools' own commands, and follows the host's theme; its node folder
-# adds trame-vuetify, so a new version folder is prepared.
+# adds trame-vuetify, so a new version folder is prepared. 3.2.0 follows a
+# growing source: open_view takes a clio.view-descriptor.v1, a following view
+# moves to each new step and a parked view reports newer steps, watch_steps
+# reports each step as MCP task progress, and measure_over_time adds field
+# statistics per step; it adds fastmcp[tasks]. 3.3.0 joins a running pvserver
+# (PARAVIEW_PVSERVER, such as a relay's local port for one in a cluster job) and
+# reads the data on the server's machine, runs ParaView 5.13 and Python 3.10 as
+# well as 6.x, runs natively on Windows, and fetches the ParaView version a server
+# needs (PARAVIEW_VERSION) from Kitware when none is installed. Over SSH from
+# Windows, whose OpenSSH has no control master, each step is its own ssh and the
+# forward its own ssh -N -L.
 # slicer 1.0.0 is a new server: it slices STL, 3MF and STEP models with the
 # PrusaSlicer or OrcaSlicer already installed (never downloaded) and shows the
 # toolpaths layer by layer in an MCP Apps view (ui://slicer/layers).
@@ -140,7 +150,7 @@ node-hardware = "2.3.3"
 ocean = "1.0.0"
 pandas = "2.4.1"
 parallel-sort = "2.3.3"
-paraview = "3.1.0"
+paraview = "3.3.0"
 parquet = "2.3.1"
 pdf = "1.0.0"
 plot = "2.2.8"
@@ -225,7 +235,7 @@ executable-paths = ["/usr/share/lmod/lmod/libexec/lmod", "/usr/local/lmod/lmod/l
 environment-files = ["SCIENTIFIC_CATALOG_FILE"]
 
 [prerequisites.paraview]
-note = "Needs ParaView 6 (pvpython) on this machine or on the SSH host in PARAVIEW_ADDRESS; the server starts without it and its first scene call says what is missing. A handshake alone is insufficient."
+note = "Needs ParaView 5.13 or later (pvpython) on this machine or on the SSH host in PARAVIEW_ADDRESS, or PARAVIEW_VERSION to fetch it here; the server starts without it and its first scene call says what is missing. A handshake alone is insufficient."
 
 [prerequisites.slicer]
 executable-environment = ["SLICER_BIN"]

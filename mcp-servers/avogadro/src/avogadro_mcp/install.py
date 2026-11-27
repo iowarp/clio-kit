@@ -42,6 +42,21 @@ def find() -> dict[str, Any]:
     return {"found": False, "source": None, "problem": "no avogadro2 found on this machine"}
 
 
+def missing_text(found: dict[str, Any]) -> str:
+    """Where Avogadro was looked for and the connector setting that points at it."""
+    where = (
+        f"Avogadro 2 was not found: {found['problem']}"
+        if found.get("source")
+        else f"Avogadro 2 was not found in Where Avogadro is ({ENV}), PATH (avogadro2) or "
+        "~/.local/opt/avogadro-*"
+    )
+    return (
+        f"{where}. If it is installed elsewhere, set the connector's Where Avogadro is; "
+        f"otherwise see the avogadro plugin's install-avogadro skill (Avogadro {VERSION}, "
+        "with the person's consent)."
+    )
+
+
 def skill_installs(home: Path | None = None) -> list[Path]:
     """Unpacked releases the install skill left in ``~/.local/opt``, newest version first."""
 

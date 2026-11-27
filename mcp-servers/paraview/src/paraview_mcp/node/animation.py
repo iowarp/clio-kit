@@ -11,6 +11,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Generator
 from pathlib import Path
 from typing import Any
 
@@ -43,7 +44,20 @@ class SceneAnimation:
     def _apply_time(self, scene: dict[str, Any]) -> None:
         raise NotImplementedError
 
-    def cmd_export_animation(
+    def screenshot(
+        self, target: Path | str, width: int, height: int, **extra: Any
+    ) -> None:
+        raise NotImplementedError
+
+    def cmd_export_animation(self, **args: Any) -> dict[str, Any]:
+        frames = self.animating(**args)
+        while True:
+            try:
+                next(frames)
+            except StopIteration as done:
+                return dict(done.value)
+
+    def animating(
         self,
         path: str,
         width: int = 1280,
@@ -52,7 +66,10 @@ class SceneAnimation:
         start: int | None = None,
         end: int | None = None,
         labels: list[str] | None = None,
-    ) -> dict[str, Any]:
+    ) -> Generator[tuple[int, int], None, dict[str, Any]]:
+        """export_animation a frame at a time: yields how many frames are rendered
+        and how many there are, then encodes them and returns the video. Closing it
+        early puts the scene's time back and removes the frames."""
         scene = self.require_scene()
         steps = self.timesteps()
         if len(steps) < 2:
@@ -84,25 +101,24 @@ class SceneAnimation:
             shown = simple.Show(stamp, self.view)
             shown.WindowLocation = "Upper Left Corner"
             shown.FontSize = 22
-        animation = simple.GetAnimationScene()
+        count = last - first + 1
+        rendered = False
         try:
             for frame, index in enumerate(range(first, last + 1)):
                 if stamp is not None and labels is not None:
                     stamp.Text = str(labels[index])
-                animation.AnimationTime = steps[index]
                 self.view.ViewTime = steps[index]
-                simple.SaveScreenshot(
-                    str(frames / f"f_{frame:05d}.png"),
-                    self.view,
-                    ImageResolution=[width, height],
-                )
+                self.screenshot(frames / f"f_{frame:05d}.png", width, height)
+                yield frame + 1, count
+            rendered = True
         finally:
             if stamp is not None:
                 simple.Hide(stamp, self.view)
                 simple.Delete(stamp)
             self._apply_time(scene)
             simple.Render(self.view)
-        count = last - first + 1
+            if not rendered:
+                shutil.rmtree(frames, ignore_errors=True)
         encoded = self._encode(frames, target, fps)
         shutil.rmtree(frames, ignore_errors=True)
         return {

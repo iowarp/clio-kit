@@ -134,12 +134,7 @@ class Session:
             raise AvogadroError("unsupported_platform", why)
         found = install.find()
         if not found["found"]:
-            raise AvogadroError(
-                "not_installed",
-                f"Avogadro 2 is not found here ({found['problem']}). Install Avogadro "
-                f"{install.VERSION} with the person's consent (the avogadro plugin's "
-                "install-avogadro skill) and set the connector's Where Avogadro is.",
-            )
+            raise AvogadroError("not_installed", install.missing_text(found))
         tools = install.display_tools()
         if tools["missing"]:
             raise AvogadroError(

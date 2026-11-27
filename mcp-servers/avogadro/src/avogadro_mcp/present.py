@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from . import install
+
 
 def status_text(d: dict[str, Any]) -> str:
     av, disp = d["avogadro"], d["display"]
@@ -13,10 +15,7 @@ def status_text(d: dict[str, Any]) -> str:
     if av["found"]:
         lines.append(f"Avogadro: {av['command']} (via {av['source']}).")
     else:
-        lines.append(
-            f"Avogadro is not found ({av['problem']}). Install Avogadro {d['version']} with the "
-            "person's consent (install-avogadro skill) and set the connector's Where Avogadro is."
-        )
+        lines.append(install.missing_text(av))
     if disp["missing"]:
         lines.append(
             f"Missing for the streamed view: {', '.join(disp['missing'])}. {disp['install']}"

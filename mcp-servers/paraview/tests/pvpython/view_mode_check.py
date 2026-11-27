@@ -3,7 +3,7 @@
     pvpython view_mode_check.py OUT_DIR
 
 Opens a small wavelet, shows it as a Volume, then as a Surface, then opens a flat one
-(an image slice), and prints ``VIEW=<json>`` with the view's mode and reason after each.
+(an image slice), then the wavelet again as a growing source, and prints ``VIEW=<json>`` with the view's mode and reason after each.
 """
 
 from __future__ import annotations
@@ -39,6 +39,9 @@ def main(out: Path) -> dict[str, Any]:
         **engine.scene["view"],
         "representation": engine.scene["objects"][0]["display"]["representation"],
     }
+    # A growing source sends one image per new step, not all its geometry again.
+    engine.run("open_view", {"path": str(data), "growing": True, "new": True})
+    seen["growing"] = dict(engine.scene["view"])
     return seen
 
 

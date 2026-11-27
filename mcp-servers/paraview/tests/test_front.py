@@ -32,6 +32,10 @@ EXPECTED_TOOLS = {
     "export_animation",
     "export_scene",
     "scene_state",
+    "watch_steps",
+    "measure_over_time",
+    "view_status",
+    "stop_view_relaunch",
 }
 
 
@@ -40,9 +44,83 @@ async def test_tools_list_without_paraview() -> None:
         tools = {tool.name: tool for tool in await client.list_tools()}
     assert set(tools) == EXPECTED_TOOLS
     assert tools["open_view"].meta["ui"]["resourceUri"] == "ui://paraview/view"
-    # Only the opening call carries the view.
-    assert all("ui" not in (t.meta or {}) for n, t in tools.items() if n != "open_view")
+    # Only the opening call carries the view; the view's own check is for it alone.
+    assert tools["view_status"].meta["ui"] == {"visibility": ["app"]}
+    assert tools["stop_view_relaunch"].meta["ui"] == {"visibility": ["app"]}
+    assert all(
+        "ui" not in (t.meta or {})
+        for n, t in tools.items()
+        if n not in ("open_view", "view_status", "stop_view_relaunch")
+    )
     assert not any("connect" in name for name in tools)
+
+
+async def test_a_view_that_cannot_reach_paraview_learns_why(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The view asks view_status; a node half whose pvserver went says why."""
+
+    class Gone:
+        def status(self, scene: str | None = None) -> dict[str, str]:
+            return {"state": "lost", "code": "pvserver_lost", "text": "It stopped."}
+
+    monkeypatch.setattr(server_module, "_attachers", {"": Gone()})
+    async with Client(mcp) as client:
+        result = await client.call_tool("view_status", {"scene": "s1"})
+        none = await client.call_tool("view_status", {})
+    assert result.structured_content == {
+        "state": "lost",
+        "code": "pvserver_lost",
+        "text": "It stopped.",
+    }
+    assert none.structured_content["state"] == "lost"
+    monkeypatch.setattr(server_module, "_attachers", {})
+    async with Client(mcp) as client:
+        closed = await client.call_tool("view_status", {})
+    assert closed.structured_content["state"] == "closed"
+
+
+def test_a_call_whose_node_half_ends_under_it_says_why(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The node half's watchdog ends it once its pvserver has gone mid-call: the call
+    fails at once with that reason, not with a retry hint after a long wait."""
+    from types import SimpleNamespace
+
+    from fastmcp.exceptions import ToolError
+
+    from paraview_mcp.link import LinkError
+
+    class Client:
+        def __init__(self, error: LinkError) -> None:
+            self.error = error
+
+        def command(self, *_args: object, **_kwargs: object) -> None:
+            raise self.error
+
+    class Ended:
+        def __init__(self, error: LinkError, state: str) -> None:
+            self.link = SimpleNamespace(client=Client(error))
+            self.state = state
+
+        def ensure(self, opening: bool = False, **_: object) -> object:
+            return self.link
+
+        def status(self, scene: str | None = None) -> dict[str, str]:
+            return {"state": self.state, "code": "pvserver_lost", "text": "It stopped."}
+
+    monkeypatch.setattr(server_module, "actor", lambda: "agent")
+    reset = LinkError("Remote end closed connection without response")
+    monkeypatch.setattr(server_module, "_attachers", {"": Ended(reset, "lost")})
+    with pytest.raises(ToolError, match=r"It stopped\. \[pvserver_lost\]"):
+        server_module.command("capture", {})
+    busy = LinkError("timed out", busy=True)
+    monkeypatch.setattr(server_module, "_attachers", {"": Ended(busy, "lost")})
+    with pytest.raises(ToolError, match=r"\[link_lost\]"):
+        server_module.command("capture", {})
+    monkeypatch.setattr(server_module, "_attachers", {"": Ended(reset, "running")})
+    with pytest.raises(ToolError, match=r"\[link_lost\]"):
+        server_module.command("capture", {})
 
 
 async def test_path_arguments_are_declared_where_paraview_runs() -> None:
@@ -85,6 +163,9 @@ async def test_view_resource_is_an_mcp_app() -> None:
     # Context reports are throttled to ten a second.
     assert "100 - (Date.now() - lastSent)" in html
     assert "127.0.0.1" not in html and "localhost" not in html
+    # A page that never reaches ParaView asks the server why, and says so.
+    assert "name: 'view_status'" in html
+    assert "Not drawn yet" in html
 
 
 def test_settings_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -151,6 +232,54 @@ def test_parse_markers() -> None:
     assert marks == {"DIR": "/h/.clio", "PVPYTHON": "", "X": "a=b"}
 
 
+def test_node_slot_leaves_another_namespaces_node_half_alone() -> None:
+    ours = '{"pid": 7, "net": "11"}'
+    theirs = '{"pid": 29, "net": "22"}'
+    # No namespace id (not Linux): the one shared record, as before.
+    assert attach.node_slot({"NODE": theirs}) == ("node", {"pid": 29, "net": "22"})
+    # Our own node half, or one from before the record named its namespace.
+    assert attach.node_slot({"NS": "11", "NODE": ours, "LOCKED": "1"})[0] == "node"
+    assert attach.node_slot({"NS": "11", "NODE": '{"pid": 7}'})[0] == "node"
+    # Another namespace's node half still holds the folder: run our own beside it.
+    assert attach.node_slot({"NS": "11", "NODE": theirs, "LOCKED": "1"}) == (
+        "node-11",
+        None,
+    )
+    assert attach.node_slot({"NS": "11", "LOCKED": "1"}) == ("node-11", None)
+    # Its record is stale and the lock is free: take the shared record over.
+    assert attach.node_slot({"NS": "11", "NODE": theirs, "LOCKED": "0"}) == (
+        "node",
+        None,
+    )
+    # Ours already runs beside it.
+    assert attach.node_slot(
+        {"NS": "11", "NODE": theirs, "LOCKED": "1", "OWNNODE": ours}
+    ) == ("node-11", {"pid": 7, "net": "11"})
+
+
+def test_native_stop_asks_a_node_half_it_cannot_signal(tmp_path: Path) -> None:
+    from paraview_mcp import native
+    from paraview_mcp.node.main import _try_lock
+
+    folder = str(tmp_path)
+    marks = native.probe(folder)
+    assert marks["NS"] == f"w{os.getpid()}" and marks["LOCKED"] == "0"
+    # Another sandbox's node half holds the folder and has lost its record.
+    held = open(tmp_path / "node.lock", "a")  # noqa: SIM115 - closed below
+    assert _try_lock(held)
+    try:
+        marks = native.probe(folder)
+        assert marks["LOCKED"] == "1" and not native.lock_free(folder, "node")
+        assert attach.node_slot(marks) == (native.own_slot(), None)
+        # It neither answers a signal nor reads the request: the slot stays taken.
+        assert native.stop(folder, 0, "node", wait=0.5) is False
+        assert (tmp_path / "node.stop").exists()
+    finally:
+        held.close()
+    assert native.stop(folder, 0, "node", wait=0.5) is True
+    assert not (tmp_path / "node.stop").exists()
+
+
 @pytest.mark.parametrize(
     ("stderr", "code"),
     [
@@ -187,6 +316,7 @@ def test_local_attach_without_pvpython_fails_clearly(
     # AQ35: a PATH with no pvpython on it.
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.delenv("XDG_DATA_HOME", raising=False)
+    monkeypatch.delenv("CLIO_KIT_CACHE_DIR", raising=False)
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
     attacher = attach.Attacher(Settings(target=Target()))
     with pytest.raises(ParaViewError) as caught:
@@ -201,6 +331,36 @@ def test_local_attach_without_pvpython_fails_clearly(
     assert oct(os.stat(folder).st_mode)[-3:] == "700"
 
 
+@pytest.mark.parametrize(
+    ("machine", "hinted"), [("windows-x86_64", True), ("linux-riscv64", False)]
+)
+def test_no_paraview_here_names_a_version_it_can_fetch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, machine: str, hinted: bool
+) -> None:
+    # Nothing by hand: a machine with a pinned build learns the knob that fetches it.
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("XDG_DATA_HOME", raising=False)
+    monkeypatch.delenv("CLIO_KIT_CACHE_DIR", raising=False)
+    monkeypatch.setenv("PATH", "/usr/bin:/bin")
+    monkeypatch.setattr(attach.client, "machine", lambda: machine)
+    attacher = attach.Attacher(Settings(target=Target()))
+    with pytest.raises(ParaViewError) as caught:
+        attacher.ensure()
+    assert caught.value.code == "no_paraview"
+    assert (
+        "set `version` ('ParaView version') to 5.13.1" in caught.value.message
+    ) is hinted
+
+
+def test_local_folder_follows_the_host_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A confining host grants CLIO_KIT_CACHE_DIR, not the per-launch profile.
+    monkeypatch.setenv("CLIO_KIT_CACHE_DIR", str(tmp_path))
+    expected = tmp_path / "paraview-node" / config.SERVER_VERSION
+    assert attach.local_folder(config.SERVER_VERSION) == str(expected)
+
+
 async def test_scene_tool_without_paraview_returns_the_message(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -209,7 +369,7 @@ async def test_scene_tool_without_paraview_returns_the_message(
     monkeypatch.setenv("HOME", str(tmp_path))
     monkeypatch.setenv("PATH", "/usr/bin:/bin")
     monkeypatch.delenv("PARAVIEW_ADDRESS", raising=False)
-    monkeypatch.setattr(server, "_attacher", None)
+    monkeypatch.setattr(server, "_attachers", {})
     async with Client(mcp) as client:
         result = await client.call_tool(
             "open_view", {"path": "/data/x.vti"}, raise_on_error=False
@@ -279,6 +439,14 @@ def test_present_scene_text_names_the_scene_and_keeps_no_secret() -> None:
     assert "scene='wave-1'" in text
 
 
+def test_scene_text_names_an_empty_scene() -> None:
+    text = present.scene_text(
+        {"scene": "empty", "dataset": {}, "objects": [], "time": {}, "view": {}},
+        "on node08",
+    )
+    assert "an empty scene; add sources with run_scene_script" in text
+
+
 def test_measure_text() -> None:
     text = present.measure_text(
         {
@@ -307,6 +475,28 @@ def test_scene_ids_are_stable_per_path() -> None:
     assert a == manifest.scene_id_for("/data/run/wave.vti")
     assert a != manifest.scene_id_for("/data/other/wave.vti")
     assert a.startswith("wave-")
+
+
+def test_prune_slots_removes_only_unheld_old_slots(tmp_path: Path) -> None:
+    fcntl = pytest.importorskip("fcntl")
+    import time
+
+    from paraview_mcp.node.main import prune_slots
+
+    old = time.time() - 3600
+    for name in ("node-1", "node-2", "node-3", "node"):
+        for suffix in (".json", ".log", ".lock"):
+            (tmp_path / f"{name}{suffix}").write_text("")
+            if name != "node-3":
+                os.utime(tmp_path / f"{name}{suffix}", (old, old))
+    with open(tmp_path / "node-2.lock", "a") as held:
+        fcntl.flock(held, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        assert prune_slots(tmp_path, "node-9") == ["node-1"]
+    assert not (tmp_path / "node-1.json").exists()
+    assert not (tmp_path / "node-1.lock").exists()
+    assert (tmp_path / "node-2.json").exists()
+    assert (tmp_path / "node-3.json").exists()
+    assert (tmp_path / "node.json").exists()
 
 
 def test_manifest_round_trip(tmp_path: Path) -> None:
@@ -382,9 +572,7 @@ class _FakeClient:
         self.calls: list[tuple[str, dict]] = []
         self.actors: list[str] = []
 
-    def command(
-        self, name: str, args: dict, timeout: float = 900.0, by: str = "agent"
-    ) -> dict:
+    def command(self, name: str, args: dict, by: str = "agent", **_: object) -> dict:
         self.calls.append((name, args))
         self.actors.append(by)
         return self.results[name]
@@ -397,14 +585,27 @@ class _FakeLink:
     def __init__(self, client: _FakeClient) -> None:
         self.client = client
 
+    def port_for(self, remote: object) -> int:
+        return self.local_port
+
 
 class _FakeAttacher:
     def __init__(self, client: _FakeClient) -> None:
+        import threading
+
         self.link = _FakeLink(client)
         self.settings = Settings(target=Target("node", "login"))
+        self.cancel = threading.Event()
+        self.progress = None
+        self.scene = None
+        self.opened: list[bool] = []
 
-    def ensure(self) -> _FakeLink:
+    def ensure(self, opening: bool = False, **_: object) -> _FakeLink:
+        self.opened.append(opening)
         return self.link
+
+    def remember(self, scene: str, remote: object, local: int) -> None:
+        pass
 
     def describe(self) -> dict:
         return {"where": "on node through login", "paraview": "6.2.1", "folder": "/f"}
@@ -467,7 +668,7 @@ async def test_tools_pass_one_command_and_keep_the_token_private(
             "inspect_selection": {"selection": None, "message": "Nothing is picked."},
         }
     )
-    monkeypatch.setattr(server, "_attacher", _FakeAttacher(client))
+    monkeypatch.setattr(server, "_attachers", {"": _FakeAttacher(client)})
     async with Client(mcp) as mcp_client:
         opened = await mcp_client.call_tool("open_view", {"path": "/d/cube.vti"})
         built = await mcp_client.call_tool(
@@ -510,7 +711,7 @@ async def test_a_call_the_host_marks_as_a_views_is_the_persons(
     from paraview_mcp import server
 
     client = _FakeClient({"set_timestep": {"time": {"steps": 1}}})
-    monkeypatch.setattr(server, "_attacher", _FakeAttacher(client))
+    monkeypatch.setattr(server, "_attachers", {"": _FakeAttacher(client)})
     async with Client(mcp) as mcp_client:
         await mcp_client.call_tool("set_timestep", {"index": 2})
         await mcp_client.call_tool(

@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/iowarp/clio-jarvis/schemas/view-descriptor.v1.json",
+  "title": "CLIO view descriptor, version 1",
+  "description": "How ParaView opens one output, and whether that output is still being written. A clio-jarvis package reports one per output (RL40), clio-relay passes it on in task progress (RL43), and clio-kit's open_view takes it (RL44).",
+  "type": "object",
+  "required": ["schema", "path", "format", "reader", "growing"],
+  "additionalProperties": false,
+  "properties": {
+    "schema": {
+      "const": "clio.view-descriptor.v1",
+      "description": "Names this schema and its version."
+    },
+    "name": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_.-]{0,63}$",
+      "description": "The output's name inside its package, for example 'fields'."
+    },
+    "path": {
+      "type": "string",
+      "minLength": 2,
+      "pattern": "^/",
+      "description": "Absolute path on the site's filesystem. An ADIOS2 BP output is the .bp directory. When path_kind is 'glob', a shell glob of the files that form the series."
+    },
+    "path_kind": {
+      "enum": ["file", "directory", "glob"],
+      "default": "file",
+      "description": "What path names. 'directory' for an ADIOS2 BP output, 'glob' for a file series."
+    },
+    "format": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9.+-]{0,63}$",
+      "description": "Data format, for example 'adios2-bp5', 'adios2-bp4', 'vtk-xml-image', 'hdf5'."
+    },
+    "reader": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]{0,127}$",
+      "description": "ParaView reader, by its paraview.simple name, for example 'ADIOS2VTXReader' or 'ADIOS2CoreImageReader'."
+    },
+    "reader_properties": {
+      "type": "object",
+      "default": {},
+      "description": "Reader proxy properties to set after the file name, by ParaView property name. Values are JSON scalars or arrays of scalars.",
+      "propertyNames": { "pattern": "^[A-Za-z][A-Za-z0-9_]{0,127}$" },
+      "additionalProperties": {
+        "anyOf": [
+          { "type": ["string", "number", "boolean"] },
+          { "type": "array", "items": { "type": ["string", "number", "boolean"] } }
+        ]
+      }
+    },
+    "growing": {
+      "type": "boolean",
+      "description": "True while the producer may still add steps. A view that follows the output re-reads the reader's time list when the output grows. False once the producer has finished."
+    },
+    "follow": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How a viewer learns that a growing output has a new step.",
+      "properties": {
+        "signal": {
+          "enum": ["reader-time-steps", "file-count", "mtime"],
+          "default": "reader-time-steps",
+          "description": "'reader-time-steps': ask the reader for its time list again. 'file-count': the glob matches more files. 'mtime': the path's modification time changes."
+        },
+        "poll_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 3600,
+          "default": 2,
+          "description": "Suggested interval between checks."
+        },
+        "expected_steps": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Steps the producer will write in total, when known."
+        }
+      }
+    },
+    "time": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "unit": {
+          "type": "string",
+          "description": "Unit of the reader's time values, for example 'step' or 's'."
+        },
+        "step_interval": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Simulation steps, or time, between two written steps."
+        }
+      }
+    },
+    "display": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "A first view that shows something meaningful. A viewer may ignore it.",
+      "properties": {
+        "array": { "type": "string", "minLength": 1, "description": "Array to color by." },
+        "association": { "enum": ["POINTS", "CELLS"], "default": "POINTS" },
+        "representation": {
+          "enum": ["Outline", "Surface", "Slice", "Volume", "Contour"],
+          "default": "Slice"
+        },
+        "slice_normal": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "contour_values": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 1
+        },
+        "color_map": { "type": "string", "description": "ParaView color map preset name." },
+        "range": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Fixed color range, so the colors mean the same across steps."
+        }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "The package that wrote the output.",
+      "properties": {
+        "package": { "type": "string", "description": "JARVIS package type, for example 'clio_jarvis.gray_scott'." },
+        "version": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "path_kind": { "const": "glob" } }, "required": ["path_kind"] },
+      "then": { "properties": { "follow": { "properties": { "signal": { "enum": ["file-count", "mtime"] } } } } }
+    }
+  ],
+  "examples": [
+    {
+      "schema": "clio.view-descriptor.v1",
+      "name": "fields",
+      "path": "/mnt/common/user/clio-relay-rework/runs/gs-1/gs.bp",
+      "path_kind": "directory",
+      "format": "adios2-bp5",
+      "reader": "ADIOS2VTXReader",
+      "reader_properties": {},
+      "growing": true,
+      "follow": { "signal": "reader-time-steps", "poll_seconds": 2, "expected_steps": 120 },
+      "time": { "unit": "step", "step_interval": 100 },
+      "display": { "array": "V", "association": "POINTS", "representation": "Slice", "slice_normal": [0, 0, 1], "color_map": "Viridis (matplotlib)", "range": [0.0, 0.5] },
+      "producer": { "package": "clio_jarvis.gray_scott", "version": "0.1.0" }
+    }
+  ]
+}
