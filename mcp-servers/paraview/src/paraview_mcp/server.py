@@ -84,7 +84,15 @@ mcp: FastMCP = FastMCP(
         "written. Each scene (a dataset, or one variable of it) has a view of its "
         "own; the other tools act on the view opened last, and open_view(scene=id) "
         "switches back to an open one. Where ParaView runs is the connector's "
-        "setting, not a tool."
+        "setting, not a tool. When a run has a body or surface made as real "
+        "geometry (an STL the person made, say), its descriptor's geometry draws "
+        "that surface in the scene; a contour of a mask or indicator field shows "
+        "only what the grid resolved, stair-stepped, and suits checking the mask "
+        "against the surface. For a live view, choose what the run changes: a fixed "
+        "plane through a region that settles soon looks still, while an isosurface "
+        "of a vortex measure the run writes (vorticity, Q) or a plane across the "
+        "wake downstream tends to show the run evolving. measure_over_time on the "
+        "shown object says whether it still changes over recent steps."
     ),
 )
 # Background tasks (the MCP tasks extension) for watch_steps; a client that does not
@@ -509,7 +517,15 @@ async def run_scene_script(
     runs it: ParaView 6 colour presets drop " (matplotlib)" (either form works), and a
     scalar bar's range labels are AddRangeLabels. A field's colour range defaults to the
     2nd to 98th percentile of the values shown, so extremes do not wash out the rest; a
-    range the script sets (RescaleTransferFunction, e.g. from measure_field) is kept."""
+    range the script sets (RescaleTransferFunction, e.g. from measure_field) is kept.
+
+    A body's real surface reads better than a contour of its mask: the mask shows what
+    the grid resolved, in steps of one cell. When the run made the body as geometry (an
+    STL, say), open that file here, or pass it in open_view's descriptor geometry, and
+    keep a mask contour for checking the mask against it. For a view that shows a run
+    evolving, a contour of a vortex measure the run writes (vorticity, Q) or a slice
+    across the wake downstream usually changes more than a fixed plane through a region
+    that settles; measure_over_time on the shown object says whether it still does."""
     result, _ = await run(ctx, "run_scene_script", {"code": code, "label": label})
     return present.script_text(result, _where())
 

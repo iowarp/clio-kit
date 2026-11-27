@@ -337,6 +337,16 @@ range. A range set by hand (a descriptor's `range`, or one a scene script sets
 with `RescaleTransferFunction`) stays where it is; Rescale in the Display panel
 gives the field's whole range instead.
 
+The tool's guidance (the server's instructions and `run_scene_script`) also
+steers what the scene shows. A body's real surface (an STL the person made,
+passed in the descriptor's `geometry` or opened by a scene script) reads better
+than a contour of its mask, which shows the grid's resolution in steps of one
+cell and suits checking the mask against the surface. A live view shows a run
+evolving better through what it changes, such as a contour of a vortex measure
+the run writes or a slice across the wake downstream, than through a fixed plane
+in a region that settles; `measure_over_time` on the shown object says whether
+it still changes.
+
 The result that opens the view declares the service in its private `_meta`:
 `"ai.iowarp.clio/service": {"port": <forwarded port>, "token": <token>}`. The
 host proxies the service under the app's own route and adds the token as
