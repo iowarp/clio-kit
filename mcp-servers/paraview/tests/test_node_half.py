@@ -162,6 +162,14 @@ def test_open_measure_and_rollback(attached: tuple[Attacher, Path]) -> None:
             "create_filter", {"filter": "Contour", "properties": {"Bogus": 1}}
         )
     assert caught.value.code == "unknown_property"
+    # An array the property's own domain does not offer is refused, the way a
+    # Contour given a vector would be, rather than read past its end.
+    with pytest.raises(ParaViewError) as caught:
+        client.command(
+            "create_filter",
+            {"filter": "Contour", "properties": {"ContourBy": ["POINTS", "q"]}},
+        )
+    assert caught.value.code == "bad_value" and "'p'" in str(caught.value)
     after = client.command("scene_state", {})
     assert [o["id"] for o in after["objects"]] == ["o1", "o2"]
     assert json.loads(manifest_path.read_text())["objects"] == before["objects"]
@@ -495,8 +503,8 @@ def test_a_descriptor_display_gives_the_first_view(
     assert objects[0]["display"]["representation"] == "Outline"
     assert objects[1]["display"]["color_by"] == ["POINTS", "p"]
     assert objects[1]["display"]["color_range"] == [0.0, 30.0]
-    # ParaView 6 names the preset without its "(matplotlib)" qualifier.
-    assert objects[1]["display"]["colormap"] == "Viridis"
+    # ParaView 6 names the preset without its "(matplotlib)" qualifier; 5.13 keeps it.
+    assert objects[1]["display"]["colormap"] in ("Viridis", "Viridis (matplotlib)")
     assert objects[1]["data"]["arrays"][0]["range"] == [3.5, 17.5]
     assert opened["dataset"]["descriptor"]["name"] == "pressure"
     assert "display_note" not in opened["dataset"]
@@ -1194,12 +1202,11 @@ def test_a_fields_default_colour_range_represents_it(tmp_path: Path) -> None:
 def test_colour_maps_survive_a_restart_and_do_not_leak(tmp_path: Path) -> None:
     built = _pvpython_script("colors_check.py", str(tmp_path), "build")
     # A new scene starts with ParaView's own colour map, not the last scene's Jet.
-    assert built["preset_after_new_scene"] != "Jet"
+    assert built.pop("jet_after_new_scene") is False
     restored = _pvpython_script("colors_check.py", str(tmp_path), "restore")
-    assert built.pop("preset_after_new_scene") is not None
     assert restored == built
     # One colour map per field: the Slice's Inferno is the Contour's too, and both say so.
-    assert restored["preset"] == "Inferno" and restored["legend"] is True
+    assert restored["preset"] in ("Inferno", None) and restored["legend"] is True
     assert restored["recorded"] == {"o1": None, "o2": "Inferno", "o3": "Inferno"}
     assert restored["reps"]["o2"] == [["POINTS", "RTData"], 0.7]
 

@@ -114,6 +114,33 @@ def allowed_strings(proxy: Any, name: str) -> list[str]:
     return []
 
 
+def allowed_arrays(proxy: Any, name: str) -> list[str] | None:
+    """The arrays a property's own array domain accepts (ParaView's panel lists
+    only these: a Contour takes one-component arrays), or None when it has none."""
+    prop = proxy.GetProperty(name)
+    sm = getattr(prop, "SMProperty", None)
+    if sm is None:
+        return None
+    each = sm.NewDomainIterator()
+    each.Begin()
+    while not each.IsAtEnd():
+        domain = each.GetDomain()
+        if domain.IsA("vtkSMArrayListDomain"):
+            return [domain.GetString(i) for i in range(domain.GetNumberOfStrings())]
+        each.Next()
+    return None
+
+
+def _array_named(value: Any) -> str | None:
+    """The array name an array property's value gives: ``"p"``, or the last
+    entry of ``["POINTS", "p"]``."""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple)) and value and isinstance(value[-1], str):
+        return value[-1]
+    return None
+
+
 def set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
     """Set ``key`` on a proxy. ``"SliceType.Normal"`` (or ``{"SliceType": {...}}``)
     reaches into the proxy a property holds, such as a Slice's plane."""
@@ -143,6 +170,17 @@ def set_property(proxy: Any, owner: str, key: str, value: Any) -> None:
                     if isinstance(now, str) and now
                     else "."
                 ),
+            )
+        accepted = allowed_arrays(proxy, head)
+        named = _array_named(value)
+        if accepted and named and named not in accepted:
+            # ParaView does not check this itself: a Contour given a vector reads
+            # past the array's end and can take the whole process down. An empty
+            # list means the input is not known yet, so nothing is refused.
+            raise CommandError(
+                "bad_value",
+                f"{owner}.{head} cannot use the array {named!r}; it takes one of: "
+                f"{', '.join(repr(a) for a in accepted)}.",
             )
         setattr(proxy, head, value)
         return
@@ -496,16 +534,19 @@ class SourceGrowth:
         self._settling.pop(item["id"], None)
         return True
 
-    def check_growth(self) -> dict[str, Any] | None:
-        """Re-read the time list of growing sources; follow the latest step."""
-        stages = self.growth_stages()
+    def check_growth(self, fresh: bool = False) -> dict[str, Any] | None:
+        """Re-read the time list of growing sources; follow the latest step. With
+        ``fresh`` (an agent asking) the disk is looked at even if a view just did."""
+        stages = self.growth_stages(fresh)
         while True:
             try:
                 next(stages)
             except StopIteration as done:
                 return done.value
 
-    def growth_stages(self) -> Generator[str, None, dict[str, Any] | None]:
+    def growth_stages(
+        self, fresh: bool = False
+    ) -> Generator[str, None, dict[str, Any] | None]:
         """``check_growth`` a stage at a time: each reader's disk look, its re-read,
         the new step's time, each colour map's range, then the scene record and the
         picture. Over a slow link each takes seconds; the caller gives the loop back
@@ -536,7 +577,9 @@ class SourceGrowth:
                 self._read_at[item["id"]] = source.generation
                 changed = True
                 continue
-            if source.reading or self.readers.looked(source):
+            if source.reading or (not fresh and self.readers.looked(source)):
+                # The follow shares one look between the views of a source; an
+                # agent's own check looks now, or a step written since is missed.
                 continue
             source.checked_at = time.monotonic()
             source.reading = True
@@ -701,7 +744,7 @@ class SourceGrowth:
         scene = self.require_scene()
         self._note_steps()
         if check:
-            self.check_growth()
+            self.check_growth(fresh=True)
         start = max(0, int(after))
         steps = self.timesteps()
         dataset = scene.get("dataset") or {}

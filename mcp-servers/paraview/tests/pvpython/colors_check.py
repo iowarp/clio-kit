@@ -18,7 +18,12 @@ from typing import Any
 
 from paraview import simple
 
+from paraview_mcp.node.colors import preset_name
 from paraview_mcp.node.engine import Engine
+
+
+def points_of(field: str) -> list[float]:
+    return [round(v, 3) for v in simple.GetColorTransferFunction(field).RGBPoints]
 
 
 def state(engine: Engine) -> dict[str, Any]:
@@ -31,7 +36,8 @@ def state(engine: Engine) -> dict[str, Any]:
     return {
         "points": hashlib.sha1(str(points).encode()).hexdigest(),
         "range": [points[0], points[-4]],
-        "preset": str(lut.NameOfLastPresetApplied),
+        # ParaView 5.13 does not keep the last preset's name: None there.
+        "preset": preset_name(simple, "RTData"),
         "recorded": {
             o["id"]: (o.get("display") or {}).get("colormap")
             for o in engine.scene["objects"]
@@ -60,8 +66,9 @@ def main(out: Path, mode: str) -> dict[str, Any]:
                 "colormap": "Jet",
             },
         )
+        jet = points_of("RTData")
         engine.run("open_view", {"path": str(data), "new": True})
-        fresh = str(simple.GetColorTransferFunction("RTData").NameOfLastPresetApplied)
+        fresh = points_of("RTData")
         engine.run(
             "create_filter",
             {
@@ -90,7 +97,7 @@ def main(out: Path, mode: str) -> dict[str, Any]:
         legend = simple.GetScalarBar(lut, engine.view)
         (out / "scene").write_text(engine.scene["scene"])
         return {
-            "preset_after_new_scene": fresh,
+            "jet_after_new_scene": fresh == jet,
             "legend": bool(legend.Visibility),
             **state(engine),
         }

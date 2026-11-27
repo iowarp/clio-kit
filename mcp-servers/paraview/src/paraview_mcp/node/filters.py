@@ -29,7 +29,7 @@ CATALOG: tuple[dict[str, Any], ...] = (
 )
 TITLES = {"StreamTracer": "Stream Tracer"}
 NEEDS_TEXT = {
-    "point_scalar": "needs a point field",
+    "point_scalar": "needs a one-component point field",
     "scalar": "needs a field",
     "vector": "needs a 3-component point field",
 }
@@ -62,7 +62,11 @@ def _diagonal(bounds: list[float] | None) -> float:
 def _arrays(info: dict[str, Any], kind: str) -> list[dict[str, Any]]:
     arrays = info.get("arrays") or []
     if kind == "point_scalar":
-        return [a for a in arrays if a["association"] == "POINTS"]
+        # ParaView's Contour takes only one-component arrays; given a vector it
+        # reads past the array's end.
+        return [
+            a for a in arrays if a["association"] == "POINTS" and a["components"] == 1
+        ]
     if kind == "vector":
         return [
             a for a in arrays if a["association"] == "POINTS" and a["components"] == 3
