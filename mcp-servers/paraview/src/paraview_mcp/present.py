@@ -22,6 +22,8 @@ def object_line(item: dict[str, Any]) -> str:
     data = item.get("data") or {}
     parts = [f"{item['id']} {item.get('label') or item.get('type')}"]
     detail = [str(item.get("type") or item.get("kind"))]
+    if item.get("kind") == "geometry":
+        detail.append(f"geometry from {item.get('path')}, in the data's coordinates")
     if item.get("input"):
         detail.append(f"from {item['input']}")
     if item.get("by"):
@@ -152,8 +154,9 @@ def scene_text(summary: dict[str, Any], where: str) -> str:
         )
     if dataset.get("growing"):
         lines.append("The source is marked as still growing; new steps are picked up.")
-    if dataset.get("display_note"):
-        lines.append(dataset["display_note"])
+    for note in ("display_note", "geometry_note"):
+        if dataset.get(note):
+            lines.append(dataset[note])
     lines.append("Objects:")
     for item in summary.get("objects") or []:
         lines.append(f"- {object_line(item)}")

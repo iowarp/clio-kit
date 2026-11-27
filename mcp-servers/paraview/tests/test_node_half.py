@@ -517,6 +517,42 @@ def test_a_descriptor_display_gives_the_first_view(
     assert "No Such Map" in partly["dataset"]["display_note"]
 
 
+def test_a_descriptor_geometry_opens_beside_the_data(
+    attached: tuple[Attacher, Path],
+) -> None:
+    """A descriptor's geometry opens as scene objects of their own beside the data;
+    one that is not there is left out and said so, and the data's view holds."""
+    attacher, data = attached
+    client = attacher.ensure().client
+    write_vti(data / "flow.vti")
+    (data / "body.stl").write_text(
+        "solid body\nfacet normal 0 0 1\nouter loop\nvertex 0 0 0\nvertex 1 0 0\n"
+        "vertex 0 1 0\nendloop\nendfacet\nendsolid body\n"
+    )
+    opened = client.command(
+        "open_view",
+        {
+            "path": str(data / "flow.vti"),
+            "new": True,
+            "descriptor": {
+                "geometry": [
+                    {"path": str(data / "body.stl"), "label": "body"},
+                    {"path": str(data / "gone.stl"), "visible": False},
+                ]
+            },
+        },
+    )
+    objects = opened["objects"]
+    assert [(o["id"], o["kind"]) for o in objects] == [
+        ("o1", "reader"),
+        ("o2", "geometry"),
+    ]
+    assert objects[1]["label"] == "body"
+    assert objects[1]["display"]["visible"] is True
+    assert objects[1]["data"]["points"] == 3
+    assert "gone.stl" in opened["dataset"]["geometry_note"]
+
+
 def test_a_descriptor_slice_opens_face_on(attached: tuple[Attacher, Path]) -> None:
     """A slice cut across y is looked at along y, not edge-on along the default z."""
     attacher, data = attached

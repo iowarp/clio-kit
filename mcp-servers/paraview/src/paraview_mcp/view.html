@@ -309,13 +309,24 @@
     if (keptPicture) kept.hidden = false;
     if (!keeps || keptPicture) frame.hidden = true;
     showStatus(() => (keeps ? stopped + words.keptBelow : stopped));
-    sentText = stopped;
     const said = keeps
       ? 'The ParaView view stopped; it still shows its last picture, which no longer changes. '
       : 'The ParaView view stopped and shows nothing now. ';
+    tellHost('stopped', said + stopped, stopped, keeps);
+  }
+
+  // The one state the banner shows is the one the host is told, so its header and
+  // the banner say the same: live, waiting, reconnecting or stopped. A picture that
+  // no longer changes (reconnecting, or kept while ParaView is looked for) is told
+  // as stopped, in the banner's words, until a report from a live page withdraws it.
+  function tellHost(state, text, shown, picture) {
+    sentText = shown;
+    const still = state === 'stopped' || state === 'reconnecting' || (state === 'waiting' && picture);
+    const extra = { drawn: picture, link_state: state };
+    if (still) extra.stopped = shown;
     request('ui/update-model-context', {
-      content: [{ type: 'text', text: said + stopped }],
-      structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: keeps, stopped }),
+      content: [{ type: 'text', text }],
+      structuredContent: Object.assign(latest ? structured(latest) : {}, extra),
     }).catch(() => {});
   }
 
@@ -343,11 +354,7 @@
     });
     if (shown !== waiting) {
       waiting = shown;
-      sentText = shown;
-      request('ui/update-model-context', {
-        content: [{ type: 'text', text: 'The ParaView view is reconnecting. ' + text }],
-        structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: pictureShown(), waiting: 'relaunching' }),
-      }).catch(() => {});
+      tellHost('reconnecting', 'The ParaView view is reconnecting. ' + text, shown, pictureShown());
     }
   }
   function checkParaView() {
@@ -385,14 +392,10 @@
         const shown = phrase(EN);
         if (shown !== waiting) {
           waiting = shown;
-          sentText = shown;
           const showing = keptPicture
             ? 'The ParaView view shows its last picture, which no longer changes until it reconnects. '
             : 'The ParaView view shows nothing yet. ';
-          request('ui/update-model-context', {
-            content: [{ type: 'text', text: showing + (keptPicture ? text : shown) }],
-            structuredContent: Object.assign(latest ? structured(latest) : {}, { drawn: keptPicture, waiting: status.state }),
-          }).catch(() => {});
+          tellHost('waiting', showing + (keptPicture ? text : shown), shown, keptPicture);
         }
         showStatus(() => phrase(words), true);
         clearTimeout(checkTimer);
@@ -493,6 +496,7 @@
       camera: state.camera,
       view_mode: state.view_mode,
       changes: state.changes || [],
+      link_state: 'live',
     };
   }
 

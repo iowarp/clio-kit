@@ -7,6 +7,8 @@ simulation package reports one per output; any MCP host may pass one to
 ``open_view``. The model below takes every field of v1 and is lenient where the
 schema is strict: only ``path`` is required and unknown fields are ignored, so a
 host that knows only the path, or a later schema version, still opens the data.
+It also takes ``geometry``, surfaces drawn with the data, which v1 does not have
+yet; a descriptor without it opens as before.
 """
 
 from __future__ import annotations
@@ -89,6 +91,22 @@ class Display(_Part):
     ] = None
 
 
+class Geometry(_Part):
+    path: Annotated[
+        str,
+        Field(
+            description="A surface file ParaView reads, such as an STL, on the same "
+            "machine as the data and in the data's coordinates."
+        ),
+    ]
+    label: Annotated[
+        str | None, Field(description="Its name in the scene, such as body.")
+    ] = None
+    visible: Annotated[
+        bool, Field(description="Show it when the view opens; else it opens hidden.")
+    ] = True
+
+
 class Producer(_Part):
     package: str | None = None
     version: str | None = None
@@ -145,19 +163,28 @@ class ViewDescriptor(_Part):
         Display | None,
         Field(description="A first view: the array, colours and representation."),
     ] = None
+    geometry: Annotated[
+        list[Geometry] | None,
+        Field(
+            description="Surfaces to draw with the data: the body a solver meshes or "
+            "voxelises, as it was made, say. Each opens as a scene object of its own."
+        ),
+    ] = None
     producer: Producer | None = None
 
     model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
     def extras(self) -> dict[str, Any] | None:
         """What the node keeps with the dataset beyond the reader: the output's name,
-        how to follow it, its time unit, the first view and its producer."""
+        how to follow it, its time unit, the first view, its geometry and its
+        producer."""
         kept = {
             "name": self.name,
             "path_kind": self.path_kind,
             "follow": _dump(self.follow),
             "time": _dump(self.time),
             "display": _dump(self.display),
+            "geometry": [g.model_dump(exclude_none=True) for g in self.geometry or []],
             "producer": _dump(self.producer),
         }
         kept = {k: v for k, v in kept.items() if v}

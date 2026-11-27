@@ -390,7 +390,7 @@ class SceneReading:
             "properties": item.get("properties") or {},
             "display": item.get("display", {}),
         }
-        if item["kind"] == "reader":
+        if item["kind"] in ("reader", "geometry"):
             out["path"] = item["path"]
         if proxy is not None:
             out["data"] = data.describe(proxy)

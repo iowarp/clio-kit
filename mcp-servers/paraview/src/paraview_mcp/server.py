@@ -67,6 +67,7 @@ VIEW_STATE = [
     {"key": "dataset", "description": "The open dataset."},
     {"key": "active_object", "description": "The object the panel shows."},
     {"key": "view_mode", "description": "Local or remote rendering."},
+    {"key": "link_state", "description": "Live, waiting, reconnecting or stopped."},
 ]
 
 mcp: FastMCP = FastMCP(

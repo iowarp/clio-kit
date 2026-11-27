@@ -67,6 +67,7 @@ class SceneOpening:
     _update_dataset: Callable[..., None]
     _open_empty: Callable[[bool], dict[str, Any]]
     _open_session: Callable[[], dict[str, Any]]
+    _files: Callable[[dict[str, Any]], Any]
     replay_script: Callable[[dict[str, Any]], dict[str, Any]]
     apply_camera: Callable[[Any], None]
     fit_view: Callable[[], None]
@@ -168,6 +169,8 @@ class SceneOpening:
             self._update_dataset(saved, growing, descriptor)
             self.scene = saved
             yield from self._build_steps(saved)
+            # A newer descriptor may name geometry the saved scene does not have.
+            yield from self._geometry_steps(descriptor)
             return self.summary(restored=True)
         dataset: dict[str, Any] = {"path": path, "growing": bool(growing)}
         reading: dict[str, Any] = {
@@ -198,6 +201,7 @@ class SceneOpening:
         self.fit_view()
         yield "shown"
         yield from self._first_view_steps((descriptor or {}).get("display"))
+        yield from self._geometry_steps(descriptor)
         self.update_view_mode()
         return self.summary()
 
@@ -212,12 +216,17 @@ class SceneOpening:
         """Rebuild a saved scene, an object at a time."""
         made: dict[str, Any] = {}
         reuse = reuse or {}
-        for item in scene["objects"]:
+        for item in list(scene["objects"]):
             if item.get("kind") == "script":
                 made.update(self.replay_script(item))
                 yield f"script {item['id']}"
                 continue
-            if item.get("kind") == "made":
+            if item.get("kind") == "geometry":
+                proxy = self._geometry_or_note(item)
+                if proxy is None:
+                    scene["objects"].remove(item)
+                    continue
+            elif item.get("kind") == "made":
                 proxy = made.pop(item["id"])
             elif item["id"] in reuse:
                 proxy = reuse[item["id"]]
@@ -308,3 +317,63 @@ class SceneOpening:
             self.scene["dataset"]["display_note"] = (
                 "The descriptor's display was shown in part: " + " ".join(notes)
             )
+
+    def _geometry_steps(
+        self, descriptor: dict[str, Any] | None
+    ) -> Generator[str, None, None]:
+        """Open the descriptor's geometry: surfaces in the data's coordinates, such as
+        the body a solver voxelises, each a scene object a script can show, hide or
+        colour beside the data. One that cannot be opened is left out and noted."""
+        scene = self.scene
+        wanted = (descriptor or {}).get("geometry") or []
+        if scene is None or not wanted:
+            return
+        # A geometry the person removed stays removed when the scene is reopened.
+        offered = scene.setdefault("dataset", {}).setdefault("geometry_offered", [])
+        have = {o.get("path") for o in scene["objects"] if o.get("kind") == "geometry"}
+        have.update(offered)
+        for part in wanted:
+            path = self.disk.expand(part["path"])
+            if path in have:
+                continue
+            item: dict[str, Any] = {
+                "id": f"o{scene['next_id']}",
+                "kind": "geometry",
+                "path": path,
+                "label": part.get("label") or os.path.basename(path),
+            }
+            proxy = self._geometry_or_note(item)
+            if proxy is None:
+                continue
+            scene["next_id"] += 1
+            item["type"] = proxy.GetXMLName()
+            scene["objects"].append(item)
+            self.proxies[item["id"]] = proxy
+            self._show(item, proxy, apply=False)
+            if not part.get("visible", True):
+                item["display"]["visible"] = False
+                self.simple.Hide(proxy, self.view)
+            have.add(path)
+            offered.append(path)
+            yield f"geometry {item['id']}"
+
+    def _geometry_or_note(self, item: dict[str, Any]) -> Any:
+        """A reader of one geometry file, or None with the reason kept in the
+        dataset's geometry_note: missing geometry leaves the data's view whole."""
+        try:
+            files = self._files(item)
+            proxy = self.simple.OpenDataFile(files)
+            if proxy is None:
+                raise CommandError(
+                    "no_reader", f"ParaView has no reader for {item['path']}."
+                )
+            proxy.UpdatePipeline()
+            return proxy
+        except (CommandError, DataError) as exc:
+            if self.scene is not None:
+                dataset = self.scene.setdefault("dataset", {})
+                kept = dataset.get("geometry_note")
+                dataset["geometry_note"] = (
+                    kept or "Geometry left out of the scene:"
+                ) + f" {item['label']}: {exc}"
+            return None
