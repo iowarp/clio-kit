@@ -1,0 +1,92 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/slicer-mcp",
+  "title": "CLIO Slicer",
+  "description": "Slice 3D models (STL, 3MF, STEP) with the PrusaSlicer or OrcaSlicer installed here, and see the...",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.13.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "slicer"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "list_printers",
+      "description": "List the printer presets the installed slicer knows. With no argument: its vendors. With vendor: that vendor's printer models and presets. With printer (words such as 'Prusa MK4' or an exact preset name): the matching preset and its quality (layer height) and material presets."
+    },
+    {
+      "name": "slice",
+      "description": "Slice a 3D model (STL, 3MF, STEP, OBJ) for a printer with the slicer installed here. printer, material and quality are words ('Prusa MK4', 'PLA', '0.2 mm') or exact preset names; the presets chosen are reported. overrides sets slicer settings by their own names (support_material: true, fill_density: '20%', brim_width: 5); rotate turns the model in degrees about x, y, z before slicing. Returns a slice id, print time, filament in grams and metres, layer count, and the slicer's warnings in words. The G-code stays with the server; export writes it out."
+    },
+    {
+      "name": "layer_stats",
+      "description": "Time and filament of a slice by feature type (outer wall, inner wall, infill, support, travel \u2026) over a range of layers (all when omitted), the slowest layer, and one row per layer (layer, z_mm, time_s, filament_g, the types it prints and where on the bed each prints)."
+    },
+    {
+      "name": "export",
+      "description": "Write a slice out: format 'gcode' (the plain-text G-code for the printer) or 'csv' (one row per layer: z_mm, height_mm, time_s, filament_g and time per feature type, for a chart). path defaults to the model's folder."
+    },
+    {
+      "name": "compare_slices",
+      "description": "Compare two or more slices: print time, filament, layers, presets, overrides and where the time goes, each against the first."
+    },
+    {
+      "name": "show_slice",
+      "description": "Open a slice in an interactive view the person can turn and zoom: the toolpaths layer by layer, coloured by feature type (walls, infill, support, travel), with a layer slider, a toggle per type, the print time, filament (grams and metres), layer count and height, and the slicer's warnings. The view reports the shown layer as layer and z_mm and the person's pick as selection; its tools go_to_layer, set_feature_visibility and pick_segment move it: to show another layer in a view that is already open, call go_to_layer rather than opening another view. Pass layer to open on a layer."
+    },
+    {
+      "name": "slice_layers",
+      "description": "Toolpaths of a range of layers for the slice view to draw. Called by the view itself."
+    },
+    {
+      "name": "remember_slice_view",
+      "description": "Save the layer and the feature types the slice view shows, so reopening it shows them again. Called by the view itself."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "ui://slicer/layers",
+      "name": "slicer_layers",
+      "description": "An interactive view of a sliced print, layer by layer (three.js)."
+    },
+    {
+      "uri": "slicer://capabilities",
+      "name": "capabilities",
+      "description": "Describe what the slicer MCP server can do."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "plan_print",
+      "description": "Slice a model for a printer, look at the layers, and weigh a faster or stronger option."
+    }
+  ],
+  "tags": [
+    "3d-printing",
+    "slicer",
+    "g-code",
+    "prusaslicer",
+    "orcaslicer",
+    "mcp-apps"
+  ],
+  "scope": "scientific"
+}

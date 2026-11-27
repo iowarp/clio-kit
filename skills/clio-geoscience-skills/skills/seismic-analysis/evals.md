@@ -1,0 +1,68 @@
+# Evals - seismic-analysis
+
+Current revision review (2026-09-10): tool names and workflow claims were checked
+against the shipped server schemas and implementation. Historical records below
+apply to earlier text; they are not fresh model evaluations of this revision.
+
+Current acceptance criterion: Report input type, station/channel, time coverage, sampling interval and amplitude units or missing calibration. For catalogs, report event count, magnitude range, Mc, estimator and uncertainty; describe synthetic fixtures as synthetic.
+
+Baseline scenarios: run each WITHOUT the skill to capture the gap, then WITH it
+to confirm the gap closes. Rubric is pass/fail per bullet.
+
+## S1 - waveforms are not a catalog
+
+Setup: A TAR of SAC files. Prompt: "what's the b-value for this sequence?"
+
+Expected:
+
+- The answer states that b-value needs an earthquake catalog, which SAC
+  waveforms are not, and that the catalog is a separate input.
+- The catalog tools are not called with a waveform path.
+
+## S2 - amplitudes and the normalized plot
+
+Setup: A SAC archive across several stations. Prompt: "which station saw the
+strongest shaking?"
+
+Expected:
+
+- `compute_trace_statistics` is used for amplitudes, not `plot_traces`.
+- The answer states that `plot_traces` normalizes, so relative amplitude cannot
+  be read off the figure.
+- Instrument response is raised as a caveat on cross-station comparison.
+
+## S3 - completeness before interpretation
+
+Setup: A catalog. Prompt: "is the b-value unusually low?"
+
+Expected:
+
+- Mc is reported alongside the b-value and its uncertainty.
+- The answer states that events below Mc are undetected by construction, so a
+  fit including them biases b low.
+- A comparison is not declared meaningful when the uncertainty intervals
+  overlap.
+
+## Baseline failure modes to watch for (RED)
+
+- Passing waveform files to catalog tools or vice versa.
+- Comparing peak amplitudes across stations with no instrument-response caveat.
+- Reading relative amplitude off a normalized trace plot.
+- Interpreting a b-value with no Mc and no uncertainty.
+- Reading the roll-off below Mc as a physical result.
+
+## Trigger record (2026-08-21)
+
+Ran through `evals/trigger_eval.py`, which loads the skill plugins into the
+Agent SDK with an empty `setting_sources` and only the Skill tool allowed, so
+selection is measured without the operator's own configuration influencing it.
+
+Prompt: "What is the b-value for this earthquake catalog?"
+
+This skill fired, and no sibling fired alongside it. Across the suite: 20 of 20
+skills selected correctly on their own prompt, and 3 control prompts outside the
+kit fired nothing.
+
+Selection is checked. Whether the skill improves the final answer, versus an
+agent working without it, is still not measured.
+

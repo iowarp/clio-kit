@@ -1,0 +1,51 @@
+[project]
+name = "earthdata-mcp"
+version = "1.0.0"
+description = "Search NASA Earthdata for Earth-science datasets and their files, and download them with an Earthdata Login."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "BSD-3-Clause"
+authors = [
+    { name = "IoWarp Team - Gnosis Research Center", email = "grc@illinoistech.edu" }
+]
+keywords = ["MCP", "NASA", "Earthdata", "CMR", "earthaccess", "remote sensing", "datasets"]
+# The one runtime dependency is the upstream server, pinned exactly; uv.lock locks
+# everything it brings (earthdata-mcp-server is BSD-3-Clause; see README.md).
+dependencies = [
+    "earthdata-mcp-server==0.6.0",
+]
+
+[project.urls]
+Homepage = "https://toolkit.iowarp.ai/"
+Repository = "https://github.com/iowarp/clio-kit"
+
+[project.scripts]
+earthdata-mcp = "earthdata_mcp.server:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.17.0",
+    "pip>=26.1.2",
+    "pip-audit>=2.10.0",
+    "pytest>=9.0.3",
+    "pytest-cov>=6.2.1",
+    "ruff>=0.12.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/earthdata_mcp"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.mypy]
+ignore_missing_imports = true

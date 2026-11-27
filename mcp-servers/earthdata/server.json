@@ -1,0 +1,67 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/earthdata-mcp",
+  "title": "CLIO Earthdata",
+  "description": "Search NASA Earthdata for Earth-science datasets and their files, and download them with an...",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.13.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "earthdata"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "download_earth_data_granules",
+      "description": "Search Earthdata granules, then describe, download or script them.\n\nModes:\n- manifest: return searchable granule metadata, no download performed.\n- download: download files immediately to folder_name on this server.\n  Needs EARTHDATA_USERNAME and EARTHDATA_PASSWORD where the server runs.\n- script: return a Python script that performs the same search and\n  download, to run in a notebook or a code sandbox.\n\nStart with manifest to check what a query matches before downloading.\n\nArgs:\n    folder_name: In download mode, a path relative to this server's safe output\n        directory. In script mode, the path is embedded unchanged and resolves\n        where the generated script runs. In manifest mode, it is reported as\n        the intended download folder.\n    short_name: Short name of the dataset.\n    count: Number of data granules to return.\n    temporal: (Optional) Temporal range in the format (date_from, date_to).\n    bounding_box: (Optional) Bounding box in the format\n        (lower_left_lon, lower_left_lat, upper_right_lon, upper_right_lat).\n    mode: Operation to perform: manifest, download, or script.\n    max_manifest_items: Maximum number of granules returned in manifest mode;\n        ignored in download and script modes."
+    },
+    {
+      "name": "search_earth_datagranules",
+      "description": "Search for data granules on NASA Earthdata.\n\nArgs:\n    short_name: Short name of the dataset.\n    count: Number of data granules to return.\n    temporal: (Optional) Temporal range in the format (date_from, date_to).\n    bounding_box: (Optional) Bounding box in the format\n        (lower_left_lon, lower_left_lat, upper_right_lon, upper_right_lat).\n\nReturns:\n    The data granules found."
+    },
+    {
+      "name": "search_earth_datasets",
+      "description": "Search for datasets on NASA Earthdata.\n\nArgs:\n    search_keywords: Keywords to search for in the dataset titles.\n    count: Number of datasets to return.\n    temporal: (Optional) Temporal range in the format (date_from, date_to).\n    bounding_box: (Optional) Bounding box in the format\n        (lower_left_lon, lower_left_lat, upper_right_lon, upper_right_lat).\n\nReturns:\n    The datasets found: title, short name, abstract, data type, DOI,\n    landing page, visualization and data links."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "download_analyze_global_sea_level",
+      "description": "Generate a prompt for downloading and analyzing Global Mean Sea Level Trend dataset."
+    },
+    {
+      "name": "sealevel_rise_dataset",
+      "description": "Ask for datasets about sea level rise worldwide between two years."
+    },
+    {
+      "name": "ask_datasets_format",
+      "description": "Ask for the data formats of the datasets found."
+    }
+  ],
+  "tags": [
+    "nasa",
+    "earthdata",
+    "remote-sensing",
+    "datasets",
+    "earth-science"
+  ],
+  "scope": "scientific"
+}

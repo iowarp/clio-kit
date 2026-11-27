@@ -1,0 +1,9 @@
+{
+  "clio-avogadro": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "avogadro"
+    ]
+  }
+}

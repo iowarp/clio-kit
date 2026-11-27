@@ -1,0 +1,62 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/decimer-mcp",
+  "title": "CLIO Decimer",
+  "description": "Read a chemical structure drawing (PNG, JPEG) into SMILES with the DECIMER image-to-SMILES...",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.13.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "decimer"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "image_to_smiles",
+      "description": "Read the chemical structure drawn in an image (PNG, JPEG, GIF, TIFF, BMP, WEBP; one molecule) into a SMILES string with DECIMER, then check it with RDKit: valid or not, canonical SMILES, formula, molecular weight (g/mol), stereo centres, InChIKey, and the model's per-token confidence. An invalid SMILES is still returned as the model wrote it. hand_drawn=true uses DECIMER's model for sketches. The result is a model's reading and must be checked against the image."
+    },
+    {
+      "name": "crop_image",
+      "description": "Cut a rectangle out of an image (for example one structure from a paper's figure) and save it as PNG under output_dir/chemistry/decimer/. box is [left, top, right, bottom] in pixels from the top-left corner, or as fractions of the width and height with unit='fraction'. Returns the new image's path."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "decimer://capabilities",
+      "name": "capabilities",
+      "description": "Describe what the decimer MCP server can do."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "structure_from_drawing",
+      "description": "Guided reading of a drawn or printed structure into SMILES."
+    }
+  ],
+  "tags": [
+    "chemistry",
+    "ocsr",
+    "decimer",
+    "smiles",
+    "image"
+  ],
+  "scope": "scientific"
+}

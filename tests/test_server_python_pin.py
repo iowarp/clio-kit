@@ -7,21 +7,21 @@ or pandas had no cp315 wheels) turns the frozen sync into source builds, which
 need a compiler: on a Mac without the Command Line Tools, and inside CLIO's
 sandbox, the server never starts. ``.python-version`` in the project is what
 ``uv sync --project`` honours, and it travels with the server's files into the
-materialised project and the wheel's shared data.
+materialised project and the release component.
 """
 
 from __future__ import annotations
 
-import re
 import tomllib
 from pathlib import Path
 
 import pytest
+import yaml
 from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
 REPO = Path(__file__).resolve().parents[1]
-SERVERS = REPO / "clio-kit-mcp-servers"
+SERVERS = REPO / "mcp-servers"
 QUALITY_CONTROL = REPO / ".github" / "workflows" / "quality_control.yml"
 
 PYTHON_SERVERS = sorted(
@@ -54,10 +54,8 @@ def test_server_pins_a_python_its_manifest_and_lock_accept(server: Path) -> None
 
 @pytest.mark.parametrize("server", PYTHON_SERVERS, ids=lambda p: p.name)
 def test_server_pin_is_a_python_ci_tests_it_on(server: Path) -> None:
-    # The server test matrix is the widest python-version list in the workflow.
-    workflow = QUALITY_CONTROL.read_text(encoding="utf-8")
-    lanes = re.findall(r"python-version: \[([^\]]*)\]", workflow)
-    tested = max((re.findall(r"\"([^\"]+)\"", lane) for lane in lanes), key=len)
+    jobs = yaml.safe_load(QUALITY_CONTROL.read_text(encoding="utf-8"))["jobs"]
+    tested = jobs["test"]["strategy"]["matrix"]["python-version"]
     assert _pin(server) in tested, (
         f"{server.name} pins Python {_pin(server)}, which no CI lane runs its tests on"
     )

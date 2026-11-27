@@ -1,0 +1,41 @@
+name: Test Node MCP servers
+
+# The shared matrix in quality_control.yml runs Python tools only, so each hosted
+# Node server is checked here with its own toolchain, from its own lock
+# (tests/test_ci_covers_every_server.py names this workflow for each of them).
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "mcp-servers/pdf/**"
+      - ".github/workflows/test-node-servers.yml"
+  pull_request:
+    branches: [ main, dev, develop ]
+    paths:
+      - "mcp-servers/pdf/**"
+      - ".github/workflows/test-node-servers.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.server }} on Node ${{ matrix.node-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        server: [pdf]
+        node-version: ["20", "22", "24"]
+    defaults:
+      run:
+        working-directory: mcp-servers/${{ matrix.server }}
+    steps:
+    - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+    - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: ${{ matrix.node-version }}
+    # The launcher's own build: exactly the locked tree, no dev dependencies.
+    - run: npm ci --omit=dev
+    - run: npm run lint
+    - run: npm test

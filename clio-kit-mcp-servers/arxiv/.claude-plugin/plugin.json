@@ -1,5 +1,0 @@
-{
-  "name": "clio-arxiv",
-  "description": "ArXiv MCP server implementation using Model Context Protocol",
-  "version": "2.2.3"
-}

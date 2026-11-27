@@ -2,6 +2,252 @@
 
 All notable user-facing changes to CLIO Kit are documented here, newest first.
 
+## Unreleased
+
+- **clio-core-skills, a new skill collection for CLIO Core**: `storage-compose`
+  chooses and orders the shipped modules into a `compose` section and states
+  what an acknowledged put means, when data is durable and what each failure
+  loses; `chimod-dev` writes and extends ChiMods and data-path operators;
+  `gpu-vector` writes and tunes kernels over the paged out-of-core vector.
+  One skill per shipped module documents every compose key, its client API
+  and what it loses per failure, for users without the CLIO Core source:
+  `clio-runtime-config`, `clio-bdev`, `clio-cte-core`, `clio-cte-caches`,
+  `clio-replication`, `clio-compressor`, `clio-indexer`, `clio-fs` and
+  `clio-cae`.
+  Install with `clio-kit skill install --bundle clio-core` or
+  `claude plugin install clio-core-skills@clio-kit`.
+
+## 2.13.0 - 2026-11-19
+
+- **globe server removed**: the plain 3D globe (the MCP Apps map example,
+  `@modelcontextprotocol/server-map`) only framed a named region and could not
+  draw points or GeoJSON. Geo's `show_on_globe` replaces it; `clio-geoscience`
+  no longer includes `clio-globe`.
+- **geo 2.4.0, layers on an interactive globe**: `show_on_globe` takes the
+  layers and styles `render_feature_map` takes (GeoJSON inline or as paths,
+  `color_by`, `category_colors`, `epa_aqi`, colormaps, legends) and shows them
+  on a CesiumJS globe with OpenStreetMap tiles, as an MCP Apps view
+  (`ui://geo/globe`). Points are dots, labelled when few; a layer list toggles
+  layers and shows legends; clicking a feature lists its properties and
+  reports it to the agent as `selected_feature`, and a host that sets
+  `selected_feature` (a linked table row) turns the globe to that feature. The
+  view offers `fly_to`, `select_feature`, `add_layer`, `remove_layer`,
+  `set_style` and `get_view`, follows the host's theme, and is saved under a
+  view id so a reopen shows the same layers, re-reading files. The agent reads
+  only layer names, counts and bounds; the GeoJSON goes to the view.
+- **paraview 3.1.0, ParaView controls in the view**: the live view gains a
+  compact left tool rail: a pipeline browser (show, hide, select, remove), an
+  Add filter palette (Contour, Slice, Clip, Threshold, Glyph, Stream Tracer,
+  Calculator) with a short property form, display controls (representation,
+  colour by field and component, colour map, rescale, legend, opacity), camera
+  presets (reset, look along each axis, parallel projection), data
+  information, and play and step controls for time. Every control runs the
+  same command as the agent's tools, and the view reports what the person
+  changed to the agent. `set_representation` takes `component`, `scalar_bar`
+  and `rescale`; `set_camera` takes `direction` and `parallel_projection`;
+  `scene_state` lists recent changes and who made them. The view follows the
+  host's light or dark theme and style variables. The node folder adds
+  trame-vuetify 3.3.0, so ParaView machines prepare a new `3.1.0` folder
+  (saved scenes are carried over). Colour maps are saved with the scene and
+  restored exactly on reopen, and no longer leak from one scene to the next.
+- **paraview 3.0.0, rebuilt**: the ParaView server is a new server. A plain
+  Python front speaks MCP and lists its tools with no ParaView installed; a
+  node half runs in ParaView's own Python on this machine or on another one
+  reached with one system `ssh` (your keys and config, a jump host, one
+  forwarded port; a host that wants a password fails at once with a clear
+  message). `open_view` shows the data in a live trame view (an MCP Apps view
+  that rotates in the browser and switches to server rendering for large
+  geometry); thirteen scene tools change, measure, capture and export the
+  scene, each committing whole or rolling back, and the scene is saved and
+  restored by id. The 26 tools of 2.2.7, `--multi-clients` and `viz.html` are
+  gone. The `clio-analysis` bundle is 1.1.0.
+
+## 2.12.7 - 2026-11-13
+
+Every MCP server ships a patch release with opentelemetry-api 1.45.2, which
+fixes a denial of service (CVE-2026-126360). adios 2.3.2 and paraview 2.2.8
+also install adios2 from wheels on macOS, hdf5 2.3.1 keeps its metrics inside
+the cache directory it was granted, and every Python server runs on Python
+3.12. 2.12.6 was tagged but never published; 2.12.7 is the first release that
+carries these changes.
+
+- **opentelemetry-api security fix**: every server lock, the launcher's lock
+  and clio-agentic-search's lock move to opentelemetry-api 1.45.2, which fixes
+  quadratic-time `traceparent` parsing (CVE-2026-126360, GHSA-mf5v-w3w3-f6cg).
+  Every server takes a patch version and is republished to the MCP Registry.
+- **adios2 wheels on macOS**: adios and paraview now require adios2
+  2.13.0.1001 or later, the first release with macOS wheels, so their first
+  prepare on a Mac no longer compiles adios2 from source. Both servers are
+  relocked; Windows still skips adios2 (#417).
+- **hdf5 writes only where it is allowed**: hdf5 no longer creates
+  `~/.hdf5_mcp` when it is imported. Metrics are saved under the server's
+  granted cache directory, which is created only when metrics are first
+  written (#418).
+- **Python 3.12 for every Python server**: each Python server carries a
+  `.python-version` of 3.12, so uv never picks a newer interpreter for which
+  some dependencies have no wheels and must build from source (#419).
+- **Windows can build clio-kit from source**: the wheel build hook reads
+  component sources as UTF-8 instead of the locale encoding, which failed with
+  a cp1252 `UnicodeDecodeError` on Windows (#421).
+
+## 2.12.6 - 2026-11-13
+
+Tagged but not published: its release checks failed on a new opentelemetry-api
+advisory (CVE-2026-126360). Its changes ship in 2.12.7.
+
+## 2.12.5 - 2026-11-13
+
+adios 2.3.1 no longer builds adios2 from source on Windows. Every other MCP
+server keeps the version it already published. 2.12.4 was tagged but never
+published; 2.12.5 is the first release that carries this change.
+
+- **adios starts in seconds on Windows**: adios2 publishes no Windows wheels,
+  so uv compiled it from the sdist on the server's first prepare (457 s on a
+  cold cache with MSVC present, a failure without one), and the result never
+  imported. The adios2 dependency is now marked `sys_platform != 'win32'`; on
+  a new Windows install the first prepare drops to about 16 s. The server and
+  `list_bp5` keep working on Windows; the tools that read BP5 contents raise a
+  typed `Adios2Unavailable` (reason `adios2_unavailable`) that says "ADIOS2
+  bindings aren't available on Windows" instead of a raw import error (#413).
+
+## 2.12.4 - 2026-11-13
+
+Tagged but not published: its release checks failed because the adios server
+still reported version 2.3.0. Its changes ship in 2.12.5.
+
+## 2.12.3 - 2026-11-11
+
+Launcher fixes, ndp 2.2.8 works against the public NDP catalog, and the web
+server works behind a SOCKS proxy. Every other MCP server keeps its 2.12.0
+version. 2.12.1 and 2.12.2 were tagged but never published; 2.12.3 is the
+first release that carries these changes.
+
+- **Self-healing server environments**: a Python server environment left
+  half-built by an interrupted or denied first build (no `pyvenv.cfg` or
+  interpreter) is set aside and rebuilt on the next launch instead of failing
+  every later start with "not a valid Python environment". A missing
+  environment is created in a temporary sibling directory and renamed into
+  place, and concurrent launches of the same server wait on a per-environment
+  build lock (#403).
+- **`clio-kit mcp-server --prepare <server>`** builds or syncs a server's
+  environment without starting it, prints one `clio-kit.mcp-prepare.v1` JSON
+  result line, and exits with a typed code: 1 unknown server, 10 build failed,
+  11 access denied, 12 path too long, 13 network, 14 uv missing. It is safe to
+  repeat (#402).
+- **ndp 2.2.8 defaults to the public NDP catalog**: with no configuration the
+  server now queries the NDP CKAN catalog at
+  `https://nationaldataplatform.org/catalog` (override with `NDP_CATALOG_URL`)
+  instead of a retired endpoint that no longer answers. Setting `NDP_API_URL`
+  still selects a self-hosted NDP Endpoint API, which is required for the
+  `local` and `pre_ckan` catalogs. Connection errors name the URL and the
+  variable that controls it, and the `ndp://catalogs` resource reports the
+  active backend (#401).
+- **web works behind a SOCKS proxy**: the web server now depends on
+  `httpx[socks]`, so a sandboxed Windows launch that sets
+  `ALL_PROXY=socks5h://...` no longer fails with "Using SOCKS proxy, but the
+  'socksio' package is not installed" (#407).
+
+## 2.12.2 - 2026-11-11
+
+Tagged but not published: main moved past the tag before its build ran.
+Its changes ship in 2.12.3.
+
+## 2.12.1 - 2026-11-11
+
+Tagged but not published: its release checks failed on a stale README
+version row. Its changes ship in 2.12.2.
+
+## 2.12.0 - 2026-11-08
+
+Five servers gain tool behavior found by running them through a coding agent
+(Clio Coder) on planted scientific datasets. Every other server takes a patch
+release for the joserfc 1.7.7 and pyasn1 0.6.5 lock updates (#398).
+
+- **adios 2.3.0**: new `variable_stats` gives per-step min, max, mean and std
+  with the index of each extreme in one call. `read_variable_at_step` reads
+  `start`/`count` slices and refuses reads above `max_elements` (default
+  10000) with a hint instead of returning 55k values. `list_bp5` defaults to
+  the working directory, single string attributes come back as strings, and
+  the instructions name the real tools.
+- **hdf5 2.3.0**: `hdf5_aggregate_stats` takes `axis` for per-index profiles,
+  `visit` returns shape, dtype, chunks, compression and attributes per node
+  from an optional group path, `get_chunks` reports compression, and
+  `read_partial_dataset` accepts list or bracketed `start`/`count`.
+  `open_file` and `close_file` are annotated read-only.
+- **pandas 2.4.0**: new read-only `aggregate` returns grouped results inline
+  without writing a file, with `column:month` style date buckets, duplicate
+  removal, a query filter and several operations per column. `profile_data`
+  reports IQR outlier counts and the rows furthest from the median, and each
+  `validate_data` violation lists up to 10 offending rows. Tools that write
+  side files are annotated destructive.
+- **parquet 2.3.0**: `aggregate_column` takes `group_by` and comma-separated
+  operations and reads only the needed columns; `summarize` reports per-column
+  null counts. Local-file tools declare `openWorldHint: false`.
+- **slurm 3.1.0** (contract `clio-kit-slurm-user-v3.1`; v3 stays available):
+  the default partition is flagged and node counts are reported, existing
+  jobs report the scheduler's reason instead of "Job not found", an invalid
+  partition error lists the valid ones, and array jobs no longer write banner
+  lines into user stdout.
+- **web 2.1.5**: `fetch`, `fetch_events` and `search` declare `openWorldHint`.
+- Patch releases for the lock updates: arxiv 2.2.7, chronolog 2.0.5,
+  compression 2.2.7, darshan 2.2.7, geo 2.3.3, jarvis 3.7.6, lmod 3.0.3,
+  ndp 2.2.7, node-hardware 2.3.2, parallel-sort 2.3.2, paraview 2.2.7,
+  plot 2.2.7, scientific-catalog 1.1.6, seismology 2.3.3, spack 2.3.3,
+  terrain 2.2.7.
+
+The clio-agentic-search CI jobs and documentation removed in #389 are restored,
+and `clio-converter/` and `handoffs/` are no longer tracked.
+
+## 2.11.1 - 2026-10-28
+
+Update audited runtime dependencies for the launcher verification environment
+and maintained MCP servers, including patched FastMCP and OpenTelemetry API.
+Each affected server receives a new immutable patch version. Tool schemas and
+the selective-installation layout remain the ones published in 2.11.0.
+
+## 2.11.0
+
+CLIO Kit now provides a meta-marketplace with 22 MCP servers, six workflow
+bundles, 60 portable Agent Skills (20 workflow skills, the dataset-report
+skill and 39 adapted Clio Coder skills), and two Claude Code agent definitions.
+External authors can validate and submit plugin entries; indexed marketplace
+collections compile into a versioned catalogue with recorded provenance.
+Node/TypeScript and Go projects can use the locked local-project launcher.
+The shipped scientific servers remain Python projects.
+
+The CLI can install portable skill folders into an agent's discovery directory.
+Native dependency bundles and agent manifests currently target Claude Code;
+other clients configure skills and stdio MCP separately. See `setup.md` and the
+website's marketplace documentation for tested paths and backend prerequisites.
+
+Scientific fixes make Pandas interpolation, directional fills and categorical
+mode fills honor the requested method and report actual fill counts. HDF5
+labels sampled statistics with coverage and omits misleading combined totals.
+Parallel-sort recognizes bracketed log levels consistently. Slurm diagnostics
+use stderr so job submission cannot corrupt the MCP stdout stream.
+
+This release incorporates main's JARVIS 1.8.1 dependency and Web task-based
+fetch support, with ordinary-call compatibility for agents without the tasks
+extension. All 22 server locks update vulnerable HTTP dependencies, and
+fresh registry versions point to the 2.11.0 wheel. The compatible JARVIS user
+schema remains v3.7.2; its component release is 3.7.4.
+
+All 22 servers now use stable FastMCP 4.0.3 with MCP Python SDK 2.2.0.
+The verification client negotiates the 2026-07-28 protocol and supports legacy
+connections. HDF5 exports accept an explicit `export_format` so clients can
+select CSV, JSON or NumPy without a mid-call prompt; modern connections default
+to JSON. Legacy elicitation remains available when the argument is omitted.
+
+Website builds now use a committed npm lock, updated Docusaurus dependencies
+and a pre-build image-format check, documented in `website/README.md`.
+
+### Removed and renamed
+
+The standalone `clio-kit search` command is no longer part of this package.
+The `geojson` server merged into `geo`, and `sac` and `seismic` merged into
+`seismology`; tool names are unchanged, and launching a retired name prints
+where it went. The launcher now lists 22 servers.
+
 ## 2.10.5
 
 ### Python 3.13: pandas and plot servers install again
@@ -62,7 +308,7 @@ enum gains `frame` (for scientific output files like `.h5`, `.dcd`, `.vtk`,
 trajectory/checkpoint frames) alongside the execution-output declarations
 above. No tool is renamed, removed, or gains a required field. Every prior
 contract revision (down to `clio-kit-jarvis-user-v3`) remains loadable by
-exact identifier â€” nothing already deployed is invalidated by this bump.
+exact identifier — nothing already deployed is invalidated by this bump.
 
 This release also closes a gap where a kit build could be asked to load the
 `clio-kit-jarvis-user-v3.7` contract family and not recognize it. The kit now

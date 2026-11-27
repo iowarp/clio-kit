@@ -20,12 +20,7 @@ from clio_agentic_search.indexing.lexical import (
     LexicalIngestionConfig,
     LexicalPostingsIngestor,
 )
-from clio_agentic_search.indexing.scientific import (
-    ScientificChunkPlan,
-    build_structure_aware_chunk_plan,
-    canonicalize_measurement,
-    normalize_formula,
-)
+from clio_agentic_search.indexing.structure import ChunkPlan, build_structure_aware_chunk_plan
 from clio_agentic_search.indexing.text_features import (
     Embedder,
     HashEmbedder,
@@ -41,10 +36,6 @@ from clio_agentic_search.models.contracts import (
 )
 from clio_agentic_search.retrieval.ann import ANNAdapter, AnnResult, build_ann_adapter
 from clio_agentic_search.retrieval.capabilities import ScoredChunk
-from clio_agentic_search.retrieval.scientific import (
-    ScientificQueryOperators,
-    score_scientific_metadata,
-)
 from clio_agentic_search.storage.contracts import DocumentBundle, FileIndexState, StorageAdapter
 
 DEFAULT_EXCLUDE_PATTERNS: frozenset[str] = frozenset(
@@ -440,69 +431,6 @@ class FilesystemConnector:
                 )
         return filtered
 
-    def search_scientific(
-        self,
-        query: str,
-        top_k: int,
-        operators: ScientificQueryOperators,
-    ) -> list[ScoredChunk]:
-        self._ensure_connected()
-        del query
-        if not operators.is_active():
-            return []
-
-        candidate_ids: set[str] | None = None
-
-        if operators.numeric_range is not None:
-            try:
-                canonical_min = None
-                canonical_max = None
-                canonical_unit = canonicalize_measurement(0.0, operators.numeric_range.unit)[1]
-                if operators.numeric_range.minimum is not None:
-                    canonical_min = canonicalize_measurement(
-                        operators.numeric_range.minimum, operators.numeric_range.unit
-                    )[0]
-                if operators.numeric_range.maximum is not None:
-                    canonical_max = canonicalize_measurement(
-                        operators.numeric_range.maximum, operators.numeric_range.unit
-                    )[0]
-            except ValueError:
-                return []
-            range_chunks = self.storage.query_chunks_by_measurement_range(
-                self.namespace, canonical_unit, canonical_min, canonical_max
-            )
-            range_ids = {c.chunk_id for c in range_chunks}
-            candidate_ids = range_ids if candidate_ids is None else candidate_ids & range_ids
-
-        if operators.formula:
-            sig = normalize_formula(operators.formula)
-            formula_chunks = self.storage.query_chunks_by_formula(self.namespace, sig)
-            formula_ids = {c.chunk_id for c in formula_chunks}
-            candidate_ids = formula_ids if candidate_ids is None else candidate_ids & formula_ids
-
-        if candidate_ids is not None:
-            chunks = [self.storage.get_chunk(self.namespace, cid) for cid in sorted(candidate_ids)]
-        else:
-            chunks = self.storage.list_chunks(self.namespace)
-
-        scored: list[ScoredChunk] = []
-        for chunk in chunks:
-            metadata = self.storage.get_chunk_metadata(self.namespace, chunk.chunk_id)
-            score = score_scientific_metadata(metadata, operators)
-            if score <= 0.0:
-                continue
-            scored.append(
-                ScoredChunk(
-                    chunk_id=chunk.chunk_id,
-                    document_id=chunk.document_id,
-                    text=chunk.text,
-                    metadata_score=score,
-                )
-            )
-
-        scored.sort(key=lambda candidate: (-candidate.metadata_score, candidate.chunk_id))
-        return scored[:top_k]
-
     def build_citation(self, chunk: ScoredChunk) -> CitationRecord:
         stored_chunk = self.storage.get_chunk(self.namespace, chunk.chunk_id)
         metadata = self.storage.get_chunk_metadata(self.namespace, stored_chunk.chunk_id)
@@ -520,7 +448,7 @@ class FilesystemConnector:
             score=round(chunk.combined_score, 6),
         )
 
-    def _build_chunks(self, *, document_id: str, text: str) -> ScientificChunkPlan:
+    def _build_chunks(self, *, document_id: str, text: str) -> ChunkPlan:
         return build_structure_aware_chunk_plan(
             namespace=self.namespace,
             document_id=document_id,

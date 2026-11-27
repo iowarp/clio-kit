@@ -1,0 +1,9 @@
+{
+  "clio-geoprocess": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "geoprocess"
+    ]
+  }
+}

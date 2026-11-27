@@ -1,0 +1,679 @@
+import asyncio
+import os
+import shutil
+import subprocess
+from pathlib import Path
+from typing import Annotated, Any, Literal, cast
+
+import httpx
+from dotenv import load_dotenv
+from fastmcp import FastMCP
+from fastmcp.exceptions import ToolError
+from fastmcp.prompts import Message
+from pydantic import Field
+from typing_extensions import NotRequired, TypedDict
+
+from ndp_mcp.clients import (
+    NDP_API_URL_ENV,
+    NDP_CATALOG_URL_ENV,
+    Dataset,
+    NDPCatalogClient,
+    NDPClient,  # noqa: F401  (re-exported for callers and tests)
+    create_ndp_client,
+)
+from ndp_mcp.staging_utils import _clean_max_bytes, _parse_resource_size_bytes, _safe_filename
+
+# Environment setup
+load_dotenv()
+
+# Initialize FastMCP server instance
+mcp: FastMCP = FastMCP(
+    "ndp",
+    version="2.2.10",
+    instructions=(
+        "Discovers and explores scientific datasets from the National Data Platform "
+        "(NDP) and stages their resources for analysis. Use search_datasets to find "
+        "data, get_dataset_details for metadata, list_organizations for sources, and "
+        "stage_resource to download an HTTP(S) or OSDF/Pelican dataset resource to a "
+        "local file."
+    ),
+)
+
+# ---------------------------------------------------------------------------
+# Resource staging configuration and helpers (standalone, domain-neutral)
+# ---------------------------------------------------------------------------
+
+# Network timeouts (seconds) for staging HTTP resources.
+_HTTP_CONNECT_TIMEOUT_S = 8.0
+_HTTP_READ_TIMEOUT_S = 60.0
+# Wall-clock timeout (seconds) for OSDF/Pelican CLI staging.
+_PELICAN_TIMEOUT_S = 900
+
+
+def artifacts_root(output_dir: str | Path | None = None) -> Path:
+    """Return the writable root for staged resources and generated artifacts.
+
+    Precedence: an explicit ``output_dir`` (caller-supplied destination) wins;
+    otherwise the ``CLIO_KIT_ARTIFACTS`` environment variable; otherwise the
+    current working directory. Falling back to the process CWD lets a caller
+    that launches the server with a chosen working directory control where
+    artifacts land by default. The tool writes where it is told — no destination
+    is hardcoded and nothing is rerouted.
+    """
+    explicit = str(output_dir).strip() if output_dir not in (None, "") else ""
+    configured = os.environ.get("CLIO_KIT_ARTIFACTS", "").strip()
+    if explicit:
+        root = Path(explicit).expanduser()
+    elif configured:
+        root = Path(configured).expanduser()
+    else:
+        root = Path.cwd()
+    root.mkdir(parents=True, exist_ok=True)
+    return root.resolve()
+
+
+def _validate_output_path(
+    candidate: str | Path, *, default_name: str, output_dir: str | Path | None = None
+) -> Path:
+    """Resolve an output path, confining writes to the resolved artifacts root.
+
+    The root is ``output_dir`` if supplied (the caller's chosen destination),
+    else the configurable artifacts root. A relative path, bare filename, or any
+    path outside that root is relocated under it using only its filename — a
+    self-contained allowed-root check with no external dependency.
+    """
+    root = artifacts_root(output_dir)
+    raw = Path(str(candidate)).expanduser() if candidate else Path(default_name)
+    name = raw.name or default_name
+    if raw.is_absolute():
+        try:
+            resolved = raw.resolve()
+            resolved.relative_to(root)
+            resolved.parent.mkdir(parents=True, exist_ok=True)
+            return resolved
+        except (ValueError, OSError):
+            pass
+    target = (root / name).resolve()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    return target
+
+
+def _stage_pelican_resource(
+    *,
+    url: str,
+    output_path: Path,
+    max_bytes: int,
+    resource_size_bytes: int | None,
+) -> dict[str, Any]:
+    """Stage an OSDF/Pelican resource using the local ``pelican`` CLI when present."""
+    if resource_size_bytes is not None and resource_size_bytes > max_bytes:
+        raise ToolError(
+            f"Resource is advertised as {resource_size_bytes} bytes, exceeding the "
+            f"staging limit of {max_bytes} bytes. Increase max_bytes intentionally "
+            "or select a smaller object."
+        )
+    pelican = shutil.which("pelican")
+    if pelican is None:
+        raise ToolError(
+            "The selected resource uses OSDF/Pelican transport, but the `pelican` "
+            "CLI was not found on PATH. Install the Pelican client and retry."
+        )
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    command = [pelican, "object", "get", url, str(output_path)]
+    try:
+        completed = subprocess.run(
+            command,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=_PELICAN_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise ToolError(
+            f"Pelican staging timed out after {_PELICAN_TIMEOUT_S}s before the "
+            "resource was downloaded."
+        ) from exc
+
+    if completed.returncode != 0:
+        stderr = (completed.stderr or completed.stdout or "").strip()
+        raise ToolError(
+            f"Pelican failed to stage the resource (exit {completed.returncode}): {stderr[-1200:]}"
+        )
+    if not output_path.exists():
+        raise ToolError("Pelican exited successfully but the expected staged file was not found.")
+
+    size = output_path.stat().st_size if output_path.is_file() else 0
+    if size > max_bytes:
+        raise ToolError(
+            f"Staged file is {size} bytes, exceeding the staging limit of {max_bytes} bytes."
+        )
+    return {
+        "ok": True,
+        "local_path": str(output_path),
+        "size_bytes": size,
+        "content_type": None,
+        "url": url,
+        "method": "pelican",
+        "transport": "osdf",
+    }
+
+
+# --- Structured result shapes (drive real MCP outputSchema declarations) ----
+
+
+class ToolMeta(TypedDict):
+    """Per-call diagnostic metadata echoed back on every NDP tool response."""
+
+    tool: str
+    status: str
+
+
+class ListOrganizationsResult(TypedDict):
+    """Structured result for a successful organizations listing."""
+
+    organizations: list[str]
+    count: int
+    server: str
+    name_filter: str | None
+    _meta: ToolMeta
+
+
+class SearchParameters(TypedDict):
+    """Echo of the request parameters that produced a search result set."""
+
+    search_terms: list[str] | None
+    search_keys: list[str] | None
+    dataset_name: str | None
+    dataset_title: str | None
+    owner_org: str | None
+    resource_format: str | None
+    search_term: str | None
+    filter_list: list[str] | None
+    limit: int | str | None
+
+
+class SearchDatasetsResult(TypedDict):
+    """Structured result for a dataset search."""
+
+    datasets: list[Dataset]
+    count: int
+    total_found: int | str
+    server: str
+    search_parameters: SearchParameters
+    _meta: ToolMeta
+
+
+class DatasetIdentifier(TypedDict):
+    """Which identifier field and value resolved the returned dataset."""
+
+    type: str
+    value: str
+
+
+class GetDatasetDetailsResult(TypedDict):
+    """Structured result for a single dataset's detailed metadata."""
+
+    dataset: Dataset
+    identifier_used: DatasetIdentifier
+    server: str
+    resource_count: int
+    _meta: ToolMeta
+
+
+class StageResourceResult(TypedDict):
+    """Structured result for a staged dataset resource (HTTP or OSDF/Pelican).
+
+    Both staging paths populate ``ok``, ``local_path``, ``size_bytes``,
+    ``content_type``, ``url``, and ``method``. ``transport`` is present only
+    on the OSDF/Pelican path; ``_meta`` is present only on the direct-HTTP(S)
+    path.
+    """
+
+    ok: Literal[True]
+    local_path: str
+    size_bytes: int
+    content_type: str | None
+    url: str
+    method: Literal["http", "pelican"]
+    transport: NotRequired[Literal["osdf"]]
+    _meta: NotRequired[ToolMeta]
+
+
+ndp_client = create_ndp_client()
+
+
+@mcp.tool(
+    name="list_organizations",
+    title="List Organizations",
+    description="List organizations available in the National Data Platform.",
+    annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
+    tags={"organizations", "catalogs"},
+)
+async def list_organizations(
+    name_filter: Annotated[
+        str | None, Field(description="Filter organizations by name substring match")
+    ] = None,
+    server: Annotated[
+        str, Field(description="Server to query: 'local', 'global', or 'pre_ckan'")
+    ] = "global",
+) -> ListOrganizationsResult:
+    """List organizations from the National Data Platform."""
+    try:
+        organizations = await ndp_client.list_organizations(name_filter, server)
+
+        return {
+            "organizations": organizations,
+            "count": len(organizations),
+            "server": server,
+            "name_filter": name_filter,
+            "_meta": {"tool": "list_organizations", "status": "success"},
+        }
+    except Exception as e:
+        raise ToolError(str(e)) from e
+
+
+def _search_hit(d: Dataset) -> dict[str, Any]:
+    """Compact a dataset to what a search result needs, not the whole record."""
+    hit = d.model_dump(exclude={"resources", "extras"})
+    hit["notes"] = (d.notes or "")[:500]
+    hit["resource_count"] = len(d.resources)
+    fmts = {str(r["format"]) for r in d.resources if r.get("format")}
+    hit["resource_formats"] = sorted(fmts)
+    return hit
+
+
+@mcp.tool(
+    name="search_datasets",
+    title="Search Datasets",
+    description="Search for datasets in the NDP using term-based or field-specific criteria.",
+    annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
+    tags={"datasets", "search"},
+)
+async def search_datasets(
+    search_terms: Annotated[
+        list[str] | None, Field(description="Terms for simple search across all fields")
+    ] = None,
+    search_keys: Annotated[
+        list[str] | None, Field(description="Corresponding keys for each search term")
+    ] = None,
+    dataset_name: Annotated[
+        str | None, Field(description="Exact or partial dataset name to match")
+    ] = None,
+    dataset_title: Annotated[str | None, Field(description="Dataset title to search for")] = None,
+    owner_org: Annotated[
+        str | None, Field(description="Organization name that owns the dataset")
+    ] = None,
+    resource_url: Annotated[str | None, Field(description="URL of dataset resource")] = None,
+    resource_name: Annotated[str | None, Field(description="Name of dataset resource")] = None,
+    dataset_description: Annotated[
+        str | None, Field(description="Text to search in dataset descriptions")
+    ] = None,
+    resource_description: Annotated[
+        str | None, Field(description="Text to search in resource descriptions")
+    ] = None,
+    resource_format: Annotated[
+        str | None, Field(description="Resource format (e.g., CSV, JSON, NetCDF)")
+    ] = None,
+    search_term: Annotated[
+        str | None, Field(description="Comma-separated terms to search across all fields")
+    ] = None,
+    filter_list: Annotated[
+        list[str] | None, Field(description="Field filters in format 'key:value'")
+    ] = None,
+    timestamp: Annotated[str | None, Field(description="Filter by timestamp field")] = None,
+    server: Annotated[str, Field(description="Server to search: 'local' or 'global'")] = "global",
+    limit: Annotated[
+        str | int | None, Field(description="Maximum results to return (default: 20)")
+    ] = None,
+    query: Annotated[
+        str | None,
+        Field(description="Words to search for across all fields; the same as search_term."),
+    ] = None,
+) -> SearchDatasetsResult:
+    """Search for datasets in the National Data Platform."""
+    if query and search_term and query != search_term:
+        raise ToolError("Give query or search_term, not two different values")
+    search_term = search_term or query
+    # An unfiltered search asks the API for the whole catalogue, which times out
+    # upstream (HTTP 504 after ~25 s). Require something to search for.
+    if not any(
+        (
+            search_terms,
+            dataset_name,
+            dataset_title,
+            owner_org,
+            resource_url,
+            resource_name,
+            dataset_description,
+            resource_description,
+            resource_format,
+            search_term,
+            filter_list,
+            timestamp,
+        )
+    ):
+        raise ToolError(
+            "search_datasets needs at least one search term or filter, e.g. "
+            "search_terms=['climate'] or owner_org='<organization>' "
+            "(see list_organizations). Listing the whole catalogue is not supported."
+        )
+    try:
+        # Convert limit to integer if it's a string
+        if isinstance(limit, str):
+            try:
+                limit = int(limit)
+            except ValueError:
+                limit = None
+
+        # Apply limit if specified, or default limit of 20 to prevent huge responses
+        effective_limit = limit if limit and limit > 0 else 20
+
+        advanced_filters: dict[str, Any] = {
+            "dataset_name": dataset_name,
+            "dataset_title": dataset_title,
+            "owner_org": owner_org,
+            "resource_url": resource_url,
+            "resource_name": resource_name,
+            "dataset_description": dataset_description,
+            "resource_description": resource_description,
+            "resource_format": resource_format,
+            "search_term": search_term,
+            "filter_list": filter_list,
+            "timestamp": timestamp,
+            "server": server,
+        }
+        if isinstance(ndp_client, NDPCatalogClient):
+            # Fetch only the page needed; the catalog reports the full hit count.
+            if search_terms:
+                datasets, total_found = await ndp_client.search_datasets_simple_page(
+                    terms=search_terms, keys=search_keys, server=server, limit=effective_limit
+                )
+            else:
+                datasets, total_found = await ndp_client.search_datasets_advanced_page(
+                    **advanced_filters, limit=effective_limit
+                )
+        elif search_terms:
+            datasets = await ndp_client.search_datasets_simple(
+                terms=search_terms, keys=search_keys, server=server
+            )
+            total_found = len(datasets)
+        else:
+            datasets = await ndp_client.search_datasets_advanced(**advanced_filters)
+            total_found = len(datasets)
+
+        was_limited = total_found > effective_limit
+        datasets = datasets[:effective_limit]
+
+        # A search hit is a pointer, not the record. Returning every resource dict
+        # and extras blob made a 20-row result exceed the client token cap; the
+        # full record is what get_dataset_details is for.
+        dataset_dicts = [_search_hit(dataset) for dataset in datasets]
+
+        return cast(
+            SearchDatasetsResult,
+            {
+                "datasets": dataset_dicts,
+                "count": len(dataset_dicts),
+                "total_found": total_found
+                if not was_limited
+                else f"{len(dataset_dicts)} of {total_found}",
+                "server": server,
+                "search_parameters": {
+                    "search_terms": search_terms,
+                    "search_keys": search_keys,
+                    "dataset_name": dataset_name,
+                    "dataset_title": dataset_title,
+                    "owner_org": owner_org,
+                    "resource_format": resource_format,
+                    "search_term": search_term,
+                    "filter_list": filter_list,
+                    "limit": limit,
+                },
+                "_meta": {"tool": "search_datasets", "status": "success"},
+            },
+        )
+    except Exception as e:
+        raise ToolError(str(e)) from e
+
+
+@mcp.tool(
+    name="get_dataset_details",
+    title="Dataset Details",
+    description="Retrieve detailed metadata for a specific dataset by ID or name.",
+    annotations={"readOnlyHint": True, "destructiveHint": False, "idempotentHint": True},
+    tags={"datasets", "metadata"},
+)
+async def get_dataset_details(
+    dataset_identifier: Annotated[
+        str | None, Field(description="The dataset ID or name to retrieve details for")
+    ] = None,
+    identifier_type: Annotated[str, Field(description="Type of identifier: 'id' or 'name'")] = "id",
+    server: Annotated[str, Field(description="Server to query: 'local' or 'global'")] = "global",
+    dataset_id: Annotated[
+        str | None, Field(description="The dataset ID; the same as dataset_identifier.")
+    ] = None,
+) -> GetDatasetDetailsResult:
+    """Get detailed information about a specific dataset."""
+    if dataset_identifier and dataset_id and dataset_identifier != dataset_id:
+        raise ToolError("Give dataset_identifier or dataset_id, not two different values")
+    dataset_identifier = dataset_identifier or dataset_id
+    if not dataset_identifier:
+        raise ToolError("Give the dataset's id or name as dataset_identifier (or dataset_id)")
+    try:
+        # Search for the specific dataset
+        if isinstance(ndp_client, NDPCatalogClient) and identifier_type in ("id", "name"):
+            found = await ndp_client.get_dataset(dataset_identifier, server=server)
+            matching_dataset = (
+                found
+                if found is not None and getattr(found, identifier_type) == dataset_identifier
+                else None
+            )
+        elif identifier_type == "id":
+            # Filter server-side: an unfiltered search returns the whole
+            # catalogue and times out upstream.
+            datasets = await ndp_client.search_datasets_advanced(
+                filter_list=[f"id:{dataset_identifier}"], server=server
+            )
+            matching_dataset = next((d for d in datasets if d.id == dataset_identifier), None)
+        else:
+            datasets = await ndp_client.search_datasets_advanced(
+                dataset_name=dataset_identifier, server=server
+            )
+            matching_dataset = next((d for d in datasets if d.name == dataset_identifier), None)
+
+        if not matching_dataset:
+            raise ToolError(f"Dataset not found with {identifier_type}: {dataset_identifier}")
+
+        # Return detailed dataset information
+        dataset_dict = matching_dataset.model_dump()
+
+        return cast(
+            GetDatasetDetailsResult,
+            {
+                "dataset": dataset_dict,
+                "identifier_used": {"type": identifier_type, "value": dataset_identifier},
+                "server": server,
+                "resource_count": len(dataset_dict.get("resources", [])),
+                "_meta": {"tool": "get_dataset_details", "status": "success"},
+            },
+        )
+    except ToolError:
+        raise
+    except Exception as e:
+        raise ToolError(str(e)) from e
+
+
+@mcp.tool(
+    name="stage_resource",
+    title="Stage Resource",
+    description=(
+        "Download/stage an HTTP(S) or OSDF/Pelican dataset resource to a local "
+        "file and return its local_path, size, and content-type."
+    ),
+    annotations={"readOnlyHint": False, "destructiveHint": False, "idempotentHint": False},
+    tags={"datasets", "staging", "download"},
+)
+async def stage_resource(
+    url: Annotated[
+        str,
+        Field(description="HTTP(S) or osdf:// URL of the dataset resource to stage."),
+    ],
+    output_name: Annotated[
+        str | None,
+        Field(description="Optional filename for the staged file; derived from URL if omitted."),
+    ] = None,
+    output_dir: Annotated[
+        str | None,
+        Field(
+            description=(
+                "Optional destination directory for the staged file. Defaults to "
+                "CLIO_KIT_ARTIFACTS or the current working directory if omitted."
+            )
+        ),
+    ] = None,
+    max_bytes: Annotated[
+        int | str | None,
+        Field(description="Maximum download size in bytes (default 50 MiB)."),
+    ] = None,
+    resource_size_bytes: Annotated[
+        int | str | None,
+        Field(description="Advertised resource size (bytes or '1.4 GB') for OSDF size checks."),
+    ] = None,
+) -> StageResourceResult:
+    """Stage a dataset resource to the configurable artifacts root.
+
+    HTTP(S) resources are streamed with a size cap. ``osdf://`` resources are
+    staged via the local ``pelican`` CLI when available. Returns ``local_path``,
+    ``size_bytes``, and ``content_type``.
+    """
+    target_url = (url or "").strip()
+    if not target_url:
+        raise ToolError("A non-empty resource URL is required.")
+    scheme_ok = target_url.lower().startswith(("http://", "https://", "osdf://"))
+    if not scheme_ok:
+        raise ToolError(f"Unsupported resource URL scheme: {target_url}")
+
+    max_stage_bytes = _clean_max_bytes(max_bytes)
+    filename_source = output_name or Path(target_url.split("?", 1)[0]).name
+    filename = _safe_filename(filename_source, default="ndp-resource")
+    output_path = _validate_output_path(
+        filename, default_name="ndp-resource", output_dir=output_dir
+    )
+
+    is_osdf = target_url.lower().startswith("osdf://")
+    if is_osdf:
+        return cast(
+            StageResourceResult,
+            await asyncio.to_thread(
+                _stage_pelican_resource,
+                url=target_url,
+                output_path=output_path,
+                max_bytes=max_stage_bytes,
+                resource_size_bytes=_parse_resource_size_bytes(resource_size_bytes),
+            ),
+        )
+
+    timeout = httpx.Timeout(_HTTP_READ_TIMEOUT_S, connect=_HTTP_CONNECT_TIMEOUT_S)
+    content_type: str | None = None
+    try:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=True) as client:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            partial_path = output_path.with_name(f"{output_path.name}.part")
+            partial_path.unlink(missing_ok=True)
+            async with client.stream("GET", target_url) as response:
+                response.raise_for_status()
+                content_type = response.headers.get("content-type")
+                content_length = response.headers.get("content-length")
+                if content_length:
+                    try:
+                        advertised = int(content_length)
+                    except ValueError:
+                        advertised = 0
+                    if advertised > max_stage_bytes:
+                        raise ToolError(
+                            f"Resource is {advertised} bytes, exceeding the staging "
+                            f"limit of {max_stage_bytes} bytes. Increase max_bytes "
+                            "intentionally or select a smaller resource."
+                        )
+                total = 0
+                with partial_path.open("wb") as handle:
+                    async for chunk in response.aiter_bytes(chunk_size=1024 * 1024):
+                        if not chunk:
+                            continue
+                        total += len(chunk)
+                        if total > max_stage_bytes:
+                            handle.close()
+                            partial_path.unlink(missing_ok=True)
+                            raise ToolError(
+                                f"Resource exceeded the staging limit of "
+                                f"{max_stage_bytes} bytes while downloading. Increase "
+                                "max_bytes intentionally or select a smaller resource."
+                            )
+                        handle.write(chunk)
+            partial_path.replace(output_path)
+    except ToolError:
+        raise
+    except httpx.HTTPError as exc:
+        raise ToolError(f"Could not download resource from {target_url}: {exc}") from exc
+
+    size = output_path.stat().st_size
+    return {
+        "ok": True,
+        "local_path": str(output_path),
+        "size_bytes": size,
+        "content_type": content_type,
+        "url": target_url,
+        "method": "http",
+        "_meta": {"tool": "stage_resource", "status": "success"},
+    }
+
+
+@mcp.resource("ndp://catalogs")
+def available_catalogs() -> dict[str, Any]:
+    """List of available NDP dataset catalogs."""
+    if isinstance(ndp_client, NDPCatalogClient):
+        return {
+            "catalogs": ["global"],
+            "backend": {"type": "ckan", "url": ndp_client.base_url, "env": NDP_CATALOG_URL_ENV},
+            "description": (
+                "Public NDP catalog. Set NDP_API_URL to an NDP Endpoint API to also "
+                "reach the 'local' and 'pre_ckan' catalogs."
+            ),
+        }
+    return {
+        "catalogs": ["global", "local", "pre_ckan"],
+        "backend": {"type": "endpoint_api", "url": ndp_client.base_url, "env": NDP_API_URL_ENV},
+        "description": "Available NDP data catalogs",
+    }
+
+
+@mcp.prompt()
+def explore_datasets(query: str) -> list[Message]:
+    """Guided workflow for discovering and exploring scientific datasets."""
+    return [
+        Message(
+            f"I want to find datasets related to '{query}'. "
+            "Search available catalogs, show me the top results, "
+            "and provide details on the most relevant one."
+        ),
+    ]
+
+
+def main() -> None:
+    """Main entry point for the NDP MCP server."""
+    import argparse
+
+    parser = argparse.ArgumentParser(description="NDP MCP Server")
+    parser.add_argument("--transport", choices=["stdio", "http"], default=None)
+    parser.add_argument("--host", default="0.0.0.0")
+    parser.add_argument("--port", type=int, default=8000)
+    args = parser.parse_args()
+    transport = args.transport or os.getenv("MCP_TRANSPORT", "stdio")
+    if transport == "http":
+        mcp.run(transport="http", host=args.host, port=args.port)
+    else:
+        mcp.run(transport="stdio")
+
+
+if __name__ == "__main__":
+    main()

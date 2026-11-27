@@ -1,0 +1,179 @@
+# mcp_handlers.py
+import importlib
+import re
+import sys
+from collections.abc import Callable
+from typing import Any, Dict, Optional
+
+from fastmcp.exceptions import ToolError
+
+ADIOS2_UNAVAILABLE_ON_WINDOWS = (
+    "ADIOS2 bindings aren't available on Windows. The adios2 package publishes no "
+    "Windows build, so this tool can't read BP5 contents here. Listing .bp files "
+    "still works."
+)
+ADIOS2_NOT_INSTALLED = (
+    "ADIOS2 bindings aren't installed in this server's environment, so this tool "
+    "can't read BP5 contents. Listing .bp files still works."
+)
+
+
+class Adios2Unavailable(RuntimeError):
+    """The ADIOS2 Python bindings can't be imported on this machine."""
+
+    reason = "adios2_unavailable"
+
+
+def _adios2_missing(exc: ModuleNotFoundError) -> bool:
+    name = exc.name or ""
+    return name == "adios2" or name.startswith("adios2.")
+
+
+class _LazyImplementation:
+    """Load an ADIOS2-backed implementation only when a tool is invoked."""
+
+    def __init__(self, module_name: str, export_name: str) -> None:
+        self._module_name = module_name
+        self._export_name = export_name
+
+    def __getattr__(self, name: str) -> Callable[..., Any]:
+        if name != self._export_name:
+            raise AttributeError(name)
+        return self._invoke
+
+    def _invoke(self, *args: Any, **kwargs: Any) -> Any:
+        try:
+            module = importlib.import_module(self._module_name)
+        except ModuleNotFoundError as exc:
+            if not _adios2_missing(exc):
+                raise
+            # adios2 is not installed on Windows (no wheel exists there).
+            message = (
+                ADIOS2_UNAVAILABLE_ON_WINDOWS
+                if sys.platform == "win32"
+                else ADIOS2_NOT_INSTALLED
+            )
+            raise Adios2Unavailable(message) from exc
+        function = getattr(module, self._export_name)
+        return function(*args, **kwargs)
+
+
+bp5_list = _LazyImplementation("adios_mcp.implementation.bp5_list", "list_bp5")
+bp5_inspect_variables = _LazyImplementation(
+    "adios_mcp.implementation.bp5_inspect_variables", "inspect_variables"
+)
+bp5_attributes = _LazyImplementation(
+    "adios_mcp.implementation.bp5_attributes", "inspect_attributes"
+)
+bp5_read_variable_at_step = _LazyImplementation(
+    "adios_mcp.implementation.bp5_read_variable_at_step", "read_variable_at_step"
+)
+bp5_variable_stats = _LazyImplementation(
+    "adios_mcp.implementation.bp5_variable_stats", "variable_stats"
+)
+bp5_inspect_variables_at_step = _LazyImplementation(
+    "adios_mcp.implementation.bp5_inspect_variables_at_step",
+    "inspect_variables_at_step",
+)
+
+
+def _tool_error(error: Exception) -> ToolError:
+    """Build an MCP error without the ANSI colour escapes ADIOS2 puts in messages."""
+    return ToolError(re.sub(r"\x1b\[[0-9;]*m", "", str(error)).strip())
+
+
+class UnknownToolError(Exception):
+    """Raised when an unsupported tool_name is requested."""
+
+    pass
+
+
+async def list_bp5_files(directory: str = ".") -> Dict[str, Any]:
+    """List all BP5 files in a specified directory.
+
+    Args:
+        directory: Path to the directory containing BP5 files
+
+    Returns:
+        Dict containing list of files and metadata
+    """
+    try:
+        files = bp5_list.list_bp5(directory)
+        return {"files": files}
+    except Exception as e:
+        raise _tool_error(e) from e
+
+
+async def inspect_variables_handler(
+    filename: str, variable_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Async handler for 'inspect_variables' tool.
+
+    Args:
+        filename: Path to the BP5 file
+        variable_name: Optional name of specific variable to inspect
+
+    Returns:
+        Dict containing either metadata for all variables or data for a specific variable
+    """
+    try:
+        if variable_name:
+            return bp5_inspect_variables.inspect_variables(filename, variable_name)
+        else:
+            return bp5_inspect_variables.inspect_variables(filename)
+    except Exception as e:
+        raise _tool_error(e) from e
+
+
+async def inspect_variables_at_step_handler(
+    filename: str, variable_name: str, step: int
+) -> Dict[str, Any]:
+    """Async handler for 'inspect_variables_at_step' tool.
+
+    Args:
+        filename: Path to the BP5 file
+        variable_name: Name of the variable to inspect
+        step: Step number to inspect
+
+    Returns:
+        Dict containing variable metadata or error information
+    """
+    try:
+        result = bp5_inspect_variables_at_step.inspect_variables_at_step(
+            filename, variable_name, step
+        )
+        return result
+    except Exception as e:
+        raise _tool_error(e) from e
+
+
+async def inspect_attributes_handler(
+    filename: str, variable_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Async handler for 'inspect_attributes' tool."""
+    try:
+        return bp5_attributes.inspect_attributes(filename, variable_name)
+    except Exception as e:
+        raise _tool_error(e) from e
+
+
+async def read_variable_at_step_handler(
+    filename: str, variable_name: str, target_step: int, **selection: Any
+) -> Dict[str, Any]:
+    """Async handler for 'read_variable_at_step' tool; selection holds start/count/max_elements."""
+    try:
+        return bp5_read_variable_at_step.read_variable_at_step(
+            filename, variable_name, target_step, **selection
+        )
+    except Exception as e:
+        raise _tool_error(e) from e
+
+
+async def variable_stats_handler(
+    filename: str, variable_name: str, **options: Any
+) -> Dict[str, Any]:
+    """Async handler for 'variable_stats' tool."""
+    try:
+        return bp5_variable_stats.variable_stats(filename, variable_name, **options)
+    except Exception as e:
+        raise _tool_error(e) from e

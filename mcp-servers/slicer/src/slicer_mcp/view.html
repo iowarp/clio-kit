@@ -1,0 +1,710 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Slice</title>
+<!--
+  The slicer server's layer view (MCP Apps, ui://slicer/layers). three.js 0.170.0 (MIT)
+  is loaded from jsDelivr at run time as an ES module; the orbit camera is this file's
+  own. Toolpaths come from the server's slice_layers tool, which only this view calls.
+-->
+<style>
+  :root {
+    color-scheme: light dark;
+    --color-background-primary: light-dark(#ffffff, #1e1f22);
+    --color-background-secondary: light-dark(#f4f5f7, #26282c);
+    --color-text-primary: light-dark(#1f2328, #e6e8eb);
+    --color-text-secondary: light-dark(#59606a, #a6adb7);
+    --color-border-primary: light-dark(#d4d6da, #3a3d44);
+    --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --border-radius-md: 8px;
+    --slicer-focus: #2f6bff;
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { font: 13px/1.4 var(--font-sans); color: var(--color-text-primary);
+    background: var(--color-background-primary); }
+  #stage { position: absolute; inset: 0 0 64px 0; touch-action: none; cursor: grab; }
+  #stage:active { cursor: grabbing; }
+  #stage canvas { display: block; width: 100%; height: 100%; }
+  .chrome { position: absolute; z-index: 5; color: var(--color-text-primary);
+    background: color-mix(in srgb, var(--color-background-primary) 92%, transparent);
+    border: 1px solid var(--color-border-primary); border-radius: var(--border-radius-md);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 0.14); }
+  [hidden] { display: none !important; }
+  #status { left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 12px 16px;
+    max-width: min(460px, 80%); text-align: center; }
+  #panel { left: 10px; top: 10px; width: min(290px, calc(100% - 20px));
+    max-height: calc(100% - 90px); overflow: auto; }
+  #panel-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px 4px; }
+  #title { font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; }
+  #panel-body { padding: 0 10px 10px; }
+  .sub { color: var(--color-text-secondary); font-size: 12px; margin: 0 0 6px;
+    overflow-wrap: anywhere; }
+  dl.stats { margin: 0 0 8px; display: grid; grid-template-columns: max-content 1fr;
+    gap: 2px 10px; }
+  dl.stats dt { color: var(--color-text-secondary); }
+  dl.stats dd { margin: 0; font-variant-numeric: tabular-nums; }
+  h3 { font-size: 12px; margin: 8px 0 4px; color: var(--color-text-secondary);
+    font-weight: 600; text-transform: none; }
+  #legend { list-style: none; margin: 0; padding: 0; }
+  #legend li { padding: 2px 0; }
+  #legend label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .swatch { width: 14px; height: 4px; border-radius: 2px; flex: none;
+    outline: 1px solid rgb(0 0 0 / 0.25); }
+  .name { flex: 1; min-width: 0; }
+  .share { color: var(--color-text-secondary); font-size: 12px;
+    font-variant-numeric: tabular-nums; }
+  button { font: inherit; color: inherit; background: var(--color-background-secondary);
+    border: 1px solid var(--color-border-primary); border-radius: 6px; padding: 2px 8px;
+    cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--slicer-focus);
+    outline-offset: 1px; }
+  #warnings { right: 10px; top: 10px; width: min(330px, calc(100% - 20px));
+    max-height: 40%; overflow: auto; padding: 8px 10px; }
+  #warnings h3 { margin-top: 0; color: var(--color-text-primary); }
+  #warnings ul { margin: 0; padding-left: 18px; }
+  #pick { right: 10px; bottom: 76px; width: min(330px, calc(100% - 20px)); padding: 8px 10px; }
+  #pick-head { display: flex; gap: 8px; align-items: start; }
+  #pick-title { font-weight: 600; flex: 1; }
+  #pick-body { margin: 4px 0 0; color: var(--color-text-secondary); }
+  #bar { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; z-index: 6;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 4px 12px; align-items: center;
+    padding: 4px 12px; box-sizing: border-box; border-top: 1px solid var(--color-border-primary);
+    background: var(--color-background-secondary); }
+  #bar label { color: var(--color-text-secondary); font-size: 12px; white-space: nowrap; }
+  #bar input[type=range] { width: 100%; accent-color: var(--slicer-focus); }
+  #layer-text { grid-column: 3; grid-row: 1 / span 2; font-variant-numeric: tabular-nums;
+    text-align: right; white-space: nowrap; }
+  @media (max-width: 560px) {
+    #panel { width: calc(100% - 20px); max-height: 46%; }
+    /* Warnings under the folded panel, picks at the bottom: the two never overlap. */
+    #warnings { top: 58px; left: 10px; right: 10px; width: auto; max-height: 24%; }
+    #pick { left: 10px; width: auto; }
+    #bar { grid-template-columns: auto 1fr; height: 84px; }
+    #stage { bottom: 84px; }
+    #layer-text { grid-column: 1 / span 2; grid-row: 3; text-align: left; }
+  }
+</style>
+</head>
+<body>
+<div id="stage" role="application" aria-label="Toolpaths, layer by layer. Drag to turn, scroll or pinch to zoom, shift-drag to pan, click a toolpath to pick it."></div>
+<aside id="panel" class="chrome" aria-label="Slice">
+  <div id="panel-head"><span id="title">Slice</span>
+    <button id="toggle-panel" type="button" aria-expanded="true" aria-controls="panel-body">Hide</button></div>
+  <div id="panel-body">
+    <p id="presets" class="sub"></p>
+    <dl class="stats" id="stats"></dl>
+    <h3 id="legend-head">Feature types (share of print time)</h3>
+    <ul id="legend" aria-labelledby="legend-head"></ul>
+    <p id="note" class="sub" hidden></p>
+  </div>
+</aside>
+<section id="warnings" class="chrome" aria-live="polite" hidden>
+  <h3>Warnings from the slicer</h3>
+  <ul id="warning-list"></ul>
+</section>
+<section id="pick" class="chrome" aria-live="polite" hidden>
+  <div id="pick-head"><span id="pick-title"></span><button id="pick-clear" type="button">Clear</button></div>
+  <p id="pick-body"></p>
+</section>
+<div id="bar">
+  <label for="from">From layer</label>
+  <input id="from" type="range" min="0" max="0" value="0" step="1">
+  <span id="layer-text" aria-live="polite"></span>
+  <label for="to">Show layer</label>
+  <input id="to" type="range" min="0" max="0" value="0" step="1">
+</div>
+<div id="status" class="chrome" role="status">Loading the slice view…</div>
+<script>
+(() => {
+  'use strict';
+  const PROTOCOL = '2026-01-26';
+  const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js';
+  const $ = (id) => document.getElementById(id);
+
+  // --- Host messaging (MCP Apps JSON-RPC over postMessage) -------------------------
+  const pending = new Map();
+  let nextId = 1;
+  let hostContext = {};
+  const send = (message) => window.parent.postMessage(message, '*');
+  function request(method, params) {
+    const id = 'slicer-' + nextId++;
+    send({ jsonrpc: '2.0', id, method, params });
+    return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+  }
+  const notify = (method, params) => send({ jsonrpc: '2.0', method, params });
+  const respond = (id, result) => send({ jsonrpc: '2.0', id, result });
+  const fail = (id, message) => send({ jsonrpc: '2.0', id, error: { code: -32603, message } });
+  async function callServer(name, args) {
+    const result = await request('tools/call', { name, arguments: args });
+    if (!result || result.isError) {
+      throw new Error(((result && result.content) || []).map((c) => c.text || '').join('\n') || name + ' failed');
+    }
+    return result.structuredContent || {};
+  }
+  function showStatus(text) { $('status').hidden = !text; $('status').textContent = text || ''; }
+
+  // --- Words -----------------------------------------------------------------------
+  function duration(s) {
+    if (s === null || s === undefined) return 'unknown';
+    const t = Math.round(s); const h = Math.floor(t / 3600); const m = Math.floor((t % 3600) / 60);
+    if (h) return h + ' h ' + m + ' min';
+    if (m) return m + ' min ' + (t % 60) + ' s';
+    return (t % 60) + ' s';
+  }
+  const grams = (g) => (g === null || g === undefined ? 'unknown' : g.toFixed(2) + ' g');
+  const mm = (v) => (v === null || v === undefined ? '?' : Number(v).toFixed(2) + ' mm');
+
+  // --- State -----------------------------------------------------------------------
+  let T = null; // three.js
+  let renderer = null, scene = null, camera = null, root = null;
+  let current = null; // show_slice structuredContent
+  const layers = new Map(); // layer -> {z, feats: {key: {object, lines, segs}}}
+  const travelLoaded = new Set();
+  const visible = new Set();
+  let fromLayer = 0, toLayer = 0;
+  let selection = null;
+  let resolveReady;
+  const ready = new Promise((resolve) => { resolveReady = resolve; });
+  const legendByKey = new Map();
+
+  // --- Theme -----------------------------------------------------------------------
+  let appliedVariables = [];
+  function applyTheme() {
+    const theme = hostContext.theme === 'dark' || hostContext.theme === 'light' ? hostContext.theme : null;
+    const variables = (hostContext.styles && hostContext.styles.variables) || {};
+    const rootEl = document.documentElement;
+    appliedVariables.forEach((name) => { if (!(name in variables)) rootEl.style.removeProperty(name); });
+    appliedVariables = [];
+    for (const [name, value] of Object.entries(variables)) {
+      if (/^--[A-Za-z0-9-]+$/.test(name) && typeof value === 'string') {
+        rootEl.style.setProperty(name, value);
+        appliedVariables.push(name);
+      }
+    }
+    rootEl.style.colorScheme = theme || 'light dark';
+    if (renderer) {
+      renderer.setClearColor(new T.Color(getComputedStyle(document.body).backgroundColor));
+      if (bedObject) bedObject.material.color.set(lineTone());
+      requestRender();
+    }
+  }
+  function lineTone() {
+    const c = getComputedStyle(document.body).color;
+    return new T.Color(c);
+  }
+
+  // --- three.js scene and orbit camera ---------------------------------------------
+  const orbit = { target: null, radius: 200, theta: -Math.PI / 2.6, phi: 1.0 };
+  let bedObject = null;
+  let renderQueued = false;
+  function requestRender() {
+    if (renderQueued || !renderer) return;
+    renderQueued = true;
+    requestAnimationFrame(() => { renderQueued = false; renderer.render(scene, camera); });
+  }
+  function placeCamera() {
+    const t = orbit.target;
+    const sp = Math.sin(orbit.phi);
+    camera.position.set(t.x + orbit.radius * sp * Math.cos(orbit.theta),
+      t.y + orbit.radius * sp * Math.sin(orbit.theta), t.z + orbit.radius * Math.cos(orbit.phi));
+    camera.lookAt(t);
+    requestRender();
+  }
+  function resize() {
+    if (!renderer) return;
+    const box = $('stage').getBoundingClientRect();
+    renderer.setSize(Math.max(1, box.width), Math.max(1, box.height), false);
+    camera.aspect = Math.max(1, box.width) / Math.max(1, box.height);
+    camera.updateProjectionMatrix();
+    requestRender();
+  }
+  function createScene() {
+    renderer = new T.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    $('stage').appendChild(renderer.domElement);
+    scene = new T.Scene();
+    root = new T.Group();
+    scene.add(root);
+    camera = new T.PerspectiveCamera(35, 1, 0.5, 5000);
+    camera.up.set(0, 0, 1);
+    orbit.target = new T.Vector3(0, 0, 0);
+    new ResizeObserver(resize).observe($('stage'));
+    attachControls(renderer.domElement);
+    applyTheme();
+    resize();
+  }
+  function attachControls(el) {
+    const pointers = new Map();
+    let pinch = 0, moved = 0, last = null;
+    el.addEventListener('pointerdown', (e) => {
+      el.setPointerCapture(e.pointerId);
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      moved = 0; last = { x: e.clientX, y: e.clientY, pan: e.shiftKey || e.button === 2 };
+      if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = Math.hypot(a.x - b.x, a.y - b.y); }
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (!pointers.has(e.pointerId)) return;
+      const prev = pointers.get(e.pointerId);
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (pointers.size === 2) {
+        const [a, b] = [...pointers.values()];
+        const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (pinch) zoom(pinch / d);
+        pinch = d; moved += 10;
+        return;
+      }
+      const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
+      moved += Math.abs(dx) + Math.abs(dy);
+      if (last && last.pan) {
+        const scale = orbit.radius / 600;
+        const right = new T.Vector3().subVectors(camera.position, orbit.target).cross(camera.up).normalize();
+        const up = new T.Vector3().crossVectors(right, new T.Vector3().subVectors(orbit.target, camera.position)).normalize();
+        orbit.target.addScaledVector(right, dx * scale).addScaledVector(up, dy * scale);
+      } else {
+        orbit.theta -= dx * 0.008;
+        orbit.phi = Math.min(Math.PI - 0.05, Math.max(0.05, orbit.phi - dy * 0.008));
+      }
+      placeCamera();
+    });
+    const end = (e) => {
+      if (!pointers.has(e.pointerId)) return;
+      pointers.delete(e.pointerId);
+      if (pointers.size < 2) pinch = 0;
+      if (pointers.size === 0 && moved < 5) pickAt(e.clientX, e.clientY);
+    };
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', (e) => { pointers.delete(e.pointerId); pinch = 0; });
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
+    el.addEventListener('wheel', (e) => { e.preventDefault(); zoom(Math.exp(e.deltaY * 0.0012)); }, { passive: false });
+  }
+  function zoom(factor) {
+    orbit.radius = Math.min(4000, Math.max(5, orbit.radius * factor));
+    placeCamera();
+  }
+  function fitCamera() {
+    const b = current.bounds || [0, 0, 200, 200];
+    const zTop = current.z_max_mm || 10;
+    orbit.target.set((b[0] + b[2]) / 2, (b[1] + b[3]) / 2, zTop / 3);
+    const span = Math.max(b[2] - b[0], b[3] - b[1], zTop, 10);
+    // A narrow (phone) view needs the camera further back to show the same width.
+    orbit.radius = (span * 1.75) / Math.min(1, camera.aspect || 1);
+    orbit.theta = -Math.PI / 2.4; orbit.phi = 0.95;
+    placeCamera();
+  }
+
+  // --- Drawing ---------------------------------------------------------------------
+  const materials = new Map();
+  function material(key) {
+    if (!materials.has(key)) {
+      const row = legendByKey.get(key);
+      materials.set(key, new T.LineBasicMaterial({ color: new T.Color(row ? row.color : '#999999'),
+        transparent: key === 'travel', opacity: key === 'travel' ? 0.55 : 1 }));
+    }
+    return materials.get(key);
+  }
+  function decode(b64, Kind) {
+    const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Kind(bytes.buffer);
+  }
+  function drawBed() {
+    if (bedObject) { root.remove(bedObject); bedObject = null; }
+    const bed = current.bed;
+    if (!bed) return;
+    const pts = [];
+    for (let i = 0; i < bed.length; i++) {
+      const a = bed[i], b = bed[(i + 1) % bed.length];
+      pts.push(a[0], a[1], 0, b[0], b[1], 0);
+    }
+    const xs = bed.map((p) => p[0]), ys = bed.map((p) => p[1]);
+    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+    for (let x = Math.ceil(x0 / 10) * 10; x < x1; x += 10) pts.push(x, y0, 0, x, y1, 0);
+    for (let y = Math.ceil(y0 / 10) * 10; y < y1; y += 10) pts.push(x0, y, 0, x1, y, 0);
+    const geometry = new T.BufferGeometry();
+    geometry.setAttribute('position', new T.Float32BufferAttribute(pts, 3));
+    bedObject = new T.LineSegments(geometry, new T.LineBasicMaterial({ color: lineTone(), transparent: true, opacity: 0.18 }));
+    root.add(bedObject);
+  }
+  function addLayer(data) {
+    let layer = layers.get(data.layer);
+    if (!layer) { layer = { z: data.z, feats: {} }; layers.set(data.layer, layer); }
+    for (const [key, path] of Object.entries(data.paths)) {
+      if (layer.feats[key]) { root.remove(layer.feats[key].object); layer.feats[key].object.geometry.dispose(); }
+      const xy = decode(path.xy, Float32Array), counts = decode(path.counts, Uint32Array), lines = decode(path.lines, Uint32Array);
+      let segs = 0; for (const c of counts) segs += Math.max(0, c - 1);
+      const pos = new Float32Array(segs * 6); const segLine = new Uint32Array(segs);
+      let v = 0, s = 0;
+      counts.forEach((count, p) => {
+        for (let k = 0; k < count - 1; k++) {
+          const i = (v + k) * 2;
+          pos.set([xy[i], xy[i + 1], data.z, xy[i + 2], xy[i + 3], data.z], s * 6);
+          segLine[s++] = lines[p];
+        }
+        v += count;
+      });
+      const geometry = new T.BufferGeometry();
+      geometry.setAttribute('position', new T.BufferAttribute(pos, 3));
+      const object = new T.LineSegments(geometry, material(key));
+      object.userData = { layer: data.layer, key, z: data.z };
+      root.add(object);
+      layer.feats[key] = { object, pos, segLine };
+    }
+  }
+  function applyVisibility() {
+    for (const [index, layer] of layers) {
+      for (const [key, feat] of Object.entries(layer.feats)) {
+        const inRange = index >= fromLayer && index <= toLayer;
+        feat.object.visible = inRange && visible.has(key) && (key !== 'travel' || index === toLayer);
+      }
+    }
+    requestRender();
+  }
+
+  // --- Loading toolpaths ------------------------------------------------------------
+  let loadToken = 0;
+  async function loadAll() {
+    const token = ++loadToken;
+    const count = current.layer_count, step = current.stride || 1;
+    let first = 0;
+    while (first !== null && first < count && token === loadToken) {
+      showStatus('Loading toolpaths: layer ' + first + ' of ' + count + '…');
+      const chunk = await callServer('slice_layers', { slice_id: current.slice_id, first, last: count - 1, step });
+      chunk.layers.forEach(addLayer);
+      applyVisibility();
+      first = chunk.next;
+    }
+    if (token !== loadToken) return;
+    await ensureLayer(toLayer);
+    showStatus('');
+  }
+  async function ensureLayer(index) {
+    const wantTravel = visible.has('travel');
+    if (layers.has(index) && (!wantTravel || travelLoaded.has(index))) return;
+    const chunk = await callServer('slice_layers', { slice_id: current.slice_id, first: index, last: index, travel: wantTravel });
+    chunk.layers.forEach(addLayer);
+    if (wantTravel) travelLoaded.add(index);
+    applyVisibility();
+  }
+
+  // --- Panels ----------------------------------------------------------------------
+  function renderPanel() {
+    $('title').textContent = current.title || current.model_name;
+    $('presets').textContent = current.printer + ' · ' + current.quality + ' · ' + current.material
+      + ' · ' + current.slicer.name + ' ' + current.slicer.version;
+    const est = current.estimates || {};
+    const rows = [
+      ['Print time', duration(current.print_time_s)],
+      ['Filament', grams(current.filament_g) + (current.filament_m ? ', ' + current.filament_m.toFixed(2) + ' m' : '')],
+      ['Layers', String(current.layer_count)],
+      ['Height', mm(current.z_max_mm)],
+    ];
+    if (est.first_layer_time_s) rows.push(['First layer', duration(est.first_layer_time_s)]);
+    $('stats').replaceChildren(...rows.flatMap(([k, v]) => {
+      const dt = document.createElement('dt'); dt.textContent = k;
+      const dd = document.createElement('dd'); dd.textContent = v;
+      return [dt, dd];
+    }));
+    $('legend').replaceChildren(...current.legend.map((row) => {
+      const li = document.createElement('li');
+      const label = document.createElement('label');
+      const box = document.createElement('input');
+      box.type = 'checkbox'; box.checked = visible.has(row.key); box.dataset.key = row.key;
+      box.addEventListener('change', () => setVisible({ [row.key]: box.checked }, 'person'));
+      const sw = document.createElement('span'); sw.className = 'swatch'; sw.style.background = row.color;
+      const name = document.createElement('span'); name.className = 'name'; name.textContent = row.label;
+      const share = document.createElement('span'); share.className = 'share';
+      share.textContent = row.time_share >= 0.001 ? Math.round(row.time_share * 100) + '% · ' + duration(row.time_s) : '';
+      label.append(box, sw, name, share); li.appendChild(label);
+      return li;
+    }));
+    const notes = [];
+    if (current.other_moves && current.other_moves.time_share >= 0.005) {
+      notes.push(current.other_moves.label + ' take ' + Math.round(current.other_moves.time_share * 100) + '% (' + duration(current.other_moves.time_s) + ').');
+    }
+    if (current.stride > 1) notes.push('This print has ' + current.vertices.toLocaleString() + ' toolpath points: below the shown layer the view draws every ' + current.stride + 'th layer. The shown layer is drawn whole, and every number uses every move.');
+    notes.push('Times per layer and type are a ' + (current.time_basis || 'feedrate estimate') + '.');
+    $('note').textContent = notes.join(' '); $('note').hidden = false;
+    const warnings = current.warnings || [];
+    $('warnings').hidden = !warnings.length;
+    $('warning-list').replaceChildren(...warnings.map((w) => { const li = document.createElement('li'); li.textContent = w; return li; }));
+    for (const id of ['from', 'to']) { $(id).max = String(current.layer_count - 1); }
+  }
+  function renderLayerText() {
+    const z = current.layers.z[toLayer], t = current.layers.time_s[toLayer], g = current.layers.filament_g[toLayer];
+    $('from').value = String(fromLayer); $('to').value = String(toLayer);
+    $('to').setAttribute('aria-valuetext', 'Layer ' + toLayer + ', Z ' + mm(z));
+    $('from').setAttribute('aria-valuetext', 'From layer ' + fromLayer);
+    $('layer-text').textContent = 'Layer ' + toLayer + ' of ' + (current.layer_count - 1) + ' · Z ' + mm(z)
+      + ' · ' + duration(t) + (g !== null && g !== undefined ? ' · ' + grams(g) : '')
+      + (fromLayer ? ' · from layer ' + fromLayer : '');
+  }
+  function renderPick() {
+    $('pick').hidden = !selection;
+    if (!selection) return;
+    $('pick-title').textContent = selection.label + ' on layer ' + selection.layer;
+    $('pick-body').textContent = 'Z ' + mm(selection.z_mm) + ' · from (' + selection.from.join(', ') + ') to ('
+      + selection.to.join(', ') + ') mm · ' + selection.length_mm.toFixed(1) + ' mm long · G-code line ' + selection.gcode_line;
+  }
+
+  // --- Changes ---------------------------------------------------------------------
+  let rememberTimer = null;
+  function remember() {
+    clearTimeout(rememberTimer);
+    rememberTimer = setTimeout(() => {
+      callServer('remember_slice_view', { slice_id: current.slice_id, layer: toLayer, visible_features: [...visible] })
+        .catch(() => {});
+    }, 600);
+  }
+  async function goTo(layer, from) {
+    toLayer = Math.max(0, Math.min(current.layer_count - 1, Math.round(layer)));
+    if (from !== undefined) fromLayer = Math.max(0, Math.min(toLayer, Math.round(from)));
+    if (fromLayer > toLayer) fromLayer = toLayer;
+    renderLayerText();
+    applyVisibility();
+    scheduleReport(); remember();
+    try { await ensureLayer(toLayer); } catch (error) { showStatus('Layer ' + toLayer + ' could not be loaded: ' + error.message); }
+  }
+  async function setVisible(changes) {
+    for (const [key, on] of Object.entries(changes)) { if (on) visible.add(key); else visible.delete(key); }
+    for (const box of $('legend').querySelectorAll('input')) box.checked = visible.has(box.dataset.key);
+    applyVisibility(); scheduleReport(); remember();
+    if (visible.has('travel')) await ensureLayer(toLayer);
+  }
+  $('to').addEventListener('input', () => goTo(Number($('to').value)));
+  $('from').addEventListener('input', () => { fromLayer = Math.min(Number($('from').value), toLayer); renderLayerText(); applyVisibility(); });
+  $('pick-clear').addEventListener('click', () => { selection = null; renderPick(); scheduleReport(); });
+  let panelFolded = false;
+  function foldPanel(folded) {
+    panelFolded = folded;
+    $('panel-body').hidden = folded;
+    $('toggle-panel').setAttribute('aria-expanded', String(!folded));
+    $('toggle-panel').textContent = folded ? 'Show' : 'Hide';
+  }
+  $('toggle-panel').addEventListener('click', () => foldPanel(!$('panel-body').hidden));
+
+  // --- Picking ---------------------------------------------------------------------
+  function selectSegment(feat, key, layerIndex, s) {
+    const p = feat.pos;
+    const a = [p[s * 6], p[s * 6 + 1]], b = [p[s * 6 + 3], p[s * 6 + 4]];
+    const row = legendByKey.get(key);
+    selection = { feature: key, label: row ? row.label : key, layer: layerIndex, z_mm: layers.get(layerIndex).z,
+      from: a.map((v) => Number(v.toFixed(2))), to: b.map((v) => Number(v.toFixed(2))),
+      length_mm: Math.hypot(b[0] - a[0], b[1] - a[1]), gcode_line: feat.segLine[s] };
+    renderPick(); scheduleReport();
+    return selection;
+  }
+  function nearest(layerIndex, x, y) {
+    const layer = layers.get(layerIndex); if (!layer) return null;
+    let best = null;
+    for (const [key, feat] of Object.entries(layer.feats)) {
+      if (!visible.has(key)) continue;
+      const p = feat.pos;
+      for (let s = 0; s < p.length / 6; s++) {
+        const ax = p[s * 6], ay = p[s * 6 + 1], bx = p[s * 6 + 3], by = p[s * 6 + 4];
+        const dx = bx - ax, dy = by - ay, len = dx * dx + dy * dy;
+        const t = len ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / len)) : 0;
+        const d = Math.hypot(ax + t * dx - x, ay + t * dy - y);
+        if (!best || d < best.d) best = { d, key, feat, s };
+      }
+    }
+    return best;
+  }
+  function pickAt(clientX, clientY) {
+    if (!current || !layers.has(toLayer)) return;
+    const box = renderer.domElement.getBoundingClientRect();
+    const ndc = new T.Vector2(((clientX - box.left) / box.width) * 2 - 1, -((clientY - box.top) / box.height) * 2 + 1);
+    const ray = new T.Raycaster(); ray.setFromCamera(ndc, camera);
+    const z = layers.get(toLayer).z;
+    const hit = new T.Vector3();
+    if (!ray.ray.intersectPlane(new T.Plane(new T.Vector3(0, 0, 1), -z), hit)) return;
+    const found = nearest(toLayer, hit.x, hit.y);
+    const tolerance = Math.max(1, orbit.radius / 120);
+    if (found && found.d <= tolerance) selectSegment(found.feat, found.key, toLayer, found.s);
+    else { selection = null; renderPick(); scheduleReport(); }
+  }
+
+  // --- What the view reports (ui/update-model-context) -----------------------------
+  let reportTimer = null, lastSent = 0, sentKey = '';
+  function state() {
+    return {
+      slice_id: current.slice_id, layer: toLayer, layer_count: current.layer_count,
+      z_mm: current.layers.z[toLayer], print_time_s: current.print_time_s, filament_g: current.filament_g,
+      printer: current.printer, material: current.material, visible_features: [...visible],
+      selection: selection || null, first_layer: fromLayer,
+    };
+  }
+  function describe(s) {
+    const labels = [...visible].map((k) => (legendByKey.get(k) || { label: k }).label);
+    let text = 'Slice view of ' + current.model_name + ' (slice ' + s.slice_id + ') shows layer ' + s.layer + ' of '
+      + (s.layer_count - 1) + ' at Z ' + s.z_mm + ' mm'
+      + (s.first_layer ? ', from layer ' + s.first_layer : '') + ', layer time '
+      + duration(current.layers.time_s[s.layer]) + '. Drawn: ' + labels.join(', ') + '. Whole print: '
+      + duration(s.print_time_s) + ', ' + grams(s.filament_g) + ' of ' + s.material + ' on ' + s.printer + '.';
+    text += s.selection ? ' The person picked ' + s.selection.label + ' on layer ' + s.selection.layer + ' at Z '
+      + s.selection.z_mm + ' mm, G-code line ' + s.selection.gcode_line + ', ' + s.selection.length_mm.toFixed(1) + ' mm long.'
+      : ' Nothing is picked.';
+    return text;
+  }
+  function report() {
+    reportTimer = null;
+    if (!current) return;
+    const s = state(); const text = describe(s);
+    if (text === sentKey) return;
+    sentKey = text; lastSent = Date.now();
+    request('ui/update-model-context', { content: [{ type: 'text', text }], structuredContent: s }).catch(() => { sentKey = ''; });
+  }
+  function scheduleReport() {
+    if (reportTimer) return;
+    reportTimer = setTimeout(report, Math.max(0, 100 - (Date.now() - lastSent)));
+  }
+
+  // --- App tools (appCapabilities.tools) -------------------------------------------
+  const TOOLS = [
+    { name: 'go_to_layer', description: 'Show the print up to a layer: give layer (0 is the first) or z_mm (the nearest layer at that height). first_layer optionally hides the layers below it.',
+      inputSchema: { type: 'object', properties: { layer: { type: 'integer', minimum: 0 }, z_mm: { type: 'number' }, first_layer: { type: 'integer', minimum: 0 } } } },
+    { name: 'set_feature_visibility', description: 'Show or hide feature types by key (external_perimeter, perimeter, overhang_perimeter, internal_infill, solid_infill, top_solid_infill, bridge_infill, gap_fill, skirt, support, support_interface, travel …): visible_features replaces the shown set; features sets some {key: true|false}.',
+      inputSchema: { type: 'object', properties: { visible_features: { type: 'array', items: { type: 'string' } },
+        features: { type: 'object', additionalProperties: { type: 'boolean' } } } } },
+    { name: 'pick_segment', description: 'Pick the toolpath nearest a point on the bed (x_mm, y_mm) on a layer (default the shown one), as if the person clicked it; reports its type, Z, ends, length and G-code line. selection: null clears it.',
+      inputSchema: { type: 'object', properties: { x_mm: { type: 'number' }, y_mm: { type: 'number' }, layer: { type: 'integer' }, selection: {} } } },
+  ];
+  const textResult = (text, structuredContent) => ({ content: [{ type: 'text', text }], structuredContent });
+  const errorResult = (text) => ({ content: [{ type: 'text', text }], isError: true });
+  async function runTool(name, args) {
+    await ready;
+    if (name === 'go_to_layer') {
+      let layer = args.layer;
+      if ((layer === undefined || layer === null) && typeof args.z_mm === 'number') {
+        const zs = current.layers.z; layer = 0;
+        zs.forEach((z, i) => { if (Math.abs(z - args.z_mm) < Math.abs(zs[layer] - args.z_mm)) layer = i; });
+      }
+      if (layer === undefined || layer === null || layer < 0 || layer >= current.layer_count) {
+        return errorResult('Give layer (0 to ' + (current.layer_count - 1) + ') or z_mm (' + current.layers.z[0] + ' to ' + current.z_max_mm + ' mm).');
+      }
+      await goTo(layer, args.first_layer);
+      const s = state();
+      return textResult('The view shows layer ' + s.layer + ' at Z ' + s.z_mm + ' mm (layer time ' + duration(current.layers.time_s[s.layer]) + ').', s);
+    }
+    if (name === 'set_feature_visibility') {
+      const known = new Set(current.legend.map((r) => r.key));
+      const changes = {};
+      if (Array.isArray(args.visible_features)) known.forEach((k) => { changes[k] = args.visible_features.includes(k); });
+      Object.assign(changes, args.features || {});
+      const unknown = Object.keys(changes).filter((k) => !known.has(k));
+      if (unknown.length) return errorResult('Unknown feature types: ' + unknown.join(', ') + '. This slice has: ' + [...known].join(', ') + '.');
+      await setVisible(changes);
+      return textResult('Drawn: ' + [...visible].map((k) => legendByKey.get(k).label).join(', ') + '.', state());
+    }
+    if (name === 'pick_segment') {
+      if (args.selection === null) { selection = null; renderPick(); scheduleReport(); return textResult('Cleared the pick.', state()); }
+      const layer = args.layer === undefined ? toLayer : args.layer;
+      if (typeof args.x_mm !== 'number' || typeof args.y_mm !== 'number') return errorResult('pick_segment needs x_mm and y_mm.');
+      if (layer !== toLayer) await goTo(layer);
+      await ensureLayer(layer);
+      const found = nearest(layer, args.x_mm, args.y_mm);
+      if (!found) return errorResult('No drawn toolpath on layer ' + layer + '.');
+      const s = selectSegment(found.feat, found.key, layer, found.s);
+      return textResult('Picked ' + s.label + ' on layer ' + s.layer + ' at Z ' + s.z_mm + ' mm, ' + found.d.toFixed(2) + ' mm from the point; G-code line ' + s.gcode_line + '.', state());
+    }
+    return errorResult('The slice view has no tool ' + name + '.');
+  }
+
+  // --- Opening ---------------------------------------------------------------------
+  async function show(data) {
+    current = data;
+    for (const layer of layers.values()) for (const f of Object.values(layer.feats)) { root.remove(f.object); f.object.geometry.dispose(); }
+    layers.clear(); travelLoaded.clear(); legendByKey.clear(); selection = null;
+    data.legend.forEach((row) => legendByKey.set(row.key, row));
+    visible.clear(); (data.visible_features || []).forEach((k) => visible.add(k));
+    toLayer = data.layer; fromLayer = 0;
+    renderPanel(); renderLayerText(); renderPick();
+    // On a phone the panel starts folded, so the toolpaths are what the person sees first.
+    if (!panelFolded && window.matchMedia('(max-width: 560px)').matches) foldPanel(true);
+    drawBed(); fitCamera();
+    resolveReady();
+    scheduleReport();
+    await loadAll();
+  }
+  let three = null;
+  function loadThree() {
+    if (!three) three = import(THREE_URL).then((module) => { T = module; createScene(); });
+    return three;
+  }
+  async function onToolResult(params) {
+    if (!params) return;
+    if (params.isError) { showStatus(((params.content || []).map((c) => c.text || '').join('\n')) || 'The slice could not be shown.'); return; }
+    const data = params.structuredContent;
+    if (!data || !data.slice_id || !data.legend) return;
+    try { await loadThree(); await show(data); }
+    catch (error) { showStatus('The slice could not be drawn: ' + ((error && error.message) || error) + '. Its numbers are in the conversation.'); }
+  }
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window.parent) return;
+    const data = event.data;
+    if (!data || data.jsonrpc !== '2.0') return;
+    if (data.id !== undefined && pending.has(data.id) && !data.method) {
+      const entry = pending.get(data.id); pending.delete(data.id);
+      if (data.error) entry.reject(new Error(data.error.message || 'request failed')); else entry.resolve(data.result);
+      return;
+    }
+    switch (data.method) {
+      case 'ui/notifications/tool-result': onToolResult(data.params); break;
+      case 'ui/notifications/tool-cancelled': showStatus('The call that opens this view was cancelled.'); break;
+      case 'ui/notifications/host-context-changed':
+        hostContext = Object.assign({}, hostContext, data.params || {}); applyTheme(); break;
+      case 'ui/resource-teardown': respond(data.id, {}); break;
+      case 'tools/list': respond(data.id, { tools: TOOLS }); break;
+      case 'tools/call': {
+        const params = data.params || {};
+        runTool(params.name, params.arguments || {}).then((r) => respond(data.id, r),
+          (error) => respond(data.id, errorResult(String((error && error.message) || error))));
+        break;
+      }
+      case 'ping': respond(data.id, {}); break;
+      default: if (data.id !== undefined && data.method) fail(data.id, 'Method not found: ' + data.method);
+    }
+  });
+
+  loadThree().catch((error) => showStatus('three.js could not be loaded from jsDelivr (' + ((error && error.message) || error) + '). The slice numbers are still in the conversation.'));
+  request('ui/initialize', {
+    appInfo: { name: 'slicer-layers', version: '1.0.0' },
+    appCapabilities: { tools: { listChanged: false }, availableDisplayModes: ['inline', 'fullscreen'] },
+    protocolVersion: PROTOCOL,
+  }).then((result) => {
+    hostContext = (result && result.hostContext) || {};
+    applyTheme();
+    notify('ui/notifications/initialized', {});
+    notify('ui/notifications/size-changed', { height: 620 });
+  }).catch((error) => showStatus('The host did not start the view: ' + ((error && error.message) || 'unknown error') + '.'));
+
+  // For tests and debugging: read-only handles, and where on screen a toolpath of a
+  // type on a layer is drawn (the middle of its longest segment), to click it.
+  function screenOf(layerIndex, key) {
+    const layer = layers.get(layerIndex);
+    const feat = layer && layer.feats[key];
+    if (!feat || !renderer) return null;
+    let best = 0, length = -1;
+    for (let s = 0; s < feat.pos.length / 6; s++) {
+      const l = Math.hypot(feat.pos[s * 6 + 3] - feat.pos[s * 6], feat.pos[s * 6 + 4] - feat.pos[s * 6 + 1]);
+      if (l > length) { length = l; best = s; }
+    }
+    const p = feat.pos;
+    const v = new T.Vector3((p[best * 6] + p[best * 6 + 3]) / 2, (p[best * 6 + 1] + p[best * 6 + 4]) / 2, layer.z).project(camera);
+    const box = renderer.domElement.getBoundingClientRect();
+    return { x: box.left + ((v.x + 1) / 2) * box.width, y: box.top + ((1 - v.y) / 2) * box.height };
+  }
+  window.slicerView = {
+    get state() { return current ? state() : null; },
+    get layers() { return layers; },
+    screenOf,
+    ready,
+  };
+})();
+</script>
+</body>
+</html>

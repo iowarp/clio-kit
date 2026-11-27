@@ -1,0 +1,839 @@
+/* Clio Coder's landing page, with CLIO Kit's content and mark. */
+.home {
+  --chapter-color: var(--secondary);
+  font: 1rem / 1.65 var(--font-ui);
+}
+.page {
+  width: min(1248px, calc(100% - 6rem));
+  margin-inline: auto;
+}
+.home :is(h1, h2, p, dl, dd, figure) {
+  margin: 0;
+}
+.home :is(h1, h2) {
+  font-family: 'Newsreader', Georgia, serif;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.home h2 {
+  font-size: clamp(2.4rem, 4vw, 3.7rem);
+}
+.home h3 {
+  font:
+    500 1.25rem / 1.3 'IBM Plex Sans',
+    sans-serif;
+  letter-spacing: -0.015em;
+  margin: 0;
+}
+.home p {
+  color: var(--ink-soft);
+  text-wrap: pretty;
+}
+.home em {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 480;
+  color: var(--ink-soft);
+}
+.home .heroHeading h1 em {
+  color: var(--accent);
+}
+.home .eyebrow {
+  font:
+    0.7rem / 1.5 'IBM Plex Mono',
+    monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--market-muted);
+}
+.eyebrow > span:not(.dot) {
+  color: var(--chapter-color);
+  margin-right: 0.7rem;
+}
+.section {
+  padding-block: clamp(4rem, 7vw, 7rem);
+  border-top: 1px solid var(--market-line);
+  scroll-margin-top: 6rem;
+}
+.sectionHeading h2 {
+  margin: 1.2rem 0 1.5rem;
+}
+.sectionHeading > p:not(.eyebrow) {
+  max-width: 55ch;
+  font-size: 1.08rem;
+}
+.sectionHeading > .textLink {
+  margin-top: 1.5rem;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  align-items: center;
+}
+.home .primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.75rem;
+  min-height: 3rem;
+  padding: 0.7rem 1.2rem;
+  background: var(--cta);
+  color: var(--on-cta);
+  border: 1px solid var(--cta);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+}
+.home .primary:hover {
+  background: var(--market-text);
+  border-color: var(--market-text);
+  color: var(--market-bg);
+}
+.home .textLink {
+  display: inline-flex;
+  gap: 1rem;
+  align-items: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  min-height: 44px;
+}
+.textLink:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+.dot {
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 50%;
+  background: var(--market-accent);
+  margin-right: 0.55rem;
+}
+.hero {
+  padding-top: 2.5rem;
+}
+.topline {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.home .release {
+  display: inline-flex;
+  gap: 0.7rem;
+  color: var(--muted);
+  font: 0.7rem var(--font-mono);
+}
+.home .release:hover {
+  color: var(--accent);
+  text-decoration: none;
+}
+.tag {
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-sm);
+  padding: 0.2rem 0.45rem;
+  color: var(--muted);
+  font: 0.7rem var(--font-mono);
+  white-space: nowrap;
+}
+.heroHeading {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 5rem;
+  align-items: end;
+  padding-block: 3.75rem 3.5rem;
+}
+.home .heroHeading h1 {
+  font-size: clamp(3.4rem, 6.5vw, 6rem);
+}
+.home .heroHeading .lede {
+  max-width: 34ch;
+  margin-block: 2rem 1rem;
+  color: var(--ink);
+  font: 500 clamp(1.5rem, 2.5vw, 2rem) / 1.3 var(--font-display);
+}
+.heroTry {
+  max-width: 36rem;
+  margin-top: 2.5rem;
+}
+.heroTry .eyebrow {
+  margin-bottom: 0.75rem;
+}
+.heroTry .command {
+  margin-block: 0;
+}
+.home .installNote {
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.installNote code {
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+.heroLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  margin-top: 1.25rem;
+}
+/* One command box with Clio Coder's Copy control. */
+.command {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-block: 1rem;
+  padding: 0.4rem 0.4rem 0.4rem 1rem;
+  border: 1px solid var(--code-border);
+  border-radius: var(--radius-sm);
+  background: var(--code);
+  color: var(--code-ink);
+}
+.command code {
+  flex: 1;
+  min-width: 0;
+  padding: 0.35rem 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: 0.8rem / 1.6 var(--font-mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.commandPrompt {
+  margin-right: 0.75ch;
+  color: var(--code-muted);
+  user-select: none;
+}
+.copy {
+  flex-shrink: 0;
+  min-width: 4rem;
+  min-height: 2.25rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--code-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--code-muted);
+  font: 0.7rem var(--font-mono);
+  cursor: pointer;
+}
+.copy:hover,
+.copy[data-state='copied'] {
+  border-color: var(--code-accent);
+  color: var(--code-accent);
+}
+.copy[data-state='copied'] {
+  background: var(--code-accent-soft);
+}
+.chapterNav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 1.5rem;
+  padding-block: 0.75rem 1.25rem;
+  border-top: 1px solid var(--line);
+}
+.chapterNav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.chapterNav a:is(:hover, :focus-visible) {
+  color: var(--accent);
+  text-decoration: none;
+}
+.workflowSteps {
+  list-style: none;
+  padding: 0;
+  margin: 3rem 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3rem;
+}
+.workflowSteps li {
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--market-line);
+}
+.workflowSteps li > span,
+.installSteps > div > span {
+  color: var(--chapter-color);
+  font:
+    0.75rem 'IBM Plex Mono',
+    monospace;
+}
+.workflowSteps h3 {
+  margin: 1.5rem 0 0.8rem;
+}
+.workflowSteps p {
+  font-size: 0.95rem;
+}
+.firstRequest {
+  display: grid;
+  grid-template-columns: 1fr 2.4fr;
+  gap: 1rem 3rem;
+  border-top: 1px solid var(--market-line);
+  padding-top: 2rem;
+}
+.home .firstRequest > p {
+  font:
+    500 1.6rem / 1.4 'Newsreader',
+    Georgia,
+    serif;
+  color: var(--market-text);
+  max-width: 48ch;
+}
+.firstRequest > a {
+  grid-column: 2;
+}
+.coderPromo {
+  margin-top: 2.5rem;
+}
+.interfaceGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+}
+.interfaceGrid article {
+  min-width: 0;
+}
+/* Stacked like Clio Coder's interface chapter, so commands keep one line. */
+.story .interfaceGrid {
+  grid-template-columns: 1fr;
+  gap: 2.5rem;
+  margin-top: 2.5rem;
+}
+.interfaceTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+.interfaceGrid article > p {
+  font-size: 0.95rem;
+}
+/* A real session, framed as on Clio Coder's overview. */
+.home .capture {
+  margin: 3rem 0;
+}
+.stageLabel {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.1rem 0.3rem 1rem;
+  color: var(--muted);
+  font: 0.7rem / 1.5 var(--font-mono);
+}
+.stageLabel > span:first-child {
+  color: var(--ink);
+}
+/* The label row is mono; the Clio Coder button keeps the UI font of the other buttons. */
+.home .stageLabel .primary {
+  font-family: var(--font-ui);
+  white-space: nowrap;
+}
+.capture img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--motion-fast) var(--motion-ease);
+}
+.capture a:hover img {
+  border-color: var(--accent);
+}
+.capture figcaption {
+  margin-top: 0.75rem;
+  color: var(--muted);
+  font: 0.7rem / 1.5 var(--font-mono);
+}
+
+.interfaceGrid pre {
+  font-size: 0.73rem;
+}
+.agentRoutes > div {
+  border-top: 1px solid var(--line-control);
+  padding-block: 1.6rem;
+}
+.agentRoutes dt {
+  font: 500 1.65rem / 1.2 var(--font-display);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.6rem;
+}
+.agentRoutes dd {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+.agentRoutes dd:last-child {
+  font-size: 0.8rem;
+  color: var(--market-muted);
+  margin-top: 0.4rem;
+}
+.headingSplit {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 3rem;
+}
+.headingSplit > p {
+  max-width: 34ch !important;
+  margin-bottom: 1.5rem;
+}
+.featureList {
+  margin-top: 2rem;
+  border-top: 1px solid var(--market-line);
+}
+.featureList a {
+  display: grid;
+  grid-template-columns: 2rem 1fr 1.4fr 1rem;
+  align-items: baseline;
+  gap: 2rem;
+  padding-block: 1.6rem;
+  border-bottom: 1px solid var(--market-line);
+  color: var(--market-text);
+}
+.home .featureList a:hover {
+  background: var(--market-surface);
+  text-decoration: none;
+}
+.featureList a > span:first-child {
+  font:
+    0.7rem 'IBM Plex Mono',
+    monospace;
+  color: var(--chapter-color);
+}
+.featureList a > span:last-child {
+  color: var(--market-accent);
+}
+.featureList p {
+  font-size: 0.92rem;
+}
+.featureList + .textLink {
+  margin-top: 1.5rem;
+}
+.installSteps > div + div {
+  margin-top: 2rem;
+}
+/* Space the whole code block; a margin on pre would collapse past the label band. */
+.installSteps :global(.theme-code-block) {
+  margin-block: 0.75rem;
+}
+.installSteps pre {
+  font-size: 0.73rem;
+}
+.installSteps p {
+  font-size: 0.85rem;
+}
+.faq details {
+  border: 0;
+  border-top: 1px solid var(--line-control);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 1.1rem 0;
+  margin: 0;
+  background: none;
+}
+.faq summary {
+  position: relative;
+  list-style: none;
+  padding-right: 2.5rem;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+.faq summary::after {
+  content: '+';
+  position: absolute;
+  top: 0;
+  right: 0.25rem;
+  color: var(--accent);
+  font: 1.2rem var(--font-mono);
+  transition: rotate var(--motion-fast) var(--motion-ease);
+}
+.faq details[open] summary::after {
+  rotate: 45deg;
+}
+.faq details p {
+  font-size: 0.95rem;
+  margin-block: 1rem 0.25rem;
+  max-width: 57ch;
+}
+.project {
+  display: grid;
+  grid-template-columns: 0.7fr 1.3fr;
+  align-items: center;
+  gap: 5rem;
+}
+.projectMark {
+  display: grid;
+  place-items: center;
+}
+.projectMark img {
+  width: min(80%, 280px);
+  height: auto;
+}
+.project h2 {
+  margin-block: 1.2rem 1.5rem;
+}
+.project p:not(.eyebrow) {
+  max-width: 58ch;
+}
+.project .credit {
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--market-muted);
+}
+.project .actions {
+  margin-top: 1.5rem;
+}
+.finale {
+  text-align: center;
+  padding-block: 5rem 4rem;
+}
+.home .finale h2 {
+  font-size: clamp(3rem, 5.5vw, 5rem);
+  margin-block: 1rem 2.5rem;
+}
+.finaleActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem 2rem;
+}
+.tutorialIntro {
+  padding-block: 4rem 3rem;
+}
+.home .tutorialIntro h1 {
+  font-size: clamp(3rem, 5vw, 5rem);
+  margin-block: 1.2rem;
+}
+.tutorialIntro .lede {
+  max-width: 58ch;
+  font-size: 1.15rem;
+}
+.tutorialIntro > .textLink {
+  margin-top: 1.5rem;
+}
+.tutorialGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 3rem;
+  padding-bottom: 5rem;
+}
+.tutorialCard {
+  min-width: 0;
+}
+.tutorialCard img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1.8;
+  object-fit: contain;
+  background: #000;
+  border: 1px solid var(--line-control);
+  padding: 1rem;
+  border-radius: 0.35rem;
+}
+.tutorialCard a:hover img {
+  border-color: var(--market-accent);
+}
+.tutorialCard .eyebrow {
+  margin-block: 1.25rem 0.75rem;
+}
+.home .tutorialCard h2 {
+  font-size: 2rem;
+  margin-bottom: 0.75rem;
+}
+.tutorialCard h2 a {
+  color: var(--market-text);
+}
+.tutorialCard > p:not(.eyebrow) {
+  font-size: 0.95rem;
+}
+.tutorialCard .textLink {
+  margin-top: 1rem;
+}
+.home
+  :is(
+    .heroHeading,
+    .workflowSteps,
+    .firstRequest,
+    .interfaceGrid,
+    .split,
+    .faqLayout,
+    .project,
+    .tutorialGrid
+  )
+  > * {
+  min-width: 0;
+}
+.home :is(.installSteps, .faq) p a {
+  text-decoration: underline;
+  text-underline-offset: 0.25em;
+}
+@media (min-width: 1400px) {
+  .heroHeading {
+    gap: 6rem;
+  }
+}
+@media (max-width: 1100px) {
+  .page {
+    width: calc(100% - 4rem);
+  }
+  .heroHeading {
+    gap: 2.5rem;
+  }
+  .workflowSteps,
+  .interfaceGrid {
+    gap: 2rem;
+  }
+
+  .project {
+    gap: 3rem;
+  }
+}
+@media (max-width: 850px) {
+  .heroHeading {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding-block: 2.5rem;
+  }
+  .home .heroHeading h1 {
+    font-size: clamp(3.5rem, 8vw, 5rem);
+  }
+  .headingSplit {
+    display: block;
+  }
+  .featureList a {
+    grid-template-columns: 1.2rem 1fr 1rem;
+    gap: 1rem;
+  }
+  .featureList p {
+    grid-column: 2;
+  }
+  .featureList a > span:last-child {
+    grid-column: 3;
+    grid-row: 1;
+  }
+}
+@media (max-width: 600px) {
+  .page {
+    width: calc(100% - 2.5rem);
+  }
+  .hero {
+    padding-top: 1.5rem;
+  }
+  .topline {
+    align-items: start;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .heroHeading {
+    padding-block: 2rem;
+    gap: 1.5rem;
+  }
+  .home .heroHeading h1 {
+    font-size: clamp(3rem, 10vw, 4rem);
+  }
+  .section {
+    padding-block: 3.5rem;
+  }
+  .sectionHeading h2 {
+    font-size: 2.5rem;
+  }
+  .workflowSteps,
+  .interfaceGrid,
+  .tutorialGrid,
+  .project {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .workflowSteps {
+    margin-block: 2rem;
+  }
+  .firstRequest {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .firstRequest > a {
+    grid-column: 1;
+  }
+  .projectMark {
+    place-items: start;
+  }
+  .projectMark img {
+    width: 130px;
+  }
+  .tutorialIntro {
+    padding-block: 2.5rem;
+  }
+}
+
+/* Alternating visual lanes follow Clio Coder's chapter layout, with Kit's mark. */
+.heroHeading {
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: center;
+}
+.heroVisual {
+  text-align: center;
+}
+.logoScene {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  aspect-ratio: 1;
+  margin-inline: auto;
+}
+.logoScene img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.story {
+  padding-block: clamp(6rem, 10vw, 9rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(220px, 1fr);
+  align-items: start;
+  gap: clamp(2rem, 5vw, 5rem);
+}
+.story:nth-of-type(even) {
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 1.65fr);
+}
+.storyBody {
+  min-width: 0;
+  grid-row: 1;
+}
+.story:nth-of-type(even) .storyBody {
+  grid-column: 2;
+}
+.storyVisual {
+  position: relative;
+  grid-row: 1;
+  grid-column: 2;
+  margin-top: 2rem;
+}
+.story:nth-of-type(even) .storyVisual {
+  grid-column: 1;
+}
+.story .logoScene {
+  max-width: 300px;
+}
+.story .firstRequest {
+  grid-template-columns: 1fr;
+}
+.story .firstRequest > a {
+  grid-column: 1;
+}
+.story .headingSplit {
+  display: block;
+}
+.story .agentRoutes,
+.story .installSteps,
+.story .faq {
+  margin-top: 2rem;
+}
+.story .featureList a {
+  grid-template-columns: 1.2rem 1fr 1rem;
+  gap: 1rem;
+}
+.story .featureList p {
+  grid-column: 2;
+}
+.story .featureList a > span:last-child {
+  grid-column: 3;
+  grid-row: 1;
+}
+@media (max-width: 1000px) {
+  .story,
+  .story:nth-of-type(even) {
+    padding-block: 3.5rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+  .story .storyBody,
+  .story:nth-of-type(even) .storyBody {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .story .storyVisual,
+  .story:nth-of-type(even) .storyVisual {
+    position: static;
+    grid-column: 1;
+    grid-row: 1;
+    margin-top: 0;
+  }
+  .story .logoScene {
+    width: 180px;
+    margin-inline: 0 auto;
+  }
+  .story:nth-of-type(even) .logoScene {
+    margin-inline: auto 0;
+  }
+}
+@media (max-width: 850px) {
+  .heroHeading {
+    grid-template-columns: 1fr;
+  }
+  .heroVisual {
+    grid-row: 1;
+  }
+  .heroVisual .logoScene {
+    max-width: 240px;
+  }
+}
+
+.storyBody[data-reveal] {
+  transition:
+    opacity 450ms ease-out,
+    transform 450ms ease-out;
+}
+.storyBody[data-reveal='pending'] {
+  opacity: 0;
+  transform: translateY(16px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .storyBody[data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+.travellingLogo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 440px;
+  height: 440px;
+  max-width: none;
+  transform-origin: top left;
+  pointer-events: none;
+  z-index: 1;
+  will-change: transform;
+}
+.travellingLogo[hidden] {
+  display: none;
+}
+.home[data-logo-journey='active'] [data-logo-slot] img {
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .travellingLogo {
+    display: none;
+  }
+  .home[data-logo-journey='active'] [data-logo-slot] img {
+    visibility: visible;
+  }
+}

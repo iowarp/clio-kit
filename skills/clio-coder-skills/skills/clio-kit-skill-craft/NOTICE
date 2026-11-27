@@ -1,0 +1,66 @@
+Clio Coder
+Copyright 2026 Anthony Kougkas and the IOWarp project contributors
+
+This product is part of the IOWarp CLIO ecosystem of agentic science
+(https://iowarp.ai), developed at the Gnosis Research Center,
+Illinois Institute of Technology.
+
+Licensed under the Apache License, Version 2.0. See the LICENSE file
+distributed with this work for the full license text.
+
+--------------------------------------------------------------------
+Technology acknowledgements
+
+Clio Coder builds on Earendil Works' Pi framework and, for optional Claude
+workers, Anthropic's Claude Agent SDK. Its runtime and development tools
+include Node.js, TypeScript, node-pty, Tree-sitter, Ollama's JavaScript
+client, esbuild, tsup, and Biome. The source GUI uses React, Deno, Vite,
+and community libraries for Markdown, diagrams, syntax highlighting,
+sanitization, images, and fonts.
+
+We thank these projects and their maintainers. Exact dependencies and
+versions are recorded in the package manifests and pnpm-lock.yaml;
+third-party components retain their upstream copyrights and licenses.
+README.md also acknowledges the optional inference and tool integrations
+that operators can connect to Clio.
+
+--------------------------------------------------------------------
+Pinned external tools
+
+Clio Coder does not bundle the programs below. `clio-coder tools install
+<id>` downloads a pinned upstream release on request, verifies it against
+the checksum recorded in src/domains/toolchain/registry.ts, and places the
+upstream license text beside the binary under the Clio data directory. Each
+program remains under its own license and copyright; Clio neither modifies
+nor redistributes it.
+
+herdr (https://herdr.dev, https://github.com/herdrdev/herdr)
+  Copyright the herdr authors.
+  Licensed under the Apache License, Version 2.0.
+  Used as the terminal multiplexer behind Clio panes.
+
+yazi (https://yazi-rs.github.io, https://github.com/sxyazi/yazi)
+  Copyright the yazi authors.
+  Licensed under the MIT License.
+  Used as the terminal file manager behind the file-picker pane.
+
+croc (https://schollz.com/software/croc6, https://github.com/schollz/croc)
+  Copyright Zack Scholl and the croc authors.
+  Licensed under the MIT License.
+  Used as the relay file-transfer backend for machine-to-machine transfers.
+
+--------------------------------------------------------------------
+Vendored components
+
+git.yazi (https://github.com/yazi-rs/plugins/tree/main/git.yazi)
+  Copyright 2023 the yazi-rs authors.
+  Licensed under the MIT License.
+  Vendored as source with its LICENSE under the managed file-pane profile.
+
+Bundled terminal compatibility code
+----------------------------------
+Clio bundles the JavaScript from @earendil-works/pi-tui 0.85.1 with a local
+input-policy/search/semantic-edit patch, plus marked and get-east-asian-width.
+Their MIT notices are distributed in dist/assets/tui-notices/. The pinned
+pi-tui runtime package remains installed for its Darwin and Windows native
+helpers; Clio does not modify consumer dependencies during installation.

@@ -2,7 +2,7 @@
 """Extract MCP server metadata via FastMCP 3.0 async API.
 
 Run from within a server directory:
-    cd clio-kit-mcp-servers/compression && uv run python ../../scripts/extract_mcp_metadata.py
+    cd mcp-servers/compression && uv run python ../../scripts/extract_mcp_metadata.py
 
 Outputs JSON to stdout with tools, resources, prompts, annotations, and tags.
 """
@@ -41,6 +41,24 @@ def find_server_module() -> str:
     return entry_point.split(":")[0]
 
 
+def server_object(module: Any) -> Any:
+    """The module's FastMCP object, or an upstream wrapper's advertised metadata.
+
+    A wrapper of an [upstream] server has no ``mcp``; it exposes ``command`` and
+    ``metadata_env``, and the running upstream server is asked instead.
+    """
+    mcp = getattr(module, "mcp", None)
+    if mcp is not None:
+        return mcp
+    command = getattr(module, "command", None)
+    environment = getattr(module, "metadata_env", None)
+    if callable(command) and callable(environment):
+        from upstream_metadata import UpstreamServer
+
+        return UpstreamServer(command([]), environment())
+    raise RuntimeError(f"{module.__name__} has no mcp object and is not a wrapper")
+
+
 async def extract(module_path: str) -> dict[str, Any]:
     """Import the server and extract all metadata."""
     module = importlib.import_module(module_path)
@@ -50,7 +68,7 @@ async def extract(module_path: str) -> dict[str, Any]:
         if not isinstance(metadata_profile, str) or not callable(profile_applier):
             raise RuntimeError("invalid MCP_METADATA_PROFILE contract")
         cast(Callable[[str], None], profile_applier)(metadata_profile)
-    mcp = getattr(module, "mcp")
+    mcp = server_object(module)
 
     tools = await mcp.list_tools()
     resources = await mcp.list_resources()
@@ -64,7 +82,9 @@ async def extract(module_path: str) -> dict[str, Any]:
             {
                 "name": t.name,
                 "description": t.description or "",
-                "annotations": t.annotations.model_dump() if t.annotations else {},
+                "annotations": t.annotations.model_dump(by_alias=True)
+                if t.annotations
+                else {},
                 "tags": sorted(t.tags) if hasattr(t, "tags") and t.tags else [],
             }
             for t in tools

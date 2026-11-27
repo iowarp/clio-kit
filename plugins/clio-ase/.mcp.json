@@ -1,0 +1,9 @@
+{
+  "clio-ase": {
+    "command": "clio-kit",
+    "args": [
+      "mcp-server",
+      "ase"
+    ]
+  }
+}

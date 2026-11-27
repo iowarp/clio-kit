@@ -1,0 +1,115 @@
+.reference {
+  max-width: 860px;
+}
+.reference section {
+  margin-block: 2rem;
+}
+.reference [hidden] {
+  display: none;
+}
+.meta {
+  margin-top: 1.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+.meta span {
+  font-size: 1.5rem;
+  margin-right: 0.5rem;
+}
+.sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  border-bottom: 1px solid var(--color-border);
+  margin-top: 2rem;
+}
+.sections a {
+  padding-block: 0.75rem;
+  text-decoration: none;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+}
+.sections a[aria-current] {
+  border-bottom-color: var(--ifm-link-color);
+  color: var(--ifm-link-color);
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.toolbar h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+.toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.toolbar label > span {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+.reference select {
+  max-width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--market-bg, var(--color-bg));
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.85rem;
+}
+.note {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+.reference details {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 0.75rem 0;
+}
+.reference summary {
+  font-size: 0.85rem;
+  color: var(--ifm-link-color);
+}
+.connection > div,
+.connection > p {
+  margin-top: 1rem;
+}
+.tools > div {
+  padding-block: 1.1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.tools dt {
+  margin-bottom: 0.5rem;
+  overflow-wrap: anywhere;
+}
+.tools dd {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+.tools dd p {
+  margin: 0;
+}
+.toolNotes {
+  margin-top: 0.75rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.5rem;
+  border-top: 1px solid var(--color-border);
+  padding-top: 1rem;
+  font-size: 0.8rem;
+}

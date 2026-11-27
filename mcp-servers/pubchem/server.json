@@ -1,0 +1,66 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/pubchem-mcp",
+  "title": "CLIO Pubchem",
+  "description": "Look compounds up in PubChem by name (candidates when a name is ambiguous) and fetch their 3D...",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.13.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "pubchem"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "resolve_name",
+      "description": "Find the PubChem compound a name means. A name PubChem maps to exactly one compound returns status 'resolved' with its CID, title, IUPAC name, formula, molecular weight (g/mol), isomeric and canonical SMILES, InChIKey and stereo centre counts. A name that maps to several compounds or to none ('xylene') returns status 'ambiguous' with up to max_candidates candidates (found by PubChem's name dictionary and word search) for the person to choose from."
+    },
+    {
+      "name": "get_compound",
+      "description": "The PubChem record of one compound by CID: title, IUPAC name, formula, molecular weight (g/mol), isomeric and canonical SMILES, InChIKey, charge, stereo centre counts, components, and its first 20 synonyms (common names, CAS numbers)."
+    },
+    {
+      "name": "fetch_structure",
+      "description": "Download a compound's 3D conformer (with hydrogens) from PubChem as an SDF file under output_dir/chemistry/pubchem/cid<CID>-<name>/, plus a JSON compound record. Returns the structure record {path, format, formula, n_atoms, sha256}. When PubChem has no 3D conformer the result says so (has_3d false, fallback '2d_record') and writes the flat 2D record; embed 3D coordinates from the SMILES with ase.smiles_to_structure instead."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "pubchem://capabilities",
+      "name": "capabilities",
+      "description": "Describe what the pubchem MCP server can do."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "compound_lookup",
+      "description": "Guided lookup of a compound in PubChem by name."
+    }
+  ],
+  "tags": [
+    "chemistry",
+    "pubchem",
+    "compounds",
+    "smiles",
+    "sdf"
+  ],
+  "scope": "scientific"
+}

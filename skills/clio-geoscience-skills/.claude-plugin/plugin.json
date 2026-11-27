@@ -1,0 +1,13 @@
+{
+  "name": "clio-geoscience-skills",
+  "description": "Skills for the clio-geoscience workflow: maps, terrain, geoprocessing, waveforms, ocean, weather, grids, NASA Earth data.",
+  "version": "1.3.0",
+  "author": {
+    "name": "IoWarp Team - Gnosis Research Center",
+    "email": "grc@illinoistech.edu",
+    "url": "https://github.com/iowarp/clio-kit"
+  },
+  "homepage": "https://github.com/iowarp/clio-kit",
+  "repository": "https://github.com/iowarp/clio-kit",
+  "license": "BSD-3-Clause"
+}

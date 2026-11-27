@@ -3,7 +3,7 @@
 [![License: BSD-3-Clause](https://img.shields.io/badge/License-BSD--3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![PyPI version](https://img.shields.io/pypi/v/clio-kit.svg)](https://pypi.org/project/clio-kit/)
 [![CI](https://github.com/iowarp/clio-kit/actions/workflows/quality_control.yml/badge.svg)](https://github.com/iowarp/clio-kit/actions/workflows/quality_control.yml)
-[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/)
 
 > **Status: Experimental** — API surface and storage format may change between minor releases. Suitable for research and evaluation; not yet recommended for production workloads.
 
@@ -11,25 +11,20 @@ Part of [**CLIO Kit**](https://github.com/iowarp/clio-kit) — the IoWarp platfo
 
 ---
 
-Hybrid retrieval engine for scientific computing corpora. Indexes documents into namespace-specific backends and supports lexical (BM25), vector, graph, metadata, and scientific-operator retrieval in one pipeline. DuckDB storage, FastAPI server, async job queue, OpenTelemetry tracing, Prometheus metrics.
+Hybrid retrieval engine for AI agents. Indexes documents into namespace-specific backends and supports lexical (token-overlap), vector, graph, and metadata retrieval in one pipeline, with structure-aware chunking and table-cell citations. DuckDB storage, FastAPI server, async job queue, OpenTelemetry tracing, Prometheus metrics.
+
+> Scientific units, measurements, formula matching and the scientific quality gate moved to `clio-converter`, a separate project that is not part of this repository. Search no longer accepts `scientific_operators` (API returns 422) or `--numeric-range` / `--unit-match` / `--formula` (CLI).
 
 ## Quick start
 
-```bash
-# Via the CLIO Kit launcher (recommended)
-uvx clio-kit search serve                    # Start the API server
-uvx clio-kit search query --namespace local_fs --q "pressure between 190 and 360 kPa"
-uvx clio-kit search index --namespace local_fs
-uvx clio-kit search list --namespace local_fs
-```
-
-### Development mode
+The `clio-kit` launcher does not ship or run this service. Run it from a CLIO Kit
+checkout:
 
 ```bash
 cd clio-agentic-search
 uv sync --all-extras --dev
 uv run clio serve                            # Start dev server with hot reload
-uv run clio query --namespace local_fs --q "pressure > 200 kPa"
+uv run clio query --namespace local_fs --q "reactor pressure calibration"
 uv run clio index --namespace local_fs
 ```
 
@@ -37,7 +32,7 @@ uv run clio index --namespace local_fs
 
 - **Multi-namespace registry** with runtime/auth config bundles
 - **Connectors**: filesystem + DuckDB (`local_fs`), S3 object store, Qdrant vector store, Neo4j graph, Redis KV log
-- **Scientific retrieval operators**: numeric range (`unit`, `min`, `max`), unit matching, formula targeting (normalized signatures)
+- **Structure-aware chunking**: sections, captions, tables, table cells (cited as `file#table=N&row=R&column=C`), equations
 - **Background indexing** job API with cancellation tokens and per-namespace serialized execution
 - **Retry/backoff** wrappers for connect/index operations
 - **Telemetry**: OpenTelemetry tracing (opt-in), Prometheus metrics at `/metrics`
@@ -87,8 +82,11 @@ uv run ruff check .
 uv run ruff format --check .
 uv run mypy src/
 uv run pytest --ignore=tests/benchmarks -v
-uv run python -m clio_agentic_search.evals.quality_gate
 ```
+
+CI runs these checks in the `agentic-search-*` jobs of
+`.github/workflows/quality_control.yml` whenever `clio-agentic-search/` changes,
+and the release workflow checks its lock and audits its dependencies.
 
 ## Benchmarks
 

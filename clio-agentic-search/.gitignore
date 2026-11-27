@@ -9,3 +9,5 @@ __pycache__/
 .virtualenv-app-data/
 .coverage
 htmlcov/
+dist/
+.benchmarks/

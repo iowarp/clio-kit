@@ -1,0 +1,9 @@
+configuration,trial,runtime_s
+baseline,1,12
+baseline,2,13
+baseline,3,11
+baseline,4,14
+tuned,1,9
+tuned,2,10
+tuned,3,8
+tuned,4,11

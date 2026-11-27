@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /component
+
+Sitemap: https://toolkit.iowarp.ai/sitemap.xml

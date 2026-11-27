@@ -85,7 +85,7 @@ def test_contract_probe_uses_a_fresh_isolated_child_environment(
             },
         ),
         (
-            "clio-kit-slurm-user-v3",
+            "clio-kit-slurm-user-v3.1",
             {
                 "slurm_submit",
                 "slurm_list",
@@ -701,7 +701,7 @@ def test_contract_cli_lists_and_prints_verified_artifacts() -> None:
     assert "clio-kit-jarvis-user-v3.4" in listed.output
     assert "clio-kit-jarvis-user-v3.3" in listed.output
     assert "clio-kit-jarvis-user-v3.2" in listed.output
-    assert "clio-kit-slurm-user-v3" in listed.output
+    assert "clio-kit-slurm-user-v3.1" in listed.output
     assert "clio-kit-spack-user-v2.3" in listed.output
     assert "clio-kit-spack-user-v2.2" in listed.output
     assert "clio-kit-spack-user-v2.1" in listed.output

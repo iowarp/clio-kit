@@ -10,22 +10,36 @@ import sys
 import subprocess
 import sysconfig
 import tempfile
-import time
 from pathlib import Path
-from typing import NoReturn
 import click
 
+from clio_kit.cache_cli import CACHE_GROUP, clio_cache_root
+from clio_kit.discovery import (
+    discover_servers_in,
+    is_servers_root,
+    read_server_descriptor,
+)
+from clio_kit.runtimes import (
+    UnsupportedRuntime,
+    build_command,
+    build_runs_in_project,
+    generated_directories,
+    lock_file_name,
+    required_project_files,
+    runtime_executable,
+    start_command,
+)
+from clio_kit.prompts_cli import PROMPT_COMMANDS
 from clio_kit.env_cache import (
-    CacheInUseError,
     EnvironmentInUseMarker,
-    collect_cache_gc,
     default_event_emitter,
-    discover_servers,
-    load_cache_policy,
     maintain_after_build,
-    measure_cache_budget,
 )
 from clio_kit.environment_build import locked_environment_build
+from clio_kit.plugins import PLUGIN_COMMANDS
+from clio_kit.runtime_build import cached_build
+from clio_kit.retired_servers import unknown_server_lines
+from clio_kit.server_scope import SERVER_SCOPE_ORDER, format_server_listing
 from clio_kit.mcp_contracts import (
     load_mcp_user_contract,
     load_mcp_user_contract_index,
@@ -34,7 +48,7 @@ from clio_kit.mcp_contracts import (
 # Determine if we're running from development or installed package
 MODULE_DIR = Path(__file__).parent
 LOCKED_SERVER_LAUNCH_SCHEMA = "clio-kit.locked-server.v4"
-_LOCKED_SERVER_RUNTIME_POLICY = "uv-run:materialized:frozen:no-editable:no-dev:v3"
+_LOCKED_SERVER_RUNTIME_POLICY = "uv-run:materialized:frozen:no-editable:no-dev:v4"
 LOCKED_SERVER_SCHEMA_ENV = "CLIO_KIT_LOCKED_SERVER_SCHEMA"
 LOCKED_SERVER_PROJECT_SHA_ENV = "CLIO_KIT_LOCKED_SERVER_PROJECT_SHA256"
 LOCKED_SERVER_LOCK_SHA_ENV = "CLIO_KIT_LOCKED_SERVER_LOCK_SHA256"
@@ -49,7 +63,9 @@ _RUNTIME_PROJECT_EXCLUDED_NAMES = frozenset(
         ".venv",
         ".virtualenv-app-data",
         "__pycache__",
-        "dist",
+        # `dist` is deliberately absent: it is Python build output but a node
+        # server's executed artifact. It is excluded per-runtime instead, via
+        # RUNTIME_GENERATED_DIRECTORIES.
         "coverage.xml",
         "htmlcov",
         "junit.xml",
@@ -62,7 +78,7 @@ _MAX_RUNTIME_PROJECT_BYTES = 512 * 1024 * 1024
 
 def get_servers_path() -> Path:
     """Return server data owned by the active clio-kit installation."""
-    shared_name = "clio-kit-mcp-servers"
+    shared_name = "mcp-servers"
     dev_path = MODULE_DIR.parent.parent / shared_name
     candidates = [
         # In an editable source checkout, the repository copy is authoritative.
@@ -118,154 +134,20 @@ def _distribution_shared_data_roots(shared_name: str) -> list[Path]:
 
 def _is_servers_root(path: Path) -> bool:
     """Return whether a directory contains at least one embedded server project."""
-    return path.is_dir() and any(path.glob("*/pyproject.toml"))
-
-
-def get_prompts_path():
-    """Get the path to prompts directory (dev or installed)"""
-    # First try development path (../../prompts from module)
-    dev_path = MODULE_DIR.parent.parent / "prompts"
-    if dev_path.exists():
-        return dev_path
-
-    # Try to find shared data in the installed package
-    possible_paths = [
-        # Standard site-packages installation
-        MODULE_DIR.parent / "prompts",  # ../prompts from module
-        # Alternative installation paths
-        MODULE_DIR / "prompts",  # ./prompts from module
-        # System-wide data directory
-        Path(sys.prefix) / "share" / "clio-kit" / "prompts",
-        # Local data directory
-        Path.home() / ".local" / "share" / "clio-kit" / "prompts",
-    ]
-
-    # Try each possible path
-    for path in possible_paths:
-        if path.exists() and path.is_dir():
-            return path
-
-    # If none found, check if we're in an isolated environment (like uvx)
-    python_path = Path(sys.executable)
-    isolated_paths = [
-        # uvx style isolated environment
-        python_path.parent.parent / "prompts",
-        python_path.parent.parent / "share" / "prompts",
-        python_path.parent.parent / "purelib" / "prompts",
-        python_path.parent.parent / "data" / "prompts",
-    ]
-
-    for path in isolated_paths:
-        if path.exists() and path.is_dir():
-            return path
-
-    # Last resort: return the dev path
-    return dev_path
-
-
-def get_search_path():
-    """Get the path to the clio-agentic-search directory (dev or installed)"""
-    dev_path = MODULE_DIR.parent.parent / "clio-agentic-search"
-    if dev_path.exists():
-        return dev_path
-
-    possible_paths = [
-        MODULE_DIR.parent / "clio-agentic-search",
-        MODULE_DIR / "clio-agentic-search",
-        Path(sys.prefix) / "share" / "clio-kit" / "clio-agentic-search",
-        Path.home() / ".local" / "share" / "clio-kit" / "clio-agentic-search",
-    ]
-
-    for path in possible_paths:
-        if path.exists() and path.is_dir():
-            return path
-
-    python_path = Path(sys.executable)
-    isolated_paths = [
-        python_path.parent.parent / "clio-agentic-search",
-        python_path.parent.parent / "share" / "clio-agentic-search",
-        python_path.parent.parent / "purelib" / "clio-agentic-search",
-        python_path.parent.parent / "data" / "clio-agentic-search",
-    ]
-
-    for path in isolated_paths:
-        if path.exists() and path.is_dir():
-            return path
-
-    return dev_path
+    return is_servers_root(path)
 
 
 def auto_discover_mcps():
-    """Auto-discover MCP servers from the clio-kit-mcp-servers directory"""
-    servers_path = get_servers_path()
-    if not servers_path.exists():
-        return {}, {}
+    """Auto-discover MCP servers from the mcp-servers directory."""
+    from clio_kit.component_store import INDEX_FILE, catalogue
 
-    server_command_map = {}
-    dir_name_map = {}
-
-    # Scan for directories containing pyproject.toml
-    for item in servers_path.iterdir():
-        if item.is_dir() and not item.name.startswith("."):
-            pyproject_file = item / "pyproject.toml"
-            if pyproject_file.exists():
-                # Read pyproject.toml to extract entry point
-                try:
-                    with open(pyproject_file, "r") as f:
-                        content = f.read()
-
-                    # Simple parsing to find the entry point
-                    # Look for lines like: server-name-mcp = "module:main"
-                    entry_point = None
-                    for line in content.split("\n"):
-                        line = line.strip()
-                        if "-mcp =" in line and "=" in line:
-                            entry_point = line.split("=")[0].strip().strip("\"'")
-                            break
-
-                    if entry_point:
-                        # Create server name by removing -mcp suffix
-                        server_name = entry_point.replace("-mcp", "").lower()
-                        # Handle special cases for naming
-                        if server_name == "node-hardware":
-                            server_name = "node-hardware"
-                        elif server_name == "parallel-sort":
-                            server_name = "parallel-sort"
-
-                        server_command_map[server_name] = entry_point
-                        dir_name_map[server_name] = item.name
-
-                except Exception:
-                    # Skip directories that can't be processed
-                    continue
-
-    return server_command_map, dir_name_map
-
-
-def auto_discover_prompts():
-    """Auto-discover prompts from the prompts directory (recursively)"""
-    prompts_path = get_prompts_path()
-    if not prompts_path.exists():
-        return {}
-
-    prompt_map = {}
-
-    # Recursively scan for .md files
-    for md_file in prompts_path.rglob("*.md"):
-        # Get relative path from prompts directory
-        relative_path = md_file.relative_to(prompts_path)
-
-        # Create prompt name from relative path without extension
-        # e.g., "code-coverage-prompt.md" -> "code-coverage-prompt"
-        # e.g., "testing/foo.md" -> "testing/foo"
-        prompt_name = str(relative_path.with_suffix(""))
-
-        # Also support underscore version
-        # "code-coverage-prompt" -> also accessible as "code_coverage_prompt"
-        prompt_map[prompt_name] = md_file
-        prompt_map[prompt_name.replace("-", "_")] = md_file
-
-    return prompt_map
+    if not INDEX_FILE.is_file():
+        return discover_servers_in(get_servers_path())
+    servers = catalogue()["servers"]
+    return (
+        {name: record["entry"] for name, record in servers.items()},
+        {name: record["directory"] for name, record in servers.items()},
+    )
 
 
 def list_available_servers():
@@ -274,20 +156,13 @@ def list_available_servers():
     return sorted(server_command_map.keys())
 
 
-def list_available_prompts():
-    """List all available prompts"""
-    prompt_map = auto_discover_prompts()
-    # Remove duplicates (dash vs underscore versions)
-    unique_prompts = set()
-    for name in prompt_map.keys():
-        # Normalize to dash version for display
-        unique_prompts.add(name.replace("_", "-"))
-    return sorted(unique_prompts)
-
-
 def subprocess_env_with_github_https_rewrite() -> dict[str, str]:
     """Return an environment that lets uv install GitHub deps without SSH keys."""
     env = os.environ.copy()
+    # FastMCP's start-up banner and its update check (a network call) are noise
+    # on a launched server's stderr. An explicit user setting still wins.
+    env.setdefault("FASTMCP_SHOW_SERVER_BANNER", "false")
+    env.setdefault("FASTMCP_CHECK_FOR_UPDATES", "off")
     if "GIT_CONFIG_COUNT" in env:
         return env
     env["GIT_CONFIG_COUNT"] = "1"
@@ -318,24 +193,23 @@ def uv_command() -> str:
     return "uv"
 
 
-def locked_server_command(server_path: Path, entry_command: str) -> list[str]:
+def locked_server_command(
+    server_path: Path, entry_command: str, runtime: str = "python"
+) -> list[str]:
     """Build a command that executes an embedded server from its exact lock."""
-    lock_path = server_path / "uv.lock"
+    lock_path = server_path / lock_file_name(runtime)
     if not lock_path.is_file():
         raise click.ClickException(
-            f"Embedded MCP server '{server_path.name}' has no uv.lock; "
-            "refusing an unpinned runtime dependency resolution."
+            f"Embedded MCP server '{server_path.name}' has no "
+            f"{lock_file_name(runtime)}; refusing an unpinned runtime "
+            "dependency resolution."
         )
-    return [
-        uv_command(),
-        "run",
-        "--no-dev",
-        "--no-editable",
-        "--frozen",
-        "--project",
-        str(server_path),
+    return start_command(
+        runtime,
+        server_path,
         entry_command,
-    ]
+        executable=runtime_executable(runtime),
+    )
 
 
 def locked_server_environment(server_path: Path) -> Path:
@@ -347,8 +221,12 @@ def locked_server_environment(server_path: Path) -> Path:
     )
 
 
-def _runtime_project_files(server_path: Path) -> list[Path]:
+def _runtime_project_files(server_path: Path, runtime: str = "python") -> list[Path]:
     """Return bounded regular files that define one embedded server runtime."""
+    # A runtime's own build output (node_modules, bin) must never be hashed:
+    # it changes on every build, so the identity would never repeat and the
+    # environment cache would never hit.
+    excluded = _RUNTIME_PROJECT_EXCLUDED_NAMES | generated_directories(runtime)
     try:
         root = server_path.resolve(strict=True)
     except OSError as exc:
@@ -371,7 +249,7 @@ def _runtime_project_files(server_path: Path) -> list[Path]:
         current = Path(current_root)
         retained_directories: list[str] = []
         for directory_name in sorted(directory_names):
-            if directory_name in _RUNTIME_PROJECT_EXCLUDED_NAMES:
+            if directory_name in excluded:
                 continue
             directory = current / directory_name
             directory_is_junction = getattr(directory, "is_junction", lambda: False)
@@ -383,7 +261,7 @@ def _runtime_project_files(server_path: Path) -> list[Path]:
             retained_directories.append(directory_name)
         directory_names[:] = retained_directories
         for file_name in sorted(file_names):
-            if file_name in _RUNTIME_PROJECT_EXCLUDED_NAMES:
+            if file_name in excluded:
                 continue
             path = current / file_name
             file_is_junction = getattr(path, "is_junction", lambda: False)
@@ -402,7 +280,7 @@ def _runtime_project_files(server_path: Path) -> list[Path]:
                     f"Embedded MCP server '{server_path.name}' exceeds the runtime "
                     "materialization bound."
                 )
-    for required_name in ("pyproject.toml", "uv.lock"):
+    for required_name in required_project_files(runtime):
         if root / required_name not in inputs:
             raise click.ClickException(
                 f"Embedded MCP server '{server_path.name}' is incomplete: "
@@ -411,14 +289,18 @@ def _runtime_project_files(server_path: Path) -> list[Path]:
     return inputs
 
 
-def locked_server_project_identity(server_path: Path) -> dict[str, str]:
+def locked_server_project_identity(
+    server_path: Path, runtime: str = "python"
+) -> dict[str, str]:
     """Hash the embedded server source and lock that define its child runtime."""
     root = server_path.resolve(strict=True)
     digest = hashlib.sha256()
-    policy = _LOCKED_SERVER_RUNTIME_POLICY.encode("utf-8")
+    # The runtime is part of the policy: the same bytes built by a different
+    # toolchain are a different environment.
+    policy = f"{_LOCKED_SERVER_RUNTIME_POLICY}:{runtime}".encode("utf-8")
     digest.update(len(policy).to_bytes(8, "big"))
     digest.update(policy)
-    inputs = _runtime_project_files(root)
+    inputs = _runtime_project_files(root, runtime)
     ordered_inputs = sorted(inputs, key=lambda item: item.relative_to(root).as_posix())
     digest.update(len(ordered_inputs).to_bytes(8, "big"))
     for path in ordered_inputs:
@@ -433,7 +315,9 @@ def locked_server_project_identity(server_path: Path) -> dict[str, str]:
                 content_digest.update(chunk)
         digest.update(content_length.to_bytes(8, "big"))
         digest.update(content_digest.digest())
-    lock_sha256 = hashlib.sha256((root / "uv.lock").read_bytes()).hexdigest()
+    lock_sha256 = hashlib.sha256(
+        (root / lock_file_name(runtime)).read_bytes()
+    ).hexdigest()
     return {
         "schema_version": LOCKED_SERVER_LAUNCH_SCHEMA,
         "server_name": server_path.name,
@@ -446,16 +330,17 @@ def materialize_locked_server_project(
     server_path: Path,
     *,
     identity: dict[str, str] | None = None,
+    runtime: str = "python",
 ) -> Path:
     """Atomically copy a wheel-embedded project outside uv's archive cache."""
-    expected = identity or locked_server_project_identity(server_path)
+    expected = identity or locked_server_project_identity(server_path, runtime)
     project_sha256 = expected["project_sha256"]
     target = (
-        _clio_cache_root() / "mcp-projects" / server_path.name / project_sha256
+        clio_cache_root() / "mcp-projects" / server_path.name / project_sha256
     ).resolve()
 
     def verify_materialized(path: Path) -> None:
-        actual = locked_server_project_identity(path)
+        actual = locked_server_project_identity(path, runtime)
         if (
             actual["schema_version"] != expected["schema_version"]
             or actual["project_sha256"] != project_sha256
@@ -479,7 +364,7 @@ def materialize_locked_server_project(
     )
     source_root = server_path.resolve(strict=True)
     try:
-        for source in _runtime_project_files(source_root):
+        for source in _runtime_project_files(source_root, runtime):
             destination = temporary / source.relative_to(source_root)
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, destination)
@@ -496,17 +381,6 @@ def materialize_locked_server_project(
             shutil.rmtree(temporary)
 
 
-def _clio_cache_root() -> Path:
-    """Return the operator-configurable cache root used by child runtimes."""
-    configured_cache = os.getenv("CLIO_KIT_CACHE_DIR")
-    if configured_cache:
-        return Path(configured_cache).expanduser().resolve()
-    return (
-        Path(os.getenv("XDG_CACHE_HOME", str(Path.home() / ".cache"))).expanduser()
-        / "clio-kit"
-    ).resolve()
-
-
 def _locked_server_environment_path(
     server_path: Path,
     *,
@@ -514,33 +388,29 @@ def _locked_server_environment_path(
 ) -> Path:
     """Resolve one source-addressed child environment without mutating it."""
     return (
-        _clio_cache_root()
+        clio_cache_root()
         / "mcp-environments"
         / f"{server_path.name}-{project_sha256[:24]}"
     ).resolve()
 
 
 @click.group(invoke_without_command=True)
+@click.version_option(package_name="clio-kit", prog_name="clio-kit")
 @click.pass_context
 def main(ctx):
-    """clio-kit: Unified launcher for MCP servers and AI prompts"""
+    """clio-kit: launcher for scientific MCP servers, skills and plugins"""
     if ctx.invoked_subcommand is None:
-        click.echo(
-            "clio-kit: Unified launcher for MCP servers, AI prompts, and services"
-        )
+        click.echo("clio-kit: launcher for scientific MCP servers, skills and plugins")
         click.echo("\nAvailable commands:")
-        click.echo("  mcp-server   Run an MCP server")
         click.echo("  mcp-servers  List all available MCP servers")
-        click.echo(
-            "  search       Run agentic search (query, index, serve, list, seed)"
-        )
-        click.echo("  prompt       Print a prompt to stdout")
-        click.echo("  prompts      List all available prompts")
+        click.echo("  mcp-server   Run an MCP server")
+        click.echo("  skill        List, validate and install portable skills")
+        click.echo("  plugin       Author, install, check and submit plugins")
+        click.echo("  doctor       Check launcher and server prerequisites")
         click.echo("\nUsage:")
         click.echo("  clio-kit mcp-server <server-name>")
-        click.echo("  clio-kit search <subcommand>")
-        click.echo("  clio-kit prompt <prompt-name>")
-        click.echo("\nFor more help: clio-kit <command> --help")
+        click.echo("  clio-kit skill install --bundle <bundle> --target <directory>")
+        click.echo("\nFor every command: clio-kit --help")
 
 
 @main.command(
@@ -553,7 +423,7 @@ def main(ctx):
     "--prepare",
     is_flag=True,
     help=(
-        "Build or sync the server's environment (the first-run uv sync), then "
+        "Build or sync the server's environment (the first-run build), then "
         "exit 0 without starting the server. Safe to repeat. Prints one JSON "
         "result line on stdout; failures exit 10 build_failed, 11 access_denied, "
         "12 path_too_long, 13 network, 14 uv_missing, 1 unknown server."
@@ -564,7 +434,9 @@ def mcp_server(server, branch, prepare, args):
     """Run an MCP server. List all if no server specified."""
 
     if prepare:
-        _prepare_server(server, branch)
+        from clio_kit.server_prepare import prepare_server
+
+        prepare_server(server, branch)
         return
 
     server_command_map, dir_name_map = auto_discover_mcps()
@@ -580,8 +452,7 @@ def mcp_server(server, branch, prepare, args):
     server_lower = server.lower()
 
     if server_lower not in server_command_map:
-        click.echo(f"Error: Unknown server '{server}'")
-        click.echo(f"Available servers: {', '.join(sorted(server_command_map.keys()))}")
+        click.echo("\n".join(unknown_server_lines(server, server_command_map)))
         sys.exit(1)
 
     # Get the entry point command and directory name
@@ -596,20 +467,20 @@ def mcp_server(server, branch, prepare, args):
         cmd = [
             uvx_command(),
             "--from",
-            f"git+https://github.com/iowarp/clio-kit.git@{branch}#subdirectory=clio-kit-mcp-servers/{actual_dir}",
+            f"git+https://github.com/iowarp/clio-kit.git@{branch}#subdirectory=mcp-servers/{actual_dir}",
             entry_command,
         ]
         cmd.extend(args)
         _run_child_command(cmd, entry_command, child_environment)
         return
 
-    server_path = get_servers_path() / actual_dir
-    if server_path.exists():
-        _run_locked_local_server(server_path, entry_command, args, child_environment)
-        return
+    from clio_kit.component_store import server_project
 
-    # Not in development: try to run the installed console script directly.
-    _run_child_command([entry_command, *args], entry_command, child_environment)
+    try:
+        server_path = server_project(actual_dir, get_servers_path())
+    except (ValueError, OSError) as exc:
+        raise click.ClickException(str(exc)) from exc
+    _run_locked_local_server(server_path, entry_command, args, child_environment)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -617,6 +488,7 @@ class _LockedServerRuntime:
     """One embedded server's materialized project and its source-keyed environment."""
 
     server: str
+    runtime: str
     project: Path
     environment: Path
     cache_root: Path
@@ -628,26 +500,40 @@ def _locked_server_runtime(
     child_environment: dict[str, str],
 ) -> _LockedServerRuntime:
     """Materialize the server project and point ``child_environment`` at its env."""
-    runtime_identity = locked_server_project_identity(server_path)
+    # The descriptor names the runtime; a tree generated before descriptors
+    # existed has none, and every server in such a tree is Python.
+    descriptor = read_server_descriptor(server_path)
+    runtime = descriptor["runtime"] if descriptor else "python"
+    runtime_identity = locked_server_project_identity(server_path, runtime)
     runtime_project = materialize_locked_server_project(
         server_path,
         identity=runtime_identity,
+        runtime=runtime,
     )
     project_sha256 = runtime_identity["project_sha256"]
-    cache_root = _clio_cache_root()
+    cache_root = clio_cache_root()
     environment_path = _locked_server_environment_path(
         server_path,
         project_sha256=project_sha256,
     )
-    child_environment["UV_PROJECT_ENVIRONMENT"] = str(environment_path)
     child_environment[LOCKED_SERVER_SCHEMA_ENV] = runtime_identity["schema_version"]
     child_environment[LOCKED_SERVER_PROJECT_SHA_ENV] = project_sha256
     child_environment[LOCKED_SERVER_LOCK_SHA_ENV] = runtime_identity["lock_sha256"]
-    child_environment["UV_CACHE_DIR"] = str((cache_root / "uv-cache").resolve())
-    child_environment["UV_PRERELEASE"] = "allow"
-    child_environment.pop("VIRTUAL_ENV", None)
+    if runtime == "python":
+        # uv places its environment where it is told and caches where it is
+        # told. Other runtimes install into the materialized project itself,
+        # which is already content-addressed, so these would mean nothing.
+        child_environment["UV_PROJECT_ENVIRONMENT"] = str(environment_path)
+        child_environment["UV_CACHE_DIR"] = str((cache_root / "uv-cache").resolve())
+        child_environment["UV_PRERELEASE"] = "allow"
+        child_environment.pop("VIRTUAL_ENV", None)
+        # The server's own requires-python (and .python-version) choose its
+        # interpreter. A caller's UV_PYTHON, such as the one setup-uv exports,
+        # names the launcher's Python and would refuse a server pinned below it.
+        child_environment.pop("UV_PYTHON", None)
     return _LockedServerRuntime(
         server=server_path.name,
+        runtime=runtime,
         project=runtime_project,
         environment=environment_path,
         cache_root=cache_root,
@@ -674,186 +560,20 @@ def _maintain_cache_after_build(runtime: _LockedServerRuntime, uv: str) -> None:
         )
 
 
-def _run_locked_local_server(
-    server_path: Path,
-    entry_command: str,
-    args: tuple[str, ...],
-    child_environment: dict[str, str],
-) -> None:
-    """Build, evict, and launch one embedded server from its source-locked cache.
-
-    The root wheel ships each server's project and ``uv.lock``. The child runs
-    from an immutable, source-and-lock-keyed environment so the outer wheel binds
-    the child dependency closure exactly. After the environment for the current
-    spec is confirmed built, older specs of this server are evicted and the
-    private uv cache is pruned, keeping steady-state disk bounded to the newest
-    spec. The in-use marker is held across the whole launch so a concurrent
-    launch or ``cache gc`` never evicts the environment this process is using.
-    """
-    runtime = _locked_server_runtime(server_path, child_environment)
-    runtime_project = runtime.project
-    cache_root = runtime.cache_root
-    environment_path = runtime.environment
-
-    uv = uv_command()
-    with contextlib.ExitStack() as held:
-        with _locked_environment_build(runtime, uv, child_environment):
-            held.enter_context(
-                EnvironmentInUseMarker(cache_root, environment_path.name)
-            )
-            built = _build_locked_environment(uv, runtime_project, child_environment)
-        if built:
-            _maintain_cache_after_build(runtime, uv)
-        else:
-            default_event_emitter(
-                {
-                    "event": "cache_maintenance_skipped",
-                    "server": server_path.name,
-                    "reason": "environment_build_failed",
-                }
-            )
-        cmd = locked_server_command(runtime_project, entry_command)
-        cmd.extend(args)
-        _run_child_command(cmd, entry_command, child_environment)
-
-
-def _build_locked_environment(
-    uv: str,
-    runtime_project: Path,
-    child_environment: dict[str, str],
-) -> bool:
-    """Materialize the child environment for the current spec from its lock.
-
-    A discrete, frozen sync gives a verifiable "environment built" signal before
-    eviction removes any older spec, so a failed upgrade never destroys the
-    previously working environment. Its output is confined to stderr because the
-    child server's stdout is the JSON-RPC channel.
-    """
-    try:
-        completed = _sync_locked_environment(uv, runtime_project, child_environment)
-    except OSError:
-        return False
-    return completed.returncode == 0
-
-
-def _sync_locked_environment(
-    uv: str,
-    runtime_project: Path,
-    child_environment: dict[str, str],
-) -> subprocess.CompletedProcess[bytes]:
-    """Run the frozen ``uv sync`` for one runtime project, echoing its output to stderr."""
-    completed = subprocess.run(
-        [
-            uv,
-            "sync",
-            "--no-dev",
-            "--no-editable",
-            "--frozen",
-            "--project",
-            str(runtime_project),
-        ],
-        env=child_environment,
-        stdin=subprocess.DEVNULL,
-        capture_output=True,
-    )
-    for stream in (completed.stdout, completed.stderr):
-        if stream:
-            sys.stderr.write(stream.decode("utf-8", errors="replace"))
-    sys.stderr.flush()
-    return completed
-
-
-# ``mcp-server --prepare`` outcome contract. Exit codes and ``error`` kinds are
-# stable: CLIO maps them to its typed provisioning failures.
-PREPARE_RESULT_SCHEMA = "clio-kit.mcp-prepare.v1"
-PREPARE_EXIT_UNKNOWN_SERVER = 1
-PREPARE_EXIT_BUILD_FAILED = 10
-PREPARE_EXIT_ACCESS_DENIED = 11
-PREPARE_EXIT_PATH_TOO_LONG = 12
-PREPARE_EXIT_NETWORK = 13
-PREPARE_EXIT_UV_MISSING = 14
-_PREPARE_EXIT_CODES = {
-    "unknown_server": PREPARE_EXIT_UNKNOWN_SERVER,
-    "build_failed": PREPARE_EXIT_BUILD_FAILED,
-    "access_denied": PREPARE_EXIT_ACCESS_DENIED,
-    "path_too_long": PREPARE_EXIT_PATH_TOO_LONG,
-    "network": PREPARE_EXIT_NETWORK,
-    "uv_missing": PREPARE_EXIT_UV_MISSING,
-}
-_PATH_TOO_LONG_MARKERS = (
-    "os error 206",
-    "winerror 206",
-    "filename or extension is too long",
-    "file name too long",
-    "os error 36",
-)
-_ACCESS_DENIED_MARKERS = (
-    "access is denied",
-    "os error 5)",
-    "winerror 5]",
-    "permission denied",
-    "os error 13",
-    "windows pe resources",
-)
-_NETWORK_MARKERS = (
-    "failed to fetch",
-    "failed to download",
-    "error sending request",
-    "dns error",
-    "tcp connect error",
-    "connection refused",
-    "connection reset",
-    "connection aborted",
-    "operation timed out",
-    "network is unreachable",
-    "no such host is known",
-    "could not connect",
-    "os error 11001",
-    "os error 10060",
-    "os error 10061",
-    "request failed after",
-)
-_WINDOWS_MAX_PATH = 260
-
-
-class PrepareFailure(Exception):
-    """A typed ``mcp-server --prepare`` failure; ``kind`` keys the exit code."""
-
-    def __init__(self, kind: str, detail: str) -> None:
-        super().__init__(detail)
-        self.kind = kind
-        self.detail = detail
-
-
-def _classify_build_output(output: str) -> str:
-    """Return the typed failure kind a failed build's output names."""
-    lowered = output.lower()
-    if any(marker in lowered for marker in _PATH_TOO_LONG_MARKERS):
-        return "path_too_long"
-    if any(marker in lowered for marker in _ACCESS_DENIED_MARKERS):
-        return "access_denied"
-    if any(marker in lowered for marker in _NETWORK_MARKERS):
-        return "network"
-    return "build_failed"
-
-
-def _classify_os_error(exc: OSError) -> str:
-    """Return the typed failure kind for an OS error raised while materializing."""
-    winerror = getattr(exc, "winerror", None)
-    names = [str(name) for name in (exc.filename, exc.filename2) if name]
-    if winerror == 206 or exc.errno == 36:  # ERROR_FILENAME_EXCED_RANGE / ENAMETOOLONG
-        return "path_too_long"
-    if winerror == 3 and any(len(name) >= _WINDOWS_MAX_PATH for name in names):
-        return "path_too_long"
-    if isinstance(exc, PermissionError) or winerror == 5:
-        return "access_denied"
-    return _classify_build_output(str(exc))
-
-
 def _locked_environment_build(
-    runtime: "_LockedServerRuntime", uv: str, child_environment: dict[str, str]
+    runtime: _LockedServerRuntime, uv: str, child_environment: dict[str, str]
 ) -> contextlib.AbstractContextManager[None]:
-    """Serialize this environment's build and heal a half-built one first."""
+    """Serialize a Python environment's build and heal a half-built one first.
+
+    Node and Go install into the content-addressed materialized project, and
+    ``cached_build`` already serializes them, so they only need the directory.
+    """
+    if runtime.runtime != "python":
+        try:
+            runtime.environment.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            pass
+        return contextlib.nullcontext()
     return locked_environment_build(
         runtime.cache_root,
         runtime.environment,
@@ -865,90 +585,116 @@ def _locked_environment_build(
     )
 
 
-def _emit_prepare_result(payload: dict[str, object]) -> None:
-    click.echo(json.dumps({"schema": PREPARE_RESULT_SCHEMA, **payload}, sort_keys=True))
+def _run_locked_local_server(
+    server_path: Path,
+    entry_command: str,
+    args: tuple[str, ...],
+    child_environment: dict[str, str],
+) -> None:
+    """Build, evict, and launch one embedded server from its source-locked cache.
 
-
-def _prepare_failed(server: str, kind: str, detail: str) -> NoReturn:
-    detail = detail.strip()
-    click.echo(
-        f"clio-kit mcp-server --prepare {server}: error={kind}: {detail}", err=True
-    )
-    _emit_prepare_result(
-        {"status": "error", "server": server, "error": kind, "detail": detail[-2000:]}
-    )
-    sys.exit(_PREPARE_EXIT_CODES[kind])
-
-
-def _prepare_server(server: str | None, branch: str | None) -> None:
-    """Build or sync one server's environment without starting it, then exit 0."""
-    if not server:
-        raise click.UsageError("--prepare requires a server name.")
-    if branch:
-        raise click.UsageError(
-            "--prepare cannot be combined with --branch (uvx owns that environment)."
-        )
-    server_command_map, dir_name_map = auto_discover_mcps()
-    server_lower = server.lower()
-    if server_lower not in server_command_map:
-        _prepare_failed(
-            server,
-            "unknown_server",
-            f"available servers: {', '.join(sorted(server_command_map))}",
-        )
-    server_path = get_servers_path() / dir_name_map[server_lower]
-    started = time.monotonic()
-    if not server_path.exists():
-        # An installed console script has no clio-kit-owned environment to build.
-        _emit_prepare_result(
-            {"status": "not_applicable", "server": server_lower, "seconds": 0.0}
-        )
-        return
-
-    child_environment = subprocess_env_with_github_https_rewrite()
-    try:
-        runtime = _locked_server_runtime(server_path, child_environment)
-    except OSError as exc:
-        _prepare_failed(server_lower, _classify_os_error(exc), f"{type(exc).__name__}: {exc}")
-    except click.ClickException as exc:
-        _prepare_failed(server_lower, "build_failed", exc.format_message())
+    Selected artifacts supply each server project and lock. The child runs
+    from an immutable, source-and-lock-keyed environment so the outer wheel binds
+    the child dependency closure exactly. After the environment for the current
+    spec is confirmed built, older specs of this server are evicted and the
+    private uv cache is pruned, keeping steady-state disk bounded to the newest
+    spec. The in-use marker is held across the whole launch so a concurrent
+    launch or ``cache gc`` never evicts the environment this process is using.
+    """
+    runtime = _locked_server_runtime(server_path, child_environment)
 
     uv = uv_command()
     with contextlib.ExitStack() as held:
+        # The in-use marker is entered inside the build lock, so a launcher
+        # waiting for the lock never looks like a live holder of the
+        # environment being healed, and it stays held for the whole launch.
         with _locked_environment_build(runtime, uv, child_environment):
             held.enter_context(
                 EnvironmentInUseMarker(runtime.cache_root, runtime.environment.name)
             )
-            try:
-                completed = _sync_locked_environment(
-                    uv, runtime.project, child_environment
-                )
-            except FileNotFoundError as exc:
-                _prepare_failed(
-                    server_lower,
-                    "uv_missing",
-                    f"uv not found ({exc}); install uv: https://github.com/astral-sh/uv",
-                )
-            except OSError as exc:
-                _prepare_failed(server_lower, _classify_os_error(exc), f"{type(exc).__name__}: {exc}")
-        if completed.returncode != 0:
-            output = b"\n".join((completed.stdout or b"", completed.stderr or b""))
-            text = output.decode("utf-8", errors="replace")
-            _prepare_failed(
-                server_lower,
-                _classify_build_output(text),
-                f"uv sync exited {completed.returncode}: {text[-1500:]}",
+            built = cached_build(
+                runtime.runtime,
+                runtime.project,
+                lambda: _build_locked_environment(
+                    runtime.runtime, runtime.project, entry_command, child_environment
+                ),
             )
-        _maintain_cache_after_build(runtime, uv)
-    _emit_prepare_result(
-        {
-            "status": "prepared",
-            "server": server_lower,
-            "environment": str(runtime.environment),
-            "project": str(runtime.project),
-            "seconds": round(time.monotonic() - started, 3),
-        }
+        if built:
+            _maintain_cache_after_build(runtime, uv)
+        else:
+            default_event_emitter(
+                {
+                    "event": "cache_maintenance_skipped",
+                    "server": runtime.server,
+                    "reason": "environment_build_failed",
+                }
+            )
+            raise click.ClickException(
+                f"Failed to build locked {runtime.runtime} server {runtime.server}"
+            )
+        cmd = locked_server_command(runtime.project, entry_command, runtime.runtime)
+        cmd.extend(args)
+        _run_child_command(cmd, entry_command, child_environment)
+
+
+def _build_locked_environment(
+    runtime: str,
+    runtime_project: Path,
+    entry_command: str,
+    child_environment: dict[str, str],
+) -> bool:
+    """Materialize the child environment for the current spec from its lock.
+
+    A discrete, frozen build gives a verifiable "environment built" signal
+    before eviction removes any older spec, so a failed upgrade never destroys
+    the previously working environment. Its output is confined to stderr
+    because the child server's stdout is the JSON-RPC channel.
+
+    Every runtime's command here installs or compiles from the lock alone and
+    refuses to resolve, which is what makes the result a function of the hashed
+    inputs rather than of when it happened to run.
+    """
+    try:
+        completed = _run_locked_build(
+            runtime, runtime_project, entry_command, child_environment
+        )
+    except UnsupportedRuntime as exc:
+        sys.stderr.write(f"{exc}\n")
+        return False
+    except OSError:
+        return False
+    return completed.returncode == 0
+
+
+def _run_locked_build(
+    runtime: str,
+    runtime_project: Path,
+    entry_command: str,
+    child_environment: dict[str, str],
+) -> subprocess.CompletedProcess[bytes]:
+    """Run one runtime's lock-only build, echoing its output to stderr.
+
+    Raises ``UnsupportedRuntime`` when the toolchain is missing and ``OSError``
+    when the build cannot be spawned. stdin is never read.
+    """
+    command = build_command(
+        runtime,
+        runtime_project,
+        entry_command,
+        executable=runtime_executable(runtime),
     )
+    completed = subprocess.run(
+        command,
+        env=child_environment,
+        stdin=subprocess.DEVNULL,
+        capture_output=True,
+        cwd=str(runtime_project) if build_runs_in_project(runtime) else None,
+    )
+    for stream in (completed.stdout, completed.stderr):
+        if stream:
+            sys.stderr.write(stream.decode("utf-8", errors="replace"))
+    sys.stderr.flush()
+    return completed
 
 
 def _run_child_command(
@@ -974,15 +720,12 @@ def _run_child_command(
 
 
 @main.command("mcp-servers")
-def list_mcp_servers():
-    """List all available MCP servers"""
-    servers = list_available_servers()
-    if servers:
-        click.echo("Available MCP servers:")
-        for s in servers:
-            click.echo(f"  - {s}")
-    else:
-        click.echo("No MCP servers found.")
+@click.option("--scope", type=click.Choice(SERVER_SCOPE_ORDER), default=None)
+def list_mcp_servers(scope):
+    """List available MCP servers, grouped by published scope."""
+    _, dir_name_map = auto_discover_mcps()
+    for line in format_server_listing(get_servers_path(), dir_name_map, scope):
+        click.echo(line)
 
 
 @main.command("mcp-contracts")
@@ -997,208 +740,22 @@ def list_mcp_contracts() -> None:
 @click.argument("contract_id")
 def show_mcp_contract(contract_id: str) -> None:
     """Print one verified locked-server user contract as machine-readable JSON."""
-    artifact = load_mcp_user_contract(contract_id)
+    try:
+        artifact = load_mcp_user_contract(contract_id)
+    except ValueError as exc:
+        known = [e["contract_id"] for e in load_mcp_user_contract_index()["contracts"]]
+        hint = f"; valid ids: {', '.join(known)}" if contract_id not in known else ""
+        raise click.ClickException(f"{exc}{hint}") from exc
     click.echo(json.dumps(artifact, separators=(",", ":"), sort_keys=True))
 
 
-@main.command("prompt")
-@click.argument("prompt_name", required=False)
-def prompt(prompt_name):
-    """Print a prompt to stdout. List all if no name specified."""
-
-    prompt_map = auto_discover_prompts()
-
-    if not prompt_name:
-        # List all prompts
-        prompts = list_available_prompts()
-        if prompts:
-            click.echo("Available prompts:")
-            for p in prompts:
-                click.echo(f"  - {p}")
-        else:
-            click.echo("No prompts found.")
-        click.echo("\nUsage: clio-kit prompt <prompt-name>")
-        return
-
-    # Normalize prompt name (support both dash and underscore)
-    prompt_lower = prompt_name.lower()
-
-    if prompt_lower not in prompt_map:
-        click.echo(f"Error: Unknown prompt '{prompt_name}'")
-        click.echo(f"Available prompts: {', '.join(list_available_prompts())}")
-        sys.exit(1)
-
-    # Read and print the prompt file
-    prompt_file = prompt_map[prompt_lower]
-    try:
-        with open(prompt_file, "r") as f:
-            content = f.read()
-        click.echo(content)
-    except Exception as e:
-        click.echo(f"Error reading prompt file: {e}")
-        sys.exit(1)
-
-
-@main.command("prompts")
-def list_prompts_cmd():
-    """List all available prompts"""
-    prompts = list_available_prompts()
-    if prompts:
-        click.echo("Available prompts:")
-        for p in prompts:
-            click.echo(f"  - {p}")
-    else:
-        click.echo("No prompts found.")
-
-
-@main.command(
-    "search",
-    context_settings=dict(
-        ignore_unknown_options=True,
-        allow_extra_args=True,
-    ),
-)
-@click.argument("args", nargs=-1, type=click.UNPROCESSED)
-def search(args):
-    """Run agentic search commands (query, index, serve, list, seed)."""
-
-    if not args:
-        click.echo("clio-kit search: Hybrid retrieval engine for scientific corpora")
-        click.echo("\nSubcommands:")
-        click.echo("  query   Run retrieval queries")
-        click.echo("  index   Index documents into a namespace")
-        click.echo("  serve   Start the FastAPI server")
-        click.echo("  list    List indexed documents")
-        click.echo("  seed    Seed sample data")
-        click.echo("\nUsage: clio-kit search <subcommand> [options]")
-        click.echo("\nExamples:")
-        click.echo(
-            '  clio-kit search query --namespace local_fs --q "pressure > 200 kPa"'
-        )
-        click.echo("  clio-kit search index --namespace local_fs")
-        click.echo("  clio-kit search serve --port 8080")
-        return
-
-    search_path = get_search_path()
-    if not search_path.exists():
-        click.echo(f"Error: clio-agentic-search not found at {search_path}")
-        click.echo("Install from: https://github.com/iowarp/clio-kit")
-        sys.exit(1)
-
-    cmd = [uvx_command(), "--from", str(search_path), "clio"]
-    cmd.extend(args)
-
-    try:
-        subprocess.run(cmd, check=True, env=subprocess_env_with_github_https_rewrite())
-    except subprocess.CalledProcessError as e:
-        sys.exit(e.returncode)
-    except FileNotFoundError:
-        click.echo(
-            "Error: uvx not found. Please install uv: https://github.com/astral-sh/uv"
-        )
-        sys.exit(1)
-
-
-@main.group("cache")
-def cache_group() -> None:
-    """Inspect and reclaim the private MCP runtime cache."""
-
-
-@cache_group.command("gc")
-@click.option(
-    "--keep",
-    type=int,
-    default=None,
-    help="Environments to keep per server (overrides CLIO_KIT_ENV_KEEP).",
-)
-@click.option(
-    "--dry-run",
-    is_flag=True,
-    help="Report what would be evicted without deleting anything.",
-)
-def cache_gc(keep: int | None, dry_run: bool) -> None:
-    """Collapse every server to its newest N specs and prune the uv cache.
-
-    This is the manual reclaim path for a box already polluted by unbounded
-    environment history. It refuses to run while any environment is held by a
-    live server, because deleting an environment mid-spawn corrupts the cache.
-    """
-    cache_root = _clio_cache_root()
-    policy = load_cache_policy()
-    if keep is not None:
-        if keep < 1:
-            raise click.ClickException("--keep must be >= 1")
-        policy = dataclasses.replace(policy, keep_per_server=keep)
-    try:
-        eviction, prune = collect_cache_gc(
-            cache_root,
-            policy=policy,
-            uv_executable=uv_command(),
-            dry_run=dry_run,
-        )
-    except CacheInUseError as exc:
-        raise click.ClickException(str(exc)) from exc
-    budget = measure_cache_budget(cache_root, policy=policy)
-    click.echo(
-        json.dumps(
-            {
-                "dry_run": dry_run,
-                "keep_per_server": policy.keep_per_server,
-                "evicted": [
-                    {
-                        "server": entry.server,
-                        "hash_prefix": entry.hash_prefix,
-                        "bytes_freed": entry.bytes_freed,
-                    }
-                    for entry in eviction.evicted
-                ],
-                "skipped_in_use": [
-                    {"server": entry.server, "hash_prefix": entry.hash_prefix}
-                    for entry in eviction.skipped_in_use
-                ],
-                "bytes_freed": eviction.bytes_freed,
-                "uv_cache_prune": {
-                    "ran": prune.ran,
-                    "ok": prune.ok,
-                    "reason": prune.reason,
-                },
-                "cache_total_bytes": budget.total_bytes,
-                "over_budget": budget.over_budget,
-            },
-            sort_keys=True,
-        )
-    )
-
-
-@cache_group.command("status")
-def cache_status() -> None:
-    """Print a machine-readable summary of the private runtime cache footprint."""
-    cache_root = _clio_cache_root()
-    policy = load_cache_policy()
-    budget = measure_cache_budget(cache_root, policy=policy)
-    environments_root = cache_root / "mcp-environments"
-    per_server: dict[str, int] = {}
-    if environments_root.is_dir():
-        for server in sorted(discover_servers(cache_root)):
-            token = f"{server}-"
-            per_server[server] = sum(
-                1
-                for child in environments_root.iterdir()
-                if child.is_dir() and child.name.startswith(token)
-            )
-    click.echo(
-        json.dumps(
-            {
-                "cache_root": str(cache_root),
-                "total_bytes": budget.total_bytes,
-                "max_bytes": budget.max_bytes,
-                "over_budget": budget.over_budget,
-                "keep_per_server": policy.keep_per_server,
-                "environments_per_server": per_server,
-            },
-            sort_keys=True,
-        )
-    )
+# Registered rather than defined here: the launcher is held at a fixed size
+# by the ratchet, so command surfaces live in their own modules.
+main.add_command(CACHE_GROUP)
+for _prompt_command in PROMPT_COMMANDS:
+    main.add_command(_prompt_command)
+for _plugin_command in PLUGIN_COMMANDS:
+    main.add_command(_plugin_command)
 
 
 def cli():

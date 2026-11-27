@@ -1,0 +1,9 @@
+{
+	"domainAuthor": "Daisy Quach",
+	"checkerContributor": "Matthew Larson",
+	"upstreamRepository": "https://github.com/iowarp/wtf-ms",
+	"domainExtractionRef": "80ca1980bd1e4d66676204b70428ea7010dc4f0a",
+	"checkerExtractionRef": "0cfb1dc5f5d7c1e62bb78991f4fb04a669dc50a1",
+	"adaptation": "IOWarp Materio portable domain bundle (materials + I/O)",
+	"licenseEvidence": "No upstream LICENSE/COPYING/NOTICE file in the inspected extraction tree; no SPDX value asserted."
+}

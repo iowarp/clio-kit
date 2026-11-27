@@ -1,0 +1,13 @@
+{
+  "name": "clio-earthdata",
+  "description": "Search NASA Earthdata for Earth-science datasets and their files, and download them with an Earthdata Login.",
+  "version": "1.0.0",
+  "author": {
+    "name": "IoWarp Team - Gnosis Research Center",
+    "email": "grc@illinoistech.edu",
+    "url": "https://github.com/iowarp/clio-kit"
+  },
+  "homepage": "https://github.com/iowarp/clio-kit",
+  "repository": "https://github.com/iowarp/clio-kit",
+  "license": "BSD-3-Clause"
+}

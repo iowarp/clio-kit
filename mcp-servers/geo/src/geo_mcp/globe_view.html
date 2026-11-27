@@ -1,0 +1,947 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Globe</title>
+<!--
+  The geo server's globe view (MCP Apps, ui://geo/globe). CesiumJS 1.123 is loaded from
+  Cesium's CDN at run time and draws OpenStreetMap's raster tiles, with no Cesium ion
+  token. Loading Cesium, the OpenStreetMap imagery set-up and the camera fitting follow
+  the MCP Apps map example (modelcontextprotocol/ext-apps, examples/map-server, MIT).
+-->
+<style>
+  /* Fallbacks for a host that sends no style variables (MCP Apps theming). */
+  :root {
+    color-scheme: light dark;
+    --color-background-primary: light-dark(#ffffff, #1e1f22);
+    --color-background-secondary: light-dark(#f4f5f7, #26282c);
+    --color-text-primary: light-dark(#1f2328, #e6e8eb);
+    --color-text-secondary: light-dark(#59606a, #a6adb7);
+    --color-border-primary: light-dark(#d4d6da, #3a3d44);
+    --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --border-radius-md: 8px;
+    --geo-highlight: #ffbf00;
+  }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body { font: 13px/1.4 var(--font-sans); color: var(--color-text-primary);
+    background: var(--color-background-primary); }
+  #globe { position: absolute; inset: 0; touch-action: none; }
+  .chrome { position: absolute; z-index: 5; color: var(--color-text-primary);
+    background: color-mix(in srgb, var(--color-background-primary) 92%, transparent);
+    border: 1px solid var(--color-border-primary); border-radius: var(--border-radius-md);
+    box-shadow: 0 2px 10px rgb(0 0 0 / 0.18); }
+  #status { left: 50%; top: 50%; transform: translate(-50%, -50%); padding: 12px 16px;
+    max-width: min(440px, 80%); text-align: center; }
+  #status[hidden], #info[hidden], #hover[hidden] { display: none; }
+  #panel { left: 10px; top: 10px; max-width: min(300px, calc(100% - 20px));
+    max-height: calc(100% - 60px); overflow: auto; }
+  #panel-head { display: flex; align-items: center; gap: 8px; padding: 6px 8px; }
+  #title { font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; }
+  button { font: inherit; color: inherit; background: var(--color-background-secondary);
+    border: 1px solid var(--color-border-primary); border-radius: 6px; padding: 2px 8px;
+    cursor: pointer; }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--geo-highlight);
+    outline-offset: 1px; }
+  #layers { list-style: none; margin: 0; padding: 0 8px 8px; }
+  #layers[hidden] { display: none; }
+  #layers li { padding: 4px 0; border-top: 1px solid var(--color-border-primary); }
+  #layers label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .swatch { width: 12px; height: 12px; border-radius: 3px; flex: none;
+    border: 1px solid rgb(0 0 0 / 0.35); }
+  .swatch.dot { border-radius: 50%; }
+  .layer-name { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .count, .muted { color: var(--color-text-secondary); font-size: 12px; }
+  .legend { margin: 3px 0 0 18px; display: grid; gap: 2px; font-size: 12px; }
+  .legend-row { display: flex; align-items: center; gap: 6px; }
+  .ramp { height: 10px; border-radius: 3px; border: 1px solid rgb(0 0 0 / 0.25); }
+  .ramp-ends { display: flex; justify-content: space-between; }
+  .problem { color: var(--color-text-secondary); font-size: 12px; margin: 2px 0 0 18px; }
+  #info { right: 10px; top: 10px; width: min(320px, calc(100% - 20px));
+    max-height: calc(100% - 60px); overflow: auto; padding: 8px 10px; }
+  #info-head { display: flex; align-items: start; gap: 8px; }
+  #info-title { margin: 0; font-size: 14px; flex: 1; overflow-wrap: anywhere; }
+  #info-sub { margin: 2px 0 6px; }
+  #info dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px;
+    font-size: 12px; }
+  #info dt { color: var(--color-text-secondary); }
+  #info dd { margin: 0; overflow-wrap: anywhere; }
+  #hover { position: absolute; z-index: 6; pointer-events: none; padding: 3px 7px;
+    font-size: 12px; white-space: nowrap; }
+  @media (max-width: 520px) {
+    #info { left: 10px; right: 10px; top: auto; bottom: 34px; width: auto; max-height: 45%; }
+    #panel { max-width: calc(100% - 20px); }
+  }
+  .cesium-viewer-bottom { opacity: 0.9; }
+</style>
+</head>
+<body>
+<div id="globe" aria-label="Globe" role="application"></div>
+<aside id="panel" class="chrome" aria-label="Layers">
+  <div id="panel-head"><span id="title">Globe</span>
+    <button id="toggle-layers" type="button" aria-expanded="true" aria-controls="layers">Hide layers</button></div>
+  <ul id="layers"></ul>
+</aside>
+<section id="info" class="chrome" aria-live="polite" hidden>
+  <div id="info-head"><h2 id="info-title"></h2>
+    <button id="info-clear" type="button">Clear</button></div>
+  <p id="info-sub" class="muted"></p>
+  <dl id="info-props"></dl>
+</section>
+<div id="hover" class="chrome" hidden></div>
+<div id="status" class="chrome" role="status">Loading the globe…</div>
+<script>
+(() => {
+  'use strict';
+  const PROTOCOL = '2026-01-26';
+  const CESIUM_BASE = 'https://cesium.com/downloads/cesiumjs/releases/1.123/Build/Cesium';
+  const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const EDIT_TOOL = 'edit_globe_view';
+  const HIGHLIGHT = '#ffbf00';
+  const $ = (id) => document.getElementById(id);
+  const statusBox = $('status');
+
+  // --- Host messaging (MCP Apps JSON-RPC over postMessage) -------------------------
+  const pending = new Map();
+  let nextId = 1;
+  let hostContext = {};
+  const send = (message) => window.parent.postMessage(message, '*');
+  function request(method, params) {
+    const id = 'geo-' + nextId++;
+    send({ jsonrpc: '2.0', id, method, params });
+    return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+  }
+  const notify = (method, params) => send({ jsonrpc: '2.0', method, params });
+  const respond = (id, result) => send({ jsonrpc: '2.0', id, result });
+  const fail = (id, message) => send({ jsonrpc: '2.0', id, error: { code: -32603, message } });
+
+  function showStatus(text) { statusBox.hidden = !text; statusBox.textContent = text || ''; }
+
+  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const flightSeconds = (wanted) => (reducedMotion() ? 0 : wanted);
+
+  // --- State -----------------------------------------------------------------------
+  let viewer = null;
+  let C = null; // the Cesium namespace once loaded
+  let current = null; // the show_on_globe structuredContent
+  const layers = new Map(); // name -> {spec, source, visible, features: Map(id -> rec)}
+  let selected = []; // [{layer, id}]
+  let hovered = null;
+  let resolveReady;
+  const ready = new Promise((resolve) => { resolveReady = resolve; });
+
+  // --- Theme -----------------------------------------------------------------------
+  let appliedVariables = [];
+  function applyTheme() {
+    const theme = hostContext.theme === 'dark' || hostContext.theme === 'light' ? hostContext.theme : null;
+    const variables = (hostContext.styles && hostContext.styles.variables) || {};
+    const root = document.documentElement;
+    appliedVariables.forEach((name) => { if (!(name in variables)) root.style.removeProperty(name); });
+    appliedVariables = [];
+    for (const [name, value] of Object.entries(variables)) {
+      if (/^--[A-Za-z0-9-]+$/.test(name) && typeof value === 'string') {
+        root.style.setProperty(name, value);
+        appliedVariables.push(name);
+      }
+    }
+    root.style.colorScheme = theme || 'light dark';
+    if (viewer) {
+      viewer.scene.backgroundColor = C.Color.fromCssColorString(getComputedStyle(document.body).backgroundColor);
+      for (const layer of layers.values()) layer.features.forEach(styleLabel);
+      viewer.scene.requestRender();
+    }
+  }
+
+  // --- Cesium ----------------------------------------------------------------------
+  function loadCesium() {
+    if (window.Cesium) return Promise.resolve(window.Cesium);
+    window.CESIUM_BASE_URL = CESIUM_BASE;
+    const css = document.createElement('link');
+    css.rel = 'stylesheet';
+    css.href = CESIUM_BASE + '/Widgets/widgets.css';
+    document.head.appendChild(css);
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = CESIUM_BASE + '/Cesium.js';
+      script.onload = () => resolve(window.Cesium);
+      script.onerror = () => reject(new Error('CesiumJS could not be loaded from cesium.com'));
+      document.head.appendChild(script);
+    });
+  }
+
+  function createViewer() {
+    C.Ion.defaultAccessToken = undefined;
+    C.Camera.DEFAULT_VIEW_RECTANGLE = C.Rectangle.fromDegrees(-150, -10, 10, 70);
+    const imagery = new C.UrlTemplateImageryProvider({
+      url: TILE_URL, minimumLevel: 0, maximumLevel: 19,
+      credit: new C.Credit('© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors', true),
+    });
+    const v = new C.Viewer('globe', {
+      baseLayer: new C.ImageryLayer(imagery), geocoder: false, baseLayerPicker: false,
+      animation: false, timeline: false, homeButton: false, sceneModePicker: false,
+      navigationHelpButton: false, fullscreenButton: false, infoBox: false,
+      selectionIndicator: false, terrainProvider: new C.EllipsoidTerrainProvider(),
+      requestRenderMode: true, maximumRenderTimeChange: Infinity,
+      contextOptions: { webgl: { preserveDrawingBuffer: true, alpha: false } },
+    });
+    v.scene.skyBox.show = false;
+    if (v.scene.sun) v.scene.sun.show = false;
+    if (v.scene.moon) v.scene.moon.show = false;
+    v.scene.globe.baseColor = C.Color.fromCssColorString('#5b6b7a');
+    v.scene.postProcessStages.fxaa.enabled = false;
+    v.canvas.style.imageRendering = 'auto';
+    for (const name of ['touchstart', 'touchmove']) {
+      v.canvas.addEventListener(name, (e) => e.preventDefault(), { passive: false });
+    }
+    const handler = new C.ScreenSpaceEventHandler(v.scene.canvas);
+    handler.setInputAction((click) => onClick(click.position), C.ScreenSpaceEventType.LEFT_CLICK);
+    let moveQueued = null;
+    handler.setInputAction((move) => {
+      if (!moveQueued) requestAnimationFrame(() => { onHover(moveQueued); moveQueued = null; });
+      moveQueued = move.endPosition;
+    }, C.ScreenSpaceEventType.MOUSE_MOVE);
+    v.camera.moveEnd.addEventListener(() => scheduleReport());
+    // A tooltip belongs to the pointer: a flight or a drag ends it.
+    v.camera.moveStart.addEventListener(() => clearHover());
+    v.canvas.addEventListener('pointerleave', () => clearHover());
+    return v;
+  }
+
+  // --- Layers ----------------------------------------------------------------------
+  const color = (css, alpha) => C.Color.fromCssColorString(css).withAlpha(alpha);
+  const featureColor = (spec, id) => (spec.colors && spec.colors[id]) || spec.style.fill;
+
+  function entityFeatureId(entity, ids) {
+    const raw = String(entity.id);
+    if (ids.has(raw)) return raw;
+    const base = raw.replace(/_\d+$/, '');
+    return ids.has(base) ? base : null;
+  }
+
+  function featureName(rec) {
+    const props = rec.properties || {};
+    const key = rec.layer.spec.style.label_property;
+    for (const k of [key, 'name', 'title', 'label', 'station', 'site', 'code']) {
+      if (k && props[k] !== undefined && props[k] !== null && props[k] !== '') return String(props[k]);
+    }
+    return rec.id;
+  }
+
+  function styleEntity(rec, entity, state) {
+    const spec = rec.layer.spec;
+    const s = spec.style;
+    const fill = featureColor(spec, rec.id);
+    const on = state === 'selected';
+    const over = state === 'hover';
+    if (entity.billboard) entity.billboard = undefined;
+    if (rec.kind === 'point') {
+      const size = s.point_size * (on ? 1.7 : over ? 1.35 : 1);
+      entity.point = new C.PointGraphics({
+        pixelSize: size, color: color(fill, s.point_alpha),
+        outlineColor: on ? color(HIGHLIGHT, 1) : color(s.stroke, 0.9),
+        outlineWidth: on ? 4 : 1.5,
+      });
+    } else if (entity.polygon) {
+      entity.polygon.material = new C.ColorMaterialProperty(color(fill, on ? Math.min(1, s.alpha + 0.2) : s.alpha));
+      entity.polygon.outline = true;
+      entity.polygon.outlineColor = on || over ? color(HIGHLIGHT, 1) : color(s.stroke, 1);
+      entity.polygon.height = 0;
+    } else if (entity.polyline) {
+      entity.polyline.material = new C.ColorMaterialProperty(on ? color(HIGHLIGHT, 1) : color(fill, Math.max(s.alpha, 0.85)));
+      entity.polyline.width = s.line_width + (on ? 3 : over ? 1.5 : 0);
+    }
+  }
+
+  function styleLabel(rec) {
+    const show = rec.kind === 'point' && (rec.layer.spec.style.label_property || isSelected(rec));
+    for (const entity of rec.entities) {
+      if (!show) { entity.label = undefined; continue; }
+      entity.label = new C.LabelGraphics({
+        text: featureName(rec), font: '600 12px ' + (getComputedStyle(document.body).fontFamily || 'sans-serif'),
+        // The basemap is light in both themes, so labels are dark text on a light halo.
+        fillColor: C.Color.fromCssColorString('#1d1f23'),
+        outlineColor: C.Color.WHITE, outlineWidth: 3,
+        style: C.LabelStyle.FILL_AND_OUTLINE, verticalOrigin: C.VerticalOrigin.BOTTOM,
+        pixelOffset: new C.Cartesian2(0, -(rec.layer.spec.style.point_size / 2 + 5)),
+        showBackground: isSelected(rec), backgroundColor: color(HIGHLIGHT, 0.85),
+        // Labels of close points would pile up from far away: they appear once the camera
+        // is near enough to tell the points apart. A selected point is always named.
+        distanceDisplayCondition: isSelected(rec) || hovered === rec ? undefined
+          : new C.DistanceDisplayCondition(0, rec.layer.labelDistance || Number.MAX_VALUE),
+      });
+      if (isSelected(rec)) entity.label.fillColor = C.Color.BLACK;
+      if (isSelected(rec)) entity.label.outlineWidth = 0;
+    }
+  }
+
+  function restyle(rec) {
+    const state = isSelected(rec) ? 'selected' : hovered === rec ? 'hover' : 'plain';
+    rec.entities.forEach((entity) => styleEntity(rec, entity, state));
+    styleLabel(rec);
+    outlineArea(rec, state === 'selected');
+  }
+
+  // A polygon's own outline is one pixel wide in WebGL: a selected area gets a wide ring.
+  function outlineArea(rec, on) {
+    (rec.rings || []).forEach((ring) => viewer.entities.remove(ring));
+    rec.rings = [];
+    if (!on || rec.kind !== 'area') return;
+    const now = C.JulianDate.now();
+    for (const entity of rec.entities) {
+      if (!entity.polygon) continue;
+      const hierarchy = entity.polygon.hierarchy.getValue(now);
+      if (!hierarchy) continue;
+      const positions = hierarchy.positions.concat([hierarchy.positions[0]]);
+      rec.rings.push(viewer.entities.add({ polyline: { positions, width: 4,
+        material: color(HIGHLIGHT, 1), arcType: C.ArcType.RHUMB } }));
+    }
+  }
+
+  async function drawLayer(spec) {
+    const old = layers.get(spec.name);
+    if (old && old.source) viewer.dataSources.remove(old.source, true);
+    if (old) old.features.forEach((rec) => outlineArea(rec, false));
+    const record = { spec, source: null, visible: old ? old.visible : true, features: new Map(), error: spec.error };
+    layers.set(spec.name, record);
+    if (spec.error || !spec.geojson) return record;
+    const source = await C.GeoJsonDataSource.load(spec.geojson, { clampToGround: false });
+    source.name = spec.name;
+    const ids = new Set(spec.geojson.features.map((f) => String(f.id)));
+    const byId = new Map(spec.geojson.features.map((f) => [String(f.id), f]));
+    for (const entity of source.entities.values) {
+      const id = entityFeatureId(entity, ids);
+      if (!id) continue;
+      let rec = record.features.get(id);
+      if (!rec) {
+        const feature = byId.get(id);
+        const type = String(feature.geometry.type);
+        rec = { id, layer: record, properties: feature.properties || {}, entities: [],
+          kind: type.endsWith('Point') ? 'point' : type.endsWith('LineString') ? 'line' : 'area' };
+        record.features.set(id, rec);
+      }
+      entity.geoFeature = rec;
+      rec.entities.push(entity);
+    }
+    record.labelDistance = labelDistance(record);
+    record.features.forEach(restyle);
+    source.show = record.visible;
+    record.source = source;
+    await viewer.dataSources.add(source);
+    orderLayers();
+    return record;
+  }
+
+  // How near the camera must be for a layer's labels: about 25 times the typical gap
+  // between its points (the median distance to the nearest neighbour).
+  function labelDistance(record) {
+    const now = C.JulianDate.now();
+    const points = [...record.features.values()].filter((rec) => rec.kind === 'point')
+      .map((rec) => rec.entities[0].position && rec.entities[0].position.getValue(now)).filter(Boolean);
+    if (points.length < 2) return Number.MAX_VALUE;
+    const nearest = points.map((p, i) => Math.min(...points.filter((_, j) => j !== i)
+      .map((q) => C.Cartesian3.distance(p, q)))).filter((d) => d > 0).sort((a, b) => a - b);
+    if (!nearest.length) return Number.MAX_VALUE;
+    return Math.max(3.0e4, Math.min(2.0e7, nearest[Math.floor(nearest.length / 2)] * 25));
+  }
+
+  function orderLayers() {
+    const sorted = [...layers.values()].filter((l) => l.source)
+      .sort((a, b) => (a.spec.style.zorder || 0) - (b.spec.style.zorder || 0));
+    sorted.forEach((layer) => viewer.dataSources.raiseToTop(layer.source));
+  }
+
+  function removeLayer(name) {
+    const layer = layers.get(name);
+    if (!layer) return false;
+    if (layer.source) viewer.dataSources.remove(layer.source, true);
+    layer.features.forEach((rec) => outlineArea(rec, false));
+    if (hovered && hovered.layer === layer) clearHover();
+    layers.delete(name);
+    selected = selected.filter((s) => s.layer !== name);
+    renderPanel();
+    renderInfo();
+    return true;
+  }
+
+  async function showResult(structured) {
+    current = structured;
+    for (const name of [...layers.keys()]) removeLayer(name);
+    selected = [];
+    $('title').textContent = structured.title || 'Globe';
+    document.title = structured.title || 'Globe';
+    for (const spec of structured.layers || []) await drawLayer(spec);
+    renderPanel();
+    renderInfo();
+    flyHome();
+    viewer.scene.requestRender();
+    showStatus('');
+    resolveReady();
+    scheduleReport();
+  }
+
+  // --- Camera ----------------------------------------------------------------------
+  function padRect(bounds, pad) {
+    let [west, south, east, north] = bounds;
+    let width = east - west;
+    if (width < 0) width += 360;
+    const height = north - south;
+    const dx = Math.max(width * pad, 0.15);
+    const dy = Math.max(height * pad, 0.15);
+    west -= dx; east += dx;
+    south = Math.max(-89.9, south - dy); north = Math.min(89.9, north + dy);
+    const wrap = (lon) => ((lon + 540) % 360) - 180;
+    if (width + 2 * dx >= 360) { west = -180; east = 180; }
+    return C.Rectangle.fromDegrees(wrap(west), south, wrap(east), north);
+  }
+
+  // Where the view opens: placed at once, from the bounds alone. A flight or a fit to a
+  // rectangle needs the canvas's size, which a frame that is not on screen yet does
+  // not have, and a flight does not advance while its frame is not drawn.
+  function homeView() {
+    const c = current && current.camera;
+    if (c) {
+      return { destination: C.Cartesian3.fromDegrees(c.lon, c.lat, c.height_m),
+        orientation: { heading: C.Math.toRadians(c.heading_deg || 0), pitch: C.Math.toRadians(c.pitch_deg ?? -90), roll: 0 } };
+    }
+    const box = (current && (current.bbox || current.bounds)) || null;
+    if (!box) return null;
+    const [west, south, east, north] = box.map(Number);
+    let width = east - west;
+    if (width < 0) width += 360;
+    const lat = (south + north) / 2;
+    const lon = ((west + width / 2 + 540) % 360) - 180;
+    const latM = (north - south) * 111e3;
+    const lonM = width * 111e3 * Math.cos(C.Math.toRadians(lat));
+    // Cesium's 60° field of view spans the frame's longer side; the shorter one sees less.
+    const aspect = window.innerWidth > 0 && window.innerHeight > 0 ? window.innerWidth / window.innerHeight : 1.6;
+    const needed = aspect >= 1 ? Math.max(lonM, latM * aspect) : Math.max(lonM / aspect, latM);
+    const height = Math.max(15e3, Math.min(2.0e7, (needed / (2 * Math.tan(Math.PI / 6))) * 1.25));
+    return { destination: C.Cartesian3.fromDegrees(lon, lat, height),
+      orientation: { heading: 0, pitch: -C.Math.PI_OVER_TWO, roll: 0 } };
+  }
+
+  function flyHome() {
+    const home = homeView();
+    if (home) viewer.camera.setView(home);
+  }
+
+  function flyTo(args) {
+    return new Promise((resolve, reject) => {
+      const duration = flightSeconds(typeof args.duration_s === 'number' ? args.duration_s : 1.5);
+      const done = { duration, complete: () => resolve(), cancel: () => resolve() };
+      if (Array.isArray(args.bbox) && args.bbox.length === 4) {
+        viewer.camera.flyTo({ destination: padRect(args.bbox.map(Number), 0.05), ...done });
+      } else if (Array.isArray(args.point) && args.point.length >= 2) {
+        const height = Number(args.height_m) || Math.min(viewer.camera.positionCartographic.height, 2.0e6);
+        viewer.camera.flyTo({ destination: C.Cartesian3.fromDegrees(Number(args.point[0]), Number(args.point[1]), height),
+          orientation: { heading: 0, pitch: -C.Math.PI_OVER_TWO, roll: 0 }, ...done });
+      } else {
+        reject(new Error('fly_to needs bbox [min_lon, min_lat, max_lon, max_lat] or point [lon, lat].'));
+      }
+    });
+  }
+
+  function cameraState() {
+    const camera = viewer.camera;
+    const at = camera.positionCartographic;
+    const state = {
+      lon: round(C.Math.toDegrees(at.longitude), 5), lat: round(C.Math.toDegrees(at.latitude), 5),
+      height_m: Math.round(at.height), heading_deg: round(C.Math.toDegrees(camera.heading), 1),
+      pitch_deg: round(C.Math.toDegrees(camera.pitch), 1),
+    };
+    const rect = camera.computeViewRectangle(viewer.scene.globe.ellipsoid);
+    const wide = rect && C.Math.toDegrees(rect.north - rect.south) > 170;
+    if (rect && !wide) {
+      state.view_bbox = [rect.west, rect.south, rect.east, rect.north].map((v) => round(C.Math.toDegrees(v), 4));
+    } else {
+      state.whole_globe = true;
+    }
+    return state;
+  }
+  const round = (v, n) => Number(Number(v).toFixed(n));
+
+  function recPosition(rec) {
+    const entity = rec.entities[0];
+    const now = C.JulianDate.now();
+    if (rec.kind === 'point' && entity.position) {
+      const p = C.Cartographic.fromCartesian(entity.position.getValue(now));
+      return [round(C.Math.toDegrees(p.longitude), 6), round(C.Math.toDegrees(p.latitude), 6)];
+    }
+    return null;
+  }
+
+  async function flyToFeatures(recs) {
+    const duration = flightSeconds(1.2);
+    if (recs.length === 1 && recs[0].kind === 'point') {
+      const [lon, lat] = recPosition(recs[0]);
+      // Turn to the point and, from far away, come near enough to tell it from its
+      // neighbours (where the layer's labels appear).
+      const near = (recs[0].layer.labelDistance || 8.0e6) * 0.8;
+      const height = Math.max(20e3, Math.min(viewer.camera.positionCartographic.height, near, 8.0e6));
+      await new Promise((resolve) => viewer.camera.flyTo({
+        destination: C.Cartesian3.fromDegrees(lon, lat, height),
+        orientation: { heading: 0, pitch: -C.Math.PI_OVER_TWO, roll: 0 },
+        duration, complete: resolve, cancel: resolve,
+      }));
+      return;
+    }
+    const entities = recs.flatMap((rec) => rec.entities);
+    await viewer.flyTo(entities, { duration });
+  }
+
+  // --- Selection -------------------------------------------------------------------
+  const isSelected = (rec) => selected.some((s) => s.layer === rec.layer.spec.name && s.id === rec.id);
+
+  function findFeature(id, layerName) {
+    const key = String(id);
+    const order = layerName ? [layers.get(layerName)].filter(Boolean) : [...layers.values()];
+    for (const layer of order) {
+      const rec = layer.features.get(key);
+      if (rec) return rec;
+    }
+    return null;
+  }
+
+  function setSelection(recs) {
+    const before = selected.map((s) => findFeature(s.id, s.layer)).filter(Boolean);
+    selected = recs.map((rec) => ({ layer: rec.layer.spec.name, id: rec.id }));
+    for (const rec of new Set([...before, ...recs])) restyle(rec);
+    for (const rec of recs) {
+      if (!rec.layer.visible) { rec.layer.visible = true; if (rec.layer.source) rec.layer.source.show = true; renderPanel(); }
+    }
+    renderInfo();
+    viewer.scene.requestRender();
+    scheduleReport(true);
+  }
+
+  function onClick(position) {
+    const picked = viewer.scene.pick(position);
+    const rec = picked && picked.id && picked.id.geoFeature;
+    if (rec) setSelection([rec]);
+    else if (selected.length) setSelection([]);
+  }
+
+  function onHover(position) {
+    if (!position || !viewer) return;
+    const picked = viewer.scene.pick(position);
+    const rec = (picked && picked.id && picked.id.geoFeature) || null;
+    if (rec !== hovered) {
+      const before = hovered;
+      hovered = rec;
+      if (before) restyle(before);
+      if (rec) restyle(rec);
+      viewer.scene.requestRender();
+    }
+    viewer.canvas.style.cursor = rec ? 'pointer' : '';
+    const tip = $('hover');
+    if (rec) {
+      tip.textContent = featureName(rec) + ' · ' + rec.layer.spec.name;
+      tip.hidden = false;
+      tip.style.left = Math.min(position.x + 14, window.innerWidth - tip.offsetWidth - 6) + 'px';
+      tip.style.top = Math.max(position.y - 30, 4) + 'px';
+    } else {
+      tip.hidden = true;
+    }
+  }
+
+  function clearHover() {
+    $('hover').hidden = true;
+    if (!hovered) return;
+    const before = hovered;
+    hovered = null;
+    restyle(before);
+    viewer.canvas.style.cursor = '';
+    viewer.scene.requestRender();
+  }
+
+  function selectionState() {
+    const recs = selected.map((s) => findFeature(s.id, s.layer)).filter(Boolean);
+    if (!recs.length) return null;
+    return recs.map((rec) => ({
+      layer: rec.layer.spec.name, id: rec.id, name: featureName(rec),
+      geometry: rec.kind, position: recPosition(rec), properties: clip(rec.properties),
+    }));
+  }
+
+  function clip(props) {
+    const out = {};
+    for (const [k, v] of Object.entries(props || {}).slice(0, 40)) {
+      out[k] = typeof v === 'string' && v.length > 200 ? v.slice(0, 200) + '…' : v;
+    }
+    return out;
+  }
+
+  // --- Panels ----------------------------------------------------------------------
+  const geometryWord = (spec) => {
+    const kinds = spec.geometry || [];
+    const word = kinds.length === 1 ? { Point: 'point', LineString: 'line', Polygon: 'polygon' }[kinds[0]] : null;
+    const n = spec.features || 0;
+    return n + ' ' + (word || 'feature') + (n === 1 ? '' : 's');
+  };
+
+  function swatch(colour, dot) {
+    const span = document.createElement('span');
+    span.className = 'swatch' + (dot ? ' dot' : '');
+    span.style.background = colour;
+    span.setAttribute('aria-hidden', 'true');
+    return span;
+  }
+
+  function legendNode(spec) {
+    const legend = spec.legend;
+    if (!legend || legend.kind === 'single') return null;
+    const box = document.createElement('div');
+    box.className = 'legend';
+    const head = document.createElement('div');
+    head.className = 'muted';
+    head.textContent = 'Colour: ' + legend.field;
+    box.appendChild(head);
+    if (legend.kind === 'ramp') {
+      const bar = document.createElement('div');
+      bar.className = 'ramp';
+      bar.style.background = 'linear-gradient(to right, ' + legend.stops.join(', ') + ')';
+      const ends = document.createElement('div');
+      ends.className = 'ramp-ends muted';
+      ends.innerHTML = '<span></span><span></span>';
+      ends.children[0].textContent = Number(legend.min).toPrecision(4);
+      ends.children[1].textContent = Number(legend.max).toPrecision(4);
+      box.append(bar, ends);
+    } else {
+      for (const entry of legend.entries.slice(0, 12)) {
+        const row = document.createElement('div');
+        row.className = 'legend-row';
+        const label = document.createElement('span');
+        label.textContent = entry.label;
+        row.append(swatch(entry.color, (spec.geometry || []).includes('Point')), label);
+        box.appendChild(row);
+      }
+      if (legend.entries.length > 12) {
+        const more = document.createElement('div');
+        more.className = 'muted';
+        more.textContent = (legend.entries.length - 12) + ' more';
+        box.appendChild(more);
+      }
+    }
+    return box;
+  }
+
+  function renderPanel() {
+    const list = $('layers');
+    list.replaceChildren(...[...layers.values()].map((layer) => {
+      const spec = layer.spec;
+      const item = document.createElement('li');
+      const label = document.createElement('label');
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.checked = layer.visible && !spec.error;
+      box.disabled = !!spec.error;
+      box.addEventListener('change', () => {
+        layer.visible = box.checked;
+        if (layer.source) layer.source.show = box.checked;
+        viewer.scene.requestRender();
+        scheduleReport();
+      });
+      const name = document.createElement('span');
+      name.className = 'layer-name';
+      name.textContent = spec.name;
+      const count = document.createElement('span');
+      count.className = 'count';
+      count.textContent = spec.error ? 'not shown' : geometryWord(spec) + (layer.visible ? '' : ', hidden');
+      const legendColours = spec.legend && spec.legend.kind !== 'single'
+        ? (spec.legend.stops || spec.legend.entries.map((e) => e.color)).slice(0, 6) : null;
+      const mark = swatch(spec.style ? spec.style.fill : '#999', (spec.geometry || []).includes('Point'));
+      if (legendColours && legendColours.length > 1) {
+        mark.style.background = 'conic-gradient(' + legendColours.map((c, i) => c + ' ' + (i * 360 / legendColours.length)
+          + 'deg ' + ((i + 1) * 360 / legendColours.length) + 'deg').join(', ') + ')';
+      }
+      label.append(box, mark, name, count);
+      item.appendChild(label);
+      if (spec.error) {
+        const why = document.createElement('div');
+        why.className = 'problem';
+        why.textContent = spec.error;
+        item.appendChild(why);
+      }
+      const legend = !spec.error && legendNode(spec);
+      if (legend) item.appendChild(legend);
+      return item;
+    }));
+  }
+
+  function renderInfo() {
+    const recs = selected.map((s) => findFeature(s.id, s.layer)).filter(Boolean);
+    const box = $('info');
+    if (!recs.length) { box.hidden = true; return; }
+    const rec = recs[0];
+    box.hidden = false;
+    $('info-title').textContent = recs.length > 1 ? recs.length + ' features selected' : featureName(rec);
+    const position = recPosition(rec);
+    $('info-sub').textContent = rec.layer.spec.name + ' · id ' + rec.id
+      + (position ? ' · ' + position[1].toFixed(4) + ', ' + position[0].toFixed(4) : '');
+    const dl = $('info-props');
+    const rows = Object.entries(rec.properties || {}).slice(0, 40);
+    dl.replaceChildren(...rows.flatMap(([k, v]) => {
+      const dt = document.createElement('dt');
+      dt.textContent = k;
+      const dd = document.createElement('dd');
+      dd.textContent = v === null || v === undefined ? '' : typeof v === 'object' ? JSON.stringify(v) : String(v);
+      return [dt, dd];
+    }));
+  }
+
+  $('info-clear').addEventListener('click', () => setSelection([]));
+  $('toggle-layers').addEventListener('click', (event) => {
+    const list = $('layers');
+    list.hidden = !list.hidden;
+    event.currentTarget.setAttribute('aria-expanded', String(!list.hidden));
+    event.currentTarget.textContent = list.hidden ? 'Show layers' : 'Hide layers';
+  });
+
+  // --- What the view reports (ui/update-model-context) -----------------------------
+  let reportTimer = null;
+  let lastSent = 0;
+  let sentKey = '';
+  function describe(state) {
+    const parts = [];
+    parts.push('Globe' + (state.title ? ' "' + state.title + '"' : '') + ' (view ' + state.view + ') shows '
+      + state.layers.map((l) => l.name + ' (' + geometryWord(l)
+        + (l.visible ? '' : ', hidden by the person') + ')').join(', ') + '.');
+    const c = state.camera;
+    parts.push('Camera over ' + c.lat.toFixed(3) + ', ' + c.lon.toFixed(3) + ' at ' + Math.round(c.height_m / 1000) + ' km'
+      + (c.view_bbox ? ', showing about lon ' + c.view_bbox[0] + ' to ' + c.view_bbox[2] + ', lat '
+        + c.view_bbox[1] + ' to ' + c.view_bbox[3] + '.' : ', showing the whole globe.'));
+    if (state.selection) {
+      parts.push(state.selection.length > 1 ? state.selection.length + ' features are selected: '
+        + state.selection.map((s) => s.name + ' (' + s.layer + ', id ' + s.id + ')').join('; ') + '.'
+        : 'The person selected ' + state.selection[0].name + ' (layer ' + state.selection[0].layer + ', id '
+          + state.selection[0].id + ')' + (state.selection[0].position ? ' at lon/lat '
+          + state.selection[0].position.join(', ') : '') + ': ' + Object.entries(state.selection[0].properties)
+          .map(([k, v]) => k + '=' + (typeof v === 'object' ? JSON.stringify(v) : v)).join(', ') + '.');
+    } else {
+      parts.push('Nothing is selected.');
+    }
+    return parts.join(' ');
+  }
+
+  function structured() {
+    const state = {
+      view: current ? current.view : null,
+      title: current ? current.title : '',
+      layers: [...layers.values()].map((l) => ({ name: l.spec.name, features: l.spec.features || 0,
+        geometry: l.spec.geometry || [], visible: l.visible && !l.spec.error })),
+      camera: cameraState(),
+    };
+    const selection = selectionState();
+    if (selection) {
+      state.selection = selection;
+      state.selected_feature = selection.length === 1 ? selection[0].id : selection.map((s) => s.id);
+    }
+    return state;
+  }
+
+  function report() {
+    reportTimer = null;
+    if (!viewer || !current) return;
+    const state = structured();
+    const text = describe(state);
+    const key = text + JSON.stringify(state.selected_feature ?? null);
+    if (key === sentKey) return;
+    sentKey = key;
+    lastSent = Date.now();
+    request('ui/update-model-context', { content: [{ type: 'text', text }], structuredContent: state })
+      .catch(() => { sentKey = ''; });
+  }
+  // At most ten reports a second; the last state wins.
+  function scheduleReport() {
+    if (reportTimer) return;
+    reportTimer = setTimeout(report, Math.max(0, 100 - (Date.now() - lastSent)));
+  }
+
+  // --- App tools (appCapabilities.tools) -------------------------------------------
+  const layerSchema = {
+    type: 'object',
+    description: 'A layer as show_on_globe takes it: geojson (FeatureCollection, Feature, geometry, list, JSON string or a path), name, id_property, style.',
+    properties: { geojson: {}, name: { type: 'string' }, id_property: { type: 'string' }, style: { type: 'object' } },
+    required: ['geojson', 'name'],
+  };
+  const TOOLS = [
+    { name: 'fly_to', description: 'Fly the globe camera to an area [min_lon, min_lat, max_lon, max_lat] or a point [lon, lat] (optionally at height_m metres).',
+      inputSchema: { type: 'object', properties: {
+        bbox: { type: 'array', items: { type: 'number' }, minItems: 4, maxItems: 4 },
+        point: { type: 'array', items: { type: 'number' }, minItems: 2, maxItems: 2 },
+        height_m: { type: 'number' }, duration_s: { type: 'number' } } } },
+    { name: 'select_feature', description: 'Select and highlight a feature by its id (as the view reports selected_feature), turning the globe to show it. An empty list clears the selection.',
+      inputSchema: { type: 'object', properties: {
+        selected_feature: { description: 'A feature id, or a list of ids.', anyOf: [{ type: 'string' }, { type: 'number' }, { type: 'array', items: { type: ['string', 'number'] } }] },
+        layer: { type: 'string', description: 'Only look in this layer.' },
+        fly: { type: 'boolean', description: 'Turn the globe to the feature (default true).' } },
+        required: ['selected_feature'] } },
+    { name: 'add_layer', description: 'Add a GeoJSON layer to the globe, or replace the layer of the same name. Saved with the view.',
+      inputSchema: { type: 'object', properties: { layer: layerSchema, fly: { type: 'boolean' } }, required: ['layer'] } },
+    { name: 'remove_layer', description: 'Remove a layer from the globe by name. Saved with the view.',
+      inputSchema: { type: 'object', properties: { layer: { type: 'string' } }, required: ['layer'] } },
+    { name: 'set_style', description: 'Change a layer\'s style (the render_feature_map style keys: color, facecolor, edgecolor, alpha, linewidth, markersize, color_by, scale, category_colors, legend, label, labels; null removes a key). Saved with the view.',
+      inputSchema: { type: 'object', properties: { layer: { type: 'string' }, style: { type: 'object' } }, required: ['layer', 'style'] } },
+    { name: 'get_view', description: 'Read the camera, the area in view, each layer and the selected feature with its properties.',
+      inputSchema: { type: 'object', properties: {} } },
+  ];
+
+  const textResult = (text, extra) => ({ content: [{ type: 'text', text }], ...(extra || {}) });
+  const errorResult = (text) => ({ content: [{ type: 'text', text }], isError: true });
+
+  async function editOnServer(args) {
+    const result = await request('tools/call', { name: EDIT_TOOL, arguments: { view: current.view, ...args } });
+    if (!result || result.isError) {
+      const text = ((result && result.content) || []).map((c) => c.text || '').join('\n');
+      throw new Error(text || 'The geo server did not apply the edit.');
+    }
+    return result;
+  }
+
+  async function runTool(name, args) {
+    await ready;
+    if (name === 'fly_to') {
+      await flyTo(args);
+      const state = cameraState();
+      return textResult('The camera is over ' + state.lat.toFixed(3) + ', ' + state.lon.toFixed(3) + ' at '
+        + Math.round(state.height_m / 1000) + ' km.', { structuredContent: { camera: state } });
+    }
+    if (name === 'select_feature') {
+      const wanted = args.selected_feature ?? args.id;
+      const ids = Array.isArray(wanted) ? wanted : wanted === undefined || wanted === null || wanted === '' ? [] : [wanted];
+      const recs = ids.map((id) => findFeature(id, args.layer));
+      const missing = ids.filter((id, i) => !recs[i]);
+      if (missing.length) return errorResult('No feature with id ' + missing.join(', ') + (args.layer ? ' in layer ' + args.layer : '') + '.');
+      setSelection(recs);
+      if (recs.length && args.fly !== false) await flyToFeatures(recs);
+      const state = selectionState();
+      return textResult(state ? 'Selected ' + state.map((s) => s.name + ' (' + s.layer + ', id ' + s.id + ')').join('; ') + '.'
+        : 'Cleared the selection.', { structuredContent: { selection: state } });
+    }
+    if (name === 'add_layer') {
+      const result = await editOnServer({ action: 'add', layer: args.layer });
+      const record = await drawLayer(result.structuredContent.layer);
+      renderPanel();
+      if (args.fly !== false && record.spec.bounds) await flyTo({ bbox: record.spec.bounds });
+      scheduleReport();
+      return textResult(result.content.map((c) => c.text || '').join('\n'));
+    }
+    if (name === 'remove_layer') {
+      if (!layers.has(args.layer)) return errorResult('No layer ' + JSON.stringify(args.layer) + '; layers: ' + [...layers.keys()].join(', ') + '.');
+      await editOnServer({ action: 'remove', name: args.layer });
+      removeLayer(args.layer);
+      viewer.scene.requestRender();
+      scheduleReport();
+      return textResult('Removed layer ' + args.layer + '.');
+    }
+    if (name === 'set_style') {
+      if (!layers.has(args.layer)) return errorResult('No layer ' + JSON.stringify(args.layer) + '; layers: ' + [...layers.keys()].join(', ') + '.');
+      const result = await editOnServer({ action: 'style', name: args.layer, style: args.style || {} });
+      const keep = selected.slice();
+      await drawLayer(result.structuredContent.layer);
+      selected = keep;
+      layers.get(args.layer).features.forEach(restyle);
+      renderPanel();
+      viewer.scene.requestRender();
+      scheduleReport();
+      return textResult(result.content.map((c) => c.text || '').join('\n'));
+    }
+    if (name === 'get_view') {
+      const state = structured();
+      return textResult(describe(state), { structuredContent: state });
+    }
+    return errorResult('The globe has no tool ' + name + '.');
+  }
+
+  // --- Host messages ---------------------------------------------------------------
+  async function onToolResult(params) {
+    if (!params) return;
+    if (params.isError) {
+      showStatus(((params.content || []).map((c) => c.text || '').join('\n')) || 'The layers could not be shown.');
+      return;
+    }
+    const data = params.structuredContent;
+    if (!data || !Array.isArray(data.layers)) return;
+    try {
+      await cesiumReady;
+      await showResult(data);
+    } catch (error) {
+      showStatus('The layers could not be drawn: ' + ((error && error.message) || error) + '.');
+    }
+  }
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window.parent) return;
+    const data = event.data;
+    if (!data || data.jsonrpc !== '2.0') return;
+    if (data.id !== undefined && pending.has(data.id) && !data.method) {
+      const entry = pending.get(data.id);
+      pending.delete(data.id);
+      if (data.error) entry.reject(new Error(data.error.message || 'request failed')); else entry.resolve(data.result);
+      return;
+    }
+    switch (data.method) {
+      case 'ui/notifications/tool-result': onToolResult(data.params); break;
+      case 'ui/notifications/tool-cancelled': showStatus('The call that opens this globe was cancelled.'); break;
+      case 'ui/notifications/host-context-changed':
+        hostContext = Object.assign({}, hostContext, data.params || {});
+        applyTheme();
+        break;
+      case 'ui/resource-teardown':
+        respond(data.id, {});
+        break;
+      case 'tools/list':
+        respond(data.id, { tools: TOOLS });
+        break;
+      case 'tools/call': {
+        const params = data.params || {};
+        runTool(params.name, params.arguments || {}).then(
+          (result) => respond(data.id, result),
+          (error) => respond(data.id, errorResult(String((error && error.message) || error))),
+        );
+        break;
+      }
+      case 'ping':
+        respond(data.id, {});
+        break;
+      default:
+        if (data.id !== undefined && data.method) fail(data.id, 'Method not found: ' + data.method);
+    }
+  });
+
+  const cesiumReady = loadCesium().then((Cesium) => {
+    C = Cesium;
+    viewer = createViewer();
+    applyTheme();
+  });
+  cesiumReady.catch((error) => {
+    showStatus((error && error.message) + '. The agent can still draw these layers as a map image with render_feature_map.');
+  });
+
+  request('ui/initialize', {
+    appInfo: { name: 'geo-globe', version: '2.4.0' },
+    appCapabilities: { tools: { listChanged: false }, availableDisplayModes: ['inline', 'fullscreen'] },
+    protocolVersion: PROTOCOL,
+  }).then((result) => {
+    hostContext = (result && result.hostContext) || {};
+    applyTheme();
+    notify('ui/notifications/initialized', {});
+    notify('ui/notifications/size-changed', { height: 560 });
+  }).catch((error) => {
+    showStatus('The host did not start the view: ' + ((error && error.message) || 'unknown error') + '.');
+  });
+
+  // For tests and debugging: read-only handles on the drawn globe.
+  window.geoGlobe = {
+    get viewer() { return viewer; },
+    get layers() { return layers; },
+    get selected() { return selected.slice(); },
+    find: findFeature,
+    ready,
+  };
+})();
+</script>
+</body>
+</html>

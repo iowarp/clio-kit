@@ -1,0 +1,71 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.iowarp/grids-mcp",
+  "title": "CLIO Grids",
+  "description": "MCP server for hand edits to 2-D model grids (bathymetry, land masks, topography): an...",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/iowarp/clio-kit",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "clio-kit",
+      "version": "2.13.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp-server"
+        },
+        {
+          "type": "positional",
+          "value": "grids"
+        }
+      ]
+    }
+  ],
+  "tools": [
+    {
+      "name": "grid_open",
+      "description": "Open a 2-D gridded field (model bathymetry, land mask, topography) in an editor the person can draw on. Returns its shape, extent, value range and content hash, and the default output path for edits."
+    },
+    {
+      "name": "grid_edit",
+      "description": "Apply an ordered list of edits to a base grid and write the result beside it with an edit log (<output>.edits.json) recording the base hash, each edit with the cells it changed, and the result hash. The base file is never changed. The grid editor calls this for every change; undo is the same list without its last edit."
+    },
+    {
+      "name": "grid_replay",
+      "description": "Apply a saved edit log to a grid, usually one regenerated after the edits were made. Edits are located by longitude and latitude, so they land on the same places; the result says whether the base grid is the logged one and, edit by edit, whether it changed the same number of cells."
+    },
+    {
+      "name": "grid_window",
+      "description": "Values of a grid strided for display. Called by the grid editor."
+    }
+  ],
+  "resources": [
+    {
+      "uri": "ui://grids/editor",
+      "name": "grids_editor",
+      "description": "An editor for a 2-D grid: draw a box or pick cells, choose an edit, apply."
+    }
+  ],
+  "prompts": [
+    {
+      "name": "clean_bathymetry",
+      "description": "Find and fix the usual problems in a model bathymetry, with a replayable edit log."
+    }
+  ],
+  "tags": [
+    "grid",
+    "bathymetry",
+    "land-mask",
+    "topography",
+    "model",
+    "mcp-apps"
+  ],
+  "scope": "scientific"
+}

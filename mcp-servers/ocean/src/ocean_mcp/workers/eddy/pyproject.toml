@@ -1,0 +1,13 @@
+# Worker environment for py-eddy-tracker (GPL-3.0). It pins numpy<1.23, so this
+# environment runs on Python 3.10. The ocean server never imports it; it runs
+# worker.py here as a subprocess.
+[project]
+name = "ocean-eddy-worker"
+version = "1.0.0"
+description = "Runs py-eddy-tracker identification and tracking for the ocean MCP server"
+requires-python = ">=3.10,<3.11"
+license = "GPL-3.0-or-later"
+dependencies = ["pyEddyTracker==3.6.1", "setuptools<81", "netCDF4", "pandas", "xarray"]
+
+[tool.uv]
+package = false

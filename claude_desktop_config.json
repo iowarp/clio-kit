@@ -14,6 +14,20 @@
         "arxiv"
       ]
     },
+    "clio-ase": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "ase"
+      ]
+    },
+    "clio-avogadro": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "avogadro"
+      ]
+    },
     "clio-chronolog": {
       "command": "clio-kit",
       "args": [
@@ -28,11 +42,39 @@
         "compression"
       ]
     },
+    "clio-copernicus": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "copernicus"
+      ]
+    },
     "clio-darshan": {
       "command": "clio-kit",
       "args": [
         "mcp-server",
         "darshan"
+      ]
+    },
+    "clio-decimer": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "decimer"
+      ]
+    },
+    "clio-earthdata": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "earthdata"
+      ]
+    },
+    "clio-fdmnes": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "fdmnes"
       ]
     },
     "clio-geo": {
@@ -42,11 +84,32 @@
         "geo"
       ]
     },
-    "clio-geojson": {
+    "clio-geoprocess": {
       "command": "clio-kit",
       "args": [
         "mcp-server",
-        "geojson"
+        "geoprocess"
+      ]
+    },
+    "clio-geoservices": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "geoservices"
+      ]
+    },
+    "clio-graspa": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "graspa"
+      ]
+    },
+    "clio-grids": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "grids"
       ]
     },
     "clio-hdf5": {
@@ -54,6 +117,13 @@
       "args": [
         "mcp-server",
         "hdf5"
+      ]
+    },
+    "clio-home-assistant": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "home-assistant"
       ]
     },
     "clio-jarvis": {
@@ -84,6 +154,13 @@
         "node-hardware"
       ]
     },
+    "clio-ocean": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "ocean"
+      ]
+    },
     "clio-pandas": {
       "command": "clio-kit",
       "args": [
@@ -112,6 +189,13 @@
         "parquet"
       ]
     },
+    "clio-pdf": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "pdf"
+      ]
+    },
     "clio-plot": {
       "command": "clio-kit",
       "args": [
@@ -119,11 +203,11 @@
         "plot"
       ]
     },
-    "clio-sac": {
+    "clio-pubchem": {
       "command": "clio-kit",
       "args": [
         "mcp-server",
-        "sac"
+        "pubchem"
       ]
     },
     "clio-scientific-catalog": {
@@ -133,11 +217,18 @@
         "scientific-catalog"
       ]
     },
-    "clio-seismic": {
+    "clio-seismology": {
       "command": "clio-kit",
       "args": [
         "mcp-server",
-        "seismic"
+        "seismology"
+      ]
+    },
+    "clio-slicer": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "slicer"
       ]
     },
     "clio-slurm": {
@@ -154,11 +245,25 @@
         "spack"
       ]
     },
+    "clio-spice": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "spice"
+      ]
+    },
     "clio-terrain": {
       "command": "clio-kit",
       "args": [
         "mcp-server",
         "terrain"
+      ]
+    },
+    "clio-weather": {
+      "command": "clio-kit",
+      "args": [
+        "mcp-server",
+        "weather"
       ]
     },
     "clio-web": {

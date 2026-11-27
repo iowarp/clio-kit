@@ -1,0 +1,21 @@
+{
+  "schema": "clio-kit.federated-marketplaces.v1",
+  "marketplaces": [
+    {
+      "name": "iowarp-clio-coder",
+      "source": {
+        "source": "github",
+        "repo": "iowarp/clio-coder",
+        "sha": "c841a46101d6d9df5fd3bcb1d337e59d92fb660d"
+      },
+      "description": "Upstream Clio Coder skills and Materio portable research procedures. Native agents, prompts and fleets run in Clio Coder.",
+      "category": "development",
+      "keywords": [],
+      "metadata": {
+        "indexed": true,
+        "maintainer": "IOWarp"
+      },
+      "add_command": "claude plugin marketplace add iowarp/clio-coder"
+    }
+  ]
+}
