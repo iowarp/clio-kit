@@ -402,8 +402,8 @@ async def open_view(
     where ParaView is, or the current scene, or else an empty scene that
     run_scene_script can fill with sources. A growing source is followed: the view
     moves to each new step unless the person has parked it on one. A growing source
-    that cannot be read yet (not there yet, or an ADIOS2 BP5 folder before its first
-    whole step) is waited for while it changes on disk, so open it as soon as the
+    that cannot be read yet (not there yet, or no file of its pattern written whole)
+    is waited for while it changes on disk, so open it as soon as the
     run starts. Starting ParaView is reported as progress and can be cancelled; it
     fails only when its start stops making progress. The result says how much of
     a test frame the view really draws.

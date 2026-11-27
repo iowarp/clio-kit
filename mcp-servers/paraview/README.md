@@ -170,10 +170,7 @@ With `PARAVIEW_PVSERVER` set, the node half connects to that `pvserver` and
 renders there. Datasets are then read on the server's machine: paths, globs and
 the steps of a growing source are checked in the server's own file system, so
 a cluster job's output never crosses to this machine, only the rendered view.
-Follow indexes for a growing BP5 source are written under the server's
-`~/.clio/paraview/follow/<source>/`, one folder per shared reader. The client
-and the server must run the same
-ParaView version; set `PARAVIEW_VERSION` to it and the front refuses any other
+The client and the server must run the same ParaView version; set `PARAVIEW_VERSION` to it and the front refuses any other
 `pvpython` with `paraview_version_mismatch`.
 
 ### ParaView on this machine
@@ -256,26 +253,18 @@ loop is held for 2 s or more, its log names the work that held it and how long
 each part took. Each step reaches the view's model
 context, and `watch_steps` reports it as task progress, "Step k of N", so any MCP
 host can show a run advancing. `watch_steps` lasts as long as the run: it ends
-when the expected steps are written, when the writer closes its ADIOS2 output,
-when the source is not marked as growing, or when it stalls (no new step and
+when the expected steps are written, when the source is not marked as growing, or when it stalls (no new step and
 nothing changed on disk for `idle_seconds`, default 300, or three times the
 longest gap between steps if that is longer), or when the person cancels. It
 takes no time limit unless a person asks for one (`max_seconds`). When the run
 ends, `measure_over_time` gives the statistics of a field at every step.
 
 A growing source can be opened as soon as the run starts. While it is not there
-yet, or an ADIOS2 BP5 folder has no whole step on disk, `open_view` waits as long
-as the folder keeps changing, and says why it cannot be read once nothing has
-changed for 90 seconds. ParaView's ADIOS2 reader takes the process down on a BP5
-folder whose index (`md.idx`) names a step that its metadata (`md.0`) does not
-hold yet, and waits forever for data that is not on disk. A writer adds data,
-metadata and index in that order, but a reader on another machine of a shared
-file system can see them land in any order. So the server reads a growing BP5
-folder only when its index, metadata, meta-metadata and data agree, and keeps the
-steps it has until they do. The reader gets a copy of the folder whose index
-holds only the steps whose data is surely on disk: each step once the next one
-starts, and the last once the folder stops changing. A run that writes a step
-every second is followed one step behind, without waiting for it to pause.
+yet, or no file of its pattern has stopped changing, `open_view` waits as long as
+the folder keeps changing, and says why it cannot be read once nothing has
+changed for 90 seconds. A file a pattern matches is read once it has been still
+for `PARAVIEW_FILE_SETTLE` seconds (default 5), so a reader does not open a file
+part written.
 
 Scene scripts run on ParaView 6, which drops the " (matplotlib)" qualifier from
 colour preset names: `ApplyPreset("Viridis (matplotlib)")` applies "Viridis", and

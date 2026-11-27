@@ -12,19 +12,14 @@ ParaView's Python and nothing else.
 from __future__ import annotations
 
 import json
-import time
 from pathlib import Path
 from typing import Any
 
 from . import disk
-from .disk import Readiness
 from .errors import CommandError
 
-#: Seconds one look at a growing output on the pvserver's disk serves every view.
-GROWN_FRESH = 1.5
-
-# Runs inside the server. SOURCE is disk.py; the module is registered so its
-# dataclass resolves its own annotations.
+# Runs inside the server. SOURCE is disk.py, registered as a module so later calls
+# reuse it.
 _SERVER_SCRIPT = """
 import sys, types
 from vtkmodules.vtkCommonCore import vtkStringArray
@@ -89,37 +84,11 @@ class LocalDisk:
         result: dict[str, Any] = self.call("series", path=path)
         return result
 
-    def is_bp(self, path: str, reader: str | None = None) -> bool:
-        return bool(self.call("is_bp", path=path, reader=reader))
-
-    def check(self, path: str) -> Readiness:
-        return Readiness(**self.call("check", path=path))
-
-    def grown(self, path: str) -> tuple[Any, Readiness]:
-        """What is on disk for a BP5 folder (``disk_key``) and whether it can be read
-        (``check``), in one look."""
-        key, state = self.call("grown", path=path)
-        return key, Readiness(**state)
-
-    def write_index(self, path: str, folder: str, steps: int) -> str:
-        return str(self.call("write_index", path=path, folder=folder, steps=steps))
-
-    def source_readiness(
-        self, path: str, reader: str | None, pattern: bool
-    ) -> tuple[str | None, bool, Any]:
-        reason, clear, key = self.call(
-            "source_readiness",
-            path=path,
-            reader=reader,
-            pattern=pattern,
-            settle=disk.FILE_SETTLE,
+    def source_readiness(self, path: str, pattern: bool) -> tuple[str | None, Any]:
+        reason, key = self.call(
+            "source_readiness", path=path, pattern=pattern, settle=disk.FILE_SETTLE
         )
-        return reason, bool(clear), key
-
-    def follow_folder(self, root: Path, source: str, name: str) -> str:
-        """Where the copy of a growing BP5 folder goes, on the data's machine: one
-        per source, which every view of it reads through one reader."""
-        return str(root / "follow" / source / name)
+        return reason, key
 
 
 class ServerDisk(LocalDisk):
@@ -127,7 +96,7 @@ class ServerDisk(LocalDisk):
 
     Every call crosses the link to the pvserver, which may be a slow tunnel, so a
     call costs as few round trips as it can: disk.py goes over once (the server
-    keeps it     loaded), and one reduction filter and one mover, made once, bring each answer
+    keeps it loaded), and one reduction filter and one mover, made once, bring each answer
     back, where ``servermanager.Fetch`` would make and delete proxies each time.
     """
 
@@ -143,18 +112,6 @@ class ServerDisk(LocalDisk):
         self._sent = False
         self._answered = False
         self._calls = 0
-        self._grown: dict[str, tuple[float, Any, Readiness]] = {}
-
-    def grown(self, path: str) -> tuple[Any, Readiness]:
-        # Several views following one output each look at it every few seconds;
-        # one look over the link serves them all for GROWN_FRESH seconds.
-        now = time.monotonic()
-        seen = self._grown.get(path)
-        if seen is not None and now - seen[0] < GROWN_FRESH:
-            return seen[1], seen[2]
-        key, state = super().grown(path)
-        self._grown[path] = (now, key, state)
-        return key, state
 
     def call(self, op: str, **args: Any) -> Any:
         reply = self._ask(op, args, with_source=not self._sent)
@@ -215,10 +172,6 @@ class ServerDisk(LocalDisk):
             )
         self._answered = True
         return json.loads(column.GetValue(0))
-
-    def follow_folder(self, root: Path, source: str, name: str) -> str:
-        # The server's home, which every rank of a cluster's pvserver shares.
-        return f"~/.clio/paraview/follow/{source}/{name}"
 
 
 def for_session(session: str | None) -> LocalDisk:

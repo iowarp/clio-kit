@@ -43,7 +43,7 @@ class Source:
 
 
 #: The engine dicts a shared reader's growth state lives in, per item id.
-STATE = ("_growth", "_settling", "_quiet", "_held", "_disk_seen")
+STATE = ("_growth", "_quiet", "_disk_seen")
 
 
 class Readers:

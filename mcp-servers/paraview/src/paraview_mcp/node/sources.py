@@ -21,7 +21,6 @@ following; a step chosen by the person or the agent ends the catch-up.
 from __future__ import annotations
 
 import difflib
-import os
 import time
 from collections.abc import Callable, Generator, Iterator
 from pathlib import Path
@@ -29,14 +28,11 @@ from typing import Any
 
 from . import ranges
 from .datafs import LocalDisk
-from .disk import FILE_SETTLE, Readiness, fresh_files, is_pattern, whole_steps, writing
+from .disk import FILE_SETTLE, fresh_files, is_pattern
 from .errors import CommandError
 from .held import LEDGER
 from .pool import Readers
 
-#: Seconds a grown BP5 folder must stay unchanged before its last step is read,
-#: when its data may still be short of that step.
-SETTLE = 1.0
 #: A late-opened growing source's catch-up: seconds its first step is held, then
 #: seconds per later step; a longer history is strided to about REPLAY_STEPS.
 REPLAY_HOLD = 2.0
@@ -225,9 +221,7 @@ class SourceGrowth:
     scene: dict[str, Any] | None
     proxies: dict[str, Any]
     _growth: dict[str, Any]
-    _settling: dict[str, tuple[Any, float]]
     _quiet: dict[str, dict[str, tuple[Any, float]]]
-    _held: dict[str, int]
     _seen: dict[float, float]
     _seen_scene: str | None
     _replay: int | None
@@ -330,42 +324,6 @@ class SourceGrowth:
             )
         raise CommandError("not_found", f"No file matches {path}.")
 
-    def _bp5(self, item: dict[str, Any]) -> bool:
-        path = item["path"]
-        return not is_pattern(path) and self.disk.is_bp(path, item.get("reader"))
-
-    def _follow_index(self, item: dict[str, Any], steps: int) -> str:
-        """The copy of a growing BP5 folder the reader is given, with ``steps`` steps.
-        It is the source's, not the scene's: views sharing the reader share it."""
-        name = os.path.basename(item["path"].rstrip("/")) or "data.bp"
-        source = Readers.folder_of(Readers.key_of(item))
-        folder = self.disk.follow_folder(self.root, source, name)
-        target = self.disk.write_index(item["path"], folder, steps)
-        self._held[item["id"]] = steps
-        return target
-
-    def _bp5_whole(
-        self, item: dict[str, Any], key: Any, state: Readiness
-    ) -> int | None:
-        """How many steps of a grown BP5 folder can be read now, if more than the
-        reader has: every whole step, and the last once the folder has stopped
-        changing for ``SETTLE`` seconds. ``state`` is the folder's ``check``."""
-        held = self._held[item["id"]]
-        if state.reason or state.steps <= held:
-            self._settling.pop(item["id"], None)
-            return None
-        whole = whole_steps(state)
-        if whole < state.steps and not state.short:
-            now = time.monotonic()
-            seen = self._settling.get(item["id"])
-            if seen is None or seen[0] != key:
-                self._settling[item["id"]] = (key, now)
-            elif now - seen[1] >= SETTLE:
-                whole = state.steps
-        if whole == state.steps:
-            self._settling.pop(item["id"], None)
-        return whole if whole > held else None
-
     def _make_reader(self, item: dict[str, Any]) -> Any:
         growing = bool(((self.scene or {}).get("dataset") or {}).get("growing"))
         shared = Readers.key_of(item)
@@ -387,20 +345,6 @@ class SourceGrowth:
         else:
             files = self._files(item)
             seen = self.disk.disk_key(item["path"]) if growing else None
-        self._held.pop(item["id"], None)
-        if self._bp5(item):
-            state = self.disk.check(item["path"])
-            if state.reason:
-                raise CommandError(
-                    "not_ready",
-                    f"{item['path']} cannot be read yet: {state.reason}. Open it once "
-                    "its writer has written a whole step; open_view with growing set "
-                    "waits for that while the folder is still changing.",
-                )
-            if state.steps and growing:
-                # A writer still writing its newest step: open on the steps surely
-                # on disk, and the follow adds the newest once it is whole.
-                files = self._follow_index(item, whole_steps(state) or state.steps)
         name = item.get("reader")
         if not name:
             proxy = self.simple.OpenDataFile(files)
@@ -513,27 +457,6 @@ class SourceGrowth:
         self._coloured_at = now
         yield from ranges.grow_stages(self, scene)
 
-    def _bp5_settled(self, item: dict[str, Any], key: Any) -> bool:
-        """Whether a grown BP5 folder can be re-read: its files agree, and its data
-        clearly holds the last step or nothing has changed for ``SETTLE`` seconds.
-        Until then the reader keeps the steps it has."""
-        state = self.disk.check(item["path"])
-        if state.reason or state.short:
-            self._settling.pop(item["id"], None)
-            return False
-        if state.clear:
-            self._settling.pop(item["id"], None)
-            return True
-        now = time.monotonic()
-        seen = self._settling.get(item["id"])
-        if seen is None or seen[0] != key:
-            self._settling[item["id"]] = (key, now)
-            return False
-        if now - seen[1] < SETTLE:
-            return False
-        self._settling.pop(item["id"], None)
-        return True
-
     def check_growth(self, fresh: bool = False) -> dict[str, Any] | None:
         """Re-read the time list of growing sources; follow the latest step. With
         ``fresh`` (an agent asking) the disk is looked at even if a view just did."""
@@ -632,14 +555,10 @@ class SourceGrowth:
     ) -> Generator[str, None, bool]:
         """Look at one reader's disk; re-read its files if they grew. The look and
         the re-read are separate stages."""
-        held = item["id"] in self._held
-        series = not held and is_pattern(item["path"])
-        state = None
+        series = is_pattern(item["path"])
         look: dict[str, Any] = {}
         with LEDGER.phase("disk"):
-            if held:
-                key, state = self.disk.grown(item["path"])
-            elif series:
+            if series:
                 look = self.disk.series(item["path"])
                 key = look.get("key")
             else:
@@ -647,16 +566,8 @@ class SourceGrowth:
         if key != self._disk_seen.get(item["id"], self):
             self._disk_seen[item["id"]] = key
             self.disk_changed = time.time()
-        if held and state is not None:
-            # A growing BP5 folder: its reader reads a copy whose index holds
-            # only the steps whose data is surely on disk.
-            whole = self._bp5_whole(item, key, state)
-            if whole is None:
-                return False
-            self._growth[item["id"]] = key
-            with LEDGER.phase("disk"):
-                files: list[str] | str = self._follow_index(item, whole)
-        elif series:
+        files: list[str] | str
+        if series:
             # A file still being written stays out until it settles; the reader
             # is re-read when the files it can have change.
             usable = self._settled(item, look)
@@ -667,9 +578,6 @@ class SourceGrowth:
         else:
             if key == self._growth.get(item["id"]):
                 return False
-            with LEDGER.phase("disk"):
-                if self._bp5(item) and not self._bp5_settled(item, key):
-                    return False
             self._growth[item["id"]] = key
             files = self._files(item)
         yield f"re-reading {item['id']}"
@@ -766,11 +674,5 @@ class SourceGrowth:
         }
 
     def source_state(self) -> dict[str, Any]:
-        """What the disk says of the growing source: when it last changed, and for an
-        ADIOS2 BP output, whether its writer still has it open (None: not known)."""
-        seen = [self._disk_seen[i] for i in self.proxies if i in self._disk_seen]
-        flags = [flag for flag in map(writing, seen) if flag is not None]
-        return {
-            "changed": self.disk_changed,
-            "writing": any(flags) if flags else None,
-        }
+        """What the disk says of the growing source: when it last changed."""
+        return {"changed": self.disk_changed}

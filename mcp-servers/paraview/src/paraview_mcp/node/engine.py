@@ -120,11 +120,9 @@ class Engine(
         self.scene: dict[str, Any] | None = None
         self.proxies: dict[str, Any] = {}
         self._growth: dict[str, Any] = {}
-        self._settling: dict[str, tuple[Any, float]] = {}
         #: Per growing pattern, when each file still being written was last seen
         #: to change (``SourceGrowth._settled``).
         self._quiet: dict[str, dict[str, tuple[Any, float]]] = {}
-        self._held: dict[str, int] = {}
         self._seen: dict[float, float] = {}
         self._seen_scene: str | None = None
         self._replay: int | None = None
@@ -221,39 +219,12 @@ class Engine(
             listener(reason)
 
     def _rollback(self, before: dict[str, Any] | None) -> None:
-        keep = self._kept_readers(before)
         self.scene = before
-        self._clear(keep)
+        self._clear()
         if before is not None:
-            self._build(before, keep)
+            self._build(before)
         for listener in list(self.listeners):
             listener("rollback")
-
-    def _kept_readers(self, before: dict[str, Any] | None) -> dict[str, Any]:
-        """BP5 readers a rollback keeps open rather than re-opening. A BP5 folder a
-        writer is still filling may not be safe to open again at this moment, and
-        the reader already holds the steps it read; what a failed command built on
-        it is rebuilt."""
-        if before is None or self.scene is None:
-            return {}
-        fields = ("path", "reader", "reader_properties")
-        current = {item["id"]: item for item in self.scene["objects"]}
-        live = {id(proxy) for proxy in self.simple.GetSources().values()}
-        kept: dict[str, Any] = {}
-        for item in before["objects"]:
-            proxy = self.proxies.get(item["id"])
-            now = current.get(item["id"])
-            if (
-                proxy is not None
-                and id(proxy) in live
-                and now is not None
-                and item.get("kind") == "reader"
-                and now.get("kind") == "reader"
-                and self._bp5(item)
-                and all(item.get(f) == now.get(f) for f in fields)
-            ):
-                kept[item["id"]] = proxy
-        return kept
 
     def require_scene(self) -> dict[str, Any]:
         if self.scene is None:
@@ -265,13 +236,11 @@ class Engine(
         return self.scene
 
     # -- building ----------------------------------------------------------
-    def _clear(self, keep: dict[str, Any] | None = None) -> None:
-        keep = keep or {}
+    def _clear(self) -> None:
         for object_id in reversed(list(self.proxies)):
             proxy = self.proxies.pop(object_id)
             item = manifest.find_object(self.scene, object_id) if self.scene else None
-            kept = keep.get(object_id) is proxy
-            if kept or (item is not None and item["kind"] == "session"):
+            if item is not None and item["kind"] == "session":
                 self.simple.Hide(proxy, self.view)
                 continue
             if self.readers.leave(proxy, self):
@@ -283,15 +252,8 @@ class Engine(
                 self.simple.Delete(proxy)
             except Exception as exc:  # noqa: BLE001 - a proxy already gone needs no delete
                 print(f"clearing {object_id}: {exc}", flush=True)
-        for state in (
-            self._growth,
-            self._settling,
-            self._quiet,
-            self._held,
-            self._read_at,
-        ):
-            for object_id in [k for k in state if k not in keep]:
-                del state[object_id]
+        for state in (self._growth, self._quiet, self._read_at):
+            state.clear()
         if not self.session:
             from paraview import servermanager
 

@@ -89,9 +89,9 @@ async def watch_steps(
     the task's status. Called directly, each step is a progress notification and the
     call lasts until the watch ends; cancelling it ends it. Progress counts the
     steps written, against the view descriptor's expected_steps when it gives them.
-    It ends once those are written ("complete"), when the writer closes its output
-    ("finished"), when the source stalls ("stalled": no new step and nothing
-    changing on disk), when the source is not growing, or when the person cancels,
+    It ends once those are written ("complete"), when the source stalls ("stalled":
+    no new step and nothing changing on disk), when the source is not growing, or
+    when the person cancels,
     and returns every step it saw. The view follows the newest step unless the
     person parked it."""
 

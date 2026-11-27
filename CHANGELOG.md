@@ -4,6 +4,14 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
 
 ## Unreleased
 
+- **paraview, no BP5-specific follow**: the node no longer parses a growing
+  ADIOS2 BP5 folder's index and metadata to read only whole steps, no longer
+  keeps BP5 readers open through a rollback, and `watch_steps` no longer ends
+  as `finished` from the BP index's writer flag. A growing folder or file
+  series is followed as any source is: re-read when what is on disk changes,
+  with a pattern's files read once they have settled. Reading a finished BP
+  output is unchanged.
+
 ## 2.13.1 - 2026-11-25
 
 - **clio-core-skills, a new skill collection for CLIO Core**: `storage-compose`

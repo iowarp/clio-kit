@@ -205,17 +205,12 @@ class SceneOpening:
         self.update_view_mode()
         return self.summary()
 
-    def _build(
-        self, scene: dict[str, Any], reuse: dict[str, Any] | None = None
-    ) -> None:
-        drain(self._build_steps(scene, reuse))
+    def _build(self, scene: dict[str, Any]) -> None:
+        drain(self._build_steps(scene))
 
-    def _build_steps(
-        self, scene: dict[str, Any], reuse: dict[str, Any] | None = None
-    ) -> Generator[str, None, None]:
+    def _build_steps(self, scene: dict[str, Any]) -> Generator[str, None, None]:
         """Rebuild a saved scene, an object at a time."""
         made: dict[str, Any] = {}
-        reuse = reuse or {}
         for item in list(scene["objects"]):
             if item.get("kind") == "script":
                 made.update(self.replay_script(item))
@@ -228,8 +223,6 @@ class SceneOpening:
                     continue
             elif item.get("kind") == "made":
                 proxy = made.pop(item["id"])
-            elif item["id"] in reuse:
-                proxy = reuse[item["id"]]
             else:
                 proxy = self._make(item)
             self.proxies[item["id"]] = proxy

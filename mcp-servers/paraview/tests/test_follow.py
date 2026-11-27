@@ -118,37 +118,23 @@ async def test_each_new_step_is_reported_once_following_then_parked() -> None:
     assert "\u00b7" not in text
 
 
-def _source(result: dict[str, Any], changed: float, writing: bool | None, at: float):
-    return {**result, "source": {"changed": changed, "writing": writing}, "checked": at}
+def _source(result: dict[str, Any], changed: float, at: float):
+    return {**result, "source": {"changed": changed}, "checked": at}
 
 
 async def test_a_slow_run_is_not_taken_for_stalled_while_its_disk_changes() -> None:
     """No step for longer than idle_seconds is no stall while the writer is still
     writing: what is on disk keeps changing. Once it stops changing, it stalls."""
-    results = [_source(steps_result(2), 0.0, True, 0.0)]
+    results = [_source(steps_result(2), 0.0, 0.0)]
     # Ten polls with no new step, while the step being written grows on disk.
-    results += [_source(steps_result(2), t, True, t) for t in range(1, 11)]
-    results += [_source(steps_result(2), 10.0, True, 10.0 + t) for t in range(1, 30)]
+    results += [_source(steps_result(2), t, t) for t in range(1, 11)]
+    results += [_source(steps_result(2), 10.0, 10.0 + t) for t in range(1, 30)]
     run = _Run(results)
     outcome = await run.watch(idle_seconds=5)
     assert outcome["ended"] == "stalled"
     # It stalled five seconds after the disk stopped changing, not after idle_seconds
     # with no new step.
     assert outcome["seconds"] == 15
-
-
-async def test_a_writer_that_closes_its_output_finishes_the_watch() -> None:
-    """An ADIOS2 writer that closes its output says the run ended: the watch ends as
-    finished once the disk has been still a moment, long before a stall."""
-    results = [_source(steps_result(2), 0.0, True, 0.0)]
-    results += [_source(steps_result(3), 1.0, True, 1.0)]
-    results += [_source(steps_result(3), 2.0, False, 2.0 + t) for t in range(40)]
-    run = _Run(results)
-    outcome = await run.watch(idle_seconds=600)
-    assert outcome["ended"] == "finished"
-    assert outcome["new_steps"] == 1
-    assert outcome["seconds"] < 60
-    assert "the run closed its output" in follow.watch_text(outcome)
 
 
 async def test_expected_steps_give_the_total_and_end_the_watch_when_written() -> None:

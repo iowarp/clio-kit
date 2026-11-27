@@ -29,9 +29,6 @@ KEEP = 200
 #: A source stalls after this many times its longest wait between two steps (and
 #: never before the watch's ``idle_seconds``): a slow run is not taken for stopped.
 STALL_FACTOR = 3.0
-#: Seconds a source whose writer closed it must stay unchanged before the watch
-#: ends, so the follow has read its last step.
-FINISH_GRACE = 15.0
 
 
 def view_note(time_state: dict[str, Any]) -> str:
@@ -99,8 +96,8 @@ async def watch(
 
     The progress reported is the number of steps written so far, against the total
     the view descriptor expects when it gives one. The watch lasts as long as the
-    run: it ends once the expected steps are written, once the run closes its output
-    (an ADIOS2 writer that finished), when the source is no longer marked as growing,
+    run: it ends once the expected steps are written, when the source is no longer
+    marked as growing,
     or when it stalls: no new step and nothing changed on disk for ``idle_seconds``,
     or for ``STALL_FACTOR`` times the longest wait between two steps so far, if that
     is longer. ``max_seconds`` ends it after that long in any case, for a person who
@@ -137,13 +134,10 @@ async def watch(
         if disk_quiet is not None:
             quiet = min(quiet, disk_quiet)
         stall = max(float(idle_seconds), STALL_FACTOR * longest)
-        writing = (result.get("source") or {}).get("writing")
         if not result.get("growing"):
             reason = "not_growing"
         elif expected and written >= expected:
             reason = "complete"
-        elif writing is False and quiet >= max(FINISH_GRACE, 3 * poll):
-            reason = "finished"
         elif quiet >= stall:
             reason = "stalled"
         elif max_seconds is not None and now - started >= max_seconds:
@@ -179,7 +173,6 @@ def watch_text(outcome: dict[str, Any]) -> str:
     why = {
         "not_growing": "the source is not marked as growing",
         "complete": f"all {outcome.get('expected_steps')} expected steps are written",
-        "finished": "the run closed its output, so no step will follow",
         "stalled": "no new step came and nothing changed on disk for "
         f"{outcome.get('stall_seconds', 0):g} s",
         "max_seconds": "the time limit the person set was reached",

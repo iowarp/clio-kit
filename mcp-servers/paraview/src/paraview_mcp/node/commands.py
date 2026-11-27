@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 from .engine import MUTATING, STEPWISE, CommandError
 from .held import LEDGER
-from .sources import SETTLE, is_pattern
+from .sources import is_pattern
 from .turns import STAGE_BREAK, TURN_POLL, Shared
 
 if TYPE_CHECKING:
@@ -343,7 +343,7 @@ class CommandRoutes:
                     note=f"the source is not readable yet ({exc.message}); trying "
                     "again once it changes"
                 )
-                while not self._source_changed(path, args.get("reader"), exc):
+                while not self._source_changed(path, exc):
                     await asyncio.sleep(1.0)
 
     async def _open_staged(self, args: dict[str, Any], by: str) -> Any:
@@ -420,8 +420,8 @@ class CommandRoutes:
 
     async def _await_source(self, name: str, args: dict[str, Any]) -> None:
         """Before a growing source is opened, wait until it can be read: until it is
-        there and, for an ADIOS2 BP5 folder, until a whole step is on disk. The wait
-        lets the node go on answering. It ends when the source is readable; once it is
+        there and, for a pattern, until one file it matches has stopped changing. The
+        wait lets the node go on answering. It ends when the source is readable; once it is
         not, and nothing in it or beside it has changed for ``SOURCE_STALL`` seconds,
         open_view says why instead of opening a view with nothing in it."""
         self._source_seen = None
@@ -436,19 +436,16 @@ class CommandRoutes:
         ):
             return
         pattern = is_pattern(path)
-        reader = args.get("reader")
         last: Any = object()
         changed = start = time.monotonic()
         said = None
         name_of = os.path.basename(path.rstrip("/")) or path
         while True:
-            reason, clear, key = self.engine.disk.source_readiness(
-                path, reader, pattern
-            )
+            reason, key = self.engine.disk.source_readiness(path, pattern)
             now = time.monotonic()
             if key != last:
                 last, changed = key, now
-            if reason is None and (clear or now - changed >= SETTLE):
+            if reason is None:
                 break
             if now - changed >= SOURCE_STALL:
                 if reason:
@@ -473,16 +470,14 @@ class CommandRoutes:
             print(f"waited {time.monotonic() - start:.1f}s for {path}", flush=True)
         self._source_seen = (key, changed)
 
-    def _source_changed(self, path: str, reader: Any, failure: CommandError) -> bool:
+    def _source_changed(self, path: str, failure: CommandError) -> bool:
         """Whether a growing source that failed to open has changed on disk since;
         once it has stopped changing, the failure stands, with why."""
         seen = self._source_seen
         if seen is None:
             raise failure
         last, changed = seen
-        _reason, _clear, key = self.engine.disk.source_readiness(
-            path, reader, is_pattern(path)
-        )
+        _reason, key = self.engine.disk.source_readiness(path, is_pattern(path))
         now = time.monotonic()
         if key != last:
             self._source_seen = (key, now)
