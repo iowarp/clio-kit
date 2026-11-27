@@ -1292,8 +1292,11 @@ def test_colour_maps_survive_a_restart_and_do_not_leak(tmp_path: Path) -> None:
     restored = _pvpython_script("colors_check.py", str(tmp_path), "restore")
     assert restored == built
     # One colour map per field: the Slice's Inferno is the Contour's too, and both say so.
-    assert restored["preset"] in ("Inferno", None) and restored["legend"] is True
-    assert restored["recorded"] == {"o1": None, "o2": "Inferno", "o3": "Inferno"}
+    # ParaView 5.13 names it "Inferno (matplotlib)"; 6 names it "Inferno".
+    inferno = restored["recorded"]["o3"]
+    assert inferno in ("Inferno", "Inferno (matplotlib)")
+    assert restored["preset"] in (inferno, None) and restored["legend"] is True
+    assert restored["recorded"] == {"o1": None, "o2": inferno, "o3": inferno}
     assert restored["reps"]["o2"] == [["POINTS", "RTData"], 0.7]
 
 
