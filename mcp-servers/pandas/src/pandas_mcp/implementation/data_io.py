@@ -4,8 +4,26 @@ Data I/O capabilities for loading and saving data in various formats.
 
 import pandas as pd
 import os
-from typing import Optional, List
+from typing import Any, Optional, List
 import traceback
+
+
+def json_safe_records(records: List[dict[str, Any]]) -> List[dict[str, Any]]:
+    """Convert NaN and numpy scalars in DataFrame records to JSON-native values, in place."""
+    for record in records:
+        for key, value in record.items():
+            if pd.isna(value):
+                record[key] = None
+            elif hasattr(value, "dtype"):
+                if "int" in str(value.dtype):
+                    record[key] = int(value)
+                elif "float" in str(value.dtype):
+                    record[key] = float(value)
+                elif "bool" in str(value.dtype):
+                    record[key] = bool(value)
+                else:
+                    record[key] = str(value)
+    return records
 
 
 def load_data_file(
@@ -86,22 +104,7 @@ def load_data_file(
             }
 
         # Convert data to JSON-serializable format
-        data_dict = df.to_dict("records")
-
-        # Convert numpy types to Python native types for JSON serialization
-        for record in data_dict:
-            for key, value in record.items():
-                if pd.isna(value):
-                    record[key] = None
-                elif hasattr(value, "dtype"):
-                    if "int" in str(value.dtype):
-                        record[key] = int(value)
-                    elif "float" in str(value.dtype):
-                        record[key] = float(value)
-                    elif "bool" in str(value.dtype):
-                        record[key] = bool(value)
-                    else:
-                        record[key] = str(value)
+        data_dict = json_safe_records(df.to_dict("records"))
 
         # Get basic info
         info = {

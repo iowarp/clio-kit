@@ -8,13 +8,18 @@ hypothesis testing on various data formats.
 
 import os
 import logging
-from typing import Annotated, Optional, List, Any, Dict, Literal, cast
+from typing import TYPE_CHECKING, Annotated, Optional, List, Any, Dict, Literal, cast
 
 from fastmcp import FastMCP
 from fastmcp.exceptions import ToolError
 from fastmcp.prompts import Message
+from fastmcp.server.context import Context
+from mcp import types as mcp_types
 from pydantic import Field
 from typing_extensions import NotRequired, TypedDict
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 try:
     from dotenv import load_dotenv
@@ -23,7 +28,7 @@ try:
 except ImportError:
     pass
 
-from .implementation.data_io import load_data_file, save_data_file
+from .implementation.data_io import json_safe_records, save_data_file
 from .implementation.pandas_statistics import (
     get_statistical_summary,
     get_correlation_analysis,
@@ -42,6 +47,7 @@ from .implementation.memory_optimization import optimize_memory_usage
 from .implementation.filtering import filter_data
 from .implementation.validation import validate_data, hypothesis_testing
 from .implementation.aggregate import aggregate
+from .implementation.size_guard import guard_records_payload
 
 
 # --- Structured result shapes (drive real MCP outputSchema declarations) ----
@@ -68,7 +74,13 @@ class LoadDataInfo(TypedDict):
 
 
 class LoadDataResult(TypedDict):
-    """Structured result for a successful data load."""
+    """Structured result for a successful data load.
+
+    The ``size_guard`` block is present when the MRTR guard ran (#1325 C2):
+    it carries the guard decision (``guarded``, ``action``, ``estimate``)
+    without the records (those are in ``data``).  Absent when the guard did
+    not run (ctx unavailable, etc.).
+    """
 
     success: Literal[True]
     file_path: str
@@ -76,6 +88,7 @@ class LoadDataResult(TypedDict):
     data: list[dict[str, Any]]
     total_rows: int
     info: LoadDataInfo
+    size_guard: NotRequired[dict[str, Any]]
     message: str
 
 
@@ -276,12 +289,21 @@ class MergeStats(TypedDict):
 
 
 class MergeDatasetsResult(TypedDict):
-    """Structured result for a successful dataset merge."""
+    """Structured result for a successful dataset merge.
+
+    C1 lean shape (#1325): the full merged dataset is on disk at ``output_file``.
+    ``merged_data`` is a backward-compat alias for ``preview`` (same bounded list).
+    """
 
     success: Literal[True]
     left_file: str
     right_file: str
     output_file: str
+    rows_total: int
+    rows_written: int
+    columns: list[str]
+    preview: list[dict[str, Any]]
+    preview_truncated: bool
     merge_stats: MergeStats
     merged_data: list[dict[str, Any]]
     message: str
@@ -299,11 +321,20 @@ class PivotInfo(TypedDict):
 
 
 class PivotTableResult(TypedDict):
-    """Structured result for a successful pivot table creation."""
+    """Structured result for a successful pivot table creation.
+
+    C1 lean shape (#1325): the full pivot table is on disk at ``output_file``.
+    ``pivot_table`` is a backward-compat alias for ``preview`` (same bounded list).
+    """
 
     success: Literal[True]
     file_path: str
     output_file: str
+    rows_total: int
+    rows_written: int
+    columns: list[str]
+    preview: list[dict[str, Any]]
+    preview_truncated: bool
     pivot_info: PivotInfo
     pivot_table: list[dict[str, Any]]
     message: str
@@ -314,11 +345,19 @@ class TimeSeriesOperationsResult(TypedDict):
 
     ``operation_info`` varies by ``operation`` (resample/rolling/lag/diff,
     each with its own field set), so it is left as ``dict[str, Any]``.
+
+    C1 lean shape (#1325): the full result is on disk at ``output_file``.
+    ``results`` is a backward-compat alias for ``preview`` (same bounded list).
     """
 
     success: Literal[True]
     file_path: str
     output_file: str
+    rows_total: int
+    rows_written: int
+    columns: list[str]
+    preview: list[dict[str, Any]]
+    preview_truncated: bool
     operation_info: dict[str, Any]
     results: list[dict[str, Any]]
     message: str
@@ -360,13 +399,22 @@ class FilterStats(TypedDict):
 
 
 class FilterDataResult(TypedDict):
-    """Structured result for a successful data filtering call."""
+    """Structured result for a successful data filtering call.
+
+    C1 lean shape (#1325): the full filtered dataset is written to disk at
+    ``output_file``; the in-context result carries only a bounded summary so
+    the LLM window is never overflowed by a large result set.
+    """
 
     success: Literal[True]
     file_path: str
     output_file: str
+    rows_total: int
+    rows_written: int
+    columns: list[str]
+    preview: list[dict[str, Any]]
+    preview_truncated: bool
     filter_stats: FilterStats
-    filtered_data: list[dict[str, Any]]
     message: str
 
 
@@ -551,7 +599,8 @@ mcp: FastMCP = FastMCP(
         "for grouped totals: it returns the table inline, buckets dates with "
         "'column:month' style keys, can drop duplicate rows and writes nothing. "
         "groupby_operations, pivot_table, filter_data and time_series_operations "
-        "write CSV files beside the input."
+        "write CSV files beside the input and return only a 5-row preview; read "
+        "output_file for the full result."
     ),
 )
 
@@ -575,10 +624,57 @@ def _checked(result: dict) -> Any:
 # ===============================================================================
 
 
+_LOAD_DATA_ROW_CAP = 100
+
+
+def _wrap_guarded_load_result(
+    df: "pd.DataFrame",
+    guard_result: dict[str, Any],
+    *,
+    total_rows: int,
+    file_path: str,
+    file_format: Optional[str],
+) -> LoadDataResult:
+    """Wrap a size-guard dict into the declared ``LoadDataResult`` shape.
+
+    THE one wrapper for BOTH guard rounds: the declared output schema applies to
+    the final result of every completed round-trip, so round 2 must return the
+    same shape round 1 does — a raw guard dict fails FastMCP output validation.
+    """
+    guarded_records = json_safe_records(list(guard_result.get("records", [])))
+    info = {
+        "shape": df.shape,
+        "columns": df.columns.tolist(),
+        "dtypes": df.dtypes.astype(str).to_dict(),
+        "memory_usage": int(df.memory_usage(deep=True).sum()),
+        "missing_values": {k: int(v) for k, v in df.isnull().sum().to_dict().items()},
+    }
+    return cast(
+        LoadDataResult,
+        {
+            "success": True,
+            "file_path": file_path,
+            "file_format": file_format or _detect_format(file_path),
+            "data": guarded_records,
+            "total_rows": total_rows,
+            "info": info,
+            "size_guard": {k: v for k, v in guard_result.items() if k != "records"},
+            "message": (
+                f"Successfully loaded {len(guarded_records)} of "
+                f"{total_rows} rows from {file_path}"
+            ),
+        },
+    )
+
+
 @mcp.tool(
     name="load_data",
     title="Load Data",
-    description="Load and parse data from CSV, Excel, JSON, Parquet, or HDF5 files with optional column selection and row limiting.",
+    description=(
+        "Load and parse data from CSV, Excel, JSON, Parquet, or HDF5 files with "
+        "optional column selection and row limiting. For large files, clio-aware "
+        "clients are asked to narrow the result via the MRTR size-guard (#1325)."
+    ),
     annotations={
         "readOnlyHint": True,
         "destructiveHint": False,
@@ -587,6 +683,7 @@ def _checked(result: dict) -> Any:
     tags={"data-analysis", "io"},
 )
 async def load_data_tool(
+    ctx: Context,
     file_path: Annotated[str, Field(description="Absolute path to the data file")],
     file_format: Annotated[
         Optional[str],
@@ -610,16 +707,192 @@ async def load_data_tool(
     nrows: Annotated[
         Optional[int], Field(description="Maximum rows to load; None loads all")
     ] = None,
+    max_tokens: Annotated[
+        Optional[int],
+        Field(
+            description=(
+                "Token budget for the returned data block. Defaults to 8 000 tokens "
+                "(≈ 32 000 chars). When the result exceeds this budget and the client "
+                "advertises the agent-driven-elicitation extension, the tool asks the "
+                "agent to narrow the result via the MRTR guard (#1325)."
+            )
+        ),
+    ] = None,
 ) -> LoadDataResult:
-    """Load data from various file formats with comprehensive parsing options."""
+    """Load data from various file formats with comprehensive parsing options.
+
+    When the loaded data exceeds the token budget and the connected client
+    advertises ``x-clio-agent/agent-driven-elicitation``, this tool returns an
+    ``InputRequiredResult`` asking the agent to narrow the result (MRTR,
+    SEP-2322).  On re-invocation the agent's narrowing is applied and only the
+    bounded result is returned.  Generic/non-clio clients always receive the
+    full data (never an ``InputRequiredResult``).
+    """
+    from .implementation.size_guard import DEFAULT_MAX_TOKENS
+
+    effective_max_tokens = max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS
+
     try:
         logger.info(f"Loading data from: {file_path}")
-        return _checked(
-            load_data_file(file_path, file_format, sheet_name, encoding, columns, nrows)
+
+        # Round 2: agent has answered the size-guard narrowing question.
+        # Re-load the full DataFrame and delegate to the guard for narrowing.
+        if ctx.input_responses is not None:
+            import json as _json
+
+            state_token = ctx.request_state
+            try:
+                state = _json.loads(state_token) if state_token else {}
+            except (ValueError, TypeError):
+                state = {}
+            fp = state.get("file_path", file_path)
+            fmt = state.get("file_format", file_format)
+            sn = state.get("sheet_name", sheet_name)
+            enc = state.get("encoding", encoding)
+            cols = state.get("columns", columns)
+            toks = int(state.get("max_tokens", effective_max_tokens))
+            df = _load_full_df(fp, fmt, sn, enc, cols)
+            round2_records = df.to_dict("records")
+            guard_result = await guard_records_payload(
+                ctx=ctx,
+                full_df=df,
+                records=round2_records,
+                max_tokens=toks,
+            )
+            # Defensive: a re-elicitation (another InputRequiredResult) is
+            # protocol-legal and passes through as-is.
+            if isinstance(guard_result, mcp_types.InputRequiredResult):
+                return guard_result  # type: ignore[return-value]
+            return _wrap_guarded_load_result(
+                df,
+                guard_result,
+                total_rows=len(round2_records),
+                file_path=fp,
+                file_format=fmt,
+            )
+
+        # Round 1: load the full DataFrame and run the guard.
+        df = _load_full_df(file_path, file_format, sheet_name, encoding, columns)
+        if nrows is not None:
+            df = df.head(nrows)
+        records = df.to_dict("records")
+
+        # Inline guard call — may return a plain dict (within budget or extension
+        # absent) or an InputRequiredResult (over budget + extension present).
+        import json as _json
+
+        guard_result = await guard_records_payload(
+            ctx=ctx,
+            full_df=df,
+            records=records,
+            max_tokens=effective_max_tokens,
         )
+
+        # If guard returned an InputRequiredResult we stamp the state_hint so
+        # round 2 knows how to reload the file (guard builds request_state from
+        # its own estimate; we override it with the richer token here).
+        if isinstance(guard_result, mcp_types.InputRequiredResult):
+            # Merge our file-reload hint into the guard's state token.
+            try:
+                guard_state = _json.loads(guard_result.request_state or "{}")
+            except (ValueError, TypeError):
+                guard_state = {}
+            guard_state.update(
+                {
+                    "file_path": file_path,
+                    "file_format": file_format,
+                    "sheet_name": sheet_name,
+                    "encoding": encoding,
+                    "columns": columns,
+                }
+            )
+            return mcp_types.InputRequiredResult(
+                input_requests=guard_result.input_requests,
+                request_state=_json.dumps(guard_state),
+            )
+
+        # Within budget or extension absent: return the standard LoadDataResult
+        # shape, embedding the guard block for observability.
+        if "records" not in guard_result:
+            guard_result = {**guard_result, "records": records}
+        if guard_result.get("action") == "extension_absent_full_returned":
+            # Clients that cannot narrow keep load_data's historical 100-row cap.
+            guard_result = {
+                **guard_result,
+                "action": "extension_absent_capped",
+                "note": (
+                    f"Result exceeds the {effective_max_tokens}-token budget and the "
+                    "client cannot narrow it; returning the first "
+                    f"{_LOAD_DATA_ROW_CAP} rows."
+                ),
+                "records": guard_result["records"][:_LOAD_DATA_ROW_CAP],
+            }
+        return _wrap_guarded_load_result(
+            df,
+            guard_result,
+            total_rows=len(records),
+            file_path=file_path,
+            file_format=file_format,
+        )
+
+    except ToolError:
+        raise
     except Exception as e:
         logger.error(f"Data loading error: {e}")
         raise ToolError(f"Data loading error: {e}") from e
+
+
+def _load_full_df(
+    file_path: str,
+    file_format: Optional[str],
+    sheet_name: Optional[str],
+    encoding: Optional[str],
+    columns: Optional[List[str]],
+) -> Any:
+    """Load the full DataFrame from file (no row cap).  Raises on error."""
+    import pandas as _pd
+
+    if file_format is None:
+        ext = os.path.splitext(file_path)[1].lower()
+        file_format = {
+            ".csv": "csv",
+            ".xlsx": "excel",
+            ".xls": "excel",
+            ".json": "json",
+            ".parquet": "parquet",
+            ".h5": "hdf5",
+            ".hdf5": "hdf5",
+        }.get(ext, "csv")
+
+    if file_format == "csv":
+        return _pd.read_csv(file_path, encoding=encoding, usecols=columns)
+    if file_format == "excel":
+        df = _pd.read_excel(file_path, sheet_name=sheet_name, usecols=columns)
+        if isinstance(df, dict):
+            df = list(df.values())[0]
+        return df
+    if file_format == "json":
+        df = _pd.read_json(file_path, encoding=encoding)
+        return df[columns] if columns else df
+    if file_format == "parquet":
+        return _pd.read_parquet(file_path, columns=columns)
+    if file_format == "hdf5":
+        return _pd.read_hdf(file_path, key="data", columns=columns)
+    raise ValueError(f"Unsupported file format: {file_format}")
+
+
+def _detect_format(file_path: str) -> str:
+    """Auto-detect file format from extension."""
+    ext = os.path.splitext(file_path)[1].lower()
+    return {
+        ".csv": "csv",
+        ".xlsx": "excel",
+        ".xls": "excel",
+        ".json": "json",
+        ".parquet": "parquet",
+        ".h5": "hdf5",
+        ".hdf5": "hdf5",
+    }.get(ext, "csv")
 
 
 @mcp.tool(
@@ -1167,7 +1440,13 @@ async def filter_data_tool(
         ),
     ] = None,
 ) -> FilterDataResult:
-    """Perform advanced data filtering with boolean indexing and conditional expressions."""
+    """Perform advanced data filtering with boolean indexing and conditional expressions.
+
+    C1 lean return (#1325): the FULL filtered result is written to ``output_file``
+    on disk. The in-context result is a lean summary (rows_total, rows_written,
+    columns, and a bounded preview of at most 5 rows) -- never the full dataset.
+    Downstream skills read the cleaned CSV by path from ``output_file``.
+    """
     logger.info(f"Filtering data in: {file_path}")
     result = filter_data(file_path, filter_conditions, output_file)
     if not result.get("success"):

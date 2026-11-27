@@ -22,11 +22,20 @@ class GroupByInfo(TypedDict):
 
 
 class GroupByOperationsResult(TypedDict):
-    """Structured result for a successful groupby operation."""
+    """Structured result for a successful groupby operation.
+
+    C1 lean shape (#1325): the full grouped result is on disk at ``output_file``.
+    ``results`` is a backward-compat alias for ``preview`` (same bounded list).
+    """
 
     success: Literal[True]
     file_path: str
     output_file: str
+    rows_total: int
+    rows_written: int
+    columns: list[str]
+    preview: list[dict[str, Any]]
+    preview_truncated: bool
     group_info: GroupByInfo
     results: list[dict[str, Any]]
     message: str
@@ -106,9 +115,6 @@ def groupby_operations(
         # Reset index to make group columns regular columns
         result = result.reset_index()
 
-        # Convert to JSON-serializable format
-        result_dict = result.to_dict("records")
-
         # Group information
         group_info = {
             "group_by_columns": group_by,
@@ -129,12 +135,24 @@ def groupby_operations(
             raise ValueError("The output must not replace the input file")
         result.to_csv(output_path, index=False, mode="w" if overwrite else "x")
 
+        # C1 lean return (#1325): groupby results are aggregated (one row per
+        # group) so the volume is usually small, but can still be large.
+        # Return a bounded preview; the full result is on disk at output_file.
+        _preview_n = 5
+        rows_written = len(result)
+        preview = result.head(_preview_n).to_dict("records")
+
         return {
             "success": True,
             "file_path": file_path,
             "output_file": output_path,
+            "rows_total": len(df),
+            "rows_written": rows_written,
+            "columns": list(result.columns),
+            "preview": preview,
+            "preview_truncated": rows_written > _preview_n,
             "group_info": group_info,
-            "results": result_dict,
+            "results": preview,  # backward-compat alias: same bounded preview
             "message": f"Grouped data into {len(result)} groups",
         }
 
@@ -245,16 +263,23 @@ def merge_datasets(
         )
         merged_df.to_csv(output_path, index=False)
 
-        # Convert to JSON-serializable format (limit to first 100 rows)
-        merged_dict = merged_df.head(100).to_dict("records")
+        # C1 lean return (#1325): never send full merged dataset into LLM context.
+        _preview_n = 5
+        rows_written = len(merged_df)
+        preview = merged_df.head(_preview_n).to_dict("records")
 
         return {
             "success": True,
             "left_file": left_file,
             "right_file": right_file,
             "output_file": output_path,
+            "rows_total": merge_stats["merged_shape"][0],
+            "rows_written": rows_written,
+            "columns": list(merged_df.columns),
+            "preview": preview,
+            "preview_truncated": rows_written > _preview_n,
             "merge_stats": merge_stats,
-            "merged_data": merged_dict,
+            "merged_data": preview,  # backward-compat alias: same bounded preview
             "message": f"Merged datasets: {merge_stats['left_shape']} + {merge_stats['right_shape']} = {merge_stats['merged_shape']}",
         }
 
@@ -362,13 +387,6 @@ def create_pivot_table(
                 for col in pivot_table.columns.values
             ]
 
-        # Convert to JSON-serializable format
-        pivot_dict = (
-            pivot_table.astype(object)
-            .where(pivot_table.notna(), None)
-            .to_dict("records")
-        )
-
         # Pivot table information
         pivot_info = {
             "index_columns": index,
@@ -385,12 +403,28 @@ def create_pivot_table(
         )
         pivot_table.to_csv(output_path, index=False)
 
+        # C1 lean return (#1325): pivot tables can be large; return a bounded
+        # preview. The full result is on disk at output_file.
+        _preview_n = 5
+        rows_written = len(pivot_table)
+        preview = (
+            pivot_table.head(_preview_n)
+            .astype(object)
+            .where(pivot_table.head(_preview_n).notna(), None)
+            .to_dict("records")
+        )
+
         return {
             "success": True,
             "file_path": file_path,
             "output_file": output_path,
+            "rows_total": df.shape[0],
+            "rows_written": rows_written,
+            "columns": list(pivot_table.columns),
+            "preview": preview,
+            "preview_truncated": rows_written > _preview_n,
             "pivot_info": pivot_info,
-            "pivot_table": pivot_dict,
+            "pivot_table": preview,  # backward-compat alias: same bounded preview
             "message": f"Created pivot table with shape {pivot_table.shape}",
         }
 

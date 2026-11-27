@@ -162,7 +162,9 @@ class TestPandasMCPCapabilities:
 
         assert result["success"]
         assert "filter_stats" in result
-        assert "filtered_data" in result
+        # C1 lean return (#1325): no full dataset in-context; bounded preview only.
+        assert "preview" in result
+        assert "filtered_data" not in result
 
     def test_optimize_memory_usage(self, temp_csv_file):
         """Test memory optimization"""

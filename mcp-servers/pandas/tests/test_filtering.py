@@ -53,7 +53,11 @@ class TestFilterData:
 
         assert result["success"]
         assert "filter_stats" in result
-        assert "filtered_data" in result
+        # C1 lean return (#1325): full dataset is on disk; result has lean summary.
+        assert "output_file" in result
+        assert "rows_written" in result
+        assert "preview" in result
+        assert "filtered_data" not in result
 
     def test_filter_min_value(self, temp_csv_file):
         """Test minimum value filter"""
@@ -532,7 +536,7 @@ def test_filter_applies_both_bounds_and_advertised_regex(tmp_path):
         {"name": {"regex": "^a"}, "value": {"min_value": 2, "max_value": 3}},
     )
     assert result["success"]
-    assert result["filtered_data"] == [{"name": "alpha", "value": 2}]
+    assert result["preview"] == [{"name": "alpha", "value": 2}]
 
 
 def test_filter_empty_input_returns_empty_output(tmp_path):

@@ -89,7 +89,10 @@ RATCHET_BASELINE: dict[str, int] = {
     # #362: NOT split this wave -- out of wave-1 scope (jarvis-only). Flat
     # FastMCP function surface, no god-class; still needs an owner-module cut.
     "mcp-servers/hdf5/src/hdf5_mcp/server.py": 2366,
-    "mcp-servers/pandas/src/pandas_mcp/server.py": 1343,
+    # clio-agent#1325 (feat/mrtr-size-guard): lean file->file returns plus the
+    # load_data MRTR size guard (InputRequiredResult, gated on the
+    # agent-driven-elicitation extension). 1343 -> 1622.
+    "mcp-servers/pandas/src/pandas_mcp/server.py": 1622,
     # clio-kit#370: SpackInstallResult + install_spec moved to a new owner
     # module (provisioning.py, real installs with a full on-disk build log
     # and typed recipe_not_found/build_failure/timed_out errors), shedding
