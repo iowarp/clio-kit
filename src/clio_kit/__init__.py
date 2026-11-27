@@ -763,5 +763,7 @@ def cli():
     main()
 
 
+from clio_kit import server_identity as _server_identity  # noqa: E402,F401 (registers the command)
+
 if __name__ == "__main__":
     main()
