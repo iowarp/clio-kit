@@ -8,7 +8,7 @@ import contextvars
 import json
 import os
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -74,7 +74,10 @@ class CommandRoutes:
     _json: Callable[..., Any]
     _went_during_call: Callable[[], Any]
     shown: Callable[[], dict[str, Any]]
-    _after_growth: Callable[[], Awaitable[None]]
+
+    if TYPE_CHECKING:
+
+        async def _after_growth(self) -> None: ...
 
     async def _command(self, request: Any) -> Any:
         try:
