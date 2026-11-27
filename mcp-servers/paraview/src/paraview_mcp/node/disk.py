@@ -15,16 +15,19 @@ data, then its metadata, then its index record, but a reader on another machine
 of a shared file system can see them land in any order. So a growing BP5 folder
 goes to the reader only when its files agree: at least one whole step in the
 index (``md.idx``), the metadata (``md.0``) holding the last one, the
-meta-metadata (``mmd.0``) written, and each data file (``data.N``) reaching into
-the step's last block.
+meta-metadata (``mmd.0``) written, and each data file (``data.N``) holding the
+step's last block.
 
-The index does not give the size of a step's last block, so a data file that
-reaches into it may still be short. ``Readiness.clear`` says the data reaches a
-whole block estimate past it. Otherwise the data holds every step but the last
-(it reaches into the last, so past the end of the one before), and
-``write_index`` gives a reader a copy of the folder whose index stops there; the
-last step is read once the folder stops changing for a moment. A writer that adds
-a step every second rarely stops, and its data ends where its last step ends.
+The index gives where each writer's last block of a step starts, not its size, and
+a writer starts each block on a stripe boundary, so the space between blocks says
+little about them. The step's metadata in ``md.0`` gives each writer's data size
+(``_block_ends``), so the last step is read once every data file reaches its end
+(``Readiness.clear``). Until then the data holds every step but the last
+(``Readiness.short``): ``write_index`` gives a reader a copy of the folder whose
+index stops there, and the last step is read once its data is all there, however
+long that takes. Metadata laid out in a way this does not know (an ADIOS2 that
+writes it otherwise) gives no size: the last step is then read once its data
+reaches into its last block and the folder stops changing for a moment.
 
 Other formats (BP4, a single file) are not checked: ``check`` reports them ready.
 
@@ -48,7 +51,6 @@ of the metadata size beside it.
 from __future__ import annotations
 
 import glob
-import itertools
 import os
 import shutil
 import struct
@@ -77,6 +79,9 @@ class Readiness:
     reason: str | None = None
     clear: bool = True
     steps: int = 0
+    #: The metadata says the last step's data is not all on disk yet: it is not
+    #: read however long the folder stays still.
+    short: bool = False
 
 
 def expand(path: str) -> str:
@@ -338,8 +343,8 @@ def check(path: str) -> Readiness:
     starts = _starts(last, writers)
     if starts is None:
         return Readiness(steps=count)
-    before = _starts(steps[-2], writers) if count > 1 else None
-    clear = True
+    ends = _block_ends(path, last, writers, starts)
+    clear, short = ends is not None, False
     for subfile in sorted(
         {subfile_of[w] if w < len(subfile_of) else 0 for w in range(writers)}
     ):
@@ -348,21 +353,90 @@ def check(path: str) -> Readiness:
             for w in range(writers)
             if (subfile_of[w] if w < len(subfile_of) else 0) == subfile
         ]
-        positions = sorted(starts[w] for w in mine)
-        gaps = [b - a for a, b in itertools.pairwise(positions) if b > a]
-        if not gaps and before is not None:
-            gaps = [starts[w] - before[w] for w in mine if starts[w] > before[w]]
-        need = positions[-1] + (min(gaps) if gaps else 1)
         size = _size(os.path.join(path, f"data.{subfile}"))
-        if size < need:
+        # Every earlier step ends before the first block of the last one.
+        if size < min(starts[w] for w in mine) or (
+            ends is None and size <= max(starts[w] for w in mine)
+        ):
             return Readiness(
                 f"its data (data.{subfile}) does not hold step {count} yet",
                 False,
                 count,
             )
-        if not gaps or size < positions[-1] + 2 * max(gaps):
-            clear = False
-    return Readiness(None, clear, count)
+        if ends is not None and size < max(ends[w] for w in mine):
+            clear, short = False, True
+    if short and count == 1:
+        return Readiness(
+            f"its data does not hold step {count} whole yet", False, count, True
+        )
+    return Readiness(None, clear, count, short)
+
+
+def _block_ends(
+    path: str, record: tuple[int, ...], writers: int, starts: list[int]
+) -> list[int] | None:
+    """Where each writer's data of the step in ``record`` ends in its data file, or
+    None when the metadata cannot say.
+
+    The index gives where a writer's last block starts, not its size, and a writer
+    starts each block on a stripe boundary, so the space between blocks is no
+    measure of one. Each writer's metadata block in ``md.0`` holds the size: it is
+    an FFS record (the format ID that ``mmd.0`` lists, the record's 8-byte length,
+    padding to 8) whose base holds ``BitFieldCount``, ``BitField`` and then
+    ``DataBlockSize``, the step's data of that writer, earlier flushes included."""
+    md_pos, md_size = record[0], record[1]
+    try:
+        ids = _format_ids(os.path.join(path, "mmd.0"))
+        fd = _open(os.path.join(path, "md.0"))
+        try:
+            os.lseek(fd, md_pos, os.SEEK_SET)
+            block = b""
+            while len(block) < md_size:
+                part = os.read(fd, md_size - len(block))
+                if not part:
+                    break
+                block += part
+        finally:
+            os.close(fd)
+    except OSError:
+        return None
+    head = 8 + 16 * writers
+    if not ids or len(block) < head:
+        return None
+    sizes = struct.unpack_from(f"<{writers}Q", block, 8)
+    per = 2 * record[2] + 1
+    pos, ends = head, []
+    for w in range(writers):
+        mine = block[pos : pos + sizes[w]]
+        pos += sizes[w]
+        flushed = sum(record[3 + w * per + 2 * f + 1] for f in range(record[2]))
+        if not sizes[w]:
+            ends.append(starts[w])
+            continue
+        id_len = next((len(i) for i in ids if mine.startswith(i)), 0)
+        header = (id_len + 8 + 7) // 8 * 8
+        if not id_len or len(mine) < header + 24:
+            return None
+        (length,) = struct.unpack_from("<Q", mine, id_len)
+        (data_size,) = struct.unpack_from("<Q", mine, header + 16)
+        if length != len(mine) - header or data_size < flushed:
+            return None
+        ends.append(starts[w] + data_size - flushed)
+    return ends
+
+
+def _format_ids(path: str) -> list[bytes]:
+    """The FFS format IDs in a BP5 meta-metadata file: per format, the ID's length,
+    the description's length, the ID, the description."""
+    data = _read(path)
+    ids, pos = [], 0
+    while pos + 16 <= len(data):
+        id_len, info_len = struct.unpack_from("<QQ", data, pos)
+        if pos + 16 + id_len + info_len > len(data):
+            break
+        ids.append(data[pos + 16 : pos + 16 + id_len])
+        pos += 16 + id_len + info_len
+    return ids
 
 
 def whole_steps(state: Readiness) -> int:

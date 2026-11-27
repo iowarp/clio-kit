@@ -230,6 +230,65 @@ def test_a_writer_that_closes_its_bp_output_is_seen(tmp_path: Path) -> None:
     assert disk.writing(disk.disk_key(str(plain))) is None
 
 
+FORMAT_ID = bytes.fromhex("020000931b885656fa7386cd")
+
+
+def _bp5(folder: Path, sizes: list[int], data: int, ffs: bool = True) -> None:
+    """A one-writer BP5 folder laid out as ADIOS2 2.10 and 2.13 write it: each step's
+    data starts on a 4096-byte stripe, and its metadata block is an FFS record whose
+    base holds the step's data size."""
+    folder.mkdir(exist_ok=True)
+    header = bytearray(disk.HEADER)
+    header[disk.BP_VERSION_AT] = 5
+    index = bytes(header) + b"w" + (32).to_bytes(8, "little")
+    index += b"".join(v.to_bytes(8, "little") for v in (1, 1, 1, 0))
+    md, start = b"", 0
+    for size in sizes:
+        base = b"".join(v.to_bytes(8, "little") for v in (1, 24, size))
+        body = base + bytes(8)
+        record = FORMAT_ID + len(body).to_bytes(8, "little") + bytes(4) + body
+        if not ffs:
+            record = bytes(len(record))
+        block = b"".join(
+            v.to_bytes(8, "little") for v in (len(record) + 16, len(record), 0)
+        )
+        block += record
+        values = (len(md), len(block), 0, start)
+        index += b"s" + (32).to_bytes(8, "little")
+        index += b"".join(v.to_bytes(8, "little") for v in values)
+        md += block
+        start = (start + size + 4095) // 4096 * 4096
+    (folder / "md.idx").write_bytes(index)
+    (folder / "md.0").write_bytes(md)
+    (folder / "mmd.0").write_bytes(
+        (12).to_bytes(8, "little") + (4).to_bytes(8, "little") + FORMAT_ID + b"desc"
+    )
+    (folder / "data.0").write_bytes(bytes(data))
+
+
+def test_a_bp5_step_is_whole_when_its_data_reaches_the_size_its_metadata_gives(
+    tmp_path: Path,
+) -> None:
+    """Steps of 4112 bytes start 8192 apart: the stripe padding between them is no
+    measure of a step, and a whole last step must not wait for the next one. A last
+    step whose data is part written stays out however long the folder is still."""
+    bp = tmp_path / "data.bp5"
+    _bp5(bp, [4112, 4112, 4112], 16384 + 4112)
+    assert disk.check(str(bp)) == disk.Readiness(None, True, 3)
+    _bp5(bp, [4112, 4112, 4112], 16384 + 2056)
+    state = disk.check(str(bp))
+    assert state == disk.Readiness(None, False, 3, True)
+    assert disk.whole_steps(state) == 2
+    _bp5(bp, [4112, 4112, 4112], 12304)
+    assert disk.check(str(bp)).reason == "its data (data.0) does not hold step 3 yet"
+    _bp5(bp, [4112], 2056)
+    state = disk.check(str(bp))
+    assert state.reason and state.short and disk.whole_steps(state) == 0
+    # Metadata this cannot read: the last step waits for the folder to settle.
+    _bp5(bp, [4112, 4112], 8192 + 10, ffs=False)
+    assert disk.check(str(bp)) == disk.Readiness(None, False, 2)
+
+
 def test_sizes_and_times_are_read_through_an_open_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -355,7 +355,7 @@ class SourceGrowth:
             self._settling.pop(item["id"], None)
             return None
         whole = whole_steps(state)
-        if whole < state.steps:
+        if whole < state.steps and not state.short:
             now = time.monotonic()
             seen = self._settling.get(item["id"])
             if seen is None or seen[0] != key:
@@ -518,7 +518,7 @@ class SourceGrowth:
         clearly holds the last step or nothing has changed for ``SETTLE`` seconds.
         Until then the reader keeps the steps it has."""
         state = self.disk.check(item["path"])
-        if state.reason:
+        if state.reason or state.short:
             self._settling.pop(item["id"], None)
             return False
         if state.clear:
