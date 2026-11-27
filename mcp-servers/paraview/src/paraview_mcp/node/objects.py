@@ -194,6 +194,12 @@ class SceneObjects:
             display["scalar_bar"] = bool(scalar_bar)
             colors.share(scene, display.get("color_by"), "scalar_bar", bool(scalar_bar))
         self._show(item, proxy, apply=True)
+        if colormap is not None and display.get("colormap"):
+            # The field's other objects hold the preset ParaView applied, not the
+            # name as it was asked for.
+            colors.share(
+                scene, display.get("color_by"), "colormap", display["colormap"]
+            )
         if rescale and display.get("color_by"):
             ranges.full(self, item, proxy)
         if span is not None:
