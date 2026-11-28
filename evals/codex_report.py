@@ -36,10 +36,6 @@ def summarize(root, *, recheck=False):
 
             case = cases[record["skill"]]
             protected = dict(record["source_hashes"])
-            # Tests may be extended during a coding task. Scientific inputs stay
-            # immutable and the independent numerical contract still runs.
-            if case["kind"] == "weighted":
-                protected.pop("test_weighted.py", None)
             answer_path = path.parent / "answer.md"
             checks = check_artifacts(
                 path.parent / "project",

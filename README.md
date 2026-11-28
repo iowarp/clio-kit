@@ -260,18 +260,6 @@ claude plugin install clio-agents@clio-kit
 
 The shared installer supports Codex, Claude Code, OpenCode, Cursor, Antigravity and VS Code. Codex, Claude Code and OpenCode also have adapters for the scientific agents and Dataset Report hooks. See [client support](docs/clients.md#component-support).
 
-Add the optional Clio Coder coding and research skills, including Materio procedures:
-
-```bash
-clio-kit skill install --bundle clio-coder --target .agents/skills
-# Or through Claude Code:
-claude plugin install clio-coder-skills@clio-kit
-```
-
-Individual skills also work: `clio-kit skill install clio-kit-scientific-debugging --target .agents/skills`.
-Adapted Clio Coder skills use the `clio-kit-` prefix to distinguish them from upstream originals.
-See [Clio Coder integration](docs/marketplace.md#clio-coder-integration) for upstream packages and native plugin support.
-
 ### Agentic Search
 
 [`clio-agentic-search`](clio-agentic-search/README.md) is a standalone hybrid

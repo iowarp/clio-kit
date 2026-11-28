@@ -16,6 +16,14 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
   `clio-cae`.
   Install with `clio-kit skill install --bundle clio-core` or
   `claude plugin install clio-core-skills@clio-kit`.
+- **Clio Coder support removed**: Clio Coder is archived. The
+  `clio-coder-skills` plugin and its 39 adapted skills are gone, so
+  `clio-kit skill install --bundle clio-coder` and
+  `claude plugin install clio-coder-skills@clio-kit` no longer resolve. The
+  catalogue no longer federates the `iowarp/clio-coder` marketplace, so its
+  upstream packages such as `scientific-debugging` and `materio` are no longer
+  indexed. Client guides and tutorials no longer cover Clio Coder.
+  Previously installed copies stay where they are; remove them by hand.
 
 ## 2.13.0 - 2026-11-19
 

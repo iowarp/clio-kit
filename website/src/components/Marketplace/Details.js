@@ -102,12 +102,6 @@ export function DetailContent({item}) {
             supported clients.
           </p>
         )}
-        {item.origin === 'Adapted' && (
-          <p>
-            Adapted from Clio Coder. Its native tools and execution environment
-            are not included.
-          </p>
-        )}
         {item.revision && (
           <p>
             Source revision <code>{item.revision.slice(0, 12)}</code>

@@ -1,4 +1,4 @@
-/* Clio Coder's landing page, with CLIO Kit's content and mark. */
+/* CLIO Kit's landing page, built around its content and mark. */
 .home {
   --chapter-color: var(--secondary);
   font: 1rem / 1.65 var(--font-ui);
@@ -182,7 +182,7 @@
   gap: 0.5rem 2rem;
   margin-top: 1.25rem;
 }
-/* One command box with Clio Coder's Copy control. */
+/* One command box with a Copy control. */
 .command {
   display: flex;
   align-items: center;
@@ -291,9 +291,6 @@
 .firstRequest > a {
   grid-column: 2;
 }
-.coderPromo {
-  margin-top: 2.5rem;
-}
 .interfaceGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -302,7 +299,7 @@
 .interfaceGrid article {
   min-width: 0;
 }
-/* Stacked like Clio Coder's interface chapter, so commands keep one line. */
+/* Stacked so commands keep one line. */
 .story .interfaceGrid {
   grid-template-columns: 1fr;
   gap: 2.5rem;
@@ -318,7 +315,7 @@
 .interfaceGrid article > p {
   font-size: 0.95rem;
 }
-/* A real session, framed as on Clio Coder's overview. */
+/* A real session, framed as a capture. */
 .home .capture {
   margin: 3rem 0;
 }
@@ -334,11 +331,6 @@
 }
 .stageLabel > span:first-child {
   color: var(--ink);
-}
-/* The label row is mono; the Clio Coder button keeps the UI font of the other buttons. */
-.home .stageLabel .primary {
-  font-family: var(--font-ui);
-  white-space: nowrap;
 }
 .capture img {
   display: block;
@@ -681,7 +673,7 @@
   }
 }
 
-/* Alternating visual lanes follow Clio Coder's chapter layout, with Kit's mark. */
+/* Alternating visual lanes form the chapter layout, with Kit's mark. */
 .heroHeading {
   grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
   align-items: center;

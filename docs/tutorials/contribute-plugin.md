@@ -1,12 +1,12 @@
 ---
 title: Build, test and contribute a plugin
-description: Package a skill with an MCP, test it in Claude Code, Codex, Clio Coder and OpenCode, and share it through the community catalogue.
+description: Package a skill with an MCP, test it in Claude Code, Codex and OpenCode, and share it through the community catalogue.
 tutorial_group: Contribute
 image: /img/tutorials/cover-contrib.png
 tutorial_category: Contribute
 tutorial_time: 6 min
 written_for: CLIO Kit 2.11
-works_in: Claude Code · Codex · Clio Coder · OpenCode
+works_in: Claude Code · Codex · OpenCode
 basis: Recorded sessions · 7 Oct 2026
 cover: /img/tutorials/cover-contrib.png
 cover_alt: "Claude Code loads the contributed skill and calls its Pandas MCP."
@@ -24,7 +24,7 @@ import TutorialHeader from '@site/src/components/TutorialHeader';
 
 This walkthrough packages a small **check-runtime-table** skill with the
 **Pandas MCP**. It shows the same package used as a native Claude Code plugin and
-as portable components in Codex, Clio Coder and OpenCode. All four sessions were
+as portable components in Codex and OpenCode. All three sessions were
 run for this guide with the versions listed in
 [Explore an HDF5 file](./codex-dataset.md); they produced the same checked group
 means from the same input.
@@ -153,43 +153,6 @@ Ask:
 [![Codex reports the same means and the saved report and grouped CSV](../../website/static/img/tutorials/contrib-codex-result.png)](../../website/static/img/tutorials/contrib-codex-result.png)
 
 </TabItem>
-<TabItem value="clio" label="Clio Coder">
-
-Copy the skill folder into the project's loose skills and declare the Pandas
-server in `.clio-coder/mcp.yaml`:
-
-```bash
-mkdir -p .clio-coder/skills
-cp -r /absolute/path/to/contribution-demo/plugins/lab-checks/skills/check-runtime-table .clio-coder/skills/
-```
-
-```yaml
-version: 1
-servers:
-  - id: clio-pandas
-    command: clio-kit
-    args: [mcp-server, pandas]
-    timeoutMs: 120000
-```
-
-```bash
-clio-coder mcp trust clio-pandas
-clio-coder
-```
-
-Ask:
-
-> /skill check-runtime-table Check runs.csv. Runtime values are in seconds. Read
-> the skill and call its Pandas MCP, check coverage and missingness, compute
-> group means and verify one independently. Preserve the original. Save
-> runtime-check.md and report output paths. Work only in this temporary project,
-> no network or delegation.
-
-[![Clio Coder loads check-runtime-table and calls clio-pandas profile_csv and groupby_operations through its gateway](../../website/static/img/tutorials/contrib-clio-tools.png)](../../website/static/img/tutorials/contrib-clio-tools.png)
-
-[![Clio Coder reports complete data and the two group means](../../website/static/img/tutorials/contrib-clio-result.png)](../../website/static/img/tutorials/contrib-clio-result.png)
-
-</TabItem>
 <TabItem value="opencode" label="OpenCode">
 
 ```bash
@@ -222,9 +185,9 @@ cat runtime-check.md
 ls *.csv
 ```
 
-All four sessions found 8 rows, no missing values, and means of **12.5 seconds**
+All three sessions found 8 rows, no missing values, and means of **12.5 seconds**
 for baseline and **9.5 seconds** for tuned. The grouped file is
-`runs_grouped.csv` in the Codex, Clio Coder and OpenCode runs and
+`runs_grouped.csv` in the Codex and OpenCode runs and
 `runtime_means_by_configuration.csv` in the Claude Code run; open the path your
 agent reports. We checked each grouped CSV and confirmed every original
 `runs.csv` was unchanged. The report should state units and coverage without

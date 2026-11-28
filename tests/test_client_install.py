@@ -152,8 +152,28 @@ def test_cli_exposes_plan_and_external_boundary(tmp_path, monkeypatch):
     result = CliRunner().invoke(plugin_group, args)
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)["client"] == "opencode"
+    # An indexed package names a publisher source that offline mode never fetches.
+    external = tmp_path / "external"
+    (external / ".clio-kit").mkdir(parents=True)
+    (external / ".clio-kit/catalogue.json").write_text(
+        json.dumps(
+            {
+                "schema": 1,
+                "name": "science",
+                "packages": [
+                    {
+                        "name": "lab",
+                        "source": {
+                            "source": "url",
+                            "url": "https://example.invalid/lab.git",
+                        },
+                    }
+                ],
+            }
+        )
+    )
     monkeypatch.setenv("CLIO_KIT_OFFLINE", "1")
-    args[1] = "scientific-debugging"
+    args[1:4] = ["lab", "--root", str(external)]
     result = CliRunner().invoke(plugin_group, args)
     assert result.exit_code != 0
     assert "Offline" in result.output

@@ -1,6 +1,6 @@
 /*
- * CLIO Kit keeps its own colors from the IOWarp mark (teal, sky, orange, cream,
- * navy) inside the layout it shares with coder.iowarp.ai.
+ * CLIO Kit takes its colors from the IOWarp mark: teal, sky, orange, cream and
+ * navy.
  */
 :root {
   --kit-teal: #217ca3;
@@ -236,7 +236,7 @@ body {
   font-size: 0.86em;
 }
 
-/* Tables and quotations follow Clio Coder's documentation. */
+/* Tables and quotations share the documentation style. */
 .markdown table {
   display: table;
   width: 100%;

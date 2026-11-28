@@ -11,7 +11,7 @@ agent definitions and community contributions into one meta-marketplace.
 
 ## Install and connect
 
-- [Set up your agent](clients.md): Codex, Claude Code, OpenCode, Cursor, Antigravity, VS Code, Claude Desktop and Clio Coder.
+- [Set up your agent](clients.md): Codex, Claude Code, OpenCode, Cursor, Antigravity, VS Code and Claude Desktop.
 - [Getting started](intro.md): launcher installation and the component model.
 - [Selective installation](installation.md): release downloads, updates, removal considerations and offline preparation.
 
@@ -19,12 +19,12 @@ agent definitions and community contributions into one meta-marketplace.
 
 - [Install components](tutorials/install-components.md): choose individual MCPs, portable skills or a native workflow plugin.
 
-- [Explore an HDF5 file](tutorials/codex-dataset.md): install a workflow, invoke its skill and inspect a scientific file through MCP in Claude Code, Codex, Clio Coder or OpenCode.
+- [Explore an HDF5 file](tutorials/codex-dataset.md): install a workflow, invoke its skill and inspect a scientific file through MCP in Claude Code, Codex or OpenCode.
 - [Summarize and plot experiment results](tutorials/claude-analysis.md): use Pandas, Plot and a skill to produce checked means and a chart.
 - [Archive and summarize](tutorials/archive-and-summarize.md): combine Compression, HDF5 and bounded statistics.
 - [Clean and plot](tutorials/clean-and-plot.md): chain two skills with Pandas and Plot.
 - [Choose a storage layout](tutorials/choose-storage.md): use a domain skill and review its assumptions.
-- [Build, test and contribute a plugin](tutorials/contribute-plugin.md): run it in Claude Code, Codex, Clio Coder and OpenCode, submit a community entry, and install it after acceptance.
+- [Build, test and contribute a plugin](tutorials/contribute-plugin.md): run it in Claude Code, Codex and OpenCode, submit a community entry, and install it after acceptance.
 
 ## Contribute and extend
 
@@ -34,7 +34,7 @@ agent definitions and community contributions into one meta-marketplace.
 
 ## Reference
 
-- [Marketplace guide](marketplace.md): external contributions, Clio Coder integration and tested coverage.
+- [Marketplace guide](marketplace.md): external contributions and tested coverage.
 - [clio-agentic-search](https://github.com/iowarp/clio-kit/tree/main/clio-agentic-search): the standalone hybrid retrieval service kept in this repository (not an MCP server).
 
 Server references are in [`mcps/`](https://github.com/iowarp/clio-kit/tree/main/docs/mcps)

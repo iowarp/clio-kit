@@ -25,7 +25,10 @@ from clio_kit.community import read_community_entries
 from clio_kit.plugins import validate_plugin
 
 ROOT = Path(__file__).resolve().parents[1]
-NAME = "coder-external-check"
+NAME = "scientific-external-check"
+# A maintained portable skill stands in for a contributor's skill.
+SKILL = "results-summary"
+SKILL_SOURCE = ROOT / "skills/clio-analysis-skills/skills" / SKILL
 SERVER = """import json, sys
 from numerics import weighted_mean
 for line in sys.stdin:
@@ -92,13 +95,12 @@ class Acceptance:
                 {
                     "name": NAME,
                     "version": "1.0.0",
-                    "description": "Scientific debugging skill with a real numerical MCP fixture.",
+                    "description": "Results summary skill with a real numerical MCP fixture.",
                     "author": {"name": "IOWarp"},
                 }
             )
         )
-        source = ROOT / "skills/clio-coder-skills/skills/clio-kit-scientific-debugging"
-        shutil.copytree(source, plugin / "skills/clio-kit-scientific-debugging")
+        shutil.copytree(SKILL_SOURCE, plugin / "skills" / SKILL)
         (plugin / "server.py").write_text(SERVER)
         (plugin / "numerics.py").write_text(NUMERICS)
         (plugin / ".mcp.json").write_text(
@@ -282,15 +284,10 @@ class Acceptance:
         installed = Path(
             registry["plugins"][NAME + "@external-check"][0]["installPath"]
         )
-        expected = (
-            ROOT / "skills/clio-coder-skills/skills/clio-kit-scientific-debugging"
-        )
-        for path in expected.rglob("*"):
+        for path in SKILL_SOURCE.rglob("*"):
             if path.is_file():
                 assert (
-                    installed
-                    / "skills/clio-kit-scientific-debugging"
-                    / path.relative_to(expected)
+                    installed / "skills" / SKILL / path.relative_to(SKILL_SOURCE)
                 ).read_bytes() == path.read_bytes()
         asyncio.run(asyncio.wait_for(self.query(installed, route), timeout=30))
         self.run(

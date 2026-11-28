@@ -34,17 +34,9 @@ def test_every_installable_marketplace_entry_and_local_skill_is_browsable():
     assert all(item["publisher"] in publishers for item in result["items"])
 
 
-def test_upstream_and_adapted_skills_have_distinct_identity_and_provenance():
-    items = {item["id"]: item for item in catalogue.generate(ROOT)["items"]}
-    upstream = items["plugin/scientific-debugging"]
-    adapted = items["skill/clio-kit-scientific-debugging"]
-    assert upstream["publisher"] == "clio-coder"
-    assert upstream["origin"] == "Indexed"
-    assert upstream["revision"] in upstream["source"]
-    assert adapted["publisher"] == "clio-kit"
-    assert adapted["origin"] == "Adapted"
-    assert adapted["evidence"] == "Scenarios recorded"
-    assert all("verified" not in r["evidence"].lower() for r in items.values())
+def test_catalogue_never_claims_unrecorded_verification():
+    items = catalogue.generate(ROOT)["items"]
+    assert all("verified" not in r["evidence"].lower() for r in items)
 
 
 def test_workflow_members_resolve():
@@ -66,16 +58,11 @@ def test_product_types_do_not_count_installation_wrappers_as_workflow_plugins():
     report = items["workflow/clio-dataset-report"]
     assert report["kind"] == "plugin"
     assert report["componentTypes"] == ["agent", "hook", "mcp", "skill"]
-    for name in ("clio-skills", "clio-coder-skills", "clio-agents"):
+    for name in ("clio-skills", "clio-agents"):
         assert items[f"plugin/{name}"]["kind"] == "collection"
     # Dependencies resolve transitively, not just from the package's own folder.
     assert items["plugin/clio-skills"]["componentTypes"] == ["skill"]
     assert items["plugin/clio-agents"]["componentTypes"] == ["agent"]
-    assert items["plugin/scientific-debugging"]["kind"] == "package"
-    assert items["plugin/scientific-debugging"]["componentTypes"] == []
-    assert (
-        items["skill/clio-kit-scientific-debugging"]["installation"] == "portable-skill"
-    )
 
 
 def test_local_mcp_package_never_gets_an_invented_launcher_command(tmp_path):

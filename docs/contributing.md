@@ -47,7 +47,6 @@ suite: sync first when you run `uv run --frozen pytest tests -q` yourself.
 
 See [package layouts](authoring.md#add-a-component-folder-to-clio-kit),
 [skill rules](authoring.md#add-a-skill), and [workflow composition](plugins.md).
-Preserve imported skill provenance; adaptations use the repository's importer.
 
 ## Add a maintained MCP in Python, Node or Go
 

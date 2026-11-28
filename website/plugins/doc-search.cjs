@@ -1,7 +1,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 
-// Index for Clio Coder's "Find a guide": each doc's title, summary, sidebar
+// Index for "Find a guide": each doc's title, summary, sidebar
 // group and section headings, published as global data for the sidebar search.
 module.exports = function docSearch({siteDir}) {
   return {

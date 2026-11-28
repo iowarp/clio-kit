@@ -3,7 +3,7 @@ import Link from '@docusaurus/Link';
 import {usePluginData} from '@docusaurus/useGlobalData';
 import DocSidebarItems from '@theme-original/DocSidebarItems';
 
-// Clio Coder's ranking: title matches first, then section headings.
+// Ranking puts title matches first, then section headings.
 function rank(guide, query) {
   const title = guide.title.toLowerCase();
   const score =
@@ -109,7 +109,7 @@ function FindGuide({onItemClick}) {
   );
 }
 
-// The search sits under the docs home link, as on coder.iowarp.ai.
+// The search sits under the docs home link.
 export default function DocSidebarItemsWithSearch(props) {
   if (props.level !== 1) return <DocSidebarItems {...props} />;
   const [home, ...rest] = props.items;

@@ -240,42 +240,6 @@ not install skills or Claude Code plugins into Desktop. Do not copy Claude Code
 plugin commands into Desktop's chat and assume they installed anything.
 For client-managed paths, see the [local MCP setup guide](https://modelcontextprotocol.io/docs/develop/connect-local-servers).
 
-### Clio Coder
-
-Kit includes a portable collection of adapted Clio Coder skills. Its native
-library route is separate from the six-client project installer:
-
-```bash
-clio-coder library install /path/to/clio-kit/skills/clio-coder-skills --project
-clio-coder library pin clio-coder-skills --project
-```
-
-Run these from the intended project, then start a fresh Clio Coder session. Read
-[Clio Coder integration](marketplace.md#clio-coder-integration) for provenance,
-names, compatibility and complete native plugin packages.
-
-Kit has no `--client clio-coder` adapter. Declare MCP servers in the project's
-`.clio-coder/mcp.yaml`, trust each one, and install portable skills into
-`.clio-coder/skills`:
-
-```yaml
-version: 1
-servers:
-  - id: clio-hdf5
-    command: clio-kit
-    args: [mcp-server, hdf5]
-    timeoutMs: 120000
-```
-
-```bash
-clio-coder mcp trust clio-hdf5
-clio-kit skill install dataset-explore --target .clio-coder/skills
-```
-
-A project server does not launch until it is trusted, and editing its declaration
-makes the trust stale. Invoke a skill with `/skill <name>`; it activates one skill
-per turn. See [Clio Coder's guides](https://coder.iowarp.ai/docs.html).
-
 ### Another MCP or Agent Skills client
 
 Use `clio-kit mcp-server <name>` as the stdio process command. For a skill, run

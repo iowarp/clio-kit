@@ -48,7 +48,7 @@ Node 24.15.0 and the dependencies pinned in `package-lock.json`.
 
 ## Marketplace preview
 
-The homepage follows Clio Coder’s editorial structure: a concise introduction,
+The homepage follows an editorial structure: a concise introduction,
 a three-step workflow, client routes, installation and contribution. It contains
 no tutorial screenshots; the searchable catalogue stays directly accessible. `/tutorials` presents
 walkthroughs stored in `docs/tutorials/`; titles, descriptions and thumbnails are
@@ -66,10 +66,9 @@ the root Python environment. No upstream network fetch or hook execution occurs.
 Display-only workflow titles live in the generator; membership and versions
 come from repository metadata. Metadata labels are not verification badges.
 
-The overview adopts the editorial structure of [Clio Coder](https://coder.iowarp.ai/):
-numbered sections, open layouts, practical examples and concise setup guidance.
-Kit keeps its own teal/orange palette and catalogue data. Newsreader and IBM Plex
-fonts are self-hosted in `static/fonts/`, adopted from Clio Coder with their SIL
+The overview uses numbered sections, open layouts, practical examples and
+concise setup guidance, with Kit's own teal/orange palette and catalogue data.
+Newsreader and IBM Plex fonts are self-hosted in `static/fonts/` with their SIL
 licenses; no remote font service is used. `editorial.css` holds shared typography,
 and `Overview.js` with `overview.module.css` holds the product introduction.
 The tutorial screenshots in `static/img/tutorials/` capture real Claude Code and Codex CLI
