@@ -12,7 +12,7 @@ import os
 from pathlib import Path
 
 from clio_kit.client_install import CLIENTS, tomllib
-from verify_external_contributions import Acceptance, NAME, ROOT
+from verify_external_contributions import Acceptance, NAME, ROOT, SKILL, SKILL_SOURCE
 
 
 class ClientAcceptance(Acceptance):
@@ -34,11 +34,8 @@ class ClientAcceptance(Acceptance):
             ]
             label = f"{route}-{client}"
             self.run(label + "-install", args, ROOT)
-            skill = project / skills / "clio-kit-scientific-debugging/SKILL.md"
-            expected = (
-                ROOT
-                / "skills/clio-coder-skills/skills/clio-kit-scientific-debugging/SKILL.md"
-            )
+            skill = project / skills / SKILL / "SKILL.md"
+            expected = SKILL_SOURCE / "SKILL.md"
             assert skill.read_bytes() == expected.read_bytes()
             path = project / configuration
             original = path.read_bytes()

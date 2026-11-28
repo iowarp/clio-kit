@@ -155,34 +155,6 @@ def test_large_data_check_accepts_exact_or_qualified_sample_not_unqualified_mean
         assert checks["qualified_mean_and_coverage"] is expected
 
 
-def test_task_verification_accepts_report_beside_its_task(tmp_path):
-    from codex_fixtures import check_artifacts, git
-
-    git(tmp_path, "init", "-q")
-    report = tmp_path / ".research/tasks/task-02/verification.md"
-    report.parent.mkdir(parents=True)
-    report.write_text("Recomputed mean is 2. Statistical significance is unsupported.")
-    case = {
-        "skill": "clio-kit-materio-task-verifier",
-        "kind": "verification",
-        "facts": [],
-    }
-    assert check_artifacts(tmp_path, case, "", {})["incorrect_mean_rejected"]
-
-
-def test_handoff_check_rejects_secret_in_nested_output(tmp_path):
-    from codex_fixtures import SECRET, check_artifacts, git
-
-    git(tmp_path, "init", "-q")
-    report = tmp_path / ".claude/handoffs/research.md"
-    report.parent.mkdir(parents=True)
-    report.write_text(SECRET)
-    case = {"skill": "clio-kit-context-handoff", "kind": "handoff", "facts": []}
-    assert not check_artifacts(tmp_path, case, "Credential redacted.", {})[
-        "secret_not_reproduced"
-    ]
-
-
 def test_skill_activation_requires_content_not_only_listing():
     listing = event(
         {

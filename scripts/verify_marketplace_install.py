@@ -196,7 +196,6 @@ class Acceptance:
             "clio-research",
             "clio-skills",
             "clio-agents",
-            "clio-coder-skills",
         ]
         for name in names:
             self.command(

@@ -18,7 +18,6 @@ from clio_kit.skills import SkillProblem
 
 def test_shipped_skills_use_standard_metadata():
     inventory = skill_inventory()
-    assert len(selected_skills((), "clio-coder")) == 39
     root = Path(__file__).resolve().parents[1]
     assert set(inventory) == {
         path.parent.name

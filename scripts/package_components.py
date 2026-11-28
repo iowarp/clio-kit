@@ -42,7 +42,6 @@ EXCLUDED = {
     "htmlcov",
     "tests",
     ".env",
-    ".clio-coder",
     ".DS_Store",
     "junit.xml",
 }

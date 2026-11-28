@@ -69,7 +69,7 @@ WORKFLOWS = {
     ),
 }
 # Public one-line summaries where the agent-facing description reads as trigger
-# text. Keyed by skill or package name; adapted skills share their upstream name.
+# text. Keyed by skill or package name.
 SUMMARIES = {
     "bibliography": "Assemble verified citations, BibTeX records and research reading lists.",
     "chart-select": "Choose a chart type, axes, bins and color scale that suit scientific data.",
@@ -105,36 +105,9 @@ SUMMARIES = {
     "slurm-script": "Prepare Slurm resource requests, job arrays and dependencies, and diagnose pending jobs.",
     "software-environment": "Check installed Spack packages and available or saved module environments.",
     "storage-format": "Choose scientific file formats, chunk layouts and compression for an access pattern.",
-    "archify": "Build interactive system maps and diagrams as standalone HTML from a typed JSON spec.",
-    "architecture": "Decide an engineering approach with the user: compare options, recommend one and record the decision.",
-    "arxiv-literature": "Search arXiv, compare papers and build a short literature survey with linked citations.",
-    "backlog": "Turn a finished PRD or architecture doc into a backlog of small, testable tickets.",
-    "coding-standards": "Strict TypeScript rules for writing or refactoring code when a project has no standards of its own.",
-    "context-handoff": "Write a redacted handoff document so the next session or agent can continue the work.",
-    "credentials": "Handle API keys, tokens and facility credentials safely, including after an auth error or a leak.",
-    "cut-it": "Slice a plan or PRD into a sprint of small, ordered tasks, each with a done-when check.",
-    "scientific-debugging": "Diagnose wrong, NaN, nondeterministic or slow scientific results by testing hypotheses before fixing.",
-    "scientific-modernization": "Port, rewrite or package established scientific software in stages validated against a trusted reference.",
-    "ship": "Ship finished work as one reviewed commit, or push a contributor branch and open a PR on request.",
-    "worktree-create": "Set up git worktrees for parallel work, each on its own branch with dependencies installed and checked.",
-    "worktree-merge": "Merge finished worktree branches through a throwaway integration branch, testing after each merge.",
-    "experiment-protocol": "Pre-register a benchmark or numerical study, locking thresholds and pass conditions before measuring.",
-    "resolve-merge-conflicts": "Resolve merge, rebase or cherry-pick conflicts by reconstructing both sides' intent, then check the result.",
-    "clio-coder-test": "Verify a Clio Coder source change against its contract, smoke, boundary and application tests.",
-    "branch-closeout": "Confirm merged work landed, then safely remove its worktrees and local branches.",
-    "product-intent": "Write a problem-first product document for a new effort, with no engineering decisions yet.",
-    "prd": "Turn an idea into a product requirements document through a staged interview.",
     "scientific-evidence-reviewer": "Check scientific tool outputs for numerical correctness, reproducibility and unsupported claims.",
-    "design-council": "Have several expert perspectives debate a design decision before code is written.",
-    "herdr": "Launch, drive or inspect another agent or command in a Herdr pane, tab or workspace.",
-    "prototype": "Answer a design question with throwaway, runnable code, keeping the verdict and discarding the code.",
-    "context-prime": "Orient a new session in a repository from the last handoff, git state and active work.",
-    "grill-me": "Stress-test a plan or design through a one-question-at-a-time interview, ending in a decision log.",
-    "find-skills": "Find published skills for a capability and prepare them for installation.",
-    "tech-spec": "Write an implementation-ready architecture handoff with typed contracts and execution flows.",
     "seismology": "Inspect SAC seismic waveforms and archives, compute per-trace statistics and plot traces.",
     "scientific-workflow-planner": "Plan a scientific workflow from verified tool capabilities, flagging missing steps before running it.",
-    "materio": "Materials research procedures: interviews, corpus synthesis, lab feasibility and verified paper handoff.",
 }
 SUMMARY_WORDS = 25
 SUMMARY_CHARS = 125
@@ -155,8 +128,8 @@ CATEGORY_ALIASES = {
 
 def public_summary(name: str, description: str) -> str:
     """One plain sentence for people; the description stays tuned for agents."""
-    if name.removeprefix("clio-kit-") in SUMMARIES:
-        return SUMMARIES[name.removeprefix("clio-kit-")]
+    if name in SUMMARIES:
+        return SUMMARIES[name]
     text = re.sub(r"^Use when this workflow is requested:\s*", "", description.strip())
     text = re.split(r"\s+Triggers on\b", text)[0].split(" | ")[0]
     match = re.match(r".*?[.!?](?=\s|$)", text)
@@ -175,18 +148,15 @@ def frontmatter(path: Path) -> tuple[dict, str]:
 
 
 def title(name: str) -> str:
-    if name == "clio-coder-skills":
-        return "Clio Coder skills"
     acronyms = {
         "hpc": "HPC",
         "io": "I/O",
         "mcp": "MCP",
         "arxiv": "arXiv",
         "hdf5": "HDF5",
-        "tdd": "TDD",
         "ndp": "NDP",
     }
-    words = name.removeprefix("clio-kit-").removeprefix("clio-").split("-")
+    words = name.removeprefix("clio-").split("-")
     return " ".join(acronyms.get(word, word.capitalize()) for word in words)
 
 
@@ -336,7 +306,7 @@ def generate(root: Path) -> dict:
             "id": "clio-kit",
             "name": "CLIO Kit",
             "organization": "IoWarp",
-            "description": "Scientific tools and reusable workflows maintained by the Gnosis Research Center. Includes attributed adaptations from Clio Coder.",
+            "description": "Scientific tools and reusable workflows maintained by the Gnosis Research Center.",
             "repository": REPOSITORY,
             "origin": "Maintained collection",
         }
@@ -346,7 +316,7 @@ def generate(root: Path) -> dict:
         publisher = entry["name"].removeprefix("iowarp-")
         publishers[publisher] = {
             "id": publisher,
-            "name": "Clio Coder" if publisher == "clio-coder" else title(publisher),
+            "name": title(publisher),
             "organization": entry.get("maintainer", "Community"),
             "description": entry["description"],
             "repository": source_url(entry["source"]),
@@ -388,7 +358,6 @@ def generate(root: Path) -> dict:
         metadata = meta.get("metadata", {})
         bundle = metadata.get("bundle", "")
         heading = re.search(r"^# (.+)$", body, re.MULTILINE)
-        adapted = metadata.get("provenance") == "adapted"
         collection = json.loads(
             (path.parents[2] / ".claude-plugin/plugin.json").read_text()
         )
@@ -398,7 +367,7 @@ def generate(root: Path) -> dict:
             title=heading.group(1) if heading else title(meta["name"]),
             description=meta["description"],
             publisher="clio-kit",
-            origin="Adapted" if adapted else "Maintained",
+            origin="Maintained",
             version=collection["version"],
             category=WORKFLOWS.get(bundle, ("", "Coding & research", ""))[1],
             source=metadata.get("source", REPOSITORY),
@@ -408,16 +377,14 @@ def generate(root: Path) -> dict:
                 for s in metadata.get("servers", "").split(",")
                 if s.strip() not in ("", "none")
             ],
-            # Origin already says "Adapted"; the bundle tag links workflow members.
+            # The bundle tag links workflow members.
             tags=[bundle] if bundle else [],
             clients=["claude-code", "codex", "antigravity", "other"],
             license=meta.get("license", "BSD-3-Clause"),
             evidence="Scenarios recorded"
             if (path.parent / "evals.md").is_file() or (path.parent / "evals").is_dir()
             else "No local scenarios recorded",
-            docs="/docs/marketplace#clio-coder-integration"
-            if adapted
-            else "/docs/marketplace#installable-components",
+            docs="/docs/marketplace#installable-components",
         )
 
     for name, spec in inventory["bundles"].items():
@@ -477,9 +444,7 @@ def generate(root: Path) -> dict:
             if publisher not in publishers:
                 publishers[publisher] = {
                     "id": publisher,
-                    "name": "Clio Coder"
-                    if publisher == "clio-coder"
-                    else title(publisher),
+                    "name": title(publisher),
                     "organization": "Community",
                     "description": entry["description"],
                     "repository": source_url(source),
@@ -635,15 +600,10 @@ def generate(root: Path) -> dict:
         if set(record["members"]) - ids:
             raise ValueError(f"Unresolved members in {record['id']}")
     classify_records(records, entries, root)
-    upstream = {r["name"]: r["category"] for r in records if r["origin"] == "Indexed"}
     for record in records:
-        if record["origin"] == "Adapted":
-            name = record["name"].removeprefix("clio-kit-")
-            record["category"] = upstream.get(name, record["category"])
         if record["kind"] == "collection":
             bundle = record["name"].removesuffix("-skills")
-            fallback = "Coding" if bundle == "clio-coder" else record["category"]
-            record["category"] = WORKFLOWS.get(bundle, ("", fallback, ""))[1]
+            record["category"] = WORKFLOWS.get(bundle, ("", record["category"], ""))[1]
         record["category"] = CATEGORY_ALIASES.get(
             record["category"], record["category"]
         )

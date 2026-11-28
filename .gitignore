@@ -249,9 +249,6 @@ rework/
 # Commit the website lock used by npm ci and dependency audits.
 !website/package-lock.json
 
-# Local agent sessions are not release artifacts.
-.clio-coder/
-
 # Project installation state; the generated shared catalogue remains tracked.
 /.clio-kit/packages/
 /.clio-kit/sources/
