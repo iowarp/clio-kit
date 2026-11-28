@@ -1,12 +1,12 @@
 ---
 title: Install an MCP, a skill or a plugin
-description: Choose individual components or a workflow, with captured installation commands for Claude Code, Codex, Clio Coder and OpenCode.
+description: Choose individual components or a workflow, with captured installation commands for Claude Code, Codex and OpenCode.
 tutorial_group: Skills and setup
 image: /img/tutorials/cover-install-components.png
 tutorial_category: Setup
 tutorial_time: 3 min
 written_for: CLIO Kit 2.11
-works_in: Claude Code · Codex · Clio Coder · OpenCode
+works_in: Claude Code · Codex · OpenCode
 basis: Captured commands · 7 Oct 2026
 cover: /img/tutorials/cover-install-components.png
 cover_alt: "OpenCode installs the scientific I/O components and opencode mcp list shows four connected servers."
@@ -67,25 +67,6 @@ For a project-only entry, put the same command in `.codex/config.toml` under
 `[mcp_servers.clio-compression]`; Codex reads it once you trust the folder.
 
 </TabItem>
-<TabItem value="clio" label="Clio Coder">
-
-Save this as `.clio-coder/mcp.yaml`, then trust it. A project server does not
-launch until you do:
-
-```yaml
-version: 1
-servers:
-  - id: clio-compression
-    command: clio-kit
-    args: [mcp-server, compression]
-    timeoutMs: 120000
-```
-
-```bash
-clio-coder mcp trust clio-compression
-```
-
-</TabItem>
 <TabItem value="opencode" label="OpenCode">
 
 Add the server to the project's `opencode.json`:
@@ -126,7 +107,6 @@ invoke it the way your client expects:
 | --- | --- | --- |
 | Claude Code | `.claude/skills` | `/storage-format` |
 | Codex | `.agents/skills` | `$storage-format` |
-| Clio Coder | `.clio-coder/skills` | `/skill storage-format` |
 | OpenCode | `.agents/skills` | "Use the storage-format skill" |
 
 ```bash
@@ -165,19 +145,6 @@ This writes project-local MCP configuration and copies the three scientific I/O
 skills. Add `--dry-run` first to inspect the plan.
 
 [![Actual Codex component installation lists its three skills and four MCP servers](../../website/static/img/tutorials/codex-install.png)](../../website/static/img/tutorials/codex-install.png)
-
-</TabItem>
-<TabItem value="clio" label="Clio Coder">
-
-Kit has no `--client clio-coder` adapter. Declare the workflow's servers in
-`.clio-coder/mcp.yaml`, trust each one, and install its skills into
-`.clio-coder/skills`:
-
-[![Actual Clio Coder setup: the project mcp.yaml for clio-hdf5, the trust record, and the dataset-explore skill installed into .clio-coder/skills](../../website/static/img/tutorials/clio-install.png)](../../website/static/img/tutorials/clio-install.png)
-
-For a whole workflow, list every server it uses, for example `clio-adios`,
-`clio-compression`, `clio-hdf5` and `clio-parquet` for scientific I/O, and
-install `dataset-explore`, `large-data-read` and `storage-format`.
 
 </TabItem>
 <TabItem value="opencode" label="OpenCode">

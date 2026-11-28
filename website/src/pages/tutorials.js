@@ -16,7 +16,7 @@ export default function Tutorials() {
   return (
     <Frame
       title="Tutorials"
-      description="Practical CLIO Kit guides: install a component, follow a real session in Claude Code, Codex, Clio Coder or OpenCode, and check the result against the supplied data."
+      description="Practical CLIO Kit guides: install a component, follow a real session in Claude Code, Codex or OpenCode, and check the result against the supplied data."
     >
       <div className={`${s.home} ${s.page}`}>
         <header className={s.tutorialIntro}>

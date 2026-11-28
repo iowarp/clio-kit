@@ -6,12 +6,12 @@ image: /img/tutorials/cover-storage.png
 tutorial_category: Skills
 tutorial_time: 3 min
 written_for: CLIO Kit 2.11
-works_in: Claude Code · Codex · Clio Coder · OpenCode
+works_in: Claude Code · Codex · OpenCode
 basis: Recorded sessions · 7 Oct 2026
 cover: /img/tutorials/cover-storage.png
-cover_alt: "Clio Coder writes storage-plan.md and summarizes the recommended layout."
-cover_caption: "Clio Coder writes storage-plan.md and summarizes the recommended layout."
-cover_tag: Clio Coder · 0.6.1
+cover_alt: "Codex reads the storage-format skill and writes storage-plan.md."
+cover_caption: "Codex reads the storage-format skill and writes storage-plan.md."
+cover_tag: Codex · 0.160.1
 hide_title: true
 displayed_sidebar: null
 ---
@@ -24,8 +24,8 @@ import TutorialHeader from '@site/src/components/TutorialHeader';
 
 Some skills provide domain guidance without calling an MCP. Here
 **storage-format** structures a format and chunk-layout discussion. The result is
-a plan, not a benchmark. The screenshots are real sessions in Claude Code, Codex,
-Clio Coder and OpenCode, recorded with the versions listed in
+a plan, not a benchmark. The screenshots are real sessions in Claude Code, Codex
+and OpenCode, recorded with the versions listed in
 [Explore an HDF5 file](./codex-dataset.md).
 
 ## 1. Install the skill
@@ -101,34 +101,6 @@ Ask:
 [![Codex recommends HDF5 with (1, 64, 64) chunks of 16 KiB for the field and Parquet for the table](../../website/static/img/tutorials/storage-codex-result.png)](../../website/static/img/tutorials/storage-codex-result.png)
 
 </TabItem>
-<TabItem value="clio" label="Clio Coder">
-
-```bash
-clio-kit skill install storage-format --target .clio-coder/skills
-clio-coder
-```
-
-Ask:
-
-> /skill storage-format We have a float32 temperature field shaped (120,64,64),
-> in kelvin, written after a simulation finishes. Researchers mostly read one
-> complete time slice, sometimes the time series at one grid point. We also have
-> a separate table of run IDs, parameters and mean runtimes. Recommend candidate
-> formats for the field and table, a starting chunk shape and its byte size,
-> tradeoffs for the secondary read pattern, and a small benchmark before adopting
-> the layout. Label any writer or concurrency model as an assumption to confirm,
-> and distinguish chunks touched from physical disk I/O. Do not create a
-> benchmark or claim measured speedups. Save storage-plan.md. No MCP calls are
-> needed for this design discussion. Work only here, no network or delegation.
-
-After writing the plan, Clio asked whether to keep it; the recording answered
-with its recommended option, **Keep the plan**.
-
-[![Clio Coder loads storage-format through its gateway](../../website/static/img/tutorials/storage-clio-tools.png)](../../website/static/img/tutorials/storage-clio-tools.png)
-
-[![Clio Coder writes storage-plan.md, asks whether to keep it, and summarizes HDF5 with (8, 64, 64) chunks of 128 KiB and Parquet for the table](../../website/static/img/tutorials/storage-clio-result.png)](../../website/static/img/tutorials/storage-clio-result.png)
-
-</TabItem>
 <TabItem value="opencode" label="OpenCode">
 
 ```bash
@@ -159,14 +131,14 @@ Ask:
 
 ## 3. Review the recommendation
 
-All four sessions proposed HDF5 for the field and Parquet for the separate run
+All three sessions proposed HDF5 for the field and Parquet for the separate run
 table, and each labeled its writer model as an assumption. They chose different
 starting chunks:
 
 | Candidate | Calculation | Size | Recommended by |
 | --- | --- | --- | --- |
 | One time slice | `1 × 64 × 64 × 4` | 16,384 bytes / 16 KiB | Codex |
-| Eight time slices | `8 × 64 × 64 × 4` | 131,072 bytes / 128 KiB | Claude Code, Clio Coder, OpenCode |
+| Eight time slices | `8 × 64 × 64 × 4` | 131,072 bytes / 128 KiB | Claude Code, OpenCode |
 
 We checked that arithmetic in each saved plan. It does not establish which
 candidate is faster: one slice per chunk reads exactly one chunk for the primary

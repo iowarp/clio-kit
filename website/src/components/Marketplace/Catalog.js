@@ -4,7 +4,6 @@ import Heading from '@theme/Heading';
 import {useHistory, useLocation} from '@docusaurus/router';
 import {
   catalogue,
-  hasAdaptedCopy,
   itemUrl,
   kinds,
   publisherFor,
@@ -39,8 +38,7 @@ export function Catalog({fixedPublisher}) {
       base
         .filter(
           (item) =>
-            // "All" lists an adapted skill once; its upstream stays under Packages.
-            (type === 'all' ? !hasAdaptedCopy(item) : item.kind === type) &&
+            (type === 'all' || item.kind === type) &&
             (origin === 'all' || item.origin === origin) &&
             (domain === 'all' || item.category === domain) &&
             [
@@ -109,7 +107,7 @@ export function Catalog({fixedPublisher}) {
                 <span>{label}</span>
                 <span className={styles.count}>
                   {key === 'all'
-                    ? base.filter((r) => !hasAdaptedCopy(r)).length
+                    ? base.length
                     : base.filter((r) => r.kind === key).length}
                 </span>
               </button>
@@ -147,7 +145,6 @@ export function Catalog({fixedPublisher}) {
           >
             <option value="all">All sources</option>
             <option>Maintained</option>
-            <option>Adapted</option>
             <option>Indexed</option>
           </select>
           {!fixedPublisher && (

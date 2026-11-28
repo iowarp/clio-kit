@@ -2,7 +2,7 @@ import React from 'react';
 import Link from '@docusaurus/Link';
 import useBaseUrl from '@docusaurus/useBaseUrl';
 
-// Clio Coder's two-weight brand: the family name strong, the product name light.
+// A two-weight brand sets the family name strong and the product name light.
 export default function NavbarLogo() {
   return (
     <Link to="/" className="navbar__brand" aria-label="CLIO Kit home">

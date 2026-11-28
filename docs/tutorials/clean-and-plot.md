@@ -6,12 +6,12 @@ image: /img/tutorials/cover-clean.png
 tutorial_category: Analysis
 tutorial_time: 3 min
 written_for: CLIO Kit 2.11
-works_in: Claude Code · Codex · Clio Coder · OpenCode
+works_in: Claude Code · Codex · OpenCode
 basis: Recorded sessions · 7 Oct 2026
 cover: /img/tutorials/cover-clean.png
-cover_alt: "Clio Coder fills two gaps with the Pandas MCP before the plotting turn."
-cover_caption: "Clio Coder fills two gaps with the Pandas MCP before the plotting turn."
-cover_tag: Clio Coder · 0.6.1
+cover_alt: "Codex reads both skills, then profiles sensor.csv and fills its gaps with the Pandas MCP."
+cover_caption: "Codex reads both skills, then profiles sensor.csv and fills its gaps with the Pandas MCP."
+cover_tag: Codex · 0.160.1
 hide_title: true
 displayed_sidebar: null
 ---
@@ -25,7 +25,7 @@ import TutorialHeader from '@site/src/components/TutorialHeader';
 Use two skills in sequence: **data-clean** for a specific repair, then
 **results-summary** for the handoff to Plot. The agent works through the real
 **Pandas** and **Plot** MCPs. The screenshots are real sessions in Claude Code,
-Codex, Clio Coder and OpenCode, recorded with the versions listed in
+Codex and OpenCode, recorded with the versions listed in
 [Explore an HDF5 file](./codex-dataset.md).
 
 ## 1. Supply a bounded repair
@@ -121,54 +121,6 @@ Paste:
 [![Codex reports the filled values 2 and 4 mV and the output files](../../website/static/img/tutorials/clean-codex-result.png)](../../website/static/img/tutorials/clean-codex-result.png)
 
 </TabItem>
-<TabItem value="clio" label="Clio Coder">
-
-Save this as `.clio-coder/mcp.yaml`:
-
-```yaml
-version: 1
-servers:
-  - id: clio-pandas
-    command: clio-kit
-    args: [mcp-server, pandas]
-    timeoutMs: 120000
-  - id: clio-plot
-    command: clio-kit
-    args: [mcp-server, plot]
-    timeoutMs: 120000
-```
-
-```bash
-clio-coder mcp trust clio-pandas
-clio-coder mcp trust clio-plot
-clio-kit skill install data-clean --target .clio-coder/skills
-clio-kit skill install results-summary --target .clio-coder/skills
-clio-coder
-```
-
-`/skill` activates exactly one skill for a turn, so use two turns. First the
-repair:
-
-> /skill data-clean Read sensor.csv. These are equally spaced one-second
-> measurements; signal_mV has only interior missing values. Through the
-> clio-pandas MCP, impute ONLY signal_mV using linear row-position interpolation;
-> preserve the source and save sensor_clean.csv. Do not remove rows or duplicates
-> or alter any other column. Verify the cleaned values independently. Work only
-> here, no delegation or network. Use MCP tools for cleaning, not replacement
-> pandas shell code. Stop after verifying; the plot comes next.
-
-Then the handoff to Plot:
-
-> /skill results-summary Use the clio-plot MCP on sensor_clean.csv to make
-> signal.png, and write cleaning-report.md stating the method, values, units and
-> output paths. Work only here, no delegation or network. Use MCP tools for
-> plotting, not replacement matplotlib shell code.
-
-[![Clio Coder loads data-clean, calls clio-pandas handle_missing_data and checks the copy, then loads results-summary in the second turn and calls clio-plot line_plot on sensor_clean.csv](../../website/static/img/tutorials/clean-clio-tools.png)](../../website/static/img/tutorials/clean-clio-tools.png)
-
-[![Clio Coder reports the interpolated values and saved outputs](../../website/static/img/tutorials/clean-clio-result.png)](../../website/static/img/tutorials/clean-clio-result.png)
-
-</TabItem>
 <TabItem value="opencode" label="OpenCode">
 
 Save this as `opencode.json` in the project:
@@ -221,7 +173,7 @@ Paste:
 
 ## 3. Inspect the transformation
 
-In all four sessions the Pandas `handle_missing_data` tool filled the gaps and
+In all three sessions the Pandas `handle_missing_data` tool filled the gaps and
 wrote its output to `sensor_imputed.csv`; the agent then saved the requested
 `sensor_clean.csv`. The second skill tells the agent to plot the **cleaned file**,
 not the original input, and every client passed `sensor_clean.csv` to
@@ -236,7 +188,7 @@ cat cleaning-report.md
 Check that the source still has its two empty cells. The cleaned signals should
 be `1, 2, 3, 4, 5`, with timestamps `0, 1, 2, 3, 4` and exactly five rows. The
 two interpolations are `(1+3)/2 = 2` and `(3+5)/2 = 4`. We checked these values
-and the unchanged source in all four recorded projects.
+and the unchanged source in all three recorded projects.
 
 ## 4. Open the figure
 

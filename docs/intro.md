@@ -46,8 +46,7 @@ clio-kit skill install --bundle clio-scientific-io --target /path/to/project/.ag
 
 For Codex, `.agents/skills` is a project skill directory; `~/.agents/skills` is
 user-wide. Other agents use their own documented discovery path as `--target`.
-Omit `--bundle` for all bundled skills, including adapted Clio Coder skills and
-the dataset-report procedure. Configure required MCP servers separately;
+Omit `--bundle` for all bundled skills, including the dataset-report procedure. Configure required MCP servers separately;
 for example `codex mcp add clio-hdf5 -- clio-kit mcp-server hdf5` registers HDF5.
 The scientific I/O workflow also requires ADIOS, Parquet and compression.
 
@@ -255,7 +254,7 @@ clio-kit/
 ├── .claude-plugin/marketplace.json
 ├── mcp-servers/            # Independent scientific server projects
 ├── plugins/                # Workflow bundles, aggregate skills and agents
-├── skills/                 # Workflow and imported skill collections
+├── skills/                 # Workflow skill collections
 ├── community/entries/      # External plugin and marketplace entries
 ├── src/clio_kit/            # Launcher, authoring, discovery and cache management
 ├── tests/fixtures/         # Runtime acceptance fixtures

@@ -51,7 +51,7 @@
   outline-offset: 4px;
   border-radius: 5px;
 }
-/* Same column as the overview's .page and coder.iowarp.ai, so edges line up with the navbar. */
+/* Same column as the overview's .page, so edges line up with the navbar. */
 .container {
   width: min(1248px, calc(100% - 6rem));
   margin-inline: auto;
@@ -132,7 +132,7 @@
 .largeGlyph .serverIcon {
   font-size: 34px;
 }
-/* One accent wash for every component type, as Clio Coder uses one accent. */
+/* One accent wash for every component type. */
 :is(.skill, .plugin, .agent, .hook, .mcp) {
   background: var(--market-tint);
   color: var(--market-accent);

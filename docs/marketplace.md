@@ -26,7 +26,7 @@ discovered during generation without a central TOML entry; see
 - Individual scientific/general MCP servers and six broad workflow plugins (bundles).
 - `clio-dataset-report`: a task plugin combining HDF5/Pandas/Plot, a report skill,
   evidence review and a verification hook; see [inputs and limits](plugins.md#scientific-dataset-report).
-- Scientific workflow skills, available per workflow or together as `clio-skills`, plus the optional imported `clio-coder-skills` collection.
+- Scientific workflow skills, available per workflow or together as `clio-skills`.
 - `clio-agents`: a scientific workflow planner and an evidence reviewer.
 - Direct external plugins and compiled external marketplace collections.
 
@@ -63,139 +63,23 @@ under `tests/fixtures/mcp-servers/` verify those adapters in CI; they are not
 installed marketplace products or bundled wheel components. Hosting an
 additional server requires its own reviewed source, locks and CI coverage.
 
-## Clio Coder integration
-
-CLIO Kit includes an optional collection imported from Clio Coder revision
-`c841a46101d6d9df5fd3bcb1d337e59d92fb660d`: 33 coding/research skills and
-six Materio skills. The original scientific workflow bundles remain unchanged.
-
-```bash
-clio-kit skill list --bundle clio-coder
-clio-kit skill install --bundle clio-coder --target .agents/skills
-clio-kit skill install clio-kit-scientific-debugging --target .agents/skills
-```
-
-Choose either the collection or individual skills. Through Claude Code:
-
-```bash
-claude plugin install clio-coder-skills@clio-kit
-```
-
-The collection also includes a portable root plugin manifest. With Clio Coder
-0.4.8, from a working project, install the collection from your kit checkout:
-
-```bash
-clio-coder library install /path/to/clio-kit/skills/clio-coder-skills --project
-clio-coder library pin clio-coder-skills --project
-```
-
-Collection version 1.1.0 gives adapted skills a `clio-kit-` prefix, such as
-`clio-kit-scientific-debugging`. Clio Coder compares skill names against its
-audited catalogue; using the original name for changed content caused a drift
-warning. Distinct names preserve that distinction without disabling integrity
-checks. Original names, revisions and file hashes remain in `import-lock.json`.
-
-If you installed the earlier unprefixed collection, review local edits and remove
-only those old imported copies before reinstalling. The portable installer does
-not delete renamed folders automatically. Native plugin users should update or
-reinstall `clio-coder-skills`, then restart their session. Upstream marketplace
-package names below remain unchanged.
-
-The imported instructions retain upstream attribution and license declarations.
-Each independently installed Materio skill includes its shared references,
-templates and scientific helper scripts. Native Clio agents, prompt commands,
-fleets and runtime gates are not provided by those skill folders. Host-specific
-instructions are identified by a compatibility note. Upstream evaluation labels are preserved
-as provenance; the kit does not reinterpret them as its own successful tests.
-
-Install a referenced companion skill too, or select the complete collection;
-for example, `clio-kit-tech-spec` uses `clio-kit-tdd`. Herdr requires its executable
-and an actual Herdr pane (`HERDR_ENV=1`); installing the skill does not start a
-session. Its instructions distinguish JSON responses from actions that succeed
-with empty output. Archify likewise requires its separate renderer.
-
-### Upstream marketplace and packed plugin
-
-The community entry `iowarp-clio-coder.toml` federates the pinned Clio Coder
-marketplace. Its upstream packages are an alternative to the adapted collection:
-
-```bash
-claude plugin install scientific-debugging@clio-kit
-claude plugin install materio@clio-kit
-```
-
-Avoid installing upstream and adapted copies of the same skill together.
-The upstream `materio` marketplace entry exposes six portable skills. Its native
-agents, prompts and fleet belong to the complete Clio Coder package:
-
-```bash
-clio-coder library install /path/to/clio-coder/library/plugins/materio --project
-```
-
-Materio also supplies `assets/scripts/project_plugin.py` for generating native
-peer exports. Its optional `wtf-p` action prepares a handoff; it does not install
-an MCP server or execute the receiving paper workflow. Foreign MCP/hook import
-is omitted by Clio Coder's interoperability importer, so installing these skills
-does not establish native MCP integration in that host.
-
-### Refresh and validation
-
-From the CLIO Kit checkout, reproduce the import using a clean Clio Coder
-checkout at the recorded revision:
-
-```bash
-uv run --frozen python scripts/import_clio_coder_skills.py /path/to/clio-coder
-clio-kit marketplace sync
-```
-
-`skills/clio-coder-skills/import-lock.json` records original metadata, source
-hashes, adaptations and hashes of imported files. Refresh refuses local changes
-and an unexpected source revision. A deliberate upstream upgrade uses
-`--revision <reviewed-commit> --version <new-collection-version>` and updates the
-community entry's pin separately. Review both diffs; clients use the collection
-version for plugin cache identity.
+## External transport acceptance
 
 The external transport acceptance test builds isolated Git repositories and a
 temporary npm registry. It tests GitHub, Git URL, Git subdirectory, npm, and
-GitHub/URL marketplace federation with a real imported skill and an MCP query:
+GitHub/URL marketplace federation with a maintained skill and an MCP query:
 
 ```bash
 uv run --frozen python scripts/verify_external_contributions.py --output /tmp/clio-external-check
-uv run --frozen python scripts/verify_imported_skill_behavior.py --output /tmp/clio-skill-behavior
 ```
 
-Use new output directories. The first test needs Claude CLI but no model login;
-its synthetic GitHub URLs are redirected to temporary repositories. A separate
-live check installed `scientific-debugging` and `materio` from the pinned public
-repository. The second test needs authenticated Codex model access and checks
-skill loading, an actual MCP query, preserved source files, and written artifacts.
-Read its diagnosis and protocol before accepting scientific claims.
-
-Installation and discovery cover all imported skills. The 2026-09-16 follow-up
-exercised each of the 39 imported procedures in a bounded task, then tested
-previously missing live paths. These checks establish the listed behavior, not
-universal compatibility or scientific correctness for arbitrary inputs.
+Use a new output directory. The test needs Claude CLI but no model login; its
+synthetic GitHub URLs are redirected to temporary repositories.
 
 | Check | Verified behavior |
 |---|---|
-| Package and installers | A fresh wheel installed all 39 adapted skills with matching resource bytes. The npm skills CLI discovered and copied all 60 skills, refreshed resources and removed them for Codex, Claude Code and Antigravity targets. |
 | External contributions | All six isolated transport routes installed, queried an actual MCP, refreshed and uninstalled successfully. A real one-file contribution [PR on the contributor's fork](https://github.com/SIslamMun/scientific-mcps/pull/2) was opened, inspected and closed without merging. |
 | Claude plugin hooks | Default, custom-file and inline hook validation is covered. Installed hooks ran at session start, observed an allowed write and denied a protected write. Both the CI-pinned client's scripted-model run and an authenticated model run passed. |
-| Codex 0.154.0 | Loaded the renamed debugging and experiment-protocol skills, queried a numerical MCP and wrote evidence/protocol artifacts while preserving source files. |
-| Claude Code 2.1.269 | Loaded the imported literature skill through its plugin, fetched an actual arXiv abstract and full PDF, and wrote a source-linked review with retrieval records. |
-| Antigravity CLI 1.2.4 | Loaded the renamed debugging skill and reproduced/diagnosed the numerical failure while preserving source files. |
-| Herdr 0.8.0 | From a real pane in an isolated session, created a sibling pane, ran a command, waited for and read its output, preserved focus and cleaned up. |
-| Clio Coder 0.4.8 | Discovered and activated the adapted debugging skill without an upstream audit-hash collision. Generated diagnostics still require evidence review; a causal explanation needed correction. |
-| Native Materio on Clio Coder 0.4.8 | Its executor and read-only verifier completed a protocol-preparation task within their write boundaries. No physical measurements were performed. |
-
-Use the current CI result for the root test suite. Materio's earlier offline helper suite passed
-92 tests and its generated Claude export passed strict validation. One native
-Clio model run exceeded the test timeout; resuming that interrupted session
-returned an upstream tool-history error. A fresh bounded run completed. Drafting and
-interview skills remain bounded evaluations; real publication, independent review
-councils and experiments require their own inputs and authorization. The exact
-`wtf-p` receiving workflow and desktop/IDE GUI flows are not verified by these
-CLI checks. Cursor remains outside this follow-up's scope.
 
 ## Optional skills CLI
 
@@ -212,7 +96,7 @@ npx skills@1.5.25 add /path/to/clio-kit --skill dataset-explore large-data-read 
 ```
 
 Use `--agent claude-code` or `--agent antigravity` for those clients; multiple
-agent names can follow `--agent`. Use `--skill '*'` for all available skills, including the Clio Coder collection. Codex and
+agent names can follow `--agent`. Use `--skill '*'` for all available skills. Codex and
 Antigravity share `.agents/skills`; Claude Code uses `.claude/skills`. Other
 agents that read the shared directory will also discover those skills.
 Antigravity CLI still needs the project selection described in
@@ -254,7 +138,7 @@ uv run --frozen python scripts/verify_skills_cli.py
 | Capability | Release scope |
 |---|---|
 | Python server packaging and stdio launcher | 22 shipped servers; individual backend prerequisites still apply |
-| Portable skills | Primary workflow, dataset-report and adapted Clio Coder skill folders; installation checks are separate from each skill's model evaluation |
+| Portable skills | Primary workflow and dataset-report skill folders; installation checks are separate from each skill's model evaluation |
 | Native bundles and agent definitions | Claude Code; other clients use portable skills and explicit MCP configuration |
 | Node/TypeScript and Go | Locked local-project adapters tested with real SDK fixtures; no shipped non-Python scientific server |
 | External plugins and marketplaces | Entry validation, snapshot compilation and client installation; third-party code remains externally maintained |

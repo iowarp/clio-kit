@@ -6,7 +6,7 @@ image: /img/tutorials/cover-analysis.png
 tutorial_category: Analysis
 tutorial_time: 3 min
 written_for: CLIO Kit 2.11
-works_in: Claude Code · Codex · Clio Coder · OpenCode
+works_in: Claude Code · Codex · OpenCode
 basis: Recorded sessions · 7 Oct 2026
 cover: /img/tutorials/cover-analysis.png
 cover_alt: "OpenCode profiles and groups runs.csv with the Pandas MCP."
@@ -25,8 +25,8 @@ import TutorialHeader from '@site/src/components/TutorialHeader';
 Give your agent a CSV of experiment runs and ask it to compare configurations.
 You connect the **Pandas** and **Plot** MCP servers, add the **results-summary**
 skill, and produce a grouped CSV, a bar chart and a short analysis. The
-screenshots are real sessions in Claude Code, Codex, Clio Coder and OpenCode,
-recorded with the versions listed in [Explore an HDF5 file](./codex-dataset.md).
+screenshots are real sessions in Claude Code, Codex and OpenCode, recorded with
+the versions listed in [Explore an HDF5 file](./codex-dataset.md).
 The eight rows are a tutorial fixture, not evidence of a real system's
 performance.
 
@@ -129,45 +129,6 @@ with a Python imaging library that was not installed.
 [![Codex reports both means and the saved chart and analysis](../../website/static/img/tutorials/analysis-codex-result.png)](../../website/static/img/tutorials/analysis-codex-result.png)
 
 </TabItem>
-<TabItem value="clio" label="Clio Coder">
-
-Save this as `.clio-coder/mcp.yaml`:
-
-```yaml
-version: 1
-servers:
-  - id: clio-pandas
-    command: clio-kit
-    args: [mcp-server, pandas]
-    timeoutMs: 120000
-  - id: clio-plot
-    command: clio-kit
-    args: [mcp-server, plot]
-    timeoutMs: 120000
-```
-
-```bash
-clio-coder mcp trust clio-pandas
-clio-coder mcp trust clio-plot
-clio-kit skill install results-summary --target .clio-coder/skills
-clio-coder
-```
-
-Ask:
-
-> /skill results-summary Compare configurations in runs.csv. Runtime is in
-> seconds. Use the clio-pandas MCP to check missing values and calculate mean
-> runtime by configuration; use the clio-plot MCP to make a bar chart from the
-> grouped output, not the raw rows. Verify one mean independently. Save the chart
-> and a short analysis.md in this folder, and report the paths and means. This is
-> a tutorial fixture, not a performance claim. Work only in this demo folder; no
-> network or delegation.
-
-[![Clio Coder loads results-summary, profiles and groups runs.csv with clio-pandas, and calls clio-plot bar_plot on the grouped file](../../website/static/img/tutorials/analysis-clio-tools.png)](../../website/static/img/tutorials/analysis-clio-tools.png)
-
-[![Clio Coder reports the two means and the output files](../../website/static/img/tutorials/analysis-clio-result.png)](../../website/static/img/tutorials/analysis-clio-result.png)
-
-</TabItem>
 <TabItem value="opencode" label="OpenCode">
 
 Save this as `opencode.json` in the project:
@@ -238,7 +199,7 @@ tuned,9.5
 ```
 
 Check the means yourself: `(12 + 13 + 11 + 14) / 4 = 12.5` seconds;
-`(9 + 10 + 8 + 11) / 4 = 9.5` seconds. After the four recorded sessions we
+`(9 + 10 + 8 + 11) / 4 = 9.5` seconds. After the three recorded sessions we
 recomputed both means from the source CSV, compared them with each saved grouped
 file, and confirmed `runs.csv` was unchanged.
 

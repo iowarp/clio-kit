@@ -28,7 +28,7 @@
   src: url('/fonts/plex-400.woff2') format('woff2');
 }
 
-/* Page chrome follows coder.iowarp.ai: header, footer and documentation. */
+/* Page chrome covers the header, footer and documentation. */
 :root {
   --ifm-navbar-height: 5rem;
   --doc-sidebar-width: 240px;
@@ -279,7 +279,7 @@ html[data-theme] .navbar__link.kit-cta-link:hover {
   border-left: 2px solid var(--accent);
   color: var(--ink);
 }
-/* Clio Coder's "Find a guide" search, under the docs home link. */
+/* The "Find a guide" search, under the docs home link. */
 .kit-doc-search {
   margin: 0.85rem 0 0.35rem;
   padding: 0 0.6rem;
@@ -461,7 +461,7 @@ html[data-theme] .navbar__link.kit-cta-link:hover {
   color: var(--muted);
 }
 
-/* Client tabs use the mono labels of Clio Coder's install chooser. */
+/* Client tabs use mono labels. */
 .tabs {
   border-bottom: 1px solid var(--line);
 }

@@ -4,7 +4,7 @@ import Head from '@docusaurus/Head';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import {useDoc} from '@docusaurus/plugin-content-docs/client';
 
-// Mirrors coder.iowarp.ai: guides are TechArticles, tutorials are Articles.
+// Guides are TechArticles and tutorials are Articles.
 export default function MetadataWrapper(props) {
   const {metadata, frontMatter} = useDoc();
   const {siteConfig} = useDocusaurusContext();

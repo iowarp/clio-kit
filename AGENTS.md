@@ -10,7 +10,7 @@ MCP server, skill or hook. Detailed contribution rules are in
 
 - `src/clio_kit/`: launcher, runtime isolation, skills and marketplace commands.
 - `mcp-servers/<name>/`: independent server packages, descriptors, locks and tests.
-- `skills/`: portable skill collections, including adapted Clio Coder skills.
+- `skills/`: portable skill collections.
 - `plugins/`: workflow packages, shared components and native client adapters.
 - `community/entries/`: external plugin and marketplace TOML entries.
 - `.clio-kit/catalogue.json`: generated shared package catalogue.
@@ -87,8 +87,6 @@ and catalogue data regenerate with
 `uv run python scripts/generate_docs.py mcp-servers website`.
 Keep reviewed usage inside the generator's existing usage markers.
 
-Preserve upstream provenance and hashes when updating imported skills; use
-`scripts/import_clio_coder_skills.py` rather than silently changing locked imports.
-Keep credentials, local `.clio-coder` sessions and temporary acceptance output
-out of commits. Report what was exercised, skipped or blocked without claiming
+Keep credentials, local agent sessions and temporary acceptance output out of
+commits. Report what was exercised, skipped or blocked without claiming
 that static validation proves live agent behavior.

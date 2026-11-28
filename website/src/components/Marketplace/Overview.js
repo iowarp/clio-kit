@@ -202,7 +202,7 @@ export function Overview() {
   return (
     <Frame
       title="Scientific tools for your AI agent"
-      description="CLIO Kit is the meta-marketplace for scientific computing: one catalogue of MCP servers, skills and workflow plugins from CLIO Kit and other publishers, for Claude Code, Codex, Clio Coder, OpenCode and other agents."
+      description="CLIO Kit is the meta-marketplace for scientific computing: one catalogue of MCP servers, skills and workflow plugins from CLIO Kit and other publishers, for Claude Code, Codex, OpenCode and other agents."
       entities={[
         {
           '@type': 'SoftwareSourceCode',
@@ -243,8 +243,7 @@ export function Overview() {
               <p className={s.lede}>
                 CLIO Kit is the meta-marketplace for scientific computing. Add
                 one MCP server, a skill or a whole workflow to Claude Code,
-                Codex, Clio Coder or OpenCode, then check the results against
-                your data.
+                Codex or OpenCode, then check the results against your data.
               </p>
               <div className={s.heroTry}>
                 <p className={s.eyebrow}>Install in one line</p>
@@ -336,29 +335,25 @@ export function Overview() {
           <figure className={s.capture}>
             <div className={s.stageLabel}>
               <span>
-                <span className={s.dot} aria-hidden="true" /> CLIO Kit in Clio
-                Coder / clio-hdf5
+                <span className={s.dot} aria-hidden="true" /> CLIO Kit in Codex
+                / clio-hdf5
               </span>
-              <a className={s.primary} href="https://coder.iowarp.ai">
-                Try Clio Coder <span aria-hidden="true">↗</span>
-              </a>
             </div>
             <a
-              href="/img/tutorials/hdf5-clio-tools.png"
-              aria-label="Open the full-size Clio Coder session screenshot"
+              href="/img/tutorials/hdf5-codex-tools.png"
+              aria-label="Open the full Codex session screenshot"
             >
               <img
-                src="/img/tutorials/hdf5-clio-tools.png"
-                width="2872"
-                height="1380"
+                src="/img/tutorials/cover-hdf5.png"
+                width="1600"
+                height="888"
                 loading="lazy"
-                alt="Clio Coder loads the dataset-explore skill and calls clio-hdf5 open_file, visit, get_shape, get_dtype, list_attributes, read_partial_dataset and close_file"
+                alt="Codex reads the dataset-explore skill, then calls clio-hdf5 open_file, get_filename, get_mode and list_keys"
               />
             </a>
             <figcaption>
-              A real session in Clio Coder, IOWarp’s open-source coding agent:
-              the HDF5 tutorial’s skill checks structure and units before
-              reading three values.
+              A real session in Codex: the HDF5 tutorial’s skill checks
+              structure and units before reading three values.
             </figcaption>
           </figure>
           <div className={s.firstRequest}>
@@ -428,7 +423,7 @@ export function Overview() {
             </h2>
             <p>
               Components install into your project in each client’s own format.
-              Every hands-on tutorial is recorded in four of them.
+              Every hands-on tutorial is recorded in three of them.
             </p>
             <Link className={s.textLink} to="/docs/clients">
               Connect your agent <span>→</span>
@@ -437,7 +432,7 @@ export function Overview() {
           <dl className={s.agentRoutes}>
             <div>
               <dt>In the terminal</dt>
-              <dd>Claude Code · Codex · Clio Coder · OpenCode</dd>
+              <dd>Claude Code · Codex · OpenCode</dd>
               <dd>Project MCP configuration, skills and visible tool calls</dd>
             </div>
             <div>
@@ -451,17 +446,6 @@ export function Overview() {
               <dd>Supported plugin dependencies, agents and hooks</dd>
             </div>
           </dl>
-          <div className={`${s.firstRequest} ${s.coderPromo}`}>
-            <span className={s.eyebrow}>Also from IOWarp</span>
-            <p>
-              Need an agent? Clio Coder is IOWarp’s open-source coding agent for
-              scientific software. Every tutorial here includes a Clio Coder
-              session.
-            </p>
-            <a className={s.textLink} href="https://coder.iowarp.ai">
-              Try Clio Coder <span>↗</span>
-            </a>
-          </div>
         </StorySection>
 
         <StorySection id="toolkit" aria-labelledby="tools-title">
@@ -579,8 +563,8 @@ export function Overview() {
               <summary>Can I keep using my current agent?</summary>
               <p>
                 Yes, if it supports the component you want to use. MCP servers
-                and portable skills work in Claude Code, Codex, Clio Coder,
-                OpenCode and other clients. Native plugin agents and hooks depend
+                and portable skills work in Claude Code, Codex, OpenCode and
+                other clients. Native plugin agents and hooks depend
                 on the host.{' '}
                 <Link to="/docs/clients">Check your client’s setup.</Link>
               </p>
@@ -645,9 +629,6 @@ export function Overview() {
               <Link className={s.textLink} to="/tutorials">
                 Browse tutorials <span>↗</span>
               </Link>
-              <a className={s.textLink} href="https://coder.iowarp.ai">
-                Try Clio Coder <span>↗</span>
-              </a>
               <a className={s.textLink} href="https://iowarp.ai">
                 Part of IOWarp <span>↗</span>
               </a>

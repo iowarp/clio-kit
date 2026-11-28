@@ -70,10 +70,7 @@ Maintained CLIO contributions additionally require implementation review and
 acceptance tests. External code and update ownership remain with the publisher.
 
 When adapting an external skill, give the changed copy a distinct name and retain
-its source revision and license. CLIO Kit's Clio Coder collection uses
-`clio-kit-` names to avoid collisions with upstream audited skills. See the
-[integration and validation guide](../docs/marketplace.md#clio-coder-integration)
-for installation routes, prerequisites and tested coverage.
+its source revision and license.
 
 ## Source types
 
@@ -325,7 +322,7 @@ Required fields are checked for command, HTTP, prompt, agent and MCP-tool handle
 Optional fields, event/type combinations and client-version compatibility remain
 subject to [Claude's native hook rules](https://code.claude.com/docs/en/hooks).
 Validation never executes submitted hooks. Claude's hooks are host-specific;
-no automatic conversion to Codex, Antigravity or Clio Coder hooks is provided.
+no automatic conversion to Codex or Antigravity hooks is provided.
 
 Reproduce installation, session-start, allowed-write, denied-write, refresh and
 uninstall checks from this checkout:

@@ -4,7 +4,7 @@ import {useDoc} from '@docusaurus/plugin-content-docs/client';
 import s from './styles.module.css';
 
 /**
- * Clio Coder's tutorial opening: back link, category and reading time, title,
+ * The tutorial opening: back link, category and reading time, title,
  * summary, a fact row and the cover capture. Content comes from front matter.
  */
 export default function TutorialHeader() {

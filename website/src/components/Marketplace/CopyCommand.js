@@ -2,7 +2,7 @@ import React, {useRef, useState} from 'react';
 import s from './overview.module.css';
 
 /**
- * A command box with Clio Coder's Copy control. Without clipboard access the
+ * A command box with a Copy control. Without clipboard access the
  * command is selected instead, so it can still be copied by hand.
  */
 export default function CopyCommand({command, prompt = '$', label}) {

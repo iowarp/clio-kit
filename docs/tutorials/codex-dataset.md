@@ -6,12 +6,12 @@ image: /img/tutorials/cover-hdf5.png
 tutorial_category: Scientific data
 tutorial_time: 3 min
 written_for: CLIO Kit 2.11
-works_in: Claude Code · Codex · Clio Coder · OpenCode
+works_in: Claude Code · Codex · OpenCode
 basis: Recorded sessions · 7 Oct 2026
 cover: /img/tutorials/cover-hdf5.png
-cover_alt: "Clio Coder loads dataset-explore and calls the clio-hdf5 tools through its gateway."
-cover_caption: "Clio Coder loads dataset-explore and calls the clio-hdf5 tools through its gateway."
-cover_tag: Clio Coder · 0.6.1
+cover_alt: "Codex reads dataset-explore and calls the clio-hdf5 tools."
+cover_caption: "Codex reads dataset-explore and calls the clio-hdf5 tools."
+cover_tag: Codex · 0.160.1
 hide_title: true
 displayed_sidebar: null
 ---
@@ -28,8 +28,8 @@ file. This walkthrough uses the **clio-scientific-io** components, the
 can check against the input.
 
 The screenshots come from real sessions recorded on 7 October 2026 in disposable
-folders: Claude Code 2.1.293 (Opus 5.5), Codex 0.160.1 (GPT-6-Astra), Clio Coder
-0.6.1 (Claude Opus 5.5) and OpenCode 1.18.35 (GPT-5.6 Terra). Each client ran in
+folders: Claude Code 2.1.293 (Opus 5.5), Codex 0.160.1 (GPT-6-Astra) and OpenCode
+1.18.35 (GPT-5.6 Terra). Each client ran in
 its permission-bypass mode inside those folders; keep approvals on in your own
 projects. Pick your client once and every tutorial follows it.
 
@@ -107,48 +107,6 @@ Codex lists each MCP call as `Called clio-hdf5.<tool>`:
 [![Codex summarizes the datasets in a table and reports the three sampled temperatures](../../website/static/img/tutorials/hdf5-codex-result.png)](../../website/static/img/tutorials/hdf5-codex-result.png)
 
 </TabItem>
-<TabItem value="clio" label="Clio Coder">
-
-Clio Coder reads project MCP servers from `.clio-coder/mcp.yaml` and loose
-project skills from `.clio-coder/skills`. Save this file as
-`.clio-coder/mcp.yaml`:
-
-```yaml
-version: 1
-servers:
-  - id: clio-hdf5
-    command: clio-kit
-    args: [mcp-server, hdf5]
-    timeoutMs: 120000
-```
-
-Then trust the declaration, add the skills and start a session:
-
-```bash
-clio-coder mcp trust clio-hdf5
-clio-kit skill install dataset-explore --target .clio-coder/skills
-clio-kit skill install large-data-read --target .clio-coder/skills
-clio-coder
-```
-
-A project server does not launch until you trust it. Paste:
-
-> /skill dataset-explore Inspect simulation.h5 read-only using the clio-hdf5 MCP
-> server. Its visit tool takes no arguments. Confirm the open file, list datasets,
-> shapes, dtypes and units. Read only the first three temperature values after
-> checking the shape. Close the file. Save a concise dataset-notes.md and show the
-> findings. Use MCP calls for inspection, not a substitute Python reader. Work
-> only in this demo folder; no network or delegation.
-
-Clio reaches MCP tools through its gateway, so it describes a tool before calling
-it. The note about `visit` saves one rejected call: unlike the other HDF5 tools,
-`visit` takes no `path`.
-
-[![Clio Coder loads dataset-explore, searches the clio-hdf5 capabilities, then calls open_file, visit, get_shape, get_dtype, list_attributes, read_partial_dataset and close_file through the gateway](../../website/static/img/tutorials/hdf5-clio-tools.png)](../../website/static/img/tutorials/hdf5-clio-tools.png)
-
-[![Clio Coder reports the two datasets, their units and the first three temperatures](../../website/static/img/tutorials/hdf5-clio-result.png)](../../website/static/img/tutorials/hdf5-clio-result.png)
-
-</TabItem>
 <TabItem value="opencode" label="OpenCode">
 
 ```bash
@@ -197,7 +155,7 @@ Your report should identify:
 | `/temperature` | `(5, 4, 3)` | `float64` | kelvin (`K`) |
 
 Check that the sample is `273.15, 274.15, 275.15` and that the file was closed.
-After the four recorded sessions we checked each saved report against these
+After the three recorded sessions we checked each saved report against these
 known values. A correct-looking report alone is not that check.
 
 For your own file, keep the same request but use its path. If it is large,

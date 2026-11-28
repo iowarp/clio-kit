@@ -6,7 +6,7 @@ image: /img/tutorials/cover-archive.png
 tutorial_category: Scientific data
 tutorial_time: 3 min
 written_for: CLIO Kit 2.11
-works_in: Claude Code · Codex · Clio Coder · OpenCode
+works_in: Claude Code · Codex · OpenCode
 basis: Recorded sessions · 7 Oct 2026
 cover: /img/tutorials/cover-archive.png
 cover_alt: "Codex compresses, restores and verifies pressure.h5 through two MCP servers."
@@ -25,8 +25,7 @@ import TutorialHeader from '@site/src/components/TutorialHeader';
 Compress a scientific file, restore a copy, and summarize its contents without
 sending every value to the model. This workflow combines the **Compression MCP**,
 the **HDF5 MCP** and the **large-data-read** skill. The screenshots are real
-sessions in Claude Code, Codex, Clio Coder and OpenCode, recorded with the
-versions listed in [Explore an HDF5 file](./codex-dataset.md).
+sessions in Claude Code, Codex and OpenCode, recorded with the versions listed in [Explore an HDF5 file](./codex-dataset.md).
 
 ## 1. Make the input
 
@@ -108,51 +107,6 @@ Trust the folder, check `/mcp`, then paste:
 [![Codex reports full coverage of 100,000 elements, byte equality and the pressure statistics](../../website/static/img/tutorials/archive-codex-result.png)](../../website/static/img/tutorials/archive-codex-result.png)
 
 </TabItem>
-<TabItem value="clio" label="Clio Coder">
-
-Save this as `.clio-coder/mcp.yaml`:
-
-```yaml
-version: 1
-servers:
-  - id: clio-compression
-    command: clio-kit
-    args: [mcp-server, compression]
-    timeoutMs: 120000
-  - id: clio-hdf5
-    command: clio-kit
-    args: [mcp-server, hdf5]
-    timeoutMs: 120000
-```
-
-```bash
-clio-coder mcp trust clio-compression
-clio-coder mcp trust clio-hdf5
-clio-kit skill install large-data-read --target .clio-coder/skills
-clio-coder
-```
-
-Paste:
-
-> /skill large-data-read Both servers are already configured for this project.
-> Archive pressure.h5 using the clio-compression MCP server. Keep the original
-> unchanged. Copy the archive into a new restored directory and use the
-> clio-compression MCP to decompress that copy. Verify byte equality against the
-> original. Open the restored file with the clio-hdf5 MCP; inspect shape, dtype
-> and units, then compute min, max and mean using hdf5_aggregate_stats instead of
-> transferring all values. Report FULL DATA or SAMPLED and coverage exactly as
-> returned. Close the file and save archive-report.md. Use shell only for file
-> copying and byte/hash checks, not replacement compression or HDF5 analysis.
-> Work only in this project, no delegation or network.
-
-The first sentence stops Clio from searching for MCP configuration files that a
-fresh folder does not have.
-
-[![Clio Coder calls clio-compression compress and decompress tools, checks the restored copy, then calls clio-hdf5 tools including hdf5_aggregate_stats](../../website/static/img/tutorials/archive-clio-tools.png)](../../website/static/img/tutorials/archive-clio-tools.png)
-
-[![Clio Coder reports byte equality, full coverage and the min, max and mean pressures](../../website/static/img/tutorials/archive-clio-result.png)](../../website/static/img/tutorials/archive-clio-result.png)
-
-</TabItem>
 <TabItem value="opencode" label="OpenCode">
 
 ```bash
@@ -203,7 +157,7 @@ Expected results:
 | Mean | 149.9995 kPa |
 | Coverage | Full dataset, 100,000 elements |
 
-After the four recorded sessions we compared each restored file with its
+After the three recorded sessions we compared each restored file with its
 original and checked each report for the mean and full coverage. Archive sizes
 and hashes may differ if the fixture is regenerated with a different library
 version; compare your own source and restored files.

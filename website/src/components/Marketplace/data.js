@@ -39,9 +39,6 @@ export const kindNames = {
   package: 'Package',
 };
 export const kindName = (kind) => kindNames[kind] || kind;
-// An indexed upstream package whose skill CLIO Kit also ships as an adaptation.
-export const hasAdaptedCopy = (item) =>
-  item.kind === 'package' && itemsById.has(`skill/clio-kit-${item.name}`);
 
 export function installation(item, client) {
   if (item.installation === 'portable-skill') {
