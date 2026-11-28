@@ -4,6 +4,12 @@ All notable user-facing changes to CLIO Kit are documented here, newest first.
 
 ## Unreleased
 
+- **MCP servers start with one OpenBLAS thread**: `clio-kit mcp-server` sets
+  `OPENBLAS_NUM_THREADS=1` for the server unless you set it yourself. OpenBLAS
+  commits 32 MB per worker thread when numpy loads, one per extra logical CPU,
+  so a numpy server on a 12-CPU machine committed about 430 MB before its first
+  call; it now commits about 70 MB. Set the variable to restore threaded BLAS.
+
 - **paraview, no BP5-specific follow**: the node no longer parses a growing
   ADIOS2 BP5 folder's index and metadata to read only whole steps, no longer
   keeps BP5 readers open through a rollback, and `watch_steps` no longer ends

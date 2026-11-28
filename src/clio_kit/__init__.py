@@ -460,6 +460,9 @@ def mcp_server(server, branch, prepare, args):
     actual_dir = dir_name_map[server_lower]
 
     child_environment = subprocess_env_with_github_https_rewrite()
+    # OpenBLAS commits a 32 MB buffer per worker thread when numpy loads, one
+    # per extra logical CPU. These servers' array work is small enough for one.
+    child_environment.setdefault("OPENBLAS_NUM_THREADS", "1")
 
     if branch:
         # Run from a git branch: uvx owns its own ephemeral environment, so the
