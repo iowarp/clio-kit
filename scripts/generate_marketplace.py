@@ -15,7 +15,7 @@ from clio_kit.community import (
 )
 from clio_kit.catalogue import write_catalogue
 from clio_kit.federation import LOCK_NAME, refresh_marketplace, read_snapshot
-from clio_kit.marketplace_assets import imported_skill_entries, write_extra_plugins
+from clio_kit.marketplace_assets import write_extra_plugins
 from clio_kit.local_plugins import discover_local_plugins
 from clio_kit.plugins import PluginProblem
 from clio_kit.skills import SkillProblem
@@ -34,7 +34,6 @@ def generate(root: Path, *, refresh: bool = False) -> None:
     marketplace = json.loads(path.read_text())
     bundles = read_bundles(root)
     community = read_community_entries(root)
-    imported = imported_skill_entries(root)
     # Only server records require runtime probes. Rebuild every other entry
     # from its source so removed/renamed local packages cannot linger.
     servers = {f"clio-{name}" for name in read_server_versions(root)}
@@ -49,7 +48,6 @@ def generate(root: Path, *, refresh: bool = False) -> None:
             skills.append(skill["name"])
         entries.append(write_bundle_plugin(root, name, spec))
     entries.extend(write_extra_plugins(root, skills))
-    entries.extend(imported)
     entries.extend(community)
     entries.extend(read_snapshot(root))
     entries.extend(write_workflow_plugins(root, entries, author=PLUGIN_AUTHOR))

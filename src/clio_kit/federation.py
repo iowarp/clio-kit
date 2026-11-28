@@ -105,7 +105,7 @@ def compile_catalogue(
                     raise ValueError(f"Plugin name differs from its manifest: {source}")
             elif entry.get("strict", True):
                 # Claude also loads skill-only packages whose identity comes
-                # from the marketplace entry (e.g. Clio Coder's library).
+                # from the marketplace entry.
                 from clio_kit.skills import read_skill_frontmatter
 
                 skill_paths = (
